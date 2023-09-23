@@ -7,18 +7,18 @@ Class Builtin := {
         : Set ;
     builtin_value_eqdec
         :: EqDecision builtin_value ;
-    builtin_unary_predicate_name
+    builtin_unary_predicate
         : Set ;
-    builtin_unary_predicate_name_eqdec
-        :: EqDecision builtin_unary_predicate_name ;
-    builtin_binary_predicate_name
+    builtin_unary_predicate_eqdec
+        :: EqDecision builtin_unary_predicate ;
+    builtin_binary_predicate
         : Set ;
-    builtin_binary_predicate_name_eqdec
-        :: EqDecision builtin_binary_predicate_name ;
+    builtin_binary_predicate_eqdec
+        :: EqDecision builtin_binary_predicate ;
     builtin_unary_predicate_interp
-        : builtin_unary_predicate_name -> builtin_value -> Prop ;
+        : builtin_unary_predicate -> builtin_value -> Prop ;
     builtin_binary_predicate_interp
-        : builtin_binary_predicate_name -> builtin_value -> builtin_value -> Prop ;
+        : builtin_binary_predicate -> builtin_value -> builtin_value -> Prop ;
 }.
 
 Class Variables := {
@@ -81,4 +81,71 @@ Proof.
     intros e1 e2.
     apply element_eqdec'.
 Defined.
+
+Inductive AtomicProposition {Σ : Signature} :=
+| ap1 (p : builtin_unary_predicate) (x : variable)
+| ap2 (p : builtin_binary_predicate) (x y : variable)
+.
+
+#[export]
+Instance atomicProposition_eqdec {Σ : Signature}
+    : EqDecision AtomicProposition
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+Inductive Constraint {Σ : Signature} :=
+| c_True
+| c_atomic (ap : AtomicProposition)
+| c_and (c1 c2 : Constraint)
+| c_not (c : Constraint)
+.
+
+#[export]
+Instance constraint_eqdec {Σ : Signature}
+    : EqDecision Constraint
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+Inductive Pattern {Σ : Signature} :=
+| pat_builtin (b : builtin_value)
+| pat_app (s : symbol) (args : list Pattern)
+| pat_var (v : variable)
+| pat_requires (p : Pattern) (c : Constraint)
+.
+
+Equations? pattern_eqdec' {Σ : Signature} (p1 p2 : Pattern)
+    : {p1 = p2} + {p1 <> p2}
+    by struct p1
+:=
+    pattern_eqdec' (pat_builtin b1) (pat_builtin b2)
+    := if (decide (b1 = b2)) then left _ else right _  ;
+    pattern_eqdec' (pat_app s1 args1) (pat_app s2 args2)
+    := if (decide (s1 = s2)) then
+        (if (@decide (args1 = args2) _) then left _ else right _)
+        else right _ ;
+    pattern_eqdec' (pat_var v1) (pat_var v2)
+    := if (decide (v1 = v2)) then left _ else right _  ;
+    pattern_eqdec' (pat_requires p1 c1) (pat_requires p2 c2)
+    := if (@decide (p1 = p2) _) then
+        (if (decide (c1 = c2)) then left _ else right _)
+       else right _  ;
+    pattern_eqdec' _ _ := right _
+.
+Proof.
+    {
+        unfold Decision.
+        apply list_eqdec.
+        unfold EqDec. intros x y.
+        apply pattern_eqdec'.
+    }
+    {
+        apply pattern_eqdec'.
+    }
+Defined.
+
+
 
