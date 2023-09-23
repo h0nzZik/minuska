@@ -1,4 +1,4 @@
-From stdpp Require Import base countable decidable list list_numbers.
+From stdpp Require Import base countable decidable list list_numbers gmap.
 From Equations Require Import Equations.
 From Ltac2 Require Import Ltac2.
 
@@ -147,5 +147,36 @@ Proof.
     }
 Defined.
 
+
+Definition Valuation {Σ : Signature}
+    := gmap variable builtin_value
+.
+
+Definition val_satisfies_ap
+    {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
+    : Prop :=
+match ap with
+| ap1 p x =>
+    match ρ !! x with
+    | None => False
+    | Some vx => builtin_unary_predicate_interp p vx
+    end
+| ap2 p x y =>
+    match ρ !! x, ρ !! y with
+    | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
+    | _,_ => False
+    end
+end
+.
+
+Fixpoint val_satisfies_c
+    {Σ : Signature} (ρ : Valuation) (c : Constraint)
+    : Prop :=
+match c with
+| c_True => True
+| c_atomic ap => val_satisfies_ap ρ ap
+| c_and c1 c2 => val_satisfies_c ρ c1 /\ val_satisfies_c ρ c2
+| c_not c' => ~ val_satisfies_c ρ c'
+end.
 
 
