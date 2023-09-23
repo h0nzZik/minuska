@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqPackages = pkgs.coqPackages;
+        coqPackages = pkgs.coqPackages_8_17;
 
       in {
 
@@ -45,6 +45,7 @@
                 inputsFrom = [minuska];
                 packages = [minuska.coqPackages.coq-lsp];
               };
+        };
       }
     )
   );
