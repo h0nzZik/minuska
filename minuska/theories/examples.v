@@ -1,6 +1,6 @@
 From Coq.Logic Require Import ProofIrrelevance.
 
-From stdpp Require Import base countable decidable list list_numbers gmap strings.
+From stdpp Require Import base countable decidable finite list list_numbers gmap strings.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
 
@@ -15,10 +15,7 @@ From Minuska Require Import minuska string_variables empty_builtin.
 
 Module example_1.
 
-    Record SymbolSet : Set := {
-        ss_name : string ;
-        ss_pf : ss_name ∈ ["Zero"; "Succ" ] ;
-    }.
+    Definition SymbolSet := {s:string | s ∈ ["Zero"; "Succ" ] }.
 
     #[local]
     Instance symbolSet_eqdec : EqDecision SymbolSet.
@@ -34,10 +31,79 @@ Module example_1.
         }
     Defined.
 
+    Lemma NoDup_sig
+        (A : Type)
+        (P : A -> Prop)
+        (l : list (sig P)):
+        NoDup (proj1_sig <$> l) ->
+        NoDup l
+    .
+    Proof.
+        induction l; intros H.
+        { constructor. }
+        {
+            destruct a as [x p].
+            cbn in H.
+            inversion H. subst. clear H.
+            constructor.
+            {
+                intros HContra.
+                apply H2. clear H2.
+                clear -HContra.
+                induction l.
+                {
+                    inversion HContra.
+                }
+                {
+                    cbn.
+                    destruct a as [ax ap].
+                    cbn.
+                    inversion HContra; subst; clear HContra.
+                    {
+                        left.
+                    }
+                    {
+                        right. apply IHl. exact H1.
+                    }
+                }
+            }
+            {
+                auto with nocore.
+            }
+        }
+    Qed.
+
     #[local]
-    Instance MySymbols : Symbols := {|
+    Program Instance SymbolSet_finite : Finite SymbolSet := {|
+        enum := [exist _ "Zero" _; exist _ "Succ" _];
+        NoDup_enum := _ ;
+        elem_of_enum := _ ;
+    |}.
+    Next Obligation.
+        ltac1:(set_solver).
+    Qed.
+    Next Obligation.
+        ltac1:(set_solver).
+    Qed.
+    Next Obligation.
+        apply NoDup_sig.
+        cbn.
+        remember (decide (NoDup ["Zero"; "Succ"])) as r.
+        ltac1:(compute in Heqr).
+        destruct r. assumption. inversion Heqr.
+    Qed.
+    Next Obligation.
+        ltac1:(destruct x).
+    Qed.
+
+    #[local]
+    Program Instance MySymbols : Symbols := {|
         symbol := SymbolSet ;
     |}.
+    Next Obligation.
+    Search Finite Countable.
+        apply (finite_countable SymbolSet_finite).
+    
 
     #[local]
     Instance Σ : Signature := {|
