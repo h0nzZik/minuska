@@ -119,6 +119,7 @@ Inductive Pattern {Σ : Signature} :=
 | pat_app (s : symbol) (args : list Pattern)
 | pat_var (v : variable)
 | pat_requires (p : Pattern) (c : Constraint)
+| pat_requires_match (p : Pattern) (v : variable) (p2 : Pattern)
 .
 
 (*Derive NoConfusion Subterm EqDec for Pattern.*)
@@ -129,6 +130,7 @@ match φ with
 | pat_app s args => 1 + sum_list_with pattern_size args
 | pat_var _ => 1
 | pat_requires p' _ => 1 + pattern_size p'
+| pat_requires_match p v p2 => 1 + pattern_size p + pattern_size p2
 end.
 
 Equations? pattern_eqdec' {Σ : Signature} (p1 p2 : Pattern)
@@ -147,6 +149,12 @@ Equations? pattern_eqdec' {Σ : Signature} (p1 p2 : Pattern)
     := if (@decide (p1 = p2) _) then
         (if (decide (c1 = c2)) then left _ else right _)
        else right _  ;
+    pattern_eqdec' (pat_requires_match p v p2) (pat_requires_match p' v' p2')
+    := if (pattern_eqdec' p p')
+        then (if (decide (v = v'))
+            then (if (pattern_eqdec' p2 p2') then left _ else right _)
+            else right _)
+        else right _ ;
     pattern_eqdec' _ _ := right _
 .
 Proof.
@@ -213,6 +221,11 @@ Section with_signature.
     element_satisfies_pattern' (pat_requires φ' c) e 
         := element_satisfies_pattern' φ' e 
         /\ val_satisfies_c ρ c ;
+    element_satisfies_pattern' (pat_requires_match φ x φ') e with (ρ !! x) => {
+        | None := False;
+        | Some v := element_satisfies_pattern' φ e 
+            /\ element_satisfies_pattern' φ' (el_builtin v);
+    };
     element_satisfies_pattern' _ _ := False ;
     where
     elements_satisfies_patterns'
