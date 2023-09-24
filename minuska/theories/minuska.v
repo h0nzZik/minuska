@@ -416,9 +416,15 @@ Section sec.
     .
 End sec.
 
-Definition rewrites_to
+Definition rewrites_in_valuation_to
     {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Element)
     : Prop
 := rr_satisfies LR_Left ρ r from
 /\ rr_satisfies LR_Right ρ r to
+.
+
+Definition rewrites_to
+    {Σ : Signature} (r : RewritingRule) (from to : Element)
+    : Prop
+:= exists ρ, rewrites_in_valuation_to ρ r from to
 .
