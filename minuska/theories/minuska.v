@@ -416,3 +416,9 @@ Section sec.
     .
 End sec.
 
+Definition rewrites_to
+    {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Element)
+    : Prop
+:= rr_satisfies LR_Left ρ r from
+/\ rr_satisfies LR_Right ρ r to
+.
