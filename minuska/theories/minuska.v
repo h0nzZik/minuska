@@ -1,6 +1,10 @@
 From stdpp Require Import base countable decidable list list_numbers gmap.
+(* This is unset by stdpp. We need to set it again.*)
+Set Transparent Obligations.
+
 From Equations Require Import Equations.
 Set Equations Transparent.
+
 Require Import Wellfounded.
 From Ltac2 Require Import Ltac2.
 
@@ -47,6 +51,7 @@ Inductive Element {Σ : Signature} :=
 | el_app (s : symbol) (args : list Element)
 .
 
+Equations Derive NoConfusion for Element.
 (*Derive NoConfusion Subterm EqDec for Element.*)
 
 Fixpoint element_size {Σ : Signature} (e : Element) :=
@@ -77,6 +82,8 @@ Proof.
     apply element_eqdec'.
 Defined.
 
+Transparent element_eqdec'.
+
 #[export]
 Instance Element_eqdec {Σ : Signature}
     : EqDecision Element
@@ -90,6 +97,8 @@ Inductive AtomicProposition {Σ : Signature} :=
 | ap1 (p : builtin_unary_predicate) (x : variable)
 | ap2 (p : builtin_binary_predicate) (x y : variable)
 .
+
+Equations Derive NoConfusion for AtomicProposition.
 
 #[export]
 Instance atomicProposition_eqdec {Σ : Signature}
@@ -106,6 +115,8 @@ Inductive Constraint {Σ : Signature} :=
 | c_not (c : Constraint)
 .
 
+Equations Derive NoConfusion for Constraint.
+
 #[export]
 Instance constraint_eqdec {Σ : Signature}
     : EqDecision Constraint
@@ -121,6 +132,8 @@ Inductive Pattern {Σ : Signature} :=
 | pat_requires (p : Pattern) (c : Constraint)
 | pat_requires_match (p : Pattern) (v : variable) (p2 : Pattern)
 .
+
+Equations Derive NoConfusion for Pattern.
 
 (*Derive NoConfusion Subterm EqDec for Pattern.*)
 
@@ -167,6 +180,16 @@ Proof.
     {
         apply pattern_eqdec'.
     }
+Defined.
+
+
+#[export]
+Instance pattern_eqdec {Σ : Signature}
+    : EqDecision Pattern
+.
+Proof.
+    intros p1 p2.
+    apply pattern_eqdec'.
 Defined.
 
 
@@ -248,3 +271,90 @@ Definition element_satisfies_pattern_in_valuation
     element_satisfies_pattern' ρ φ e
 .
 
+Record LocalRewrite {Σ : Signature} := {
+    lr_from : Pattern ;
+    lr_to : Pattern ;
+}.
+
+Equations Derive NoConfusion for LocalRewrite.
+
+#[export]
+Instance localRewrite_eqdec {Σ : Signature}
+    : EqDecision LocalRewrite
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+Definition lr_from_satisfies
+    {Σ : Signature} (e : Element) (lr : LocalRewrite) (ρ : Valuation)
+    : Prop :=
+    element_satisfies_pattern_in_valuation e (lr_from lr) ρ
+.
+
+Definition lr_to_satisfies
+    {Σ : Signature} (e : Element) (lr : LocalRewrite) (ρ : Valuation)
+    : Prop :=
+    element_satisfies_pattern_in_valuation e (lr_to lr) ρ
+.
+
+Inductive RewritingRule {Σ : Signature} :=
+| rl_local_rewrite (lr : LocalRewrite)
+| rl_builtin (b : builtin_value)
+| rl_app (s : symbol) (args : list RewritingRule)
+| rl_var (v : variable)
+| rl_requires (r : RewritingRule) (c : Constraint)
+| rl_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
+.
+
+Equations Derive NoConfusion for RewritingRule.
+
+Equations? rewritingRule_eqdec' {Σ : Signature} (r1 r2 : RewritingRule)
+    : {r1 = r2} + {r1 <> r2}
+    by struct r1
+:=
+    rewritingRule_eqdec' (rl_local_rewrite lr1) (rl_local_rewrite lr2)
+    := if (decide (lr1 = lr2)) then left _ else right _ ;
+
+    rewritingRule_eqdec' (rl_builtin b1) (rl_builtin b2)
+    := if (decide (b1 = b2)) then left _ else right _  ;
+
+    rewritingRule_eqdec' (rl_app s1 args1) (rl_app s2 args2)
+    := if (decide (s1 = s2)) then
+        (if (@decide (args1 = args2) _) then left _ else right _)
+        else right _ ;
+
+    rewritingRule_eqdec' (rl_var v1) (rl_var v2)
+    := if (decide (v1 = v2)) then left _ else right _  ;
+
+    rewritingRule_eqdec' (rl_requires r1 c1) (rl_requires r2 c2)
+    := if (rewritingRule_eqdec' r1 r2) then
+        (if (decide (c1 = c2)) then left _ else right _)
+       else right _  ;
+
+    rewritingRule_eqdec' (rl_requires_match p v p2) (rl_requires_match p' v' p2')
+    := if (rewritingRule_eqdec' p p')
+        then (if (decide (v = v'))
+            then (if (pattern_eqdec' p2 p2') then left _ else right _)
+            else right _)
+        else right _ ;
+    
+    rewritingRule_eqdec' _ _ := right _
+.
+Proof.
+    {
+        apply list_eqdec.
+        intros r1 r2.
+        apply rewritingRule_eqdec'.
+    }
+Defined.
+
+
+#[export]
+Instance rewritingRule_eqdec {Σ : Signature}
+    : EqDecision RewritingRule
+.
+Proof.
+    intros rr1 rr2.
+    apply rewritingRule_eqdec'.
+Defined.
