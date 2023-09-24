@@ -239,7 +239,7 @@ Section with_signature.
         := ρ !! x = Some b ;
     element_satisfies_pattern' (pat_app s2 φs) (el_app s1 es)
         := s1 = s2
-        /\ length es = length φs
+        (* /\ length es = length φs *)
         /\ elements_satisfies_patterns' φs es ;
     element_satisfies_pattern' (pat_requires φ' c) e 
         := element_satisfies_pattern' φ' e 
@@ -286,25 +286,26 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
-Definition lr_from_satisfies
-    {Σ : Signature} (e : Element) (lr : LocalRewrite) (ρ : Valuation)
-    : Prop :=
-    element_satisfies_pattern_in_valuation e (lr_from lr) ρ
-.
+Inductive LR : Set := LR_Left | LR_Right.
 
-Definition lr_to_satisfies
-    {Σ : Signature} (e : Element) (lr : LocalRewrite) (ρ : Valuation)
+Definition lr_satisfies
+    {Σ : Signature} (left_right : LR) (e : Element) (lr : LocalRewrite) (ρ : Valuation)
     : Prop :=
+match left_right with
+| LR_Left =>
+    element_satisfies_pattern_in_valuation e (lr_from lr) ρ
+| LR_Right =>
     element_satisfies_pattern_in_valuation e (lr_to lr) ρ
+end
 .
 
 Inductive RewritingRule {Σ : Signature} :=
-| rl_local_rewrite (lr : LocalRewrite)
-| rl_builtin (b : builtin_value)
-| rl_app (s : symbol) (args : list RewritingRule)
-| rl_var (v : variable)
-| rl_requires (r : RewritingRule) (c : Constraint)
-| rl_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
+| rr_local_rewrite (lr : LocalRewrite)
+| rr_builtin (b : builtin_value)
+| rr_app (s : symbol) (args : list RewritingRule)
+| rr_var (v : variable)
+| rr_requires (r : RewritingRule) (c : Constraint)
+| rr_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
 .
 
 Equations Derive NoConfusion for RewritingRule.
@@ -313,26 +314,26 @@ Equations? rewritingRule_eqdec' {Σ : Signature} (r1 r2 : RewritingRule)
     : {r1 = r2} + {r1 <> r2}
     by struct r1
 :=
-    rewritingRule_eqdec' (rl_local_rewrite lr1) (rl_local_rewrite lr2)
+    rewritingRule_eqdec' (rr_local_rewrite lr1) (rr_local_rewrite lr2)
     := if (decide (lr1 = lr2)) then left _ else right _ ;
 
-    rewritingRule_eqdec' (rl_builtin b1) (rl_builtin b2)
+    rewritingRule_eqdec' (rr_builtin b1) (rr_builtin b2)
     := if (decide (b1 = b2)) then left _ else right _  ;
 
-    rewritingRule_eqdec' (rl_app s1 args1) (rl_app s2 args2)
+    rewritingRule_eqdec' (rr_app s1 args1) (rr_app s2 args2)
     := if (decide (s1 = s2)) then
         (if (@decide (args1 = args2) _) then left _ else right _)
         else right _ ;
 
-    rewritingRule_eqdec' (rl_var v1) (rl_var v2)
+    rewritingRule_eqdec' (rr_var v1) (rr_var v2)
     := if (decide (v1 = v2)) then left _ else right _  ;
 
-    rewritingRule_eqdec' (rl_requires r1 c1) (rl_requires r2 c2)
+    rewritingRule_eqdec' (rr_requires r1 c1) (rr_requires r2 c2)
     := if (rewritingRule_eqdec' r1 r2) then
         (if (decide (c1 = c2)) then left _ else right _)
        else right _  ;
 
-    rewritingRule_eqdec' (rl_requires_match p v p2) (rl_requires_match p' v' p2')
+    rewritingRule_eqdec' (rr_requires_match p v p2) (rr_requires_match p' v' p2')
     := if (rewritingRule_eqdec' p p')
         then (if (decide (v = v'))
             then (if (pattern_eqdec' p2 p2') then left _ else right _)
@@ -358,3 +359,60 @@ Proof.
     intros rr1 rr2.
     apply rewritingRule_eqdec'.
 Defined.
+
+Section sec.
+    Context
+        {Σ : Signature}
+        (left_right : LR)
+        (ρ : Valuation)
+    .
+
+    Equations rr_satisfies
+        (r : RewritingRule) (e : Element)
+        : Prop
+        by struct r
+    :=
+        rr_satisfies (rr_local_rewrite lr) e
+        := lr_satisfies left_right e lr ρ ;
+
+        rr_satisfies (rr_builtin b1) (el_builtin b2)
+        := b1 = b2 ;
+
+        rr_satisfies (rr_var x) (el_builtin b)
+        := ρ !! x = Some b ;
+
+        rr_satisfies (rr_app s2 rs) (el_app s1 es)
+        := s1 = s2
+        (* /\ length es = length rs *)
+        /\ rrs_satisfies rs es ;
+
+        rr_satisfies (rr_requires r c) e 
+        := rr_satisfies r e 
+        /\ val_satisfies_c ρ c ;
+
+        rr_satisfies (rr_requires_match r x φ') e with (ρ !! x) => {
+        | None := False;
+        | Some v := rr_satisfies r e 
+            /\ element_satisfies_pattern' ρ φ' (el_builtin v);
+        } ;
+
+        rr_satisfies _ _ := False ;
+    
+    where
+    rrs_satisfies
+        (rs : list RewritingRule) (es : list Element) : Prop
+        by struct rs :=
+    
+    rrs_satisfies [] []
+        := True ;
+
+    rrs_satisfies (r::rs') (e::es')
+        := rr_satisfies r e
+        /\ rrs_satisfies rs' es' ;
+    
+    rrs_satisfies (r'::rs') [] := False ;
+    
+    rrs_satisfies [] (e'::es') := False
+    .
+End sec.
+
