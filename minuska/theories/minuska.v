@@ -497,11 +497,11 @@ Definition Interpreter_sound
     (Γ : RewritingTheory)
     (interpreter : Interpreter Γ)
     : Prop
-    := forall e,
-        stuck Γ e -> interpreter e = None
-    /\ forall e,
+    := (forall e,
+        stuck Γ e -> interpreter e = None)
+    /\ (forall e,
         not_stuck Γ e ->
-        exists e', interpreter e = Some e'
+        exists e', interpreter e = Some e')
 .
 
 Definition Explorer

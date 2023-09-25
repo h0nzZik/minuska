@@ -11,7 +11,7 @@ Set Equations Transparent.
 Require Import Wellfounded.
 From Ltac2 Require Import Ltac2.
 
-From Minuska Require Import minuska.
+From Minuska Require Import tactics minuska.
 
 (*
 #[export]
@@ -329,6 +329,49 @@ Section with_decidable_signature.
         }
     Qed.
 
+
+    Lemma thy_lhs_match_one_Some
+        (e : Element)
+        (Γ : RewritingTheory)
+        (r : RewritingRule)
+        (ρ : Valuation)
+        :
+        thy_lhs_match_one e Γ = Some (r, ρ) ->
+        exists (r : RewritingRule) (ρ : Valuation),
+            r ∈ Γ /\ rr_satisfies LR_Left ρ r e
+    .
+    Proof.
+        intros H.
+        unfold thy_lhs_match_one in H.
+        unfold is_Some in H.
+        (repeat ltac1:(case_match)); subst.
+        {
+            inversion H; subst; clear H.
+            ltac1:(rewrite list_find_Some in H0).
+            ltac1:(rewrite list_lookup_fmap in H0).
+            ltac1:(rewrite H3 in H0).
+            ltac1:(rewrite fmap_Some in H0).
+            ltac1:(destruct_and!).
+            destruct_ex!.
+            ltac1:(destruct_and!).
+            ltac1:(simplify_eq /=).
+            symmetry in H0.
+            ltac1:(rewrite lhs_match_one_Some in H0).
+            eexists. eexists. split>[()|apply H0].
+            apply elem_of_list_lookup_2 in H3.
+            exact H3.
+        }
+        {
+            inversion H.
+        }
+        {
+            inversion H.
+        }
+        {
+            inversion H.
+        }
+    Qed.
+
     Definition naive_interpreter
         (Γ : RewritingTheory)
         (e : Element)
@@ -337,7 +380,28 @@ Section with_decidable_signature.
         let oρ : option (RewritingRule*Valuation) := thy_lhs_match_one e Γ in
         match oρ with
         | None => None
-        | Some (r,ρ) => Some (rhs_evaluate_rule ρ r)
+        | Some (r,ρ) => (rhs_evaluate_rule ρ r)
         end
     .
+
+    Lemma naive_interpreter_sound
+        (Γ : RewritingTheory)
+     : Interpreter_sound Γ (naive_interpreter Γ).
+    Proof.
+        unfold naive_interpreter.
+        unfold Interpreter_sound.
+        split.
+        {
+            intros e Hstuck.
+            destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
+            {
+
+            }
+            destruct
+        }
+        {
+
+        }
+    Qed.
+
 End with_decidable_signature.
