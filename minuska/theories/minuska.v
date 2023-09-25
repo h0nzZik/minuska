@@ -454,6 +454,14 @@ Definition rewrites_in_valuation_to
 /\ rr_satisfies LR_Right ρ r to
 .
 
+Definition rule_weakly_well_defined
+    {Σ : Signature}
+    (r : RewritingRule)
+    : Prop
+    := forall from ρ, rr_satisfies LR_Left ρ r from ->
+        exists to, rr_satisfies LR_Right ρ r to
+.
+
 Definition rewrites_to
     {Σ : Signature} (r : RewritingRule) (from to : Element)
     : Prop
@@ -463,6 +471,13 @@ Definition rewrites_to
 Definition RewritingTheory {Σ : Signature}
     := list RewritingRule
 .
+
+Definition thy_weakly_well_defined
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    : Prop
+    := forall r, r ∈ Γ -> rule_weakly_well_defined r.
+
 
 Definition rewriting_relation
     {Σ : Signature}
@@ -499,7 +514,8 @@ Definition Interpreter_sound
     : Prop
     := (forall e,
         stuck Γ e -> interpreter e = None)
-    /\ (forall e,
+    /\ (thy_weakly_well_defined Γ ->
+        forall e,
         not_stuck Γ e ->
         exists e', interpreter e = Some e')
 .

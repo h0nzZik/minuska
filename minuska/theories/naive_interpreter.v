@@ -337,8 +337,7 @@ Section with_decidable_signature.
         (ρ : Valuation)
         :
         thy_lhs_match_one e Γ = Some (r, ρ) ->
-        exists (r : RewritingRule) (ρ : Valuation),
-            r ∈ Γ /\ rr_satisfies LR_Left ρ r e
+        r ∈ Γ /\ rr_satisfies LR_Left ρ r e
     .
     Proof.
         intros H.
@@ -357,7 +356,7 @@ Section with_decidable_signature.
             ltac1:(simplify_eq /=).
             symmetry in H0.
             ltac1:(rewrite lhs_match_one_Some in H0).
-            eexists. eexists. split>[()|apply H0].
+            split>[()|apply H0].
             apply elem_of_list_lookup_2 in H3.
             exact H3.
         }
@@ -388,19 +387,60 @@ Section with_decidable_signature.
         (Γ : RewritingTheory)
      : Interpreter_sound Γ (naive_interpreter Γ).
     Proof.
-        unfold naive_interpreter.
-        unfold Interpreter_sound.
         split.
         {
+            unfold naive_interpreter.
+            unfold Interpreter_sound.
+            unfold stuck,not_stuck.
             intros e Hstuck.
             destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
             {
-
+                destruct p as [r ρ].
+                {
+                    apply thy_lhs_match_one_Some in Hmatch.
+                    destruct Hmatch as [Hin Hsat].
+                    ltac1:(rewrite -lhs_match_one_Some in Hsat).
+                    unfold rewriting_relation, rewrites_to in Hstuck.
+                    destruct (rhs_evaluate_rule ρ r) eqn:Heval; cbn in *.
+                    {
+                        apply lhs_match_one_Some in Hsat.
+                        apply rhs_evaluate_rule_correct in Heval.
+                        ltac1:(exfalso).
+                        apply Hstuck. clear Hstuck.
+                        unfold rewrites_in_valuation_to.
+                        exists e0.
+                        exists r.
+                        split.
+                        { exact Hin. }
+                        exists ρ.
+                        split; assumption.
+                    }
+                    {
+                        reflexivity.
+                    }
+                }
             }
-            destruct
+            {
+                reflexivity.
+            }
         }
         {
-
+            intros e Hnotstuck.
+            unfold naive_interpreter.
+            destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
+            {
+                destruct p as [r ρ]; cbn in *.
+                apply thy_lhs_match_one_Some in Hmatch.
+                destruct Hmatch as [Hin Hsat].
+                destruct (rhs_evaluate_rule ρ r) eqn:Heval.
+                {
+                    exists e0. reflexivity.
+                }
+                {
+                    ltac1:(exfalso).
+                }
+                Search rhs_evaluate_rule.
+            }
         }
     Qed.
 
