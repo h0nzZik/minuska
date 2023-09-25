@@ -207,6 +207,7 @@ Defined.
 
 Inductive Pattern {Σ : Signature} :=
 | pat_builtin (b : builtin_value)
+| pat_sym (s : symbol)
 | pat_app (e1 e2 : Pattern)
 | pat_var (x : variable)
 | pat_requires (p : Pattern) (c : Constraint)
@@ -226,6 +227,7 @@ Defined.
 Fixpoint pattern_size {Σ : Signature} (φ : Pattern) :=
 match φ with
 | pat_builtin _ => 1
+| pat_sym _ => 1
 | pat_app e1 e2 => 1 + pattern_size e1 + pattern_size e2
 | pat_var _ => 1
 | pat_requires p' _ => 1 + pattern_size p'
@@ -274,6 +276,8 @@ Section with_signature.
         by (*wf (@Pattern_subterm Σ)*) struct φ (*wf (pattern_size φ)*) :=
     element_satisfies_pattern' (pat_builtin b2) (el_builtin _ b1)
         := b1 = b2 ;
+    element_satisfies_pattern' (pat_sym s1) (el_sym _ s2)
+        := s1 = s2 ;
     element_satisfies_pattern' (pat_var x) e
         := ρ !! x = Some e ;
     element_satisfies_pattern' (pat_app p1 p2) (el_app _ e1 e2)
