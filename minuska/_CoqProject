@@ -4,3 +4,4 @@ theories/minuska.v
 theories/string_variables.v
 theories/empty_builtin.v
 theories/examples.v
+theories/naive_interpreter.v
