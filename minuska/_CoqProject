@@ -1,5 +1,6 @@
 -R theories Minuska
 
+theories/tactics.v
 theories/minuska.v
 theories/string_variables.v
 theories/empty_builtin.v
