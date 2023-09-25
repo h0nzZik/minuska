@@ -104,6 +104,81 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Check decide.
+    Fixpoint evaluate_pattern
+        (ρ : Valuation)
+        (φ : Pattern)
+        : option Element :=
+    match φ with
+    | pat_builtin v => Some (el_builtin v)
+    | pat_sym s => Some (el_sym s)
+    | pat_app φ1 φ2 =>
+        let oe1 := (evaluate_pattern ρ φ1) in
+        let oe2 := (evaluate_pattern ρ φ2) in
+        match oe1,oe2 with
+        | Some e1, Some e2 =>
+            Some (el_app e1 e2)
+        | _,_ => None
+        end
+    | pat_var x => ρ !! x
+    | pat_requires φ' c =>
+        if (base.decide (val_satisfies_c ρ c))
+        then
+            evaluate_pattern ρ φ'
+        else
+            None
+    | pat_requires_match φ x φ' =>
+        match (evaluate_pattern ρ φ') with
+        | None => None
+        | Some e =>
+            if (decide (ρ !! x = Some e))
+            then evaluate_pattern ρ φ
+            else None
+        end        
+    end
+    .
+
+
+    Lemma evaluate_pattern_correct
+        (φ : Pattern)
+        (ρ : Valuation)
+        (e : Element)
+        : evaluate_pattern ρ φ = Some e ->
+        element_satisfies_pattern_in_valuation e φ ρ
+    .
+    Proof.
+        intros H.
+        unfold element_satisfies_pattern_in_valuation.
+        ltac1:(funelim (element_satisfies_pattern' ρ φ e));
+            cbn; ltac1:(simp evaluate_pattern in H); cbn in *;
+            try (solve [inversion H; subst; reflexivity]).
+        {
+            repeat ltac1:(case_match); inversion H.
+        }
+        {
+            repeat ltac1:(case_match); inversion H.
+        }
+        {
+            repeat ltac1:(case_match);
+                try (inversion H; subst; clear H);
+                try (inversion H1; subst; clear H1).
+            ltac1:(naive_solver).
+        }
+        {
+            unfold decide,is_left in H0.
+            repeat ltac1:(case_match); repeat split; try (ltac1:(naive_solver)).
+        }
+        {
+            destruct Heqcall.
+            unfold decide,is_left in H1.
+            (repeat ltac1:(case_match)); (ltac1:(naive_solver)).
+        }
+        {
+            unfold is_left,decide in H.
+            (repeat ltac1:(case_match)); (ltac1:(naive_solver)).
+        }
+    Qed.
+
     Fixpoint rhs_evaluate_rule
         (ρ : Valuation)
         (r : RewritingRule)
