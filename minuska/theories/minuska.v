@@ -407,3 +407,64 @@ Definition rewrites_to
     : Prop
 := exists ρ, rewrites_in_valuation_to ρ r from to
 .
+
+Definition RewritingTheory {Σ : Signature}
+    := list RewritingRule
+.
+
+Definition rewriting_relation
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    : relation Element
+    := fun from to =>
+        exists r, r ∈ Γ /\ rewrites_to r from to
+.
+
+Definition not_stuck
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    (e : Element) : Prop
+:= exists e', rewriting_relation Γ e e'.
+
+Definition stuck
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    (e : Element) : Prop
+:= not (not_stuck Γ e).
+
+
+Definition Interpreter
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    : Type
+    := Element -> option Element
+.
+
+Definition Interpreter_sound
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    (interpreter : Interpreter Γ)
+    : Prop
+    := forall e,
+        stuck Γ e -> interpreter e = None
+    /\ forall e,
+        not_stuck Γ e ->
+        exists e', interpreter e = Some e'
+.
+
+Definition Explorer
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    : Type
+    := Element -> list Element
+.
+
+Definition Explorer_sound
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    (explorer : Explorer Γ)
+    : Prop
+    := forall (e e' : Element),
+        e' ∈ explorer e <-> rewriting_relation Γ e e'
+.
+
