@@ -21,115 +21,122 @@ Proof.
 Defined.
 
 
-Class Variables := {
-    variable : Set ;
+Class Variables (variable : Set) := {
     variable_eqdec :: EqDecision variable ;
     variable_countable :: Countable variable ;
     variable_infinite :: Infinite variable ;
 }.
 
-Class Symbols := {
-    symbol : Set ;
+Class Symbols (symbol : Set) := {
     symbol_eqdec :: EqDecision symbol ;
     symbol_countable :: Countable symbol ;
 }.
 
 (* Model elements *)
-Inductive Element' {symbols : Symbols} (T : Set) :=
-| el_builtin (b : T)
+Inductive Element' (symbol : Set) (builtin : Set) :=
+| el_builtin (b : builtin)
 | el_sym (s : symbol)
-| el_app (e1 e2 : Element' T)
+| el_app (e1 e2 : Element' symbol builtin)
 .
 
 Equations Derive NoConfusion for Element'.
 
 #[export]
 Instance Element'_eqdec
-    {symbols : Symbols}
+    {A : Set}
+    {symbols : Symbols A}
     (T : Set)
     {T_dec : EqDecision T}
-    : EqDecision (Element' T)
+    : EqDecision (Element' A T)
 .
 Proof.
     ltac1:(solve_decision).
 Defined.
 
+Arguments el_app {symbol builtin}%type_scope e1 e2.
+Arguments el_builtin {symbol builtin}%type_scope b.
+Arguments el_sym {symbol}%type_scope {builtin}%type_scope s.
+
 Equations element'_to_gen_tree
-    {symbols : Symbols}
-    (T : Set)
-    {T_eqdec : EqDecision T}
-    {T_countable : Countable T}
-    (e : Element' T)
-    : gen_tree (T+symbol)%type
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {T_eqdec : EqDecision builtin}
+    {T_countable : Countable builtin}
+    (e : Element' symbol builtin)
+    : gen_tree (builtin+symbol)%type
 :=
-    element'_to_gen_tree _ (el_builtin _ b)
+    element'_to_gen_tree _ _ (el_builtin b)
     := GenLeaf (inl _ b) ;
     
-    element'_to_gen_tree _ (el_sym _ s)
+    element'_to_gen_tree _ _ (el_sym s)
     := GenLeaf (inr _ s) ;
     
-    element'_to_gen_tree _ (el_app _ e1 e2)
-    := GenNode 0 [(element'_to_gen_tree T e1);(element'_to_gen_tree T e2)]
+    element'_to_gen_tree _ _ (el_app e1 e2)
+    := GenNode 0 [(element'_to_gen_tree symbol builtin e1);(element'_to_gen_tree symbol builtin e2)]
 .
 
 Equations element'_from_gen_tree
-    {symbols : Symbols}
-    (T : Set)
-    {T_eqdec : EqDecision T}
-    {T_countable : Countable T}
-    (t : gen_tree (T+symbol)%type)
-    :  option (Element' T)
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {builtin_eqdec : EqDecision builtin}
+    {builtin_countable : Countable builtin}
+    (t : gen_tree (builtin+symbol)%type)
+    :  option (Element' symbol builtin)
 :=
-    element'_from_gen_tree _ (GenLeaf (inl _ b))
-    := Some (el_builtin _ b);
+    element'_from_gen_tree _ _ (GenLeaf (inl _ b))
+    := Some (el_builtin b);
     
-    element'_from_gen_tree _ (GenLeaf (inr _ s))
-    := Some (el_sym _ s);
+    element'_from_gen_tree _ _ (GenLeaf (inr _ s))
+    := Some (el_sym s);
     
-    element'_from_gen_tree _ (GenNode 0 [x;y])
-    with ((element'_from_gen_tree T x), (element'_from_gen_tree T y)) => {
-        | (Some e1, Some e2) := Some (el_app _ e1 e2) ;
+    element'_from_gen_tree _ _ (GenNode 0 [x;y])
+    with ((element'_from_gen_tree symbol builtin x), (element'_from_gen_tree symbol builtin y)) => {
+        | (Some e1, Some e2) := Some (el_app e1 e2) ;
         | (_, _) := None
     };
-    element'_from_gen_tree _ _
+    element'_from_gen_tree _ _ _
     := None
 .
 
 Lemma element'_to_from_gen_tree
-    {symbols : Symbols}
-    (T : Set)
-    {T_eqdec : EqDecision T}
-    {T_countable : Countable T}
-    (e : Element' T)
-    : element'_from_gen_tree T (element'_to_gen_tree T e) = Some e
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {builtin_eqdec : EqDecision builtin}
+    {builtin_countable : Countable builtin}
+    (e : Element' symbol builtin)
+    : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
 .
 Proof.
-    ltac1:(funelim (element'_to_gen_tree T e)).
+    ltac1:(funelim (element'_to_gen_tree symbol builtin e)).
     { reflexivity. }
     { reflexivity. }
-    { cbn. rewrite H. rewrite H0. reflexivity. }
+    { cbn. ltac1:(simp element'_from_gen_tree). rewrite H. rewrite H0. reflexivity. }
 Qed.
 
 #[export]
 Instance element'_countable
-    {symbols : Symbols}
-    (T : Set)
-    {T_eqdec : EqDecision T}
-    {T_countable : Countable T}
-    : Countable (Element' T)
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {builtin_eqdec : EqDecision builtin}
+    {builtin_countable : Countable builtin}
+    : Countable (Element' symbol builtin)
 .
 Proof.
     apply inj_countable
     with
-        (f := (element'_to_gen_tree T))
-        (g := element'_from_gen_tree T)
+        (f := (element'_to_gen_tree symbol builtin ))
+        (g := element'_from_gen_tree symbol builtin)
     .
     intros x.
     apply element'_to_from_gen_tree.
 Qed.
 
 
-Class Builtin {symbols : Symbols} := {
+Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
     builtin_value
         : Set ;
     builtin_value_eqdec
@@ -144,23 +151,25 @@ Class Builtin {symbols : Symbols} := {
         :: EqDecision builtin_binary_predicate ;
     builtin_unary_predicate_interp
         : builtin_unary_predicate 
-        -> (Element' builtin_value)
+        -> (Element' symbol builtin_value)
         -> Prop ;
     builtin_binary_predicate_interp
         : builtin_binary_predicate 
-        -> (Element' builtin_value)
-        -> (Element' builtin_value)
+        -> (Element' symbol builtin_value)
+        -> (Element' symbol builtin_value)
         -> Prop ;
 }.
 
 Class Signature := {
-    symbols :: Symbols ;
+    symbol : Set ;
+    variable : Set ;
+    symbols :: Symbols symbol ;
     builtin :: Builtin ;
-    variables :: Variables ;
+    variables :: Variables variable ;
 }.
 
 Definition Element {Σ : Signature}
-    := Element' builtin_value
+    := Element' symbol builtin_value
 .
 
 #[export]
@@ -274,13 +283,13 @@ Section with_signature.
     Equations element_satisfies_pattern'
          (φ : Pattern) (e : Element) : Prop
         by (*wf (@Pattern_subterm Σ)*) struct φ (*wf (pattern_size φ)*) :=
-    element_satisfies_pattern' (pat_builtin b2) (el_builtin _ b1)
+    element_satisfies_pattern' (pat_builtin b2) (el_builtin b1)
         := b1 = b2 ;
-    element_satisfies_pattern' (pat_sym s1) (el_sym _ s2)
+    element_satisfies_pattern' (pat_sym s1) (el_sym s2)
         := s1 = s2 ;
     element_satisfies_pattern' (pat_var x) e
         := ρ !! x = Some e ;
-    element_satisfies_pattern' (pat_app p1 p2) (el_app _ e1 e2)
+    element_satisfies_pattern' (pat_app p1 p2) (el_app e1 e2)
         := element_satisfies_pattern' p1 e1
         /\ element_satisfies_pattern' p2 e2 ;
     element_satisfies_pattern' (pat_requires φ' c) e 
@@ -363,13 +372,13 @@ Section sec.
         rr_satisfies (rr_local_rewrite lr) e
         := lr_satisfies left_right e lr ρ ;
 
-        rr_satisfies (rr_builtin b1) (el_builtin _ b2)
+        rr_satisfies (rr_builtin b1) (el_builtin b2)
         := b1 = b2 ;
 
         rr_satisfies (rr_var x) e
         := ρ !! x = Some e ;
 
-        rr_satisfies (rr_app r1 r2) (el_app _ e1 e2)
+        rr_satisfies (rr_app r1 r2) (el_app e1 e2)
         := rr_satisfies r1 e1 /\ rr_satisfies r2 e2 ;
 
         rr_satisfies (rr_requires r c) e 

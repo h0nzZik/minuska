@@ -16,16 +16,18 @@ From Minuska Require Import minuska string_variables empty_builtin.
 Module example_1.
 
     #[local]
-    Program Instance MySymbols : Symbols := {|
-        symbol := string ;
-    |}.
+    Instance MySymbols : Symbols string := Build_Symbols _ _ _.
 
     #[local]
-    Instance Σ : Signature := {|
-        builtin := EmptyBuiltin ;
-        variables := StringVariables ;
+    Program Instance Σ : Signature := {|
+        symbol := string ;
+        variable := string ;
         symbols :=  MySymbols;
+        variables := StringVariables ;
     |}.
+    Next Obligation.
+        apply EmptyBuiltin.
+    Defined.
 
     Definition rule_sub_2 : RewritingRule :=
         rr_local_rewrite {|
@@ -39,5 +41,29 @@ Module example_1.
             lr_to := pat_var "X" ;
         |}
     .
+
+    About el_app.
+    (* Set Default Proof Mode "Classic".*)
+    
+    Lemma rewrites_3_to_1:
+        rewrites_to rule_sub_2
+            (el_app
+                (el_sym "Succ")
+                (el_app
+                    (el_sym "Succ")
+                    (el_app (el_sym "Succ") (el_sym "Zero"))))
+            (el_app
+                (el_sym "Succ")
+                (el_sym "Zero"))
+    .
+    Proof.
+        unfold rewrites_to.
+        unfold rule_sub_2.
+        exists ({[
+            "X" := (el_app (el_sym "Succ") (el_sym "Zero"))
+        ]}).
+        unfold rewrites_in_valuation_to.
+        repeat split.
+    Qed.
 
 End example_1.

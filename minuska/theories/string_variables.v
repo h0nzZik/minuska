@@ -4,6 +4,5 @@ From Minuska Require Import minuska.
 
 From Ltac2 Require Import Ltac2.
 
-Definition StringVariables : Variables := {|
-    variable := string ;
-|}.
+Definition StringVariables : Variables string
+:= Build_Variables _ _ _ _.

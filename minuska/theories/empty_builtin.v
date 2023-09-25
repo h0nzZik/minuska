@@ -13,7 +13,8 @@ Proof.
     destruct x, y.
 Defined.
 
-Definition EmptyBuiltin {symbols : Symbols} : Builtin := {|
+Definition EmptyBuiltin
+    (symbol : Set) {symbols : Symbols symbol} : Builtin := {|
     builtin_value
         := Emptyset ;
     builtin_unary_predicate
