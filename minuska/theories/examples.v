@@ -27,7 +27,7 @@ Module example_1.
         symbols :=  MySymbols;
     |}.
 
-    Program Definition rule_sub_2 : RewritingRule :=
+    Definition rule_sub_2 : RewritingRule :=
         rr_local_rewrite {|
             lr_from
                 := pat_app
@@ -39,6 +39,5 @@ Module example_1.
             lr_to := pat_var "X" ;
         |}
     .
-    Solve All Obligations with set_solver.
 
 End example_1.
