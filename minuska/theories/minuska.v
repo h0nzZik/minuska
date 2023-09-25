@@ -243,6 +243,31 @@ match φ with
 | pat_requires_match p v p2 => 1 + pattern_size p + pattern_size p2
 end.
 
+Inductive SimplePattern {Σ : Signature} :=
+| spat_builtin (b : builtin_value)
+| spat_sym (s : symbol)
+| spat_app (e1 e2 : SimplePattern)
+| spat_var (x : variable)
+.
+
+Equations Derive NoConfusion for SimplePattern.
+
+#[export]
+Instance SimplePattern_eqdec {Σ : Signature}
+    : EqDecision SimplePattern
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+Fixpoint simplePattern_size {Σ : Signature} (φ : SimplePattern) :=
+match φ with
+| spat_builtin _ => 1
+| spat_sym _ => 1
+| spat_app e1 e2 => 1 + simplePattern_size e1 + simplePattern_size e2
+| spat_var _ => 1
+end.
+
 Definition Valuation {Σ : Signature}
     := gmap variable Element
 .
@@ -302,6 +327,26 @@ Section with_signature.
     };
     element_satisfies_pattern' _ _ := False
     .
+
+    Equations element_satisfies_simple_pattern'
+         (φ : SimplePattern) (e : Element) : Prop
+        by (*wf (@Pattern_subterm Σ)*) struct φ (*wf (pattern_size φ)*) :=
+    element_satisfies_simple_pattern' (spat_builtin b2) (el_builtin b1)
+        := b1 = b2 ;
+    
+    element_satisfies_simple_pattern' (spat_sym s1) (el_sym s2)
+        := s1 = s2 ;
+    
+    element_satisfies_simple_pattern' (spat_var x) e
+        := ρ !! x = Some e ;
+    
+    element_satisfies_simple_pattern' (spat_app p1 p2) (el_app e1 e2)
+        := element_satisfies_simple_pattern' p1 e1
+        /\ element_satisfies_simple_pattern' p2 e2 ;
+    
+    element_satisfies_simple_pattern' _ _ := False
+    .
+
 End with_signature.
 
 Definition element_satisfies_pattern_in_valuation
@@ -310,9 +355,16 @@ Definition element_satisfies_pattern_in_valuation
     element_satisfies_pattern' ρ φ e
 .
 
+Definition element_satisfies_simple_pattern_in_valuation
+    {Σ : Signature} (e : Element) (φ : SimplePattern) (ρ : Valuation)
+    : Prop :=
+    element_satisfies_simple_pattern' ρ φ e
+.
+
+
 Record LocalRewrite {Σ : Signature} := {
     lr_from : Pattern ;
-    lr_to : Pattern ;
+    lr_to : SimplePattern ;
 }.
 
 Equations Derive NoConfusion for LocalRewrite.
@@ -334,7 +386,7 @@ match left_right with
 | LR_Left =>
     element_satisfies_pattern_in_valuation e (lr_from lr) ρ
 | LR_Right =>
-    element_satisfies_pattern_in_valuation e (lr_to lr) ρ
+    element_satisfies_simple_pattern_in_valuation e (lr_to lr) ρ
 end
 .
 

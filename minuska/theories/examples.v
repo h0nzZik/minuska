@@ -38,7 +38,7 @@ Module example_1.
                         (pat_sym "Succ")
                         (pat_var "X")
                     );
-            lr_to := pat_var "X" ;
+            lr_to := spat_var "X" ;
         |}
     .
 
