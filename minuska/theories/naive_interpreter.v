@@ -199,11 +199,10 @@ Section with_decidable_signature.
     | rr_requires r' c =>
         if (decide (val_satisfies_c ρ c)) then rhs_evaluate_rule ρ r' else None
     | rr_requires_match r' x φ =>
-        match (evaluate_simple_pattern ρ φ) with
+        match (evaluate_pattern ρ φ) with
         | None => None
         | Some e => if (decide (ρ !! x = Some e)) then None else None
         end
-        rhs_evaluate_rule ρ r'
     end
     .
 
@@ -218,30 +217,12 @@ Section with_decidable_signature.
         intros H.
         ltac1:(funelim (rr_satisfies LR_Right ρ r e));
             cbn in *;
-            try (solve [inversion H; reflexivity]).
+            unfold decide,is_left in *;
+            try (solve [(repeat ltac1:(case_match)); try ltac1:(naive_solver)]).
         {
             apply evaluate_simple_pattern_correct.
             exact H.
         }
-        {
-            repeat (ltac1:(case_match)); inversion H.
-        }
-        {
-            repeat (ltac1:(case_match)); inversion H.
-        }
-        {
-            (repeat (ltac1:(case_match))); inversion H1; subst; clear H1.
-            ltac1:(naive_solver).
-        }
-        {
-            split.
-            { auto with nocore. }
-        }
-        induction r; intros e; destruct e; cbn; intros H.
-        {
-            ltac1:(simp element_satisfies_simple_pattern_in_valuation).
-        }
-        ; ltac1:(simp rr_satisfies in H). ; try ltac1:(naive_solver).
     Qed.
 
     Definition lhs_match_one
