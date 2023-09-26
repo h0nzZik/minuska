@@ -309,13 +309,13 @@ Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
     builtin_unary_function_interp
         : builtin_unary_function
         -> (Element' symbol builtin_value)
-        -> builtin_value ;
+        -> (Element' symbol builtin_value) ;
 
     builtin_binary_function_interp
         : builtin_binary_function
         -> (Element' symbol builtin_value)
         -> (Element' symbol builtin_value)
-        -> builtin_value ;
+        -> (Element' symbol builtin_value) ;
 }.
 
 Class Signature := {
@@ -416,6 +416,7 @@ match φ with
 | pat_requires_match p v p2 => 1 + pattern_size p + pattern_size p2
 end.
 
+(*
 Inductive ElementOrVariable
     {Σ : Signature}
 :=
@@ -430,14 +431,15 @@ Instance ElementOrVariable_eqdec {Σ : Signature}
 Proof.
     ltac1:(solve_decision).
 Defined.
-
+*)
 
 Inductive FunTerm
     {Σ : Signature}
     :=
-| ft_builtin (b : builtin_value)
-| ft_unary (f : builtin_unary_function) (e : ElementOrVariable)
-| ft_binary (f : builtin_binary_function) (e1 : ElementOrVariable) (e2 : ElementOrVariable)
+| ft_element (e : Element)
+| ft_variable (x : variable)
+| ft_unary (f : builtin_unary_function) (t : FunTerm)
+| ft_binary (f : builtin_binary_function) (t1 : FunTerm) (t2 : FunTerm)
 .
 
 Equations Derive NoConfusion for FunTerm.
@@ -456,7 +458,7 @@ Inductive RhsPattern {Σ : Signature} :=
 | spat_sym (s : symbol)
 | spat_app (e1 e2 : RhsPattern)
 | spat_var (x : variable)
-| spat_ft (ft : FunTerm' symbol builtin_value builtin_unary_function builtin_binary_function)
+| spat_ft (ft : FunTerm)
 .
 
 Equations Derive NoConfusion for RhsPattern.
@@ -513,6 +515,25 @@ Section with_signature.
     Context
         {Σ : Signature}
         (ρ : Valuation)
+    .
+
+    Equations funTerm_evaluate
+        (t : FunTerm) : option Element
+        by struct t :=
+    
+    funTerm_evaluate (ft_element e) := Some e ;
+
+    funTerm_evaluate (ft_variable x) := ρ !! x ;
+
+    funTerm_evaluate (ft_unary f t) with (funTerm_evaluate t) => {
+        | Some e := Some (builtin_unary_function_interp f e)
+        | None := None
+    } ;
+
+    funTerm_evaluate (ft_binary f t1 t2) with (funTerm_evaluate t1), (funTerm_evaluate t2) => {
+        | Some e1, Some e2 := Some (builtin_binary_function_interp f e1 e2)
+        | _, _ := None
+    }
     .
 
     Equations appliedSymbol_satisfies_pattern
