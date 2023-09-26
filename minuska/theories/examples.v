@@ -42,25 +42,36 @@ Module example_1.
         |}
     .
 
-    About el_app.
-    (* Set Default Proof Mode "Classic".*)
-    
+    Definition weird_binary_succ : Element :=
+        el_appsym (aps_app_aps (aps_app_aps (aps_operator "Succ") (aps_operator "Zero")) (aps_operator "Zero"))
+    .
+
     Lemma rewrites_3_to_1:
         rewrites_to rule_sub_2
-            (el_app
-                (el_sym "Succ")
-                (el_app
-                    (el_sym "Succ")
-                    (el_app (el_sym "Succ") (el_sym "Zero"))))
-            (el_app
-                (el_sym "Succ")
-                (el_sym "Zero"))
+            (el_appsym
+                (aps_app_aps
+                    (aps_operator "Succ")
+                    (aps_app_aps
+                        (aps_operator "Succ")
+                        (aps_app_aps
+                            (aps_operator "Succ")
+                            (aps_operator "Zero")
+                        )
+                    )
+                )
+            )
+            (el_appsym
+                (aps_app_aps
+                    (aps_operator "Succ")
+                    (aps_operator "Zero")
+                )
+            )
     .
     Proof.
         unfold rewrites_to.
         unfold rule_sub_2.
         exists ({[
-            "X" := (el_app (el_sym "Succ") (el_sym "Zero"))
+            "X" := (el_appsym (aps_app_aps (aps_operator "Succ") (aps_operator "Zero")))
         ]}).
         unfold rewrites_in_valuation_to.
         repeat split.
