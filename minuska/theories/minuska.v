@@ -649,30 +649,28 @@ match left_right with
 end
 .
 
-Definition lr_satisfies_apsym
-    {Σ : Signature}
-    (left_right : LR)
-    (aps : AppliedSymbol)
-    (lr : LocalRewrite)
-    : Prop :=
-match left_right with
-| LR_Left =>
-    appliedSymbol_satisfies_pattern (lr_from lr) aps
-| LR_Right =>
-    appliedSymbol_satisfies_rhs_pattern (lr_to lr) aps
-end
-.
-
 Inductive RewritingRule {Σ : Signature} :=
 | rr_local_rewrite (lr : LocalRewrite)
 | rr_builtin (b : builtin_value)
 | rr_app (r1 r2 : RewritingRule)
 | rr_var (v : variable)
+| rr_sym (s : symbol)
 | rr_requires (r : RewritingRule) (c : Constraint)
 | rr_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
 .
 
 Equations Derive NoConfusion for RewritingRule.
+
+Fixpoint RewritingRule_size {Σ : Signature} (r : RewritingRule) : nat :=
+match r with
+| rr_local_rewrite _ => 1
+| rr_builtin _ => 1
+| rr_app r1 r2 => 1 + RewritingRule_size r1 + RewritingRule_size r2
+| rr_var _ => 1
+| rr_sym _ => 1
+| rr_requires r _ => 1 + RewritingRule_size r
+| rr_requires_match r _ _ => 1 + RewritingRule_size r
+end.
 
 #[export]
 Instance RewritingRule_eqdec {Σ : Signature}
@@ -689,42 +687,10 @@ Section sec.
         (ρ : Valuation)
     .
 
-    Print RewritingRule.
-    Print AppliedOperator'.
-    Print Element'.
-    Print AppliedSymbol.
-
-    Equations rr_satisfies_apsym
-        (r : RewritingRule)
-        (aps : AppliedSymbol)
-        : Prop
-        by struct r :=
-
-    rr_satisfies_apsym (rr_local_rewrite lr) aps
-        := lr_satisfies_apsym left_right aps lr ;
-
-    rr_satisfies_apsym (rr_app r1 (rr_builtin b1)) (aps_app_operand aps b2)
-        := b1 = b2 
-        /\ rr_satisfies_apsym r1 aps ;
-
-    rr_satisfies_apsym (rr_app r1 r2) (aps_operator _)
-        := False ;
-
-    
-    rr_satisfies_apsym (rr_builtin b) _ 
-        := False ;
-
-    rr_satisfies_apsym (rr_var x) aps
-        := ρ !! x = Some (el_apsym aps) ;
-    
-    rr_satisfies_apsym (rr_requires )
-
-    .
-
-    Equations rr_satisfies
+    Equations? rr_satisfies
         (r : RewritingRule) (e : Element)
         : Prop
-        by struct r
+        by wf (RewritingRule_size r)
     :=
         rr_satisfies (rr_local_rewrite lr) e
         := lr_satisfies left_right e lr ρ ;
@@ -735,8 +701,16 @@ Section sec.
         rr_satisfies (rr_var x) e
         := ρ !! x = Some e ;
 
-        rr_satisfies r (el_appsym aps)
-        := rr_satisfies_apsym r aps ;
+        rr_satisfies (rr_sym s1) (el_appsym (aps_operator s2))
+        := s1 = s2;
+
+        rr_satisfies (rr_app φ1 (rr_builtin b')) (el_appsym (aps_app_operand aps b))
+        := b = b'
+        /\ rr_satisfies φ1 (el_appsym aps) ;
+
+        rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+        := rr_satisfies φ1 (el_appsym aps1)
+        /\ rr_satisfies φ2 (el_appsym aps2) ;
 
         rr_satisfies (rr_requires r c) e 
         := rr_satisfies r e 
@@ -748,8 +722,11 @@ Section sec.
             /\ element_satisfies_pattern' ρ φ' e2;
         } ;
 
-        (* rr_satisfies _ _ := False ; *)
+        rr_satisfies _ _ := False ;
     .
+    Proof.
+        all: cbn; ltac1:(lia).
+    Qed.
 End sec.
 
 Definition rewrites_in_valuation_to
