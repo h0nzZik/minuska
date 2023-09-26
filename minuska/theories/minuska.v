@@ -1,3 +1,5 @@
+From Coq.micromega Require Import Lia.
+
 From stdpp Require Import base countable decidable gmap list list_numbers numbers.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
@@ -536,49 +538,25 @@ Section with_signature.
     }
     .
 
-    Equations appliedSymbol_satisfies_pattern
-        (φ : Pattern) (aps : AppliedSymbol) : Prop
-        by struct aps :=
-    appliedSymbol_satisfies_pattern (pat_sym s1) (aps_operator s2)
-    := s1 = s2 ;
+    (*Equations Derive Subterm for Pattern.*)
 
-    appliedSymbol_satisfies_pattern (pat_app φ1 (pat_builtin b')) (aps_app_operand aps b)
-    := b = b'
-    /\ appliedSymbol_satisfies_pattern φ1 aps ;
-
-    appliedSymbol_satisfies_pattern (pat_app φ1 φ2) (aps_app_aps aps1 aps2)
-    := appliedSymbol_satisfies_pattern φ1 aps1
-    /\ appliedSymbol_satisfies_pattern φ2 aps2 ;
-
-    appliedSymbol_satisfies_pattern _ _ := False 
-    .
-
-    Equations appliedSymbol_satisfies_rhs_pattern
-        (φ : RhsPattern) (aps : AppliedSymbol) : Prop
-        by struct aps :=
-    appliedSymbol_satisfies_rhs_pattern (spat_sym s1) (aps_operator s2)
-    := s1 = s2 ;
-
-    appliedSymbol_satisfies_rhs_pattern (spat_app φ1 (spat_builtin b')) (aps_app_operand aps b)
-    := b = b'
-    /\ appliedSymbol_satisfies_rhs_pattern φ1 aps ;
-
-    appliedSymbol_satisfies_rhs_pattern (spat_app φ1 φ2) (aps_app_aps aps1 aps2)
-    := appliedSymbol_satisfies_rhs_pattern φ1 aps1
-    /\ appliedSymbol_satisfies_rhs_pattern φ2 aps2 ;
-
-    appliedSymbol_satisfies_rhs_pattern _ _ := False 
-    .
-
-    Equations element_satisfies_pattern'
+    Equations? element_satisfies_pattern'
          (φ : Pattern) (e : Element) : Prop
-        by (*wf (@Pattern_subterm Σ)*) struct φ (*wf (pattern_size φ)*) :=
+        by (*wf @Pattern_subterm Σ*) (*struct φ*) wf (pattern_size φ) :=
     element_satisfies_pattern' (pat_builtin b2) (el_builtin b1)
         := b1 = b2 ;
     
-    element_satisfies_pattern' φ (el_appsym aps)
-        := appliedSymbol_satisfies_pattern φ aps;
-    
+    element_satisfies_pattern' (pat_sym s1) (el_appsym (aps_operator s2))
+        := s1 = s2;
+
+    element_satisfies_pattern' (pat_app φ1 (pat_builtin b')) (el_appsym (aps_app_operand aps b))
+        := b = b'
+        /\ element_satisfies_pattern' φ1 (el_appsym aps) ;
+
+    element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+        := element_satisfies_pattern' φ1 (el_appsym aps1)
+        /\ element_satisfies_pattern' φ2 (el_appsym aps2) ;
+
     element_satisfies_pattern' (pat_var x) e
         := ρ !! x = Some e ;
 
@@ -594,24 +572,39 @@ Section with_signature.
     
     element_satisfies_pattern' _ _ := False
     .
+    Proof.
+        all: cbn; ltac1:(lia).
+    Qed.
 
-    Equations element_satisfies_rhs_pattern'
+    Equations? element_satisfies_rhs_pattern'
          (φ : RhsPattern) (e : Element) : Prop
-        by (*wf (@Pattern_subterm Σ)*) struct φ (*wf (pattern_size φ)*) :=
+        by (*wf (@Pattern_subterm Σ)*) (*struct φ *) wf (RhsPattern_size φ) :=
+
     element_satisfies_rhs_pattern' (spat_builtin b2) (el_builtin b1)
         := b1 = b2 ;
     
-    element_satisfies_rhs_pattern' φ (el_appsym aps)
-        := appliedSymbol_satisfies_rhs_pattern φ aps;
-    
+    element_satisfies_rhs_pattern' (spat_sym s1) (el_appsym (aps_operator s2))
+        := s1 = s2;
+
+    element_satisfies_rhs_pattern' (spat_app φ1 (spat_builtin b')) (el_appsym (aps_app_operand aps b))
+        := b = b'
+        /\ element_satisfies_rhs_pattern' φ1 (el_appsym aps) ;
+
+    element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+        := element_satisfies_rhs_pattern' φ1 (el_appsym aps1)
+        /\ element_satisfies_rhs_pattern' φ2 (el_appsym aps2) ;
+
     element_satisfies_rhs_pattern' (spat_var x) e
         := ρ !! x = Some e ;
 
-    element_satisfies_rhs_pattern' (spat_ft t) (el_builtin b)
-        := b =  ; 
+    element_satisfies_rhs_pattern' (spat_ft t) e
+        := funTerm_evaluate t = Some e; 
 
     element_satisfies_rhs_pattern' _ _ := False
     .
+    Proof.
+        all: cbn; ltac1:(lia).
+    Qed.
 
 End with_signature.
 
@@ -656,6 +649,20 @@ match left_right with
 end
 .
 
+Definition lr_satisfies_apsym
+    {Σ : Signature}
+    (left_right : LR)
+    (aps : AppliedSymbol)
+    (lr : LocalRewrite)
+    : Prop :=
+match left_right with
+| LR_Left =>
+    appliedSymbol_satisfies_pattern (lr_from lr) aps
+| LR_Right =>
+    appliedSymbol_satisfies_rhs_pattern (lr_to lr) aps
+end
+.
+
 Inductive RewritingRule {Σ : Signature} :=
 | rr_local_rewrite (lr : LocalRewrite)
 | rr_builtin (b : builtin_value)
@@ -682,6 +689,38 @@ Section sec.
         (ρ : Valuation)
     .
 
+    Print RewritingRule.
+    Print AppliedOperator'.
+    Print Element'.
+    Print AppliedSymbol.
+
+    Equations rr_satisfies_apsym
+        (r : RewritingRule)
+        (aps : AppliedSymbol)
+        : Prop
+        by struct r :=
+
+    rr_satisfies_apsym (rr_local_rewrite lr) aps
+        := lr_satisfies_apsym left_right aps lr ;
+
+    rr_satisfies_apsym (rr_app r1 (rr_builtin b1)) (aps_app_operand aps b2)
+        := b1 = b2 
+        /\ rr_satisfies_apsym r1 aps ;
+
+    rr_satisfies_apsym (rr_app r1 r2) (aps_operator _)
+        := False ;
+
+    
+    rr_satisfies_apsym (rr_builtin b) _ 
+        := False ;
+
+    rr_satisfies_apsym (rr_var x) aps
+        := ρ !! x = Some (el_apsym aps) ;
+    
+    rr_satisfies_apsym (rr_requires )
+
+    .
+
     Equations rr_satisfies
         (r : RewritingRule) (e : Element)
         : Prop
@@ -696,8 +735,8 @@ Section sec.
         rr_satisfies (rr_var x) e
         := ρ !! x = Some e ;
 
-        rr_satisfies (rr_app r1 r2) (el_app e1 e2)
-        := rr_satisfies r1 e1 /\ rr_satisfies r2 e2 ;
+        rr_satisfies r (el_appsym aps)
+        := rr_satisfies_apsym r aps ;
 
         rr_satisfies (rr_requires r c) e 
         := rr_satisfies r e 
@@ -709,7 +748,7 @@ Section sec.
             /\ element_satisfies_pattern' ρ φ' e2;
         } ;
 
-        rr_satisfies _ _ := False ;
+        (* rr_satisfies _ _ := False ; *)
     .
 End sec.
 
