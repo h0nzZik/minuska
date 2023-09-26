@@ -21,8 +21,16 @@ Definition EmptyBuiltin
         := Emptyset ;
     builtin_binary_predicate
         := Emptyset ;
+    builtin_unary_function
+        := Emptyset ;
+    builtin_binary_function
+        := Emptyset ;
     builtin_unary_predicate_interp
         := fun p v => match p with end ;
     builtin_binary_predicate_interp
+        := fun p v1 v2 => match p with end ;
+    builtin_unary_function_interp
+        := fun p v => match p with end ;
+    builtin_binary_function_interp
         := fun p v1 v2 => match p with end ;
 |}.
