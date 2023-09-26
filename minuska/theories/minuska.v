@@ -83,6 +83,7 @@ Equations AppliedOperator'_to_gen_tree
         GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree _ _ aps1; AppliedOperator'_to_gen_tree _ _ aps2])
     )
 .
+Opaque AppliedOperator'_to_gen_tree.
 
 Equations AppliedOperator'_of_gen_tree
     (symbol : Set)
@@ -114,7 +115,7 @@ Equations AppliedOperator'_of_gen_tree
     AppliedOperator'_of_gen_tree _ _ _
     := None
 .
-(* Opaque appliedSymbol_of_gen_tree. *)
+Opaque AppliedOperator'_of_gen_tree.
 
 Lemma AppliedOperator'_of_to_gen_tree
     (symbol : Set)
@@ -128,13 +129,12 @@ Lemma AppliedOperator'_of_to_gen_tree
 Proof.
     ltac1:(funelim (AppliedOperator'_to_gen_tree symbol builtin a)).
     {
-        ltac1:(rewrite <- Heqcall).
+        ltac1:(simp AppliedOperator'_to_gen_tree).
         ltac1:(simp AppliedOperator'_of_gen_tree).
         reflexivity.
     }
     {
-        ltac1:(rewrite <- Heqcall).
-        clear Heqcall.
+        ltac1:(simp AppliedOperator'_to_gen_tree).
         ltac1:(simp AppliedOperator'_of_gen_tree).
         ltac1:(rewrite ! Pos2Nat.id, decode_encode).
         unfold AppliedOperator'_of_gen_tree_clause_2.
@@ -145,8 +145,7 @@ Proof.
         reflexivity.
     }
     {
-        ltac1:(rewrite <- Heqcall).
-        clear Heqcall.
+        ltac1:(simp AppliedOperator'_to_gen_tree).
         ltac1:(simp AppliedOperator'_of_gen_tree).
         ltac1:(rewrite ! Pos2Nat.id, decode_encode).
         unfold AppliedOperator'_of_gen_tree_clause_2.
@@ -218,6 +217,8 @@ Equations element'_to_gen_tree
     := GenLeaf (inr _ s)
 .
 
+Opaque element'_to_gen_tree.
+
 Equations element'_from_gen_tree
     (symbol : Set)
     {symbols : Symbols symbol}
@@ -236,6 +237,7 @@ Equations element'_from_gen_tree
     element'_from_gen_tree _ _ _
     := None
 .
+Opaque element'_from_gen_tree.
 
 Lemma element'_to_from_gen_tree
     (symbol : Set)
@@ -538,6 +540,8 @@ Section with_signature.
     }
     .
 
+    Opaque funTerm_evaluate.
+
     (*Equations Derive Subterm for Pattern.*)
 
     Equations? element_satisfies_pattern'
@@ -576,6 +580,8 @@ Section with_signature.
         all: cbn; ltac1:(lia).
     Qed.
 
+    Opaque element_satisfies_pattern'.
+
     Equations? element_satisfies_rhs_pattern'
          (φ : RhsPattern) (e : Element) : Prop
         by (*wf (@Pattern_subterm Σ)*) (*struct φ *) wf (RhsPattern_size φ) :=
@@ -605,6 +611,8 @@ Section with_signature.
     Proof.
         all: cbn; ltac1:(lia).
     Qed.
+
+    Opaque element_satisfies_rhs_pattern'.
 
 End with_signature.
 
@@ -727,6 +735,9 @@ Section sec.
     Proof.
         all: cbn; ltac1:(lia).
     Qed.
+
+    Opaque rr_satisfies.
+    
 End sec.
 
 Definition rewrites_in_valuation_to
