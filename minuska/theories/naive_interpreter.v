@@ -425,7 +425,7 @@ Section with_decidable_signature.
             }
         }
         {
-            intros e Hnotstuck.
+            intros Hwwd e Hnotstuck.
             unfold naive_interpreter.
             destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
             {
@@ -438,6 +438,12 @@ Section with_decidable_signature.
                 }
                 {
                     ltac1:(exfalso).
+                    unfold thy_weakly_well_defined in Hwwd.
+                    specialize (Hwwd r Hin).
+                    unfold rule_weakly_well_defined in Hwwd.
+                    specialize (Hwwd e ρ Hsat).
+                    destruct Hwwd as [e' Hsate'].
+                    Search rhs_evaluate_rule.
                 }
                 Search rhs_evaluate_rule.
             }
