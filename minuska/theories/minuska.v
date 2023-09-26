@@ -32,124 +32,124 @@ Class Symbols (symbol : Set) := {
     symbol_countable :: Countable symbol ;
 }.
 
-Inductive AppliedSymbol' (symbol : Set) (builtin : Set) :=
-| aps_sym (s : symbol)
-| aps_app_builtin (aps : AppliedSymbol' symbol builtin) (b : builtin) 
-| aps_app_aps (aps : AppliedSymbol' symbol builtin) (x : AppliedSymbol' symbol builtin)
+Inductive AppliedOperator' (operator : Set) (operand : Set) :=
+| aps_operator (s : operator)
+| aps_app_operand (aps : AppliedOperator' operator operand) (b : operand) 
+| aps_app_aps (aps : AppliedOperator' operator operand) (x : AppliedOperator' operator operand)
 .
 
-Equations Derive NoConfusion for AppliedSymbol'.
+Equations Derive NoConfusion for AppliedOperator'.
 
-Arguments aps_sym {symbol builtin}%type_scope s.
-Arguments aps_app_builtin {symbol builtin}%type_scope aps b.
-Arguments aps_app_aps {symbol builtin}%type_scope aps x.
+Arguments aps_operator {operator operand}%type_scope s.
+Arguments aps_app_operand {operator operand}%type_scope aps b.
+Arguments aps_app_aps {operator operand}%type_scope aps x.
 
 #[export]
-Instance appliedSymbol'_eqdec
+Instance AppliedOperator'_eqdec
     {symbol : Set}
     {symbols : Symbols symbol}
     (builtin : Set)
     {builtin_dec : EqDecision builtin}
-    : EqDecision (AppliedSymbol' symbol builtin)
+    : EqDecision (AppliedOperator' symbol builtin)
 .
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-Equations appliedSymbol'_to_gen_tree
+Equations AppliedOperator'_to_gen_tree
     (symbol : Set)
     {symbols : Symbols symbol}
     (builtin : Set)
     {T_eqdec : EqDecision builtin}
     {T_countable : Countable builtin}
-    (a : AppliedSymbol' symbol builtin)
+    (a : AppliedOperator' symbol builtin)
     : gen_tree symbol
 :=
-    appliedSymbol'_to_gen_tree _ _ (aps_sym s)
+    AppliedOperator'_to_gen_tree _ _ (aps_operator s)
     := GenLeaf s ;
 
-    appliedSymbol'_to_gen_tree _ _ (aps_app_builtin aps b)
+    AppliedOperator'_to_gen_tree _ _ (aps_app_operand aps b)
     := (
         let x := (encode (0, encode b)) in
-        GenNode (Pos.to_nat x) ([appliedSymbol'_to_gen_tree symbol builtin aps;appliedSymbol'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
+        GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree symbol builtin aps;AppliedOperator'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
     ) ;
 
-    appliedSymbol'_to_gen_tree _ _ (aps_app_aps aps1 aps2)
+    AppliedOperator'_to_gen_tree _ _ (aps_app_aps aps1 aps2)
     := (
         let xd := (1, encode 0) in
         let x := (encode xd) in
-        GenNode (Pos.to_nat x) ([appliedSymbol'_to_gen_tree _ _ aps1; appliedSymbol'_to_gen_tree _ _ aps2])
+        GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree _ _ aps1; AppliedOperator'_to_gen_tree _ _ aps2])
     )
 .
 
-Equations appliedSymbol'_of_gen_tree
+Equations AppliedOperator'_of_gen_tree
     (symbol : Set)
     {symbols : Symbols symbol}
     (builtin : Set)
     {T_eqdec : EqDecision builtin}
     {T_countable : Countable builtin}
     (t : gen_tree symbol)
-    : option (AppliedSymbol' symbol builtin)
+    : option (AppliedOperator' symbol builtin)
 :=
-    appliedSymbol'_of_gen_tree _ _ (GenLeaf s)
-    := Some (aps_sym s);
+    AppliedOperator'_of_gen_tree _ _ (GenLeaf s)
+    := Some (aps_operator s);
       
-    appliedSymbol'_of_gen_tree _ _ (GenNode n [gt1;gt2])
+    AppliedOperator'_of_gen_tree _ _ (GenNode n [gt1;gt2])
     with (@decode (nat*positive) _ _ (Pos.of_nat n)) => {
         | Some (0, pb) with (@decode builtin _ _ pb) => {
-            | Some b with (appliedSymbol'_of_gen_tree symbol builtin gt1) => {
-                | Some as1 := Some (aps_app_builtin as1 b)
+            | Some b with (AppliedOperator'_of_gen_tree symbol builtin gt1) => {
+                | Some as1 := Some (aps_app_operand as1 b)
                 | _ := None
             }
             | _ := None
         }
-        | Some (1, _) with appliedSymbol'_of_gen_tree symbol builtin gt1, appliedSymbol'_of_gen_tree symbol builtin gt2 => {
+        | Some (1, _) with AppliedOperator'_of_gen_tree symbol builtin gt1, AppliedOperator'_of_gen_tree symbol builtin gt2 => {
             | Some aps1, Some aps2 := Some (aps_app_aps aps1 aps2)
             | _, _ := None
         }
         | _ := None
     };
-    appliedSymbol'_of_gen_tree _ _ _
+    AppliedOperator'_of_gen_tree _ _ _
     := None
 .
 (* Opaque appliedSymbol_of_gen_tree. *)
 
-Lemma appliedSymbol'_of_to_gen_tree
+Lemma AppliedOperator'_of_to_gen_tree
     (symbol : Set)
     {symbols : Symbols symbol}
     (builtin : Set)
     {T_eqdec : EqDecision builtin}
     {T_countable : Countable builtin}
-    (a : AppliedSymbol' symbol builtin)
-    : appliedSymbol'_of_gen_tree symbol builtin (appliedSymbol'_to_gen_tree symbol builtin a) = Some a
+    (a : AppliedOperator' symbol builtin)
+    : AppliedOperator'_of_gen_tree symbol builtin (AppliedOperator'_to_gen_tree symbol builtin a) = Some a
 .
 Proof.
-    ltac1:(funelim (appliedSymbol'_to_gen_tree symbol builtin a)).
+    ltac1:(funelim (AppliedOperator'_to_gen_tree symbol builtin a)).
     {
         ltac1:(rewrite <- Heqcall).
-        ltac1:(simp appliedSymbol'_of_gen_tree).
+        ltac1:(simp AppliedOperator'_of_gen_tree).
         reflexivity.
     }
     {
         ltac1:(rewrite <- Heqcall).
         clear Heqcall.
-        ltac1:(simp appliedSymbol'_of_gen_tree).
+        ltac1:(simp AppliedOperator'_of_gen_tree).
         ltac1:(rewrite ! Pos2Nat.id, decode_encode).
-        unfold appliedSymbol'_of_gen_tree_clause_2.
-        unfold appliedSymbol'_of_gen_tree_clause_2_clause_1.
+        unfold AppliedOperator'_of_gen_tree_clause_2.
+        unfold AppliedOperator'_of_gen_tree_clause_2_clause_1.
         rewrite decode_encode.
         ltac1:(rewrite H).
-        unfold appliedSymbol'_of_gen_tree_clause_2_clause_1_clause_1.
+        unfold AppliedOperator'_of_gen_tree_clause_2_clause_1_clause_1.
         reflexivity.
     }
     {
         ltac1:(rewrite <- Heqcall).
         clear Heqcall.
-        ltac1:(simp appliedSymbol'_of_gen_tree).
+        ltac1:(simp AppliedOperator'_of_gen_tree).
         ltac1:(rewrite ! Pos2Nat.id, decode_encode).
-        unfold appliedSymbol'_of_gen_tree_clause_2.
-        unfold appliedSymbol'_of_gen_tree_clause_2_clause_2.
-        unfold appliedSymbol'_of_gen_tree_clause_2_clause_2_clause_1.
+        unfold AppliedOperator'_of_gen_tree_clause_2.
+        unfold AppliedOperator'_of_gen_tree_clause_2_clause_2.
+        unfold AppliedOperator'_of_gen_tree_clause_2_clause_2_clause_1.
         ltac1:(rewrite H).
         ltac1:(rewrite H0).
         reflexivity.
@@ -163,23 +163,23 @@ Instance appliedSymbol_countable
     (builtin : Set)
     {builtin_eqdec : EqDecision builtin}
     {builtin_countable : Countable builtin}
-    : Countable (AppliedSymbol' symbol builtin)
+    : Countable (AppliedOperator' symbol builtin)
 .
 Proof.
     apply inj_countable
     with
-        (f := (appliedSymbol'_to_gen_tree symbol builtin ))
-        (g := appliedSymbol'_of_gen_tree symbol builtin)
+        (f := (AppliedOperator'_to_gen_tree symbol builtin ))
+        (g := AppliedOperator'_of_gen_tree symbol builtin)
     .
     intros x.
-    apply appliedSymbol'_of_to_gen_tree.
+    apply AppliedOperator'_of_to_gen_tree.
 Qed.
 
 
 (* Model elements *)
 Inductive Element' (symbol : Set) (builtin : Set) :=
 | el_builtin (b : builtin)
-| el_appsym (s : AppliedSymbol' symbol builtin)
+| el_appsym (s : AppliedOperator' symbol builtin)
 .
 
 Equations Derive NoConfusion for Element'.
@@ -207,7 +207,7 @@ Equations element'_to_gen_tree
     {T_eqdec : EqDecision builtin}
     {T_countable : Countable builtin}
     (e : Element' symbol builtin)
-    : gen_tree (builtin + (AppliedSymbol' symbol builtin))%type
+    : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
 :=
     element'_to_gen_tree _ _ (el_builtin b)
     := GenLeaf (inl _ b) ;
@@ -222,7 +222,7 @@ Equations element'_from_gen_tree
     (builtin : Set)
     {builtin_eqdec : EqDecision builtin}
     {builtin_countable : Countable builtin}
-    (t : gen_tree (builtin+(AppliedSymbol' symbol builtin))%type)
+    (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
     :  option (Element' symbol builtin)
 :=
     element'_from_gen_tree _ _ (GenLeaf (inl _ b))
@@ -342,7 +342,7 @@ Defined.
 
 
 Definition AppliedSymbol {Σ : Signature}
-    := AppliedSymbol' symbol builtin_value
+    := AppliedOperator' symbol builtin_value
 .
 
 #[export]
@@ -351,7 +351,7 @@ Instance AppliedSymbol_eqdec {Σ : Signature}
 .
 Proof.
     intros e1 e2.
-    apply appliedSymbol'_eqdec.
+    apply AppliedOperator'_eqdec.
     apply builtin_value_eqdec.
 Defined.
 
@@ -416,19 +416,35 @@ match φ with
 | pat_requires_match p v p2 => 1 + pattern_size p + pattern_size p2
 end.
 
-
-Inductive FunTerm'
-    (symbol : Set) (builtin : Set) (unary_function : Set) (binary_function : Set) :=
-| ft_builtin (b : builtin)
-| ft_unary (f : unary_function) (e : Element' symbol builtin)
-| ft_binary (f : binary_function) (e1 : Element' symbol builtin) (e2 : Element' symbol builtin)
+Inductive ElementOrVariable
+    {Σ : Signature}
+:=
+| eov_element (e : Element)
+| eov_variable (x : variable)
 .
 
-Equations Derive NoConfusion for FunTerm'.
+#[export]
+Instance ElementOrVariable_eqdec {Σ : Signature}
+    : EqDecision (ElementOrVariable)
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+
+Inductive FunTerm
+    {Σ : Signature}
+    :=
+| ft_builtin (b : builtin_value)
+| ft_unary (f : builtin_unary_function) (e : ElementOrVariable)
+| ft_binary (f : builtin_binary_function) (e1 : ElementOrVariable) (e2 : ElementOrVariable)
+.
+
+Equations Derive NoConfusion for FunTerm.
 
 #[export]
-Instance FunTerm'_eqdec {Σ : Signature}
-    : EqDecision (FunTerm' symbol builtin_value builtin_unary_function builtin_binary_function)
+Instance FunTerm_eqdec {Σ : Signature}
+    : EqDecision (FunTerm)
 .
 Proof.
     ltac1:(solve_decision).
@@ -502,10 +518,10 @@ Section with_signature.
     Equations appliedSymbol_satisfies_pattern
         (φ : Pattern) (aps : AppliedSymbol) : Prop
         by struct aps :=
-    appliedSymbol_satisfies_pattern (pat_sym s1) (aps_sym s2)
+    appliedSymbol_satisfies_pattern (pat_sym s1) (aps_operator s2)
     := s1 = s2 ;
 
-    appliedSymbol_satisfies_pattern (pat_app φ1 (pat_builtin b')) (aps_app_builtin aps b)
+    appliedSymbol_satisfies_pattern (pat_app φ1 (pat_builtin b')) (aps_app_operand aps b)
     := b = b'
     /\ appliedSymbol_satisfies_pattern φ1 aps ;
 
@@ -519,10 +535,10 @@ Section with_signature.
     Equations appliedSymbol_satisfies_rhs_pattern
         (φ : RhsPattern) (aps : AppliedSymbol) : Prop
         by struct aps :=
-    appliedSymbol_satisfies_rhs_pattern (spat_sym s1) (aps_sym s2)
+    appliedSymbol_satisfies_rhs_pattern (spat_sym s1) (aps_operator s2)
     := s1 = s2 ;
 
-    appliedSymbol_satisfies_rhs_pattern (spat_app φ1 (spat_builtin b')) (aps_app_builtin aps b)
+    appliedSymbol_satisfies_rhs_pattern (spat_app φ1 (spat_builtin b')) (aps_app_operand aps b)
     := b = b'
     /\ appliedSymbol_satisfies_rhs_pattern φ1 aps ;
 
