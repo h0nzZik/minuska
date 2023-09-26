@@ -63,48 +63,50 @@ Section with_decidable_signature.
         { apply not_dec. apply IHc. }
     Defined.
 
-    Fixpoint evaluate_simple_pattern
+    Fixpoint evaluate_rhs_pattern
         (ρ : Valuation)
-        (φ : SimplePattern)
+        (φ : RhsPattern)
         : option Element :=
     match φ with
     | spat_builtin v => Some (el_builtin v)
-    | spat_sym s => Some (el_sym s)
+    | spat_sym s => Some (el_appsym (aps_operator s))
     | spat_app φ1 φ2 =>
-        let oe1 := (evaluate_simple_pattern ρ φ1) in
-        let oe2 := (evaluate_simple_pattern ρ φ2) in
+        let oe1 : option Element := (evaluate_rhs_pattern ρ φ1) in
+        let oe2 : option Element := (evaluate_rhs_pattern ρ φ2) in
         match oe1,oe2 with
-        | Some e1, Some e2 =>
-            Some (el_app e1 e2)
+        | Some (el_appsym aps1), Some (el_appsym aps2) =>
+            Some (el_appsym (aps_app_aps aps1 aps2))
+        | Some (el_appsym aps1), Some (el_builtin b) =>
+            Some (el_appsym (aps_app_operand aps1 b))
         | _,_ => None
         end
-    | spat_var x => ρ !! x
+    | spat_var x => ρ !! x (* Is this necessary when we have FunTerms? *)
+    | spat_ft t => funTerm_evaluate ρ t
     end
     .
 
-    Lemma evaluate_simple_pattern_correct
-        (φ : SimplePattern)
+    Lemma evaluate_rhs_pattern_correct
+        (φ : RhsPattern)
         (ρ : Valuation)
         (e : Element)
-        : evaluate_simple_pattern ρ φ = Some e ->
-        element_satisfies_simple_pattern_in_valuation e φ ρ
+        : evaluate_rhs_pattern ρ φ = Some e ->
+        element_satisfies_rhs_pattern_in_valuation e φ ρ
     .
     Proof.
-        revert e.
-        induction φ; intros e; destruct e; cbn; intros H; try (solve [inversion H; subst; clear H; try reflexivity]).
-        {
-            repeat ltac1:(case_match); inversion H.
-        }
-        {
-            repeat ltac1:(case_match); inversion H.
-        }
-        {
-            repeat ltac1:(case_match); inversion H; subst.
-            ltac1:(naive_solver).
-        }
+        intros H.
+        unfold element_satisfies_rhs_pattern_in_valuation.
+
+        ltac1:(funelim (element_satisfies_rhs_pattern' ρ φ e));
+            ltac1:(simp element_satisfies_rhs_pattern');
+            simpl in *.
+        all: try (solve[ltac1:(simplify_eq /=);
+            try reflexivity;
+            repeat ltac1:(case_match);
+            ltac1:(simplify_eq /=);
+            try ltac1:(naive_solver)]).
+
     Qed.
 
-    Check decide.
     Fixpoint evaluate_pattern
         (ρ : Valuation)
         (φ : Pattern)

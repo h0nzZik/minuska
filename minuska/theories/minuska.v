@@ -600,11 +600,15 @@ Section with_signature.
         := element_satisfies_rhs_pattern' φ1 (el_appsym aps1)
         /\ element_satisfies_rhs_pattern' φ2 (el_appsym aps2) ;
 
-    element_satisfies_rhs_pattern' (spat_var x) e
-        := ρ !! x = Some e ;
+    element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
+        := element_satisfies_rhs_pattern' φ1 (el_appsym aps1)
+        /\ element_satisfies_rhs_pattern' φ2 (el_builtin b) ;
 
-    element_satisfies_rhs_pattern' (spat_ft t) e
-        := funTerm_evaluate t = Some e; 
+    element_satisfies_rhs_pattern' (spat_var x) e'
+        := ρ !! x = Some e' ;
+
+    element_satisfies_rhs_pattern' (spat_ft t) e'
+        := funTerm_evaluate t = Some e'; 
 
     element_satisfies_rhs_pattern' _ _ := False
     .
