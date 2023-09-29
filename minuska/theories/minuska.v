@@ -10,6 +10,11 @@ Set Equations Transparent.
 Require Import Wellfounded.
 From Ltac2 Require Import Ltac2.
 
+Add Search Blacklist "_graph_mut".
+Add Search Blacklist "_graph_rect".
+Add Search Blacklist "_graph_equation".
+Add Search Blacklist "FunctionalElimination_".
+
 (* Convert Equations eq decision to stdpp's eq decision*)
 #[export]
 Instance EquationsEqdec
@@ -540,6 +545,7 @@ Section with_signature.
     }
     .
 
+    #[global]
     Opaque funTerm_evaluate.
 
     (*Equations Derive Subterm for Pattern.*)
@@ -561,6 +567,10 @@ Section with_signature.
         := element_satisfies_pattern' φ1 (el_appsym aps1)
         /\ element_satisfies_pattern' φ2 (el_appsym aps2) ;
 
+    element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
+        := element_satisfies_pattern' φ1 (el_appsym aps1)
+        /\ element_satisfies_pattern' φ2 (el_builtin b) ;
+
     element_satisfies_pattern' (pat_var x) e
         := ρ !! x = Some e ;
 
@@ -568,9 +578,9 @@ Section with_signature.
         := element_satisfies_pattern' φ' e 
         /\ val_satisfies_c ρ c ;
     
-    element_satisfies_pattern' (pat_requires_match φ x φ') e with (ρ !! x) => {
+    element_satisfies_pattern' (pat_requires_match φ'' x φ') e with (ρ !! x) => {
         | None := False;
-        | Some e2 := element_satisfies_pattern' φ e 
+        | Some e2 := element_satisfies_pattern' φ'' e 
             /\ element_satisfies_pattern' φ' e2;
     };
     
@@ -580,6 +590,7 @@ Section with_signature.
         all: cbn; ltac1:(lia).
     Qed.
 
+    #[global]
     Opaque element_satisfies_pattern'.
 
     Equations? element_satisfies_rhs_pattern'
@@ -616,6 +627,7 @@ Section with_signature.
         all: cbn; ltac1:(lia).
     Qed.
 
+    #[global]
     Opaque element_satisfies_rhs_pattern'.
 
 End with_signature.
@@ -716,14 +728,17 @@ Section sec.
         rr_satisfies (rr_sym s1) (el_appsym (aps_operator s2))
         := s1 = s2;
 
-        rr_satisfies (rr_app φ1 (rr_builtin b')) (el_appsym (aps_app_operand aps b))
-        := b = b'
-        /\ rr_satisfies φ1 (el_appsym aps) ;
-
         rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
         := rr_satisfies φ1 (el_appsym aps1)
         /\ rr_satisfies φ2 (el_appsym aps2) ;
 
+        rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_operand aps b))
+        := rr_satisfies φ1 (el_appsym aps) /\ rr_satisfies φ2 (el_builtin b) ;
+(*
+        rr_satisfies (rr_app φ1 (rr_builtin b')) (el_appsym (aps_app_operand aps b))
+        := b = b'
+        /\ rr_satisfies φ1 (el_appsym aps) ;
+*)
         rr_satisfies (rr_requires r c) e 
         := rr_satisfies r e 
         /\ val_satisfies_c ρ c ;
@@ -740,6 +755,7 @@ Section sec.
         all: cbn; ltac1:(lia).
     Qed.
 
+    #[global]
     Opaque rr_satisfies.
     
 End sec.

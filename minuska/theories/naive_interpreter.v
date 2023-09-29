@@ -104,22 +104,24 @@ Section with_decidable_signature.
             repeat ltac1:(case_match);
             ltac1:(simplify_eq /=);
             try ltac1:(naive_solver)]).
-
     Qed.
 
+(*
     Fixpoint evaluate_pattern
         (ρ : Valuation)
         (φ : Pattern)
         : option Element :=
     match φ with
     | pat_builtin v => Some (el_builtin v)
-    | pat_sym s => Some (el_sym s)
+    | pat_sym s => Some (el_appsym (aps_operator s))
     | pat_app φ1 φ2 =>
-        let oe1 := (evaluate_pattern ρ φ1) in
-        let oe2 := (evaluate_pattern ρ φ2) in
+        let oe1 : option Element := (evaluate_pattern ρ φ1) in
+        let oe2 : option Element := (evaluate_pattern ρ φ2) in
         match oe1,oe2 with
-        | Some e1, Some e2 =>
-            Some (el_app e1 e2)
+        | Some (el_appsym aps1), Some (el_appsym aps2) =>
+            Some (el_appsym (aps_app_aps aps1 aps2))
+        | Some (el_appsym aps1), Some (el_builtin b) =>
+            Some (el_appsym (aps_app_operand aps1 b))
         | _,_ => None
         end
     | pat_var x => ρ !! x
@@ -129,12 +131,12 @@ Section with_decidable_signature.
             evaluate_pattern ρ φ'
         else
             None
-    | pat_requires_match φ x φ' =>
+    | pat_requires_match φ'' x φ' =>
         match (evaluate_pattern ρ φ') with
         | None => None
         | Some e =>
             if (decide (ρ !! x = Some e))
-            then evaluate_pattern ρ φ
+            then evaluate_pattern ρ φ''
             else None
         end        
     end
@@ -152,59 +154,68 @@ Section with_decidable_signature.
         intros H.
         unfold element_satisfies_pattern_in_valuation.
         ltac1:(funelim (element_satisfies_pattern' ρ φ e));
-            cbn; ltac1:(simp evaluate_pattern in H); cbn in *;
-            try (solve [inversion H; subst; reflexivity]).
+            cbn in H; unfold is_left,decide in *;
+            ltac1:(simp element_satisfies_pattern');
+            (repeat ltac1:(case_match));
+            ltac1:(simplify_eq /=);
+            try reflexivity.
+        
+        all: (repeat ltac1:(case_match));
+            ltac1:(simplify_eq /=).
+        all: try ltac1:(naive_solver).
+        all: (repeat split);try ltac1:(naive_solver).
+        all: repeat (
+            Control.enter (fun () =>
+            match! goal with
+                [h: ((?x = ?x) -> _) |- _]
+                    =>
+                    Message.print (Message.of_ident h);
+                    Message.print (Message.of_constr x) ;
+                    ltac1:(H |- specialize(H ltac:(reflexivity))) (Ltac1.of_ident h); ()
+            end)).
         {
-            repeat ltac1:(case_match); inversion H.
+            destruct p;
+                cbn in *;
+                (repeat (ltac1:(case_match)));
+                ltac1:(simplify_eq /=);
+                try ltac1:(naive_solver).
         }
-        {
-            repeat ltac1:(case_match); inversion H.
-        }
-        {
-            repeat ltac1:(case_match);
-                try (inversion H; subst; clear H);
-                try (inversion H1; subst; clear H1).
-            ltac1:(naive_solver).
-        }
-        {
-            unfold decide,is_left in H0.
-            repeat ltac1:(case_match); repeat split; try (ltac1:(naive_solver)).
-        }
-        {
-            destruct Heqcall.
-            unfold decide,is_left in H1.
-            (repeat ltac1:(case_match)); (ltac1:(naive_solver)).
-        }
-        {
-            unfold is_left,decide in H.
-            (repeat ltac1:(case_match)); (ltac1:(naive_solver)).
-        }
+        
     Qed.
-
+*)
     Fixpoint rhs_evaluate_rule
         (ρ : Valuation)
         (r : RewritingRule)
         : option Element :=
     match r with
     | rr_local_rewrite lr =>
-        evaluate_simple_pattern ρ (lr_to lr)
+        evaluate_rhs_pattern ρ (lr_to lr)
     | rr_builtin b => Some (el_builtin b)
+    | rr_sym s => Some (el_appsym (aps_operator s))
     | rr_app r1 r2 =>
         let oe1 := rhs_evaluate_rule ρ r1 in
         let oe2 := rhs_evaluate_rule ρ r2 in
         match oe1,oe2 with
-        | Some e1, Some e2 => Some (el_app e1 e2)
+        | Some (el_appsym aps1), Some (el_appsym aps2) =>
+            Some (el_appsym (aps_app_aps aps1 aps2))
+        | Some (el_appsym aps1), Some (el_builtin b) =>
+            Some (el_appsym (aps_app_operand aps1 b))
         | _,_ => None
         end
     | rr_var x => ρ !! x
-    (* We CANNOT ignore requires clauses when evaluating RHS*)
+    (* We CANNOT ignore requires clauses when evaluating RHS.
+       But we have to.
+    *)
+    (*
     | rr_requires r' c =>
         if (decide (val_satisfies_c ρ c)) then rhs_evaluate_rule ρ r' else None
     | rr_requires_match r' x φ =>
-        match (evaluate_pattern ρ φ) with
+        match (evaluate_rhs_pattern ρ φ) with
         | None => None
         | Some e => if (decide (ρ !! x = Some e)) then None else None
         end
+    *)
+    | _ => None
     end
     .
 
@@ -212,19 +223,26 @@ Section with_decidable_signature.
         (r : RewritingRule)
         (ρ : Valuation)
         (e : Element)
-        : rhs_evaluate_rule ρ r = Some e ->
+        : 
+        (* rr_satisfies LR_Left ρ r e0 -> *)
+        rhs_evaluate_rule ρ r = Some e ->
         rr_satisfies LR_Right ρ r e
     .
     Proof.
-        intros H.
-        ltac1:(funelim (rr_satisfies LR_Right ρ r e));
-            cbn in *;
-            unfold decide,is_left in *;
-            try (solve [(repeat ltac1:(case_match)); try ltac1:(naive_solver)]).
+        revert e. revert ρ.
+        induction r; intros ρ e (*Hsat*) Heval.
         {
-            apply evaluate_simple_pattern_correct.
-            exact H.
+            destruct e;
+            ltac1:(simp rr_satisfies);
+            cbn in Heval;
+            destruct lr; cbn in *;
+            apply evaluate_rhs_pattern_correct;
+            exact Heval.
         }
+        all: cbn in Heval; ltac1:(simplify_eq /=); auto with nocore.
+        all: ltac1:(simp rr_satisfies); try reflexivity.
+        all: (repeat (ltac1:(case_match))); ltac1:(simplify_eq /=).
+        all: ltac1:(simp rr_satisfies); try ltac1:(naive_solver).
     Qed.
 
     Definition lhs_match_one
