@@ -41,8 +41,11 @@ Class Symbols (symbol : Set) := {
 
 Inductive AppliedOperator' (operator : Set) (operand : Set) :=
 | aps_operator (s : operator)
-| aps_app_operand (aps : AppliedOperator' operator operand) (b : operand) 
-| aps_app_aps (aps : AppliedOperator' operator operand) (x : AppliedOperator' operator operand)
+| aps_app_operand
+    (aps : AppliedOperator' operator operand) (b : operand) 
+| aps_app_aps
+    (aps : AppliedOperator' operator operand)
+    (x : AppliedOperator' operator operand)
 .
 
 Equations Derive NoConfusion for AppliedOperator'.
@@ -396,6 +399,7 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+(* TODO: rename to LhsPattern *)
 Inductive Pattern {Σ : Signature} :=
 | pat_builtin (b : builtin_value)
 | pat_sym (s : symbol)
@@ -442,6 +446,7 @@ Proof.
 Defined.
 *)
 
+(* TODO: think about whether we want to have symbol application here. *)
 Inductive FunTerm
     {Σ : Signature}
     :=
@@ -466,7 +471,7 @@ Inductive RhsPattern {Σ : Signature} :=
 | spat_builtin (b : builtin_value)
 | spat_sym (s : symbol)
 | spat_app (e1 e2 : RhsPattern)
-| spat_var (x : variable)
+| spat_var (x : variable) (* TODO remove *)
 | spat_ft (ft : FunTerm)
 .
 
@@ -534,6 +539,7 @@ Section with_signature.
 
     funTerm_evaluate (ft_variable x) := ρ !! x ;
 
+    (* TODO use fmap and "do notation"*)
     funTerm_evaluate (ft_unary f t) with (funTerm_evaluate t) => {
         | Some e := Some (builtin_unary_function_interp f e)
         | None := None
@@ -741,12 +747,12 @@ Section sec.
 *)
         rr_satisfies (rr_requires r c) e 
         := rr_satisfies r e 
-        /\ val_satisfies_c ρ c ;
+        /\ (val_satisfies_c ρ c  \/ left_right = LR_Right);
 
         rr_satisfies (rr_requires_match r x φ') e with (ρ !! x) => {
         | None := False;
         | Some e2 := rr_satisfies r e 
-            /\ element_satisfies_pattern' ρ φ' e2;
+            /\ (element_satisfies_pattern' ρ φ' e2 \/ left_right = LR_Right);
         } ;
 
         rr_satisfies _ _ := False ;

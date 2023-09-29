@@ -89,10 +89,12 @@ Section with_decidable_signature.
         (φ : RhsPattern)
         (ρ : Valuation)
         (e : Element)
-        : evaluate_rhs_pattern ρ φ = Some e ->
+        : evaluate_rhs_pattern ρ φ = Some e <->
         element_satisfies_rhs_pattern_in_valuation e φ ρ
     .
     Proof.
+        split.
+        {
         intros H.
         unfold element_satisfies_rhs_pattern_in_valuation.
 
@@ -104,6 +106,27 @@ Section with_decidable_signature.
             repeat ltac1:(case_match);
             ltac1:(simplify_eq /=);
             try ltac1:(naive_solver)]).
+        }
+        {
+            unfold element_satisfies_rhs_pattern_in_valuation.
+            ltac1:(funelim (element_satisfies_rhs_pattern' ρ φ e));
+                cbn;
+                intros Hsat;
+                ltac1:(simp element_satisfies_rhs_pattern' in Hsat);
+                ltac1:(simplify_eq /=);
+                try reflexivity;
+                try ltac1:(contradiction)
+            .
+            all: destruct Heqcall;
+                ltac1:(destruct_and!);
+                (repeat ltac1:(case_match));
+                try ltac1:(specialize (H ltac:(assumption)));
+                try ltac1:(specialize (H0 ltac:(assumption)));
+                ltac1:(simplify_eq /=);
+                try ltac1:(contradiction)
+            .
+            all: try reflexivity.
+        }
     Qed.
 
 (*
@@ -203,46 +226,76 @@ Section with_decidable_signature.
         | _,_ => None
         end
     | rr_var x => ρ !! x
-    (* We CANNOT ignore requires clauses when evaluating RHS.
-       But we have to.
-    *)
-    (*
-    | rr_requires r' c =>
-        if (decide (val_satisfies_c ρ c)) then rhs_evaluate_rule ρ r' else None
-    | rr_requires_match r' x φ =>
-        match (evaluate_rhs_pattern ρ φ) with
-        | None => None
-        | Some e => if (decide (ρ !! x = Some e)) then None else None
-        end
-    *)
-    | _ => None
+    | rr_requires r' _ => rhs_evaluate_rule ρ r'
+    | rr_requires_match r' _ _ => rhs_evaluate_rule ρ r'
     end
     .
 
-    Lemma rhs_evaluate_rule_correct
+
+    Lemma rhs_evaluate_rule_correct_1
         (r : RewritingRule)
         (ρ : Valuation)
         (e : Element)
         : 
-        (* rr_satisfies LR_Left ρ r e0 -> *)
         rhs_evaluate_rule ρ r = Some e ->
         rr_satisfies LR_Right ρ r e
     .
     Proof.
-        revert e. revert ρ.
-        induction r; intros ρ e (*Hsat*) Heval.
         {
-            destruct e;
-            ltac1:(simp rr_satisfies);
-            cbn in Heval;
-            destruct lr; cbn in *;
-            apply evaluate_rhs_pattern_correct;
-            exact Heval.
+            revert e. revert ρ.
+            induction r; intros ρ e (*Hsat*) Heval.
+            {
+                destruct e;
+                ltac1:(simp rr_satisfies);
+                cbn in Heval;
+                destruct lr; cbn in *;
+                apply evaluate_rhs_pattern_correct;
+                exact Heval.
+            }
+            all: cbn in Heval; ltac1:(simplify_eq /=); auto with nocore.
+            all: ltac1:(simp rr_satisfies); try reflexivity.
+            all: (repeat (ltac1:(case_match))); ltac1:(simplify_eq /=).
+            all: ltac1:(simp rr_satisfies); try ltac1:(naive_solver).
+            {
+                
+            }
         }
-        all: cbn in Heval; ltac1:(simplify_eq /=); auto with nocore.
-        all: ltac1:(simp rr_satisfies); try reflexivity.
-        all: (repeat (ltac1:(case_match))); ltac1:(simplify_eq /=).
-        all: ltac1:(simp rr_satisfies); try ltac1:(naive_solver).
+    Qed.
+
+    Lemma rhs_evaluate_rule_correct_2
+        (r : RewritingRule)
+        (ρ : Valuation)
+        (e : Element)
+        : 
+            (* forall e', rr_satisfies LR_Left ρ r e' -> *)
+            rr_satisfies LR_Right ρ r e ->
+            rhs_evaluate_rule ρ r = Some e
+    .
+    Proof.
+        intros (*e' Hsatl*) Hsatr.
+        ltac1:(funelim (rr_satisfies LR_Right ρ r e));
+            cbn.
+        {
+            apply evaluate_rhs_pattern_correct.
+            assumption.
+        }
+        all: ltac1:(simp rr_satisfies in Hsatr).
+        all: ltac1:(simplify_eq /=).
+        all: try reflexivity.
+        all: try ltac1:(contradiction).
+        {
+            erewrite H by ltac1:(naive_solver);
+            erewrite H0 by ltac1:(naive_solver);
+            reflexivity.
+        }
+        {
+            erewrite H by ltac1:(naive_solver);
+            erewrite H0 by ltac1:(naive_solver);
+            reflexivity.
+        }
+        {
+            ltac1:(simp rr_satisfies in Heqcall).
+        }
     Qed.
 
     Definition lhs_match_one
@@ -463,6 +516,7 @@ Section with_decidable_signature.
                     unfold rule_weakly_well_defined in Hwwd.
                     specialize (Hwwd e ρ Hsat).
                     destruct Hwwd as [e' Hsate'].
+                    apply evaluate_rhs_rule_correct. in Heval.
                     Search rhs_evaluate_rule.
                 }
                 Search rhs_evaluate_rule.

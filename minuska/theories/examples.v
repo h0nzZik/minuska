@@ -73,6 +73,7 @@ Module example_1.
         exists ({[
             "X" := (el_appsym (aps_app_aps (aps_operator "Succ") (aps_operator "Zero")))
         ]}).
+        Print rewrites_in_valuation_to.
         unfold rewrites_in_valuation_to.
         repeat split.
     Qed.
