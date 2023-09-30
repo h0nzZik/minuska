@@ -129,83 +129,6 @@ Section with_decidable_signature.
         }
     Qed.
 
-(*
-    Fixpoint evaluate_pattern
-        (ρ : Valuation)
-        (φ : Pattern)
-        : option Element :=
-    match φ with
-    | pat_builtin v => Some (el_builtin v)
-    | pat_sym s => Some (el_appsym (aps_operator s))
-    | pat_app φ1 φ2 =>
-        let oe1 : option Element := (evaluate_pattern ρ φ1) in
-        let oe2 : option Element := (evaluate_pattern ρ φ2) in
-        match oe1,oe2 with
-        | Some (el_appsym aps1), Some (el_appsym aps2) =>
-            Some (el_appsym (aps_app_aps aps1 aps2))
-        | Some (el_appsym aps1), Some (el_builtin b) =>
-            Some (el_appsym (aps_app_operand aps1 b))
-        | _,_ => None
-        end
-    | pat_var x => ρ !! x
-    | pat_requires φ' c =>
-        if (base.decide (val_satisfies_c ρ c))
-        then
-            evaluate_pattern ρ φ'
-        else
-            None
-    | pat_requires_match φ'' x φ' =>
-        match (evaluate_pattern ρ φ') with
-        | None => None
-        | Some e =>
-            if (decide (ρ !! x = Some e))
-            then evaluate_pattern ρ φ''
-            else None
-        end        
-    end
-    .
-
-
-    Lemma evaluate_pattern_correct
-        (φ : Pattern)
-        (ρ : Valuation)
-        (e : Element)
-        : evaluate_pattern ρ φ = Some e ->
-        element_satisfies_pattern_in_valuation e φ ρ
-    .
-    Proof.
-        intros H.
-        unfold element_satisfies_pattern_in_valuation.
-        ltac1:(funelim (element_satisfies_pattern' ρ φ e));
-            cbn in H; unfold is_left,decide in *;
-            ltac1:(simp element_satisfies_pattern');
-            (repeat ltac1:(case_match));
-            ltac1:(simplify_eq /=);
-            try reflexivity.
-        
-        all: (repeat ltac1:(case_match));
-            ltac1:(simplify_eq /=).
-        all: try ltac1:(naive_solver).
-        all: (repeat split);try ltac1:(naive_solver).
-        all: repeat (
-            Control.enter (fun () =>
-            match! goal with
-                [h: ((?x = ?x) -> _) |- _]
-                    =>
-                    Message.print (Message.of_ident h);
-                    Message.print (Message.of_constr x) ;
-                    ltac1:(H |- specialize(H ltac:(reflexivity))) (Ltac1.of_ident h); ()
-            end)).
-        {
-            destruct p;
-                cbn in *;
-                (repeat (ltac1:(case_match)));
-                ltac1:(simplify_eq /=);
-                try ltac1:(naive_solver).
-        }
-        
-    Qed.
-*)
     Fixpoint rhs_evaluate_rule
         (ρ : Valuation)
         (r : RewritingRule)
@@ -243,7 +166,7 @@ Section with_decidable_signature.
     Proof.
         {
             revert e. revert ρ.
-            induction r; intros ρ e (*Hsat*) Heval.
+            induction r; intros ρ e Heval.
             {
                 destruct e;
                 ltac1:(simp rr_satisfies);
@@ -257,7 +180,8 @@ Section with_decidable_signature.
             all: (repeat (ltac1:(case_match))); ltac1:(simplify_eq /=).
             all: ltac1:(simp rr_satisfies); try ltac1:(naive_solver).
             {
-                
+                unfold rr_satisfies_unfold_clause_8.
+                destruct (ρ !! v) eqn:Hv; ltac1:(naive_solver).
             }
         }
     Qed.
@@ -267,12 +191,11 @@ Section with_decidable_signature.
         (ρ : Valuation)
         (e : Element)
         : 
-            (* forall e', rr_satisfies LR_Left ρ r e' -> *)
             rr_satisfies LR_Right ρ r e ->
             rhs_evaluate_rule ρ r = Some e
     .
     Proof.
-        intros (*e' Hsatl*) Hsatr.
+        intros Hsatr.
         ltac1:(funelim (rr_satisfies LR_Right ρ r e));
             cbn.
         {
@@ -295,6 +218,19 @@ Section with_decidable_signature.
         }
         {
             ltac1:(simp rr_satisfies in Heqcall).
+            apply H.
+            apply Hsatr.
+        }
+        {
+            apply H.
+            rewrite Heq in Hsatr.
+            unfold rr_satisfies_unfold_clause_8 in Hsatr.
+            apply Hsatr.
+        }{
+            apply H.
+            rewrite Heq in Hsatr.
+            unfold rr_satisfies_unfold_clause_8 in Hsatr.
+            apply Hsatr.
         }
     Qed.
 
@@ -444,6 +380,19 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma weakly_well_defined_baked_in ρ r e:
+        rr_satisfies LR_Left ρ r e ->
+        exists e', rr_satisfies LR_Right ρ r e'
+    .
+    Proof.
+        intros H.
+        ltac1:(funelim (rr_satisfies LR_Left ρ r e));
+            ltac1:(simp rr_satisfies in H).
+        {
+            
+        }
+    Qed.
+
     Definition naive_interpreter
         (Γ : RewritingTheory)
         (e : Element)
@@ -477,7 +426,7 @@ Section with_decidable_signature.
                     destruct (rhs_evaluate_rule ρ r) eqn:Heval; cbn in *.
                     {
                         apply lhs_match_one_Some in Hsat.
-                        apply rhs_evaluate_rule_correct in Heval.
+                        apply rhs_evaluate_rule_correct_1 in Heval.
                         ltac1:(exfalso).
                         apply Hstuck. clear Hstuck.
                         unfold rewrites_in_valuation_to.
@@ -498,7 +447,7 @@ Section with_decidable_signature.
             }
         }
         {
-            intros Hwwd e Hnotstuck.
+            intros e Hnotstuck.
             unfold naive_interpreter.
             destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
             {

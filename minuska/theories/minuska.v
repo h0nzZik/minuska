@@ -1,6 +1,8 @@
+From Coq Require Import ssreflect ssrfun ssrbool.
+
 From Coq.micromega Require Import Lia.
 
-From stdpp Require Import base countable decidable gmap list list_numbers numbers.
+From stdpp Require Import base countable decidable gmap sets list list_numbers numbers.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
 
@@ -144,7 +146,7 @@ Proof.
     {
         ltac1:(simp AppliedOperator'_to_gen_tree).
         ltac1:(simp AppliedOperator'_of_gen_tree).
-        ltac1:(rewrite ! Pos2Nat.id, decode_encode).
+        ltac1:(rewrite ! Pos2Nat.id decode_encode).
         unfold AppliedOperator'_of_gen_tree_clause_2.
         unfold AppliedOperator'_of_gen_tree_clause_2_clause_1.
         rewrite decode_encode.
@@ -155,7 +157,7 @@ Proof.
     {
         ltac1:(simp AppliedOperator'_to_gen_tree).
         ltac1:(simp AppliedOperator'_of_gen_tree).
-        ltac1:(rewrite ! Pos2Nat.id, decode_encode).
+        ltac1:(rewrite ! Pos2Nat.id decode_encode).
         unfold AppliedOperator'_of_gen_tree_clause_2.
         unfold AppliedOperator'_of_gen_tree_clause_2_clause_2.
         unfold AppliedOperator'_of_gen_tree_clause_2_clause_2_clause_1.
@@ -374,6 +376,15 @@ Inductive AtomicProposition {Σ : Signature} :=
 
 Equations Derive NoConfusion for AtomicProposition.
 
+Definition vars_of_AP
+    {Σ : Signature}
+    (ap : AtomicProposition)
+    : gset variable :=
+match ap with
+| ap1 _ x => {[x]}
+| ap2 _ x y => {[x;y]}
+end.
+
 #[export]
 Instance atomicProposition_eqdec {Σ : Signature}
     : EqDecision AtomicProposition
@@ -390,6 +401,17 @@ Inductive Constraint {Σ : Signature} :=
 .
 
 Equations Derive NoConfusion for Constraint.
+
+Fixpoint vars_of_Constraint
+    { Σ : Signature }
+    (c : Constraint)
+    : gset variable :=
+match c with
+| c_True => ∅
+| c_atomic ap => vars_of_AP ap
+| c_and c1 c2 => vars_of_Constraint c1 ∪ vars_of_Constraint c2
+| c_not c' => vars_of_Constraint c'
+end.
 
 #[export]
 Instance constraint_eqdec {Σ : Signature}
@@ -410,6 +432,22 @@ Inductive Pattern {Σ : Signature} :=
 .
 
 Equations Derive NoConfusion for Pattern.
+
+Fixpoint vars_of_Pattern
+    {Σ : Signature}
+    (φ : Pattern)
+    : gset variable :=
+match φ with
+| pat_builtin _ => ∅
+| pat_sym _ => ∅
+| pat_app φ1 φ2 => vars_of_Pattern φ1 ∪ vars_of_Pattern φ2
+| pat_var x => {[x]}
+| pat_requires φ' c => vars_of_Pattern φ' ∪ vars_of_Constraint c
+| pat_requires_match φ' x φ'' =>
+    {[x]} ∪ vars_of_Pattern φ' ∪ vars_of_Pattern φ''
+end
+.
+
 
 #[export]
 Instance Pattern_eqdec {Σ : Signature}
@@ -466,6 +504,16 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+Fixpoint vars_of_FunTerm
+    {Σ : Signature}
+    (t : FunTerm)
+    : gset variable :=
+match t with
+| ft_element _ => ∅
+| ft_variable x => {[x]}
+| ft_unary _ t' => vars_of_FunTerm t'
+| ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
+end.
 
 Inductive RhsPattern {Σ : Signature} :=
 | spat_builtin (b : builtin_value)
@@ -484,6 +532,18 @@ Instance RhsPattern_eqdec {Σ : Signature}
 Proof.
     ltac1:(solve_decision).
 Defined.
+
+Fixpoint vars_of_RhsPattern
+    {Σ : Signature}
+    (φ : RhsPattern)
+    : gset variable :=
+match φ with
+| spat_builtin _ => ∅
+| spat_sym _ => ∅
+| spat_app φ1 φ2 => vars_of_RhsPattern φ1 ∪ vars_of_RhsPattern φ1
+| spat_var x => {[x]}
+| spat_ft t => vars_of_FunTerm t
+end.
 
 Fixpoint RhsPattern_size {Σ : Signature} (φ : RhsPattern) :=
 match φ with
@@ -638,6 +698,97 @@ Section with_signature.
 
 End with_signature.
 
+Lemma funTerm_evalute_total_iff
+    {Σ : Signature}
+    (t : FunTerm)
+    (ρ : Valuation)
+    :
+    (∃ e:Element, funTerm_evaluate ρ t = Some e)
+    <->
+    ( vars_of_FunTerm t ⊆ dom ρ )
+.
+Proof.
+    induction t; cbn.
+    {
+        split; intros H.
+        {
+            apply empty_subseteq.
+        }
+        {
+            exists e.
+            ltac1:(simp funTerm_evaluate).
+            reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            rewrite elem_of_subseteq.
+            intros x0 Hx0.
+            rewrite elem_of_singleton in Hx0.
+            subst x0.
+            destruct H as [e H].
+            ltac1:(simp funTerm_evaluate in H).
+            ltac1:(fold_classes).
+            ltac1:(rewrite elem_of_dom).
+            exists e. exact H.
+        }
+        {
+            rewrite elem_of_subseteq in H.
+            specialize (H x).
+            rewrite elem_of_singleton in H.
+            specialize (H erefl).
+            ltac1:(rewrite elem_of_dom in H).
+            unfold is_Some in H.
+            destruct H as [e H].
+            exists e.
+            ltac1:(simp funTerm_evaluate in H).
+        }
+    }
+    {
+        ltac1:(simp funTerm_evaluate).
+        unfold funTerm_evaluate_clause_3.
+        ltac1:(rewrite <- IHt).
+        split; intros [e H].
+        {
+            ltac1:(case_match).
+            {
+                ltac1:(rewrite <- H0).
+                eexists.
+                exact H0.
+            }
+            {
+                inversion H.
+            }
+        }
+        {
+            eexists. rewrite H. reflexivity.
+        }
+    }
+    {
+        rewrite union_subseteq.
+        ltac1:(rewrite <- IHt1).
+        ltac1:(rewrite <- IHt2).
+        split; intros H.
+        {
+            destruct H as [e H].
+            ltac1:(simp funTerm_evaluate in H).
+            unfold funTerm_evaluate_clause_4_clause_1 in H.
+            (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
+                split; eexists; reflexivity.
+        }
+        {
+            destruct H as [[e1 H1] [e2 H2]].
+            ltac1:(simp funTerm_evaluate).
+            unfold funTerm_evaluate_clause_4_clause_1.
+            rewrite H1.
+            rewrite H2.
+            eexists. reflexivity.
+        }
+    }
+Qed.
+
+
 Definition element_satisfies_pattern_in_valuation
     {Σ : Signature} (e : Element) (φ : Pattern) (ρ : Valuation)
     : Prop :=
@@ -740,17 +891,13 @@ Section sec.
 
         rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_operand aps b))
         := rr_satisfies φ1 (el_appsym aps) /\ rr_satisfies φ2 (el_builtin b) ;
-(*
-        rr_satisfies (rr_app φ1 (rr_builtin b')) (el_appsym (aps_app_operand aps b))
-        := b = b'
-        /\ rr_satisfies φ1 (el_appsym aps) ;
-*)
+
         rr_satisfies (rr_requires r c) e 
         := rr_satisfies r e 
         /\ (val_satisfies_c ρ c  \/ left_right = LR_Right);
 
         rr_satisfies (rr_requires_match r x φ') e with (ρ !! x) => {
-        | None := False;
+        | None := rr_satisfies r e ;
         | Some e2 := rr_satisfies r e 
             /\ (element_satisfies_pattern' ρ φ' e2 \/ left_right = LR_Right);
         } ;
@@ -773,14 +920,6 @@ Definition rewrites_in_valuation_to
 /\ rr_satisfies LR_Right ρ r to
 .
 
-Definition rule_weakly_well_defined
-    {Σ : Signature}
-    (r : RewritingRule)
-    : Prop
-    := forall from ρ, rr_satisfies LR_Left ρ r from ->
-        exists to, rr_satisfies LR_Right ρ r to
-.
-
 Definition rewrites_to
     {Σ : Signature} (r : RewritingRule) (from to : Element)
     : Prop
@@ -790,13 +929,6 @@ Definition rewrites_to
 Definition RewritingTheory {Σ : Signature}
     := list RewritingRule
 .
-
-Definition thy_weakly_well_defined
-    {Σ : Signature}
-    (Γ : RewritingTheory)
-    : Prop
-    := forall r, r ∈ Γ -> rule_weakly_well_defined r.
-
 
 Definition rewriting_relation
     {Σ : Signature}
@@ -833,8 +965,7 @@ Definition Interpreter_sound
     : Prop
     := (forall e,
         stuck Γ e -> interpreter e = None)
-    /\ (thy_weakly_well_defined Γ ->
-        forall e,
+    /\ (forall e,
         not_stuck Γ e ->
         exists e', interpreter e = Some e')
 .
