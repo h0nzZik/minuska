@@ -515,12 +515,9 @@ match t with
 | ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
 end.
 
-Inductive RhsPattern {Σ : Signature} :=
-| spat_builtin (b : builtin_value)
-| spat_sym (s : symbol)
-| spat_app (e1 e2 : RhsPattern)
-| spat_var (x : variable) (* TODO remove *)
-| spat_ft (ft : FunTerm)
+Inductive RhsPattern {Σ : Signature} := 
+| rpat_ft (t : FunTerm)
+| rpat_op (op : AppliedOperator' symbol FunTerm)
 .
 
 Equations Derive NoConfusion for RhsPattern.
@@ -533,25 +530,27 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
-Fixpoint vars_of_RhsPattern
+Print AppliedOperator'.
+
+Fixpoint vars_of_AppliedOperator_sym_fterm
+    {Σ : Signature}
+    (op : AppliedOperator' symbol FunTerm)
+    : gset variable :=
+match op with
+| aps_operator _ => ∅
+| aps_app_operand aps' o =>
+    vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
+| aps_app_aps aps1 aps2 =>
+    vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
+end.
+
+Definition vars_of_RhsPattern
     {Σ : Signature}
     (φ : RhsPattern)
     : gset variable :=
 match φ with
-| spat_builtin _ => ∅
-| spat_sym _ => ∅
-| spat_app φ1 φ2 => vars_of_RhsPattern φ1 ∪ vars_of_RhsPattern φ1
-| spat_var x => {[x]}
-| spat_ft t => vars_of_FunTerm t
-end.
-
-Fixpoint RhsPattern_size {Σ : Signature} (φ : RhsPattern) :=
-match φ with
-| spat_builtin _ => 1
-| spat_sym _ => 1
-| spat_app e1 e2 => 1 + RhsPattern_size e1 + RhsPattern_size e2
-| spat_var _ => 1
-| spat_ft _ => 1
+| rpat_op op => vars_of_AppliedOperator_sym_fterm op
+| rpat_ft t => vars_of_FunTerm t
 end.
 
 Definition Valuation {Σ : Signature}
@@ -616,86 +615,127 @@ Section with_signature.
 
     (*Equations Derive Subterm for Pattern.*)
 
-    Equations? element_satisfies_pattern'
-         (φ : Pattern) (e : Element) : Prop
-        by (*wf @Pattern_subterm Σ*) (*struct φ*) wf (pattern_size φ) :=
-    element_satisfies_pattern' (pat_builtin b2) (el_builtin b1)
-        := b1 = b2 ;
-    
-    element_satisfies_pattern' (pat_sym s1) (el_appsym (aps_operator s2))
-        := s1 = s2;
-
-    element_satisfies_pattern' (pat_app φ1 (pat_builtin b')) (el_appsym (aps_app_operand aps b))
-        := b = b'
-        /\ element_satisfies_pattern' φ1 (el_appsym aps) ;
-
-    element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
-        := element_satisfies_pattern' φ1 (el_appsym aps1)
-        /\ element_satisfies_pattern' φ2 (el_appsym aps2) ;
-
-    element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
-        := element_satisfies_pattern' φ1 (el_appsym aps1)
-        /\ element_satisfies_pattern' φ2 (el_builtin b) ;
-
-    element_satisfies_pattern' (pat_var x) e
-        := ρ !! x = Some e ;
-
-    element_satisfies_pattern' (pat_requires φ' c) e 
-        := element_satisfies_pattern' φ' e 
-        /\ val_satisfies_c ρ c ;
-    
-    element_satisfies_pattern' (pat_requires_match φ'' x φ') e with (ρ !! x) => {
-        | None := False;
-        | Some e2 := element_satisfies_pattern' φ'' e 
-            /\ element_satisfies_pattern' φ' e2;
-    };
-    
-    element_satisfies_pattern' _ _ := False
+    Inductive element_satisfies_pattern':
+        Pattern -> Element -> Prop :=
+    | esp_builtin :
+        forall (b : builtin_value),
+            element_satisfies_pattern' (pat_builtin b) (el_builtin b)
+    | esp_sym :
+        forall (s : symbol),
+            element_satisfies_pattern' (pat_sym s) (el_appsym (aps_operator s))
+    | esp_app_1 :
+        forall φ1 aps b,
+            element_satisfies_pattern' φ1 (el_appsym aps) ->
+            element_satisfies_pattern' (pat_app φ1 (pat_builtin b)) (el_appsym (aps_app_operand aps b))
+    | esp_app_2 :
+        forall φ1 φ2 aps1 aps2,
+            element_satisfies_pattern' φ1 (el_appsym aps1) ->
+            element_satisfies_pattern' φ2 (el_appsym aps2) ->
+            element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+    | esp_app_3 :
+        forall φ1 φ2 aps1 b,
+        element_satisfies_pattern' φ1 (el_appsym aps1) ->
+        element_satisfies_pattern' φ2 (el_builtin b) ->
+        element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
+    | esp_var :
+        forall x e,
+            ρ !! x = Some e ->
+            element_satisfies_pattern' (pat_var x) e
+    | esp_req :
+        forall φ' c e,
+            element_satisfies_pattern' φ' e ->
+            vars_of_Constraint c ⊆ vars_of_Pattern φ' ->
+            val_satisfies_c ρ c ->
+            element_satisfies_pattern' (pat_requires φ' c) e
+    | esp_req_match :
+        forall φ'' x φ' e e2,
+            (ρ !! x) = Some e2 ->
+            element_satisfies_pattern' φ'' e  ->
+            element_satisfies_pattern' φ' e2 ->
+            element_satisfies_pattern' (pat_requires_match φ'' x φ') e 
     .
-    Proof.
-        all: cbn; ltac1:(lia).
-    Qed.
 
-    #[global]
-    Opaque element_satisfies_pattern'.
-
-    Equations? element_satisfies_rhs_pattern'
-         (φ : RhsPattern) (e : Element) : Prop
-        by (*wf (@Pattern_subterm Σ)*) (*struct φ *) wf (RhsPattern_size φ) :=
-
-    element_satisfies_rhs_pattern' (spat_builtin b2) (el_builtin b1)
-        := b1 = b2 ;
+    Print RhsPattern.
+    Print AppliedOperator'.
+    Print Element.
+    Print Element'.
     
-    element_satisfies_rhs_pattern' (spat_sym s1) (el_appsym (aps_operator s2))
-        := s1 = s2;
+    (*
+    Fixpoint eval_aosf
+        (φ : AppliedOperator' symbol FunTerm)
+        : Element :=
+    match φ with
+    | aps_operator s => el_appsym (aps_operator s)
+    | aps_app_operand φ' t =>
+    end.
+    *)
 
-    element_satisfies_rhs_pattern' (spat_app φ1 (spat_builtin b')) (el_appsym (aps_app_operand aps b))
-        := b = b'
-        /\ element_satisfies_rhs_pattern' φ1 (el_appsym aps) ;
+    Inductive element_satisfies_aosf:
+        AppliedOperator' symbol FunTerm -> Element -> Prop :=
+    | esaosf_sym :
+        forall s,
+            element_satisfies_aosf
+                (aps_operator s)
+                (el_appsym (aps_operator s))
 
-    element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
-        := element_satisfies_rhs_pattern' φ1 (el_appsym aps1)
-        /\ element_satisfies_rhs_pattern' φ2 (el_appsym aps2) ;
+    | esaosf_app_1 :
+        forall aps1 t aps1' b,
+            element_satisfies_aosf aps1 (el_appsym aps1') ->
+            funTerm_evaluate t = Some (el_builtin b) ->
+            element_satisfies_aosf
+                (aps_app_operand aps1 t)
+                (el_appsym (aps_app_operand aps1' b))
 
-    element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
-        := element_satisfies_rhs_pattern' φ1 (el_appsym aps1)
-        /\ element_satisfies_rhs_pattern' φ2 (el_builtin b) ;
+    | esaosf_app_2 :
+        forall aps1 t aps1' v,
+            element_satisfies_aosf aps1 (el_appsym aps1') ->
+            funTerm_evaluate t = Some (el_appsym v) ->
+            element_satisfies_aosf
+                (aps_app_operand aps1 t)
+                (el_appsym (aps_app_aps aps1' v))
 
-    element_satisfies_rhs_pattern' (spat_var x) e'
-        := ρ !! x = Some e' ;
-
-    element_satisfies_rhs_pattern' (spat_ft t) e'
-        := funTerm_evaluate t = Some e'; 
-
-    element_satisfies_rhs_pattern' _ _ := False
+    | esaosf_tmp :
+        forall aps1 aps2 ele1 ele2,
+            element_satisfies_aosf aps1 ele1 ->
+            element_satisfies_aosf aps2 ele2 ->
+            element_satisfies_aosf
+                (aps_app_aps aps1 aps2)
+                (el_appsym (aps_app_aps ele1 ele2))
     .
-    Proof.
-        all: cbn; ltac1:(lia).
-    Qed.
 
-    #[global]
-    Opaque element_satisfies_rhs_pattern'.
-
+(*
+    Inductive element_satisfies_rhs_pattern':
+        RhsPattern -> Element -> Prop :=
+    | esrp_builtin :
+        forall b, 
+            element_satisfies_rhs_pattern' (spat_builtin b) (el_builtin b)
+    | esrp_sym :
+        forall s,
+            element_satisfies_rhs_pattern' (spat_sym s) (el_appsym (aps_operator s))
+    | esrp_app_1 :
+        forall φ1 b aps,
+            element_satisfies_rhs_pattern' φ1 (el_appsym aps) ->
+            element_satisfies_rhs_pattern' (spat_app φ1 (spat_builtin b)) (el_appsym (aps_app_operand aps b))
+    | esrp_app_2 :
+        forall φ1 φ2 aps1 aps2,
+            element_satisfies_rhs_pattern' φ1 (el_appsym aps1) ->
+            element_satisfies_rhs_pattern' φ2 (el_appsym aps2) ->
+            element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+    | esrp_app_3 :
+        forall φ1 φ2 aps1 b,
+            element_satisfies_rhs_pattern' φ1 (el_appsym aps1) ->
+            element_satisfies_rhs_pattern' φ2 (el_builtin b) ->
+            element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
+    | esrp_var :
+        forall x e',
+            ρ !! x = Some e' ->
+            element_satisfies_rhs_pattern' (spat_var x) e'
+    | esrp_funterm :
+        forall t e',
+            funTerm_evaluate t = Some e' ->
+            element_satisfies_rhs_pattern' (spat_ft t) e'        
+    .
+*)
 End with_signature.
 
 Lemma funTerm_evalute_total_iff
@@ -818,6 +858,64 @@ Proof.
 Defined.
 
 Inductive LR : Set := LR_Left | LR_Right.
+
+Lemma lhs_sat_impl_good_valuation
+    {Σ : Signature} e φ ρ:
+    element_satisfies_pattern_in_valuation e φ ρ ->
+    vars_of_Pattern φ ⊆ dom ρ
+.
+Proof.
+    unfold element_satisfies_pattern_in_valuation.
+    intros H.
+    induction H; cbn; try (ltac1:(set_solver)).
+    { 
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        rewrite elem_of_singleton in Hx0.
+        subst.
+        ltac1:(rewrite elem_of_dom).
+        exists e.
+        exact H.
+    }
+    {
+        ltac1:(rewrite !union_subseteq).
+        repeat split; try assumption.
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        rewrite elem_of_singleton in Hx0.
+        subst.
+        ltac1:(rewrite elem_of_dom).
+        exists e2.
+        exact H.
+    }
+Qed.
+
+Lemma good_valuation_impl_rhs_sat
+    {Σ : Signature} φ ρ:
+    vars_of_RhsPattern φ ⊆ dom ρ ->
+    exists e, element_satisfies_rhs_pattern_in_valuation e φ ρ
+.
+Proof.
+    unfold element_satisfies_rhs_pattern_in_valuation.
+    induction φ; intros H; try (solve [eexists; econstructor]).
+    {
+        cbn in H.
+        ltac1:(specialize (IHφ1 ltac:(set_solver))).
+        ltac1:(specialize (IHφ2 ltac:(set_solver))).
+        destruct IHφ1 as [e1 H1].
+        destruct IHφ2 as [e2 H2].
+        destruct e1, e2; cbn.
+        {
+            eexists. apply esrp_app_2.
+        }
+    }
+    {
+        destruct e;
+            cbn in H;
+            try constructor.
+    }
+Qed.
+
 
 Definition lr_satisfies
     {Σ : Signature} (left_right : LR) (e : Element) (lr : LocalRewrite) (ρ : Valuation)
