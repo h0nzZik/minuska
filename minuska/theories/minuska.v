@@ -186,6 +186,100 @@ Proof.
     apply AppliedOperator'_of_to_gen_tree.
 Qed.
 
+Inductive Element' (symbol : Set) (builtin : Set) :=
+| el_builtin (b : builtin)
+| el_appsym (s : AppliedOperator' symbol builtin)
+.
+
+Equations Derive NoConfusion for Element'.
+
+#[export]
+Instance Element'_eqdec
+    {A : Set}
+    {symbols : Symbols A}
+    (T : Set)
+    {T_dec : EqDecision T}
+    : EqDecision (Element' A T)
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+
+Arguments el_appsym {symbol builtin}%type_scope s.
+Arguments el_builtin {symbol builtin}%type_scope b.
+
+Equations element'_to_gen_tree
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {T_eqdec : EqDecision builtin}
+    {T_countable : Countable builtin}
+    (e : Element' symbol builtin)
+    : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
+:=
+    element'_to_gen_tree _ _ (el_builtin b)
+    := GenLeaf (inl _ b) ;
+    
+    element'_to_gen_tree _ _ (el_appsym s)
+    := GenLeaf (inr _ s)
+.
+
+Opaque element'_to_gen_tree.
+
+Equations element'_from_gen_tree
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {builtin_eqdec : EqDecision builtin}
+    {builtin_countable : Countable builtin}
+    (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
+    :  option (Element' symbol builtin)
+:=
+    element'_from_gen_tree _ _ (GenLeaf (inl _ b))
+    := Some (el_builtin b);
+    
+    element'_from_gen_tree _ _ (GenLeaf (inr _ s))
+    := Some (el_appsym s);
+    
+    element'_from_gen_tree _ _ _
+    := None
+.
+Opaque element'_from_gen_tree.
+
+Lemma element'_to_from_gen_tree
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {builtin_eqdec : EqDecision builtin}
+    {builtin_countable : Countable builtin}
+    (e : Element' symbol builtin)
+    : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
+.
+Proof.
+    ltac1:(funelim (element'_to_gen_tree symbol builtin e)).
+    { reflexivity. }
+    { reflexivity. }
+Qed.
+
+#[export]
+Instance element'_countable
+    (symbol : Set)
+    {symbols : Symbols symbol}
+    (builtin : Set)
+    {builtin_eqdec : EqDecision builtin}
+    {builtin_countable : Countable builtin}
+    : Countable (Element' symbol builtin)
+.
+Proof.
+    apply inj_countable
+    with
+        (f := (element'_to_gen_tree symbol builtin ))
+        (g := element'_from_gen_tree symbol builtin)
+    .
+    intros x.
+    apply element'_to_from_gen_tree.
+Qed.
 
 Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
     builtin_value
@@ -215,25 +309,25 @@ Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
 
     builtin_unary_predicate_interp
         : builtin_unary_predicate 
-        -> (AppliedOperator' symbol builtin_value)
+        -> (Element' symbol builtin_value)
         -> Prop ;
 
     builtin_binary_predicate_interp
         : builtin_binary_predicate 
-        -> (AppliedOperator' symbol builtin_value)
-        -> (AppliedOperator' symbol builtin_value)
+        -> (Element' symbol builtin_value)
+        -> (Element' symbol builtin_value)
         -> Prop ;
     
     builtin_unary_function_interp
         : builtin_unary_function
-        -> (AppliedOperator' symbol builtin_value)
-        -> (AppliedOperator' symbol builtin_value) ;
+        -> (Element' symbol builtin_value)
+        -> (Element' symbol builtin_value) ;
 
     builtin_binary_function_interp
         : builtin_binary_function
-        -> (AppliedOperator' symbol builtin_value)
-        -> (AppliedOperator' symbol builtin_value)
-        -> (AppliedOperator' symbol builtin_value) ;
+        -> (Element' symbol builtin_value)
+        -> (Element' symbol builtin_value)
+        -> (Element' symbol builtin_value) ;
 }.
 
 Class Signature := {
@@ -245,7 +339,7 @@ Class Signature := {
 }.
 
 Definition Element {Σ : Signature}
-    := AppliedOperator' symbol builtin_value
+    := Element' symbol builtin_value
 .
 
 #[export]
@@ -254,7 +348,7 @@ Instance Element_eqdec {Σ : Signature}
 .
 Proof.
     intros e1 e2.
-    apply AppliedOperator'_eqdec.
+    apply Element'_eqdec.
     apply builtin_value_eqdec.
 Defined.
 
@@ -473,8 +567,8 @@ Definition val_satisfies_ap
 match ap with
 | ap1 p x =>
     match ρ !! x with
-    | None => False
     | Some vx => builtin_unary_predicate_interp p vx
+    | None => False
     end
 | ap2 p x y =>
     match ρ !! x, ρ !! y with
@@ -542,7 +636,15 @@ Section with_signature.
             aosb_satisfies_aosbf
                 (ao_app_operand φ b)
                 (ao_app_operand v (bov_builtin b))
-    
+
+    | asa_var_builtin:
+        forall φ x b v,
+            ρ !! x = Some b ->
+            aosb_satisfies_aosbf φ v ->
+            aosb_satisfies_aosbf
+                (ao_app_operand φ b)
+                (ao_app_operand v (bov_variable x))
+
     | asa_app:
         forall φ1 φ2 v1 v2,
             aosb_satisfies_aosbf φ1 v1 ->
@@ -589,11 +691,11 @@ Section with_signature.
                 (ao_operator s)
 
     | asaosf_app_operand_1 :
-        forall aps1 t aps1' b,
+        forall aps1 t aps1' v,
             aosb_satisfies_aosf aps1' aps1  ->
-            funTerm_evaluate t = Some (el_builtin b) ->
+            funTerm_evaluate t = Some v ->
             aosb_satisfies_aosf
-                (ao_app_operand aps1' b)
+                (ao_app_operand aps1' v)
                 (ao_app_operand aps1 t)
 
     | asaosf_app_operand_2 :
