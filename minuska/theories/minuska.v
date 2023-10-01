@@ -32,17 +32,6 @@ Defined.
 
 Module Syntax.
 
-    Class Variables (variable : Set) := {
-        variable_eqdec :: EqDecision variable ;
-        variable_countable :: Countable variable ;
-        variable_infinite :: Infinite variable ;
-    }.
-
-    Class Symbols (symbol : Set) := {
-        symbol_eqdec :: EqDecision symbol ;
-        symbol_countable :: Countable symbol ;
-    }.
-
     Inductive AppliedOperator' (operator : Set) (operand : Set) :=
     | ao_operator (s : operator)
     | ao_app_operand
@@ -51,7 +40,6 @@ Module Syntax.
         (aps : AppliedOperator' operator operand)
         (x : AppliedOperator' operator operand)
     .
-
 
     Inductive Element' (symbol : Set) (builtin : Set) :=
     | el_builtin (b : builtin)
@@ -64,6 +52,17 @@ Module Syntax.
     Arguments ao_operator {operator operand}%type_scope s.
     Arguments ao_app_operand {operator operand}%type_scope aps b.
     Arguments ao_app_ao {operator operand}%type_scope aps x.
+
+    Class Variables (variable : Set) := {
+        variable_eqdec :: EqDecision variable ;
+        variable_countable :: Countable variable ;
+        variable_infinite :: Infinite variable ;
+    }.
+
+    Class Symbols (symbol : Set) := {
+        symbol_eqdec :: EqDecision symbol ;
+        symbol_countable :: Countable symbol ;
+    }.
 
     Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
         builtin_value
@@ -169,6 +168,35 @@ Module Syntax.
     | ft_binary (f : builtin_binary_function) (t1 : FunTerm) (t2 : FunTerm)
     .
 
+    (* Do we want to be able to return the whole configuration
+    from a builtin function? If so, then we need
+    the `rpat_ft` constructor.
+    But currently we cannot afford that, because then
+    a RhsPattern could concretize to a single builtin,
+    and the builtin could be applied to something else,
+    which is undesirable. But that is very unfortunate,
+    because it would mean that we cannot do local rewrites
+    to builtins. Hmm...
+    *)
+    Inductive RhsPattern {Σ : Signature} := 
+    | rpat_ft (t : FunTerm)
+    | rpat_op (op : AppliedOperator' symbol FunTerm)
+    .
+
+    Record LocalRewrite {Σ : Signature} := {
+        lr_from : LhsPattern ;
+        lr_to : RhsPattern ;
+    }.
+
+    Inductive RewritingRule {Σ : Signature} :=
+    | rr_local_rewrite (lr : LocalRewrite)
+    | rr_builtin (b : builtin_value)
+    | rr_app (r1 r2 : RewritingRule)
+    | rr_var (v : variable)
+    | rr_sym (s : symbol)
+    | rr_requires (r : RewritingRule) (c : Constraint)
+    | rr_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
+    .
 
     Equations Derive NoConfusion for AppliedOperator'.
 
@@ -505,697 +533,672 @@ Module Syntax.
     end.
 
 
-Equations Derive NoConfusion for FunTerm.
+    Equations Derive NoConfusion for FunTerm.
 
-#[export]
-Instance FunTerm_eqdec {Σ : Signature}
-    : EqDecision (FunTerm)
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
+    #[export]
+    Instance FunTerm_eqdec {Σ : Signature}
+        : EqDecision (FunTerm)
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
 
-Fixpoint vars_of_FunTerm
-    {Σ : Signature}
-    (t : FunTerm)
-    : gset variable :=
-match t with
-| ft_element _ => ∅
-| ft_variable x => {[x]}
-| ft_unary _ t' => vars_of_FunTerm t'
-| ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
-end.
+    Fixpoint vars_of_FunTerm
+        {Σ : Signature}
+        (t : FunTerm)
+        : gset variable :=
+    match t with
+    | ft_element _ => ∅
+    | ft_variable x => {[x]}
+    | ft_unary _ t' => vars_of_FunTerm t'
+    | ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
+    end.
 
-(* Do we want to be able to return the whole configuration
-   from a builtin function? If so, then we need
-   the `rpat_ft` constructor.
-   But currently we cannot afford that, because then
-   a RhsPattern could concretize to a single builtin,
-   and the builtin could be applied to something else,
-   which is undesirable. But that is very unfortunate,
-   because it would mean that we cannot do local rewrites
-   to builtins. Hmm...
-*)
-Inductive RhsPattern {Σ : Signature} := 
-| rpat_ft (t : FunTerm)
-| rpat_op (op : AppliedOperator' symbol FunTerm)
-.
 
-Equations Derive NoConfusion for RhsPattern.
 
-#[export]
-Instance RhsPattern_eqdec {Σ : Signature}
-    : EqDecision RhsPattern
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
+    Equations Derive NoConfusion for RhsPattern.
 
-Print AppliedOperator'.
+    #[export]
+    Instance RhsPattern_eqdec {Σ : Signature}
+        : EqDecision RhsPattern
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
 
-Fixpoint vars_of_AppliedOperator_sym_fterm
-    {Σ : Signature}
-    (op : AppliedOperator' symbol FunTerm)
-    : gset variable :=
-match op with
-| ao_operator _ => ∅
-| ao_app_operand aps' o =>
-    vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
-| ao_app_ao aps1 aps2 =>
-    vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
-end.
+    Print AppliedOperator'.
 
-Definition vars_of_RhsPattern
-    {Σ : Signature}
-    (φ : RhsPattern)
-    : gset variable :=
-match φ with
-| rpat_op op => vars_of_AppliedOperator_sym_fterm op
-| rpat_ft t => vars_of_FunTerm t
-end.
+    Fixpoint vars_of_AppliedOperator_sym_fterm
+        {Σ : Signature}
+        (op : AppliedOperator' symbol FunTerm)
+        : gset variable :=
+    match op with
+    | ao_operator _ => ∅
+    | ao_app_operand aps' o =>
+        vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
+    | ao_app_ao aps1 aps2 =>
+        vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
+    end.
+
+    Definition vars_of_RhsPattern
+        {Σ : Signature}
+        (φ : RhsPattern)
+        : gset variable :=
+    match φ with
+    | rpat_op op => vars_of_AppliedOperator_sym_fterm op
+    | rpat_ft t => vars_of_FunTerm t
+    end.
 
 End Syntax.
 
 Module Semantics.
+    Import Syntax.
 
-Definition Valuation {Σ : Signature}
-    := gmap variable Element
-.
+    Definition Valuation {Σ : Signature}
+        := gmap variable Element
+    .
 
-Definition val_satisfies_ap
-    {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
-    : Prop :=
-match ap with
-| ap1 p x =>
-    match ρ !! x with
-    | Some vx => builtin_unary_predicate_interp p vx
-    | None => False
+    Definition val_satisfies_ap
+        {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
+        : Prop :=
+    match ap with
+    | ap1 p x =>
+        match ρ !! x with
+        | Some vx => builtin_unary_predicate_interp p vx
+        | None => False
+        end
+    | ap2 p x y =>
+        match ρ !! x, ρ !! y with
+        | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
+        | _,_ => False
+        end
     end
-| ap2 p x y =>
-    match ρ !! x, ρ !! y with
-    | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
-    | _,_ => False
-    end
-end
-.
+    .
 
-Fixpoint val_satisfies_c
-    {Σ : Signature} (ρ : Valuation) (c : Constraint)
-    : Prop :=
-match c with
-| c_True => True
-| c_atomic ap => val_satisfies_ap ρ ap
-| c_and c1 c2 => val_satisfies_c ρ c1 /\ val_satisfies_c ρ c2
-| c_not c' => ~ val_satisfies_c ρ c'
-end.
+    Fixpoint val_satisfies_c
+        {Σ : Signature} (ρ : Valuation) (c : Constraint)
+        : Prop :=
+    match c with
+    | c_True => True
+    | c_atomic ap => val_satisfies_ap ρ ap
+    | c_and c1 c2 => val_satisfies_c ρ c1 /\ val_satisfies_c ρ c2
+    | c_not c' => ~ val_satisfies_c ρ c'
+    end.
 
-Inductive aoxy_satisfies_aoxz
-    {X Y Z : Set}
-    {Y_sat_Z : Y -> Z -> Prop}:
-    AppliedOperator' X Y ->
-    AppliedOperator' X Z ->
-    Prop :=
+    Inductive aoxy_satisfies_aoxz
+        {X Y Z : Set}
+        {Y_sat_Z : Y -> Z -> Prop}:
+        AppliedOperator' X Y ->
+        AppliedOperator' X Z ->
+        Prop :=
 
-| asa_x:
-    forall x,
-        aoxy_satisfies_aoxz
-            (@ao_operator X Y x)
-            (@ao_operator X Z x)
+    | asa_x:
+        forall x,
+            aoxy_satisfies_aoxz
+                (@ao_operator X Y x)
+                (@ao_operator X Z x)
 
-| asa_operand:
-    forall aoxy aoxz y z,
-        aoxy_satisfies_aoxz aoxy aoxz ->
-        Y_sat_Z y z ->
-        aoxy_satisfies_aoxz
-            (ao_app_operand aoxy y)
-            (ao_app_operand aoxz z)
+    | asa_operand:
+        forall aoxy aoxz y z,
+            aoxy_satisfies_aoxz aoxy aoxz ->
+            Y_sat_Z y z ->
+            aoxy_satisfies_aoxz
+                (ao_app_operand aoxy y)
+                (ao_app_operand aoxz z)
 
-| asa_asa:
-    forall aoxy1 aoxy2 aoxz1 aoxz2,
-        aoxy_satisfies_aoxz aoxy1 aoxz1 ->
-        aoxy_satisfies_aoxz aoxy2 aoxz2 ->
-        aoxy_satisfies_aoxz
-            (ao_app_ao aoxy1 aoxy2)
-            (ao_app_ao aoxz1 aoxz2)
-.
+    | asa_asa:
+        forall aoxy1 aoxy2 aoxz1 aoxz2,
+            aoxy_satisfies_aoxz aoxy1 aoxz1 ->
+            aoxy_satisfies_aoxz aoxy2 aoxz2 ->
+            aoxy_satisfies_aoxz
+                (ao_app_ao aoxy1 aoxy2)
+                (ao_app_ao aoxz1 aoxz2)
+    .
 
 
-Section with_signature.
-    Context
+    Section with_signature.
+        Context
+            {Σ : Signature}
+            (ρ : Valuation)
+        .
+
+        (* TODO define this directly without Equations *)
+        Equations funTerm_evaluate
+            (t : FunTerm) : option Element
+            by struct t :=
+        
+        funTerm_evaluate (ft_element e) := Some e ;
+
+        funTerm_evaluate (ft_variable x) := ρ !! x ;
+
+        (* TODO use fmap and "do notation"*)
+        funTerm_evaluate (ft_unary f t) with (funTerm_evaluate t) => {
+            | Some e := Some (builtin_unary_function_interp f e)
+            | None := None
+        } ;
+
+        funTerm_evaluate (ft_binary f t1 t2) with (funTerm_evaluate t1), (funTerm_evaluate t2) => {
+            | Some e1, Some e2 := Some (builtin_binary_function_interp f e1 e2)
+            | _, _ := None
+        }
+        .
+
+        #[global]
+        Opaque funTerm_evaluate.
+
+        (*Equations Derive Subterm for Pattern.*)
+
+        Inductive builtin_satisfies_BuiltinOrVar:
+            builtin_value ->
+            BuiltinOrVar ->
+            Prop :=
+
+        | bsbv_builtin:
+            forall b,
+                builtin_satisfies_BuiltinOrVar b (bov_builtin b)
+
+        | bsbv_var:
+            forall b x,
+                ρ !! x = Some (el_builtin b) ->
+                builtin_satisfies_BuiltinOrVar b (bov_variable x)
+        .
+
+        Definition aosb_satisfies_aosbf:
+            AppliedOperator' symbol builtin_value ->
+            AppliedOperator' symbol BuiltinOrVar ->
+            Prop :=
+        @aoxy_satisfies_aoxz
+            symbol
+            builtin_value
+            BuiltinOrVar
+            builtin_satisfies_BuiltinOrVar
+        .
+
+        Inductive element_satisfies_pattern:
+            Element -> Pattern -> Prop :=
+
+        | esp_op :
+            forall e φ,
+                aosb_satisfies_aosbf e φ ->
+                element_satisfies_pattern e (pat_aop φ)
+        
+        | esp_req:
+            forall e φ c,
+                element_satisfies_pattern e φ ->
+                vars_of_Constraint c ⊆ vars_of_Pattern φ ->
+                val_satisfies_c ρ c ->
+                element_satisfies_pattern e (pat_requires φ c)
+
+        | esp_req_match :
+            forall φ x φ' e e2,
+                (ρ !! x) = Some e2 ->
+                element_satisfies_pattern e φ  ->
+                element_satisfies_pattern e2 φ' ->
+                element_satisfies_pattern
+                    e
+                    (pat_requires_match φ x φ')
+        .
+
+        Inductive aosb_satisfies_aosf:
+            AppliedOperator' symbol builtin_value ->
+            AppliedOperator' symbol FunTerm
+            -> Prop :=
+
+        | asaosf_sym :
+            forall s,
+                aosb_satisfies_aosf
+                    (ao_operator s)
+                    (ao_operator s)
+
+        | asaosf_app_operand_1 :
+            forall aps1 t aps1' v,
+                aosb_satisfies_aosf aps1' aps1  ->
+                funTerm_evaluate t = Some v ->
+                aosb_satisfies_aosf
+                    (ao_app_operand aps1' v)
+                    (ao_app_operand aps1 t)
+
+        | asaosf_app_operand_2 :
+            forall aps1 t aps1' v,
+                aosb_satisfies_aosf aps1' aps1 ->
+                funTerm_evaluate t = Some (el_appsym v) ->
+                aosb_satisfies_aosf
+                    (ao_app_ao aps1' v)
+                    (ao_app_operand aps1 t)
+
+        | asaosf_app_aps :
+            forall aps1 aps2 aps1' aps2',
+                aosb_satisfies_aosf aps1' aps1 ->
+                aosb_satisfies_aosf aps2' aps2 ->
+                aosb_satisfies_aosf
+                    (ao_app_ao aps1' aps2')
+                    (ao_app_ao aps1 aps2)
+        .
+
+        Inductive element_satisfies_rhs_pattern:
+            Element -> RhsPattern -> Prop :=
+        | esrp_ft:
+            forall e t,
+                funTerm_evaluate t = Some e ->
+                element_satisfies_rhs_pattern
+                    e
+                    (rpat_ft t)
+        | esrp_op:
+            forall aps op,
+                aosb_satisfies_aosf aps op ->
+                element_satisfies_rhs_pattern
+                    (el_appsym aps)
+                    (rpat_op op)
+        .
+
+    End with_signature.
+
+    Lemma funTerm_evalute_total_iff
         {Σ : Signature}
+        (t : FunTerm)
         (ρ : Valuation)
+        :
+        (∃ e:Element, funTerm_evaluate ρ t = Some e)
+        <->
+        ( vars_of_FunTerm t ⊆ dom ρ )
     .
-
-    (* TODO define this directly without Equations *)
-    Equations funTerm_evaluate
-        (t : FunTerm) : option Element
-        by struct t :=
-    
-    funTerm_evaluate (ft_element e) := Some e ;
-
-    funTerm_evaluate (ft_variable x) := ρ !! x ;
-
-    (* TODO use fmap and "do notation"*)
-    funTerm_evaluate (ft_unary f t) with (funTerm_evaluate t) => {
-        | Some e := Some (builtin_unary_function_interp f e)
-        | None := None
-    } ;
-
-    funTerm_evaluate (ft_binary f t1 t2) with (funTerm_evaluate t1), (funTerm_evaluate t2) => {
-        | Some e1, Some e2 := Some (builtin_binary_function_interp f e1 e2)
-        | _, _ := None
-    }
-    .
-
-    #[global]
-    Opaque funTerm_evaluate.
-
-    (*Equations Derive Subterm for Pattern.*)
-
-    Inductive builtin_satisfies_BuiltinOrVar:
-        builtin_value ->
-        BuiltinOrVar ->
-        Prop :=
-
-    | bsbv_builtin:
-        forall b,
-            builtin_satisfies_BuiltinOrVar b (bov_builtin b)
-
-    | bsbv_var:
-        forall b x,
-            ρ !! x = Some (el_builtin b) ->
-            builtin_satisfies_BuiltinOrVar b (bov_variable x)
-    .
-
-    Definition aosb_satisfies_aosbf:
-        AppliedOperator' symbol builtin_value ->
-        AppliedOperator' symbol BuiltinOrVar ->
-        Prop :=
-    @aoxy_satisfies_aoxz
-        symbol
-        builtin_value
-        BuiltinOrVar
-        builtin_satisfies_BuiltinOrVar
-    .
-
-    Inductive element_satisfies_pattern:
-        Element -> Pattern -> Prop :=
-
-    | esp_op :
-        forall e φ,
-            aosb_satisfies_aosbf e φ ->
-            element_satisfies_pattern e (pat_aop φ)
-    
-    | esp_req:
-        forall e φ c,
-            element_satisfies_pattern e φ ->
-            vars_of_Constraint c ⊆ vars_of_Pattern φ ->
-            val_satisfies_c ρ c ->
-            element_satisfies_pattern e (pat_requires φ c)
-
-    | esp_req_match :
-        forall φ x φ' e e2,
-            (ρ !! x) = Some e2 ->
-            element_satisfies_pattern e φ  ->
-            element_satisfies_pattern e2 φ' ->
-            element_satisfies_pattern
-                e
-                (pat_requires_match φ x φ')
-    .
-
-    Inductive aosb_satisfies_aosf:
-        AppliedOperator' symbol builtin_value ->
-        AppliedOperator' symbol FunTerm
-        -> Prop :=
-
-    | asaosf_sym :
-        forall s,
-            aosb_satisfies_aosf
-                (ao_operator s)
-                (ao_operator s)
-
-    | asaosf_app_operand_1 :
-        forall aps1 t aps1' v,
-            aosb_satisfies_aosf aps1' aps1  ->
-            funTerm_evaluate t = Some v ->
-            aosb_satisfies_aosf
-                (ao_app_operand aps1' v)
-                (ao_app_operand aps1 t)
-
-    | asaosf_app_operand_2 :
-        forall aps1 t aps1' v,
-            aosb_satisfies_aosf aps1' aps1 ->
-            funTerm_evaluate t = Some (el_appsym v) ->
-            aosb_satisfies_aosf
-                (ao_app_ao aps1' v)
-                (ao_app_operand aps1 t)
-
-    | asaosf_app_aps :
-        forall aps1 aps2 aps1' aps2',
-            aosb_satisfies_aosf aps1' aps1 ->
-            aosb_satisfies_aosf aps2' aps2 ->
-            aosb_satisfies_aosf
-                (ao_app_ao aps1' aps2')
-                (ao_app_ao aps1 aps2)
-    .
-
-    Inductive element_satisfies_rhs_pattern:
-        Element -> RhsPattern -> Prop :=
-    | esrp_ft:
-        forall e t,
-            funTerm_evaluate t = Some e ->
-            element_satisfies_rhs_pattern
-                e
-                (rpat_ft t)
-    | esrp_op:
-        forall aps op,
-            aosb_satisfies_aosf aps op ->
-            element_satisfies_rhs_pattern
-                (el_appsym aps)
-                (rpat_op op)
-    .
-
-End with_signature.
-
-Lemma funTerm_evalute_total_iff
-    {Σ : Signature}
-    (t : FunTerm)
-    (ρ : Valuation)
-    :
-    (∃ e:Element, funTerm_evaluate ρ t = Some e)
-    <->
-    ( vars_of_FunTerm t ⊆ dom ρ )
-.
-Proof.
-    induction t; cbn.
-    {
-        split; intros H.
+    Proof.
+        induction t; cbn.
         {
-            apply empty_subseteq.
+            split; intros H.
+            {
+                apply empty_subseteq.
+            }
+            {
+                exists e.
+                ltac1:(simp funTerm_evaluate).
+                reflexivity.
+            }
         }
         {
-            exists e.
+            split; intros H.
+            {
+                rewrite elem_of_subseteq.
+                intros x0 Hx0.
+                rewrite elem_of_singleton in Hx0.
+                subst x0.
+                destruct H as [e H].
+                ltac1:(simp funTerm_evaluate in H).
+                ltac1:(fold_classes).
+                ltac1:(rewrite elem_of_dom).
+                exists e. exact H.
+            }
+            {
+                rewrite elem_of_subseteq in H.
+                specialize (H x).
+                rewrite elem_of_singleton in H.
+                specialize (H erefl).
+                ltac1:(rewrite elem_of_dom in H).
+                unfold is_Some in H.
+                destruct H as [e H].
+                exists e.
+                ltac1:(simp funTerm_evaluate in H).
+            }
+        }
+        {
             ltac1:(simp funTerm_evaluate).
-            reflexivity.
+            unfold funTerm_evaluate_clause_3.
+            ltac1:(rewrite <- IHt).
+            split; intros [e H].
+            {
+                ltac1:(case_match).
+                {
+                    ltac1:(rewrite <- H0).
+                    eexists.
+                    exact H0.
+                }
+                {
+                    inversion H.
+                }
+            }
+            {
+                eexists. rewrite H. reflexivity.
+            }
         }
-    }
-    {
-        split; intros H.
         {
+            rewrite union_subseteq.
+            ltac1:(rewrite <- IHt1).
+            ltac1:(rewrite <- IHt2).
+            split; intros H.
+            {
+                destruct H as [e H].
+                ltac1:(simp funTerm_evaluate in H).
+                unfold funTerm_evaluate_clause_4_clause_1 in H.
+                (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
+                    split; eexists; reflexivity.
+            }
+            {
+                destruct H as [[e1 H1] [e2 H2]].
+                ltac1:(simp funTerm_evaluate).
+                unfold funTerm_evaluate_clause_4_clause_1.
+                rewrite H1.
+                rewrite H2.
+                eexists. reflexivity.
+            }
+        }
+    Qed.
+
+
+    Equations Derive NoConfusion for LocalRewrite.
+
+    #[export]
+    Instance localRewrite_eqdec {Σ : Signature}
+        : EqDecision LocalRewrite
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
+    Inductive LR : Set := LR_Left | LR_Right.
+
+    Lemma lhs_sat_impl_good_valuation
+        {Σ : Signature} e φ ρ:
+        element_satisfies_pattern ρ e φ ->
+        vars_of_Pattern φ ⊆ dom ρ
+    .
+    Proof.
+        intros H.
+        induction H; cbn; try (ltac1:(set_solver)).
+        { 
             rewrite elem_of_subseteq.
             intros x0 Hx0.
             rewrite elem_of_singleton in Hx0.
-            subst x0.
-            destruct H as [e H].
-            ltac1:(simp funTerm_evaluate in H).
-            ltac1:(fold_classes).
+            subst.
             ltac1:(rewrite elem_of_dom).
-            exists e. exact H.
-        }
-        {
-            rewrite elem_of_subseteq in H.
-            specialize (H x).
-            rewrite elem_of_singleton in H.
-            specialize (H erefl).
-            ltac1:(rewrite elem_of_dom in H).
-            unfold is_Some in H.
-            destruct H as [e H].
             exists e.
-            ltac1:(simp funTerm_evaluate in H).
-        }
-    }
-    {
-        ltac1:(simp funTerm_evaluate).
-        unfold funTerm_evaluate_clause_3.
-        ltac1:(rewrite <- IHt).
-        split; intros [e H].
-        {
-            ltac1:(case_match).
-            {
-                ltac1:(rewrite <- H0).
-                eexists.
-                exact H0.
-            }
-            {
-                inversion H.
-            }
+            exact H.
         }
         {
-            eexists. rewrite H. reflexivity.
+            ltac1:(rewrite !union_subseteq).
+            repeat split; try assumption.
+            rewrite elem_of_subseteq.
+            intros x0 Hx0.
+            rewrite elem_of_singleton in Hx0.
+            subst.
+            ltac1:(rewrite elem_of_dom).
+            exists e2.
+            exact H.
         }
-    }
-    {
-        rewrite union_subseteq.
-        ltac1:(rewrite <- IHt1).
-        ltac1:(rewrite <- IHt2).
-        split; intros H.
-        {
-            destruct H as [e H].
-            ltac1:(simp funTerm_evaluate in H).
-            unfold funTerm_evaluate_clause_4_clause_1 in H.
-            (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
-                split; eexists; reflexivity.
-        }
-        {
-            destruct H as [[e1 H1] [e2 H2]].
-            ltac1:(simp funTerm_evaluate).
-            unfold funTerm_evaluate_clause_4_clause_1.
-            rewrite H1.
-            rewrite H2.
-            eexists. reflexivity.
-        }
-    }
-Qed.
-
-Record LocalRewrite {Σ : Signature} := {
-    lr_from : Pattern ;
-    lr_to : RhsPattern ;
-}.
-
-Equations Derive NoConfusion for LocalRewrite.
-
-#[export]
-Instance localRewrite_eqdec {Σ : Signature}
-    : EqDecision LocalRewrite
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-
-Inductive LR : Set := LR_Left | LR_Right.
-
-Lemma lhs_sat_impl_good_valuation
-    {Σ : Signature} e φ ρ:
-    element_satisfies_pattern ρ e φ ->
-    vars_of_Pattern φ ⊆ dom ρ
-.
-Proof.
-    intros H.
-    induction H; cbn; try (ltac1:(set_solver)).
-    { 
-        rewrite elem_of_subseteq.
-        intros x0 Hx0.
-        rewrite elem_of_singleton in Hx0.
-        subst.
-        ltac1:(rewrite elem_of_dom).
-        exists e.
-        exact H.
-    }
-    {
-        ltac1:(rewrite !union_subseteq).
-        repeat split; try assumption.
-        rewrite elem_of_subseteq.
-        intros x0 Hx0.
-        rewrite elem_of_singleton in Hx0.
-        subst.
-        ltac1:(rewrite elem_of_dom).
-        exists e2.
-        exact H.
-    }
-Qed.
+    Qed.
 
 
-Lemma good_valuation_impl_rhs_sat_helper
-    {Σ : Signature} φ ρ:
-    vars_of_AppliedOperator_sym_fterm φ ⊆ dom ρ ->
-    exists e, aosb_satisfies_aosf ρ e φ
-.
-Proof.
-    induction φ; cbn; intros H.
-    {
-        eexists. econstructor.
-    }
-    {
-        rewrite union_subseteq in H.
-        destruct H as [H1 H2]; cbn.
-        specialize (IHφ H1).
-        ltac1:(rewrite -funTerm_evalute_total_iff in H2).
-        destruct IHφ as [e1 IHφ].
-        destruct H2 as [e2 He2]; cbn.
-        destruct e2; cbn.
+    Lemma good_valuation_impl_rhs_sat_helper
+        {Σ : Signature} φ ρ:
+        vars_of_AppliedOperator_sym_fterm φ ⊆ dom ρ ->
+        exists e, aosb_satisfies_aosf ρ e φ
+    .
+    Proof.
+        induction φ; cbn; intros H.
         {
             eexists. econstructor.
-            apply IHφ.
-            exact He2.
         }
         {
-            eexists. apply asaosf_app_operand_2.
-            { apply IHφ. }
-            { apply He2. }
+            rewrite union_subseteq in H.
+            destruct H as [H1 H2]; cbn.
+            specialize (IHφ H1).
+            ltac1:(rewrite -funTerm_evalute_total_iff in H2).
+            destruct IHφ as [e1 IHφ].
+            destruct H2 as [e2 He2]; cbn.
+            destruct e2; cbn.
+            {
+                eexists. econstructor.
+                apply IHφ.
+                exact He2.
+            }
+            {
+                eexists. apply asaosf_app_operand_2.
+                { apply IHφ. }
+                { apply He2. }
+            }
         }
-    }
-    {
-        rewrite union_subseteq in H.
-        destruct H as [H1 H2].
-        specialize (IHφ1 H1).
-        specialize (IHφ2 H2).
-        destruct IHφ1 as [e1 IHφ1].
-        destruct IHφ2 as [e2 IHφ2].
-        eexists. econstructor.
-        { apply IHφ1. }
-        { apply IHφ2. }
-    }
-Qed.
+        {
+            rewrite union_subseteq in H.
+            destruct H as [H1 H2].
+            specialize (IHφ1 H1).
+            specialize (IHφ2 H2).
+            destruct IHφ1 as [e1 IHφ1].
+            destruct IHφ2 as [e2 IHφ2].
+            eexists. econstructor.
+            { apply IHφ1. }
+            { apply IHφ2. }
+        }
+    Qed.
 
-Lemma good_valuation_impl_rhs_sat
-    {Σ : Signature} φ ρ:
-    vars_of_RhsPattern φ ⊆ dom ρ ->
-    exists e, element_satisfies_rhs_pattern ρ e φ
-.
-Proof.
-    destruct φ; cbn.
-    {
-        intros H.
-        ltac1:(rewrite -funTerm_evalute_total_iff in H).
-        destruct H as [e H].
-        exists e.
-        constructor.
-        exact H.
-    }
-    {
-        intros H.
-        apply good_valuation_impl_rhs_sat_helper in H.
-        destruct H as [e H].
-        eexists. econstructor. 
-        apply H.
-    }
-Qed.
+    Lemma good_valuation_impl_rhs_sat
+        {Σ : Signature} φ ρ:
+        vars_of_RhsPattern φ ⊆ dom ρ ->
+        exists e, element_satisfies_rhs_pattern ρ e φ
+    .
+    Proof.
+        destruct φ; cbn.
+        {
+            intros H.
+            ltac1:(rewrite -funTerm_evalute_total_iff in H).
+            destruct H as [e H].
+            exists e.
+            constructor.
+            exact H.
+        }
+        {
+            intros H.
+            apply good_valuation_impl_rhs_sat_helper in H.
+            destruct H as [e H].
+            eexists. econstructor. 
+            apply H.
+        }
+    Qed.
 
 
-Definition lr_satisfies
-    {Σ : Signature} (left_right : LR) (e : Element) (lr : LocalRewrite) (ρ : Valuation)
-    : Prop :=
-match left_right with
-| LR_Left =>
-    element_satisfies_pattern ρ e (lr_from lr)
-| LR_Right =>
-    element_satisfies_rhs_pattern ρ e (lr_to lr)
-end
-.
-
-Print Pattern.
-Inductive RewritingRule {Σ : Signature} :=
-| rr_local_rewrite (lr : LocalRewrite)
-| rr_builtin (b : builtin_value)
-| rr_app (r1 r2 : RewritingRule)
-| rr_var (v : variable)
-| rr_sym (s : symbol)
-| rr_requires (r : RewritingRule) (c : Constraint)
-| rr_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
-.
-
-Equations Derive NoConfusion for RewritingRule.
-
-Fixpoint RewritingRule_size {Σ : Signature} (r : RewritingRule) : nat :=
-match r with
-| rr_local_rewrite _ => 1
-| rr_builtin _ => 1
-| rr_app r1 r2 => 1 + RewritingRule_size r1 + RewritingRule_size r2
-| rr_var _ => 1
-| rr_sym _ => 1
-| rr_requires r _ => 1 + RewritingRule_size r
-| rr_requires_match r _ _ => 1 + RewritingRule_size r
-end.
-
-#[export]
-Instance RewritingRule_eqdec {Σ : Signature}
-    : EqDecision RewritingRule
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-
-Section sec.
-    Context
-        {Σ : Signature}
-        (left_right : LR)
-        (ρ : Valuation)
+    Definition lr_satisfies
+        {Σ : Signature} (left_right : LR) (e : Element) (lr : LocalRewrite) (ρ : Valuation)
+        : Prop :=
+    match left_right with
+    | LR_Left =>
+        element_satisfies_pattern ρ e (lr_from lr)
+    | LR_Right =>
+        element_satisfies_rhs_pattern ρ e (lr_to lr)
+    end
     .
 
     Print Pattern.
 
-    Inductive rr_satisfies :
-        RewritingRule -> Element -> Prop :=
-        
-    | rr_sat_local :
-        forall e lr
-            (Hvars : vars_of_RhsPattern (lr_to lr) ⊆ vars_of_Pattern (lr_from lr))
-            (Hsat : lr_satisfies left_right e lr ρ),
-            rr_satisfies (rr_local_rewrite lr) e
-    
-    | rr_sat_builtin :
-        forall b,
-            rr_satisfies (rr_builtin b) (el_builtin b)
+    Equations Derive NoConfusion for RewritingRule.
 
-    | rr_sat_var :
-        forall x e
-            (Hlookup : ρ !! x = Some e),
-            rr_satisfies (rr_var x) e
-    
-    | rr_sat_sym :
-        forall s,
-            rr_satisfies (rr_sym s) (el_appsym (ao_operator s))
-    
-    | rr_sat_app_1 :
-        forall φ1 φ2 aps1 aps2
-            (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
-            (Hsat2 : rr_satisfies φ2 (el_appsym aps2)),
-            rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_ao aps1 aps2))
-    
-    | rr_sat_app_2 :
-        forall φ1 φ2 aps1 b2
-            (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
-            (Hsat2 : rr_satisfies φ2 (el_builtin b2)),
-            rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_operand aps1 b2))
-    
-    | rr_sat_req :
-        forall r c e
-            (Hsat1 : rr_satisfies r e)
-            (Hsat2 : (val_satisfies_c ρ c  \/ left_right = LR_Right)),
-            rr_satisfies (rr_requires r c) e
-    
-    | rr_sat_req_match :
-        forall r x φ' e e2
-            (Hsat1 : rr_satisfies r e)
-            (Hlookup : ρ !! x = Some e2)
-            (Hsat2 : (element_satisfies_pattern ρ e2 φ' \/ left_right = LR_Right)),
-            rr_satisfies (rr_requires_match r x φ') e
+    Fixpoint RewritingRule_size {Σ : Signature} (r : RewritingRule) : nat :=
+    match r with
+    | rr_local_rewrite _ => 1
+    | rr_builtin _ => 1
+    | rr_app r1 r2 => 1 + RewritingRule_size r1 + RewritingRule_size r2
+    | rr_var _ => 1
+    | rr_sym _ => 1
+    | rr_requires r _ => 1 + RewritingRule_size r
+    | rr_requires_match r _ _ => 1 + RewritingRule_size r
+    end.
+
+    #[export]
+    Instance RewritingRule_eqdec {Σ : Signature}
+        : EqDecision RewritingRule
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
+    Section sec.
+        Context
+            {Σ : Signature}
+            (left_right : LR)
+            (ρ : Valuation)
+        .
+
+        Print Pattern.
+
+        Inductive rr_satisfies :
+            RewritingRule -> Element -> Prop :=
+            
+        | rr_sat_local :
+            forall e lr
+                (Hvars : vars_of_RhsPattern (lr_to lr) ⊆ vars_of_Pattern (lr_from lr))
+                (Hsat : lr_satisfies left_right e lr ρ),
+                rr_satisfies (rr_local_rewrite lr) e
+        
+        | rr_sat_builtin :
+            forall b,
+                rr_satisfies (rr_builtin b) (el_builtin b)
+
+        | rr_sat_var :
+            forall x e
+                (Hlookup : ρ !! x = Some e),
+                rr_satisfies (rr_var x) e
+        
+        | rr_sat_sym :
+            forall s,
+                rr_satisfies (rr_sym s) (el_appsym (ao_operator s))
+        
+        | rr_sat_app_1 :
+            forall φ1 φ2 aps1 aps2
+                (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
+                (Hsat2 : rr_satisfies φ2 (el_appsym aps2)),
+                rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_ao aps1 aps2))
+        
+        | rr_sat_app_2 :
+            forall φ1 φ2 aps1 b2
+                (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
+                (Hsat2 : rr_satisfies φ2 (el_builtin b2)),
+                rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_operand aps1 b2))
+        
+        | rr_sat_req :
+            forall r c e
+                (Hsat1 : rr_satisfies r e)
+                (Hsat2 : (val_satisfies_c ρ c  \/ left_right = LR_Right)),
+                rr_satisfies (rr_requires r c) e
+        
+        | rr_sat_req_match :
+            forall r x φ' e e2
+                (Hsat1 : rr_satisfies r e)
+                (Hlookup : ρ !! x = Some e2)
+                (Hsat2 : (element_satisfies_pattern ρ e2 φ' \/ left_right = LR_Right)),
+                rr_satisfies (rr_requires_match r x φ') e
+        .
+
+    End sec.
+    (*
+    Lemma rr_weakly_well_defined_0 {Σ : Signature} rr ρ aps:
+        rr_satisfies LR_Left ρ rr (el_appsym aps) ->
+        ∃ aps', rr_satisfies LR_Right ρ rr (el_appsym aps').
+    Proof.
+        intros H.
+        induction H; cbn.
+        {
+            destruct lr; cbn in *.
+            apply lhs_sat_impl_good_valuation in Hsat.
+            assert (Hvars2 : vars_of_RhsPattern lr_to0 ⊆ dom ρ).
+            { ltac1:(set_solver). }
+            apply good_valuation_impl_rhs_sat in Hvars2.
+            destruct Hvars2 as [e' He'].
+            eexists. econstructor; cbn.
+            { ltac1:(set_solver). }
+            { apply He'. }
+        }
+    Qed.
+    *)
+    Lemma rr_weakly_well_defined {Σ : Signature} rr ρ e:
+        rr_satisfies LR_Left ρ rr e ->
+        ∃ e', rr_satisfies LR_Right ρ rr e'.
+    Proof.
+        intros H.
+        induction H; cbn.
+        {
+            destruct lr; cbn in *.
+            apply lhs_sat_impl_good_valuation in Hsat.
+            assert (Hvars2 : vars_of_RhsPattern lr_to0 ⊆ dom ρ).
+            { ltac1:(set_solver). }
+            apply good_valuation_impl_rhs_sat in Hvars2.
+            destruct Hvars2 as [e' He'].
+            eexists. econstructor; cbn.
+            { ltac1:(set_solver). }
+            { apply He'. }
+        }
+        {
+            eexists. econstructor.
+        }
+        {
+            eexists. econstructor. apply Hlookup.
+        }
+        {
+            eexists. econstructor.
+        }
+        {
+            destruct IHrr_satisfies1 as [e1 He1].
+            destruct IHrr_satisfies2 as [e2 He2].
+            (* eexists (el_appsym ?[aps']). *)
+            destruct e1.
+            {
+                inversion He1; subst;
+                            eexists;
+                apply rr_sat_app_2.
+                {
+                    econstructor.
+                    { exact Hvars. }
+                    {}
+                }
+            }
+            eexists.
+            apply rr_sat_app_1.
+            {}
+            destruct e1, e2.
+            { eexists. apply rr_sat_app_2. }
+            eexists.
+            apply rr_sat_app_2.
+            { apply He1. }
+            { apply He2. }
+        }
+        {
+
+        }
+
+    Qed.
+
+    Definition rewrites_in_valuation_to
+        {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Element)
+        : Prop
+    := rr_satisfies LR_Left ρ r from
+    /\ rr_satisfies LR_Right ρ r to
     .
 
-End sec.
-(*
-Lemma rr_weakly_well_defined_0 {Σ : Signature} rr ρ aps:
-    rr_satisfies LR_Left ρ rr (el_appsym aps) ->
-    ∃ aps', rr_satisfies LR_Right ρ rr (el_appsym aps').
-Proof.
-    intros H.
-    induction H; cbn.
-    {
-        destruct lr; cbn in *.
-        apply lhs_sat_impl_good_valuation in Hsat.
-        assert (Hvars2 : vars_of_RhsPattern lr_to0 ⊆ dom ρ).
-        { ltac1:(set_solver). }
-        apply good_valuation_impl_rhs_sat in Hvars2.
-        destruct Hvars2 as [e' He'].
-        eexists. econstructor; cbn.
-        { ltac1:(set_solver). }
-        { apply He'. }
-    }
-Qed.
-*)
-Lemma rr_weakly_well_defined {Σ : Signature} rr ρ e:
-    rr_satisfies LR_Left ρ rr e ->
-    ∃ e', rr_satisfies LR_Right ρ rr e'.
-Proof.
-    intros H.
-    induction H; cbn.
-    {
-        destruct lr; cbn in *.
-        apply lhs_sat_impl_good_valuation in Hsat.
-        assert (Hvars2 : vars_of_RhsPattern lr_to0 ⊆ dom ρ).
-        { ltac1:(set_solver). }
-        apply good_valuation_impl_rhs_sat in Hvars2.
-        destruct Hvars2 as [e' He'].
-        eexists. econstructor; cbn.
-        { ltac1:(set_solver). }
-        { apply He'. }
-    }
-    {
-        eexists. econstructor.
-    }
-    {
-        eexists. econstructor. apply Hlookup.
-    }
-    {
-        eexists. econstructor.
-    }
-    {
-        destruct IHrr_satisfies1 as [e1 He1].
-        destruct IHrr_satisfies2 as [e2 He2].
-        (* eexists (el_appsym ?[aps']). *)
-        destruct e1.
-        {
-            inversion He1; subst;
-                        eexists;
-            apply rr_sat_app_2.
-            {
-                econstructor.
-                { exact Hvars. }
-                {}
-            }
-        }
-        eexists.
-        apply rr_sat_app_1.
-        {}
-        destruct e1, e2.
-        { eexists. apply rr_sat_app_2. }
-        eexists.
-        apply rr_sat_app_2.
-        { apply He1. }
-        { apply He2. }
-    }
-    {
+    Definition rewrites_to
+        {Σ : Signature} (r : RewritingRule) (from to : Element)
+        : Prop
+    := exists ρ, rewrites_in_valuation_to ρ r from to
+    .
 
-    }
+    Definition RewritingTheory {Σ : Signature}
+        := list RewritingRule
+    .
 
-Qed.
+    Definition rewriting_relation
+        {Σ : Signature}
+        (Γ : RewritingTheory)
+        : relation Element
+        := fun from to =>
+            exists r, r ∈ Γ /\ rewrites_to r from to
+    .
 
-Definition rewrites_in_valuation_to
-    {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Element)
-    : Prop
-:= rr_satisfies LR_Left ρ r from
-/\ rr_satisfies LR_Right ρ r to
-.
+    Definition not_stuck
+        {Σ : Signature}
+        (Γ : RewritingTheory)
+        (e : Element) : Prop
+    := exists e', rewriting_relation Γ e e'.
 
-Definition rewrites_to
-    {Σ : Signature} (r : RewritingRule) (from to : Element)
-    : Prop
-:= exists ρ, rewrites_in_valuation_to ρ r from to
-.
-
-Definition RewritingTheory {Σ : Signature}
-    := list RewritingRule
-.
-
-Definition rewriting_relation
-    {Σ : Signature}
-    (Γ : RewritingTheory)
-    : relation Element
-    := fun from to =>
-        exists r, r ∈ Γ /\ rewrites_to r from to
-.
-
-Definition not_stuck
-    {Σ : Signature}
-    (Γ : RewritingTheory)
-    (e : Element) : Prop
-:= exists e', rewriting_relation Γ e e'.
-
-Definition stuck
-    {Σ : Signature}
-    (Γ : RewritingTheory)
-    (e : Element) : Prop
-:= not (not_stuck Γ e).
+    Definition stuck
+        {Σ : Signature}
+        (Γ : RewritingTheory)
+        (e : Element) : Prop
+    := not (not_stuck Γ e).
 
 End Semantics.
 
