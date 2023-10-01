@@ -588,12 +588,44 @@ match c with
 | c_not c' => ~ val_satisfies_c ρ c'
 end.
 
+Inductive aoxy_satisfies_aoxz
+    {X Y Z : Set}
+    {Y_sat_Z : Y -> Z -> Prop}:
+    AppliedOperator' X Y ->
+    AppliedOperator' X Z ->
+    Prop :=
+
+| asa_x:
+    forall x,
+        aoxy_satisfies_aoxz
+            (@ao_operator X Y x)
+            (@ao_operator X Z x)
+
+| asa_operand:
+    forall aoxy aoxz y z,
+        aoxy_satisfies_aoxz aoxy aoxz ->
+        Y_sat_Z y z ->
+        aoxy_satisfies_aoxz
+            (ao_app_operand aoxy y)
+            (ao_app_operand aoxz z)
+
+| asa_asa:
+    forall aoxy1 aoxy2 aoxz1 aoxz2,
+        aoxy_satisfies_aoxz aoxy1 aoxz1 ->
+        aoxy_satisfies_aoxz aoxy2 aoxz2 ->
+        aoxy_satisfies_aoxz
+            (ao_app_ao aoxy1 aoxy2)
+            (ao_app_ao aoxz1 aoxz2)
+.
+
+
 Section with_signature.
     Context
         {Σ : Signature}
         (ρ : Valuation)
     .
 
+    (* TODO define this directly without Equations *)
     Equations funTerm_evaluate
         (t : FunTerm) : option Element
         by struct t :=
