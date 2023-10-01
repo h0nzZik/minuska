@@ -615,127 +615,110 @@ Section with_signature.
 
     (*Equations Derive Subterm for Pattern.*)
 
-    Inductive element_satisfies_pattern':
-        Pattern -> Element -> Prop :=
+    Inductive element_satisfies_pattern:
+        Element -> Pattern -> Prop :=
     | esp_builtin :
         forall (b : builtin_value),
-            element_satisfies_pattern' (pat_builtin b) (el_builtin b)
+            element_satisfies_pattern
+                (el_builtin b)
+                (pat_builtin b)
+                
     | esp_sym :
         forall (s : symbol),
-            element_satisfies_pattern' (pat_sym s) (el_appsym (aps_operator s))
+            element_satisfies_pattern
+                (el_appsym (aps_operator s))
+                (pat_sym s)
+
     | esp_app_1 :
         forall φ1 aps b,
-            element_satisfies_pattern' φ1 (el_appsym aps) ->
-            element_satisfies_pattern' (pat_app φ1 (pat_builtin b)) (el_appsym (aps_app_operand aps b))
+            element_satisfies_pattern (el_appsym aps) φ1 ->
+            element_satisfies_pattern
+                (el_appsym (aps_app_operand aps b))
+                (pat_app φ1 (pat_builtin b)) 
+                
     | esp_app_2 :
         forall φ1 φ2 aps1 aps2,
-            element_satisfies_pattern' φ1 (el_appsym aps1) ->
-            element_satisfies_pattern' φ2 (el_appsym aps2) ->
-            element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+            element_satisfies_pattern (el_appsym aps1) φ1 ->
+            element_satisfies_pattern (el_appsym aps2) φ2 ->
+            element_satisfies_pattern (el_appsym (aps_app_aps aps1 aps2)) (pat_app φ1 φ2)
     | esp_app_3 :
         forall φ1 φ2 aps1 b,
-        element_satisfies_pattern' φ1 (el_appsym aps1) ->
-        element_satisfies_pattern' φ2 (el_builtin b) ->
-        element_satisfies_pattern' (pat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
+        element_satisfies_pattern (el_appsym aps1) φ1 ->
+        element_satisfies_pattern (el_builtin b) φ2 ->
+        element_satisfies_pattern (el_appsym (aps_app_operand aps1 b)) (pat_app φ1 φ2)
+
     | esp_var :
         forall x e,
             ρ !! x = Some e ->
-            element_satisfies_pattern' (pat_var x) e
+            element_satisfies_pattern e (pat_var x)
+
     | esp_req :
         forall φ' c e,
-            element_satisfies_pattern' φ' e ->
+            element_satisfies_pattern e φ' ->
             vars_of_Constraint c ⊆ vars_of_Pattern φ' ->
             val_satisfies_c ρ c ->
-            element_satisfies_pattern' (pat_requires φ' c) e
+            element_satisfies_pattern e (pat_requires φ' c)
+
     | esp_req_match :
         forall φ'' x φ' e e2,
             (ρ !! x) = Some e2 ->
-            element_satisfies_pattern' φ'' e  ->
-            element_satisfies_pattern' φ' e2 ->
-            element_satisfies_pattern' (pat_requires_match φ'' x φ') e 
+            element_satisfies_pattern e φ''  ->
+            element_satisfies_pattern e2 φ' ->
+            element_satisfies_pattern e (pat_requires_match φ'' x φ')
     .
 
-    Print RhsPattern.
-    Print AppliedOperator'.
-    Print Element.
-    Print Element'.
-    
-    (*
-    Fixpoint eval_aosf
-        (φ : AppliedOperator' symbol FunTerm)
-        : Element :=
-    match φ with
-    | aps_operator s => el_appsym (aps_operator s)
-    | aps_app_operand φ' t =>
-    end.
-    *)
+    Inductive aosb_satisfies_aosf:
+        AppliedOperator' symbol builtin_value ->
+        AppliedOperator' symbol FunTerm
+        -> Prop :=
 
-    Inductive element_satisfies_aosf:
-        AppliedOperator' symbol FunTerm -> Element -> Prop :=
-    | esaosf_sym :
+    | asaosf_sym :
         forall s,
-            element_satisfies_aosf
+            aosb_satisfies_aosf
                 (aps_operator s)
-                (el_appsym (aps_operator s))
+                (aps_operator s)
 
-    | esaosf_app_1 :
+    | asaosf_app_operand_1 :
         forall aps1 t aps1' b,
-            element_satisfies_aosf aps1 (el_appsym aps1') ->
+            aosb_satisfies_aosf aps1' aps1  ->
             funTerm_evaluate t = Some (el_builtin b) ->
-            element_satisfies_aosf
+            aosb_satisfies_aosf
+                (aps_app_operand aps1' b)
                 (aps_app_operand aps1 t)
-                (el_appsym (aps_app_operand aps1' b))
 
-    | esaosf_app_2 :
+    | asaosf_app_operand_2 :
         forall aps1 t aps1' v,
-            element_satisfies_aosf aps1 (el_appsym aps1') ->
+            aosb_satisfies_aosf aps1' aps1 ->
             funTerm_evaluate t = Some (el_appsym v) ->
-            element_satisfies_aosf
+            aosb_satisfies_aosf
+                (aps_app_aps aps1' v)
                 (aps_app_operand aps1 t)
-                (el_appsym (aps_app_aps aps1' v))
 
-    | esaosf_tmp :
-        forall aps1 aps2 ele1 ele2,
-            element_satisfies_aosf aps1 ele1 ->
-            element_satisfies_aosf aps2 ele2 ->
-            element_satisfies_aosf
+    | asaosf_app_aps :
+        forall aps1 aps2 aps1' aps2',
+            aosb_satisfies_aosf aps1' aps1 ->
+            aosb_satisfies_aosf aps2' aps2 ->
+            aosb_satisfies_aosf
+                (aps_app_aps aps1' aps2')
                 (aps_app_aps aps1 aps2)
-                (el_appsym (aps_app_aps ele1 ele2))
     .
 
-(*
-    Inductive element_satisfies_rhs_pattern':
-        RhsPattern -> Element -> Prop :=
-    | esrp_builtin :
-        forall b, 
-            element_satisfies_rhs_pattern' (spat_builtin b) (el_builtin b)
-    | esrp_sym :
-        forall s,
-            element_satisfies_rhs_pattern' (spat_sym s) (el_appsym (aps_operator s))
-    | esrp_app_1 :
-        forall φ1 b aps,
-            element_satisfies_rhs_pattern' φ1 (el_appsym aps) ->
-            element_satisfies_rhs_pattern' (spat_app φ1 (spat_builtin b)) (el_appsym (aps_app_operand aps b))
-    | esrp_app_2 :
-        forall φ1 φ2 aps1 aps2,
-            element_satisfies_rhs_pattern' φ1 (el_appsym aps1) ->
-            element_satisfies_rhs_pattern' φ2 (el_appsym aps2) ->
-            element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
-    | esrp_app_3 :
-        forall φ1 φ2 aps1 b,
-            element_satisfies_rhs_pattern' φ1 (el_appsym aps1) ->
-            element_satisfies_rhs_pattern' φ2 (el_builtin b) ->
-            element_satisfies_rhs_pattern' (spat_app φ1 φ2) (el_appsym (aps_app_operand aps1 b))
-    | esrp_var :
-        forall x e',
-            ρ !! x = Some e' ->
-            element_satisfies_rhs_pattern' (spat_var x) e'
-    | esrp_funterm :
-        forall t e',
-            funTerm_evaluate t = Some e' ->
-            element_satisfies_rhs_pattern' (spat_ft t) e'        
+    Inductive element_satisfies_rhs_pattern:
+        Element -> RhsPattern -> Prop :=
+    | esrp_ft:
+        forall e t,
+            funTerm_evaluate t = Some e ->
+            element_satisfies_rhs_pattern
+                e
+                (rpat_ft t)
+    | esrp_op:
+        forall aps op,
+            aosb_satisfies_aosf aps op ->
+            element_satisfies_rhs_pattern
+                (el_appsym aps)
+                (rpat_op op)
     .
-*)
+
 End with_signature.
 
 Lemma funTerm_evalute_total_iff
@@ -828,20 +811,6 @@ Proof.
     }
 Qed.
 
-
-Definition element_satisfies_pattern_in_valuation
-    {Σ : Signature} (e : Element) (φ : Pattern) (ρ : Valuation)
-    : Prop :=
-    element_satisfies_pattern' ρ φ e
-.
-
-Definition element_satisfies_rhs_pattern_in_valuation
-    {Σ : Signature} (e : Element) (φ : RhsPattern) (ρ : Valuation)
-    : Prop :=
-    element_satisfies_rhs_pattern' ρ φ e
-.
-
-
 Record LocalRewrite {Σ : Signature} := {
     lr_from : Pattern ;
     lr_to : RhsPattern ;
@@ -861,11 +830,10 @@ Inductive LR : Set := LR_Left | LR_Right.
 
 Lemma lhs_sat_impl_good_valuation
     {Σ : Signature} e φ ρ:
-    element_satisfies_pattern_in_valuation e φ ρ ->
+    element_satisfies_pattern ρ e φ ->
     vars_of_Pattern φ ⊆ dom ρ
 .
 Proof.
-    unfold element_satisfies_pattern_in_valuation.
     intros H.
     induction H; cbn; try (ltac1:(set_solver)).
     { 
@@ -890,13 +858,81 @@ Proof.
     }
 Qed.
 
+
+Lemma good_valuation_impl_rhs_sat_helper
+    {Σ : Signature} φ ρ:
+    vars_of_AppliedOperator_sym_fterm φ ⊆ dom ρ ->
+    exists e, aosb_satisfies_aosf ρ e φ
+.
+Proof.
+    induction φ; cbn; intros H.
+    {
+        eexists. econstructor.
+    }
+    {
+        rewrite union_subseteq in H.
+        destruct H as [H1 H2]; cbn.
+        specialize (IHφ H1).
+        ltac1:(rewrite -funTerm_evalute_total_iff in H2).
+        destruct IHφ as [e1 IHφ].
+        destruct H2 as [e2 He2]; cbn.
+        destruct e2; cbn.
+        {
+            eexists. econstructor.
+            apply IHφ.
+            exact He2.
+        }
+        {
+            eexists. apply asaosf_app_operand_2.
+            { apply IHφ. }
+            { apply He2. }
+        }
+    }
+    {
+        rewrite union_subseteq in H.
+        destruct H as [H1 H2].
+        specialize (IHφ1 H1).
+        specialize (IHφ2 H2).
+        destruct IHφ1 as [e1 IHφ1].
+        destruct IHφ2 as [e2 IHφ2].
+        eexists. econstructor.
+        { apply IHφ1. }
+        { apply IHφ2. }
+    }
+Qed.
+
 Lemma good_valuation_impl_rhs_sat
     {Σ : Signature} φ ρ:
     vars_of_RhsPattern φ ⊆ dom ρ ->
-    exists e, element_satisfies_rhs_pattern_in_valuation e φ ρ
+    exists e, element_satisfies_rhs_pattern ρ e φ
 .
 Proof.
-    unfold element_satisfies_rhs_pattern_in_valuation.
+    destruct φ; cbn.
+    {
+        intros H.
+        ltac1:(rewrite -funTerm_evalute_total_iff in H).
+        destruct H as [e H].
+        exists e.
+        constructor.
+        exact H.
+    }
+    {
+        
+        induction op; cbn; intros H.
+        {
+            eexists. econstructor. econstructor.
+        }
+        {
+            ltac1:(specialize (IHop ltac:(set_solver))).
+            destruct IHop as [e IH].
+            inversion IH; subst; clear IH.
+            eexists (aps_app_operand ?[x] ?[y]). econstructor.
+            apply esrp_op.
+            Print aosb_satisfies_aosf.
+            
+             econstructor. eapply IH.
+        }
+    }
     induction φ; intros H; try (solve [eexists; econstructor]).
     {
         cbn in H.
