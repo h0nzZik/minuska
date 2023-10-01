@@ -42,19 +42,19 @@ Class Symbols (symbol : Set) := {
 }.
 
 Inductive AppliedOperator' (operator : Set) (operand : Set) :=
-| aps_operator (s : operator)
-| aps_app_operand
+| ao_operator (s : operator)
+| ao_app_operand
     (aps : AppliedOperator' operator operand) (b : operand) 
-| aps_app_aps
+| ao_app_ao
     (aps : AppliedOperator' operator operand)
     (x : AppliedOperator' operator operand)
 .
 
 Equations Derive NoConfusion for AppliedOperator'.
 
-Arguments aps_operator {operator operand}%type_scope s.
-Arguments aps_app_operand {operator operand}%type_scope aps b.
-Arguments aps_app_aps {operator operand}%type_scope aps x.
+Arguments ao_operator {operator operand}%type_scope s.
+Arguments ao_app_operand {operator operand}%type_scope aps b.
+Arguments ao_app_ao {operator operand}%type_scope aps x.
 
 #[export]
 Instance AppliedOperator'_eqdec
@@ -77,16 +77,16 @@ Equations AppliedOperator'_to_gen_tree
     (a : AppliedOperator' symbol builtin)
     : gen_tree symbol
 :=
-    AppliedOperator'_to_gen_tree _ _ (aps_operator s)
+    AppliedOperator'_to_gen_tree _ _ (ao_operator s)
     := GenLeaf s ;
 
-    AppliedOperator'_to_gen_tree _ _ (aps_app_operand aps b)
+    AppliedOperator'_to_gen_tree _ _ (ao_app_operand aps b)
     := (
         let x := (encode (0, encode b)) in
         GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree symbol builtin aps;AppliedOperator'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
     ) ;
 
-    AppliedOperator'_to_gen_tree _ _ (aps_app_aps aps1 aps2)
+    AppliedOperator'_to_gen_tree _ _ (ao_app_ao aps1 aps2)
     := (
         let xd := (1, encode 0) in
         let x := (encode xd) in
@@ -105,19 +105,19 @@ Equations AppliedOperator'_of_gen_tree
     : option (AppliedOperator' symbol builtin)
 :=
     AppliedOperator'_of_gen_tree _ _ (GenLeaf s)
-    := Some (aps_operator s);
+    := Some (ao_operator s);
       
     AppliedOperator'_of_gen_tree _ _ (GenNode n [gt1;gt2])
     with (@decode (nat*positive) _ _ (Pos.of_nat n)) => {
         | Some (0, pb) with (@decode builtin _ _ pb) => {
             | Some b with (AppliedOperator'_of_gen_tree symbol builtin gt1) => {
-                | Some as1 := Some (aps_app_operand as1 b)
+                | Some as1 := Some (ao_app_operand as1 b)
                 | _ := None
             }
             | _ := None
         }
         | Some (1, _) with AppliedOperator'_of_gen_tree symbol builtin gt1, AppliedOperator'_of_gen_tree symbol builtin gt2 => {
-            | Some aps1, Some aps2 := Some (aps_app_aps aps1 aps2)
+            | Some aps1, Some aps2 := Some (ao_app_ao aps1 aps2)
             | _, _ := None
         }
         | _ := None
@@ -187,102 +187,6 @@ Proof.
 Qed.
 
 
-(* Model elements *)
-Inductive Element' (symbol : Set) (builtin : Set) :=
-| el_builtin (b : builtin)
-| el_appsym (s : AppliedOperator' symbol builtin)
-.
-
-Equations Derive NoConfusion for Element'.
-
-#[export]
-Instance Element'_eqdec
-    {A : Set}
-    {symbols : Symbols A}
-    (T : Set)
-    {T_dec : EqDecision T}
-    : EqDecision (Element' A T)
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-
-
-Arguments el_appsym {symbol builtin}%type_scope s.
-Arguments el_builtin {symbol builtin}%type_scope b.
-
-Equations element'_to_gen_tree
-    (symbol : Set)
-    {symbols : Symbols symbol}
-    (builtin : Set)
-    {T_eqdec : EqDecision builtin}
-    {T_countable : Countable builtin}
-    (e : Element' symbol builtin)
-    : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
-:=
-    element'_to_gen_tree _ _ (el_builtin b)
-    := GenLeaf (inl _ b) ;
-    
-    element'_to_gen_tree _ _ (el_appsym s)
-    := GenLeaf (inr _ s)
-.
-
-Opaque element'_to_gen_tree.
-
-Equations element'_from_gen_tree
-    (symbol : Set)
-    {symbols : Symbols symbol}
-    (builtin : Set)
-    {builtin_eqdec : EqDecision builtin}
-    {builtin_countable : Countable builtin}
-    (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
-    :  option (Element' symbol builtin)
-:=
-    element'_from_gen_tree _ _ (GenLeaf (inl _ b))
-    := Some (el_builtin b);
-    
-    element'_from_gen_tree _ _ (GenLeaf (inr _ s))
-    := Some (el_appsym s);
-    
-    element'_from_gen_tree _ _ _
-    := None
-.
-Opaque element'_from_gen_tree.
-
-Lemma element'_to_from_gen_tree
-    (symbol : Set)
-    {symbols : Symbols symbol}
-    (builtin : Set)
-    {builtin_eqdec : EqDecision builtin}
-    {builtin_countable : Countable builtin}
-    (e : Element' symbol builtin)
-    : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
-.
-Proof.
-    ltac1:(funelim (element'_to_gen_tree symbol builtin e)).
-    { reflexivity. }
-    { reflexivity. }
-Qed.
-
-#[export]
-Instance element'_countable
-    (symbol : Set)
-    {symbols : Symbols symbol}
-    (builtin : Set)
-    {builtin_eqdec : EqDecision builtin}
-    {builtin_countable : Countable builtin}
-    : Countable (Element' symbol builtin)
-.
-Proof.
-    apply inj_countable
-    with
-        (f := (element'_to_gen_tree symbol builtin ))
-        (g := element'_from_gen_tree symbol builtin)
-    .
-    intros x.
-    apply element'_to_from_gen_tree.
-Qed.
-
 Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
     builtin_value
         : Set ;
@@ -311,25 +215,25 @@ Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
 
     builtin_unary_predicate_interp
         : builtin_unary_predicate 
-        -> (Element' symbol builtin_value)
+        -> (AppliedOperator' symbol builtin_value)
         -> Prop ;
 
     builtin_binary_predicate_interp
         : builtin_binary_predicate 
-        -> (Element' symbol builtin_value)
-        -> (Element' symbol builtin_value)
+        -> (AppliedOperator' symbol builtin_value)
+        -> (AppliedOperator' symbol builtin_value)
         -> Prop ;
     
     builtin_unary_function_interp
         : builtin_unary_function
-        -> (Element' symbol builtin_value)
-        -> (Element' symbol builtin_value) ;
+        -> (AppliedOperator' symbol builtin_value)
+        -> (AppliedOperator' symbol builtin_value) ;
 
     builtin_binary_function_interp
         : builtin_binary_function
-        -> (Element' symbol builtin_value)
-        -> (Element' symbol builtin_value)
-        -> (Element' symbol builtin_value) ;
+        -> (AppliedOperator' symbol builtin_value)
+        -> (AppliedOperator' symbol builtin_value)
+        -> (AppliedOperator' symbol builtin_value) ;
 }.
 
 Class Signature := {
@@ -341,7 +245,7 @@ Class Signature := {
 }.
 
 Definition Element {Σ : Signature}
-    := Element' symbol builtin_value
+    := AppliedOperator' symbol builtin_value
 .
 
 #[export]
@@ -350,7 +254,7 @@ Instance Element_eqdec {Σ : Signature}
 .
 Proof.
     intros e1 e2.
-    apply Element'_eqdec.
+    apply AppliedOperator'_eqdec.
     apply builtin_value_eqdec.
 Defined.
 
@@ -421,33 +325,50 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+Inductive BuiltinOrVar {Σ : Signature} :=
+| bov_builtin (b : builtin_value)
+| bov_variable (x : variable)
+.
+
+#[export]
+Instance BuiltinOrVar_eqdec {Σ : Signature}
+    : EqDecision BuiltinOrVar
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
 (* TODO: rename to LhsPattern *)
 Inductive Pattern {Σ : Signature} :=
-| pat_builtin (b : builtin_value)
-| pat_sym (s : symbol)
-| pat_app (e1 e2 : Pattern)
-| pat_var (x : variable)
+| pat_aop (o : AppliedOperator' symbol BuiltinOrVar)
 | pat_requires (p : Pattern) (c : Constraint)
 | pat_requires_match (p : Pattern) (v : variable) (p2 : Pattern)
 .
 
 Equations Derive NoConfusion for Pattern.
 
+Fixpoint vars_of_aosb
+    {Σ : Signature}
+    (o : AppliedOperator' symbol BuiltinOrVar)
+    : gset variable :=
+match o with
+| ao_operator _ => ∅
+| ao_app_operand o' (bov_builtin _) => vars_of_aosb o'
+| ao_app_operand o' (bov_variable x) => {[x]} ∪ vars_of_aosb o'
+| ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
+end.
+
 Fixpoint vars_of_Pattern
     {Σ : Signature}
     (φ : Pattern)
     : gset variable :=
 match φ with
-| pat_builtin _ => ∅
-| pat_sym _ => ∅
-| pat_app φ1 φ2 => vars_of_Pattern φ1 ∪ vars_of_Pattern φ2
-| pat_var x => {[x]}
+| pat_aop o => vars_of_aosb o
 | pat_requires φ' c => vars_of_Pattern φ' ∪ vars_of_Constraint c
 | pat_requires_match φ' x φ'' =>
     {[x]} ∪ vars_of_Pattern φ' ∪ vars_of_Pattern φ''
 end
 .
-
 
 #[export]
 Instance Pattern_eqdec {Σ : Signature}
@@ -459,32 +380,11 @@ Defined.
 
 Fixpoint pattern_size {Σ : Signature} (φ : Pattern) :=
 match φ with
-| pat_builtin _ => 1
-| pat_sym _ => 1
-| pat_app e1 e2 => 1 + pattern_size e1 + pattern_size e2
-| pat_var _ => 1
+| pat_aop _ => 1
 | pat_requires p' _ => 1 + pattern_size p'
 | pat_requires_match p v p2 => 1 + pattern_size p + pattern_size p2
 end.
 
-(*
-Inductive ElementOrVariable
-    {Σ : Signature}
-:=
-| eov_element (e : Element)
-| eov_variable (x : variable)
-.
-
-#[export]
-Instance ElementOrVariable_eqdec {Σ : Signature}
-    : EqDecision (ElementOrVariable)
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-*)
-
-(* TODO: think about whether we want to have symbol application here. *)
 Inductive FunTerm
     {Σ : Signature}
     :=
@@ -515,6 +415,16 @@ match t with
 | ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
 end.
 
+(* Do we want to be able to return the whole configuration
+   from a builtin function? If so, then we need
+   the `rpat_ft` constructor.
+   But currently we cannot afford that, because then
+   a RhsPattern could concretize to a single builtin,
+   and the builtin could be applied to something else,
+   which is undesirable. But that is very unfortunate,
+   because it would mean that we cannot do local rewrites
+   to builtins. Hmm...
+*)
 Inductive RhsPattern {Σ : Signature} := 
 | rpat_ft (t : FunTerm)
 | rpat_op (op : AppliedOperator' symbol FunTerm)
@@ -537,10 +447,10 @@ Fixpoint vars_of_AppliedOperator_sym_fterm
     (op : AppliedOperator' symbol FunTerm)
     : gset variable :=
 match op with
-| aps_operator _ => ∅
-| aps_app_operand aps' o =>
+| ao_operator _ => ∅
+| ao_app_operand aps' o =>
     vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
-| aps_app_aps aps1 aps2 =>
+| ao_app_ao aps1 aps2 =>
     vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
 end.
 
@@ -615,56 +525,56 @@ Section with_signature.
 
     (*Equations Derive Subterm for Pattern.*)
 
+    Inductive aosb_satisfies_aosbf:
+        AppliedOperator' symbol builtin_value ->
+        AppliedOperator' symbol BuiltinOrVar ->
+        Prop :=
+    
+    | asa_sym:
+        forall s,
+            aosb_satisfies_aosbf
+                (ao_operator s)
+                (ao_operator s)
+    
+    | asa_builtin:
+        forall φ b v,
+            aosb_satisfies_aosbf φ v ->
+            aosb_satisfies_aosbf
+                (ao_app_operand φ b)
+                (ao_app_operand v (bov_builtin b))
+    
+    | asa_app:
+        forall φ1 φ2 v1 v2,
+            aosb_satisfies_aosbf φ1 v1 ->
+            aosb_satisfies_aosbf φ2 v2 ->
+            aosb_satisfies_aosbf
+                (ao_app_ao φ1 φ2)
+                (ao_app_ao v1 v2)
+    .
+
     Inductive element_satisfies_pattern:
         Element -> Pattern -> Prop :=
-    | esp_builtin :
-        forall (b : builtin_value),
-            element_satisfies_pattern
-                (el_builtin b)
-                (pat_builtin b)
-                
-    | esp_sym :
-        forall (s : symbol),
-            element_satisfies_pattern
-                (el_appsym (aps_operator s))
-                (pat_sym s)
 
-    | esp_app_1 :
-        forall φ1 aps b,
-            element_satisfies_pattern (el_appsym aps) φ1 ->
-            element_satisfies_pattern
-                (el_appsym (aps_app_operand aps b))
-                (pat_app φ1 (pat_builtin b)) 
-                
-    | esp_app_2 :
-        forall φ1 φ2 aps1 aps2,
-            element_satisfies_pattern (el_appsym aps1) φ1 ->
-            element_satisfies_pattern (el_appsym aps2) φ2 ->
-            element_satisfies_pattern (el_appsym (aps_app_aps aps1 aps2)) (pat_app φ1 φ2)
-    | esp_app_3 :
-        forall φ1 φ2 aps1 b,
-        element_satisfies_pattern (el_appsym aps1) φ1 ->
-        element_satisfies_pattern (el_builtin b) φ2 ->
-        element_satisfies_pattern (el_appsym (aps_app_operand aps1 b)) (pat_app φ1 φ2)
-
-    | esp_var :
-        forall x e,
-            ρ !! x = Some e ->
-            element_satisfies_pattern e (pat_var x)
-
-    | esp_req :
-        forall φ' c e,
-            element_satisfies_pattern e φ' ->
-            vars_of_Constraint c ⊆ vars_of_Pattern φ' ->
+    | esp_op :
+        forall e φ,
+            aosb_satisfies_aosbf e φ ->
+            element_satisfies_pattern e (pat_aop φ)
+    
+    | esp_req:
+        forall e φ c,
+            element_satisfies_pattern e φ ->
+            vars_of_Constraint c ⊆ vars_of_Pattern φ ->
             val_satisfies_c ρ c ->
-            element_satisfies_pattern e (pat_requires φ' c)
+            element_satisfies_pattern e (pat_requires φ c)
 
     | esp_req_match :
-        forall φ'' x φ' e e2,
+        forall φ x φ' e e2,
             (ρ !! x) = Some e2 ->
-            element_satisfies_pattern e φ''  ->
+            element_satisfies_pattern e φ  ->
             element_satisfies_pattern e2 φ' ->
-            element_satisfies_pattern e (pat_requires_match φ'' x φ')
+            element_satisfies_pattern
+                e
+                (pat_requires_match φ x φ')
     .
 
     Inductive aosb_satisfies_aosf:
@@ -675,32 +585,32 @@ Section with_signature.
     | asaosf_sym :
         forall s,
             aosb_satisfies_aosf
-                (aps_operator s)
-                (aps_operator s)
+                (ao_operator s)
+                (ao_operator s)
 
     | asaosf_app_operand_1 :
         forall aps1 t aps1' b,
             aosb_satisfies_aosf aps1' aps1  ->
             funTerm_evaluate t = Some (el_builtin b) ->
             aosb_satisfies_aosf
-                (aps_app_operand aps1' b)
-                (aps_app_operand aps1 t)
+                (ao_app_operand aps1' b)
+                (ao_app_operand aps1 t)
 
     | asaosf_app_operand_2 :
         forall aps1 t aps1' v,
             aosb_satisfies_aosf aps1' aps1 ->
             funTerm_evaluate t = Some (el_appsym v) ->
             aosb_satisfies_aosf
-                (aps_app_aps aps1' v)
-                (aps_app_operand aps1 t)
+                (ao_app_ao aps1' v)
+                (ao_app_operand aps1 t)
 
     | asaosf_app_aps :
         forall aps1 aps2 aps1' aps2',
             aosb_satisfies_aosf aps1' aps1 ->
             aosb_satisfies_aosf aps2' aps2 ->
             aosb_satisfies_aosf
-                (aps_app_aps aps1' aps2')
-                (aps_app_aps aps1 aps2)
+                (ao_app_ao aps1' aps2')
+                (ao_app_ao aps1 aps2)
     .
 
     Inductive element_satisfies_rhs_pattern:
@@ -937,6 +847,7 @@ match left_right with
 end
 .
 
+Print Pattern.
 Inductive RewritingRule {Σ : Signature} :=
 | rr_local_rewrite (lr : LocalRewrite)
 | rr_builtin (b : builtin_value)
@@ -997,19 +908,19 @@ Section sec.
     
     | rr_sat_sym :
         forall s,
-            rr_satisfies (rr_sym s) (el_appsym (aps_operator s))
+            rr_satisfies (rr_sym s) (el_appsym (ao_operator s))
     
     | rr_sat_app_1 :
         forall φ1 φ2 aps1 aps2
             (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
             (Hsat2 : rr_satisfies φ2 (el_appsym aps2)),
-            rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+            rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_ao aps1 aps2))
     
     | rr_sat_app_2 :
         forall φ1 φ2 aps1 b2
             (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
             (Hsat2 : rr_satisfies φ2 (el_builtin b2)),
-            rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_operand aps1 b2))
+            rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_operand aps1 b2))
     
     | rr_sat_req :
         forall r c e
