@@ -917,38 +917,11 @@ Proof.
         exact H.
     }
     {
-        
-        induction op; cbn; intros H.
-        {
-            eexists. econstructor. econstructor.
-        }
-        {
-            ltac1:(specialize (IHop ltac:(set_solver))).
-            destruct IHop as [e IH].
-            inversion IH; subst; clear IH.
-            eexists (aps_app_operand ?[x] ?[y]). econstructor.
-            apply esrp_op.
-            Print aosb_satisfies_aosf.
-            
-             econstructor. eapply IH.
-        }
-    }
-    induction φ; intros H; try (solve [eexists; econstructor]).
-    {
-        cbn in H.
-        ltac1:(specialize (IHφ1 ltac:(set_solver))).
-        ltac1:(specialize (IHφ2 ltac:(set_solver))).
-        destruct IHφ1 as [e1 H1].
-        destruct IHφ2 as [e2 H2].
-        destruct e1, e2; cbn.
-        {
-            eexists. apply esrp_app_2.
-        }
-    }
-    {
-        destruct e;
-            cbn in H;
-            try constructor.
+        intros H.
+        apply good_valuation_impl_rhs_sat_helper in H.
+        destruct H as [e H].
+        eexists. econstructor. 
+        apply H.
     }
 Qed.
 
@@ -958,9 +931,9 @@ Definition lr_satisfies
     : Prop :=
 match left_right with
 | LR_Left =>
-    element_satisfies_pattern_in_valuation e (lr_from lr) ρ
+    element_satisfies_pattern ρ e (lr_from lr)
 | LR_Right =>
-    element_satisfies_rhs_pattern_in_valuation e (lr_to lr) ρ
+    element_satisfies_rhs_pattern ρ e (lr_to lr)
 end
 .
 
@@ -1002,50 +975,133 @@ Section sec.
         (ρ : Valuation)
     .
 
-    Equations? rr_satisfies
-        (r : RewritingRule) (e : Element)
-        : Prop
-        by wf (RewritingRule_size r)
-    :=
-        rr_satisfies (rr_local_rewrite lr) e
-        := lr_satisfies left_right e lr ρ ;
+    Print Pattern.
 
-        rr_satisfies (rr_builtin b1) (el_builtin b2)
-        := b1 = b2 ;
-
-        rr_satisfies (rr_var x) e
-        := ρ !! x = Some e ;
-
-        rr_satisfies (rr_sym s1) (el_appsym (aps_operator s2))
-        := s1 = s2;
-
-        rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
-        := rr_satisfies φ1 (el_appsym aps1)
-        /\ rr_satisfies φ2 (el_appsym aps2) ;
-
-        rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_operand aps b))
-        := rr_satisfies φ1 (el_appsym aps) /\ rr_satisfies φ2 (el_builtin b) ;
-
-        rr_satisfies (rr_requires r c) e 
-        := rr_satisfies r e 
-        /\ (val_satisfies_c ρ c  \/ left_right = LR_Right);
-
-        rr_satisfies (rr_requires_match r x φ') e with (ρ !! x) => {
-        | None := rr_satisfies r e ;
-        | Some e2 := rr_satisfies r e 
-            /\ (element_satisfies_pattern' ρ φ' e2 \/ left_right = LR_Right);
-        } ;
-
-        rr_satisfies _ _ := False ;
-    .
-    Proof.
-        all: cbn; ltac1:(lia).
-    Qed.
-
-    #[global]
-    Opaque rr_satisfies.
+    Inductive rr_satisfies :
+        RewritingRule -> Element -> Prop :=
+        
+    | rr_sat_local :
+        forall e lr
+            (Hvars : vars_of_RhsPattern (lr_to lr) ⊆ vars_of_Pattern (lr_from lr))
+            (Hsat : lr_satisfies left_right e lr ρ),
+            rr_satisfies (rr_local_rewrite lr) e
     
+    | rr_sat_builtin :
+        forall b,
+            rr_satisfies (rr_builtin b) (el_builtin b)
+
+    | rr_sat_var :
+        forall x e
+            (Hlookup : ρ !! x = Some e),
+            rr_satisfies (rr_var x) e
+    
+    | rr_sat_sym :
+        forall s,
+            rr_satisfies (rr_sym s) (el_appsym (aps_operator s))
+    
+    | rr_sat_app_1 :
+        forall φ1 φ2 aps1 aps2
+            (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
+            (Hsat2 : rr_satisfies φ2 (el_appsym aps2)),
+            rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_aps aps1 aps2))
+    
+    | rr_sat_app_2 :
+        forall φ1 φ2 aps1 b2
+            (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
+            (Hsat2 : rr_satisfies φ2 (el_builtin b2)),
+            rr_satisfies (rr_app φ1 φ2) (el_appsym (aps_app_operand aps1 b2))
+    
+    | rr_sat_req :
+        forall r c e
+            (Hsat1 : rr_satisfies r e)
+            (Hsat2 : (val_satisfies_c ρ c  \/ left_right = LR_Right)),
+            rr_satisfies (rr_requires r c) e
+    
+    | rr_sat_req_match :
+        forall r x φ' e e2
+            (Hsat1 : rr_satisfies r e)
+            (Hlookup : ρ !! x = Some e2)
+            (Hsat2 : (element_satisfies_pattern ρ e2 φ' \/ left_right = LR_Right)),
+            rr_satisfies (rr_requires_match r x φ') e
+    .
+
 End sec.
+(*
+Lemma rr_weakly_well_defined_0 {Σ : Signature} rr ρ aps:
+    rr_satisfies LR_Left ρ rr (el_appsym aps) ->
+    ∃ aps', rr_satisfies LR_Right ρ rr (el_appsym aps').
+Proof.
+    intros H.
+    induction H; cbn.
+    {
+        destruct lr; cbn in *.
+        apply lhs_sat_impl_good_valuation in Hsat.
+        assert (Hvars2 : vars_of_RhsPattern lr_to0 ⊆ dom ρ).
+        { ltac1:(set_solver). }
+        apply good_valuation_impl_rhs_sat in Hvars2.
+        destruct Hvars2 as [e' He'].
+        eexists. econstructor; cbn.
+        { ltac1:(set_solver). }
+        { apply He'. }
+    }
+Qed.
+*)
+Lemma rr_weakly_well_defined {Σ : Signature} rr ρ e:
+    rr_satisfies LR_Left ρ rr e ->
+    ∃ e', rr_satisfies LR_Right ρ rr e'.
+Proof.
+    intros H.
+    induction H; cbn.
+    {
+        destruct lr; cbn in *.
+        apply lhs_sat_impl_good_valuation in Hsat.
+        assert (Hvars2 : vars_of_RhsPattern lr_to0 ⊆ dom ρ).
+        { ltac1:(set_solver). }
+        apply good_valuation_impl_rhs_sat in Hvars2.
+        destruct Hvars2 as [e' He'].
+        eexists. econstructor; cbn.
+        { ltac1:(set_solver). }
+        { apply He'. }
+    }
+    {
+        eexists. econstructor.
+    }
+    {
+        eexists. econstructor. apply Hlookup.
+    }
+    {
+        eexists. econstructor.
+    }
+    {
+        destruct IHrr_satisfies1 as [e1 He1].
+        destruct IHrr_satisfies2 as [e2 He2].
+        (* eexists (el_appsym ?[aps']). *)
+        destruct e1.
+        {
+            inversion He1; subst;
+                        eexists;
+            apply rr_sat_app_2.
+            {
+                econstructor.
+                { exact Hvars. }
+                {}
+            }
+        }
+        eexists.
+        apply rr_sat_app_1.
+        {}
+        destruct e1, e2.
+        { eexists. apply rr_sat_app_2. }
+        eexists.
+        apply rr_sat_app_2.
+        { apply He1. }
+        { apply He2. }
+    }
+    {
+
+    }
+
+Qed.
 
 Definition rewrites_in_valuation_to
     {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Element)
