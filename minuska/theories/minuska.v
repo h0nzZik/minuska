@@ -755,7 +755,7 @@ Module Semantics.
                 (ao_app_ao aoxz1 aoxz2)
     .
 
-    Section with_signature.
+    Section with_valuation.
         Context
             {Σ : Signature}
             (ρ : Valuation)
@@ -837,7 +837,7 @@ Module Semantics.
                 (g : GroundTerm)
                 (φ : BasicPattern)
                 (pf : GroundTerm_satisfies_BasicPattern g φ ),
-                GroundTerm_satisfies_BasicPatternWSC g (wsc_pat φ)
+                GroundTerm_satisfies_BasicPatternWSC g (wsc_base φ)
         | gsbc_side:
             forall
                 (g : GroundTerm)
@@ -848,95 +848,27 @@ Module Semantics.
                 GroundTerm_satisfies_BasicPatternWSC g (wsc_sc φc c)
         .
 
-        Print LhsPattern.
-
         Definition GroundTerm_satisfies_LhsPattern:
             GroundTerm -> LhsPattern -> Prop
             := @aoxy_satisfies_aoxz
                 symbol
                 builtin_value
                 BasicPatternWSC
+                (fun x y => False)
                 GroundTerm_satisfies_BasicPatternWSC
             .
-        Print LhsPattern.
-        Inductive GroundTerm_satisfies_LhsPattern:
-            GroundTerm -> LhsPattern -> Prop :=
-
-        | esp_op :
-            forall e φ,
-                aosb_satisfies_aosbf e φ ->
-                element_satisfies_pattern e (pat_aop φ)
         
-        | esp_req:
-            forall e φ c,
-                element_satisfies_pattern e φ ->
-                vars_of_Constraint c ⊆ vars_of_Pattern φ ->
-                val_satisfies_c ρ c ->
-                element_satisfies_pattern e (pat_requires φ c)
-
-        | esp_req_match :
-            forall φ x φ' e e2,
-                (ρ !! x) = Some e2 ->
-                element_satisfies_pattern e φ  ->
-                element_satisfies_pattern e2 φ' ->
-                element_satisfies_pattern
-                    e
-                    (pat_requires_match φ x φ')
+        Definition GroundTerm_satisfies_RhsPattern:
+            GroundTerm -> RhsPattern -> Prop
+            := @aoxy_satisfies_aoxz
+                symbol
+                builtin_value
+                Expression
+                (fun b e => Expression_evaluate e = Some (val_builtin b))
+                (fun g e => Expression_evaluate e = Some (val_gterm g))
         .
 
-        Inductive aosb_satisfies_aosf:
-            AppliedOperator' symbol builtin_value ->
-            AppliedOperator' symbol Expression
-            -> Prop :=
-
-        | asaosf_sym :
-            forall s,
-                aosb_satisfies_aosf
-                    (ao_operator s)
-                    (ao_operator s)
-
-        | asaosf_app_operand_1 :
-            forall aps1 t aps1' v,
-                aosb_satisfies_aosf aps1' aps1  ->
-                Expression_evaluate t = Some v ->
-                aosb_satisfies_aosf
-                    (ao_app_operand aps1' v)
-                    (ao_app_operand aps1 t)
-
-        | asaosf_app_operand_2 :
-            forall aps1 t aps1' v,
-                aosb_satisfies_aosf aps1' aps1 ->
-                Expression_evaluate t = Some (val_gterm v) ->
-                aosb_satisfies_aosf
-                    (ao_app_ao aps1' v)
-                    (ao_app_operand aps1 t)
-
-        | asaosf_app_aps :
-            forall aps1 aps2 aps1' aps2',
-                aosb_satisfies_aosf aps1' aps1 ->
-                aosb_satisfies_aosf aps2' aps2 ->
-                aosb_satisfies_aosf
-                    (ao_app_ao aps1' aps2')
-                    (ao_app_ao aps1 aps2)
-        .
-
-        Inductive element_satisfies_rhs_pattern:
-            Value -> RhsPattern -> Prop :=
-        | esrp_ft:
-            forall e t,
-                Expression_evaluate t = Some e ->
-                element_satisfies_rhs_pattern
-                    e
-                    (rpat_ft t)
-        | esrp_op:
-            forall aps op,
-                aosb_satisfies_aosf aps op ->
-                element_satisfies_rhs_pattern
-                    (val_gterm aps)
-                    (rpat_op op)
-        .
-
-    End with_signature.
+    End with_valuation.
 
     Lemma Expression_evalute_total_iff
         {Σ : Signature}
@@ -956,7 +888,6 @@ Module Semantics.
             }
             {
                 exists e.
-                ltac1:(simp Expression_evaluate).
                 reflexivity.
             }
         }
@@ -968,8 +899,6 @@ Module Semantics.
                 rewrite elem_of_singleton in Hx0.
                 subst x0.
                 destruct H as [e H].
-                ltac1:(simp Expression_evaluate in H).
-                ltac1:(fold_classes).
                 ltac1:(rewrite elem_of_dom).
                 exists e. exact H.
             }
@@ -982,15 +911,15 @@ Module Semantics.
                 unfold is_Some in H.
                 destruct H as [e H].
                 exists e.
-                ltac1:(simp Expression_evaluate in H).
+                exact H.
             }
         }
         {
-            ltac1:(simp Expression_evaluate).
-            unfold Expression_evaluate_clause_3.
+            
             ltac1:(rewrite <- IHt).
             split; intros [e H].
             {
+                unfold mbind,option_bind in H; cbn.
                 ltac1:(case_match).
                 {
                     ltac1:(rewrite <- H0).
@@ -1012,15 +941,13 @@ Module Semantics.
             split; intros H.
             {
                 destruct H as [e H].
-                ltac1:(simp Expression_evaluate in H).
-                unfold Expression_evaluate_clause_4_clause_1 in H.
+                unfold mbind,option_bind in H.
                 (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
                     split; eexists; reflexivity.
             }
             {
                 destruct H as [[e1 H1] [e2 H2]].
-                ltac1:(simp Expression_evaluate).
-                unfold Expression_evaluate_clause_4_clause_1.
+                unfold mbind,option_bind.
                 rewrite H1.
                 rewrite H2.
                 eexists. reflexivity.
