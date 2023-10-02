@@ -29,6 +29,59 @@ Proof.
     apply eq_dec.
 Defined.
 
+(*
+    Here is a bunch of examples illustrating
+    what language specifications want to support.
+    r,s,t,... - symbols
+    x,y,z,... - variables
+    1,2,3,... - builtins
+    +,*,...   - binary operators
+
+    G1. Rewrite builtins to expressions (using local rewrite)
+    ```
+        1 => (2 + 3)
+    ```
+
+    G2. Rewrite possibly constrained variables to expressions
+    ```
+        (x where x >= 1) => (x + 1)
+    ```
+
+    G3. Both (1) and (2) in a term context, locally
+    ```
+        t (1 => (2 + 3)) ((x where x >= 1) => (x + 1))
+    ```
+
+
+    G4. Variable sharing across local rewrites
+    ```
+        t (x => y) (y => x)
+    ```
+
+
+    Here are examples illustrating what we do NOT want to support.
+
+    B1. Rewrites of symbols
+    ```
+        (t => s) x
+    ```
+
+    B2. Rewrites of partial applications
+    ```
+        (t x => s x) y
+    ```
+
+    B3. Rewrite terms to builtins
+    ```
+        (t x 3) => 4
+    ```
+
+    B4. Rewrite expressions
+    ```
+        (x + 3) => x
+    ```
+
+*)
 
 Module Syntax.
 
@@ -160,30 +213,44 @@ Module Syntax.
     | sc_match (v : variable) (φ : BasicPattern)
     .
 
-    Inductive BasicPatternWSC {Σ : Signature} :=
-    |  bpwsc_pat (φ : BasicPattern)
-    |  bpwsc_sc (φc : BasicPatternWSC) (sc : SideCondition)
+    Inductive WithASideCondition {Σ : Signature} (Base : Set) :=
+    |  wsc_base (φ : Base)
+    |  wsc_sc (φc : WithASideCondition Base) (sc : SideCondition)
     .
 
+    Arguments wsc_base {Σ} {Base}%type_scope φ.
+    Arguments wsc_sc {Σ} {Base}%type_scope φc sc.
+
+    Definition BasicPatternWSC {Σ : Signature}
+        := WithASideCondition (@BasicPattern Σ)
+    .
+
+    (*
+        LhsPattern matches only terms
+        and cannot match builtin values directly.
+        However, we still can rewrite leaves directly,
+        thanks to how LocalRewrite is defined.
+    *)
     Definition LhsPattern {Σ : Signature}
         := AppliedOperator' symbol BasicPatternWSC
     .
 
-    Inductive FunTerm
+    Inductive Expression
         {Σ : Signature}
         :=
     | ft_element (e : Value)
     | ft_variable (x : variable)
-    | ft_unary (f : builtin_unary_function) (t : FunTerm)
-    | ft_binary (f : builtin_binary_function) (t1 : FunTerm) (t2 : FunTerm)
+    | ft_unary (f : builtin_unary_function) (t : Expression)
+    | ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
     .
 
     Definition RhsPattern {Σ : Signature}
-        := AppliedOperator' symbol FunTerm
+        := AppliedOperator' symbol Expression
     .
 
     Inductive LocalRewrite {Σ : Signature} :=
-    | lr_element (from : builtin_value) (to : FunTerm)
+    | lr_var (from : WithASideCondition variable) (to : Expression)
+    | lr_builtin (from : builtin_value) (to : Expression)
     | lr_pattern (from : LhsPattern) (to : RhsPattern)
     . 
 
@@ -195,8 +262,8 @@ Module Syntax.
     Equations Derive NoConfusion for Value'.
     Equations Derive NoConfusion for AtomicProposition.
     Equations Derive NoConfusion for Constraint.
-    Equations Derive NoConfusion for FunTerm.
-    Equations Derive NoConfusion for BasicPatternWSC.
+    Equations Derive NoConfusion for Expression.
+    Equations Derive NoConfusion for WithASideCondition.
     Equations Derive NoConfusion for LocalRewrite.
 
     Section eqdec.
@@ -260,8 +327,8 @@ Module Syntax.
         Defined.
 
         #[export]
-        Instance FunTerm_eqdec {Σ : Signature}
-            : EqDecision (FunTerm)
+        Instance Expression_eqdec {Σ : Signature}
+            : EqDecision (Expression)
         .
         Proof.
             ltac1:(solve_decision).
@@ -559,8 +626,8 @@ Module Syntax.
             (φc : BasicPatternWSC)
             : gset variable :=
         match φc with
-        | bpwsc_pat φ => vars_of_BasicPattern φ
-        | bpwsc_sc φ c
+        | wsc_base φ => vars_of_BasicPattern φ
+        | wsc_sc φ c
             => vars_of_BasicPatternWSC φ ∪ vars_of_SideCondition c
         end.
 
@@ -576,25 +643,25 @@ Module Syntax.
             => vars_of_LhsPattern x ∪ vars_of_LhsPattern y
         end.
 
-        Fixpoint vars_of_FunTerm
+        Fixpoint vars_of_Expression
             {Σ : Signature}
-            (t : FunTerm)
+            (t : Expression)
             : gset variable :=
         match t with
         | ft_element _ => ∅
         | ft_variable x => {[x]}
-        | ft_unary _ t' => vars_of_FunTerm t'
-        | ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
+        | ft_unary _ t' => vars_of_Expression t'
+        | ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
         end.
 
         Fixpoint vars_of_AppliedOperator_sym_fterm
             {Σ : Signature}
-            (op : AppliedOperator' symbol FunTerm)
+            (op : AppliedOperator' symbol Expression)
             : gset variable :=
         match op with
         | ao_operator _ => ∅
         | ao_app_operand aps' o =>
-            vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
+            vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_Expression o
         | ao_app_ao aps1 aps2 =>
             vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
         end.
@@ -606,7 +673,7 @@ Module Syntax.
         match φ with
         | ao_operator _ => ∅
         | ao_app_operand  φ' t
-            => vars_of_RhsPattern φ' ∪ vars_of_FunTerm t
+            => vars_of_RhsPattern φ' ∪ vars_of_Expression t
         | ao_app_ao φ1 φ2
             => vars_of_RhsPattern φ1 ∪ vars_of_RhsPattern φ2
         end.
@@ -694,16 +761,16 @@ Module Semantics.
             (ρ : Valuation)
         .
 
-        Fixpoint funTerm_evaluate
-            (t : FunTerm) : option Value :=
+        Fixpoint Expression_evaluate
+            (t : Expression) : option Value :=
         match t with
         | ft_element e => Some e
         | ft_variable x => ρ !! x
         | ft_unary f t =>
-            e ← funTerm_evaluate t; Some (builtin_unary_function_interp f e)
+            e ← Expression_evaluate t; Some (builtin_unary_function_interp f e)
         | ft_binary f t1 t2 =>
-            e1 ← funTerm_evaluate t1;
-            e2 ← funTerm_evaluate t2;
+            e1 ← Expression_evaluate t1;
+            e2 ← Expression_evaluate t2;
             Some (builtin_binary_function_interp f e1 e2)
         end.
 
@@ -770,7 +837,7 @@ Module Semantics.
                 (g : GroundTerm)
                 (φ : BasicPattern)
                 (pf : GroundTerm_satisfies_BasicPattern g φ ),
-                GroundTerm_satisfies_BasicPatternWSC g (bpwsc_pat φ)
+                GroundTerm_satisfies_BasicPatternWSC g (wsc_pat φ)
         | gsbc_side:
             forall
                 (g : GroundTerm)
@@ -778,7 +845,7 @@ Module Semantics.
                 (c : SideCondition)
                 (pf1 : GroundTerm_satisfies_BasicPatternWSC g φc)
                 (pf2 : valuation_satisfies_sc c),
-                GroundTerm_satisfies_BasicPatternWSC g (bpwsc_sc φc c)
+                GroundTerm_satisfies_BasicPatternWSC g (wsc_sc φc c)
         .
 
         Print LhsPattern.
@@ -819,7 +886,7 @@ Module Semantics.
 
         Inductive aosb_satisfies_aosf:
             AppliedOperator' symbol builtin_value ->
-            AppliedOperator' symbol FunTerm
+            AppliedOperator' symbol Expression
             -> Prop :=
 
         | asaosf_sym :
@@ -831,7 +898,7 @@ Module Semantics.
         | asaosf_app_operand_1 :
             forall aps1 t aps1' v,
                 aosb_satisfies_aosf aps1' aps1  ->
-                funTerm_evaluate t = Some v ->
+                Expression_evaluate t = Some v ->
                 aosb_satisfies_aosf
                     (ao_app_operand aps1' v)
                     (ao_app_operand aps1 t)
@@ -839,7 +906,7 @@ Module Semantics.
         | asaosf_app_operand_2 :
             forall aps1 t aps1' v,
                 aosb_satisfies_aosf aps1' aps1 ->
-                funTerm_evaluate t = Some (val_gterm v) ->
+                Expression_evaluate t = Some (val_gterm v) ->
                 aosb_satisfies_aosf
                     (ao_app_ao aps1' v)
                     (ao_app_operand aps1 t)
@@ -857,7 +924,7 @@ Module Semantics.
             Value -> RhsPattern -> Prop :=
         | esrp_ft:
             forall e t,
-                funTerm_evaluate t = Some e ->
+                Expression_evaluate t = Some e ->
                 element_satisfies_rhs_pattern
                     e
                     (rpat_ft t)
@@ -871,14 +938,14 @@ Module Semantics.
 
     End with_signature.
 
-    Lemma funTerm_evalute_total_iff
+    Lemma Expression_evalute_total_iff
         {Σ : Signature}
-        (t : FunTerm)
+        (t : Expression)
         (ρ : Valuation)
         :
-        (∃ e:Value, funTerm_evaluate ρ t = Some e)
+        (∃ e:Value, Expression_evaluate ρ t = Some e)
         <->
-        ( vars_of_FunTerm t ⊆ dom ρ )
+        ( vars_of_Expression t ⊆ dom ρ )
     .
     Proof.
         induction t; cbn.
@@ -889,7 +956,7 @@ Module Semantics.
             }
             {
                 exists e.
-                ltac1:(simp funTerm_evaluate).
+                ltac1:(simp Expression_evaluate).
                 reflexivity.
             }
         }
@@ -901,7 +968,7 @@ Module Semantics.
                 rewrite elem_of_singleton in Hx0.
                 subst x0.
                 destruct H as [e H].
-                ltac1:(simp funTerm_evaluate in H).
+                ltac1:(simp Expression_evaluate in H).
                 ltac1:(fold_classes).
                 ltac1:(rewrite elem_of_dom).
                 exists e. exact H.
@@ -915,12 +982,12 @@ Module Semantics.
                 unfold is_Some in H.
                 destruct H as [e H].
                 exists e.
-                ltac1:(simp funTerm_evaluate in H).
+                ltac1:(simp Expression_evaluate in H).
             }
         }
         {
-            ltac1:(simp funTerm_evaluate).
-            unfold funTerm_evaluate_clause_3.
+            ltac1:(simp Expression_evaluate).
+            unfold Expression_evaluate_clause_3.
             ltac1:(rewrite <- IHt).
             split; intros [e H].
             {
@@ -945,15 +1012,15 @@ Module Semantics.
             split; intros H.
             {
                 destruct H as [e H].
-                ltac1:(simp funTerm_evaluate in H).
-                unfold funTerm_evaluate_clause_4_clause_1 in H.
+                ltac1:(simp Expression_evaluate in H).
+                unfold Expression_evaluate_clause_4_clause_1 in H.
                 (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
                     split; eexists; reflexivity.
             }
             {
                 destruct H as [[e1 H1] [e2 H2]].
-                ltac1:(simp funTerm_evaluate).
-                unfold funTerm_evaluate_clause_4_clause_1.
+                ltac1:(simp Expression_evaluate).
+                unfold Expression_evaluate_clause_4_clause_1.
                 rewrite H1.
                 rewrite H2.
                 eexists. reflexivity.
@@ -1019,7 +1086,7 @@ Module Semantics.
             rewrite union_subseteq in H.
             destruct H as [H1 H2]; cbn.
             specialize (IHφ H1).
-            ltac1:(rewrite -funTerm_evalute_total_iff in H2).
+            ltac1:(rewrite -Expression_evalute_total_iff in H2).
             destruct IHφ as [e1 IHφ].
             destruct H2 as [e2 He2]; cbn.
             destruct e2; cbn.
@@ -1056,7 +1123,7 @@ Module Semantics.
         destruct φ; cbn.
         {
             intros H.
-            ltac1:(rewrite -funTerm_evalute_total_iff in H).
+            ltac1:(rewrite -Expression_evalute_total_iff in H).
             destruct H as [e H].
             exists e.
             constructor.
