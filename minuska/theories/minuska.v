@@ -258,7 +258,7 @@ Module Syntax.
             apply Value'_eqdec.
             apply builtin_value_eqdec.
         Defined.
-        
+
         #[export]
         Instance FunTerm_eqdec {Σ : Signature}
             : EqDecision (FunTerm)
@@ -725,10 +725,51 @@ Module Semantics.
             builtin_satisfies_BuiltinOrVar
         .
 
+        Print GroundTerm.
         Print Value'.
         Print BasicPattern.
         Print BasicPatternWSC.
         Print LhsPattern.
+        Print SideCondition.
+
+        Definition GroundTerm_satisfies_BasicPattern
+            (g : GroundTerm)
+            (φ : BasicPattern)
+            : Prop
+        := aosb_satisfies_aosbf g φ.
+
+        Definition valuation_satisfies_sc
+            (sc : SideCondition) : Prop :=
+        match sc with
+        | sc_constraint c => val_satisfies_c ρ c
+        | sc_match x φ =>
+            match ρ !! x with
+            | Some (val_gterm g)
+                => GroundTerm_satisfies_BasicPattern g φ
+            | _ => False
+            end
+        end.
+
+        Inductive GroundTerm_satisfies_BasicPatternWSC:
+            GroundTerm ->
+            BasicPatternWSC ->
+            Prop :=
+        | gsbc_basic:
+            forall
+                (g : GroundTerm)
+                (φ : BasicPattern)
+                (pf : GroundTerm_satisfies_BasicPattern g φ ),
+                GroundTerm_satisfies_BasicPatternWSC g (bpwsc_pat φ)
+        | gsbc_side:
+            forall
+                (g : GroundTerm)
+                (φc : BasicPatternWSC)
+                (c : SideCondition)
+                (pf1 : GroundTerm_satisfies_BasicPatternWSC g φc)
+                (pf2 : valuation_satisfies_sc c),
+                GroundTerm_satisfies_BasicPatternWSC g (bpwsc_sc φc c)
+        .
+
 
         Inductive element_satisfies_lhs_pattern:
             Value -> LhsPattern -> Prop :=
