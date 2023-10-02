@@ -203,6 +203,7 @@ Module Syntax.
     | bov_variable (x : variable)
     .
 
+    (* Can be renamed to OpenTerm? *)
     Definition BasicPattern {Σ : Signature}
         := AppliedOperator' symbol BuiltinOrVar
     .
@@ -257,6 +258,8 @@ Module Syntax.
     Definition RewritingRule {Σ : Signature}
         := AppliedOperator' symbol LocalRewrite
     .
+
+    Inductive LR : Set := LR_Left | LR_Right.
 
     Equations Derive NoConfusion for AppliedOperator'.
     Equations Derive NoConfusion for Value'.
@@ -363,6 +366,25 @@ Module Syntax.
         #[export]
         Instance RhsPattern_eqdec {Σ : Signature}
             : EqDecision RhsPattern
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance WithASideCondition_eqdec
+            {Σ : Signature}
+            (A : Set)
+            (A_eqdec : EqDecision A)
+            : EqDecision (WithASideCondition A)
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance LocalRewrite_eqdec {Σ : Signature}
+            : EqDecision LocalRewrite
         .
         Proof.
             ltac1:(solve_decision).
@@ -868,6 +890,18 @@ Module Semantics.
                 (fun g e => Expression_evaluate e = Some (val_gterm g))
         .
 
+        Print LocalRewrite.
+        Inductive Value_satisfies_LocalRewrite
+            {Σ : Signature}
+            LR -> Value -> LocalRewrite -> Prop :=
+        | vslr_left_var:
+
+                Value_satisfies_LocalRewrite LR_Left 
+        
+
+        .
+
+
     End with_valuation.
 
     Lemma Expression_evalute_total_iff
@@ -954,19 +988,6 @@ Module Semantics.
             }
         }
     Qed.
-
-
-    Equations Derive NoConfusion for LocalRewrite.
-
-    #[export]
-    Instance localRewrite_eqdec {Σ : Signature}
-        : EqDecision LocalRewrite
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    Inductive LR : Set := LR_Left | LR_Right.
 
     Lemma lhs_sat_impl_good_valuation
         {Σ : Signature} e φ ρ:
