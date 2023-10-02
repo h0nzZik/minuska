@@ -651,7 +651,8 @@ Module Semantics.
 
     Inductive aoxy_satisfies_aoxz
         {X Y Z : Set}
-        {Y_sat_Z : Y -> Z -> Prop}:
+        {Y_sat_Z : Y -> Z -> Prop}
+        {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
         AppliedOperator' X Y ->
         AppliedOperator' X Z ->
         Prop :=
@@ -670,6 +671,14 @@ Module Semantics.
                 (ao_app_operand aoxy y)
                 (ao_app_operand aoxz z)
 
+    | asa_operand_asa:
+        forall aoxy aoxz aoxy2 z,
+            aoxy_satisfies_aoxz aoxy aoxz ->
+            AOXY_sat_Z aoxy2 z ->
+            aoxy_satisfies_aoxz
+                (ao_app_ao aoxy aoxy2)
+                (ao_app_operand aoxz z)
+
     | asa_asa:
         forall aoxy1 aoxy2 aoxz1 aoxz2,
             aoxy_satisfies_aoxz aoxy1 aoxz1 ->
@@ -678,7 +687,6 @@ Module Semantics.
                 (ao_app_ao aoxy1 aoxy2)
                 (ao_app_ao aoxz1 aoxz2)
     .
-
 
     Section with_signature.
         Context
@@ -714,6 +722,15 @@ Module Semantics.
                 builtin_satisfies_BuiltinOrVar b (bov_variable x)
         .
 
+        Definition GroundTerm_satisfies_BuiltinOrVar
+            (g : GroundTerm)
+            (bov : BuiltinOrVar)
+            : Prop :=
+        match bov with
+        | bov_builtin _ => False
+        | bov_variable x => ρ !! x = Some (val_gterm g)
+        end.
+
         Definition aosb_satisfies_aosbf:
             AppliedOperator' symbol builtin_value ->
             AppliedOperator' symbol BuiltinOrVar ->
@@ -723,14 +740,8 @@ Module Semantics.
             builtin_value
             BuiltinOrVar
             builtin_satisfies_BuiltinOrVar
+            GroundTerm_satisfies_BuiltinOrVar
         .
-
-        Print GroundTerm.
-        Print Value'.
-        Print BasicPattern.
-        Print BasicPatternWSC.
-        Print LhsPattern.
-        Print SideCondition.
 
         Definition GroundTerm_satisfies_BasicPattern
             (g : GroundTerm)
@@ -770,9 +781,19 @@ Module Semantics.
                 GroundTerm_satisfies_BasicPatternWSC g (bpwsc_sc φc c)
         .
 
+        Print LhsPattern.
 
-        Inductive element_satisfies_lhs_pattern:
-            Value -> LhsPattern -> Prop :=
+        Definition GroundTerm_satisfies_LhsPattern:
+            GroundTerm -> LhsPattern -> Prop
+            := @aoxy_satisfies_aoxz
+                symbol
+                builtin_value
+                BasicPatternWSC
+                GroundTerm_satisfies_BasicPatternWSC
+            .
+        Print LhsPattern.
+        Inductive GroundTerm_satisfies_LhsPattern:
+            GroundTerm -> LhsPattern -> Prop :=
 
         | esp_op :
             forall e φ,
