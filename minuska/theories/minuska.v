@@ -146,17 +146,19 @@ Module Syntax.
         := AppliedOperator' symbol BuiltinOrVar
     .
 
+    (* TODO make a plural *)
     Inductive SideCondition {Σ : Signature} :=
     | sc_constraint (c : Constraint)
     | sc_match (v : variable) (φ : BasicPattern)
     .
 
-    Definition LhsPattern {Σ : Signature}
-        := AppliedOperator' BasicPattern SideCondition
+    Inductive BasicPatternWSC {Σ : Signature} :=
+    |  bpwsc_pat (φ : BasicPattern)
+    |  bpwsc_sc (φc : BasicPatternWSC) (sc : SideCondition)
     .
 
-    Definition AppliedSymbol {Σ : Signature}
-        := AppliedOperator' symbol builtin_value
+    Definition LhsPattern {Σ : Signature}
+        := AppliedOperator' symbol BasicPatternWSC
     .
 
     Inductive FunTerm
@@ -168,360 +170,402 @@ Module Syntax.
     | ft_binary (f : builtin_binary_function) (t1 : FunTerm) (t2 : FunTerm)
     .
 
-    (* Do we want to be able to return the whole configuration
-    from a builtin function? If so, then we need
-    the `rpat_ft` constructor.
-    But currently we cannot afford that, because then
-    a RhsPattern could concretize to a single builtin,
-    and the builtin could be applied to something else,
-    which is undesirable. But that is very unfortunate,
-    because it would mean that we cannot do local rewrites
-    to builtins. Hmm...
-    *)
-    Inductive RhsPattern {Σ : Signature} := 
-    | rpat_ft (t : FunTerm)
-    | rpat_op (op : AppliedOperator' symbol FunTerm)
+    Definition RhsPattern {Σ : Signature}
+        := AppliedOperator' symbol FunTerm
     .
 
-    Record LocalRewrite {Σ : Signature} := {
-        lr_from : LhsPattern ;
-        lr_to : RhsPattern ;
-    }.
+    Inductive LocalRewrite {Σ : Signature} :=
+    | lr_element (from : builtin_value) (to : FunTerm)
+    | lr_pattern (from : LhsPattern) (to : RhsPattern)
+    . 
 
-    Inductive RewritingRule {Σ : Signature} :=
-    | rr_local_rewrite (lr : LocalRewrite)
-    | rr_builtin (b : builtin_value)
-    | rr_app (r1 r2 : RewritingRule)
-    | rr_var (v : variable)
-    | rr_sym (s : symbol)
-    | rr_requires (r : RewritingRule) (c : Constraint)
-    | rr_requires_match (r : RewritingRule) (v : variable) (p2 : Pattern) 
+    Definition RewritingRule {Σ : Signature}
+        := AppliedOperator' symbol LocalRewrite
     .
 
     Equations Derive NoConfusion for AppliedOperator'.
+    Equations Derive NoConfusion for Element'.
+    Equations Derive NoConfusion for AtomicProposition.
+    Equations Derive NoConfusion for Constraint.
+    Equations Derive NoConfusion for FunTerm.
+    Equations Derive NoConfusion for BasicPatternWSC.
+    Equations Derive NoConfusion for LocalRewrite.
 
+    Section eqdec.
 
-    #[export]
-    Instance AppliedOperator'_eqdec
-        {symbol : Set}
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {builtin_dec : EqDecision builtin}
-        : EqDecision (AppliedOperator' symbol builtin)
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
+        #[export]
+        Instance AppliedOperator'_eqdec
+            {symbol : Set}
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {builtin_dec : EqDecision builtin}
+            : EqDecision (AppliedOperator' symbol builtin)
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
 
-    Equations AppliedOperator'_to_gen_tree
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {T_eqdec : EqDecision builtin}
-        {T_countable : Countable builtin}
-        (a : AppliedOperator' symbol builtin)
-        : gen_tree symbol
-    :=
-        AppliedOperator'_to_gen_tree _ _ (ao_operator s)
-        := GenLeaf s ;
+        #[export]
+        Instance Element'_eqdec
+            {A : Set}
+            {symbols : Symbols A}
+            (T : Set)
+            {T_dec : EqDecision T}
+            : EqDecision (Element' A T)
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
 
-        AppliedOperator'_to_gen_tree _ _ (ao_app_operand aps b)
-        := (
-            let x := (encode (0, encode b)) in
-            GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree symbol builtin aps;AppliedOperator'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
-        ) ;
+        #[export]
+        Instance atomicProposition_eqdec {Σ : Signature}
+            : EqDecision AtomicProposition
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
 
-        AppliedOperator'_to_gen_tree _ _ (ao_app_ao aps1 aps2)
-        := (
-            let xd := (1, encode 0) in
-            let x := (encode xd) in
-            GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree _ _ aps1; AppliedOperator'_to_gen_tree _ _ aps2])
-        )
-    .
-    Opaque AppliedOperator'_to_gen_tree.
+        #[export]
+        Instance constraint_eqdec {Σ : Signature}
+            : EqDecision Constraint
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
 
-    Equations AppliedOperator'_of_gen_tree
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {T_eqdec : EqDecision builtin}
-        {T_countable : Countable builtin}
-        (t : gen_tree symbol)
-        : option (AppliedOperator' symbol builtin)
-    :=
-        AppliedOperator'_of_gen_tree _ _ (GenLeaf s)
-        := Some (ao_operator s);
-        
-        AppliedOperator'_of_gen_tree _ _ (GenNode n [gt1;gt2])
-        with (@decode (nat*positive) _ _ (Pos.of_nat n)) => {
-            | Some (0, pb) with (@decode builtin _ _ pb) => {
-                | Some b with (AppliedOperator'_of_gen_tree symbol builtin gt1) => {
-                    | Some as1 := Some (ao_app_operand as1 b)
+        #[export]
+        Instance BuiltinOrVar_eqdec {Σ : Signature}
+            : EqDecision BuiltinOrVar
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance FunTerm_eqdec {Σ : Signature}
+            : EqDecision (FunTerm)
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance  SideCondition_eqdec {Σ : Signature}
+            : EqDecision SideCondition
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance  BasicPatternWSC_eqdec {Σ : Signature}
+            : EqDecision BasicPatternWSC
+        .
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance Element_eqdec {Σ : Signature}
+            : EqDecision Element
+        .
+        Proof.
+            intros e1 e2.
+            apply Element'_eqdec.
+            apply builtin_value_eqdec.
+        Defined.
+
+    End eqdec.
+
+    Section countable.
+
+        Equations AppliedOperator'_to_gen_tree
+            (symbol : Set)
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {T_eqdec : EqDecision builtin}
+            {T_countable : Countable builtin}
+            (a : AppliedOperator' symbol builtin)
+            : gen_tree symbol
+        :=
+            AppliedOperator'_to_gen_tree _ _ (ao_operator s)
+            := GenLeaf s ;
+
+            AppliedOperator'_to_gen_tree _ _ (ao_app_operand aps b)
+            := (
+                let x := (encode (0, encode b)) in
+                GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree symbol builtin aps;AppliedOperator'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
+            ) ;
+
+            AppliedOperator'_to_gen_tree _ _ (ao_app_ao aps1 aps2)
+            := (
+                let xd := (1, encode 0) in
+                let x := (encode xd) in
+                GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree _ _ aps1; AppliedOperator'_to_gen_tree _ _ aps2])
+            )
+        .
+        Opaque AppliedOperator'_to_gen_tree.
+
+        Equations AppliedOperator'_of_gen_tree
+            (symbol : Set)
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {T_eqdec : EqDecision builtin}
+            {T_countable : Countable builtin}
+            (t : gen_tree symbol)
+            : option (AppliedOperator' symbol builtin)
+        :=
+            AppliedOperator'_of_gen_tree _ _ (GenLeaf s)
+            := Some (ao_operator s);
+            
+            AppliedOperator'_of_gen_tree _ _ (GenNode n [gt1;gt2])
+            with (@decode (nat*positive) _ _ (Pos.of_nat n)) => {
+                | Some (0, pb) with (@decode builtin _ _ pb) => {
+                    | Some b with (AppliedOperator'_of_gen_tree symbol builtin gt1) => {
+                        | Some as1 := Some (ao_app_operand as1 b)
+                        | _ := None
+                    }
                     | _ := None
                 }
+                | Some (1, _) with AppliedOperator'_of_gen_tree symbol builtin gt1, AppliedOperator'_of_gen_tree symbol builtin gt2 => {
+                    | Some aps1, Some aps2 := Some (ao_app_ao aps1 aps2)
+                    | _, _ := None
+                }
                 | _ := None
-            }
-            | Some (1, _) with AppliedOperator'_of_gen_tree symbol builtin gt1, AppliedOperator'_of_gen_tree symbol builtin gt2 => {
-                | Some aps1, Some aps2 := Some (ao_app_ao aps1 aps2)
-                | _, _ := None
-            }
-            | _ := None
-        };
-        AppliedOperator'_of_gen_tree _ _ _
-        := None
-    .
-    Opaque AppliedOperator'_of_gen_tree.
-
-    Lemma AppliedOperator'_of_to_gen_tree
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {T_eqdec : EqDecision builtin}
-        {T_countable : Countable builtin}
-        (a : AppliedOperator' symbol builtin)
-        : AppliedOperator'_of_gen_tree symbol builtin (AppliedOperator'_to_gen_tree symbol builtin a) = Some a
-    .
-    Proof.
-        ltac1:(funelim (AppliedOperator'_to_gen_tree symbol builtin a)).
-        {
-            ltac1:(simp AppliedOperator'_to_gen_tree).
-            ltac1:(simp AppliedOperator'_of_gen_tree).
-            reflexivity.
-        }
-        {
-            ltac1:(simp AppliedOperator'_to_gen_tree).
-            ltac1:(simp AppliedOperator'_of_gen_tree).
-            ltac1:(rewrite ! Pos2Nat.id decode_encode).
-            unfold AppliedOperator'_of_gen_tree_clause_2.
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_1.
-            rewrite decode_encode.
-            ltac1:(rewrite H).
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_1_clause_1.
-            reflexivity.
-        }
-        {
-            ltac1:(simp AppliedOperator'_to_gen_tree).
-            ltac1:(simp AppliedOperator'_of_gen_tree).
-            ltac1:(rewrite ! Pos2Nat.id decode_encode).
-            unfold AppliedOperator'_of_gen_tree_clause_2.
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_2.
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_2_clause_1.
-            ltac1:(rewrite H).
-            ltac1:(rewrite H0).
-            reflexivity.
-        }
-    Qed.
-
-    #[export]
-    Instance appliedSymbol_countable
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {builtin_eqdec : EqDecision builtin}
-        {builtin_countable : Countable builtin}
-        : Countable (AppliedOperator' symbol builtin)
-    .
-    Proof.
-        apply inj_countable
-        with
-            (f := AppliedOperator'_to_gen_tree symbol builtin)
-            (g := AppliedOperator'_of_gen_tree symbol builtin)
+            };
+            AppliedOperator'_of_gen_tree _ _ _
+            := None
         .
-        intros x.
-        apply AppliedOperator'_of_to_gen_tree.
-    Qed.
+        Opaque AppliedOperator'_of_gen_tree.
 
-
-    Equations Derive NoConfusion for Element'.
-
-    #[export]
-    Instance Element'_eqdec
-        {A : Set}
-        {symbols : Symbols A}
-        (T : Set)
-        {T_dec : EqDecision T}
-        : EqDecision (Element' A T)
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-
-
-    Equations element'_to_gen_tree
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {T_eqdec : EqDecision builtin}
-        {T_countable : Countable builtin}
-        (e : Element' symbol builtin)
-        : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
-    :=
-        element'_to_gen_tree _ _ (el_builtin b)
-        := GenLeaf (inl _ b) ;
-        
-        element'_to_gen_tree _ _ (el_appsym s)
-        := GenLeaf (inr _ s)
-    .
-
-    Opaque element'_to_gen_tree.
-
-    Equations element'_from_gen_tree
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {builtin_eqdec : EqDecision builtin}
-        {builtin_countable : Countable builtin}
-        (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
-        :  option (Element' symbol builtin)
-    :=
-        element'_from_gen_tree _ _ (GenLeaf (inl _ b))
-        := Some (el_builtin b);
-        
-        element'_from_gen_tree _ _ (GenLeaf (inr _ s))
-        := Some (el_appsym s);
-        
-        element'_from_gen_tree _ _ _
-        := None
-    .
-    Opaque element'_from_gen_tree.
-
-    Lemma element'_to_from_gen_tree
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {builtin_eqdec : EqDecision builtin}
-        {builtin_countable : Countable builtin}
-        (e : Element' symbol builtin)
-        : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
-    .
-    Proof.
-        ltac1:(funelim (element'_to_gen_tree symbol builtin e)).
-        { reflexivity. }
-        { reflexivity. }
-    Qed.
-
-    #[export]
-    Instance element'_countable
-        (symbol : Set)
-        {symbols : Symbols symbol}
-        (builtin : Set)
-        {builtin_eqdec : EqDecision builtin}
-        {builtin_countable : Countable builtin}
-        : Countable (Element' symbol builtin)
-    .
-    Proof.
-        apply inj_countable
-        with
-            (f := (element'_to_gen_tree symbol builtin ))
-            (g := element'_from_gen_tree symbol builtin)
+        Lemma AppliedOperator'_of_to_gen_tree
+            (symbol : Set)
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {T_eqdec : EqDecision builtin}
+            {T_countable : Countable builtin}
+            (a : AppliedOperator' symbol builtin)
+            : AppliedOperator'_of_gen_tree symbol builtin (AppliedOperator'_to_gen_tree symbol builtin a) = Some a
         .
-        intros x.
-        apply element'_to_from_gen_tree.
-    Qed.
+        Proof.
+            ltac1:(funelim (AppliedOperator'_to_gen_tree symbol builtin a)).
+            {
+                ltac1:(simp AppliedOperator'_to_gen_tree).
+                ltac1:(simp AppliedOperator'_of_gen_tree).
+                reflexivity.
+            }
+            {
+                ltac1:(simp AppliedOperator'_to_gen_tree).
+                ltac1:(simp AppliedOperator'_of_gen_tree).
+                ltac1:(rewrite ! Pos2Nat.id decode_encode).
+                unfold AppliedOperator'_of_gen_tree_clause_2.
+                unfold AppliedOperator'_of_gen_tree_clause_2_clause_1.
+                rewrite decode_encode.
+                ltac1:(rewrite H).
+                unfold AppliedOperator'_of_gen_tree_clause_2_clause_1_clause_1.
+                reflexivity.
+            }
+            {
+                ltac1:(simp AppliedOperator'_to_gen_tree).
+                ltac1:(simp AppliedOperator'_of_gen_tree).
+                ltac1:(rewrite ! Pos2Nat.id decode_encode).
+                unfold AppliedOperator'_of_gen_tree_clause_2.
+                unfold AppliedOperator'_of_gen_tree_clause_2_clause_2.
+                unfold AppliedOperator'_of_gen_tree_clause_2_clause_2_clause_1.
+                ltac1:(rewrite H).
+                ltac1:(rewrite H0).
+                reflexivity.
+            }
+        Qed.
+
+        #[export]
+        Instance appliedOperator_countable
+            (symbol_set : Set)
+            {symbols : Symbols symbol_set}
+            (builtin_set : Set)
+            {builtin_eqdec : EqDecision builtin_set}
+            {builtin_countable : Countable builtin_set}
+            : Countable (AppliedOperator' symbol_set builtin_set)
+        .
+        Proof.
+            apply inj_countable
+            with
+                (f := AppliedOperator'_to_gen_tree symbol_set builtin_set)
+                (g := AppliedOperator'_of_gen_tree symbol_set builtin_set)
+            .
+            intros x.
+            apply AppliedOperator'_of_to_gen_tree.
+        Qed.
+
+        Equations element'_to_gen_tree
+            (symbol : Set)
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {T_eqdec : EqDecision builtin}
+            {T_countable : Countable builtin}
+            (e : Element' symbol builtin)
+            : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
+        :=
+            element'_to_gen_tree _ _ (el_builtin b)
+            := GenLeaf (inl _ b) ;
+            
+            element'_to_gen_tree _ _ (el_appsym s)
+            := GenLeaf (inr _ s)
+        .
+
+        Opaque element'_to_gen_tree.
+
+        Equations element'_from_gen_tree
+            (symbol : Set)
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {builtin_eqdec : EqDecision builtin}
+            {builtin_countable : Countable builtin}
+            (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
+            :  option (Element' symbol builtin)
+        :=
+            element'_from_gen_tree _ _ (GenLeaf (inl _ b))
+            := Some (el_builtin b);
+            
+            element'_from_gen_tree _ _ (GenLeaf (inr _ s))
+            := Some (el_appsym s);
+            
+            element'_from_gen_tree _ _ _
+            := None
+        .
+        Opaque element'_from_gen_tree.
+
+        Lemma element'_to_from_gen_tree
+            (symbol : Set)
+            {symbols : Symbols symbol}
+            (builtin : Set)
+            {builtin_eqdec : EqDecision builtin}
+            {builtin_countable : Countable builtin}
+            (e : Element' symbol builtin)
+            : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
+        .
+        Proof.
+            ltac1:(funelim (element'_to_gen_tree symbol builtin e)).
+            { reflexivity. }
+            { reflexivity. }
+        Qed.
+
+        #[export]
+        Instance element'_countable
+            (symbol_set : Set)
+            {symbols : Symbols symbol_set}
+            (builtin_set : Set)
+            {builtin_eqdec : EqDecision builtin_set}
+            {builtin_countable : Countable builtin_set}
+            : Countable (Element' symbol_set builtin_set)
+        .
+        Proof.
+            apply inj_countable
+            with
+                (f := element'_to_gen_tree symbol_set builtin_set)
+                (g := element'_from_gen_tree symbol_set builtin_set)
+            .
+            intros x.
+            apply element'_to_from_gen_tree.
+        Qed.
+
+    End countable.
+
+    
+    Section vars_of.
+
+        Definition vars_of_AP
+            {Σ : Signature}
+            (ap : AtomicProposition)
+            : gset variable :=
+        match ap with
+        | ap1 _ x => {[x]}
+        | ap2 _ x y => {[x;y]}
+        end.
+
+        
+
+        Fixpoint vars_of_Constraint
+            { Σ : Signature }
+            (c : Constraint)
+            : gset variable :=
+        match c with
+        | c_True => ∅
+        | c_atomic ap => vars_of_AP ap
+        | c_and c1 c2 => vars_of_Constraint c1 ∪ vars_of_Constraint c2
+        | c_not c' => vars_of_Constraint c'
+        end.
+
+        Fixpoint vars_of_aosb
+            {Σ : Signature}
+            (o : AppliedOperator' symbol BuiltinOrVar)
+            : gset variable :=
+        match o with
+        | ao_operator _ => ∅
+        | ao_app_operand o' (bov_builtin _) => vars_of_aosb o'
+        | ao_app_operand o' (bov_variable x) => {[x]} ∪ vars_of_aosb o'
+        | ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
+        end.
+
+        Fixpoint vars_of_BasicPattern
+            {Σ : Signature}
+            (φ : BasicPattern)
+            : gset variable :=
+        match φ with
+        | ao_operator s => ∅
+        | ao_app_operand φ' (bov_variable x)
+            => {[x]} ∪ vars_of_BasicPattern φ'
+        | ao_app_operand φ' (bov_builtin _)
+            => vars_of_BasicPattern φ'
+        | ao_app_ao φ1 φ2
+            => vars_of_BasicPattern φ1 ∪ vars_of_BasicPattern φ2
+        end.
+
+        Print SideCondition.
+
+        Definition vars_of_SideCondition
+            {Σ : Signature}
+            (c : SideCondition)
+            : gset variable :=
+        match c with
+        | sc_constraint c' => vars_of_Constraint c'
+        | sc_match x φ => {[x]} ∪ vars_of_BasicPattern φ
+        end.
+
+        Fixpoint vars_of_BasicPatternWSC
+            {Σ : Signature}
+            (φc : BasicPatternWSC)
+            : gset variable :=
+        match φc with
+        | bpwsc_pat φ => vars_of_BasicPattern φ
+        | bpwsc_sc φ c
+            => vars_of_BasicPatternWSC φ ∪ vars_of_SideCondition c
+        end.
+
+
+        Fixpoint vars_of_LhsPattern
+            {Σ : Signature}
+            (φ : LhsPattern)
+            : gset variable :=
+        match φ with
+        | ao_operator o => ∅
+        | ao_app_operand x y
+            => vars_of_LhsPattern x ∪ vars_of_BasicPatternWSC y
+        | ao_app_ao x y
+            => vars_of_LhsPattern x ∪ vars_of_LhsPattern y
+        end
+        .
+
+    End vars_of.
 
 
     #[export]
-    Instance Element_eqdec {Σ : Signature}
-        : EqDecision Element
+    Instance LhsPattern_eqdec {Σ : Signature}
+        : EqDecision LhsPattern
     .
     Proof.
-        intros e1 e2.
-        apply Element'_eqdec.
-        apply builtin_value_eqdec.
-    Defined.
-
-
-    #[export]
-    Instance AppliedSymbol_eqdec {Σ : Signature}
-        : EqDecision AppliedSymbol
-    .
-    Proof.
-        intros e1 e2.
+        unfold LhsPattern.
         apply AppliedOperator'_eqdec.
-        apply builtin_value_eqdec.
-    Defined.
-
-
-
-    Equations Derive NoConfusion for AtomicProposition.
-
-    Definition vars_of_AP
-        {Σ : Signature}
-        (ap : AtomicProposition)
-        : gset variable :=
-    match ap with
-    | ap1 _ x => {[x]}
-    | ap2 _ x y => {[x;y]}
-    end.
-
-    #[export]
-    Instance atomicProposition_eqdec {Σ : Signature}
-        : EqDecision AtomicProposition
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-
-    Equations Derive NoConfusion for Constraint.
-
-    Fixpoint vars_of_Constraint
-        { Σ : Signature }
-        (c : Constraint)
-        : gset variable :=
-    match c with
-    | c_True => ∅
-    | c_atomic ap => vars_of_AP ap
-    | c_and c1 c2 => vars_of_Constraint c1 ∪ vars_of_Constraint c2
-    | c_not c' => vars_of_Constraint c'
-    end.
-
-    #[export]
-    Instance constraint_eqdec {Σ : Signature}
-        : EqDecision Constraint
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance BuiltinOrVar_eqdec {Σ : Signature}
-        : EqDecision BuiltinOrVar
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-
-    Fixpoint vars_of_aosb
-        {Σ : Signature}
-        (o : AppliedOperator' symbol BuiltinOrVar)
-        : gset variable :=
-    match o with
-    | ao_operator _ => ∅
-    | ao_app_operand o' (bov_builtin _) => vars_of_aosb o'
-    | ao_app_operand o' (bov_variable x) => {[x]} ∪ vars_of_aosb o'
-    | ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
-    end.
-
-    Fixpoint vars_of_Pattern
-        {Σ : Signature}
-        (φ : Pattern)
-        : gset variable :=
-    match φ with
-    | pat_aop o => vars_of_aosb o
-    | pat_requires φ' c => vars_of_Pattern φ' ∪ vars_of_Constraint c
-    | pat_requires_match φ' x φ'' =>
-        {[x]} ∪ vars_of_Pattern φ' ∪ vars_of_Pattern φ''
-    end
-    .
-
-    #[export]
-    Instance Pattern_eqdec {Σ : Signature}
-        : EqDecision Pattern
-    .
-    Proof.
         ltac1:(solve_decision).
     Defined.
 
@@ -533,15 +577,7 @@ Module Syntax.
     end.
 
 
-    Equations Derive NoConfusion for FunTerm.
-
-    #[export]
-    Instance FunTerm_eqdec {Σ : Signature}
-        : EqDecision (FunTerm)
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
+    
 
     Fixpoint vars_of_FunTerm
         {Σ : Signature}
@@ -556,7 +592,7 @@ Module Syntax.
 
 
 
-    Equations Derive NoConfusion for RhsPattern.
+    
 
     #[export]
     Instance RhsPattern_eqdec {Σ : Signature}
