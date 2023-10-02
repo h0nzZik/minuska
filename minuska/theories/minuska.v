@@ -41,13 +41,17 @@ Module Syntax.
         (x : AppliedOperator' operator operand)
     .
 
-    Inductive Element' (symbol : Set) (builtin : Set) :=
-    | el_builtin (b : builtin)
-    | el_appsym (s : AppliedOperator' symbol builtin)
+    Definition GroundTerm' (symbol : Set) (builtin : Set)
+        := (AppliedOperator' symbol builtin)
     .
 
-    Arguments el_appsym {symbol builtin}%type_scope s.
-    Arguments el_builtin {symbol builtin}%type_scope b.
+    Inductive Value' (symbol : Set) (builtin : Set) :=
+    | val_builtin (b : builtin)
+    | val_gterm (g : GroundTerm' symbol builtin)
+    .
+
+    Arguments val_gterm {symbol builtin}%type_scope g.
+    Arguments val_builtin {symbol builtin}%type_scope b.
     
     Arguments ao_operator {operator operand}%type_scope s.
     Arguments ao_app_operand {operator operand}%type_scope aps b.
@@ -92,25 +96,25 @@ Module Syntax.
 
         builtin_unary_predicate_interp
             : builtin_unary_predicate 
-            -> (Element' symbol builtin_value)
+            -> (Value' symbol builtin_value)
             -> Prop ;
 
         builtin_binary_predicate_interp
             : builtin_binary_predicate 
-            -> (Element' symbol builtin_value)
-            -> (Element' symbol builtin_value)
+            -> (Value' symbol builtin_value)
+            -> (Value' symbol builtin_value)
             -> Prop ;
         
         builtin_unary_function_interp
             : builtin_unary_function
-            -> (Element' symbol builtin_value)
-            -> (Element' symbol builtin_value) ;
+            -> (Value' symbol builtin_value)
+            -> (Value' symbol builtin_value) ;
 
         builtin_binary_function_interp
             : builtin_binary_function
-            -> (Element' symbol builtin_value)
-            -> (Element' symbol builtin_value)
-            -> (Element' symbol builtin_value) ;
+            -> (Value' symbol builtin_value)
+            -> (Value' symbol builtin_value)
+            -> (Value' symbol builtin_value) ;
     }.
 
     Class Signature := {
@@ -121,8 +125,12 @@ Module Syntax.
         variables :: Variables variable ;
     }.
 
-    Definition Element {Σ : Signature}
-        := Element' symbol builtin_value
+    Definition Value {Σ : Signature}
+        := Value' symbol builtin_value
+    .
+
+    Definition GroundTerm {Σ : Signature}
+        := GroundTerm' symbol builtin_value
     .
 
     Inductive AtomicProposition {Σ : Signature} :=
@@ -164,7 +172,7 @@ Module Syntax.
     Inductive FunTerm
         {Σ : Signature}
         :=
-    | ft_element (e : Element)
+    | ft_element (e : Value)
     | ft_variable (x : variable)
     | ft_unary (f : builtin_unary_function) (t : FunTerm)
     | ft_binary (f : builtin_binary_function) (t1 : FunTerm) (t2 : FunTerm)
@@ -184,7 +192,7 @@ Module Syntax.
     .
 
     Equations Derive NoConfusion for AppliedOperator'.
-    Equations Derive NoConfusion for Element'.
+    Equations Derive NoConfusion for Value'.
     Equations Derive NoConfusion for AtomicProposition.
     Equations Derive NoConfusion for Constraint.
     Equations Derive NoConfusion for FunTerm.
@@ -206,12 +214,12 @@ Module Syntax.
         Defined.
 
         #[export]
-        Instance Element'_eqdec
+        Instance Value'_eqdec
             {A : Set}
             {symbols : Symbols A}
             (T : Set)
             {T_dec : EqDecision T}
-            : EqDecision (Element' A T)
+            : EqDecision (Value' A T)
         .
         Proof.
             ltac1:(solve_decision).
@@ -242,6 +250,16 @@ Module Syntax.
         Defined.
 
         #[export]
+        Instance Value_eqdec {Σ : Signature}
+            : EqDecision Value
+        .
+        Proof.
+            intros e1 e2.
+            apply Value'_eqdec.
+            apply builtin_value_eqdec.
+        Defined.
+        
+        #[export]
         Instance FunTerm_eqdec {Σ : Signature}
             : EqDecision (FunTerm)
         .
@@ -266,13 +284,21 @@ Module Syntax.
         Defined.
 
         #[export]
-        Instance Element_eqdec {Σ : Signature}
-            : EqDecision Element
+        Instance LhsPattern_eqdec {Σ : Signature}
+            : EqDecision LhsPattern
         .
         Proof.
-            intros e1 e2.
-            apply Element'_eqdec.
-            apply builtin_value_eqdec.
+            unfold LhsPattern.
+            apply AppliedOperator'_eqdec.
+            ltac1:(solve_decision).
+        Defined.
+
+        #[export]
+        Instance RhsPattern_eqdec {Σ : Signature}
+            : EqDecision RhsPattern
+        .
+        Proof.
+            ltac1:(solve_decision).
         Defined.
 
     End eqdec.
@@ -403,13 +429,13 @@ Module Syntax.
             (builtin : Set)
             {T_eqdec : EqDecision builtin}
             {T_countable : Countable builtin}
-            (e : Element' symbol builtin)
+            (e : Value' symbol builtin)
             : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
         :=
-            element'_to_gen_tree _ _ (el_builtin b)
+            element'_to_gen_tree _ _ (val_builtin b)
             := GenLeaf (inl _ b) ;
             
-            element'_to_gen_tree _ _ (el_appsym s)
+            element'_to_gen_tree _ _ (val_gterm s)
             := GenLeaf (inr _ s)
         .
 
@@ -422,13 +448,13 @@ Module Syntax.
             {builtin_eqdec : EqDecision builtin}
             {builtin_countable : Countable builtin}
             (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
-            :  option (Element' symbol builtin)
+            :  option (Value' symbol builtin)
         :=
             element'_from_gen_tree _ _ (GenLeaf (inl _ b))
-            := Some (el_builtin b);
+            := Some (val_builtin b);
             
             element'_from_gen_tree _ _ (GenLeaf (inr _ s))
-            := Some (el_appsym s);
+            := Some (val_gterm s);
             
             element'_from_gen_tree _ _ _
             := None
@@ -441,7 +467,7 @@ Module Syntax.
             (builtin : Set)
             {builtin_eqdec : EqDecision builtin}
             {builtin_countable : Countable builtin}
-            (e : Element' symbol builtin)
+            (e : Value' symbol builtin)
             : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
         .
         Proof.
@@ -457,7 +483,7 @@ Module Syntax.
             (builtin_set : Set)
             {builtin_eqdec : EqDecision builtin_set}
             {builtin_countable : Countable builtin_set}
-            : Countable (Element' symbol_set builtin_set)
+            : Countable (Value' symbol_set builtin_set)
         .
         Proof.
             apply inj_countable
@@ -482,8 +508,6 @@ Module Syntax.
         | ap1 _ x => {[x]}
         | ap2 _ x y => {[x;y]}
         end.
-
-        
 
         Fixpoint vars_of_Constraint
             { Σ : Signature }
@@ -521,8 +545,6 @@ Module Syntax.
             => vars_of_BasicPattern φ1 ∪ vars_of_BasicPattern φ2
         end.
 
-        Print SideCondition.
-
         Definition vars_of_SideCondition
             {Σ : Signature}
             (c : SideCondition)
@@ -542,7 +564,6 @@ Module Syntax.
             => vars_of_BasicPatternWSC φ ∪ vars_of_SideCondition c
         end.
 
-
         Fixpoint vars_of_LhsPattern
             {Σ : Signature}
             (φ : LhsPattern)
@@ -553,77 +574,44 @@ Module Syntax.
             => vars_of_LhsPattern x ∪ vars_of_BasicPatternWSC y
         | ao_app_ao x y
             => vars_of_LhsPattern x ∪ vars_of_LhsPattern y
-        end
-        .
+        end.
+
+        Fixpoint vars_of_FunTerm
+            {Σ : Signature}
+            (t : FunTerm)
+            : gset variable :=
+        match t with
+        | ft_element _ => ∅
+        | ft_variable x => {[x]}
+        | ft_unary _ t' => vars_of_FunTerm t'
+        | ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
+        end.
+
+        Fixpoint vars_of_AppliedOperator_sym_fterm
+            {Σ : Signature}
+            (op : AppliedOperator' symbol FunTerm)
+            : gset variable :=
+        match op with
+        | ao_operator _ => ∅
+        | ao_app_operand aps' o =>
+            vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
+        | ao_app_ao aps1 aps2 =>
+            vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
+        end.
+
+        Fixpoint vars_of_RhsPattern
+            {Σ : Signature}
+            (φ : RhsPattern)
+            : gset variable :=
+        match φ with
+        | ao_operator _ => ∅
+        | ao_app_operand  φ' t
+            => vars_of_RhsPattern φ' ∪ vars_of_FunTerm t
+        | ao_app_ao φ1 φ2
+            => vars_of_RhsPattern φ1 ∪ vars_of_RhsPattern φ2
+        end.
 
     End vars_of.
-
-
-    #[export]
-    Instance LhsPattern_eqdec {Σ : Signature}
-        : EqDecision LhsPattern
-    .
-    Proof.
-        unfold LhsPattern.
-        apply AppliedOperator'_eqdec.
-        ltac1:(solve_decision).
-    Defined.
-
-    Fixpoint pattern_size {Σ : Signature} (φ : Pattern) :=
-    match φ with
-    | pat_aop _ => 1
-    | pat_requires p' _ => 1 + pattern_size p'
-    | pat_requires_match p v p2 => 1 + pattern_size p + pattern_size p2
-    end.
-
-
-    
-
-    Fixpoint vars_of_FunTerm
-        {Σ : Signature}
-        (t : FunTerm)
-        : gset variable :=
-    match t with
-    | ft_element _ => ∅
-    | ft_variable x => {[x]}
-    | ft_unary _ t' => vars_of_FunTerm t'
-    | ft_binary _ t1 t2 => vars_of_FunTerm t1 ∪ vars_of_FunTerm t2
-    end.
-
-
-
-    
-
-    #[export]
-    Instance RhsPattern_eqdec {Σ : Signature}
-        : EqDecision RhsPattern
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    Print AppliedOperator'.
-
-    Fixpoint vars_of_AppliedOperator_sym_fterm
-        {Σ : Signature}
-        (op : AppliedOperator' symbol FunTerm)
-        : gset variable :=
-    match op with
-    | ao_operator _ => ∅
-    | ao_app_operand aps' o =>
-        vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_FunTerm o
-    | ao_app_ao aps1 aps2 =>
-        vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
-    end.
-
-    Definition vars_of_RhsPattern
-        {Σ : Signature}
-        (φ : RhsPattern)
-        : gset variable :=
-    match φ with
-    | rpat_op op => vars_of_AppliedOperator_sym_fterm op
-    | rpat_ft t => vars_of_FunTerm t
-    end.
 
 End Syntax.
 
@@ -631,7 +619,7 @@ Module Semantics.
     Import Syntax.
 
     Definition Valuation {Σ : Signature}
-        := gmap variable Element
+        := gmap variable Value
     .
 
     Definition val_satisfies_ap
@@ -698,31 +686,18 @@ Module Semantics.
             (ρ : Valuation)
         .
 
-        (* TODO define this directly without Equations *)
-        Equations funTerm_evaluate
-            (t : FunTerm) : option Element
-            by struct t :=
-        
-        funTerm_evaluate (ft_element e) := Some e ;
-
-        funTerm_evaluate (ft_variable x) := ρ !! x ;
-
-        (* TODO use fmap and "do notation"*)
-        funTerm_evaluate (ft_unary f t) with (funTerm_evaluate t) => {
-            | Some e := Some (builtin_unary_function_interp f e)
-            | None := None
-        } ;
-
-        funTerm_evaluate (ft_binary f t1 t2) with (funTerm_evaluate t1), (funTerm_evaluate t2) => {
-            | Some e1, Some e2 := Some (builtin_binary_function_interp f e1 e2)
-            | _, _ := None
-        }
-        .
-
-        #[global]
-        Opaque funTerm_evaluate.
-
-        (*Equations Derive Subterm for Pattern.*)
+        Fixpoint funTerm_evaluate
+            (t : FunTerm) : option Value :=
+        match t with
+        | ft_element e => Some e
+        | ft_variable x => ρ !! x
+        | ft_unary f t =>
+            e ← funTerm_evaluate t; Some (builtin_unary_function_interp f e)
+        | ft_binary f t1 t2 =>
+            e1 ← funTerm_evaluate t1;
+            e2 ← funTerm_evaluate t2;
+            Some (builtin_binary_function_interp f e1 e2)
+        end.
 
         Inductive builtin_satisfies_BuiltinOrVar:
             builtin_value ->
@@ -735,7 +710,7 @@ Module Semantics.
 
         | bsbv_var:
             forall b x,
-                ρ !! x = Some (el_builtin b) ->
+                ρ !! x = Some (val_builtin b) ->
                 builtin_satisfies_BuiltinOrVar b (bov_variable x)
         .
 
@@ -750,8 +725,13 @@ Module Semantics.
             builtin_satisfies_BuiltinOrVar
         .
 
-        Inductive element_satisfies_pattern:
-            Element -> Pattern -> Prop :=
+        Print Value'.
+        Print BasicPattern.
+        Print BasicPatternWSC.
+        Print LhsPattern.
+
+        Inductive element_satisfies_lhs_pattern:
+            Value -> LhsPattern -> Prop :=
 
         | esp_op :
             forall e φ,
@@ -797,7 +777,7 @@ Module Semantics.
         | asaosf_app_operand_2 :
             forall aps1 t aps1' v,
                 aosb_satisfies_aosf aps1' aps1 ->
-                funTerm_evaluate t = Some (el_appsym v) ->
+                funTerm_evaluate t = Some (val_gterm v) ->
                 aosb_satisfies_aosf
                     (ao_app_ao aps1' v)
                     (ao_app_operand aps1 t)
@@ -812,7 +792,7 @@ Module Semantics.
         .
 
         Inductive element_satisfies_rhs_pattern:
-            Element -> RhsPattern -> Prop :=
+            Value -> RhsPattern -> Prop :=
         | esrp_ft:
             forall e t,
                 funTerm_evaluate t = Some e ->
@@ -823,7 +803,7 @@ Module Semantics.
             forall aps op,
                 aosb_satisfies_aosf aps op ->
                 element_satisfies_rhs_pattern
-                    (el_appsym aps)
+                    (val_gterm aps)
                     (rpat_op op)
         .
 
@@ -834,7 +814,7 @@ Module Semantics.
         (t : FunTerm)
         (ρ : Valuation)
         :
-        (∃ e:Element, funTerm_evaluate ρ t = Some e)
+        (∃ e:Value, funTerm_evaluate ρ t = Some e)
         <->
         ( vars_of_FunTerm t ⊆ dom ρ )
     .
@@ -1031,7 +1011,7 @@ Module Semantics.
 
 
     Definition lr_satisfies
-        {Σ : Signature} (left_right : LR) (e : Element) (lr : LocalRewrite) (ρ : Valuation)
+        {Σ : Signature} (left_right : LR) (e : Value) (lr : LocalRewrite) (ρ : Valuation)
         : Prop :=
     match left_right with
     | LR_Left =>
@@ -1074,7 +1054,7 @@ Module Semantics.
         Print Pattern.
 
         Inductive rr_satisfies :
-            RewritingRule -> Element -> Prop :=
+            RewritingRule -> Value -> Prop :=
             
         | rr_sat_local :
             forall e lr
@@ -1084,7 +1064,7 @@ Module Semantics.
         
         | rr_sat_builtin :
             forall b,
-                rr_satisfies (rr_builtin b) (el_builtin b)
+                rr_satisfies (rr_builtin b) (val_builtin b)
 
         | rr_sat_var :
             forall x e
@@ -1093,19 +1073,19 @@ Module Semantics.
         
         | rr_sat_sym :
             forall s,
-                rr_satisfies (rr_sym s) (el_appsym (ao_operator s))
+                rr_satisfies (rr_sym s) (val_gterm (ao_operator s))
         
         | rr_sat_app_1 :
             forall φ1 φ2 aps1 aps2
-                (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
-                (Hsat2 : rr_satisfies φ2 (el_appsym aps2)),
-                rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_ao aps1 aps2))
+                (Hsat1 : rr_satisfies φ1 (val_gterm aps1))
+                (Hsat2 : rr_satisfies φ2 (val_gterm aps2)),
+                rr_satisfies (rr_app φ1 φ2) (val_gterm (ao_app_ao aps1 aps2))
         
         | rr_sat_app_2 :
             forall φ1 φ2 aps1 b2
-                (Hsat1 : rr_satisfies φ1 (el_appsym aps1))
-                (Hsat2 : rr_satisfies φ2 (el_builtin b2)),
-                rr_satisfies (rr_app φ1 φ2) (el_appsym (ao_app_operand aps1 b2))
+                (Hsat1 : rr_satisfies φ1 (val_gterm aps1))
+                (Hsat2 : rr_satisfies φ2 (val_builtin b2)),
+                rr_satisfies (rr_app φ1 φ2) (val_gterm (ao_app_operand aps1 b2))
         
         | rr_sat_req :
             forall r c e
@@ -1124,8 +1104,8 @@ Module Semantics.
     End sec.
     (*
     Lemma rr_weakly_well_defined_0 {Σ : Signature} rr ρ aps:
-        rr_satisfies LR_Left ρ rr (el_appsym aps) ->
-        ∃ aps', rr_satisfies LR_Right ρ rr (el_appsym aps').
+        rr_satisfies LR_Left ρ rr (val_gterm aps) ->
+        ∃ aps', rr_satisfies LR_Right ρ rr (val_gterm aps').
     Proof.
         intros H.
         induction H; cbn.
@@ -1171,7 +1151,7 @@ Module Semantics.
         {
             destruct IHrr_satisfies1 as [e1 He1].
             destruct IHrr_satisfies2 as [e2 He2].
-            (* eexists (el_appsym ?[aps']). *)
+            (* eexists (val_gterm ?[aps']). *)
             destruct e1.
             {
                 inversion He1; subst;
@@ -1200,14 +1180,14 @@ Module Semantics.
     Qed.
 
     Definition rewrites_in_valuation_to
-        {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Element)
+        {Σ : Signature} (ρ : Valuation) (r : RewritingRule) (from to : Value)
         : Prop
     := rr_satisfies LR_Left ρ r from
     /\ rr_satisfies LR_Right ρ r to
     .
 
     Definition rewrites_to
-        {Σ : Signature} (r : RewritingRule) (from to : Element)
+        {Σ : Signature} (r : RewritingRule) (from to : Value)
         : Prop
     := exists ρ, rewrites_in_valuation_to ρ r from to
     .
@@ -1219,7 +1199,7 @@ Module Semantics.
     Definition rewriting_relation
         {Σ : Signature}
         (Γ : RewritingTheory)
-        : relation Element
+        : relation Value
         := fun from to =>
             exists r, r ∈ Γ /\ rewrites_to r from to
     .
@@ -1227,13 +1207,13 @@ Module Semantics.
     Definition not_stuck
         {Σ : Signature}
         (Γ : RewritingTheory)
-        (e : Element) : Prop
+        (e : Value) : Prop
     := exists e', rewriting_relation Γ e e'.
 
     Definition stuck
         {Σ : Signature}
         (Γ : RewritingTheory)
-        (e : Element) : Prop
+        (e : Value) : Prop
     := not (not_stuck Γ e).
 
 End Semantics.
@@ -1242,7 +1222,7 @@ Definition Interpreter
     {Σ : Signature}
     (Γ : RewritingTheory)
     : Type
-    := Element -> option Element
+    := Value -> option Value
 .
 
 Definition Interpreter_sound
@@ -1261,7 +1241,7 @@ Definition Explorer
     {Σ : Signature}
     (Γ : RewritingTheory)
     : Type
-    := Element -> list Element
+    := Value -> list Value
 .
 
 Definition Explorer_sound
@@ -1269,7 +1249,7 @@ Definition Explorer_sound
     (Γ : RewritingTheory)
     (explorer : Explorer Γ)
     : Prop
-    := forall (e e' : Element),
+    := forall (e e' : Value),
         e' ∈ explorer e <-> rewriting_relation Γ e e'
 .
 
