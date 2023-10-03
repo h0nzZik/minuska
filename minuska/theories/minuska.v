@@ -58,6 +58,16 @@ Defined.
         t (x => y) (y => x)
     ```
 
+    G5. Constraints on top of a rewrite rule
+    ```
+        (t (x => y) z) where x >= z
+    ```
+
+    G6. Constraints inside rewrite rule
+    ```
+        t ((x => y) where x >= 0) (z where z >= 0)
+    ```
+
 
     Here are examples illustrating what we do NOT want to support.
 
