@@ -1,6 +1,7 @@
 -R theories Minuska
 
 theories/tactics.v
+theories/prelude.v
 theories/spec_syntax.v
 theories/spec_semantics.v
 theories/minuska.v

@@ -3,7 +3,7 @@ From Coq.Logic Require Import ProofIrrelevance.
 From stdpp Require Import base countable decidable finite list list_numbers gmap strings.
 
 From Ltac2 Require Import Ltac2.
-Check @ex.
+
 Ltac2 rec destruct_ex_go (h : ident) :=
 
 try (
