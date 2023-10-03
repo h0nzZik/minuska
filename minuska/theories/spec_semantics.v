@@ -128,7 +128,7 @@ Section with_valuation.
         GroundTerm_satisfies_BuiltinOrVar
     .
 
-    Definition GroundTerm_satisfies_OpenTerm
+    Definition in_val_GroundTerm_satisfies_OpenTerm
         (g : GroundTerm)
         (φ : OpenTerm)
         : Prop
@@ -141,12 +141,12 @@ Section with_valuation.
     | sc_match x φ =>
         match ρ !! x with
         | Some (val_gterm g)
-            => GroundTerm_satisfies_OpenTerm g φ
+            => in_val_GroundTerm_satisfies_OpenTerm g φ
         | _ => False
         end
     end.
 
-    Inductive GroundTerm_satisfies_OpenTermWSC:
+    Inductive in_val_GroundTerm_satisfies_OpenTermWSC:
         GroundTerm ->
         OpenTermWSC ->
         Prop :=
@@ -154,16 +154,16 @@ Section with_valuation.
         forall
             (g : GroundTerm)
             (φ : OpenTerm)
-            (pf : GroundTerm_satisfies_OpenTerm g φ ),
-            GroundTerm_satisfies_OpenTermWSC g (wsc_base φ)
+            (pf : in_val_GroundTerm_satisfies_OpenTerm g φ ),
+            in_val_GroundTerm_satisfies_OpenTermWSC g (wsc_base φ)
     | gsbc_side:
         forall
             (g : GroundTerm)
             (φc : OpenTermWSC)
             (c : SideCondition)
-            (pf1 : GroundTerm_satisfies_OpenTermWSC g φc)
+            (pf1 : in_val_GroundTerm_satisfies_OpenTermWSC g φc)
             (pf2 : valuation_satisfies_sc c),
-            GroundTerm_satisfies_OpenTermWSC g (wsc_sc φc c)
+            in_val_GroundTerm_satisfies_OpenTermWSC g (wsc_sc φc c)
     .
 
     Definition GroundTerm_satisfies_LhsPattern:
@@ -173,7 +173,7 @@ Section with_valuation.
             builtin_value
             OpenTermWSC
             (fun x y => False)
-            GroundTerm_satisfies_OpenTermWSC
+            in_val_GroundTerm_satisfies_OpenTermWSC
         .
     
     Definition GroundTerm_satisfies_RhsPattern:
@@ -262,7 +262,7 @@ Section with_valuation.
     | lp_rewrite r =>
         Value_satisfies_LocalRewrite lr (val_gterm g) r
     | lp_basicpat φ =>
-        GroundTerm_satisfies_OpenTerm g φ
+        in_val_GroundTerm_satisfies_OpenTerm g φ
     | lp_bov bx => False
     end.
 
@@ -306,6 +306,11 @@ Section with_valuation.
 End with_valuation.
 
 
+Definition GroundTerm_satisfies_OpenTerm
+    {Σ : Signature}
+    : GroundTerm -> OpenTerm -> Prop :=
+    fun g φ => ∃ ρ, in_val_GroundTerm_satisfies_OpenTerm ρ g φ
+.
 
 Definition rewrites_in_valuation_to
     {Σ : Signature}

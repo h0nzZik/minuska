@@ -36,18 +36,18 @@ From Minuska Require Import
     | ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
     end.
 
-    Fixpoint vars_of_BasicPattern
+    Fixpoint vars_of_OpenTerm
         {Σ : Signature}
-        (φ : BasicPattern)
+        (φ : OpenTerm)
         : gset variable :=
     match φ with
     | ao_operator s => ∅
     | ao_app_operand φ' (bov_variable x)
-        => {[x]} ∪ vars_of_BasicPattern φ'
+        => {[x]} ∪ vars_of_OpenTerm φ'
     | ao_app_operand φ' (bov_builtin _)
-        => vars_of_BasicPattern φ'
+        => vars_of_OpenTerm φ'
     | ao_app_ao φ1 φ2
-        => vars_of_BasicPattern φ1 ∪ vars_of_BasicPattern φ2
+        => vars_of_OpenTerm φ1 ∪ vars_of_OpenTerm φ2
     end.
 
     Definition vars_of_SideCondition
@@ -56,17 +56,17 @@ From Minuska Require Import
         : gset variable :=
     match c with
     | sc_constraint c' => vars_of_Constraint c'
-    | sc_match x φ => {[x]} ∪ vars_of_BasicPattern φ
+    | sc_match x φ => {[x]} ∪ vars_of_OpenTerm φ
     end.
 
-    Fixpoint vars_of_BasicPatternWSC
+    Fixpoint vars_of_OpenTermWSC
         {Σ : Signature}
-        (φc : BasicPatternWSC)
+        (φc : OpenTermWSC)
         : gset variable :=
     match φc with
-    | wsc_base φ => vars_of_BasicPattern φ
+    | wsc_base φ => vars_of_OpenTerm φ
     | wsc_sc φ c
-        => vars_of_BasicPatternWSC φ ∪ vars_of_SideCondition c
+        => vars_of_OpenTermWSC φ ∪ vars_of_SideCondition c
     end.
 
     Fixpoint vars_of_LhsPattern
@@ -76,7 +76,7 @@ From Minuska Require Import
     match φ with
     | ao_operator o => ∅
     | ao_app_operand x y
-        => vars_of_LhsPattern x ∪ vars_of_BasicPatternWSC y
+        => vars_of_LhsPattern x ∪ vars_of_OpenTermWSC y
     | ao_app_ao x y
         => vars_of_LhsPattern x ∪ vars_of_LhsPattern y
     end.
