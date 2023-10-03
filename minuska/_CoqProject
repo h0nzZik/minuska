@@ -4,6 +4,8 @@ theories/tactics.v
 theories/prelude.v
 theories/spec_syntax.v
 theories/spec_semantics.v
+theories/syntax_properties.v
+theories/semantics_properties.v
 theories/minuska.v
 theories/string_variables.v
 theories/empty_builtin.v
