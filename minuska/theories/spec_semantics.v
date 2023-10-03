@@ -128,9 +128,9 @@ Section with_valuation.
         GroundTerm_satisfies_BuiltinOrVar
     .
 
-    Definition GroundTerm_satisfies_BasicPattern
+    Definition GroundTerm_satisfies_OpenTerm
         (g : GroundTerm)
-        (φ : BasicPattern)
+        (φ : OpenTerm)
         : Prop
     := aosb_satisfies_aosbf g φ.
 
@@ -141,29 +141,29 @@ Section with_valuation.
     | sc_match x φ =>
         match ρ !! x with
         | Some (val_gterm g)
-            => GroundTerm_satisfies_BasicPattern g φ
+            => GroundTerm_satisfies_OpenTerm g φ
         | _ => False
         end
     end.
 
-    Inductive GroundTerm_satisfies_BasicPatternWSC:
+    Inductive GroundTerm_satisfies_OpenTermWSC:
         GroundTerm ->
-        BasicPatternWSC ->
+        OpenTermWSC ->
         Prop :=
     | gsbc_basic:
         forall
             (g : GroundTerm)
-            (φ : BasicPattern)
-            (pf : GroundTerm_satisfies_BasicPattern g φ ),
-            GroundTerm_satisfies_BasicPatternWSC g (wsc_base φ)
+            (φ : OpenTerm)
+            (pf : GroundTerm_satisfies_OpenTerm g φ ),
+            GroundTerm_satisfies_OpenTermWSC g (wsc_base φ)
     | gsbc_side:
         forall
             (g : GroundTerm)
-            (φc : BasicPatternWSC)
+            (φc : OpenTermWSC)
             (c : SideCondition)
-            (pf1 : GroundTerm_satisfies_BasicPatternWSC g φc)
+            (pf1 : GroundTerm_satisfies_OpenTermWSC g φc)
             (pf2 : valuation_satisfies_sc c),
-            GroundTerm_satisfies_BasicPatternWSC g (wsc_sc φc c)
+            GroundTerm_satisfies_OpenTermWSC g (wsc_sc φc c)
     .
 
     Definition GroundTerm_satisfies_LhsPattern:
@@ -171,9 +171,9 @@ Section with_valuation.
         := @aoxy_satisfies_aoxz
             symbol
             builtin_value
-            BasicPatternWSC
+            OpenTermWSC
             (fun x y => False)
-            GroundTerm_satisfies_BasicPatternWSC
+            GroundTerm_satisfies_OpenTermWSC
         .
     
     Definition GroundTerm_satisfies_RhsPattern:
@@ -253,24 +253,24 @@ Section with_valuation.
     | LR_Right => Value_satisfies_right_LocalRewrite v r
     end.
 
-    Definition GroundTerm_satisfies_LocalRewriteOrBasicPatternOrBOV
+    Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
         (lr : LeftRight)
         (g : GroundTerm)
-        (rb : LocalRewriteOrBasicPatternOrBOV)
+        (rb : LocalRewriteOrOpenTermOrBOV)
         : Prop :=
     match rb with
     | lp_rewrite r =>
         Value_satisfies_LocalRewrite lr (val_gterm g) r
     | lp_basicpat φ =>
-        GroundTerm_satisfies_BasicPattern g φ
+        GroundTerm_satisfies_OpenTerm g φ
     | lp_bov bx => False
     end.
 
 
-    Definition builtin_satisfies_LocalRewriteOrBasicPatternOrBOV
+    Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
         (lr : LeftRight)
         (b : builtin_value)
-        (rb : LocalRewriteOrBasicPatternOrBOV)
+        (rb : LocalRewriteOrOpenTermOrBOV)
         : Prop :=
     match rb with
     | lp_rewrite r =>
@@ -287,9 +287,9 @@ Section with_valuation.
     := @aoxy_satisfies_aoxz
             symbol
             builtin_value
-            LocalRewriteOrBasicPatternOrBOV
-            (builtin_satisfies_LocalRewriteOrBasicPatternOrBOV lr)
-            (GroundTerm_satisfies_LocalRewriteOrBasicPatternOrBOV lr)
+            LocalRewriteOrOpenTermOrBOV
+            (builtin_satisfies_LocalRewriteOrOpenTermOrBOV lr)
+            (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr)
     .
 
     (* Not sure if this is needed *)

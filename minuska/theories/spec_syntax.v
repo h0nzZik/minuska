@@ -120,15 +120,14 @@ Inductive BuiltinOrVar {Σ : Signature} :=
 | bov_variable (x : variable)
 .
 
-(* Can be renamed to OpenTerm? *)
-Definition BasicPattern {Σ : Signature}
+Definition OpenTerm {Σ : Signature}
     := AppliedOperator' symbol BuiltinOrVar
 .
 
 (* TODO make a plural *)
 Inductive SideCondition {Σ : Signature} :=
 | sc_constraint (c : Constraint)
-| sc_match (v : variable) (φ : BasicPattern)
+| sc_match (v : variable) (φ : OpenTerm)
 .
 
 Inductive WithASideCondition {Σ : Signature} (Base : Set) :=
@@ -139,8 +138,8 @@ Inductive WithASideCondition {Σ : Signature} (Base : Set) :=
 Arguments wsc_base {Σ} {Base}%type_scope φ.
 Arguments wsc_sc {Σ} {Base}%type_scope φc sc.
 
-Definition BasicPatternWSC {Σ : Signature}
-    := WithASideCondition (@BasicPattern Σ)
+Definition OpenTermWSC {Σ : Signature}
+    := WithASideCondition (@OpenTerm Σ)
 .
 
 (*
@@ -150,7 +149,7 @@ Definition BasicPatternWSC {Σ : Signature}
     thanks to how LocalRewrite is defined.
 *)
 Definition LhsPattern {Σ : Signature}
-    := AppliedOperator' symbol BasicPatternWSC
+    := AppliedOperator' symbol OpenTermWSC
 .
 
 Inductive Expression
@@ -172,14 +171,14 @@ Inductive LocalRewrite {Σ : Signature} :=
 | lr_pattern (from : LhsPattern) (to : RhsPattern)
 .
 
-Inductive LocalRewriteOrBasicPatternOrBOV {Σ : Signature} :=
+Inductive LocalRewriteOrOpenTermOrBOV {Σ : Signature} :=
 | lp_rewrite (r : LocalRewrite)
-| lp_basicpat (φ : BasicPattern)
+| lp_basicpat (φ : OpenTerm)
 | lp_bov (bx : BuiltinOrVar)
 . 
 
 Definition RewritingRule {Σ : Signature}
-    := AppliedOperator' symbol LocalRewriteOrBasicPatternOrBOV
+    := AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV
 .
 
 Inductive LeftRight : Set := LR_Left | LR_Right.
@@ -269,8 +268,8 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  BasicPatternWSC_eqdec {Σ : Signature}
-        : EqDecision BasicPatternWSC
+    Instance  OpenTermWSC_eqdec {Σ : Signature}
+        : EqDecision OpenTermWSC
     .
     Proof.
         ltac1:(solve_decision).
