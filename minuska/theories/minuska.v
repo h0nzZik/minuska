@@ -12,6 +12,12 @@ Set Equations Transparent.
 Require Import Wellfounded.
 From Ltac2 Require Import Ltac2.
 
+From Minuska Require Import
+    prelude
+    spec_syntax
+    spec_semantics
+.
+
 Add Search Blacklist "_graph_mut".
 Add Search Blacklist "_graph_rect".
 Add Search Blacklist "_graph_equation".
@@ -30,66 +36,7 @@ Proof.
 Defined.
 
 (*
-    Here is a bunch of examples illustrating
-    what language specifications want to support.
-    r,s,t,... - symbols
-    x,y,z,... - variables
-    1,2,3,... - builtins
-    +,*,...   - binary operators
-
-    G1. Rewrite builtins to expressions (using local rewrite)
-    ```
-        1 => (2 + 3)
-    ```
-
-    G2. Rewrite possibly constrained variables to expressions
-    ```
-        (x where x >= 1) => (x + 1)
-    ```
-
-    G3. Both (1) and (2) in a term context, locally
-    ```
-        t (1 => (2 + 3)) ((x where x >= 1) => (x + 1))
-    ```
-
-
-    G4. Variable sharing across local rewrites
-    ```
-        t (x => y) (y => x)
-    ```
-
-    G5. Constraints on top of a rewrite rule
-    ```
-        (t (x => y) z) where x >= z
-    ```
-
-    G6. Constraints inside rewrite rule
-    ```
-        t ((x => y) where x >= 0) (z where z >= 0)
-    ```
-
-
-    Here are examples illustrating what we do NOT want to support.
-
-    B1. Rewrites of symbols
-    ```
-        (t => s) x
-    ```
-
-    B2. Rewrites of partial applications
-    ```
-        (t x => s x) y
-    ```
-
-    B3. Rewrite terms to builtins
-    ```
-        (t x 3) => 4
-    ```
-
-    B4. Rewrite expressions
-    ```
-        (x + 3) => x
-    ```
+    
 
 *)
 
@@ -713,6 +660,29 @@ Module Syntax.
             => vars_of_RhsPattern φ' ∪ vars_of_Expression t
         | ao_app_ao φ1 φ2
             => vars_of_RhsPattern φ1 ∪ vars_of_RhsPattern φ2
+        end.
+
+        Fixpoint var_of_WithASideCondition_variable
+            {Σ : Signature}
+            (x : WithASideCondition variable)
+            : variable :=
+        match x with
+        | wsc_base x' => x'
+        | wsc_sc x' sc => var_of_WithASideCondition_variable x'
+        end.
+
+        Definition vars_of_LocalRewrite
+            {Σ : Signature}
+            (lr : LeftRight)
+            (r : LocalRewrite)
+            : gset variable :=
+        match lr,r with
+        | LR_Left,lr_var x _ => {[var_of_WithASideCondition_variable x]}
+        | LR_Left, lr_builtin _ _ => ∅
+        | LR_Left, lr_pattern φ _ => vars_of_LhsPattern φ
+        | LR_Right, lr_var _ e => vars_of_Expression e
+        | LR_Right, lr_builtin _ e => vars_of_Expression e
+        | LR_Right, lr_pattern _ φ => vars_of_RhsPattern φ
         end.
 
     End vars_of.
