@@ -263,13 +263,18 @@ Module Syntax.
     | lr_var (from : WithASideCondition variable) (to : Expression)
     | lr_builtin (from : builtin_value) (to : Expression)
     | lr_pattern (from : LhsPattern) (to : RhsPattern)
+    .
+
+    Inductive LocalRewriteOrBasicPattern {Σ : Signature} :=
+    | lp_rewrite (r : LocalRewrite)
+    | lp_basicpat (φ : BasicPattern)
     . 
 
     Definition RewritingRule {Σ : Signature}
-        := AppliedOperator' symbol LocalRewrite
+        := AppliedOperator' symbol LocalRewriteOrBasicPattern
     .
 
-    Inductive LR : Set := LR_Left | LR_Right.
+    Inductive LeftRight : Set := LR_Left | LR_Right.
 
     Equations Derive NoConfusion for AppliedOperator'.
     Equations Derive NoConfusion for Value'.
@@ -900,16 +905,72 @@ Module Semantics.
                 (fun g e => Expression_evaluate e = Some (val_gterm g))
         .
 
-        Print LocalRewrite.
-        Inductive Value_satisfies_LocalRewrite
-            {Σ : Signature}
-            LR -> Value -> LocalRewrite -> Prop :=
-        | vslr_left_var:
+        Inductive Value_satisfies_VarWithSc:
+            Value -> WithASideCondition variable -> Prop :=
 
-                Value_satisfies_LocalRewrite LR_Left 
+        | vsvsc_var:
+            forall x v,
+                ρ !! x = Some v ->
+                Value_satisfies_VarWithSc v (wsc_base x)
+
+        | vsvsc_sc :
+            forall x v sc,
+                Value_satisfies_VarWithSc v x ->
+                valuation_satisfies_sc sc ->
+                Value_satisfies_VarWithSc v (wsc_sc x sc)
+        .
+
+
+        Inductive Value_satisfies_left_LocalRewrite:
+            Value -> LocalRewrite -> Prop :=
+
+        | vslr_left_var:
+            forall v x e,
+                Value_satisfies_VarWithSc v x ->
+                Value_satisfies_left_LocalRewrite
+                    v (lr_var x e)
         
+        | vslr_left_builtin:
+            forall b e,
+                Value_satisfies_left_LocalRewrite
+                    (val_builtin b) (lr_builtin b e)
+        
+        | vslr_left_pattern:
+            forall g φl φr,
+                GroundTerm_satisfies_LhsPattern g φl ->
+                Value_satisfies_left_LocalRewrite
+                    (val_gterm g) (lr_pattern φl φr)
 
         .
+
+        Inductive Value_satisfies_right_LocalRewrite:
+            Value -> LocalRewrite -> Prop :=
+
+        | vlsr_right_var:
+            forall v x e,
+                Value_satisfies_right_LocalRewrite
+                    v (lr_var x e)
+        
+        | vlsr_right_builtin:
+            forall b v e,
+                Expression_evaluate e = Some v ->
+                Value_satisfies_right_LocalRewrite
+                    v (lr_builtin b e)
+        
+        | vlsr_right_pattern:
+            forall g φl φr,
+                GroundTerm_satisfies_RhsPattern g φr ->
+                Value_satisfies_right_LocalRewrite
+                    (val_gterm g) (lr_pattern φl φr)
+        .
+
+        Definition Value_satisfies_LocalRewrite
+            (v : Value) (r : LocalRewrite) (lr : LeftRight)
+            : Prop :=
+        match lr with
+        | LR_Left => Value_satisfies_left_LocalRewrite v r
+        | LR_Right => Value_satisfies_right_LocalRewrite v r
+        end.
 
 
     End with_valuation.
