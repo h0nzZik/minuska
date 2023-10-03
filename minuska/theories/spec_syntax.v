@@ -172,13 +172,14 @@ Inductive LocalRewrite {Σ : Signature} :=
 | lr_pattern (from : LhsPattern) (to : RhsPattern)
 .
 
-Inductive LocalRewriteOrBasicPattern {Σ : Signature} :=
+Inductive LocalRewriteOrBasicPatternOrBOV {Σ : Signature} :=
 | lp_rewrite (r : LocalRewrite)
 | lp_basicpat (φ : BasicPattern)
+| lp_bov (bx : BuiltinOrVar)
 . 
 
 Definition RewritingRule {Σ : Signature}
-    := AppliedOperator' symbol LocalRewriteOrBasicPattern
+    := AppliedOperator' symbol LocalRewriteOrBasicPatternOrBOV
 .
 
 Inductive LeftRight : Set := LR_Left | LR_Right.

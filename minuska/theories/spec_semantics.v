@@ -246,12 +246,105 @@ Section with_valuation.
     .
 
     Definition Value_satisfies_LocalRewrite
-        (v : Value) (r : LocalRewrite) (lr : LeftRight)
+        (lr : LeftRight) (v : Value) (r : LocalRewrite)
         : Prop :=
     match lr with
     | LR_Left => Value_satisfies_left_LocalRewrite v r
     | LR_Right => Value_satisfies_right_LocalRewrite v r
     end.
 
+    Definition GroundTerm_satisfies_LocalRewriteOrBasicPatternOrBOV
+        (lr : LeftRight)
+        (g : GroundTerm)
+        (rb : LocalRewriteOrBasicPatternOrBOV)
+        : Prop :=
+    match rb with
+    | lp_rewrite r =>
+        Value_satisfies_LocalRewrite lr (val_gterm g) r
+    | lp_basicpat φ =>
+        GroundTerm_satisfies_BasicPattern g φ
+    | lp_bov bx => False
+    end.
+
+
+    Definition builtin_satisfies_LocalRewriteOrBasicPatternOrBOV
+        (lr : LeftRight)
+        (b : builtin_value)
+        (rb : LocalRewriteOrBasicPatternOrBOV)
+        : Prop :=
+    match rb with
+    | lp_rewrite r =>
+        Value_satisfies_LocalRewrite lr (val_builtin b) r
+    | lp_basicpat φ =>
+        False
+    | lp_bov bx =>
+        builtin_satisfies_BuiltinOrVar b bx
+    end.
+
+    Definition GroundTerm_satisfies_RewritingRule
+        (lr : LeftRight)
+        : GroundTerm -> RewritingRule -> Prop
+    := @aoxy_satisfies_aoxz
+            symbol
+            builtin_value
+            LocalRewriteOrBasicPatternOrBOV
+            (builtin_satisfies_LocalRewriteOrBasicPatternOrBOV lr)
+            (GroundTerm_satisfies_LocalRewriteOrBasicPatternOrBOV lr)
+    .
+
+    (* Not sure if this is needed *)
+    Definition Value_satisfies_RewritingRule
+        (lr : LeftRight)
+        : Value -> RewritingRule -> Prop :=
+    fun v =>
+        match v with
+        | val_builtin b => fun _ => False
+        | val_gterm g => GroundTerm_satisfies_RewritingRule lr g
+        end
+    .
 
 End with_valuation.
+
+
+
+Definition rewrites_in_valuation_to
+    {Σ : Signature}
+    (ρ : Valuation)
+    (r : RewritingRule)
+    (from to : GroundTerm)
+    : Prop
+:= GroundTerm_satisfies_RewritingRule ρ LR_Left from r
+/\ GroundTerm_satisfies_RewritingRule ρ LR_Right to r
+.
+
+Definition rewrites_to
+    {Σ : Signature}
+    (r : RewritingRule)
+    (from to : GroundTerm)
+    : Prop
+:= exists ρ, rewrites_in_valuation_to ρ r from to
+.
+
+Definition RewritingTheory {Σ : Signature}
+    := list RewritingRule
+.
+
+Definition rewriting_relation
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    : relation GroundTerm
+    := fun from to =>
+        exists r, r ∈ Γ /\ rewrites_to r from to
+.
+
+Definition not_stuck
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    (e : GroundTerm) : Prop
+:= exists e', rewriting_relation Γ e e'.
+
+Definition stuck
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    (e : GroundTerm) : Prop
+:= not (not_stuck Γ e).
