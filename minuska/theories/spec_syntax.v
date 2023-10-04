@@ -146,13 +146,6 @@ Definition OpenTermWSC {Σ : Signature}
     := WithASideCondition (@OpenTerm Σ)
 .
 
-(*
-    LhsPattern matches only terms
-    and cannot match builtin values directly.
-    However, we still can rewrite leaves directly,
-    thanks to how LocalRewrite is defined.
-*)
-
 Definition LhsPattern {Σ : Signature} :=
     AppliedOperatorOr' symbol OpenTermWSC
 .
@@ -166,16 +159,14 @@ Inductive Expression
 | ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
 .
 
-Inductive RhsPattern {Σ : Signature} :=
-| rp_aop (aop : AppliedOperator' symbol Expression)
-| rp_exp (exp : Expression)
+Definition RhsPattern {Σ : Signature} :=
+    AppliedOperatorOr' symbol Expression
 .
 
-Inductive LocalRewrite {Σ : Signature} :=
-(*| lr_var (from : WithASideCondition variable) (to : Expression)
-| lr_builtin (from : builtin_value) (to : Expression) *)
-| lr_pattern (from : LhsPattern) (to : RhsPattern)
-.
+Record LocalRewrite {Σ : Signature} := {
+    lr_from : LhsPattern ;
+    lr_to : RhsPattern ;
+}.
 
 Inductive LocalRewriteOrOpenTermOrBOV {Σ : Signature} :=
 | lp_rewrite (r : LocalRewrite)

@@ -289,81 +289,37 @@ Section with_valuation.
         AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC
     .
 
-    Print RhsPattern.
-    
     Definition GroundTerm_satisfies_RhsPattern:
         GroundTerm -> RhsPattern -> Prop
-        := fun g φ =>
-        match φ with 
-        | rp_aop aop =>
-          @aoxy_satisfies_aoxz
-            symbol
-            builtin_value
-            Expression
-            (fun b e => Expression_evaluate e = Some (val_builtin b))
-            (fun g e => Expression_evaluate e = Some (val_gterm g))
-            g aop
-        | rp_exp exp => Expression_evaluate exp = Some (val_gterm g)
-        end
+    := @aoxyo_satisfies_aoxzo
+        symbol
+        builtin_value
+        Expression
+        (fun b e => Expression_evaluate e = Some (aoo_operand _ _ b))
+        (fun ao e => Expression_evaluate e = Some (aoo_app _ _ ao))
     .
 
-    Inductive GroundTerm_satisfies_VarWithSc:
-        GroundTerm -> WithASideCondition variable -> Prop :=
-
-    | vsvsc_var:
-        forall x v,
-            ρ !! x = Some v ->
-            GroundTerm_satisfies_VarWithSc v (wsc_base x)
-
-    | vsvsc_sc :
-        forall x v sc,
-            GroundTerm_satisfies_VarWithSc v x ->
-            valuation_satisfies_sc sc ->
-            GroundTerm_satisfies_VarWithSc v (wsc_sc x sc)
+    Definition GroundTerm_satisfies_VarWithSc:
+        GroundTerm ->
+        WithASideCondition variable
+        -> Prop :=
+        A_satisfies_B_WithASideCondition
+            GroundTerm
+            variable
+            (fun g x => ρ !! x = Some g)
+            ρ
     .
 
+    Print LocalRewrite.
 
-    Inductive GroundTerm_satisfies_left_LocalRewrite:
+    Definition GroundTerm_satisfies_left_LocalRewrite:
         GroundTerm -> LocalRewrite -> Prop :=
-
-    | vslr_left_var:
-        forall v x e,
-            GroundTerm_satisfies_VarWithSc v x ->
-            GroundTerm_satisfies_left_LocalRewrite
-                v (lr_var x e)
-    
-    | vslr_left_builtin:
-        forall b e,
-            GroundTerm_satisfies_left_LocalRewrite
-                (val_builtin b) (lr_builtin b e)
-    
-    | vslr_left_pattern:
-        forall g φl φr,
-            GroundTerm_satisfies_LhsPattern g φl ->
-            GroundTerm_satisfies_left_LocalRewrite
-                (val_gterm g) (lr_pattern φl φr)
-
+        fun g r => GroundTerm_satisfies_LhsPattern g (lr_from r)
     .
 
-    Inductive GroundTerm_satisfies_right_LocalRewrite:
+    Definition GroundTerm_satisfies_right_LocalRewrite:
         GroundTerm -> LocalRewrite -> Prop :=
-
-    | vlsr_right_var:
-        forall v x e,
-            GroundTerm_satisfies_right_LocalRewrite
-                v (lr_var x e)
-    
-    | vlsr_right_builtin:
-        forall b v e,
-            Expression_evaluate e = Some v ->
-            GroundTerm_satisfies_right_LocalRewrite
-                v (lr_builtin b e)
-    
-    | vlsr_right_pattern:
-        forall g φl φr,
-            GroundTerm_satisfies_RhsPattern g φr ->
-            GroundTerm_satisfies_right_LocalRewrite
-                (val_gterm g) (lr_pattern φl φr)
+        fun g r => GroundTerm_satisfies_RhsPattern g (lr_to r)
     .
 
     Definition GroundTerm_satisfies_LocalRewrite
