@@ -11,17 +11,19 @@ Inductive AppliedOperator' (operator : Set) (operand : Set) :=
     (x : AppliedOperator' operator operand)
 .
 
+
+Inductive AppliedOperatorOr'
+    (Operator : Set)
+    (Operand : Set)
+    : Set :=
+| aoo_app (ao : AppliedOperator' Operator Operand)
+| aoo_operand (operand : Operand)
+.
+
+
 Definition GroundTerm' (symbol : Set) (builtin : Set)
-    := (AppliedOperator' symbol builtin)
+    := (AppliedOperatorOr' symbol builtin)
 .
-
-Inductive Value' (symbol : Set) (builtin : Set) :=
-| val_builtin (b : builtin)
-| val_gterm (g : GroundTerm' symbol builtin)
-.
-
-Arguments val_gterm {symbol builtin}%type_scope g.
-Arguments val_builtin {symbol builtin}%type_scope b.
 
 Arguments ao_operator {operator operand}%type_scope s.
 Arguments ao_app_operand {operator operand}%type_scope aps b.
@@ -66,25 +68,25 @@ Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
 
     builtin_unary_predicate_interp
         : builtin_unary_predicate 
-        -> (Value' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value)
         -> Prop ;
 
     builtin_binary_predicate_interp
         : builtin_binary_predicate 
-        -> (Value' symbol builtin_value)
-        -> (Value' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value)
         -> Prop ;
     
     builtin_unary_function_interp
         : builtin_unary_function
-        -> (Value' symbol builtin_value)
-        -> (Value' symbol builtin_value) ;
+        -> (GroundTerm' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value) ;
 
     builtin_binary_function_interp
         : builtin_binary_function
-        -> (Value' symbol builtin_value)
-        -> (Value' symbol builtin_value)
-        -> (Value' symbol builtin_value) ;
+        -> (GroundTerm' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value) ;
 }.
 
 Class Signature := {
@@ -94,10 +96,6 @@ Class Signature := {
     builtin :: Builtin ;
     variables :: MVariables variable ;
 }.
-
-Definition Value {Σ : Signature}
-    := Value' symbol builtin_value
-.
 
 Definition GroundTerm {Σ : Signature}
     := GroundTerm' symbol builtin_value
@@ -121,7 +119,7 @@ Inductive BuiltinOrVar {Σ : Signature} :=
 .
 
 Definition OpenTerm {Σ : Signature}
-    := AppliedOperator' symbol BuiltinOrVar
+    := AppliedOperatorOr' symbol BuiltinOrVar
 .
 (*
 Inductive OpenTerm {Σ : Signature} :=
@@ -154,15 +152,15 @@ Definition OpenTermWSC {Σ : Signature}
     However, we still can rewrite leaves directly,
     thanks to how LocalRewrite is defined.
 *)
-Inductive LhsPattern {Σ : Signature} :=
-| lp_aop (aop: AppliedOperator' symbol OpenTermWSC)
-| lp_otwsc (otwsc: OpenTermWSC)
+
+Definition LhsPattern {Σ : Signature} :=
+    AppliedOperatorOr' symbol OpenTermWSC
 .
 
 Inductive Expression
     {Σ : Signature}
     :=
-| ft_element (e : Value)
+| ft_element (e : GroundTerm)
 | ft_variable (x : variable)
 | ft_unary (f : builtin_unary_function) (t : Expression)
 | ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
@@ -174,8 +172,8 @@ Inductive RhsPattern {Σ : Signature} :=
 .
 
 Inductive LocalRewrite {Σ : Signature} :=
-| lr_var (from : WithASideCondition variable) (to : Expression)
-| lr_builtin (from : builtin_value) (to : Expression)
+(*| lr_var (from : WithASideCondition variable) (to : Expression)
+| lr_builtin (from : builtin_value) (to : Expression) *)
 | lr_pattern (from : LhsPattern) (to : RhsPattern)
 .
 
@@ -196,7 +194,6 @@ Definition RewritingRule {Σ : Signature}
 Inductive LeftRight : Set := LR_Left | LR_Right.
 
 Equations Derive NoConfusion for AppliedOperator'.
-Equations Derive NoConfusion for Value'.
 Equations Derive NoConfusion for AtomicProposition.
 Equations Derive NoConfusion for Constraint.
 Equations Derive NoConfusion for Expression.
@@ -218,12 +215,12 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance Value'_eqdec
+    Instance GroundTerm'_eqdec
         {A : Set}
         {symbols : Symbols A}
         (T : Set)
         {T_dec : EqDecision T}
-        : EqDecision (Value' A T)
+        : EqDecision (GroundTerm' A T)
     .
     Proof.
         ltac1:(solve_decision).
@@ -254,12 +251,12 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance Value_eqdec {Σ : Signature}
-        : EqDecision Value
+    Instance GroundTerm_eqdec {Σ : Signature}
+        : EqDecision GroundTerm
     .
     Proof.
         intros e1 e2.
-        apply Value'_eqdec.
+        apply GroundTerm'_eqdec.
         apply builtin_value_eqdec.
     Defined.
 
@@ -453,76 +450,76 @@ Section countable.
         apply AppliedOperator'_of_to_gen_tree.
     Qed.
 
-    Equations element'_to_gen_tree
+    Equations GroundTerm'_to_gen_tree
         (symbol : Set)
         {symbols : Symbols symbol}
         (builtin : Set)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (e : Value' symbol builtin)
+        (e : GroundTerm' symbol builtin)
         : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
     :=
-        element'_to_gen_tree _ _ (val_builtin b)
+        GroundTerm'_to_gen_tree _ _ (aoo_operand _ _ b)
         := GenLeaf (inl _ b) ;
         
-        element'_to_gen_tree _ _ (val_gterm s)
+        GroundTerm'_to_gen_tree _ _ (aoo_app _ _ s)
         := GenLeaf (inr _ s)
     .
 
-    Opaque element'_to_gen_tree.
+    Opaque GroundTerm'_to_gen_tree.
 
-    Equations element'_from_gen_tree
+    Equations GroundTerm'_from_gen_tree
         (symbol : Set)
         {symbols : Symbols symbol}
         (builtin : Set)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
         (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
-        :  option (Value' symbol builtin)
+        :  option (GroundTerm' symbol builtin)
     :=
-        element'_from_gen_tree _ _ (GenLeaf (inl _ b))
-        := Some (val_builtin b);
+        GroundTerm'_from_gen_tree _ _ (GenLeaf (inl _ b))
+        := Some (aoo_operand _ _ b);
         
-        element'_from_gen_tree _ _ (GenLeaf (inr _ s))
-        := Some (val_gterm s);
+        GroundTerm'_from_gen_tree _ _ (GenLeaf (inr _ s))
+        := Some (aoo_app _ _ s);
         
-        element'_from_gen_tree _ _ _
+        GroundTerm'_from_gen_tree _ _ _
         := None
     .
-    Opaque element'_from_gen_tree.
+    Opaque GroundTerm'_from_gen_tree.
 
-    Lemma element'_to_from_gen_tree
+    Lemma GroundTerm'_to_from_gen_tree
         (symbol : Set)
         {symbols : Symbols symbol}
         (builtin : Set)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
-        (e : Value' symbol builtin)
-        : element'_from_gen_tree symbol builtin (element'_to_gen_tree symbol builtin e) = Some e
+        (e : GroundTerm' symbol builtin)
+        : GroundTerm'_from_gen_tree symbol builtin (GroundTerm'_to_gen_tree symbol builtin e) = Some e
     .
     Proof.
-        ltac1:(funelim (element'_to_gen_tree symbol builtin e)).
+        ltac1:(funelim (GroundTerm'_to_gen_tree symbol builtin e)).
         { reflexivity. }
         { reflexivity. }
     Qed.
 
     #[export]
-    Instance element'_countable
+    Instance GroundTerm'_countable
         (symbol_set : Set)
         {symbols : Symbols symbol_set}
         (builtin_set : Set)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
-        : Countable (Value' symbol_set builtin_set)
+        : Countable (GroundTerm' symbol_set builtin_set)
     .
     Proof.
         apply inj_countable
         with
-            (f := element'_to_gen_tree symbol_set builtin_set)
-            (g := element'_from_gen_tree symbol_set builtin_set)
+            (f := GroundTerm'_to_gen_tree symbol_set builtin_set)
+            (g := GroundTerm'_from_gen_tree symbol_set builtin_set)
         .
         intros x.
-        apply element'_to_from_gen_tree.
+        apply GroundTerm'_to_from_gen_tree.
     Qed.
 
 End countable.

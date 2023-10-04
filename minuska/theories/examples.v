@@ -55,6 +55,15 @@ Module example_1.
         )
     .
 
+    Print RhsPattern.
+    Print LocalRewrite.
+
+(*
+    Notation "x => e" := (lr_var x e) (at level 90).
+    Notation "b => e" := (lr_builtin b e) (at level 90).
+*)
+    Notation "φ1 => φ2" := (lr_pattern φ1 φ2) (at level 90).
+
     Lemma rewrites_3_to_1:
         rewrites_to rule_sub_2
         (ao_app_ao

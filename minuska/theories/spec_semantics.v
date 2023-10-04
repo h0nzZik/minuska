@@ -4,7 +4,7 @@ From Minuska Require Import
 .
 
 Definition Valuation {Σ : Signature}
-        := gmap variable Value
+        := gmap variable GroundTerm
     .
 
 Definition val_satisfies_ap
@@ -73,6 +73,126 @@ Inductive aoxy_satisfies_aoxz
             (ao_app_ao aoxz1 aoxz2)
 .
 
+Inductive aoxyo_satisfies_aoxzo
+    {X Y Z : Set}
+    {Y_sat_Z : Y -> Z -> Prop}
+    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
+    AppliedOperatorOr' X Y ->
+    AppliedOperatorOr' X Z ->
+    Prop :=
+| axysaxz_app:
+    forall
+        (xy : AppliedOperator' X Y)
+        (xz : AppliedOperator' X Z)
+        (pf : @aoxy_satisfies_aoxz X Y Z Y_sat_Z AOXY_sat_Z xy xz),
+        aoxyo_satisfies_aoxzo (@aoo_app _ _  xy) (aoo_app _ _ xz)
+| axysaxz_operand:
+    forall (y : Y) (z : Z) (pf : Y_sat_Z y z),
+        aoxyo_satisfies_aoxzo (@aoo_operand X Y y) (@aoo_operand X Z z)
+.
+
+
+Inductive builtin_satisfies_BuiltinOrVar
+    {Σ : Signature}
+    (ρ : Valuation)
+    :
+    builtin_value ->
+    BuiltinOrVar ->
+    Prop :=
+
+| bsbv_builtin:
+    forall b,
+        builtin_satisfies_BuiltinOrVar ρ b (bov_builtin b)
+
+| bsbv_var:
+    forall (b : builtin_value) (x : variable),
+        ρ !! x = Some (@aoo_operand symbol builtin_value b) ->
+        builtin_satisfies_BuiltinOrVar ρ b (bov_variable x)
+.
+
+Definition AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
+    {Σ : Signature}
+    (ρ : Valuation)
+    (aop : AppliedOperator' symbol builtin_value)
+    (bov : BuiltinOrVar)
+    : Prop :=
+match bov with
+| bov_builtin _ => False
+| bov_variable x => ρ !! x = Some (aoo_app symbol builtin_value aop)
+end.
+
+Definition aosb_satisfies_aosbf
+    {Σ : Signature}
+    (ρ : Valuation)
+    :
+    AppliedOperator' symbol builtin_value ->
+    AppliedOperator' symbol BuiltinOrVar ->
+    Prop :=
+    @aoxy_satisfies_aoxz
+        symbol
+        builtin_value
+        BuiltinOrVar
+        (builtin_satisfies_BuiltinOrVar ρ)
+        (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+.
+
+Definition aoosb_satisfies_aoosbf
+    {Σ : Signature}
+    (ρ : Valuation)
+    :
+    AppliedOperatorOr' symbol builtin_value ->
+    AppliedOperatorOr' symbol BuiltinOrVar ->
+    Prop :=
+    @aoxyo_satisfies_aoxzo
+        symbol
+        builtin_value
+        BuiltinOrVar
+        (builtin_satisfies_BuiltinOrVar ρ)
+        (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+.
+
+Definition in_val_GroundTerm_satisfies_OpenTerm
+    {Σ : Signature}
+    (ρ : Valuation)
+    (g : GroundTerm)
+    (φ : OpenTerm)
+    : Prop := aoosb_satisfies_aoosbf ρ g φ
+.
+
+Definition valuation_satisfies_sc
+    {Σ : Signature}
+    (ρ : Valuation)
+    (sc : SideCondition) : Prop :=
+match sc with
+| sc_constraint c => val_satisfies_c ρ c
+| sc_match x φ =>
+    match ρ !! x with
+    | Some g
+        => in_val_GroundTerm_satisfies_OpenTerm ρ g φ
+    | _ => False
+    end
+end.
+
+Inductive A_satisfies_B_WithASideCondition
+    {Σ : Signature}
+    (A B : Set)
+    (A_sat_B : A -> B -> Prop)
+    (ρ : Valuation)
+    : A -> WithASideCondition B -> Prop :=
+
+| asbwsc_base:
+    forall (a : A) (b : B),
+        A_sat_B a b ->
+        A_satisfies_B_WithASideCondition A B A_sat_B ρ a (wsc_base b)
+
+| asbwsc_sc :
+    forall (a : A) (bsc : WithASideCondition B) sc,
+        A_satisfies_B_WithASideCondition A B A_sat_B ρ a bsc ->
+        valuation_satisfies_sc ρ sc ->
+        A_satisfies_B_WithASideCondition A B A_sat_B ρ a (wsc_sc bsc sc)
+.
+
+
 Section with_valuation.
     Context
         {Σ : Signature}
@@ -80,7 +200,7 @@ Section with_valuation.
     .
 
     Fixpoint Expression_evaluate
-        (t : Expression) : option Value :=
+        (t : Expression) : option GroundTerm :=
     match t with
     | ft_element e => Some e
     | ft_variable x => ρ !! x
@@ -92,101 +212,84 @@ Section with_valuation.
         Some (builtin_binary_function_interp f e1 e2)
     end.
 
-    Inductive builtin_satisfies_BuiltinOrVar:
-        builtin_value ->
-        BuiltinOrVar ->
-        Prop :=
-
-    | bsbv_builtin:
-        forall b,
-            builtin_satisfies_BuiltinOrVar b (bov_builtin b)
-
-    | bsbv_var:
-        forall b x,
-            ρ !! x = Some (val_builtin b) ->
-            builtin_satisfies_BuiltinOrVar b (bov_variable x)
-    .
-
     Definition GroundTerm_satisfies_BuiltinOrVar
         (g : GroundTerm)
         (bov : BuiltinOrVar)
         : Prop :=
     match bov with
-    | bov_builtin _ => False
-    | bov_variable x => ρ !! x = Some (val_gterm g)
-    end.
-
-    Definition aosb_satisfies_aosbf:
-        AppliedOperator' symbol builtin_value ->
-        AppliedOperator' symbol BuiltinOrVar ->
-        Prop :=
-    @aoxy_satisfies_aoxz
-        symbol
-        builtin_value
-        BuiltinOrVar
-        builtin_satisfies_BuiltinOrVar
-        GroundTerm_satisfies_BuiltinOrVar
-    .
-
-    Definition in_val_GroundTerm_satisfies_OpenTerm
-        (g : GroundTerm)
-        (φ : OpenTerm)
-        : Prop := aosb_satisfies_aosbf g φ
-    .
-    (*
-    match φ with
-    | ot_aop aop => aosb_satisfies_aosbf g aop
-    |ot_bov x => x
-    end.
-    *)
-
-    Definition valuation_satisfies_sc
-        (sc : SideCondition) : Prop :=
-    match sc with
-    | sc_constraint c => val_satisfies_c ρ c
-    | sc_match x φ =>
-        match ρ !! x with
-        | Some (val_gterm g)
-            => in_val_GroundTerm_satisfies_OpenTerm g φ
-        | _ => False
+    | bov_builtin b =>
+        match g with
+        | aoo_app _ _ _ => False
+        | aoo_operand _ _ b' => b = b'
         end
+    | bov_variable x => ρ !! x = Some g
     end.
 
-    Inductive in_val_GroundTerm_satisfies_OpenTermWSC:
+
+    Definition in_val_GroundTerm_satisfies_OpenTermWSC:
         GroundTerm ->
         OpenTermWSC ->
         Prop :=
-    | gsbc_basic:
-        forall
-            (g : GroundTerm)
-            (φ : OpenTerm)
-            (pf : in_val_GroundTerm_satisfies_OpenTerm g φ ),
-            in_val_GroundTerm_satisfies_OpenTermWSC g (wsc_base φ)
-    | gsbc_side:
-        forall
-            (g : GroundTerm)
-            (φc : OpenTermWSC)
-            (c : SideCondition)
-            (pf1 : in_val_GroundTerm_satisfies_OpenTermWSC g φc)
-            (pf2 : valuation_satisfies_sc c),
-            in_val_GroundTerm_satisfies_OpenTermWSC g (wsc_sc φc c)
+        A_satisfies_B_WithASideCondition
+            GroundTerm
+            OpenTerm
+            (in_val_GroundTerm_satisfies_OpenTerm ρ)
+            ρ
+    .
+
+    Definition builtin_value_satisfies_OpenTerm:
+        builtin_value ->
+        OpenTerm ->
+        Prop := fun b t =>
+    match t with
+    | aoo_app _ _ _ => False
+    | aoo_operand _ _ bov =>
+        builtin_satisfies_BuiltinOrVar ρ b bov
+    end.
+
+    Definition builtin_value_satisfies_OpenTermWSC:
+        builtin_value ->
+        OpenTermWSC ->
+        Prop :=
+        A_satisfies_B_WithASideCondition
+            builtin_value
+            OpenTerm
+            builtin_value_satisfies_OpenTerm
+            ρ
+    .
+
+    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm:
+        AppliedOperator' symbol builtin_value ->
+        OpenTerm ->
+        Prop
+    := fun asb o =>
+    match o with
+    | aoo_app _ _ t => aosb_satisfies_aosbf ρ asb t
+    | aoo_operand _ _ _ => False
+    end.
+
+    Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC:
+        AppliedOperator' symbol builtin_value ->
+        OpenTermWSC ->
+        Prop :=
+        A_satisfies_B_WithASideCondition
+            (AppliedOperator' symbol builtin_value)
+            OpenTerm
+            (AppliedOperator'_symbol_builtin_satisfies_OpenTerm)
+            ρ
     .
 
     Definition GroundTerm_satisfies_LhsPattern:
         GroundTerm -> LhsPattern -> Prop
-        := fun g φ =>
-        match φ with
-        | lp_aop aop =>
-          @aoxy_satisfies_aoxz
-            symbol
-            builtin_value
-            OpenTermWSC
-            (fun x y => False)
-            in_val_GroundTerm_satisfies_OpenTermWSC
-            g aop
-        | lp_otwsc otwsc =>
-            in_val_GroundTerm_satisfies_OpenTermWSC g otwsc
-        end.
+    := @aoxyo_satisfies_aoxzo
+        symbol
+        builtin_value
+        OpenTermWSC
+        builtin_value_satisfies_OpenTermWSC
+        AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC
+    .
+
+    Print RhsPattern.
     
     Definition GroundTerm_satisfies_RhsPattern:
         GroundTerm -> RhsPattern -> Prop
@@ -204,71 +307,71 @@ Section with_valuation.
         end
     .
 
-    Inductive Value_satisfies_VarWithSc:
-        Value -> WithASideCondition variable -> Prop :=
+    Inductive GroundTerm_satisfies_VarWithSc:
+        GroundTerm -> WithASideCondition variable -> Prop :=
 
     | vsvsc_var:
         forall x v,
             ρ !! x = Some v ->
-            Value_satisfies_VarWithSc v (wsc_base x)
+            GroundTerm_satisfies_VarWithSc v (wsc_base x)
 
     | vsvsc_sc :
         forall x v sc,
-            Value_satisfies_VarWithSc v x ->
+            GroundTerm_satisfies_VarWithSc v x ->
             valuation_satisfies_sc sc ->
-            Value_satisfies_VarWithSc v (wsc_sc x sc)
+            GroundTerm_satisfies_VarWithSc v (wsc_sc x sc)
     .
 
 
-    Inductive Value_satisfies_left_LocalRewrite:
-        Value -> LocalRewrite -> Prop :=
+    Inductive GroundTerm_satisfies_left_LocalRewrite:
+        GroundTerm -> LocalRewrite -> Prop :=
 
     | vslr_left_var:
         forall v x e,
-            Value_satisfies_VarWithSc v x ->
-            Value_satisfies_left_LocalRewrite
+            GroundTerm_satisfies_VarWithSc v x ->
+            GroundTerm_satisfies_left_LocalRewrite
                 v (lr_var x e)
     
     | vslr_left_builtin:
         forall b e,
-            Value_satisfies_left_LocalRewrite
+            GroundTerm_satisfies_left_LocalRewrite
                 (val_builtin b) (lr_builtin b e)
     
     | vslr_left_pattern:
         forall g φl φr,
             GroundTerm_satisfies_LhsPattern g φl ->
-            Value_satisfies_left_LocalRewrite
+            GroundTerm_satisfies_left_LocalRewrite
                 (val_gterm g) (lr_pattern φl φr)
 
     .
 
-    Inductive Value_satisfies_right_LocalRewrite:
-        Value -> LocalRewrite -> Prop :=
+    Inductive GroundTerm_satisfies_right_LocalRewrite:
+        GroundTerm -> LocalRewrite -> Prop :=
 
     | vlsr_right_var:
         forall v x e,
-            Value_satisfies_right_LocalRewrite
+            GroundTerm_satisfies_right_LocalRewrite
                 v (lr_var x e)
     
     | vlsr_right_builtin:
         forall b v e,
             Expression_evaluate e = Some v ->
-            Value_satisfies_right_LocalRewrite
+            GroundTerm_satisfies_right_LocalRewrite
                 v (lr_builtin b e)
     
     | vlsr_right_pattern:
         forall g φl φr,
             GroundTerm_satisfies_RhsPattern g φr ->
-            Value_satisfies_right_LocalRewrite
+            GroundTerm_satisfies_right_LocalRewrite
                 (val_gterm g) (lr_pattern φl φr)
     .
 
-    Definition Value_satisfies_LocalRewrite
-        (lr : LeftRight) (v : Value) (r : LocalRewrite)
+    Definition GroundTerm_satisfies_LocalRewrite
+        (lr : LeftRight) (v : GroundTerm) (r : LocalRewrite)
         : Prop :=
     match lr with
-    | LR_Left => Value_satisfies_left_LocalRewrite v r
-    | LR_Right => Value_satisfies_right_LocalRewrite v r
+    | LR_Left => GroundTerm_satisfies_left_LocalRewrite v r
+    | LR_Right => GroundTerm_satisfies_right_LocalRewrite v r
     end.
 
     Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
@@ -278,7 +381,7 @@ Section with_valuation.
         : Prop :=
     match rb with
     | lp_rewrite r =>
-        Value_satisfies_LocalRewrite lr (val_gterm g) r
+        GroundTerm_satisfies_LocalRewrite lr (val_gterm g) r
     | lp_basicpat φ =>
         in_val_GroundTerm_satisfies_OpenTerm g φ
     | lp_bov bx => False
@@ -292,7 +395,7 @@ Section with_valuation.
         : Prop :=
     match rb with
     | lp_rewrite r =>
-        Value_satisfies_LocalRewrite lr (val_builtin b) r
+        GroundTerm_satisfies_LocalRewrite lr (val_builtin b) r
     | lp_basicpat φ =>
         False
     | lp_bov bx =>
@@ -311,7 +414,7 @@ Section with_valuation.
     .
 
 
-    (* TODO: factor out the commonalities with Value_satisfies_VarWithSc *)
+    (* TODO: factor out the commonalities with GroundTerm_satisfies_VarWithSc *)
     Inductive GroundTerm_satisfies_RewritingRule
         (lr : LeftRight)
         : GroundTerm -> RewritingRule -> Prop :=

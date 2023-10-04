@@ -42,7 +42,7 @@ G6. Constraints inside rewrite rule
 
 Here are examples illustrating what we do NOT want to support.
 
-B1. Rewrites of symbols
+B1. Rewrites of symbols under application
 ```
     (t => s) x
 ```
