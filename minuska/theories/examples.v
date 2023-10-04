@@ -25,62 +25,60 @@ Module example_1.
         apply EmptyBuiltin.
     Defined.
 
-    Definition left_SSX := (lp_otwsc
-                        (wsc_base
-                            (ao_app_ao
-                                (ao_operator "Succ")
-                                (ao_app_operand
-                                    (ao_operator "Succ")
-                                    (bov_variable "X")
-                                )
-                            )
+    Definition left_SSX : LhsPattern :=
+        (aoo_operand _ _
+            (wsc_base
+                (aoo_app _ _ 
+                    (ao_app_ao
+                        (ao_operator "Succ")
+                        (ao_app_operand
+                            (ao_operator "Succ")
+                            (bov_variable "X")
                         )
                     )
-    .
-
-    Definition right_X := (rp_exp 
-                        (ft_variable "X")
-                    ).
-
-    Definition rule_sub_2 : RewritingRule :=
-        wsc_base (
-            ao_app_operand 
-                (ao_operator "TopCell")
-                (lp_rewrite
-                    (lr_pattern
-                        left_SSX
-                        right_X
-                    )
                 )
+            )
         )
     .
 
-    Print RhsPattern.
-    Print LocalRewrite.
+    Definition right_X : RhsPattern :=
+        (aoo_operand _ _ 
+            (ft_variable "X")
+        )
+    .
 
-(*
-    Notation "x => e" := (lr_var x e) (at level 90).
-    Notation "b => e" := (lr_builtin b e) (at level 90).
-*)
-    Notation "φ1 => φ2" := (lr_pattern φ1 φ2) (at level 90).
+    Definition rule_sub_2 : RewritingRule :=
+        wsc_base
+            (aoo_operand _ _
+                (
+                    (lp_rewrite
+                        {|
+                            lr_from := left_SSX;
+                            lr_to :=right_X;
+                        |}
+                    )
+                )
+            )
+    .
 
+    Notation "φ1 => φ2" := (Build_LocalRewrite _ φ1 φ2) (at level 90).
+
+    Print GroundTerm'.
     Lemma rewrites_3_to_1:
         rewrites_to rule_sub_2
-        (ao_app_ao
-            (ao_operator "TopCell")
+        (aoo_app _ _
+            (ao_app_ao
+                (ao_operator "Succ")
                 (ao_app_ao
                     (ao_operator "Succ")
                     (ao_app_ao
                         (ao_operator "Succ")
-                        (ao_app_ao
-                            (ao_operator "Succ")
-                            (ao_operator "Zero")
-                        )
+                        (ao_operator "Zero")
                     )
                 )
+            )
         )
-        (ao_app_ao
-            (ao_operator "TopCell")
+        (aoo_app _ _
             (ao_app_ao
                 (ao_operator "Succ")
                 (ao_operator "Zero")
@@ -91,9 +89,12 @@ Module example_1.
         unfold rewrites_to.
         unfold rule_sub_2.
         exists ({[
-            "X" := (val_gterm (ao_app_ao (ao_operator "Succ") (ao_operator "Zero")))
+            "X" := (aoo_app _ _ (ao_app_ao (ao_operator "Succ") (ao_operator "Zero")))
         ]}).
         unfold rewrites_in_valuation_to.
+        unfold GroundTerm_satisfies_RewritingRule.
+        unfold GroundTerm_satisfies_UncondRewritingRule.
+        unfold left_SSX, right_X.
         repeat constructor.
     Qed.
 

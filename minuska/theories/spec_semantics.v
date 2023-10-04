@@ -89,6 +89,11 @@ Inductive aoxyo_satisfies_aoxzo
 | axysaxz_operand:
     forall (y : Y) (z : Z) (pf : Y_sat_Z y z),
         aoxyo_satisfies_aoxzo (@aoo_operand X Y y) (@aoo_operand X Z z)
+
+| axysaxz_combined:
+    forall axy axz,
+        AOXY_sat_Z axy axz ->
+        aoxyo_satisfies_aoxzo (@aoo_app _ _  axy) (@aoo_operand X Z axz)
 .
 
 

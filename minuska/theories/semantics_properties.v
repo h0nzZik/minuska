@@ -10,7 +10,7 @@ Lemma Expression_evalute_total_iff
     (t : Expression)
     (ρ : Valuation)
     :
-    (∃ e:Value, Expression_evaluate ρ t = Some e)
+    (∃ e:GroundTerm, Expression_evaluate ρ t = Some e)
     <->
     ( vars_of_Expression t ⊆ dom ρ )
 .
