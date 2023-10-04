@@ -69,16 +69,25 @@ From Minuska Require Import
         => vars_of_OpenTermWSC φ ∪ vars_of_SideCondition c
     end.
 
-    Fixpoint vars_of_LhsPattern
+    Fixpoint vars_of_AppliedOperator'_symbol_OpenTermWSC
         {Σ : Signature}
-        (φ : LhsPattern)
+        (φ : AppliedOperator' symbol OpenTermWSC)
         : gset variable :=
     match φ with
     | ao_operator o => ∅
     | ao_app_operand x y
-        => vars_of_LhsPattern x ∪ vars_of_OpenTermWSC y
+        => vars_of_AppliedOperator'_symbol_OpenTermWSC x ∪ vars_of_OpenTermWSC y
     | ao_app_ao x y
-        => vars_of_LhsPattern x ∪ vars_of_LhsPattern y
+        => vars_of_AppliedOperator'_symbol_OpenTermWSC x ∪ vars_of_AppliedOperator'_symbol_OpenTermWSC y
+    end.
+
+    Definition vars_of_LhsPattern
+        {Σ : Signature}
+        (φ : LhsPattern)
+        : gset variable :=
+    match φ with
+    | lp_aop aop => vars_of_AppliedOperator'_symbol_OpenTermWSC aop
+    | lp_otwsc otwsc => vars_of_OpenTermWSC otwsc
     end.
 
     Fixpoint vars_of_Expression
@@ -104,16 +113,25 @@ From Minuska Require Import
         vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
     end.
 
-    Fixpoint vars_of_RhsPattern
+    Fixpoint vars_of_AppliedOperator'_symbol_Expression
         {Σ : Signature}
-        (φ : RhsPattern)
+        (φ : AppliedOperator' symbol Expression)
         : gset variable :=
     match φ with
     | ao_operator _ => ∅
     | ao_app_operand  φ' t
-        => vars_of_RhsPattern φ' ∪ vars_of_Expression t
+        => vars_of_AppliedOperator'_symbol_Expression φ' ∪ vars_of_Expression t
     | ao_app_ao φ1 φ2
-        => vars_of_RhsPattern φ1 ∪ vars_of_RhsPattern φ2
+        => vars_of_AppliedOperator'_symbol_Expression φ1 ∪ vars_of_AppliedOperator'_symbol_Expression φ2
+    end.
+
+    Definition vars_of_RhsPattern
+        {Σ : Signature}
+        (φ : RhsPattern)
+        : gset variable :=
+    match φ with
+    | rp_aop aop => vars_of_AppliedOperator'_symbol_Expression aop
+    | rp_exp exp => vars_of_Expression exp
     end.
 
     Fixpoint var_of_WithASideCondition_variable

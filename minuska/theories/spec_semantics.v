@@ -131,8 +131,14 @@ Section with_valuation.
     Definition in_val_GroundTerm_satisfies_OpenTerm
         (g : GroundTerm)
         (φ : OpenTerm)
-        : Prop
-    := aosb_satisfies_aosbf g φ.
+        : Prop := aosb_satisfies_aosbf g φ
+    .
+    (*
+    match φ with
+    | ot_aop aop => aosb_satisfies_aosbf g aop
+    |ot_bov x => x
+    end.
+    *)
 
     Definition valuation_satisfies_sc
         (sc : SideCondition) : Prop :=
@@ -168,22 +174,34 @@ Section with_valuation.
 
     Definition GroundTerm_satisfies_LhsPattern:
         GroundTerm -> LhsPattern -> Prop
-        := @aoxy_satisfies_aoxz
+        := fun g φ =>
+        match φ with
+        | lp_aop aop =>
+          @aoxy_satisfies_aoxz
             symbol
             builtin_value
             OpenTermWSC
             (fun x y => False)
             in_val_GroundTerm_satisfies_OpenTermWSC
-        .
+            g aop
+        | lp_otwsc otwsc =>
+            in_val_GroundTerm_satisfies_OpenTermWSC g otwsc
+        end.
     
     Definition GroundTerm_satisfies_RhsPattern:
         GroundTerm -> RhsPattern -> Prop
-        := @aoxy_satisfies_aoxz
+        := fun g φ =>
+        match φ with 
+        | rp_aop aop =>
+          @aoxy_satisfies_aoxz
             symbol
             builtin_value
             Expression
             (fun b e => Expression_evaluate e = Some (val_builtin b))
             (fun g e => Expression_evaluate e = Some (val_gterm g))
+            g aop
+        | rp_exp exp => Expression_evaluate exp = Some (val_gterm g)
+        end
     .
 
     Inductive Value_satisfies_VarWithSc:
@@ -281,9 +299,9 @@ Section with_valuation.
         builtin_satisfies_BuiltinOrVar b bx
     end.
 
-    Definition GroundTerm_satisfies_RewritingRule
+    Definition GroundTerm_satisfies_UncondRewritingRule
         (lr : LeftRight)
-        : GroundTerm -> RewritingRule -> Prop
+        : GroundTerm -> UncondRewritingRule -> Prop
     := @aoxy_satisfies_aoxz
             symbol
             builtin_value
@@ -292,16 +310,25 @@ Section with_valuation.
             (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr)
     .
 
-    (* Not sure if this is needed *)
-    Definition Value_satisfies_RewritingRule
+
+    (* TODO: factor out the commonalities with Value_satisfies_VarWithSc *)
+    Inductive GroundTerm_satisfies_RewritingRule
         (lr : LeftRight)
-        : Value -> RewritingRule -> Prop :=
-    fun v =>
-        match v with
-        | val_builtin b => fun _ => False
-        | val_gterm g => GroundTerm_satisfies_RewritingRule lr g
-        end
+        : GroundTerm -> RewritingRule -> Prop :=
+
+    | gtsr_base:
+        forall g r,
+            GroundTerm_satisfies_UncondRewritingRule lr g r ->
+            GroundTerm_satisfies_RewritingRule lr g (wsc_base r)
+
+    | gtsr_sc :
+        forall g r sc,
+            GroundTerm_satisfies_RewritingRule lr g r ->
+            valuation_satisfies_sc sc ->
+            GroundTerm_satisfies_RewritingRule lr g (wsc_sc r sc)
     .
+
+
 
 End with_valuation.
 

@@ -27,7 +27,7 @@ Arguments ao_operator {operator operand}%type_scope s.
 Arguments ao_app_operand {operator operand}%type_scope aps b.
 Arguments ao_app_ao {operator operand}%type_scope aps x.
 
-Class Variables (variable : Set) := {
+Class MVariables (variable : Set) := {
     variable_eqdec :: EqDecision variable ;
     variable_countable :: Countable variable ;
     variable_infinite :: Infinite variable ;
@@ -92,7 +92,7 @@ Class Signature := {
     variable : Set ;
     symbols :: Symbols symbol ;
     builtin :: Builtin ;
-    variables :: Variables variable ;
+    variables :: MVariables variable ;
 }.
 
 Definition Value {Σ : Signature}
@@ -123,6 +123,12 @@ Inductive BuiltinOrVar {Σ : Signature} :=
 Definition OpenTerm {Σ : Signature}
     := AppliedOperator' symbol BuiltinOrVar
 .
+(*
+Inductive OpenTerm {Σ : Signature} :=
+| ot_aop (aop : AppliedOperator' symbol BuiltinOrVar)
+| ot_bov (bov : BuiltinOrVar)
+.
+*)
 
 (* TODO make a plural *)
 Inductive SideCondition {Σ : Signature} :=
@@ -148,8 +154,9 @@ Definition OpenTermWSC {Σ : Signature}
     However, we still can rewrite leaves directly,
     thanks to how LocalRewrite is defined.
 *)
-Definition LhsPattern {Σ : Signature}
-    := AppliedOperator' symbol OpenTermWSC
+Inductive LhsPattern {Σ : Signature} :=
+| lp_aop (aop: AppliedOperator' symbol OpenTermWSC)
+| lp_otwsc (otwsc: OpenTermWSC)
 .
 
 Inductive Expression
@@ -161,8 +168,9 @@ Inductive Expression
 | ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
 .
 
-Definition RhsPattern {Σ : Signature}
-    := AppliedOperator' symbol Expression
+Inductive RhsPattern {Σ : Signature} :=
+| rp_aop (aop : AppliedOperator' symbol Expression)
+| rp_exp (exp : Expression)
 .
 
 Inductive LocalRewrite {Σ : Signature} :=
@@ -177,8 +185,12 @@ Inductive LocalRewriteOrOpenTermOrBOV {Σ : Signature} :=
 | lp_bov (bx : BuiltinOrVar)
 . 
 
-Definition RewritingRule {Σ : Signature}
+Definition UncondRewritingRule {Σ : Signature}
     := AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV
+.
+
+Definition RewritingRule {Σ : Signature}
+    := WithASideCondition UncondRewritingRule
 .
 
 Inductive LeftRight : Set := LR_Left | LR_Right.
@@ -259,6 +271,15 @@ Section eqdec.
         ltac1:(solve_decision).
     Defined.
 
+
+    #[export]
+    Instance  OpenTerm_eqdec {Σ : Signature}
+        : EqDecision OpenTerm
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
     #[export]
     Instance  SideCondition_eqdec {Σ : Signature}
         : EqDecision SideCondition
@@ -280,8 +301,6 @@ Section eqdec.
         : EqDecision LhsPattern
     .
     Proof.
-        unfold LhsPattern.
-        apply AppliedOperator'_eqdec.
         ltac1:(solve_decision).
     Defined.
 

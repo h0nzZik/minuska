@@ -1,8 +1,7 @@
-From stdpp Require Import base countable decidable list list_numbers gmap.
-
-From Minuska Require Import minuska.
-
-From Ltac2 Require Import Ltac2.
+From Minuska Require Import
+    prelude
+    spec_syntax
+.
 
 Inductive Emptyset : Set := .
 

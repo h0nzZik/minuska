@@ -1,8 +1,8 @@
-From stdpp Require Import base countable decidable list list_numbers gmap strings.
+From Minuska Require Import
+    prelude
+    spec_syntax
+.
 
-From Minuska Require Import minuska.
+Definition StringVariables : MVariables string
+:= Build_MVariables _ _ _ _.
 
-From Ltac2 Require Import Ltac2.
-
-Definition StringVariables : Variables string
-:= Build_Variables _ _ _ _.

@@ -1,16 +1,12 @@
 From Coq.Logic Require Import ProofIrrelevance.
 
-From stdpp Require Import base countable decidable finite list list_numbers gmap strings.
-(* This is unset by stdpp. We need to set it again.*)
-Set Transparent Obligations.
-
-From Equations Require Import Equations.
-Set Equations Transparent.
-
-Require Import Wellfounded.
-From Ltac2 Require Import Ltac2.
-
-From Minuska Require Import minuska string_variables empty_builtin.
+From Minuska Require Import
+    prelude
+    spec_syntax
+    spec_semantics
+    string_variables
+    empty_builtin
+.
 
 
 Module example_1.
@@ -29,53 +25,67 @@ Module example_1.
         apply EmptyBuiltin.
     Defined.
 
-    Definition rule_sub_2 : RewritingRule :=
-        rr_local_rewrite {|
-            lr_from
-                := pat_app
-                    (pat_sym "Succ")
-                    (pat_app 
-                        (pat_sym "Succ")
-                        (pat_var "X")
-                    );
-            lr_to := spat_var "X" ;
-        |}
+    Definition left_SSX := (lp_otwsc
+                        (wsc_base
+                            (ao_app_ao
+                                (ao_operator "Succ")
+                                (ao_app_operand
+                                    (ao_operator "Succ")
+                                    (bov_variable "X")
+                                )
+                            )
+                        )
+                    )
     .
 
-    Definition weird_binary_succ : Element :=
-        el_appsym (aps_app_aps (aps_app_aps (aps_operator "Succ") (aps_operator "Zero")) (aps_operator "Zero"))
+    Definition right_X := (rp_exp 
+                        (ft_variable "X")
+                    ).
+
+    Definition rule_sub_2 : RewritingRule :=
+        wsc_base (
+            ao_app_operand 
+                (ao_operator "TopCell")
+                (lp_rewrite
+                    (lr_pattern
+                        left_SSX
+                        right_X
+                    )
+                )
+        )
     .
 
     Lemma rewrites_3_to_1:
         rewrites_to rule_sub_2
-            (el_appsym
-                (aps_app_aps
-                    (aps_operator "Succ")
-                    (aps_app_aps
-                        (aps_operator "Succ")
-                        (aps_app_aps
-                            (aps_operator "Succ")
-                            (aps_operator "Zero")
+        (ao_app_ao
+            (ao_operator "TopCell")
+                (ao_app_ao
+                    (ao_operator "Succ")
+                    (ao_app_ao
+                        (ao_operator "Succ")
+                        (ao_app_ao
+                            (ao_operator "Succ")
+                            (ao_operator "Zero")
                         )
                     )
                 )
+        )
+        (ao_app_ao
+            (ao_operator "TopCell")
+            (ao_app_ao
+                (ao_operator "Succ")
+                (ao_operator "Zero")
             )
-            (el_appsym
-                (aps_app_aps
-                    (aps_operator "Succ")
-                    (aps_operator "Zero")
-                )
-            )
+        )
     .
     Proof.
         unfold rewrites_to.
         unfold rule_sub_2.
         exists ({[
-            "X" := (el_appsym (aps_app_aps (aps_operator "Succ") (aps_operator "Zero")))
+            "X" := (val_gterm (ao_app_ao (ao_operator "Succ") (ao_operator "Zero")))
         ]}).
-        Print rewrites_in_valuation_to.
         unfold rewrites_in_valuation_to.
-        repeat split.
+        repeat constructor.
     Qed.
 
 End example_1.

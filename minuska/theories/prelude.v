@@ -8,6 +8,7 @@ From stdpp Require Export
     decidable
     gmap
     sets
+    strings
     list
     list_numbers
     numbers
