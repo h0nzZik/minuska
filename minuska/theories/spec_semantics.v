@@ -310,8 +310,6 @@ Section with_valuation.
             ρ
     .
 
-    Print LocalRewrite.
-
     Definition GroundTerm_satisfies_left_LocalRewrite:
         GroundTerm -> LocalRewrite -> Prop :=
         fun g r => GroundTerm_satisfies_LhsPattern g (lr_from r)
@@ -337,12 +335,11 @@ Section with_valuation.
         : Prop :=
     match rb with
     | lp_rewrite r =>
-        GroundTerm_satisfies_LocalRewrite lr (val_gterm g) r
+        GroundTerm_satisfies_LocalRewrite lr g r
     | lp_basicpat φ =>
-        in_val_GroundTerm_satisfies_OpenTerm g φ
-    | lp_bov bx => False
+        in_val_GroundTerm_satisfies_OpenTerm ρ g φ
+    | lp_bov bx => GroundTerm_satisfies_BuiltinOrVar g bx
     end.
-
 
     Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
         (lr : LeftRight)
@@ -351,43 +348,35 @@ Section with_valuation.
         : Prop :=
     match rb with
     | lp_rewrite r =>
-        GroundTerm_satisfies_LocalRewrite lr (val_builtin b) r
+        GroundTerm_satisfies_LocalRewrite lr (aoo_operand _ _ b) r
     | lp_basicpat φ =>
         False
     | lp_bov bx =>
-        builtin_satisfies_BuiltinOrVar b bx
+        builtin_satisfies_BuiltinOrVar ρ b bx
     end.
 
     Definition GroundTerm_satisfies_UncondRewritingRule
         (lr : LeftRight)
         : GroundTerm -> UncondRewritingRule -> Prop
-    := @aoxy_satisfies_aoxz
+    := @aoxyo_satisfies_aoxzo
             symbol
             builtin_value
             LocalRewriteOrOpenTermOrBOV
             (builtin_satisfies_LocalRewriteOrOpenTermOrBOV lr)
-            (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr)
+            (fun ao => GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr (aoo_app _ _ ao))
     .
 
 
     (* TODO: factor out the commonalities with GroundTerm_satisfies_VarWithSc *)
-    Inductive GroundTerm_satisfies_RewritingRule
+    Definition GroundTerm_satisfies_RewritingRule
         (lr : LeftRight)
         : GroundTerm -> RewritingRule -> Prop :=
-
-    | gtsr_base:
-        forall g r,
-            GroundTerm_satisfies_UncondRewritingRule lr g r ->
-            GroundTerm_satisfies_RewritingRule lr g (wsc_base r)
-
-    | gtsr_sc :
-        forall g r sc,
-            GroundTerm_satisfies_RewritingRule lr g r ->
-            valuation_satisfies_sc sc ->
-            GroundTerm_satisfies_RewritingRule lr g (wsc_sc r sc)
+        A_satisfies_B_WithASideCondition
+            GroundTerm
+            UncondRewritingRule
+            (GroundTerm_satisfies_UncondRewritingRule lr)
+            ρ
     .
-
-
 
 End with_valuation.
 

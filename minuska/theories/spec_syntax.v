@@ -175,7 +175,7 @@ Inductive LocalRewriteOrOpenTermOrBOV {Σ : Signature} :=
 . 
 
 Definition UncondRewritingRule {Σ : Signature}
-    := AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV
+    := AppliedOperatorOr' symbol LocalRewriteOrOpenTermOrBOV
 .
 
 Definition RewritingRule {Σ : Signature}
