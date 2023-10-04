@@ -353,3 +353,22 @@ Definition stuck
     (Γ : RewritingTheory)
     (e : GroundTerm) : Prop
 := not (not_stuck Γ e).
+
+Definition rule_weakly_well_defined
+    {Σ : Signature}
+    (r : RewritingRule)
+    : Prop
+    := ∀ ρ from,
+        GroundTerm_satisfies_RewritingRule ρ LR_Left from r ->
+        ∃ to, GroundTerm_satisfies_RewritingRule ρ LR_Right to r
+.
+
+Definition thy_weakly_well_defined
+    {Σ : Signature}
+    (Γ : RewritingTheory)
+    : Prop
+    := ∀ r, r ∈ Γ -> rule_weakly_well_defined r
+.
+
+
+

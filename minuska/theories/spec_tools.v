@@ -15,6 +15,7 @@ Definition Interpreter
 Definition Interpreter_sound
     {Σ : Signature}
     (Γ : RewritingTheory)
+    (Γwwd : thy_weakly_well_defined Γ)
     (interpreter : Interpreter Γ)
     : Prop
     := (forall e,
@@ -34,6 +35,7 @@ Definition Explorer
 Definition Explorer_sound
     {Σ : Signature}
     (Γ : RewritingTheory)
+    (Γwwd : thy_weakly_well_defined Γ)
     (explorer : Explorer Γ)
     : Prop
     := forall (e e' : GroundTerm),
@@ -69,6 +71,7 @@ Definition OpenTerm_stuck
 Definition SymbolicInterpreter_sound
     {Σ : Signature}
     (Γ : RewritingTheory)
+    (Γwwd : thy_weakly_well_defined Γ)
     (symbolic_interpreter : SymbolicInterpreter Γ)
     : Prop :=
     (forall (φ φ': OpenTerm),
