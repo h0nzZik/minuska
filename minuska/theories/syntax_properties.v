@@ -36,20 +36,16 @@ From Minuska Require Import
     | ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
     end.
 
-    Fixpoint vars_of_OpenTerm
+    Definition vars_of_OpenTerm
         {Σ : Signature}
         (φ : OpenTerm)
         : gset variable :=
     match φ with
-    | ao_operator s => ∅
-    | ao_app_operand φ' (bov_variable x)
-        => {[x]} ∪ vars_of_OpenTerm φ'
-    | ao_app_operand φ' (bov_builtin _)
-        => vars_of_OpenTerm φ'
-    | ao_app_ao φ1 φ2
-        => vars_of_OpenTerm φ1 ∪ vars_of_OpenTerm φ2
+    | aoo_app _ _ o => vars_of_aosb o
+    | aoo_operand _ _ (bov_variable x) => {[x]}
+    | aoo_operand _ _ (bov_builtin _) => ∅
     end.
-
+    
     Definition vars_of_SideCondition
         {Σ : Signature}
         (c : SideCondition)
@@ -86,8 +82,8 @@ From Minuska Require Import
         (φ : LhsPattern)
         : gset variable :=
     match φ with
-    | lp_aop aop => vars_of_AppliedOperator'_symbol_OpenTermWSC aop
-    | lp_otwsc otwsc => vars_of_OpenTermWSC otwsc
+    | aoo_app _ _ aop => vars_of_AppliedOperator'_symbol_OpenTermWSC aop
+    | aoo_operand _ _ otwsc => vars_of_OpenTermWSC otwsc
     end.
 
     Fixpoint vars_of_Expression
@@ -130,8 +126,8 @@ From Minuska Require Import
         (φ : RhsPattern)
         : gset variable :=
     match φ with
-    | rp_aop aop => vars_of_AppliedOperator'_symbol_Expression aop
-    | rp_exp exp => vars_of_Expression exp
+    | aoo_app _ _ aop => vars_of_AppliedOperator'_symbol_Expression aop
+    | aoo_operand _ _ exp => vars_of_Expression exp
     end.
 
     Fixpoint var_of_WithASideCondition_variable
@@ -149,12 +145,8 @@ From Minuska Require Import
         (r : LocalRewrite)
         : gset variable :=
     match lr,r with
-    | LR_Left,lr_var x _ => {[var_of_WithASideCondition_variable x]}
-    | LR_Left, lr_builtin _ _ => ∅
-    | LR_Left, lr_pattern φ _ => vars_of_LhsPattern φ
-    | LR_Right, lr_var _ e => vars_of_Expression e
-    | LR_Right, lr_builtin _ e => vars_of_Expression e
-    | LR_Right, lr_pattern _ φ => vars_of_RhsPattern φ
+    | LR_Left, Build_LocalRewrite _ φ1 φ2 => vars_of_LhsPattern φ1
+    | LR_Right, Build_LocalRewrite _ φ1 φ2 => vars_of_RhsPattern φ2
     end.
 
 
