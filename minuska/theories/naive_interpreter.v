@@ -168,7 +168,59 @@ Section with_decidable_signature.
         matches o1 o2
     end.
 
-    Print OpenTerm.
+    Definition builtin_value_matches_BuiltinOrVar
+        (ρ : Valuation)
+        : builtin_value -> BuiltinOrVar -> bool :=
+    fun b bv =>
+    match bv with
+    | bov_builtin b' => bool_decide (b = b')
+    | bov_variable x =>
+        match ρ !! x with
+        | None => false
+        | Some (aoo_app _ _ _) => false
+        | Some (aoo_operand _ _ b') => bool_decide (b = b')
+        end
+    end.
+
+    Definition builtin_value_matches_pure_OpenTerm
+        (ρ : Valuation)
+        : builtin_value -> OpenTerm -> bool :=
+    fun b t =>
+    match t with
+    | aoo_app _ _ _ => false
+    | aoo_operand _ _ (bov_variable x) =>
+        match ρ !! x with
+        | None => false
+        | Some (aoo_app _ _ _) => false
+        | Some (aoo_operand _ _ b') => bool_decide (b = b')
+        end
+    | aoo_operand _ _ (bov_builtin b') =>
+        bool_decide (b = b')
+    end.
+
+    Print GroundTerm'.
+    Print AppliedOperatorOr'.
+    Definition pure_GroundTerm_matches_BuiltinOrVar
+        (ρ : Valuation)
+        : AppliedOperator' symbol builtin_value -> BuiltinOrVar -> bool
+    := fun t bov =>
+    match bov with
+    | bov_builtin b => false
+    | bov_variable x =>
+        bool_decide (ρ !! x = Some (aoo_app _ _ t))
+    end.
+
+    Definition GroundTerm_matches_OpenTerm
+        (ρ : Valuation):
+        GroundTerm -> OpenTerm -> bool :=
+        ApppliedOperatorOr'_matches_AppliedOperatorOr'
+            symbol
+            builtin_value
+            BuiltinOrVar
+            (builtin_value_matches_BuiltinOrVar ρ)
+            (fun x y => false)
+            (pure_GroundTerm_matches_BuiltinOrVar ρ)
+    .
     
     Definition evaluate_sc
         (ρ : Valuation)
@@ -180,7 +232,7 @@ Section with_decidable_signature.
     | sc_match x φ =>
         match ρ !! x with
         | None => false
-        | Some g =>
+        | Some g => GroundTerm_matches_OpenTerm ρ g φ
         end
     end.
 
@@ -194,7 +246,7 @@ Section with_decidable_signature.
     | wsc_base a => try_match_A a g
     | wsc_sc wsc' sc =>
         ρ ← try_match_wsc A try_match_A wsc' g;
-        None
+        if evaluate_sc ρ sc then Some ρ else None
     end.
 
     Fixpoint evaluate_rhs_pattern
