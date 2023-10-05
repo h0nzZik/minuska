@@ -168,6 +168,138 @@ Section with_decidable_signature.
         matches o1 o2
     end.
 
+    Definition use_left (og1 og2: option GroundTerm): option GroundTerm :=
+    match og1, og2 with
+    | None, None => None
+    | Some g1, None => Some g1
+    | None, Some g2 => Some g2
+    | Some g1, Some g2 => Some g1
+    end.
+
+    Definition merge_valuations (ρ1 ρ2 : Valuation)
+        : option Valuation :=
+    if decide (ρ1 ## ρ2) then Some (merge use_left ρ1 ρ2) else None.
+
+    Fixpoint ApppliedOperator'_try_match_AppliedOperator'
+        (Operator : Set)
+        {Operator_eqdec : EqDecision Operator}
+        (Operand1 Operand2 : Set)
+        (matches : Operand1 -> Operand2 -> option Valuation)
+        (matches_app_1 :
+            Operand1 ->
+            AppliedOperator' Operator Operand2 ->
+            option Valuation
+        )
+        (matches_app_2 :
+            AppliedOperator' Operator Operand1 ->
+            Operand2 ->
+            option Valuation
+        )
+        (x : AppliedOperator' Operator Operand1)
+        (y : AppliedOperator' Operator Operand2)
+        : option Valuation :=
+    match x, y with
+    | ao_operator a1, ao_operator a2 =>
+        if decide (a1 = a2) then Some ∅ else None
+    | ao_operator _, ao_app_operand _ _ => None
+    | ao_operator _, ao_app_ao _ _ => None
+    | ao_app_operand _ _ , ao_operator _ => None
+    | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
+        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2;
+        ρ2 ← matches o1 o2;
+        merge_valuations ρ1 ρ2
+
+    | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2 ;
+        ρ2 ← matches_app_1 o1 o2;
+        merge_valuations ρ1 ρ2
+
+    | ao_app_ao app1 o1, ao_operator _ => None
+
+    | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
+        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2 ;
+        ρ2 ← matches_app_2 o1 o2;
+        merge_valuations ρ1 ρ2
+
+    | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
+        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2 ;
+        ρ2 ← ApppliedOperator'_try_match_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            o1
+            o2 ;
+        merge_valuations ρ1 ρ2
+    end.
+
+    Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
+        (Operator : Set)
+        {Operator_eqdec : EqDecision Operator}
+        (Operand1 Operand2 : Set)
+        (matches : Operand1 -> Operand2 -> option Valuation)
+        (matches_app_1 :
+            Operand1 ->
+            AppliedOperator' Operator Operand2 ->
+            option Valuation
+        )
+        (matches_app_2 :
+            AppliedOperator' Operator Operand1 ->
+            Operand2 ->
+            option Valuation
+        )
+        (x : AppliedOperatorOr' Operator Operand1)
+        (y : AppliedOperatorOr' Operator Operand2)
+        : option Valuation :=
+    match x, y with
+    | aoo_app _ _ app1, aoo_app _ _ app2 =>
+        ApppliedOperator'_try_match_AppliedOperator'
+            Operator
+            Operand1 Operand2
+            matches matches_app_1 matches_app_2
+            app1 app2
+    | aoo_app _ _ app1, aoo_operand _ _ o2 =>
+        matches_app_2 app1 o2
+    | aoo_operand _ _ o1, aoo_app _ _ app2 =>
+        matches_app_1 o1 app2
+    | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
+        matches o1 o2
+    end.
+
     Definition builtin_value_matches_BuiltinOrVar
         (ρ : Valuation)
         : builtin_value -> BuiltinOrVar -> bool :=
@@ -248,6 +380,26 @@ Section with_decidable_signature.
         ρ ← try_match_wsc A try_match_A wsc' g;
         if evaluate_sc ρ sc then Some ρ else None
     end.
+
+    Print LocalRewriteOrOpenTermOrBOV.
+    Print UncondRewritingRule.
+    Print RewritingRule.
+
+    Definition try_match_uncondrule_lhs:
+        UncondRewritingRule -> GroundTerm -> option Valuation
+    :=
+        ApppliedOperatorOr'_matches_AppliedOperatorOr'
+            symbol
+            LocalRewriteOrOpenTermOrBOV
+            builtin_value
+    .
+
+    Definition try_match_lhs_r:
+        RewritingRule -> GroundTerm -> option Valuation
+    :=
+        try_match_wsc
+            UncondRewritingRule
+    .
 
     Fixpoint evaluate_rhs_pattern
         (ρ : Valuation)
