@@ -314,6 +314,14 @@ Section with_decidable_signature.
         end
     end.
 
+    Definition builtin_value_try_match_BuiltinOrVar:
+        builtin_value -> BuiltinOrVar -> option Valuation :=
+    fun b bv =>
+    match bv with
+    | bov_builtin b' => if (decide (b = b')) then Some ∅ else None
+    | bov_variable x => Some (<[x := (aoo_operand _ _ b)]>∅)
+    end.
+
     Definition builtin_value_matches_pure_OpenTerm
         (ρ : Valuation)
         : builtin_value -> OpenTerm -> bool :=
@@ -330,8 +338,6 @@ Section with_decidable_signature.
         bool_decide (b = b')
     end.
 
-    Print GroundTerm'.
-    Print AppliedOperatorOr'.
     Definition pure_GroundTerm_matches_BuiltinOrVar
         (ρ : Valuation)
         : AppliedOperator' symbol builtin_value -> BuiltinOrVar -> bool
@@ -340,6 +346,15 @@ Section with_decidable_signature.
     | bov_builtin b => false
     | bov_variable x =>
         bool_decide (ρ !! x = Some (aoo_app _ _ t))
+    end.
+
+    Definition pure_GroundTerm_try_match_BuiltinOrVar:
+        AppliedOperator' symbol builtin_value -> BuiltinOrVar -> option Valuation
+    := fun t bov =>
+    match bov with
+    | bov_builtin b => None
+    | bov_variable x =>
+        Some (<[x := (aoo_app _ _ t)]>∅)
     end.
 
     Definition GroundTerm_matches_OpenTerm
@@ -352,6 +367,17 @@ Section with_decidable_signature.
             (builtin_value_matches_BuiltinOrVar ρ)
             (fun x y => false)
             (pure_GroundTerm_matches_BuiltinOrVar ρ)
+    .
+
+    Definition GroundTerm_try_match_OpenTerm:
+        GroundTerm -> OpenTerm -> option Valuation :=
+        ApppliedOperatorOr'_try_match_AppliedOperatorOr'
+            symbol
+            builtin_value
+            BuiltinOrVar
+            (builtin_value_try_match_BuiltinOrVar)
+            (fun x y => None)
+            (pure_GroundTerm_try_match_BuiltinOrVar)
     .
     
     Definition evaluate_sc
@@ -385,10 +411,18 @@ Section with_decidable_signature.
     Print UncondRewritingRule.
     Print RewritingRule.
 
+    Definition try_match_LRoOToBOV_builtin_value:
+        LocalRewriteOrOpenTermOrBOV -> builtin_value -> option Valuation
+    := fun φ b =>
+    match φ with
+    | lp_rewrite r => None (* TODO *)
+    | lp_basicpatn φ' => None
+    end.
+
     Definition try_match_uncondrule_lhs:
         UncondRewritingRule -> GroundTerm -> option Valuation
     :=
-        ApppliedOperatorOr'_matches_AppliedOperatorOr'
+        ApppliedOperatorOr'_try_match_AppliedOperatorOr'
             symbol
             LocalRewriteOrOpenTermOrBOV
             builtin_value
