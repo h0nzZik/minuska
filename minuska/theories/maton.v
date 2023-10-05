@@ -133,8 +133,25 @@ match t with
 | t_app_binary s t1 t2 => ta_app_binary s (get_variable t1) (get_variable t2)
 end.
 
-
+Record SubstAction {Σ : TermSignature} := {
+    sa_nonempty : unit ;
+}.
 
 Inductive Maton {Σ : TermSignature} :=
-|
+| m_nil
+| m_cont
+    (xs: list
+        (TermAbstraction*(SubstAction*Maton))%type)
 .
+
+Fixpoint traverse {Σ : TermSignature}
+    (m : Maton)
+    (t : Term)
+    (ls : list Substitution)
+    : list Substitution :=
+match m with
+| m_nil => ls
+| m_cont f =>
+    let ta := abstract t in
+    
+end.
