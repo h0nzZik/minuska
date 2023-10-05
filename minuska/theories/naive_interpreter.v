@@ -1,17 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq.Logic Require Import ProofIrrelevance.
-
-From stdpp Require Import base countable decidable finite list list_numbers gmap strings.
-(* This is unset by stdpp. We need to set it again.*)
-Set Transparent Obligations.
-
-From Equations Require Import Equations.
-Set Equations Transparent.
-
-Require Import Wellfounded.
-From Ltac2 Require Import Ltac2.
-
-From Minuska Require Import tactics minuska.
+From Minuska Require Import
+    prelude
+    tactics
+    spec_syntax
+    spec_semantics
+.
 
 (*
 #[export]
@@ -62,6 +54,148 @@ Section with_decidable_signature.
         { apply and_dec; auto with nocore. }
         { apply not_dec. apply IHc. }
     Defined.
+
+    Fixpoint ApppliedOperator'_matches_AppliedOperator'
+        (Operator : Set)
+        {Operator_eqdec : EqDecision Operator}
+        (Operand1 Operand2 : Set)
+        (matches : Operand1 -> Operand2 -> bool)
+        (matches_app_1 :
+            Operand1 ->
+            AppliedOperator' Operator Operand2 ->
+            bool
+        )
+        (matches_app_2 :
+            AppliedOperator' Operator Operand1 ->
+            Operand2 ->
+            bool
+        )
+        (x : AppliedOperator' Operator Operand1)
+        (y : AppliedOperator' Operator Operand2)
+        : bool :=
+    match x, y with
+    | ao_operator a1, ao_operator a2 =>
+        bool_decide (a1 = a2)
+    | ao_operator _, ao_app_operand _ _ => false
+    | ao_operator _, ao_app_ao _ _ => false
+    | ao_app_operand _ _ , ao_operator _ => false
+    | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
+        ApppliedOperator'_matches_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2
+        && matches o1 o2
+    | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+        ApppliedOperator'_matches_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2
+        && matches_app_1 o1 o2
+    | ao_app_ao app1 o1, ao_operator _ => false
+    | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
+        ApppliedOperator'_matches_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2
+        && matches_app_2 o1 o2
+    | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
+        ApppliedOperator'_matches_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            app1
+            app2
+        &&
+        ApppliedOperator'_matches_AppliedOperator' 
+            Operator
+            Operand1
+            Operand2
+            matches
+            matches_app_1
+            matches_app_2
+            o1
+            o2
+    end.
+
+    Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
+        (Operator : Set)
+        {Operator_eqdec : EqDecision Operator}
+        (Operand1 Operand2 : Set)
+        (matches : Operand1 -> Operand2 -> bool)
+        (matches_app_1 :
+            Operand1 ->
+            AppliedOperator' Operator Operand2 ->
+            bool
+        )
+        (matches_app_2 :
+            AppliedOperator' Operator Operand1 ->
+            Operand2 ->
+            bool
+        )
+        (x : AppliedOperatorOr' Operator Operand1)
+        (y : AppliedOperatorOr' Operator Operand2)
+        : bool :=
+    match x, y with
+    | aoo_app _ _ app1, aoo_app _ _ app2 =>
+        ApppliedOperator'_matches_AppliedOperator'
+            Operator
+            Operand1 Operand2
+            matches matches_app_1 matches_app_2
+            app1 app2
+    | aoo_app _ _ app1, aoo_operand _ _ o2 =>
+        matches_app_2 app1 o2
+    | aoo_operand _ _ o1, aoo_app _ _ app2 =>
+        matches_app_1 o1 app2
+    | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
+        matches o1 o2
+    end.
+
+    Print OpenTerm.
+    
+    Definition evaluate_sc
+        (ρ : Valuation)
+        (sc : SideCondition)
+        : bool :=
+    match sc with
+    | sc_constraint c =>
+        bool_decide (val_satisfies_c ρ c)
+    | sc_match x φ =>
+        match ρ !! x with
+        | None => false
+        | Some g =>
+        end
+    end.
+
+    Fixpoint try_match_wsc
+        (A : Set)
+        (try_match_A : A -> GroundTerm -> option Valuation)
+        (wsc : WithASideCondition A)
+        (g : GroundTerm)
+        : option Valuation :=
+    match wsc with
+    | wsc_base a => try_match_A a g
+    | wsc_sc wsc' sc =>
+        ρ ← try_match_wsc A try_match_A wsc' g;
+        None
+    end.
 
     Fixpoint evaluate_rhs_pattern
         (ρ : Valuation)
