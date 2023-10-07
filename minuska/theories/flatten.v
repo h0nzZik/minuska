@@ -62,7 +62,7 @@ Fixpoint AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
     {Σ : Signature}
     {A : Set}
     (A_to_OpenTerm_SC : A ->
-        ((AppliedOperator' symbol BuiltinOrVar) * (list SideCondition))
+        ((AppliedOperatorOr' symbol BuiltinOrVar) * (list SideCondition))
     )
     (x : AppliedOperator' symbol A)
     : ((AppliedOperator' symbol BuiltinOrVar) * (list SideCondition))
@@ -73,8 +73,10 @@ match x with
     match AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x' with
     | (t1, scs1) =>
         match A_to_OpenTerm_SC o with
-        | (t2, scs2) =>
+        | (aoo_app _ _ t2, scs2) =>
             ((ao_app_ao t1 t2), scs1 ++ scs2)
+        | (aoo_operand _ _ t2, scs2) =>
+            ((ao_app_operand t1 t2), scs1 ++ scs2)
         end
     end
 | ao_app_ao x1 x2 =>
@@ -90,7 +92,7 @@ Lemma correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
     {Σ : Signature}
     {A : Set}
     (A_to_OpenTerm_SC : A ->
-        ((AppliedOperator' symbol BuiltinOrVar) * (list SideCondition))
+        ((AppliedOperatorOr' symbol BuiltinOrVar) * (list SideCondition))
     )
     (builtin_satisfies_A:
         Valuation -> builtin_value -> A -> Prop
@@ -101,9 +103,25 @@ Lemma correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
         A ->
         Prop
     )
+    (ρ : Valuation)
+    (correct_A_to_OpenTerm_SC :
+        forall γ (a : A),
+            (match A_to_OpenTerm_SC a with
+            | (aoo_app _ _ b, scb) => @aoxy_satisfies_aoxz symbol builtin_value BuiltinOrVar
+                (builtin_satisfies_BuiltinOrVar ρ)
+                (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+                γ b
+                /\ valuation_satisfies_scs ρ scb
+            | (aoo_operand _ _ b, scb) =>
+                AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ γ b
+                /\ valuation_satisfies_scs ρ scb
+            end
+            <->
+                AppliedOperator'_symbol_builtin_satisfies_A ρ γ a
+            )
+    )
     (x : AppliedOperator' symbol A)
     (g : AppliedOperator' symbol builtin_value)
-    (ρ : Valuation)
     :
     (
         match AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x with
@@ -130,11 +148,72 @@ Lemma correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
                 x
 .
 Proof.
-    induction x; cbn.
+    revert g.
+    induction x; intros g; cbn.
     {
         unfold valuation_satisfies_scs.
         rewrite list.Forall_nil.
-        ltac1:(naive_solver).
+        split; intros H.
+        {
+            destruct H as [H _].
+            inversion H; subst; constructor.
+        }
+        {
+            inversion H; subst; repeat constructor.
+        }
+    }
+    {
+        remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x) as rec.
+        destruct rec as [y scs].
+        remember (A_to_OpenTerm_SC b) as rec2.
+        destruct rec2 as [t2 scs2].
+        destruct t2 as [t2 | t2].
+        split.
+        {
+            intros H.
+            destruct H as [H1 H2].
+            inversion H1; subst; clear H1.
+            constructor.
+            {
+                rewrite <- IHx.
+                split.
+                { assumption. }
+                {
+                    unfold valuation_satisfies_scs.
+                    unfold valuation_satisfies_scs in H2.
+                    rewrite Forall_app in H2.
+                    apply H2.
+                }
+            }
+            {
+                apply correct_A_to_OpenTerm_SC.
+                rewrite <- Heqrec2.
+                split.
+                { assumption. }
+                {
+                    unfold valuation_satisfies_scs.
+                    unfold valuation_satisfies_scs in H2.
+                    rewrite Forall_app in H2.
+                    apply H2.
+                }
+            }
+        }
+        {
+            intros H.
+            split.
+            {
+                (*
+                assert (Hcor := correct_A_to_OpenTerm_SC g (ao_app_operand x b)).
+                ltac1:(rewrite <- Heqrec2 in Hcor).
+                *)
+                (*apply IHx in H.*)
+                inversion H; subst; clear H.
+                {
+                    apply IHx in H3.
+                    constructor; cbn.
+                }
+            }
+        }
     }
 Qed.
 
