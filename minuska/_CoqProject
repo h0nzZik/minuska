@@ -7,6 +7,7 @@ theories/spec_semantics.v
 theories/spec_tools.v
 theories/syntax_properties.v
 theories/semantics_properties.v
+theories/flatten.v
 theories/minuska.v
 theories/string_variables.v
 theories/empty_builtin.v
