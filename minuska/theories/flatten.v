@@ -298,6 +298,62 @@ Proof.
             }
         }
         {
+            remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC aoxz) as rec1.
+            destruct rec1 as [t1 scs2].
+            remember (A_to_OpenTerm_SC z ) as rec2.
+            destruct rec2 as [a scs0].
+            rewrite <- correct_A_to_OpenTerm_SC in H0.
+            rewrite <- Heqrec2 in H0.
+            destruct a.
+            {
+                split.
+                {
+                    constructor.
+                    {
+                        apply IHaoxy_satisfies_aoxz.
+                    }
+                    {
+                        apply H0.
+                    }
+                }
+                {
+                    unfold valuation_satisfies_scs.
+                    rewrite Forall_app.
+                    split.
+                    {
+                        apply IHaoxy_satisfies_aoxz.
+                    }
+                    {
+                        apply H0.
+                    }
+                }
+            }
+            {
+                split.
+                {
+                    constructor.
+                    {
+                        apply IHaoxy_satisfies_aoxz.
+                    }
+                    {
+                        apply H0.
+                    }
+                }
+                {
+                    unfold valuation_satisfies_scs.
+                    rewrite Forall_app.
+                    split.
+                    {
+                        apply IHaoxy_satisfies_aoxz.
+                    }
+                    {
+                        apply H0.
+                    }
+                }
+
+            }
+        }
+        {
             
         }
     }
