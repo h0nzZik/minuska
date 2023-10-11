@@ -54,6 +54,64 @@ match wsc with
     end
 end.
 
+Lemma separate_scs_correct
+    {Σ : Signature}
+    {A B : Set}
+    (A_sat_B : A -> B -> Prop)
+    (wscb : WithASideCondition B)
+    (a : A)
+    (ρ : Valuation)
+    :
+    match separate_scs wscb with
+    | (b, scs) => A_sat_B a b /\ valuation_satisfies_scs ρ scs
+    end
+    <->
+    A_satisfies_B_WithASideCondition A B A_sat_B ρ a wscb
+.
+Proof.
+    unfold valuation_satisfies_scs.
+    induction wscb; cbn.
+    {
+        split.
+        {
+            intros [H1 H2].
+            constructor.
+            exact H1.
+        }
+        {
+            intros H.
+            inversion H; subst.
+            split.
+            { assumption. }
+            {
+                apply Forall_nil.
+            }
+        }
+    }
+    {
+        repeat (ltac1:(case_match)).
+        rewrite Forall_cons_iff.
+        
+        ltac1:(rewrite [(valuation_satisfies_sc _ _) /\ _]and_comm).
+        ltac1:(rewrite and_assoc).
+        ltac1:(rewrite IHwscb).
+        clear IHwscb.
+        (repeat split); intros.
+        {
+            constructor;
+            ltac1:(naive_solver).
+        }
+        {
+            inversion H0; subst.
+            assumption.
+        }
+        {
+            inversion H0; subst.
+            assumption.
+        }
+    }
+Qed.
+
 Fixpoint AppliedOperator'_size
     {Operator Operand : Set}
     (x : AppliedOperator' Operator Operand)
