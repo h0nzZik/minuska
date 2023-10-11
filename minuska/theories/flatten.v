@@ -468,6 +468,67 @@ match l with
     separate_scs o
 end.
 
+Check LhsPattern_to_pair_OpenTerm_SC.
+
+
+Lemma correct_LhsPattern_to_pair_OpenTerm_SC
+    {Σ : Signature}
+    (l : LhsPattern)
+    (ρ : Valuation)
+    (g : GroundTerm):
+    match LhsPattern_to_pair_OpenTerm_SC l with
+    | (o, scs) =>
+        in_val_GroundTerm_satisfies_OpenTerm ρ g o
+        /\ valuation_satisfies_scs ρ scs
+    end
+    <-> GroundTerm_satisfies_LhsPattern ρ g l
+.
+Proof.
+    remember (LhsPattern_to_pair_OpenTerm_SC l) as call.
+    destruct call as [o scs]; cbn.
+    unfold GroundTerm_satisfies_LhsPattern.
+    destruct g; cbn.
+    {
+        assert (Hlemma := @correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC Σ BuiltinOrVar).
+        specialize (Hlemma (fun t => (@aoo_operand symbol BuiltinOrVar t, []))).
+        specialize (Hlemma builtin_satisfies_BuiltinOrVar).
+        specialize (Hlemma (fun ρ t => GroundTerm_satisfies_BuiltinOrVar ρ (aoo_app _ _ t))).
+        specialize (Hlemma ρ).
+        split.
+        {
+            intros [H1 H2].
+            destruct l.
+            {
+                simpl in Heqcall.
+                remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC separate_scs ao0) as call0.
+                destruct call0 as [o0 sc]; cbn.
+                constructor.
+                inversion H1; subst; clear H1.
+                {
+                    rewrite <- Hlemma in pf.
+                    {
+                        clear Hlemma.
+                        remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC (λ t : BuiltinOrVar, (aoo_operand symbol BuiltinOrVar t, [])) xz) as call2.
+                        destruct call2 as [y scs0].
+                        inversion Heqcall; subst; clear Heqcall.
+                    }
+                    
+                }
+            }
+            inversion H1; subst; clear H1.
+            {
+                rewrite <- Hlemma in pf.
+                ltac1:(case_match).
+                cbn in H.
+                apply axysaxz_app.
+                Print aoxyo_satisfies_aoxzo .
+            }
+            unfold LhsPattern_to_pair_OpenTerm_SC in Heqcall.
+        }
+    }
+    rewrite <- correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC.
+Qed.
+
 Print LocalRewrite.
 
 Print LocalRewriteOrOpenTermOrBOV.
