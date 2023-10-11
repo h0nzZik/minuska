@@ -528,7 +528,7 @@ match l with
     separate_scs o
 end.
 
-Lemma helper {Σ : Signature}:
+Lemma A_satisfies_B_WithASideCondition_helper {Σ : Signature}:
     forall ρ bsc γ,
     A_satisfies_B_WithASideCondition
         (AppliedOperatorOr' symbol builtin_value)
@@ -544,17 +544,26 @@ Lemma helper {Σ : Signature}:
 .
 Proof.
     intros.
-    revert H.
-    induction γ; intros H; cbn.
     {
-        inversion H; subst; clear H.
-        constructor.
-        destruct b; simpl.
-        { inversion H0; subst; clear H0. assumption. }
+        remember ((aoo_app symbol builtin_value γ)) as r.
+        induction H; repeat constructor; try assumption.
         {
-            inversion H0; subst; clear H0.
-            destruct operand; simpl in H2.
-            { exact H2. }
+            subst.
+            inversion H; subst; clear H.
+            { simpl.
+              exact pf.
+            }
+            {
+                simpl. destruct axz.
+                { simpl in H1. exact H1. }
+                {
+                    simpl in H1. exact H1.
+                }
+            }
+        }
+        {
+            specialize (IHA_satisfies_B_WithASideCondition Heqr).
+            apply IHA_satisfies_B_WithASideCondition.
         }
     }
 Qed.
