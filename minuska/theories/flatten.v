@@ -535,7 +535,7 @@ Lemma A_satisfies_B_WithASideCondition_helper {Σ : Signature}:
         (AppliedOperatorOr' symbol BuiltinOrVar)
         (in_val_GroundTerm_satisfies_OpenTerm ρ)
         ρ
-        (aoo_app symbol builtin_value γ) bsc ->
+        (aoo_app symbol builtin_value γ) bsc <->
     A_satisfies_B_WithASideCondition
         (AppliedOperator' symbol builtin_value)
         (AppliedOperatorOr' symbol BuiltinOrVar)
@@ -544,6 +544,7 @@ Lemma A_satisfies_B_WithASideCondition_helper {Σ : Signature}:
 .
 Proof.
     intros.
+    split. intros.
     {
         remember ((aoo_app symbol builtin_value γ)) as r.
         induction H; repeat constructor; try assumption.
@@ -564,6 +565,29 @@ Proof.
         {
             specialize (IHA_satisfies_B_WithASideCondition Heqr).
             apply IHA_satisfies_B_WithASideCondition.
+        }
+    }
+    {
+        intros.
+        remember ((aoo_app symbol builtin_value γ)) as r.
+        induction H; repeat constructor; try assumption.
+        {
+            subst.
+            destruct b; cbn.
+            {
+                cbn in H.
+                constructor.
+                assumption.
+            }
+            {
+                cbn in H.
+                cbn; destruct operand; constructor.
+                inversion H.
+                apply H.
+            }
+        }
+        {
+            auto with nocore.
         }
     }
 Qed.
@@ -598,12 +622,26 @@ Proof.
                 {
                     inversion Heqcall; subst; clear Heqcall.
                     erewrite <- (correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC separate_scs); cbn.
-                    rewrite H.
-                    split; assumption.
+                    {
+                        rewrite H.
+                        split; assumption.
+                    }
+                    {
+                        intros.
+                        repeat ltac1:(case_match); subst.
+                        unfold AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC.
+                        rewrite <- separate_scs_correct.
+                        remember (separate_scs a0) as rsa0.
+                        destruct rsa0.
+                        
+                        ltac1:(simplify_eq /=).
+
+
+                    }
                 }
                 {
                     intros.
-                    repeat (ltac1:(case_match)).
+                    {repeat (ltac1:(case_match)).
                     ltac1:(simplify_eq /=).
                     epose (H' := @separate_scs_correct Σ (AppliedOperatorOr' symbol builtin_value) (AppliedOperatorOr' symbol BuiltinOrVar) (in_val_GroundTerm_satisfies_OpenTerm ρ) a0).
                     rewrite H0 in H'.
@@ -631,50 +669,73 @@ Proof.
                         }
                         {
                             simpl in H1.
-                            remember ((aoo_app symbol builtin_value γ)) as r.
-                            clear -H1 HH1 Heqr.
-                            revert γ Heqr HH1.
-                            induction H1; intros γ Heqr HHq; try (solve[constructor; simpl in *; auto]).
+                            apply A_satisfies_B_WithASideCondition_helper.
+                            assumption.
+                        }
+                        {
+                            assumption.
+                        }
+                    }
+                    {
+                        ltac1:(feed specialize H'2).
+                        {
+                            clear H'1 H'2.
+                            apply A_satisfies_B_WithASideCondition_helper.
+                            assumption.
+                        }
+                        clear H'1.
+                        destruct H'2 as [H''1 H''2].
+                        split; try assumption.
+                        inversion H''1; subst; clear H''1.
+                        assumption.
+                    }
+                    {
+                        subst.
+                        unfold AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC.
+                        repeat split; intros.
+                        {
+                            destruct H1 as [HH1 HH2].
+                            rewrite <- separate_scs_correct.
+                            repeat (ltac1:(case_match)).
+                            ltac1:(rewrite H1 in H0); cbn.
+                            ltac1:(simplify_eq /=).
+                            repeat (ltac1:(case_match));
+                                ltac1:(simplify_eq /=).
+                            { inversion HH1. }
+                            { split; assumption. }
+                        }
+                        {
+                            destruct a0; cbn in *.
                             {
-                                constructor.
-                                subst a. destruct b; simpl in *.
-                                {
-                                    inversion H; subst; clear H.
-                                    assumption.
-                                }
-                                {
-                                    inversion H; subst; clear H.
-                                }
+                                inversion H0; subst; clear H0.
+                                inversion H1; subst; clear H1.
+                                cbn in H4.
+                                unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar.
+                                exact H4.
                             }
                             {
-                                destruct b.
+                                repeat ltac1:(case_match).
+                                ltac1:(simplify_eq /=).
+                                inversion H1; subst; clear H1.
+                                inversion H6; subst; clear H6.
+                                unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar.
+                                assert (Htmp := @separate_scs_correct Σ GroundTerm OpenTerm (in_val_GroundTerm_satisfies_OpenTerm ρ)).
+                                specialize (Htmp (wsc_base b)).
+                                ltac1:(rewrite H3 in Htmp).
+                                cbn in Htmp.
+                                specialize (Htmp (aoo_app _ _ γ) ρ).
+                                destruct Htmp as [Htmp1 Htmp2]; cbn.
+                                ltac1:(feed specialize Htmp2).
                                 {
-                                    simpl.
-                                }
-                            }
-                            Search A_satisfies_B_WithASideCondition.
-                            apply H1.
-                            inversion H1; subst; clear H1; constructor.
-                            { inversion H4; subst; clear H4; simpl.
-                              apply pf0. inversion H0.
-                            }
-                            {
-                                inversion H4; subst; clear H4; constructor.
-                                {
-                                    inversion H0; subst; clear H0.
-                                    inversion H1; subst; clear H1.
-                                    simpl. assumption.
-                                }
-                                {
-                                    inversion H1; subst; clear H1; constructor; simpl; try assumption.
+                                    constructor.
+                                    unfold in_val_GroundTerm_satisfies_OpenTerm.
+                                    destruct b; constructor.
                                     {
-                                        inversion H4; subst; clear H4.
-                                        {
-                                            simpl. assumption.
-                                        }
-                                        {
-
-                                        }
+                                        inversion H0; subst; clear H0.
+                                        constructor.
+                                    }
+                                    {
+                                        constructor; assumption.
                                     }
                                 }
                             }
@@ -682,15 +743,6 @@ Proof.
                     }
                 }
             }
-            inversion H1; subst; clear H1.
-            {
-                rewrite <- Hlemma in pf.
-                ltac1:(case_match).
-                cbn in H.
-                apply axysaxz_app.
-                Print aoxyo_satisfies_aoxzo .
-            }
-            unfold LhsPattern_to_pair_OpenTerm_SC in Heqcall.
         }
     }
     rewrite <- correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC.
