@@ -510,6 +510,8 @@ Print AppliedOperator'.
 Print AppliedOperatorOr'.
 Print OpenTerm.
 
+Print OpenTerm.
+Print OpenTermWSC.
 Print LhsPattern.
 
 Definition LhsPattern_to_pair_OpenTerm_SC
@@ -526,8 +528,36 @@ match l with
     separate_scs o
 end.
 
-Check LhsPattern_to_pair_OpenTerm_SC.
-
+Lemma helper {Σ : Signature}:
+    forall ρ bsc γ,
+    A_satisfies_B_WithASideCondition
+        (AppliedOperatorOr' symbol builtin_value)
+        (AppliedOperatorOr' symbol BuiltinOrVar)
+        (in_val_GroundTerm_satisfies_OpenTerm ρ)
+        ρ
+        (aoo_app symbol builtin_value γ) bsc ->
+    A_satisfies_B_WithASideCondition
+        (AppliedOperator' symbol builtin_value)
+        (AppliedOperatorOr' symbol BuiltinOrVar)
+        (AppliedOperator'_symbol_builtin_satisfies_OpenTerm ρ)
+        ρ γ bsc
+.
+Proof.
+    intros.
+    revert H.
+    induction γ; intros H; cbn.
+    {
+        inversion H; subst; clear H.
+        constructor.
+        destruct b; simpl.
+        { inversion H0; subst; clear H0. assumption. }
+        {
+            inversion H0; subst; clear H0.
+            destruct operand; simpl in H2.
+            { exact H2. }
+        }
+    }
+Qed.
 
 Lemma correct_LhsPattern_to_pair_OpenTerm_SC
     {Σ : Signature}
@@ -547,30 +577,100 @@ Proof.
     unfold GroundTerm_satisfies_LhsPattern.
     destruct g; cbn.
     {
-        assert (Hlemma := @correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC Σ BuiltinOrVar).
-        specialize (Hlemma (fun t => (@aoo_operand symbol BuiltinOrVar t, []))).
-        specialize (Hlemma builtin_satisfies_BuiltinOrVar).
-        specialize (Hlemma (fun ρ t => GroundTerm_satisfies_BuiltinOrVar ρ (aoo_app _ _ t))).
-        specialize (Hlemma ρ).
         split.
         {
             intros [H1 H2].
             destruct l.
             {
                 simpl in Heqcall.
-                remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC separate_scs ao0) as call0.
-                destruct call0 as [o0 sc]; cbn.
+                repeat ltac1:(case_match).
                 constructor.
                 inversion H1; subst; clear H1.
                 {
-                    rewrite <- Hlemma in pf.
+                    inversion Heqcall; subst; clear Heqcall.
+                    erewrite <- (correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC separate_scs); cbn.
+                    rewrite H.
+                    split; assumption.
+                }
+                {
+                    intros.
+                    repeat (ltac1:(case_match)).
+                    ltac1:(simplify_eq /=).
+                    epose (H' := @separate_scs_correct Σ (AppliedOperatorOr' symbol builtin_value) (AppliedOperatorOr' symbol BuiltinOrVar) (in_val_GroundTerm_satisfies_OpenTerm ρ) a0).
+                    rewrite H0 in H'.
+                    specialize (H' (aoo_app _ _ γ) ρ).
+                    destruct H' as [H'1 H'2].
+                    split; intros HH.
                     {
-                        clear Hlemma.
-                        remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC (λ t : BuiltinOrVar, (aoo_operand symbol BuiltinOrVar t, [])) xz) as call2.
-                        destruct call2 as [y scs0].
-                        inversion Heqcall; subst; clear Heqcall.
+                        destruct HH as [HH1 HH2].
+                        ltac1:(feed specialize H'1).
+                        {
+                            split.
+                            {
+                                constructor.
+                                exact HH1.
+                            }
+                            {
+                                exact HH2.
+                            }
+                        }
+                        inversion H'1; subst; clear H'1; constructor.
+                        {
+                            inversion H1; subst; clear H1.
+                            { simpl. assumption. }
+                            { simpl. cbn in H0. inversion H0. }
+                        }
+                        {
+                            simpl in H1.
+                            remember ((aoo_app symbol builtin_value γ)) as r.
+                            clear -H1 HH1 Heqr.
+                            revert γ Heqr HH1.
+                            induction H1; intros γ Heqr HHq; try (solve[constructor; simpl in *; auto]).
+                            {
+                                constructor.
+                                subst a. destruct b; simpl in *.
+                                {
+                                    inversion H; subst; clear H.
+                                    assumption.
+                                }
+                                {
+                                    inversion H; subst; clear H.
+                                }
+                            }
+                            {
+                                destruct b.
+                                {
+                                    simpl.
+                                }
+                            }
+                            Search A_satisfies_B_WithASideCondition.
+                            apply H1.
+                            inversion H1; subst; clear H1; constructor.
+                            { inversion H4; subst; clear H4; simpl.
+                              apply pf0. inversion H0.
+                            }
+                            {
+                                inversion H4; subst; clear H4; constructor.
+                                {
+                                    inversion H0; subst; clear H0.
+                                    inversion H1; subst; clear H1.
+                                    simpl. assumption.
+                                }
+                                {
+                                    inversion H1; subst; clear H1; constructor; simpl; try assumption.
+                                    {
+                                        inversion H4; subst; clear H4.
+                                        {
+                                            simpl. assumption.
+                                        }
+                                        {
+
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                    
                 }
             }
             inversion H1; subst; clear H1.

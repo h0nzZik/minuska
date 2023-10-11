@@ -270,7 +270,11 @@ Section with_valuation.
     := fun asb o =>
     match o with
     | aoo_app _ _ t => aosb_satisfies_aosbf ρ asb t
-    | aoo_operand _ _ _ => False
+    | aoo_operand _ _ bov =>
+        match bov with
+        | bov_builtin _ => False
+        | bov_variable x => ρ !! x = Some (aoo_app _ _ asb) 
+        end
     end.
 
     Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC:
