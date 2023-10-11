@@ -629,14 +629,43 @@ Proof.
                     {
                         intros.
                         repeat ltac1:(case_match); subst.
-                        unfold AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC.
+                        {
+                            unfold AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC.
                         rewrite <- separate_scs_correct.
-                        remember (separate_scs a0) as rsa0.
-                        destruct rsa0.
+                        remember (separate_scs a0) as rsa.
+                        ltac1:(rewrite -Heqrsa).
+                        ltac1:(rewrite H0).
                         
-                        ltac1:(simplify_eq /=).
+                            (repeat split); intros; try constructor.
+                        {
+                            unfold AppliedOperator'_symbol_builtin_satisfies_OpenTerm.
+                            apply H1.
+                        }
+                        {
+                            apply H1.
+                        }
+                        {
+                            apply H1.
+                        }
+                        {
+                            apply H1.
+                        }
+                        }
+                        {
 
+                            (* unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar. *)
+                            unfold AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC.
+                            rewrite <- separate_scs_correct.
 
+                            remember (separate_scs a0) as rsa.
+                            ltac1:(rewrite -Heqrsa).
+                            ltac1:(rewrite H0).
+
+                            (repeat split); cbn; try ltac1:(naive_solver).
+                        }
+                    }
+                    {
+                        intros.
                     }
                 }
                 {
