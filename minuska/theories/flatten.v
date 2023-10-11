@@ -219,7 +219,7 @@ Lemma correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
     )
     (correct2_A_to_OpenTerm_SC :
         ∀ (a : A) (b : builtin_value) (ρ : Valuation),
-        builtin_satisfies_A ρ b a ->
+        builtin_satisfies_A ρ b a <->
         ∃ (bov : BuiltinOrVar) rest,
             (A_to_OpenTerm_SC a) = (aoo_operand _ _ bov, rest)
             /\ builtin_satisfies_BuiltinOrVar ρ b bov
@@ -254,7 +254,154 @@ Lemma correct_AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
 .
 Proof.
     split.
-    { admit. }
+    { 
+        intros H.
+        remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x) as call.
+        destruct call as [y scs].
+        destruct H as [H1 H2].
+        revert y g scs Heqcall H1 H2.
+        induction x; intros y g scs Heqcall H1 H2; cbn in *.
+        {
+            ltac1:(simplify_eq /=).
+            inversion H1; subst; clear H1.
+            constructor.
+        }
+        {
+            (repeat ltac1:(case_match));
+              ltac1:(simplify_eq /=).
+            {
+                inversion H1; subst; clear H1.
+                constructor.
+                {
+                    eapply IHx.
+                    { reflexivity. }
+                    { assumption. }
+                    {
+                        unfold valuation_satisfies_scs in * |-; cbn.
+                        unfold valuation_satisfies_scs.
+                        rewrite Forall_app in H2.
+                        apply H2.
+                    }
+                }
+                {
+                    
+                    apply correct_A_to_OpenTerm_SC.
+                    repeat ltac1:(case_match);
+                    ltac1:(simplify_eq /=).
+                    {
+                        split.
+                        {
+                            assumption.
+                        }
+                        {
+                            unfold valuation_satisfies_scs in * |-; cbn.
+                            unfold valuation_satisfies_scs.
+                            rewrite Forall_app in H2.
+                            apply H2.
+                        }
+                    }
+                }
+            }
+            {
+                inversion H1; subst; clear H1; constructor.
+                {
+                    eapply IHx.
+                    { reflexivity. }
+                    {
+                        assumption.
+                    }
+                    {
+                        unfold valuation_satisfies_scs in * |-; cbn.
+                        unfold valuation_satisfies_scs.
+                        rewrite Forall_app in H2.
+                        apply H2.
+                    }
+                }
+                {
+                    rewrite correct2_A_to_OpenTerm_SC.
+                    rewrite H0.
+                    eexists. eexists. split.
+                    { reflexivity. }
+                    split.
+                    { assumption. }
+                    {
+                        unfold valuation_satisfies_scs in H2.
+                        rewrite Forall_app in H2.
+                        apply H2.
+                    }
+                }
+                {
+                    eapply IHx.
+                    { reflexivity. }
+                    {
+                        assumption.
+                    }
+                    {
+                        unfold valuation_satisfies_scs in * |-; cbn.
+                        unfold valuation_satisfies_scs.
+                        rewrite Forall_app in H2.
+                        apply H2.
+                    }
+                }
+                {
+                    destruct operand.
+                    {
+                        inversion H7.
+                    }
+                    {
+                        inversion H7; subst; clear H7.
+                        rewrite <- correct_A_to_OpenTerm_SC.
+                        remember (A_to_OpenTerm_SC b) as rec2.
+                        destruct rec2 as [a0 scb].
+                        destruct a0.
+                        {
+                            inversion H0; subst; clear H0.
+                        }
+                        {
+                            inversion H0; subst; clear H0.
+                            split.
+                            {
+                                cbn.
+                                exact H3.
+                            }
+                            {
+                                unfold valuation_satisfies_scs in H2.
+                                rewrite Forall_app in H2.
+                                apply H2.
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        {
+            (repeat ltac1:(case_match));
+              ltac1:(simplify_eq /=).
+            inversion H1; subst; clear H1.
+            constructor.
+            {
+                eapply IHx1.
+                { reflexivity. }
+                { assumption.  }
+                {
+                    unfold valuation_satisfies_scs in H2.
+                    rewrite Forall_app in H2.
+                    apply H2.
+                }
+            }
+            {
+                eapply IHx2.
+                { reflexivity. }
+                { assumption.  }
+                {
+                    unfold valuation_satisfies_scs in H2.
+                    rewrite Forall_app in H2.
+                    apply H2.
+                }
+            }
+        }
+        
+    }
     {
         intros H.
         induction H; cbn.
@@ -354,78 +501,25 @@ Proof.
             }
         }
         {
-            
-        }
-    }
-(*
-    revert g.
-    induction x; intros g; cbn.
-    {
-        unfold valuation_satisfies_scs.
-        rewrite list.Forall_nil.
-        split; intros H.
-        {
-            destruct H as [H _].
-            inversion H; subst; constructor.
-        }
-        {
-            inversion H; subst; repeat constructor.
-        }
-    }
-    {
-        remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x) as rec.
-        destruct rec as [y scs].
-        remember (A_to_OpenTerm_SC b) as rec2.
-        destruct rec2 as [t2 scs2].
-        destruct t2 as [t2 | t2].
-        split.
-        {
-            intros H.
-            destruct H as [H1 H2].
-            inversion H1; subst; clear H1.
-            constructor.
-            {
-                rewrite <- IHx.
-                split.
-                { assumption. }
-                {
-                    unfold valuation_satisfies_scs.
-                    unfold valuation_satisfies_scs in H2.
-                    rewrite Forall_app in H2.
-                    apply H2.
-                }
-            }
-            {
-                apply correct_A_to_OpenTerm_SC.
-                rewrite <- Heqrec2.
-                split.
-                { assumption. }
-                {
-                    unfold valuation_satisfies_scs.
-                    unfold valuation_satisfies_scs in H2.
-                    rewrite Forall_app in H2.
-                    apply H2.
-                }
-            }
-        }
-        {
-            intros H.
+            remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC aoxz1) as rec1.
+            remember (AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC aoxz2) as rec2.
+            destruct rec1 as [t1 scs1].
+            destruct rec2 as [t2 scs2].
             split.
             {
-                (*
-                assert (Hcor := correct_A_to_OpenTerm_SC g (ao_app_operand x b)).
-                ltac1:(rewrite <- Heqrec2 in Hcor).
-                *)
-                (*apply IHx in H.*)
-                inversion H; subst; clear H.
-                {
-                    apply IHx in H3.
-                    constructor; cbn.
-                }
+                constructor.
+                { apply IHaoxy_satisfies_aoxz1. }
+                { apply IHaoxy_satisfies_aoxz2. }
+            }
+            {
+                unfold valuation_satisfies_scs.
+                rewrite Forall_app.
+                split.
+                { apply IHaoxy_satisfies_aoxz1. }
+                { apply IHaoxy_satisfies_aoxz2. }
             }
         }
     }
-*)
 Qed.
 
 Print LhsPattern.
