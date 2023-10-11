@@ -54,10 +54,6 @@ match wsc with
     end
 end.
 
-Print AppliedOperator'.
-Print AppliedOperatorOr'.
-Print OpenTerm.
-
 Fixpoint AppliedOperator'_size
     {Operator Operand : Set}
     (x : AppliedOperator' Operator Operand)
@@ -76,77 +72,6 @@ match x with
 | aoo_operand _ _ o => 1
 | aoo_app _ _ x' => 1 + AppliedOperator'_size x'
 end.
-
-(*
-Equations AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC
-    {Σ : Signature}
-    {A : Set}
-    (A_to_OpenTerm_SC : A ->
-        ((AppliedOperatorOr' symbol BuiltinOrVar) * (list SideCondition))
-    )
-    (x : AppliedOperatorOr' symbol A)
-    : ((AppliedOperatorOr' symbol BuiltinOrVar) * (list SideCondition))
-    by wf (AppliedOperatorOr'_deep_size x)
-:=
-AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC f 
-    (aoo_operand _ _ o) := aoo_operand _ _ o ;
-
-AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC f
-    (aoo_app _ _ (ao_operator a)) := (aoo_app _ _ (ao_operator a), []) ;
-
-AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC f
-    (aoo_app A B (ao_app_operand x2 o))
-    with pair
-        (AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC f (aoo_app A B x2))
-        (f o) => {
-            | _,_ := 3
-         } ;
-.
-*)
-(*
-Fixpoint AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC
-    {Σ : Signature}
-    {A : Set}
-    (A_to_OpenTerm_SC : A ->
-        ((AppliedOperatorOr' symbol BuiltinOrVar) * (list SideCondition))
-    )
-    (x : AppliedOperatorOr' symbol A)
-    : ((AppliedOperatorOr' symbol BuiltinOrVar) * (list SideCondition))
-:=
-match x with
-| aoo_operand _ _ o => aoo_operand _ _ o
-| aoo_app _ _ (ao_operator a) => (aoo_app _ _ (ao_operator a), [])
-| aoo_app _ _ (ao_app_operand x' o) =>
-    match AppliedOperatorOr'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC (aoo_app _ _ x') with
-    | (t1, scs1) =>
-        match A_to_OpenTerm_SC o with
-        | (aoo_app _ _ t2, scs2) =>
-            ((ao_app_operand t1 t2), scs1 ++ scs2)
-        | (aoo_operand _ _ t2, scs2) =>
-            ((ao_app_operand t1 t2), scs1 ++ scs2)
-        end
-    end
-(*
-| ao_app_operand x' o =>
-    match AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x' with
-    | (t1, scs1) =>
-        match A_to_OpenTerm_SC o with
-        | (aoo_app _ _ t2, scs2) =>
-            ((ao_app_operand t1 t2), scs1 ++ scs2)
-        | (aoo_operand _ _ t2, scs2) =>
-            ((ao_app_operand t1 t2), scs1 ++ scs2)
-        end
-    end
-| ao_app_ao x1 x2 =>
-    match AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x1 with
-    | (t1, scs1) =>
-        match AppliedOperator'_symbol_A_to_pair_OpenTerm_SC A_to_OpenTerm_SC x2 with
-        | (t2, scs2) => (ao_app_ao t1 t2, scs1 ++ scs2)
-        end
-    end
-*)
-end.
-*)
 
 Fixpoint AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
     {Σ : Signature}
@@ -522,15 +447,25 @@ Proof.
     }
 Qed.
 
+
+Print AppliedOperator'.
+Print AppliedOperatorOr'.
+Print OpenTerm.
+
 Print LhsPattern.
 
-Fixpoint LhsPattern_to_pair_OpenTerm_SC
+Definition LhsPattern_to_pair_OpenTerm_SC
     {Σ : Signature}
     (l : LhsPattern)
     : (OpenTerm * (list SideCondition))
 :=
 match l with
-| aoo_app _ _ 
+| aoo_app _ _ aop =>
+    match AppliedOperator'_symbol_A_to_pair_OpenTerm_SC separate_scs aop with
+    | (o, sc) => (aoo_app _ _ o, sc)
+    end
+| aoo_operand _ _ o =>
+    separate_scs o
 end.
 
 Print LocalRewrite.
