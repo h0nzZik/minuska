@@ -1,6 +1,6 @@
 From Coq.Logic Require Import ProofIrrelevance.
 
-From stdpp Require Import base countable decidable finite list list_numbers gmap strings.
+From stdpp Require Import base countable decidable finite list list_numbers gmap strings tactics.
 
 From Ltac2 Require Import Ltac2.
 

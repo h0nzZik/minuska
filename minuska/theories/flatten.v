@@ -453,22 +453,91 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
         g x
 .
 Proof.
+    unfold in_val_GroundTerm_satisfies_OpenTerm in *.
+    unfold in_val_GroundTerm_satisfies_OpenTerm in *.
+    unfold aoosb_satisfies_aoosbf in *.
     destruct x, g; cbn.
     {
+        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        unfold valuation_satisfies_scs.
 
+
+        revert ao0; induction ao; cbn in *; intros ao0.
+        {
+            destruct ao0; cbn; try ltac1:(naive_solver).
+        }
+        {
+            repeat ltac1:(case_match); cbn in *;
+            destruct ao0; cbn.
+            1,4: ltac1:(naive_solver).
+            {
+                split; intros HH.
+                {
+                    destruct HH as [HH1 HH2].
+                    inversion HH1.
+                }
+                {
+                    ltac1:(exfalso).
+                    destruct HH as [HH1 HH2].
+                    rewrite <- correct_underlying in HH2; cbn.
+                    destruct HH2 as [HH21 HH22].
+                    inversion HH21; subst.
+                    rewrite H in H2; cbn.
+                    inversion H2.
+                }
+            }
+            {
+                remember (aoxy_satisfies_aoxz_comp (builtin_satisfies_BuiltinOrVar ρ)
+  (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)) as SAT.
+                
+                rewrite <- IHao.
+                ltac1:(rewrite Forall_app).
+                Search GroundTerm_satisfies_A.
+                reflexivity.
+            }
+        }
+        (*
+        revert ao.
+        induction ao0; intros ao; cbn;
+            cbn;
+            destruct ao; cbn;
+            split; intros HH; (repeat split);
+            try ltac1:(contradiction).
+        all: ltac1:(destruct_and?).
+        all: try assumption.
+        { apply Forall_nil. }
+        all: repeat ltac1:(case_match).
+        all: ltac1:(destruct_and?).
+        all: try ltac1:(contradiction).
+        all: unfold valuation_satisfies_scs in *.
+        all: ltac1:(simplify_eq/=).
+        all: cbn in *.
+        all: try (rewrite <- IHao0); try split; try assumption.
+        {
+            
+        }
+        *)
     }
     {
-
+        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        cbn.
+        ltac1:(naive_solver).
     }
     {
-
+        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        cbn.
+        ltac1:(rewrite -correct_underlying).
+        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        cbn.
+        reflexivity.
     }
     {
         specialize (correct_underlying (aoo_operand _ _ operand0) operand).
-        unfold in_val_GroundTerm_satisfies_OpenTerm in correct_underlying.
-        unfold aoosb_satisfies_aoosbf in correct_underlying.
-        unfold GroundTerm_satisfies
-        ltac1:(naive_solver).
+        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        cbn.
+        rewrite <- aoxyo_satisfies_aoxzo_comp_iff in correct_underlying.
+        cbn in correct_underlying.
+        apply correct_underlying.
     }
 
 Qed.
