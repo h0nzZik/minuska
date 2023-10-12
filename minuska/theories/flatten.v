@@ -722,73 +722,7 @@ Proof.
     }
 Qed.
 
-
-Lemma A_satisfies_B_WithASideCondition_iff {Σ : Signature}:
-    forall ρ bsc γ,
-    A_satisfies_B_WithASideCondition
-        (AppliedOperatorOr' symbol builtin_value)
-        (AppliedOperatorOr' symbol BuiltinOrVar)
-        (in_val_GroundTerm_satisfies_OpenTerm ρ)
-        ρ
-        (aoo_app symbol builtin_value γ) bsc <->
-    A_satisfies_B_WithASideCondition
-        (AppliedOperator' symbol builtin_value)
-        (AppliedOperatorOr' symbol BuiltinOrVar)
-        (AppliedOperator'_symbol_builtin_satisfies_OpenTerm ρ)
-        ρ γ bsc
-.
-Proof.
-    intros.
-    split. intros.
-    {
-        remember ((aoo_app symbol builtin_value γ)) as r.
-        induction H; repeat constructor; try assumption.
-        {
-            subst.
-            inversion H; subst; clear H.
-            { simpl.
-              exact pf.
-            }
-            {
-                simpl. destruct axz.
-                { simpl in H1. exact H1. }
-                {
-                    simpl in H1. exact H1.
-                }
-            }
-        }
-        {
-            specialize (IHA_satisfies_B_WithASideCondition Heqr).
-            apply IHA_satisfies_B_WithASideCondition.
-        }
-    }
-    {
-        intros.
-        remember ((aoo_app symbol builtin_value γ)) as r.
-        induction H; repeat constructor; try assumption.
-        {
-            subst.
-            destruct b; cbn.
-            {
-                cbn in H.
-                constructor.
-                assumption.
-            }
-            {
-                cbn in H.
-                cbn; destruct operand; constructor.
-                inversion H.
-                apply H.
-            }
-        }
-        {
-            auto with nocore.
-        }
-    }
-Qed.
-
-Print AppliedOperator'_symbol_builtin_satisfies_OpenTerm.
-Lemma A_satisfies_B_WithASideCondition_iff_generalized
+Lemma A_satisfies_B_WithASideCondition_iff
     {Σ : Signature}
     (B : Set)
     (AppliedOperator'_symbol_builtin_satisfies_B:
@@ -821,7 +755,11 @@ Lemma A_satisfies_B_WithASideCondition_iff_generalized
     A_satisfies_B_WithASideCondition
         (AppliedOperator' symbol builtin_value)
         (AppliedOperatorOr' symbol B)
-        (AppliedOperator'_symbol_builtin_satisfies_OpenTerm ρ)
+        (fun a => @aoxyo_satisfies_aoxzo symbol builtin_value B 
+            (builtin_satisfies_B ρ)
+            (AppliedOperator'_symbol_builtin_satisfies_B ρ)
+            (aoo_app _ _ a)
+        )
         ρ γ bsc
 .
 Proof.
@@ -834,14 +772,13 @@ Proof.
             subst.
             inversion H; subst; clear H.
             { simpl.
+                constructor.
               exact pf.
             }
             {
-                simpl. destruct axz.
-                { simpl in H1. exact H1. }
-                {
-                    simpl in H1. exact H1.
-                }
+                simpl.
+                constructor.
+                assumption.
             }
         }
         {
@@ -857,15 +794,14 @@ Proof.
             subst.
             destruct b; cbn.
             {
-                cbn in H.
+                inversion H; subst; clear H.
                 constructor.
                 assumption.
             }
             {
-                cbn in H.
-                cbn; destruct operand; constructor.
-                inversion H.
-                apply H.
+                inversion H; subst; clear H.
+                constructor.
+                assumption.
             }
         }
         {
@@ -897,6 +833,29 @@ Proof.
     unfold GroundTerm.
     unfold GroundTerm'.
     unfold UncondRewritingRule.
+    unfold GroundTerm_satisfies_UncondRewritingRule.
+    unfold aoosb_satisfies_aoosbf.
+
+    Print aoxyo_satisfies_aoxzo.
+    Print AppliedOperator'_symbol_builtin_satisfies_OpenTermB.
+
+
+    rewrite <- (A_satisfies_B_WithASideCondition_iff LocalRewriteOrOpenTermOrBOV).
+    Print AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar.
+    Set Printing Implicit.
     
-    rewrite A_satisfies_B_WithASideCondition_iff.
+    ltac1:(rewrite <- (A_satisfies_B_WithASideCondition_iff LocalRewriteOrOpenTermOrBOV)).
+    destruct from,to; cbn.
+    {
+        ltac1:(rewrite -> A_satisfies_B_WithASideCondition_iff).
+    }
+    {
+ltac1:(rewrite A_satisfies_B_WithASideCondition_iff).
+    }
+    {
+ltac1:(rewrite A_satisfies_B_WithASideCondition_iff).
+    }
+    {
+ltac1:(rewrite A_satisfies_B_WithASideCondition_iff).
+    }
 Qed.

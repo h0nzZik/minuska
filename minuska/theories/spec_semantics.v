@@ -263,6 +263,7 @@ Section with_valuation.
             ρ
     .
 
+    (* TODO prove that this is equivalent to aoxyo_satisfies_aoxzo. *)
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
         (B : Set)
         (AppliedOperator'_symbol_builtin_satisfies_B:
@@ -298,15 +299,16 @@ Section with_valuation.
         AppliedOperator' symbol builtin_value ->
         OpenTerm ->
         Prop
-    := AppliedOperator'_symbol_builtin_satisfies_OpenTermB BuiltinOrVar
+    :=  fun a b => @aoxyo_satisfies_aoxzo symbol builtin_value BuiltinOrVar
+        (builtin_satisfies_BuiltinOrVar ρ)
         (
-            fun ρ asb bov =>
+            fun asb bov =>
             match bov with
             | bov_builtin _ => False
             | bov_variable x => ρ !! x = Some (aoo_app _ _ asb) 
             end
         )
-        builtin_satisfies_BuiltinOrVar
+        (aoo_app _ _ a) b
     .
     
 
