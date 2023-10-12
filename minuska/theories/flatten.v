@@ -242,6 +242,7 @@ Definition LhsPattern_to_pair_OpenTerm_SC
 Definition lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm
     {Σ : Signature}
     (lox : LocalRewriteOrOpenTermOrBOV)
+    : OpenTerm
 :=
 match lox with
 | lp_rewrite r => AppliedOperatorOr'_symbol_A_to_OpenTerm getBase (lr_from r)
@@ -292,6 +293,55 @@ Definition lhs_RewritingRule_to_SCS
     lhs_UncondRewritingRule_to_SCS (getBase r)
     ++ getSCS r
 .
+
+Definition BOV_to_Expression
+    {Σ : Signature}
+    (bov : BuiltinOrVar)
+    : Expression
+:=
+match bov with
+| bov_builtin b => ft_element (aoo_operand _ _ b)
+| bov_variable x => ft_variable x
+end.
+
+Fixpoint AppliedOperator'_fmap
+    {A B C : Set}
+    (f : B -> C)
+    (ao : AppliedOperator' A B)
+    : AppliedOperator' A C
+:=
+match ao with
+| ao_operator o => ao_operator o
+| ao_app_operand ao' x => ao_app_operand (AppliedOperator'_fmap f ao') (f x)
+| ao_app_ao ao1 ao2 => ao_app_ao (AppliedOperator'_fmap f ao1) (AppliedOperator'_fmap f ao2)
+end.
+
+Definition AppliedOperatorOr'_fmap
+    {A B C : Set}
+    (f : B -> C)
+    (aoo : AppliedOperatorOr' A B)
+    : AppliedOperatorOr' A C
+:=
+match aoo with
+| aoo_app _ _ ao => aoo_app _ _ (AppliedOperator'_fmap f ao)
+| aoo_operand _ _ o => aoo_operand _ _ (f o)
+end.
+
+
+Definition rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
+    {Σ : Signature}
+    (lox : LocalRewriteOrOpenTermOrBOV)
+    : RhsPattern
+:=
+match lox with
+| lp_rewrite r => (lr_to r)
+| lp_basicpat φ =>
+    AppliedOperatorOr'_fmap BOV_to_Expression φ
+| lp_bov bov => aoo_operand _ _ (BOV_to_Expression bov)
+end.
+
+
+
 
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
