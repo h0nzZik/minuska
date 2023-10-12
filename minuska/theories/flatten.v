@@ -188,6 +188,111 @@ match wscb with
 end
 .
 
+
+Fixpoint aoxy_satisfies_aoxz_comp
+    {X Y Z : Set}
+    (Y_sat_Z : Y -> Z -> Prop)
+    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
+    (g : AppliedOperator' X Y)
+    (φ : AppliedOperator' X Z):
+    Prop :=
+match g, φ with
+| ao_operator x1, ao_operator x2 => x1 = x2
+| ao_operator _, _ => False
+| ao_app_operand g1 g2, ao_app_operand φ1 φ2 =>
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
+    /\ Y_sat_Z g2 φ2
+| ao_app_operand _ _, _ => False
+| ao_app_ao g1 g2, ao_app_ao φ1 φ2 => 
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
+    /\ aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g2 φ2
+| ao_app_ao g1 g2, ao_app_operand φ1 φ2 =>
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
+    /\ AOXY_sat_Z g2 φ2
+| ao_app_ao _ _, _ => False
+end.
+
+
+Definition aoxyo_satisfies_aoxzo_comp
+    {X Y Z : Set}
+    (Y_sat_Z : Y -> Z -> Prop)
+    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop):
+    AppliedOperatorOr' X Y ->
+    AppliedOperatorOr' X Z ->
+    Prop :=
+fun g φ =>
+match g, φ with
+| aoo_app _ _ g0, aoo_app _ _ φ0 => aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g0 φ0
+| aoo_operand _ _ g0, aoo_operand _ _ φ0 => Y_sat_Z g0 φ0
+| aoo_app _ _ g0, aoo_operand _ _ φ0 => AOXY_sat_Z g0 φ0
+| aoo_operand _ _ _, aoo_app _ _ _ => False
+end.
+
+
+Definition LhsPattern_to_pair_OpenTerm_SC
+    {Σ : Signature}
+    (l : LhsPattern)
+    : (OpenTerm * (list SideCondition))
+:= 
+(
+    AppliedOperatorOr'_symbol_A_to_OpenTerm getBase l,
+    AppliedOperatorOr'_symbol_A_to_SCS getSCS l
+).
+
+Definition lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm
+    {Σ : Signature}
+    (lox : LocalRewriteOrOpenTermOrBOV)
+:=
+match lox with
+| lp_rewrite r => AppliedOperatorOr'_symbol_A_to_OpenTerm getBase (lr_from r)
+| lp_basicpat φ => φ
+| lp_bov bov => aoo_operand _ _ bov
+end.
+
+Definition lhs_LocalRewriteOrOpenTermOrBOV_to_SCS
+    {Σ : Signature}
+    (lox : LocalRewriteOrOpenTermOrBOV)
+    : list SideCondition
+:=
+match lox with
+| lp_rewrite r => AppliedOperatorOr'_symbol_A_to_SCS getSCS (lr_from r)
+| lp_basicpat φ => [] (* we would use `getSCS φ` if it had a side condition *)
+| lp_bov bov => []
+end.
+
+Definition lhs_UncondRewritingRule_to_OpenTerm
+    {Σ : Signature}
+    (ur : UncondRewritingRule)
+    : OpenTerm
+:=
+    AppliedOperatorOr'_symbol_A_to_OpenTerm lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm ur
+.
+
+Definition lhs_UncondRewritingRule_to_SCS
+    {Σ : Signature}
+    (ur : UncondRewritingRule)
+    : list SideCondition
+:=
+    AppliedOperatorOr'_symbol_A_to_SCS lhs_LocalRewriteOrOpenTermOrBOV_to_SCS ur
+.
+
+Definition lhs_RewritingRule_to_OpenTerm
+    {Σ : Signature}
+    (r : RewritingRule)
+    : OpenTerm
+:=
+    lhs_UncondRewritingRule_to_OpenTerm (getBase r)
+.
+
+Definition lhs_RewritingRule_to_SCS
+    {Σ : Signature}
+    (r : RewritingRule)
+    : list SideCondition
+:=
+    lhs_UncondRewritingRule_to_SCS (getBase r)
+    ++ getSCS r
+.
+
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
     (A B : Set)
@@ -325,28 +430,6 @@ Proof.
     }
 Qed.
 
-Fixpoint aoxy_satisfies_aoxz_comp
-    {X Y Z : Set}
-    (Y_sat_Z : Y -> Z -> Prop)
-    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
-    (g : AppliedOperator' X Y)
-    (φ : AppliedOperator' X Z):
-    Prop :=
-match g, φ with
-| ao_operator x1, ao_operator x2 => x1 = x2
-| ao_operator _, _ => False
-| ao_app_operand g1 g2, ao_app_operand φ1 φ2 =>
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
-    /\ Y_sat_Z g2 φ2
-| ao_app_operand _ _, _ => False
-| ao_app_ao g1 g2, ao_app_ao φ1 φ2 => 
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
-    /\ aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g2 φ2
-| ao_app_ao g1 g2, ao_app_operand φ1 φ2 =>
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
-    /\ AOXY_sat_Z g2 φ2
-| ao_app_ao _ _, _ => False
-end.
 
 Lemma aoxy_satisfies_aoxz_comp_iff
     {X Y Z : Set}
@@ -366,21 +449,6 @@ Proof.
         try ltac1:(naive_solver).
 Qed.
 
-
-Definition aoxyo_satisfies_aoxzo_comp
-    {X Y Z : Set}
-    (Y_sat_Z : Y -> Z -> Prop)
-    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop):
-    AppliedOperatorOr' X Y ->
-    AppliedOperatorOr' X Z ->
-    Prop :=
-fun g φ =>
-match g, φ with
-| aoo_app _ _ g0, aoo_app _ _ φ0 => aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g0 φ0
-| aoo_operand _ _ g0, aoo_operand _ _ φ0 => Y_sat_Z g0 φ0
-| aoo_app _ _ g0, aoo_operand _ _ φ0 => AOXY_sat_Z g0 φ0
-| aoo_operand _ _ _, aoo_app _ _ _ => False
-end.
 
 Lemma aoxyo_satisfies_aoxzo_comp_iff
     {X Y Z : Set}
@@ -583,15 +651,6 @@ Proof.
 Qed.
 
 
-Definition LhsPattern_to_pair_OpenTerm_SC
-    {Σ : Signature}
-    (l : LhsPattern)
-    : (OpenTerm * (list SideCondition))
-:= 
-(
-    AppliedOperatorOr'_symbol_A_to_OpenTerm getBase l,
-    AppliedOperatorOr'_symbol_A_to_SCS getSCS l
-).
 
 Lemma A_satisfies_B_WithASideCondition_helper {Σ : Signature}:
     forall ρ bsc γ,
@@ -656,4 +715,3 @@ Proof.
         }
     }
 Qed.
-
