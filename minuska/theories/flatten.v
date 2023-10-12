@@ -134,41 +134,41 @@ match x with
 | aoo_operand _ _ operand => A_to_SC operand
 end.
 
-Fixpoint AppliedOperator'_symbol_A_to_OpenTerm
+Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
     {Σ : Signature}
-    {A : Set}
-    (A_to_OpenTerm : A ->
-        ((AppliedOperatorOr' symbol BuiltinOrVar))
+    {A B : Set}
+    (A_to_OpenTermB : A ->
+        ((AppliedOperatorOr' symbol B))
     )
     (x : AppliedOperator' symbol A)
-    : ((AppliedOperator' symbol BuiltinOrVar))
+    : ((AppliedOperator' symbol B))
 :=
 match x with
 | ao_operator a => (ao_operator a)
 | ao_app_operand x' a =>
-    let t1 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x' in
-    match A_to_OpenTerm a with
+    let t1 := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
+    match A_to_OpenTermB a with
     | (aoo_app _ _ t2) => (ao_app_ao t1 t2)
     | (aoo_operand _ _ t2) => (ao_app_operand t1 t2)
     end
 | ao_app_ao x1 x2 =>
-    let t1 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x1 in
-    let t2 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x2 in
+    let t1 := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
+    let t2 := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
     ao_app_ao t1 t2
 end.
 
-Definition AppliedOperatorOr'_symbol_A_to_OpenTerm
+Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
     {Σ : Signature}
-    {A : Set}
-    (A_to_OpenTerm : A ->
-        ((AppliedOperatorOr' symbol BuiltinOrVar))
+    {A B : Set}
+    (A_to_OpenTermB : A ->
+        ((AppliedOperatorOr' symbol B))
     )
     (x : AppliedOperatorOr' symbol A)
-    : ((AppliedOperatorOr' symbol BuiltinOrVar))
+    : ((AppliedOperatorOr' symbol B))
 :=
 match x with
-| aoo_app _ _ app => aoo_app _ _ (AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm app)
-| aoo_operand _ _ operand => A_to_OpenTerm operand
+| aoo_app _ _ app => aoo_app _ _ (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
+| aoo_operand _ _ operand => A_to_OpenTermB operand
 end.
 
 
@@ -235,7 +235,7 @@ Definition LhsPattern_to_pair_OpenTerm_SC
     : (OpenTerm * (list SideCondition))
 := 
 (
-    AppliedOperatorOr'_symbol_A_to_OpenTerm getBase l,
+    AppliedOperatorOr'_symbol_A_to_OpenTermB getBase l,
     AppliedOperatorOr'_symbol_A_to_SCS getSCS l
 ).
 
@@ -245,7 +245,7 @@ Definition lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm
     : OpenTerm
 :=
 match lox with
-| lp_rewrite r => AppliedOperatorOr'_symbol_A_to_OpenTerm getBase (lr_from r)
+| lp_rewrite r => AppliedOperatorOr'_symbol_A_to_OpenTermB getBase (lr_from r)
 | lp_basicpat φ => φ
 | lp_bov bov => aoo_operand _ _ bov
 end.
@@ -266,7 +266,7 @@ Definition lhs_UncondRewritingRule_to_OpenTerm
     (ur : UncondRewritingRule)
     : OpenTerm
 :=
-    AppliedOperatorOr'_symbol_A_to_OpenTerm lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm ur
+    AppliedOperatorOr'_symbol_A_to_OpenTermB lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm ur
 .
 
 Definition lhs_UncondRewritingRule_to_SCS
@@ -340,7 +340,34 @@ match lox with
 | lp_bov bov => aoo_operand _ _ (BOV_to_Expression bov)
 end.
 
+Definition rhs_UncondRewritingRule_to_RhsPattern
+    {Σ : Signature}
+    (ur : UncondRewritingRule)
+    : RhsPattern
+:=
+    AppliedOperatorOr'_symbol_A_to_OpenTermB rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern ur
+.
 
+Definition rhs_RewritingRule_to_RhsPattern
+    {Σ : Signature}
+    (r : RewritingRule)
+    : RhsPattern
+:=
+    rhs_UncondRewritingRule_to_RhsPattern (getBase r)
+.
+
+Definition RewritingRule_to_FlattenedRewritingRule
+    {Σ : Signature}
+    (r : RewritingRule)
+    : FlattenedRewritingRule
+:=
+{|
+    fr_from := lhs_RewritingRule_to_OpenTerm r ;
+    fr_to := rhs_RewritingRule_to_RhsPattern r ;
+    fr_scs := lhs_RewritingRule_to_SCS r ;
+|}.
+
+Print RewritingRule.
 
 
 Lemma A_satisfies_B_WithASideCondition_comp_iff
