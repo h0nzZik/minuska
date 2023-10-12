@@ -615,20 +615,63 @@ Proof.
                 (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
                     simpl in *; try ltac1:(naive_solver).
                 do 1 (rewrite <- IHao0). clear IHao0.
-                destruct b1; simpl in *.
-                rewrite builtin_satisfies_BuiltinOrVar_comp_iff.
-                unfold builtin_satisfies_BuiltinOrVar.
+                destruct b1; simpl in *;
+                rewrite builtin_satisfies_BuiltinOrVar_comp_iff;
+                cbn;
+                split; intros H;
                 ltac1:(naive_solver).
+            }
+            {
+                unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar in *.
+                (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
+                    simpl in *; try ltac1:(naive_solver).
+                rewrite <- IHao0_1.
+                destruct b0; simpl in *.
+                {
+                    split; intros H; inversion H; inversion H1.
+                }
+                {
+                    ltac1:(naive_solver).
+                }
             }
         }
         {
             ltac1:(naive_solver).
         }
         {
-
+            unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar.
+            destruct operand; simpl in *.
+            split; intros H; inversion H.
+            ltac1:(naive_solver).
+        }
+        {
+            unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar.
+            destruct operand; simpl in *.
+            split; intros H; inversion H; subst; constructor.
+            ltac1:(rewrite builtin_satisfies_BuiltinOrVar_comp_iff).
+            simpl.
+            ltac1:(naive_solver).
         }
     }
-Qed,
+    {
+
+        ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+        destruct bx,g; cbn.
+        {
+            split; intros H; inversion H.
+        }
+        {
+            split; intros H; inversion H;
+            subst; reflexivity.
+        }
+        {
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
 
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     {Σ : Signature}
