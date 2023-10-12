@@ -5,6 +5,26 @@ From Minuska Require Import
     spec_semantics
 .
 
+Fixpoint AppliedOperator'_size
+    {Operator Operand : Set}
+    (x : AppliedOperator' Operator Operand)
+    : nat :=
+match x with
+| ao_operator _ => 1
+| ao_app_operand x' _ => 1 + AppliedOperator'_size x'
+| ao_app_ao x1 x2 => 1 + AppliedOperator'_size x1 + AppliedOperator'_size x2
+end.
+
+Definition AppliedOperatorOr'_deep_size
+    {Operator Operand : Set}
+    (x : AppliedOperatorOr' Operator Operand)
+    : nat :=
+match x with
+| aoo_operand _ _ o => 1
+| aoo_app _ _ x' => 1 + AppliedOperator'_size x'
+end.
+
+
 Definition valuation_satisfies_scs
     {Σ : Signature}
     (ρ : Valuation)
@@ -53,6 +73,118 @@ match wsc with
     | (a, scs) => (a, sc::scs)
     end
 end.
+
+Fixpoint getSCS {Σ : Signature} {A : Set} (wsc : WithASideCondition A):
+    list SideCondition
+:=
+match wsc with
+| wsc_base _ => []
+| wsc_sc wsc' sc => sc::(getSCS wsc')
+end.
+
+Fixpoint getBase {Σ : Signature} {A : Set} (wsc : WithASideCondition A):
+    A
+:=
+match wsc with
+| wsc_base a => a
+| wsc_sc wsc' _ => getBase wsc'
+end.
+
+
+Lemma separate_scs_getSCS_getBase
+    {Σ : Signature} {A : Set}
+    (wsc : WithASideCondition A)
+    : separate_scs wsc = (getBase wsc, getSCS wsc)
+.
+Proof.
+    induction wsc; cbn.
+    { reflexivity. }
+    {
+        ltac1:(case_match).
+        ltac1:(simplify_eq/=).
+        reflexivity.
+    }
+Qed.
+
+
+Fixpoint AppliedOperator'_symbol_A_to_SCS
+    {Σ : Signature}
+    {A : Set}
+    (A_to_SC : A -> list SideCondition )
+    (x : AppliedOperator' symbol A)
+    : list SideCondition
+:=
+match x with
+| ao_operator a => []
+| ao_app_operand x' o =>
+    (AppliedOperator'_symbol_A_to_SCS A_to_SC x') ++ A_to_SC o
+| ao_app_ao x1 x2 =>
+    (AppliedOperator'_symbol_A_to_SCS A_to_SC x1) ++ (AppliedOperator'_symbol_A_to_SCS A_to_SC x2)
+end.
+
+
+Fixpoint AppliedOperator'_symbol_A_to_OpenTerm
+    {Σ : Signature}
+    {A : Set}
+    (A_to_OpenTerm : A ->
+        ((AppliedOperatorOr' symbol BuiltinOrVar))
+    )
+    (x : AppliedOperator' symbol A)
+    : ((AppliedOperator' symbol BuiltinOrVar))
+:=
+match x with
+| ao_operator a => (ao_operator a)
+| ao_app_operand x' a =>
+    let t1 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x' in
+    match A_to_OpenTerm a with
+    | (aoo_app _ _ t2) => (ao_app_ao t1 t2)
+    | (aoo_operand _ _ t2) => (ao_app_operand t1 t2)
+    end
+| ao_app_ao x1 x2 =>
+    let t1 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x1 in
+    let t2 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x2 in
+    ao_app_ao t1 t2
+end.
+
+
+Lemma getSCS_getBase_correct
+    {Σ : Signature}
+    {A B : Set}
+    (A_sat_B : A -> B -> Prop)
+    (wscb : WithASideCondition B)
+    (a : A)
+    (ρ : Valuation)
+    : 
+    (A_sat_B a (getBase wscb) /\ valuation_satisfies_scs ρ (getSCS wscb))
+    <->
+    A_satisfies_B_WithASideCondition A B A_sat_B ρ a wscb
+.
+Proof.
+    unfold valuation_satisfies_scs.
+    revert a;
+    induction wscb; intros a; cbn.
+    {
+        split.
+        {
+            intros [H1 H2].
+            constructor.
+            assumption.
+        }
+        {
+            intros H.
+            inversion H; subst; clear H.
+            split.
+            { assumption. }
+            { apply Forall_nil. }
+        }
+    }
+    {
+        ltac1:(rewrite Forall_cons_iff).
+        specialize (IHwscb a).
+        ltac1:(naive_solver).
+    }
+Qed.
+
 
 Lemma separate_scs_correct
     {Σ : Signature}
@@ -112,24 +244,8 @@ Proof.
     }
 Qed.
 
-Fixpoint AppliedOperator'_size
-    {Operator Operand : Set}
-    (x : AppliedOperator' Operator Operand)
-    : nat :=
-match x with
-| ao_operator _ => 1
-| ao_app_operand x' _ => 1 + AppliedOperator'_size x'
-| ao_app_ao x1 x2 => 1 + AppliedOperator'_size x1 + AppliedOperator'_size x2
-end.
 
-Definition AppliedOperatorOr'_deep_size
-    {Operator Operand : Set}
-    (x : AppliedOperatorOr' Operator Operand)
-    : nat :=
-match x with
-| aoo_operand _ _ o => 1
-| aoo_app _ _ x' => 1 + AppliedOperator'_size x'
-end.
+
 
 Fixpoint AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
     {Σ : Signature}
@@ -590,6 +706,19 @@ Proof.
             auto with nocore.
         }
     }
+Qed.
+
+
+Lemma helper {Σ : Signature} ρ0 b a0:
+    builtin_value_satisfies_OpenTermWSC ρ0 b a0
+    ↔ (∃ (bov : BuiltinOrVar) (rest : list SideCondition),
+    separate_scs a0 = (aoo_operand symbol BuiltinOrVar bov, rest)
+    ∧ builtin_satisfies_BuiltinOrVar ρ0 b bov
+    ∧ valuation_satisfies_scs ρ0 rest)
+.
+Proof.
+    unfold builtin_value_satisfies_OpenTermWSC.
+    Search A_satisfies_B_WithASideCondition.
 Qed.
 
 Lemma correct_LhsPattern_to_pair_OpenTerm_SC
