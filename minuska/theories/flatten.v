@@ -1,3 +1,5 @@
+Require Import Logic.PropExtensionality.
+
 From Minuska Require Import
     prelude
     tactics
@@ -546,6 +548,88 @@ Proof.
     all: split; cbn; intros HH; try (inversion HH); try constructor; cbn; try assumption.
 Qed.
 
+Definition builtin_satisfies_BuiltinOrVar_comp
+    {Σ : Signature}
+    (ρ : Valuation)
+    (b : builtin_value)
+    (bov : BuiltinOrVar)
+    : Prop
+:=
+match bov with
+| bov_builtin b' => b = b'
+| bov_variable x => ρ !! x = Some (aoo_operand _ _ b)
+end.
+
+Lemma builtin_satisfies_BuiltinOrVar_comp_iff
+    {Σ : Signature}
+    (ρ : Valuation)
+    (b : builtin_value)
+    (bov : BuiltinOrVar):
+    builtin_satisfies_BuiltinOrVar ρ b bov
+    <-> builtin_satisfies_BuiltinOrVar_comp ρ b bov
+.
+Proof.
+    destruct bov; cbn; split; intros H; subst; try (inversion H; subst); try constructor; try assumption.
+Qed.
+
+Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
+    {Σ : Signature} lro
+    (ρ : Valuation)
+    (g : GroundTerm):
+    GroundTerm_satisfies_RhsPattern
+        ρ
+        g
+        (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro)
+    <->
+    GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
+        ρ
+        LR_Right
+        g
+        lro
+.
+Proof.
+    unfold GroundTerm_satisfies_RhsPattern.
+    unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
+    unfold rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
+    destruct lro; cbn.
+    {
+        unfold GroundTerm_satisfies_right_LocalRewrite.
+        unfold GroundTerm_satisfies_RhsPattern.
+        ltac1:(naive_solver).
+    }
+    {
+        unfold in_val_GroundTerm_satisfies_OpenTerm.
+        unfold BOV_to_Expression.
+        unfold aoosb_satisfies_aoosbf.
+        do 2 (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        cbn.
+        destruct φ,g; cbn.
+        {
+            revert ao.
+            induction ao0; cbn; intros ao.
+            {
+                repeat (ltac1:(case_match)); subst; inversion H; subst;
+                    ltac1:(naive_solver).
+            }
+            {
+                (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
+                    simpl in *; try ltac1:(naive_solver).
+                do 1 (rewrite <- IHao0). clear IHao0.
+                destruct b1; simpl in *.
+                rewrite builtin_satisfies_BuiltinOrVar_comp_iff.
+                unfold builtin_satisfies_BuiltinOrVar.
+                ltac1:(naive_solver).
+            }
+        }
+        {
+            ltac1:(naive_solver).
+        }
+        {
+
+        }
+    }
+Qed,
+
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     {Σ : Signature}
     {A B : Set}
@@ -719,70 +803,23 @@ Proof.
     }
 Qed.
 
-Lemma A_satisfies_B_WithASideCondition_iff
-    {Σ : Signature}
-    (B : Set)
-    (AppliedOperator'_symbol_builtin_satisfies_B:
-            AppliedOperator' symbol builtin_value ->
-            B ->
-            Prop
-    )
-    (builtin_satisfies_B:
-        builtin_value ->
-        B ->
-        Prop
-    )
-    :
-    forall ρ bsc γ,
-    A_satisfies_B_WithASideCondition
-        (AppliedOperatorOr' symbol builtin_value)
-        (AppliedOperatorOr' symbol B)
-        (
-            @aoxyo_satisfies_aoxzo
-                symbol
-                builtin_value
-                B
-                builtin_satisfies_B
-                AppliedOperator'_symbol_builtin_satisfies_B
-        )
-        ρ
-        γ bsc <->
-    A_satisfies_B_WithASideCondition
-        (AppliedOperatorOr' symbol builtin_value)
-        (AppliedOperatorOr' symbol B)
-        (AppliedOperator'_symbol_builtin_satisfies_OpenTermB
-            B
-            builtin_satisfies_B
-            AppliedOperator'_symbol_builtin_satisfies_B
-        )
-
-        ρ γ bsc
-.
-Proof.
-    intros.
-    split. intros.
-    {
-        induction H; repeat constructor; try assumption.
-    }
-    {
-        intros.
-        induction H; repeat constructor; try assumption.
-    }
-Qed.
-
 Lemma builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm
     {Σ : Signature}
     (ρ : Valuation)
     (lr : LeftRight)
-    (b : builtin_value)
-    (rb : LocalRewriteOrOpenTermOrBOV)
     :
-    (builtin_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr b rb)
-    <->
-    ((fun g => GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr g rb) ∘ (aoo_operand _ _)) b 
+    (builtin_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr)
+    =
+    (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr) ∘ (aoo_operand _ _)
 .
 Proof.
-    destruct rb; cbn.
+    apply functional_extensionality.
+    intros b.
+    apply functional_extensionality.
+    intros rb.
+    apply propositional_extensionality.
+    unfold compose.
+    destruct rb.
     { ltac1:(naive_solver). }
     {
         destruct φ.
@@ -844,9 +881,74 @@ Proof.
 
     cbn.
     do 2 (rewrite <- getSCS_getBase_correct).
-    Search A_satisfies_B_WithASideCondition.
-    Set Printing Implicit.
-    ltac1:(rewrite <- correct_AppliedOperator'_symbol_A_to_OpenTerm).
+    do 2 (rewrite builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm).
+    
+    rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
+        (lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
+        (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ LR_Left)
+        (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+        (builtin_satisfies_BuiltinOrVar ρ)
+        ρ).
+    
+    {
+        rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
+        (lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
+        (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ LR_Right)
+        (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+        (builtin_satisfies_BuiltinOrVar ρ)
+        ρ).
+        {
+            Set Printing Implicit.
+            unfold lhs_RewritingRule_to_OpenTerm.
+            unfold rhs_RewritingRule_to_RhsPattern.
+            unfold lhs_RewritingRule_to_SCS.
+            unfold lhs_UncondRewritingRule_to_OpenTerm.
+            unfold rhs_UncondRewritingRule_to_RhsPattern.
+            unfold lhs_UncondRewritingRule_to_SCS.
+            unfold valuation_satisfies_scs.
+            rewrite Forall_app; cbn.
+            unfold UncondRewritingRule.
+
+
+            remember (Forall (valuation_satisfies_sc ρ)) as FA1.
+            remember ((@aoxyo_satisfies_aoxzo (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))
+  (@BuiltinOrVar Σ) (@builtin_satisfies_BuiltinOrVar Σ ρ)
+  (@AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar Σ ρ) from
+  (@AppliedOperatorOr'_symbol_A_to_OpenTermB Σ
+  (@LocalRewriteOrOpenTermOrBOV Σ) (@BuiltinOrVar Σ)
+  (@lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm Σ)
+  (@getBase Σ
+  (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ))
+  r)))) as P2'.
+            remember ((@aoxyo_satisfies_aoxzo (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))
+  (@BuiltinOrVar Σ) (@builtin_satisfies_BuiltinOrVar Σ ρ)
+  (@AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar Σ ρ) to
+  (@AppliedOperatorOr'_symbol_A_to_OpenTermB Σ
+  (@LocalRewriteOrOpenTermOrBOV Σ) (@BuiltinOrVar Σ)
+  (@lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm Σ)
+  (@getBase Σ
+  (AppliedOperatorOr' (@symbol Σ)
+  (@LocalRewriteOrOpenTermOrBOV Σ))
+  r)))) as P3.
+
+            cbn.
+
+            ltac1:(naive_solver).
+            
+            split; intros H; apply H.
+        }
+    }
+    (*
+    rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar).
+    {
+        rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar).
+    }
+    {
+        in
+    }
+    unfold AppliedOperatorOr'_symbol_A_to_OpenTermB.
 
     
     unfold lhs_RewritingRule_to_OpenTerm.
@@ -872,5 +974,5 @@ Proof.
     (*ltac1:(rewrite -A_satisfies_B_WithASideCondition_iff).*)
     rewrite <- (@A_satisfies_B_WithASideCondition_iff Σ (@LocalRewriteOrOpenTermOrBOV Σ)).
     *)
-
+    *)
 Qed.
