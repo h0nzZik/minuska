@@ -625,14 +625,6 @@ Proof.
                 unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar in *.
                 (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
                     simpl in *; try ltac1:(naive_solver).
-                rewrite <- IHao0_1.
-                destruct b0; simpl in *.
-                {
-                    split; intros H; inversion H; inversion H1.
-                }
-                {
-                    ltac1:(naive_solver).
-                }
             }
         }
         {
@@ -934,13 +926,16 @@ Proof.
         ρ).
     
     {
-        rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
-        (lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
+        rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ Expression
+        (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
         (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ LR_Right)
-        (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
-        (builtin_satisfies_BuiltinOrVar ρ)
+        (fun ao e => Expression_evaluate ρ e = Some (aoo_app _ _ ao))
+        ((fun b e => Expression_evaluate ρ e = Some (aoo_operand _ _ b)))
         ρ).
         {
+
+            Check correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
+            
             Set Printing Implicit.
             unfold lhs_RewritingRule_to_OpenTerm.
             unfold rhs_RewritingRule_to_RhsPattern.
@@ -951,7 +946,7 @@ Proof.
             unfold valuation_satisfies_scs.
             rewrite Forall_app; cbn.
             unfold UncondRewritingRule.
-
+            ltac1:(rewrite -correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern).
 
             remember (Forall (valuation_satisfies_sc ρ)) as FA1.
             remember ((@aoxyo_satisfies_aoxzo (@symbol Σ)
@@ -977,6 +972,8 @@ Proof.
   r)))) as P3.
 
             cbn.
+
+
 
             ltac1:(naive_solver).
             
