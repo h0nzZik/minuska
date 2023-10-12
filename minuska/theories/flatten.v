@@ -367,9 +367,6 @@ Definition RewritingRule_to_FlattenedRewritingRule
     fr_scs := lhs_RewritingRule_to_SCS r ;
 |}.
 
-Print RewritingRule.
-
-
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
     (A B : Set)
@@ -726,8 +723,7 @@ Proof.
 Qed.
 
 
-
-Lemma A_satisfies_B_WithASideCondition_helper {Σ : Signature}:
+Lemma A_satisfies_B_WithASideCondition_iff {Σ : Signature}:
     forall ρ bsc γ,
     A_satisfies_B_WithASideCondition
         (AppliedOperatorOr' symbol builtin_value)
@@ -789,4 +785,118 @@ Proof.
             auto with nocore.
         }
     }
+Qed.
+
+Print AppliedOperator'_symbol_builtin_satisfies_OpenTerm.
+Lemma A_satisfies_B_WithASideCondition_iff_generalized
+    {Σ : Signature}
+    (B : Set)
+    (AppliedOperator'_symbol_builtin_satisfies_B:
+            Valuation ->
+            AppliedOperator' symbol builtin_value ->
+            B ->
+            Prop
+    )
+    (builtin_satisfies_B:
+        Valuation ->
+        builtin_value ->
+        B ->
+        Prop
+    )
+    :
+    forall ρ bsc γ,
+    A_satisfies_B_WithASideCondition
+        (AppliedOperatorOr' symbol builtin_value)
+        (AppliedOperatorOr' symbol B)
+        (
+            @aoxyo_satisfies_aoxzo
+                symbol
+                builtin_value
+                B
+                (builtin_satisfies_B ρ)
+                (AppliedOperator'_symbol_builtin_satisfies_B ρ)
+        )
+        ρ
+        (aoo_app symbol builtin_value γ) bsc <->
+    A_satisfies_B_WithASideCondition
+        (AppliedOperator' symbol builtin_value)
+        (AppliedOperatorOr' symbol B)
+        (AppliedOperator'_symbol_builtin_satisfies_OpenTerm ρ)
+        ρ γ bsc
+.
+Proof.
+    intros.
+    split. intros.
+    {
+        remember ((aoo_app symbol builtin_value γ)) as r.
+        induction H; repeat constructor; try assumption.
+        {
+            subst.
+            inversion H; subst; clear H.
+            { simpl.
+              exact pf.
+            }
+            {
+                simpl. destruct axz.
+                { simpl in H1. exact H1. }
+                {
+                    simpl in H1. exact H1.
+                }
+            }
+        }
+        {
+            specialize (IHA_satisfies_B_WithASideCondition Heqr).
+            apply IHA_satisfies_B_WithASideCondition.
+        }
+    }
+    {
+        intros.
+        remember ((aoo_app symbol builtin_value γ)) as r.
+        induction H; repeat constructor; try assumption.
+        {
+            subst.
+            destruct b; cbn.
+            {
+                cbn in H.
+                constructor.
+                assumption.
+            }
+            {
+                cbn in H.
+                cbn; destruct operand; constructor.
+                inversion H.
+                apply H.
+            }
+        }
+        {
+            auto with nocore.
+        }
+    }
+Qed.
+
+
+Theorem correct_RewritingRule_to_FlattenedRewritingRule
+    {Σ : Signature}
+    (r : RewritingRule)
+    (ρ : Valuation)
+    (from to : GroundTerm)
+    :
+    flattened_rewrites_in_valuation_to
+        ρ
+        (RewritingRule_to_FlattenedRewritingRule r)
+        from to
+    <->
+    rewrites_in_valuation_to ρ r from to
+.
+Proof.
+    unfold flattened_rewrites_in_valuation_to.
+    unfold rewrites_in_valuation_to.
+    unfold in_val_GroundTerm_satisfies_OpenTerm.
+    unfold GroundTerm_satisfies_RhsPattern.
+    unfold GroundTerm_satisfies_RewritingRule.
+    unfold GroundTerm.
+    unfold GroundTerm'.
+    unfold UncondRewritingRule.
+    
+    rewrite A_satisfies_B_WithASideCondition_iff.
 Qed.

@@ -263,19 +263,52 @@ Section with_valuation.
             ρ
     .
 
+    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+        (B : Set)
+        (AppliedOperator'_symbol_builtin_satisfies_B:
+            Valuation ->
+            AppliedOperator' symbol builtin_value ->
+            B ->
+            Prop
+        )
+        (builtin_satisfies_B:
+            Valuation ->
+            builtin_value ->
+            B ->
+            Prop
+        )
+        :
+        AppliedOperator' symbol builtin_value ->
+        AppliedOperatorOr' symbol B ->
+        Prop
+    := fun asb o =>
+    match o with
+    | aoo_app _ _ t =>
+        @aoxy_satisfies_aoxz
+        symbol
+        builtin_value
+        B
+        (builtin_satisfies_B ρ)
+        (AppliedOperator'_symbol_builtin_satisfies_B ρ)
+        asb t
+    | aoo_operand _ _ bov => AppliedOperator'_symbol_builtin_satisfies_B ρ asb bov
+    end.
+
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm:
         AppliedOperator' symbol builtin_value ->
         OpenTerm ->
         Prop
-    := fun asb o =>
-    match o with
-    | aoo_app _ _ t => aosb_satisfies_aosbf ρ asb t
-    | aoo_operand _ _ bov =>
-        match bov with
-        | bov_builtin _ => False
-        | bov_variable x => ρ !! x = Some (aoo_app _ _ asb) 
-        end
-    end.
+    := AppliedOperator'_symbol_builtin_satisfies_OpenTermB BuiltinOrVar
+        (
+            fun ρ asb bov =>
+            match bov with
+            | bov_builtin _ => False
+            | bov_variable x => ρ !! x = Some (aoo_app _ _ asb) 
+            end
+        )
+        builtin_satisfies_BuiltinOrVar
+    .
+    
 
     Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC:
         AppliedOperator' symbol builtin_value ->
