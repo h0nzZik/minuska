@@ -122,6 +122,17 @@ match x with
     (AppliedOperator'_symbol_A_to_SCS A_to_SC x1) ++ (AppliedOperator'_symbol_A_to_SCS A_to_SC x2)
 end.
 
+Definition AppliedOperatorOr'_symbol_A_to_SCS
+    {Σ : Signature}
+    {A : Set}
+    (A_to_SC : A -> list SideCondition )
+    (x : AppliedOperatorOr' symbol A)
+    : list SideCondition
+:=
+match x with
+| aoo_app _ _ app => AppliedOperator'_symbol_A_to_SCS A_to_SC app
+| aoo_operand _ _ operand => A_to_SC operand
+end.
 
 Fixpoint AppliedOperator'_symbol_A_to_OpenTerm
     {Σ : Signature}
@@ -145,6 +156,21 @@ match x with
     let t2 := AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm x2 in
     ao_app_ao t1 t2
 end.
+
+Definition AppliedOperatorOr'_symbol_A_to_OpenTerm
+    {Σ : Signature}
+    {A : Set}
+    (A_to_OpenTerm : A ->
+        ((AppliedOperatorOr' symbol BuiltinOrVar))
+    )
+    (x : AppliedOperatorOr' symbol A)
+    : ((AppliedOperatorOr' symbol BuiltinOrVar))
+:=
+match x with
+| aoo_app _ _ app => aoo_app _ _ (AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm app)
+| aoo_operand _ _ operand => A_to_OpenTerm operand
+end.
+
 
 Fixpoint A_satisfies_B_WithASideCondition_comp
     {Σ : Signature}
@@ -299,7 +325,131 @@ Proof.
     }
 Qed.
 
+Fixpoint aoxy_satisfies_aoxz_comp
+    {X Y Z : Set}
+    (Y_sat_Z : Y -> Z -> Prop)
+    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
+    (g : AppliedOperator' X Y)
+    (φ : AppliedOperator' X Z):
+    Prop :=
+match g, φ with
+| ao_operator x1, ao_operator x2 => x1 = x2
+| ao_operator _, _ => False
+| ao_app_operand g1 g2, ao_app_operand φ1 φ2 =>
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
+    /\ Y_sat_Z g2 φ2
+| ao_app_operand _ _, _ => False
+| ao_app_ao g1 g2, ao_app_ao φ1 φ2 => 
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
+    /\ aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g2 φ2
+| ao_app_ao g1 g2, ao_app_operand φ1 φ2 =>
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
+    /\ AOXY_sat_Z g2 φ2
+| ao_app_ao _ _, _ => False
+end.
 
+Lemma aoxy_satisfies_aoxz_comp_iff
+    {X Y Z : Set}
+    (Y_sat_Z : Y -> Z -> Prop)
+    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
+    (g : AppliedOperator' X Y)
+    (φ : AppliedOperator' X Z)
+    :
+    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g φ
+    <->
+    @aoxy_satisfies_aoxz _ _ _ Y_sat_Z AOXY_sat_Z g φ
+.
+Proof.
+    revert g.
+    induction φ; intros gg; destruct gg; cbn; split; intros HH;
+        inversion HH; subst; try constructor;
+        try ltac1:(naive_solver).
+Qed.
+
+
+Definition aoxyo_satisfies_aoxzo_comp
+    {X Y Z : Set}
+    {Y_sat_Z : Y -> Z -> Prop}
+    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
+    AppliedOperatorOr' X Y ->
+    AppliedOperatorOr' X Z ->
+    Prop :=
+fun g φ =>
+match g, φ with
+| aoo_app _ _ g0, aoo_operand _ _ φ0 =>
+| aoo_operand _ _ g0, aoo_operand _ _ φ0 => Y_sat_Z g0 φ0
+| aoo_app _ _ g0, aoo_operand _ _ φ0 => AOXY_sat_Z g0 φ0
+| aoo_operand _ _ _, aoo_app _ _ _ => False
+end.
+
+Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
+    {Σ : Signature}
+    {A : Set}
+    (A_to_OpenTerm : A -> OpenTerm)
+    (A_to_SC : A -> list SideCondition )
+    (GroundTerm_satisfies_A:
+        Valuation ->
+        GroundTerm ->
+        A ->
+        Prop
+    )
+    (ρ : Valuation)
+    (correct_underlying:
+        ∀ γ a,
+            (in_val_GroundTerm_satisfies_OpenTerm ρ γ (A_to_OpenTerm a)
+            /\
+                valuation_satisfies_scs ρ (A_to_SC a)
+            )
+            <->
+            GroundTerm_satisfies_A ρ γ a
+    )
+    (x : AppliedOperatorOr' symbol A)
+    (g : GroundTerm)
+    :
+    (
+        @aoxyo_satisfies_aoxzo
+            symbol
+            builtin_value
+            BuiltinOrVar
+            (builtin_satisfies_BuiltinOrVar ρ)
+            (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+            g
+            (AppliedOperatorOr'_symbol_A_to_OpenTerm A_to_OpenTerm x)
+        /\ (valuation_satisfies_scs
+             ρ
+             (AppliedOperatorOr'_symbol_A_to_SCS A_to_SC x)
+            )
+
+    )
+    <->
+    @aoxyo_satisfies_aoxzo
+        symbol
+        builtin_value
+        A
+        (fun b => GroundTerm_satisfies_A ρ (aoo_operand _ _ b))
+        (fun t => GroundTerm_satisfies_A ρ (aoo_app _ _ t))
+        g x
+.
+Proof.
+    destruct x, g; cbn.
+    {
+
+    }
+    {
+
+    }
+    {
+
+    }
+    {
+        specialize (correct_underlying (aoo_operand _ _ operand0) operand).
+        unfold in_val_GroundTerm_satisfies_OpenTerm in correct_underlying.
+        unfold aoosb_satisfies_aoosbf in correct_underlying.
+        unfold GroundTerm_satisfies
+        ltac1:(naive_solver).
+    }
+
+Qed.
 
 
 Fixpoint AppliedOperator'_symbol_A_to_pair_OpenTerm_SC
