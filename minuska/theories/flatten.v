@@ -146,7 +146,61 @@ match x with
     ao_app_ao t1 t2
 end.
 
+Fixpoint A_satisfies_B_WithASideCondition_comp
+    {Σ : Signature}
+    (A B : Set)
+    (A_sat_B : A -> B -> Prop)
+    (ρ : Valuation)
+    (a : A)
+    (wscb : WithASideCondition B)
+:=
+match wscb with
+| wsc_base b => A_sat_B a b
+| wsc_sc wscb' sc =>
+    A_satisfies_B_WithASideCondition_comp A B A_sat_B ρ a wscb'
+    /\ valuation_satisfies_sc ρ sc
+end
+.
 
+Lemma A_satisfies_B_WithASideCondition_comp_iff
+    {Σ : Signature}
+    (A B : Set)
+    (A_sat_B : A -> B -> Prop)
+    (ρ : Valuation)
+    (a : A)
+    (wscb : WithASideCondition B)
+    :
+    A_satisfies_B_WithASideCondition A B A_sat_B ρ a wscb
+    <->
+    A_satisfies_B_WithASideCondition_comp A B A_sat_B ρ a wscb
+.
+Proof.
+    induction wscb; cbn.
+    {
+        split; intros H.
+        {
+            inversion H; subst; clear H.
+            assumption.
+        }
+        {
+            constructor. assumption.
+        }
+    }
+    {
+        split; intros H.
+        {
+            inversion H; subst; clear H.
+            ltac1:(naive_solver).
+        }
+        {
+            constructor; ltac1:(naive_solver).
+        }
+    }
+Qed.
+
+
+Print A_satisfies_B_WithASideCondition.
+Search reflect.
 Lemma getSCS_getBase_correct
     {Σ : Signature}
     {A B : Set}
