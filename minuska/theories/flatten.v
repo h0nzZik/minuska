@@ -425,6 +425,13 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
             <->
             GroundTerm_satisfies_A ρ γ a
     )
+    (correct2_underlying :
+        ∀ (a : A) (b : builtin_value) (ρ : Valuation),
+        GroundTerm_satisfies_A ρ (aoo_operand _ _ b) a <->
+        ∃ (bov : BuiltinOrVar),
+            (A_to_OpenTerm a) = aoo_operand _ _ bov
+            /\ builtin_satisfies_BuiltinOrVar ρ b bov
+    )
     (x : AppliedOperatorOr' symbol A)
     (g : GroundTerm)
     :
@@ -487,36 +494,70 @@ Proof.
                 }
             }
             {
-                remember (aoxy_satisfies_aoxz_comp (builtin_satisfies_BuiltinOrVar ρ)
-  (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)) as SAT.
-                
                 rewrite <- IHao.
                 ltac1:(rewrite Forall_app).
-                Search GroundTerm_satisfies_A.
-                reflexivity.
+                remember (aoxy_satisfies_aoxz_comp (builtin_satisfies_BuiltinOrVar ρ)
+  (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)) as SAT1.
+                remember (SAT1 ao0_1 (AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm ao)) as P0.
+                remember (Forall (valuation_satisfies_sc ρ) (AppliedOperator'_symbol_A_to_SCS A_to_SC ao)) as P1.
+                remember (Forall (valuation_satisfies_sc ρ) (A_to_SC b)) as P2.
+                remember (GroundTerm_satisfies_A ρ (aoo_app symbol builtin_value ao0_2) b) as P3.
+                remember (SAT1 ao0_2 ao1) as P4.
+                ltac1:(cut (iff (and P2 P4) P3)).
+                {
+                    clear. ltac1:(naive_solver).
+                }
+                subst.
+                ltac1:(rewrite -correct_underlying).
+                ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+                cbn.
+                rewrite H.
+                unfold valuation_satisfies_scs.
+                clear.
+                ltac1:(naive_solver).
+            }
+            {
+                ltac1:(rewrite -IHao).
+                ltac1:(rewrite -correct_underlying).
+                ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+                cbn.
+                rewrite H.
+                rewrite Forall_app.
+                remember ((aoxy_satisfies_aoxz_comp (builtin_satisfies_BuiltinOrVar ρ)
+  (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ) ao0
+  (AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm ao))) as P1.
+                unfold valuation_satisfies_scs.
+                clear.
+                ltac1:(naive_solver).
+            }
+            {
+                ltac1:(rewrite -IHao).
+                ltac1:(rewrite -correct_underlying).
+                ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+                cbn.
+                rewrite H.
+                unfold valuation_satisfies_scs.
+                rewrite Forall_app; cbn.
+                clear.
+                ltac1:(naive_solver).
             }
         }
-        (*
-        revert ao.
-        induction ao0; intros ao; cbn;
-            cbn;
-            destruct ao; cbn;
-            split; intros HH; (repeat split);
-            try ltac1:(contradiction).
-        all: ltac1:(destruct_and?).
-        all: try assumption.
-        { apply Forall_nil. }
-        all: repeat ltac1:(case_match).
-        all: ltac1:(destruct_and?).
-        all: try ltac1:(contradiction).
-        all: unfold valuation_satisfies_scs in *.
-        all: ltac1:(simplify_eq/=).
-        all: cbn in *.
-        all: try (rewrite <- IHao0); try split; try assumption.
         {
-            
+            destruct ao0; cbn.
+            {
+                clear. ltac1:(naive_solver).
+            }
+            {
+                clear. ltac1:(naive_solver).
+            }
+            {
+                ltac1:(rewrite -IHao1);
+                ltac1:(rewrite -IHao2).
+                rewrite Forall_app.
+                clear.
+                ltac1:(naive_solver).
+            }
         }
-        *)
     }
     {
         repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
@@ -539,7 +580,6 @@ Proof.
         cbn in correct_underlying.
         apply correct_underlying.
     }
-
 Qed.
 
 
