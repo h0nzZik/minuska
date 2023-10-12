@@ -369,18 +369,40 @@ Qed.
 
 Definition aoxyo_satisfies_aoxzo_comp
     {X Y Z : Set}
-    {Y_sat_Z : Y -> Z -> Prop}
-    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
+    (Y_sat_Z : Y -> Z -> Prop)
+    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop):
     AppliedOperatorOr' X Y ->
     AppliedOperatorOr' X Z ->
     Prop :=
 fun g φ =>
 match g, φ with
-| aoo_app _ _ g0, aoo_operand _ _ φ0 =>
+| aoo_app _ _ g0, aoo_app _ _ φ0 => aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g0 φ0
 | aoo_operand _ _ g0, aoo_operand _ _ φ0 => Y_sat_Z g0 φ0
 | aoo_app _ _ g0, aoo_operand _ _ φ0 => AOXY_sat_Z g0 φ0
 | aoo_operand _ _ _, aoo_app _ _ _ => False
 end.
+
+Lemma aoxyo_satisfies_aoxzo_comp_iff
+    {X Y Z : Set}
+    (Y_sat_Z : Y -> Z -> Prop)
+    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
+    (g : AppliedOperatorOr' X Y)
+    (φ : AppliedOperatorOr' X Z)
+    :
+    aoxyo_satisfies_aoxzo_comp Y_sat_Z AOXY_sat_Z g φ
+    <->
+    @aoxyo_satisfies_aoxzo _ _ _ Y_sat_Z AOXY_sat_Z g φ
+.
+Proof.
+    destruct g,φ.
+    {
+        cbn.
+        rewrite aoxy_satisfies_aoxz_comp_iff.
+        split; intros H; try constructor; try assumption.
+        inversion H; subst. assumption.
+    }
+    all: split; cbn; intros HH; try (inversion HH); try constructor; cbn; try assumption.
+Qed.
 
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     {Σ : Signature}
