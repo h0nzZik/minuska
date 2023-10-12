@@ -551,8 +551,8 @@ Qed.
 
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     {Σ : Signature}
-    {A : Set}
-    (A_to_OpenTerm : A -> OpenTerm)
+    {A B : Set}
+    (A_to_OpenTermB : A -> AppliedOperatorOr' symbol B)
     (A_to_SC : A -> list SideCondition )
     (GroundTerm_satisfies_A:
         Valuation ->
@@ -560,22 +560,35 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
         A ->
         Prop
     )
+    (AppliedOperator'_symbol_builtin_satisfies_B:
+            Valuation ->
+            AppliedOperator' symbol builtin_value ->
+            B ->
+            Prop
+    )
+    (builtin_satisfies_B:
+        Valuation ->
+        builtin_value ->
+        B ->
+        Prop
+    )
     (ρ : Valuation)
     (correct_underlying:
         ∀ γ a,
-            (in_val_GroundTerm_satisfies_OpenTerm ρ γ (A_to_OpenTerm a)
+            (
+                @aoxyo_satisfies_aoxzo
+        symbol
+        builtin_value
+        B
+        (builtin_satisfies_B ρ)
+        (AppliedOperator'_symbol_builtin_satisfies_B ρ)
+                γ
+                (A_to_OpenTermB a)
             /\
                 valuation_satisfies_scs ρ (A_to_SC a)
             )
             <->
             GroundTerm_satisfies_A ρ γ a
-    )
-    (correct2_underlying :
-        ∀ (a : A) (b : builtin_value) (ρ : Valuation),
-        GroundTerm_satisfies_A ρ (aoo_operand _ _ b) a <->
-        ∃ (bov : BuiltinOrVar),
-            (A_to_OpenTerm a) = aoo_operand _ _ bov
-            /\ builtin_satisfies_BuiltinOrVar ρ b bov
     )
     (x : AppliedOperatorOr' symbol A)
     (g : GroundTerm)
@@ -584,11 +597,11 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
         @aoxyo_satisfies_aoxzo
             symbol
             builtin_value
-            BuiltinOrVar
-            (builtin_satisfies_BuiltinOrVar ρ)
-            (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+            B
+            (builtin_satisfies_B ρ)
+            (AppliedOperator'_symbol_builtin_satisfies_B ρ)
             g
-            (AppliedOperatorOr'_symbol_A_to_OpenTerm A_to_OpenTerm x)
+            (AppliedOperatorOr'_symbol_A_to_OpenTermB A_to_OpenTermB x)
         /\ (valuation_satisfies_scs
              ρ
              (AppliedOperatorOr'_symbol_A_to_SCS A_to_SC x)
@@ -641,18 +654,6 @@ Proof.
             {
                 rewrite <- IHao.
                 ltac1:(rewrite Forall_app).
-                remember (aoxy_satisfies_aoxz_comp (builtin_satisfies_BuiltinOrVar ρ)
-  (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)) as SAT1.
-                remember (SAT1 ao0_1 (AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm ao)) as P0.
-                remember (Forall (valuation_satisfies_sc ρ) (AppliedOperator'_symbol_A_to_SCS A_to_SC ao)) as P1.
-                remember (Forall (valuation_satisfies_sc ρ) (A_to_SC b)) as P2.
-                remember (GroundTerm_satisfies_A ρ (aoo_app symbol builtin_value ao0_2) b) as P3.
-                remember (SAT1 ao0_2 ao1) as P4.
-                ltac1:(cut (iff (and P2 P4) P3)).
-                {
-                    clear. ltac1:(naive_solver).
-                }
-                subst.
                 ltac1:(rewrite -correct_underlying).
                 ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
                 cbn.
@@ -668,9 +669,6 @@ Proof.
                 cbn.
                 rewrite H.
                 rewrite Forall_app.
-                remember ((aoxy_satisfies_aoxz_comp (builtin_satisfies_BuiltinOrVar ρ)
-  (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ) ao0
-  (AppliedOperator'_symbol_A_to_OpenTerm A_to_OpenTerm ao))) as P1.
                 unfold valuation_satisfies_scs.
                 clear.
                 ltac1:(naive_solver).
