@@ -263,6 +263,7 @@ Section with_valuation.
             ρ
     .
 
+    (*
     (* TODO prove that this is equivalent to aoxyo_satisfies_aoxzo. *)
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
         (B : Set)
@@ -294,24 +295,58 @@ Section with_valuation.
         asb t
     | aoo_operand _ _ bov => AppliedOperator'_symbol_builtin_satisfies_B ρ asb bov
     end.
+    *)
+
+    Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
+        (ao : AppliedOperator' symbol builtin_value)
+        (bov : BuiltinOrVar)
+        : Prop
+    :=
+    match bov with
+    | bov_builtin _ => False
+    | bov_variable x => ρ !! x = Some (aoo_app _ _ ao) 
+    end
+    .
+
+    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB'
+        (B : Set)
+        (builtin_satisfies_B : builtin_value -> B -> Prop)
+        AppliedOperator'_symbol_builtin_value_satisfies_B
+        :
+        AppliedOperator' symbol builtin_value ->
+        AppliedOperatorOr' symbol B ->
+        Prop
+    :=  fun a b => @aoxyo_satisfies_aoxzo symbol builtin_value B
+        builtin_satisfies_B
+        AppliedOperator'_symbol_builtin_value_satisfies_B
+        (aoo_app _ _ a) b
+    .
+
+    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+        (B : Set)
+        (builtin_satisfies_B : builtin_value -> B -> Prop)
+        AppliedOperator'_symbol_builtin_value_satisfies_B
+        :
+        AppliedOperatorOr' symbol builtin_value ->
+        AppliedOperatorOr' symbol B ->
+        Prop
+    :=  @aoxyo_satisfies_aoxzo symbol builtin_value B
+        builtin_satisfies_B
+        AppliedOperator'_symbol_builtin_value_satisfies_B
+    .
 
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm:
         AppliedOperator' symbol builtin_value ->
         OpenTerm ->
         Prop
-    :=  fun a b => @aoxyo_satisfies_aoxzo symbol builtin_value BuiltinOrVar
-        (builtin_satisfies_BuiltinOrVar ρ)
-        (
-            fun asb bov =>
-            match bov with
-            | bov_builtin _ => False
-            | bov_variable x => ρ !! x = Some (aoo_app _ _ asb) 
-            end
-        )
-        (aoo_app _ _ a) b
+    :=  fun a b =>
+        AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+            BuiltinOrVar
+            (builtin_satisfies_BuiltinOrVar ρ)
+            AppliedOperator'_symbol_builtin_value_satisfies_BOV
+            (aoo_app _ _ a) b
     .
     
-
     Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC:
         AppliedOperator' symbol builtin_value ->
         OpenTermWSC ->
@@ -393,8 +428,10 @@ Section with_valuation.
     match rb with
     | lp_rewrite r =>
         GroundTerm_satisfies_LocalRewrite lr (aoo_operand _ _ b) r
-    | lp_basicpat φ =>
+    | lp_basicpat (aoo_app _ _ _) =>
         False
+    | lp_basicpat (aoo_operand _ _ bov) =>
+        builtin_satisfies_BuiltinOrVar ρ b bov
     | lp_bov bx =>
         builtin_satisfies_BuiltinOrVar ρ b bx
     end.
@@ -407,7 +444,7 @@ Section with_valuation.
             builtin_value
             LocalRewriteOrOpenTermOrBOV
             (builtin_satisfies_LocalRewriteOrOpenTermOrBOV lr)
-            (fun ao => GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr (aoo_app _ _ ao))
+            ((GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr) ∘ (aoo_app _ _))
     .
 
 
