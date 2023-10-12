@@ -199,8 +199,6 @@ Proof.
 Qed.
 
 
-Print A_satisfies_B_WithASideCondition.
-Search reflect.
 Lemma getSCS_getBase_correct
     {Σ : Signature}
     {A B : Set}
@@ -234,7 +232,10 @@ Proof.
     }
     {
         ltac1:(rewrite Forall_cons_iff).
+        rewrite A_satisfies_B_WithASideCondition_comp_iff.
         specialize (IHwscb a).
+        rewrite A_satisfies_B_WithASideCondition_comp_iff in IHwscb.
+        cbn.
         ltac1:(naive_solver).
     }
 Qed.
