@@ -1,4 +1,5 @@
 Require Import Logic.PropExtensionality.
+From Coq Require Import Setoid.
 
 From Minuska Require Import
     prelude
@@ -917,13 +918,95 @@ Proof.
     cbn.
     do 2 (rewrite <- getSCS_getBase_correct).
     do 2 (rewrite builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm).
-    
+
+    Set Printing Implicit.
+    set (P1 := aoxyo_satisfies_aoxzo from (lhs_RewritingRule_to_OpenTerm r)).
+    set (P2 := aoxyo_satisfies_aoxzo to (rhs_RewritingRule_to_RhsPattern r)).
+    set (P3 := valuation_satisfies_scs ρ (lhs_RewritingRule_to_SCS r)).
+    set (P4 := (@aoxyo_satisfies_aoxzo (@symbol Σ) (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))
+  (@LocalRewriteOrOpenTermOrBOV Σ)
+  (@GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV Σ ρ LR_Left
+∘ aoo_operand (@symbol Σ) (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)))
+  (@GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV Σ ρ LR_Left
+∘ aoo_app (@symbol Σ) (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)))
+  from
+  (@getBase Σ (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ)) r))).
+
+    set ( P5 := @valuation_satisfies_scs Σ ρ
+  (@getSCS Σ (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ)) r)).
+    set (P6 := @aoxyo_satisfies_aoxzo (@symbol Σ) (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))
+  (@LocalRewriteOrOpenTermOrBOV Σ)
+  (@GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV Σ ρ LR_Right
+∘ aoo_operand (@symbol Σ) (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)))
+  (@GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV Σ ρ LR_Right
+∘ aoo_app (@symbol Σ) (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)))
+  to
+  (@getBase Σ (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ)) r))
+    .
+    Unset Printing Implicit.
+
+    ltac1:(cut (((P1 /\ P2 /\ P3) <-> (P4 /\ P5 /\ P6)))).
+    {
+        ltac1:(naive_solver).
+    }
+    unfold lhs_RewritingRule_to_OpenTerm in P1; cbn.
+    unfold rhs_RewritingRule_to_RhsPattern in P2; cbn.
+    unfold lhs_RewritingRule_to_SCS in P3; cbn.
+    unfold valuation_satisfies_scs in *.
+    set (P31 := Forall (valuation_satisfies_sc ρ) (lhs_UncondRewritingRule_to_SCS (getBase r))).
+    set (P32 := Forall (valuation_satisfies_sc ρ) (getSCS r)).
+    assert (H : P3 <-> P31 /\ P32).
+    {
+        ltac1:(unfold P3,P31,P32).
+        apply Forall_app.
+    }
+
+    ltac1:(cut (P1 ∧ P2 ∧ P31 ∧ P32 ↔ P4 ∧ P5 ∧ P6)).
+    {
+        ltac1:(naive_solver).
+    }
+    clear H. clear P3.
+
+    unfold lhs_UncondRewritingRule_to_OpenTerm in *.    
+    assert (L1 := fun pf => @correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
+        (lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
+        (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ LR_Left)
+        (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
+        (builtin_satisfies_BuiltinOrVar ρ)
+        ρ pf (getBase r) from).
+    ltac1:(feed specialize L1).
+    {
+        intros.
+        unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
+        destruct a.
+        {
+            unfold GroundTerm_satisfies_LocalRewrite.
+            unfold GroundTerm_satisfies_left_LocalRewrite.
+            unfold GroundTerm_satisfies_LhsPattern.
+            destruct r0; simpl in *.
+            Set Printing Implicit.
+            Set Debug "tactic-unification".
+            (*unfold builtin_satisfies_BuiltinOrVar.*)
+            (*About correct_AppliedOperator'_symbol_A_to_OpenTerm.*)
+            ltac1:(simple apply correct_AppliedOperator'_symbol_A_to_OpenTerm).
+        }
+    }
+    rewrite L1.
+
+
+
+
+    unfold GroundTerm,GroundTerm' in from.
+    About correct_AppliedOperator'_symbol_A_to_OpenTerm.
+    Check lhs_RewritingRule_to_OpenTerm.
+
     rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
         (lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
         (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ LR_Left)
         (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
         (builtin_satisfies_BuiltinOrVar ρ)
-        ρ).
+        ρ 
+        ) in P4.
     
     {
         rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ Expression
@@ -934,20 +1017,27 @@ Proof.
         ρ).
         {
 
-            Check correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
-            
+            Check @correct_AppliedOperator'_symbol_A_to_OpenTerm.
             Set Printing Implicit.
             unfold lhs_RewritingRule_to_OpenTerm.
             unfold rhs_RewritingRule_to_RhsPattern.
             unfold lhs_RewritingRule_to_SCS.
+            unfold valuation_satisfies_scs.
+            rewrite Forall_app.
+            unfold UncondRewritingRule; cbn in *.
+            remember (Forall (valuation_satisfies_sc ρ) (getSCS r)) as P1.
+            
+            unfold UncondRewritingRule in HeqP1; cbn in *.
+            ltac1:(rewrite -correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern).
+            Check correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
+            *)
+            
+            (*
             unfold lhs_UncondRewritingRule_to_OpenTerm.
             unfold rhs_UncondRewritingRule_to_RhsPattern.
             unfold lhs_UncondRewritingRule_to_SCS.
-            unfold valuation_satisfies_scs.
-            rewrite Forall_app; cbn.
-            unfold UncondRewritingRule.
-            ltac1:(rewrite -correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern).
 
+            unfold UncondRewritingRule.
             remember (Forall (valuation_satisfies_sc ρ)) as FA1.
             remember ((@aoxyo_satisfies_aoxzo (@symbol Σ)
   (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))
@@ -959,25 +1049,44 @@ Proof.
   (@getBase Σ
   (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ))
   r)))) as P2'.
-            remember ((@aoxyo_satisfies_aoxzo (@symbol Σ)
-  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))
-  (@BuiltinOrVar Σ) (@builtin_satisfies_BuiltinOrVar Σ ρ)
-  (@AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar Σ ρ) to
-  (@AppliedOperatorOr'_symbol_A_to_OpenTermB Σ
-  (@LocalRewriteOrOpenTermOrBOV Σ) (@BuiltinOrVar Σ)
-  (@lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm Σ)
-  (@getBase Σ
+
+  
+            remember (@aoxyo_satisfies_aoxzo (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)) (@Expression Σ)
+  (λ (b : @builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)) (e : @Expression
+  Σ),
+  @Expression_evaluate Σ ρ e =
+@Some
   (AppliedOperatorOr' (@symbol Σ)
-  (@LocalRewriteOrOpenTermOrBOV Σ))
-  r)))) as P3.
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)))
+  (aoo_operand (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)) b))
+  (λ (ao : AppliedOperator' (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ))) (e : @Expression
+  Σ),
+  @Expression_evaluate Σ ρ e =
+@Some
+  (AppliedOperatorOr' (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)))
+  (aoo_app (@symbol Σ)
+  (@builtin_value (@symbol Σ) (@symbols Σ) (@builtin Σ)) ao))
+  to
+  (@AppliedOperatorOr'_symbol_A_to_OpenTermB Σ
+  (@LocalRewriteOrOpenTermOrBOV Σ) (@Expression Σ)
+  (@rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern Σ)
+  (@getBase Σ
+  (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ))
+  r))) as P3.
 
             cbn.
 
+            Set Printing Implicit.
 
 
             ltac1:(naive_solver).
             
             split; intros H; apply H.
+            *)
         }
     }
     (*
