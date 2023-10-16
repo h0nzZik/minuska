@@ -397,12 +397,19 @@ Section with_decidable_signature.
         end
     end.
 
-    
     Definition evaluate_rhs_pattern
             (ρ : Valuation)
-            (φ : RhsPattern)
+            (φ : AppliedOperatorOr' symbol Expression)
             : option GroundTerm :=
-        AppliedOperator'_collapse_option (AppliedOperatorOr'_fmap (Expression_evaluate ρ) φ)
+        let f : Expression -> option GroundTerm
+            := (Expression_evaluate ρ) in
+        let fφ  : AppliedOperatorOr' symbol (option GroundTerm)
+            := f <$> φ in 
+        let cfφ : option (AppliedOperatorOr' symbol GroundTerm)
+            := AppliedOperatorOr'_collapse_option fφ in
+        cfφ' ← cfφ;
+        let flat := AppliedOperatorOr'_symbol_A_to_OpenTermB id cfφ' in
+        Some flat
     .
 
     Definition rewrite_with
