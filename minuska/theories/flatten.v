@@ -687,7 +687,10 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
         Prop
     )
     (ρ : Valuation)
-    (correct_underlying:
+    (x : AppliedOperatorOr' symbol A)
+    (g : GroundTerm)
+    :
+    (
         ∀ γ a,
             (
                 @aoxyo_satisfies_aoxzo
@@ -704,10 +707,8 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
             <->
             GroundTerm_satisfies_A γ a
     )
-    (x : AppliedOperatorOr' symbol A)
-    (g : GroundTerm)
-    :
-    (
+    ->
+    ((
         @aoxyo_satisfies_aoxzo
             symbol
             builtin_value
@@ -730,8 +731,10 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
         ((GroundTerm_satisfies_A) ∘ (aoo_operand _ _))
         ((GroundTerm_satisfies_A) ∘ (aoo_app _ _))
         g x
+    )
 .
 Proof.
+    intros correct_underlying.
     unfold in_val_GroundTerm_satisfies_OpenTerm in *.
     unfold in_val_GroundTerm_satisfies_OpenTerm in *.
     unfold aoosb_satisfies_aoosbf in *.
@@ -968,14 +971,15 @@ Proof.
     clear H. clear P3.
 
     unfold lhs_UncondRewritingRule_to_OpenTerm in *.    
-    assert (L1 := fun pf => @correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
+    assert (L1 := @correct_AppliedOperator'_symbol_A_to_OpenTerm Σ _ BuiltinOrVar
         (lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm) (lhs_LocalRewriteOrOpenTermOrBOV_to_SCS)
         (GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ LR_Left)
         (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
         (builtin_satisfies_BuiltinOrVar ρ)
-        ρ pf (getBase r) from).
+        ρ (getBase r) from).
     ltac1:(feed specialize L1).
     {
+        clear L1.
         intros.
         unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
         destruct a.
@@ -984,11 +988,19 @@ Proof.
             unfold GroundTerm_satisfies_left_LocalRewrite.
             unfold GroundTerm_satisfies_LhsPattern.
             destruct r0; simpl in *.
+            
+            ltac1:(replace ((@builtin_value_satisfies_OpenTermWSC Σ ρ))
+            with ((in_val_GroundTerm_satisfies_OpenTermWSC ρ) ∘ (aoo_operand _ _))).
+            2: {
+                apply functional_extensionality.
+            }
             Set Printing Implicit.
-            Set Debug "tactic-unification".
+            rewrite correct_AppliedOperator'_symbol_A_to_OpenTerm.
+            unfold AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC.
+            (* Set Debug "tactic-unification". *)
             (*unfold builtin_satisfies_BuiltinOrVar.*)
             (*About correct_AppliedOperator'_symbol_A_to_OpenTerm.*)
-            ltac1:(simple apply correct_AppliedOperator'_symbol_A_to_OpenTerm).
+            (* ltac1:(simple apply correct_AppliedOperator'_symbol_A_to_OpenTerm). *)
         }
     }
     rewrite L1.
