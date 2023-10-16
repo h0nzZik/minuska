@@ -35,7 +35,7 @@ match c with
 end.
 
 Inductive aoxy_satisfies_aoxz
-    {X Y Z : Set}
+    {X Y Z : Type}
     {Y_sat_Z : Y -> Z -> Prop}
     {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
     AppliedOperator' X Y ->
@@ -74,7 +74,7 @@ Inductive aoxy_satisfies_aoxz
 .
 
 Inductive aoxyo_satisfies_aoxzo
-    {X Y Z : Set}
+    {X Y Z : Type}
     {Y_sat_Z : Y -> Z -> Prop}
     {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
     AppliedOperatorOr' X Y ->
@@ -180,7 +180,7 @@ end.
 
 Inductive A_satisfies_B_WithASideCondition
     {Σ : Signature}
-    (A B : Set)
+    (A B : Type)
     (A_sat_B : A -> B -> Prop)
     (ρ : Valuation)
     : A -> WithASideCondition B -> Prop :=
@@ -266,7 +266,7 @@ Section with_valuation.
     (*
     (* TODO prove that this is equivalent to aoxyo_satisfies_aoxzo. *)
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
-        (B : Set)
+        (B : Type)
         (AppliedOperator'_symbol_builtin_satisfies_B:
             Valuation ->
             AppliedOperator' symbol builtin_value ->
@@ -309,7 +309,7 @@ Section with_valuation.
     .
 
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB'
-        (B : Set)
+        (B : Type)
         (builtin_satisfies_B : builtin_value -> B -> Prop)
         AppliedOperator'_symbol_builtin_value_satisfies_B
         :
@@ -323,7 +323,7 @@ Section with_valuation.
     .
 
     Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
-        (B : Set)
+        (B : Type)
         (builtin_satisfies_B : builtin_value -> B -> Prop)
         AppliedOperator'_symbol_builtin_value_satisfies_B
         :

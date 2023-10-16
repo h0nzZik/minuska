@@ -9,7 +9,7 @@ From Minuska Require Import
 .
 
 Fixpoint AppliedOperator'_size
-    {Operator Operand : Set}
+    {Operator Operand : Type}
     (x : AppliedOperator' Operator Operand)
     : nat :=
 match x with
@@ -19,7 +19,7 @@ match x with
 end.
 
 Definition AppliedOperatorOr'_deep_size
-    {Operator Operand : Set}
+    {Operator Operand : Type}
     (x : AppliedOperatorOr' Operator Operand)
     : nat :=
 match x with
@@ -30,7 +30,7 @@ end.
 Print AppliedOperatorOr'.
 
 Fixpoint AppliedOperator'_operands
-    (Operator Operand : Set)
+    (Operator Operand : Type)
     (a : AppliedOperator' Operator Operand)
     : list Operand
 :=
@@ -41,7 +41,7 @@ match a with
 end.
 
 Definition AppliedOperatorOr'_operands
-    (Operator Operand : Set)
+    (Operator Operand : Type)
     (a : AppliedOperatorOr' Operator Operand)
     : list Operand
 :=
@@ -89,7 +89,7 @@ Definition flattened_rewrites_to
 
 Fixpoint separate_scs
     {Σ : Signature}
-    {A : Set}
+    {A : Type}
     (wsc : WithASideCondition A):
     A * (list SideCondition)
 :=
@@ -101,7 +101,7 @@ match wsc with
     end
 end.
 
-Fixpoint getSCS {Σ : Signature} {A : Set} (wsc : WithASideCondition A):
+Fixpoint getSCS {Σ : Signature} {A : Type} (wsc : WithASideCondition A):
     list SideCondition
 :=
 match wsc with
@@ -109,7 +109,7 @@ match wsc with
 | wsc_sc wsc' sc => sc::(getSCS wsc')
 end.
 
-Fixpoint getBase {Σ : Signature} {A : Set} (wsc : WithASideCondition A):
+Fixpoint getBase {Σ : Signature} {A : Type} (wsc : WithASideCondition A):
     A
 :=
 match wsc with
@@ -119,7 +119,7 @@ end.
 
 
 Lemma separate_scs_getSCS_getBase
-    {Σ : Signature} {A : Set}
+    {Σ : Signature} {A : Type}
     (wsc : WithASideCondition A)
     : separate_scs wsc = (getBase wsc, getSCS wsc)
 .
@@ -136,7 +136,7 @@ Qed.
 
 Fixpoint AppliedOperator'_symbol_A_to_SCS
     {Σ : Signature}
-    {A : Set}
+    {A : Type}
     (A_to_SC : A -> list SideCondition )
     (x : AppliedOperator' symbol A)
     : list SideCondition
@@ -151,7 +151,7 @@ end.
 
 Definition AppliedOperatorOr'_symbol_A_to_SCS
     {Σ : Signature}
-    {A : Set}
+    {A : Type}
     (A_to_SC : A -> list SideCondition )
     (x : AppliedOperatorOr' symbol A)
     : list SideCondition
@@ -163,7 +163,7 @@ end.
 
 Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
     {Σ : Signature}
-    {A B : Set}
+    {A B : Type}
     (A_to_OpenTermB : A ->
         ((AppliedOperatorOr' symbol B))
     )
@@ -186,7 +186,7 @@ end.
 
 Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
     {Σ : Signature}
-    {A B : Set}
+    {A B : Type}
     (A_to_OpenTermB : A ->
         ((AppliedOperatorOr' symbol B))
     )
@@ -201,7 +201,7 @@ end.
 
 Fixpoint A_satisfies_B_WithASideCondition_comp
     {Σ : Signature}
-    (A B : Set)
+    (A B : Type)
     (A_sat_B : A -> B -> Prop)
     (ρ : Valuation)
     (a : A)
@@ -217,7 +217,7 @@ end
 
 
 Fixpoint aoxy_satisfies_aoxz_comp
-    {X Y Z : Set}
+    {X Y Z : Type}
     (Y_sat_Z : Y -> Z -> Prop)
     (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
     (g : AppliedOperator' X Y)
@@ -241,7 +241,7 @@ end.
 
 
 Definition aoxyo_satisfies_aoxzo_comp
-    {X Y Z : Set}
+    {X Y Z : Type}
     (Y_sat_Z : Y -> Z -> Prop)
     (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop):
     AppliedOperatorOr' X Y ->
@@ -332,7 +332,7 @@ match bov with
 end.
 
 Fixpoint AppliedOperator'_fmap
-    {A B C : Set}
+    {A B C : Type}
     (f : B -> C)
     (ao : AppliedOperator' A B)
     : AppliedOperator' A C
@@ -344,7 +344,7 @@ match ao with
 end.
 
 Definition AppliedOperatorOr'_fmap
-    {A B C : Set}
+    {A B C : Type}
     (f : B -> C)
     (aoo : AppliedOperatorOr' A B)
     : AppliedOperatorOr' A C
@@ -396,7 +396,7 @@ Definition RewritingRule_to_FlattenedRewritingRule
 
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
-    (A B : Set)
+    (A B : Type)
     (A_sat_B : A -> B -> Prop)
     (ρ : Valuation)
     (a : A)
@@ -433,7 +433,7 @@ Qed.
 
 Lemma getSCS_getBase_correct
     {Σ : Signature}
-    {A B : Set}
+    {A B : Type}
     (A_sat_B : A -> B -> Prop)
     (wscb : WithASideCondition B)
     (a : A)
@@ -475,7 +475,7 @@ Qed.
 
 Lemma separate_scs_correct
     {Σ : Signature}
-    {A B : Set}
+    {A B : Type}
     (A_sat_B : A -> B -> Prop)
     (wscb : WithASideCondition B)
     (a : A)
@@ -533,7 +533,7 @@ Qed.
 
 
 Lemma aoxy_satisfies_aoxz_comp_iff
-    {X Y Z : Set}
+    {X Y Z : Type}
     (Y_sat_Z : Y -> Z -> Prop)
     (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
     (g : AppliedOperator' X Y)
@@ -552,7 +552,7 @@ Qed.
 
 
 Lemma aoxyo_satisfies_aoxzo_comp_iff
-    {X Y Z : Set}
+    {X Y Z : Type}
     (Y_sat_Z : Y -> Z -> Prop)
     (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
     (g : AppliedOperatorOr' X Y)
@@ -692,7 +692,7 @@ Qed.
 
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     {Σ : Signature}
-    {A B : Set}
+    {A B : Type}
     (A_to_OpenTermB : A -> AppliedOperatorOr' symbol B)
     (A_to_SC : A -> list SideCondition )
     (GroundTerm_satisfies_A:

@@ -2,7 +2,10 @@ From Minuska Require Import
     prelude
 .
 
-Inductive AppliedOperator' (operator : Set) (operand : Set) :=
+Polymorphic Cumulative
+Inductive AppliedOperator' (operator : Type) (operand : Type)
+: Type
+:=
 | ao_operator (s : operator)
 | ao_app_operand
     (aps : AppliedOperator' operator operand) (b : operand) 
@@ -12,16 +15,17 @@ Inductive AppliedOperator' (operator : Set) (operand : Set) :=
 .
 
 
+Polymorphic Cumulative
 Inductive AppliedOperatorOr'
-    (Operator : Set)
-    (Operand : Set)
-    : Set :=
+    (Operator : Type)
+    (Operand : Type)
+    : Type :=
 | aoo_app (ao : AppliedOperator' Operator Operand)
 | aoo_operand (operand : Operand)
 .
 
 
-Definition GroundTerm' (symbol : Set) (builtin : Set)
+Definition GroundTerm' (symbol : Type) (builtin : Type)
     := (AppliedOperatorOr' symbol builtin)
 .
 
@@ -29,40 +33,40 @@ Arguments ao_operator {operator operand}%type_scope s.
 Arguments ao_app_operand {operator operand}%type_scope aps b.
 Arguments ao_app_ao {operator operand}%type_scope aps x.
 
-Class MVariables (variable : Set) := {
+Class MVariables (variable : Type) := {
     variable_eqdec :: EqDecision variable ;
     variable_countable :: Countable variable ;
     variable_infinite :: Infinite variable ;
 }.
 
-Class Symbols (symbol : Set) := {
+Class Symbols (symbol : Type) := {
     symbol_eqdec :: EqDecision symbol ;
     symbol_countable :: Countable symbol ;
 }.
 
-Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
+Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
     builtin_value
-        : Set ;
+        : Type ;
     builtin_value_eqdec
         :: EqDecision builtin_value ;
     
     builtin_unary_predicate
-        : Set ;
+        : Type ;
     builtin_unary_predicate_eqdec
         :: EqDecision builtin_unary_predicate ;
     
     builtin_binary_predicate
-        : Set ;
+        : Type ;
     builtin_binary_predicate_eqdec
         :: EqDecision builtin_binary_predicate ;
 
     builtin_unary_function
-        : Set ;
+        : Type ;
     builtin_unary_function_eqdec
         :: EqDecision builtin_unary_function ;
 
     builtin_binary_function
-        : Set ;
+        : Type ;
     builtin_binary_function_eqdec
         :: EqDecision builtin_binary_function ;
 
@@ -90,8 +94,8 @@ Class Builtin {symbol : Set} {symbols : Symbols symbol} := {
 }.
 
 Class Signature := {
-    symbol : Set ;
-    variable : Set ;
+    symbol : Type ;
+    variable : Type ;
     symbols :: Symbols symbol ;
     builtin :: Builtin ;
     variables :: MVariables variable ;
@@ -134,7 +138,7 @@ Inductive SideCondition {Σ : Signature} :=
 | sc_match (v : variable) (φ : OpenTerm)
 .
 
-Inductive WithASideCondition {Σ : Signature} (Base : Set) :=
+Inductive WithASideCondition {Σ : Signature} (Base : Type) :=
 |  wsc_base (φ : Base)
 |  wsc_sc (φc : WithASideCondition Base) (sc : SideCondition)
 .
@@ -195,9 +199,9 @@ Section eqdec.
 
     #[export]
     Instance AppliedOperator'_eqdec
-        {symbol : Set}
+        {symbol : Type}
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {builtin_dec : EqDecision builtin}
         : EqDecision (AppliedOperator' symbol builtin)
     .
@@ -207,9 +211,9 @@ Section eqdec.
 
     #[export]
     Instance GroundTerm'_eqdec
-        {A : Set}
+        {A : Type}
         {symbols : Symbols A}
-        (T : Set)
+        (T : Type)
         {T_dec : EqDecision T}
         : EqDecision (GroundTerm' A T)
     .
@@ -303,7 +307,7 @@ Section eqdec.
     #[export]
     Instance WithASideCondition_eqdec
         {Σ : Signature}
-        (A : Set)
+        (A : Type)
         (A_eqdec : EqDecision A)
         : EqDecision (WithASideCondition A)
     .
@@ -324,9 +328,9 @@ End eqdec.
 Section countable.
 
     Equations AppliedOperator'_to_gen_tree
-        (symbol : Set)
+        (symbol : Type)
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (a : AppliedOperator' symbol builtin)
@@ -351,9 +355,9 @@ Section countable.
     Opaque AppliedOperator'_to_gen_tree.
 
     Equations AppliedOperator'_of_gen_tree
-        (symbol : Set)
+        (symbol : Type)
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (t : gen_tree symbol)
@@ -383,9 +387,9 @@ Section countable.
     Opaque AppliedOperator'_of_gen_tree.
 
     Lemma AppliedOperator'_of_to_gen_tree
-        (symbol : Set)
+        (symbol : Type)
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (a : AppliedOperator' symbol builtin)
@@ -424,9 +428,9 @@ Section countable.
 
     #[export]
     Instance appliedOperator_countable
-        (symbol_set : Set)
+        (symbol_set : Type)
         {symbols : Symbols symbol_set}
-        (builtin_set : Set)
+        (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
         : Countable (AppliedOperator' symbol_set builtin_set)
@@ -442,9 +446,9 @@ Section countable.
     Qed.
 
     Equations GroundTerm'_to_gen_tree
-        (symbol : Set)
+        (symbol : Type)
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (e : GroundTerm' symbol builtin)
@@ -460,9 +464,9 @@ Section countable.
     Opaque GroundTerm'_to_gen_tree.
 
     Equations GroundTerm'_from_gen_tree
-        (symbol : Set)
+        (symbol : Type)
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
         (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
@@ -480,9 +484,9 @@ Section countable.
     Opaque GroundTerm'_from_gen_tree.
 
     Lemma GroundTerm'_to_from_gen_tree
-        (symbol : Set)
+        (symbol : Type)
         {symbols : Symbols symbol}
-        (builtin : Set)
+        (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
         (e : GroundTerm' symbol builtin)
@@ -496,9 +500,9 @@ Section countable.
 
     #[export]
     Instance GroundTerm'_countable
-        (symbol_set : Set)
+        (symbol_set : Type)
         {symbols : Symbols symbol_set}
-        (builtin_set : Set)
+        (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
         : Countable (GroundTerm' symbol_set builtin_set)
