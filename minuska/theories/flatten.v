@@ -27,6 +27,30 @@ match x with
 | aoo_app _ _ x' => 1 + AppliedOperator'_size x'
 end.
 
+Print AppliedOperatorOr'.
+
+Fixpoint AppliedOperator'_operands
+    (Operator Operand : Set)
+    (a : AppliedOperator' Operator Operand)
+    : list Operand
+:=
+match a with
+| ao_operator _ => []
+| ao_app_operand a' o => o::(AppliedOperator'_operands Operator Operand a')
+| ao_app_ao a1 a2 => (AppliedOperator'_operands Operator Operand a1) ++ (AppliedOperator'_operands Operator Operand a2)
+end.
+
+Definition AppliedOperatorOr'_operands
+    (Operator Operand : Set)
+    (a : AppliedOperatorOr' Operator Operand)
+    : list Operand
+:=
+match a with
+| aoo_app _ _ a' => AppliedOperator'_operands Operator Operand a'
+| aoo_operand _ _ o => [o]
+end.
+
+
 
 Definition valuation_satisfies_scs
     {Σ : Signature}
@@ -691,7 +715,9 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     (g : GroundTerm)
     :
     (
-        ∀ γ a,
+        ∀ (γ : AppliedOperatorOr' symbol builtin_value)
+          (a : A),
+        a ∈ AppliedOperatorOr'_operands _ _ x ->
             (
                 @aoxyo_satisfies_aoxzo
         symbol
@@ -766,22 +792,39 @@ Proof.
                     inversion HH21; subst.
                     rewrite H in H2; cbn.
                     inversion H2.
+                    { clear; ltac1:(set_solver). }
                 }
             }
             {
                 rewrite <- IHao.
                 ltac1:(rewrite Forall_app).
                 ltac1:(rewrite -correct_underlying).
-                ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
-                cbn.
-                rewrite H.
-                unfold valuation_satisfies_scs.
-                clear.
-                ltac1:(naive_solver).
+                { ltac1:(clear; set_solver). }
+                {
+                    ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+                    cbn.
+                    rewrite H.
+                    unfold valuation_satisfies_scs.
+                    clear.
+                    ltac1:(naive_solver).
+                }
+                {
+                    intros.
+                    apply correct_underlying.
+                    { clear -H0; ltac1:(set_solver). }
+                }
             }
             {
                 ltac1:(rewrite -IHao).
+                {
+                    intros.
+                    apply correct_underlying.
+                    clear -H0; ltac1:(set_solver).
+                }
                 ltac1:(rewrite -correct_underlying).
+                {
+                    clear; ltac1:(set_solver).
+                }
                 ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
                 cbn.
                 rewrite H.
@@ -792,7 +835,15 @@ Proof.
             }
             {
                 ltac1:(rewrite -IHao).
+                {
+                    intros.
+                    apply correct_underlying.
+                    clear -H0; ltac1:(set_solver).
+                }
                 ltac1:(rewrite -correct_underlying).
+                {
+                    clear; ltac1:(set_solver).
+                }
                 ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
                 cbn.
                 rewrite H.
@@ -811,8 +862,18 @@ Proof.
                 clear. ltac1:(naive_solver).
             }
             {
-                ltac1:(rewrite -IHao1);
+                ltac1:(rewrite -IHao1).
+                {
+                    intros.
+                    apply correct_underlying.
+                    clear -H; ltac1:(set_solver).
+                }
                 ltac1:(rewrite -IHao2).
+                {
+                    intros.
+                    apply correct_underlying.
+                    clear -H; ltac1:(set_solver).
+                }
                 rewrite Forall_app.
                 clear.
                 ltac1:(naive_solver).
@@ -830,6 +891,10 @@ Proof.
         ltac1:(rewrite -correct_underlying).
         repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
         cbn.
+        {
+            clear; ltac1:(set_solver).
+        }
+        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
         reflexivity.
     }
     {
@@ -839,8 +904,11 @@ Proof.
         rewrite <- aoxyo_satisfies_aoxzo_comp_iff in correct_underlying.
         cbn in correct_underlying.
         apply correct_underlying.
+        clear; ltac1:(set_solver).
     }
 Qed.
+
+Check @correct_AppliedOperator'_symbol_A_to_OpenTerm.
 
 Lemma builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm
     {Σ : Signature}
@@ -1212,7 +1280,6 @@ Proof.
     unfold valuation_satisfies_scs in L1.
     unfold UncondRewritingRule in L1.
     fold P4 in L1.
-    clear P32.
     unfold rhs_UncondRewritingRule_to_RhsPattern in P2.
     set (P7 := (@Forall (@SideCondition Σ) (@valuation_satisfies_sc Σ ρ)
         (@AppliedOperatorOr'_symbol_A_to_SCS Σ (@LocalRewriteOrOpenTermOrBOV Σ)
@@ -1221,7 +1288,7 @@ Proof.
         (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ)) r)))).
     unfold lhs_UncondRewritingRule_to_SCS in P31.
     fold P7 in L1.
-    ltac1:(cut (P7 -> P2 /\ P7 ↔ P6)).
+    ltac1:(cut (P7 -> ((P2 /\ P7) ↔ P6))).
     {
         ltac1:(naive_solver).
     }
@@ -1234,6 +1301,7 @@ Proof.
     ltac1:(unfold P2).
     ltac1:(unfold P6).
     ltac1:(unfold P7).
+    Print getBase.
     
     erewrite <- correct_AppliedOperator'_symbol_A_to_OpenTerm.
     { 
@@ -1241,11 +1309,14 @@ Proof.
         reflexivity.
     }
     intros γ a.
+            unfold valuation_satisfies_scs.
     unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
     destruct a; cbn.
     {
         unfold GroundTerm_satisfies_right_LocalRewrite.
         unfold GroundTerm_satisfies_RhsPattern.
+        unfold lhs_LocalRewriteOrOpenTermOrBOV_to_SCS in P7.
+        destruct r. cbn in *.
         
     }
     {
