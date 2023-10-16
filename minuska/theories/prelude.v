@@ -9,6 +9,7 @@ From stdpp Require Export
     gmap
     sets
     strings
+    tactics
     list
     list_numbers
     numbers
