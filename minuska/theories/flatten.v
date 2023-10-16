@@ -1091,7 +1091,6 @@ Proof.
     do 2 (rewrite <- getSCS_getBase_correct).
     do 2 (rewrite builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm).
 
-    Set Printing Implicit.
     set (P1 := aoxyo_satisfies_aoxzo from (lhs_RewritingRule_to_OpenTerm r)).
     set (P2 := aoxyo_satisfies_aoxzo to (rhs_RewritingRule_to_RhsPattern r)).
     set (P3 := valuation_satisfies_scs ρ (lhs_RewritingRule_to_SCS r)).
@@ -1115,7 +1114,6 @@ Proof.
   to
   (@getBase Σ (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ)) r))
     .
-    Unset Printing Implicit.
 
     ltac1:(cut (((P1 /\ P2 /\ P3) <-> (P4 /\ P5 /\ P6)))).
     {
@@ -1399,6 +1397,7 @@ Proof.
         ltac1:(set_solver).
     }
 
-    
-    
+    rewrite <- correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
+    unfold GroundTerm_satisfies_RhsPattern.
+    reflexivity.
 Qed.
