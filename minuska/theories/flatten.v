@@ -1071,6 +1071,12 @@ Proof.
     }
     clear H. clear P3.
 
+    ltac1:(cut (P32 -> (P1 ∧ P2 ∧ P31 ↔ P4 ∧ P6))).
+    {
+        ltac1:(naive_solver).
+    }
+    intros HP32.
+
     unfold lhs_UncondRewritingRule_to_OpenTerm in *.    
 
     assert (Htmp1: (
@@ -1145,7 +1151,7 @@ Proof.
             }
         }
         {
-cbn.
+        cbn.
         unfold GroundTerm_satisfies_BuiltinOrVar.
         unfold valuation_satisfies_scs.
         destruct bx,γ; cbn.
@@ -1201,8 +1207,52 @@ cbn.
         (builtin_satisfies_BuiltinOrVar ρ)
         ρ (getBase r) from Htmp1).
 
+    clear Htmp1.
+    fold P1 in L1.
+    unfold valuation_satisfies_scs in L1.
+    unfold UncondRewritingRule in L1.
+    fold P4 in L1.
+    clear P32.
+    unfold rhs_UncondRewritingRule_to_RhsPattern in P2.
+    set (P7 := (@Forall (@SideCondition Σ) (@valuation_satisfies_sc Σ ρ)
+        (@AppliedOperatorOr'_symbol_A_to_SCS Σ (@LocalRewriteOrOpenTermOrBOV Σ)
+        (@lhs_LocalRewriteOrOpenTermOrBOV_to_SCS Σ)
+        (@getBase Σ
+        (AppliedOperatorOr' (@symbol Σ) (@LocalRewriteOrOpenTermOrBOV Σ)) r)))).
+    unfold lhs_UncondRewritingRule_to_SCS in P31.
+    fold P7 in L1.
+    ltac1:(cut (P7 -> P2 /\ P7 ↔ P6)).
+    {
+        ltac1:(naive_solver).
+    }
+    intros HP7.
+    clear L1.
+    clear P4.
+    clear P5.
+    clear P1.    
+    clear P31.
+    ltac1:(unfold P2).
+    ltac1:(unfold P6).
+    ltac1:(unfold P7).
     
-    
-    
+    erewrite <- correct_AppliedOperator'_symbol_A_to_OpenTerm.
+    { 
+        unfold valuation_satisfies_scs.
+        reflexivity.
+    }
+    intros γ a.
+    unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
+    destruct a; cbn.
+    {
+        unfold GroundTerm_satisfies_right_LocalRewrite.
+        unfold GroundTerm_satisfies_RhsPattern.
+        
+    }
+    {
+
+    }
+
+    Set Printing Implicit.
+    ltac1:(simple apply correct_AppliedOperator'_symbol_A_to_OpenTerm).
     
 Qed.
