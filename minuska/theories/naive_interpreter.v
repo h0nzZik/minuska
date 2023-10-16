@@ -3,6 +3,8 @@ From Minuska Require Import
     tactics
     spec_syntax
     spec_semantics
+    syntax_properties
+    flattened
     flatten
 .
 
@@ -57,9 +59,9 @@ Section with_decidable_signature.
     Defined.
 
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
-        (Operator : Set)
+        (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Set)
+        (Operand1 Operand2 : Type)
         (matches : Operand1 -> Operand2 -> bool)
         (matches_app_1 :
             Operand1 ->
@@ -137,9 +139,9 @@ Section with_decidable_signature.
     end.
 
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
-        (Operator : Set)
+        (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Set)
+        (Operand1 Operand2 : Type)
         (matches : Operand1 -> Operand2 -> bool)
         (matches_app_1 :
             Operand1 ->
@@ -182,9 +184,9 @@ Section with_decidable_signature.
     if decide (ρ1 ## ρ2) then Some (merge use_left ρ1 ρ2) else None.
 
     Fixpoint ApppliedOperator'_try_match_AppliedOperator'
-        (Operator : Set)
+        (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Set)
+        (Operand1 Operand2 : Type)
         (matches : Operand1 -> Operand2 -> option Valuation)
         (matches_app_1 :
             Operand1 ->
@@ -269,9 +271,9 @@ Section with_decidable_signature.
     end.
 
     Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
-        (Operator : Set)
+        (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Set)
+        (Operand1 Operand2 : Type)
         (matches : Operand1 -> Operand2 -> option Valuation)
         (matches_app_1 :
             Operand1 ->
@@ -395,38 +397,12 @@ Section with_decidable_signature.
         end
     end.
 
-    Print GroundTerm.
-    Print GroundTerm'.
-
-    #[global]
-    Instance AppliedOperatorOr'_A_B_fmap (A : Type)
-        : FMap (AppliedOperatorOr' A)
-        := @AppliedOperatorOr'_fmap A
-    .
-
-
-    Check AppliedOperatorOr'_fmap.
-    Fixpoint evaluate_rhs_pattern
+    
+    Definition evaluate_rhs_pattern
             (ρ : Valuation)
             (φ : RhsPattern)
-            : GroundTerm :=
-        AppliedOperatorOr'_fmap (Expression_evaluate ρ) φ.
-        match φ with
-        | spat_builtin v => Some (el_builtin v)
-        | spat_sym s => Some (el_appsym (aps_operator s))
-        | spat_app φ1 φ2 =>
-            let oe1 : option Element := (evaluate_rhs_pattern ρ φ1) in
-            let oe2 : option Element := (evaluate_rhs_pattern ρ φ2) in
-            match oe1,oe2 with
-            | Some (el_appsym aps1), Some (el_appsym aps2) =>
-                Some (el_appsym (aps_app_aps aps1 aps2))
-            | Some (el_appsym aps1), Some (el_builtin b) =>
-                Some (el_appsym (aps_app_operand aps1 b))
-            | _,_ => None
-            end
-        | spat_var x => ρ !! x (* Is this necessary when we have FunTerms? *)
-        | spat_ft t => funTerm_evaluate ρ t
-        end
+            : option GroundTerm :=
+        AppliedOperator'_collapse_option (AppliedOperatorOr'_fmap (Expression_evaluate ρ) φ)
     .
 
     Definition rewrite_with

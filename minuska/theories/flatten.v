@@ -6,6 +6,8 @@ From Minuska Require Import
     tactics
     spec_syntax
     spec_semantics
+    syntax_properties
+    flattened
 .
 
 Fixpoint AppliedOperator'_size
@@ -51,41 +53,6 @@ match a with
 end.
 
 
-
-Definition valuation_satisfies_scs
-    {Σ : Signature}
-    (ρ : Valuation)
-    (scs : list SideCondition)
-    : Prop
-:= Forall (valuation_satisfies_sc ρ) scs
-.
-
-Record FlattenedRewritingRule {Σ : Signature} := {
-    fr_from : OpenTerm ;
-    fr_to : RhsPattern ;
-    fr_scs : list SideCondition ;
-}.
-
-Definition flattened_rewrites_in_valuation_to
-    {Σ : Signature}
-    (ρ : Valuation)
-    (r : FlattenedRewritingRule)
-    (from to : GroundTerm)
-    : Prop
-:= in_val_GroundTerm_satisfies_OpenTerm
-    ρ from (fr_from r)
-/\ GroundTerm_satisfies_RhsPattern
-    ρ to (fr_to r)
-/\ valuation_satisfies_scs ρ (fr_scs r)
-.
-
-Definition flattened_rewrites_to
-    {Σ : Signature}
-    (r : FlattenedRewritingRule)
-    (from to : GroundTerm)
-    : Prop
-:= exists ρ, flattened_rewrites_in_valuation_to ρ r from to
-.
 
 Fixpoint separate_scs
     {Σ : Signature}
@@ -331,28 +298,6 @@ match bov with
 | bov_variable x => ft_variable x
 end.
 
-Fixpoint AppliedOperator'_fmap
-    {A B C : Type}
-    (f : B -> C)
-    (ao : AppliedOperator' A B)
-    : AppliedOperator' A C
-:=
-match ao with
-| ao_operator o => ao_operator o
-| ao_app_operand ao' x => ao_app_operand (AppliedOperator'_fmap f ao') (f x)
-| ao_app_ao ao1 ao2 => ao_app_ao (AppliedOperator'_fmap f ao1) (AppliedOperator'_fmap f ao2)
-end.
-
-Definition AppliedOperatorOr'_fmap
-    {A B C : Type}
-    (f : B -> C)
-    (aoo : AppliedOperatorOr' A B)
-    : AppliedOperatorOr' A C
-:=
-match aoo with
-| aoo_app _ _ ao => aoo_app _ _ (AppliedOperator'_fmap f ao)
-| aoo_operand _ _ o => aoo_operand _ _ (f o)
-end.
 
 
 Definition rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
