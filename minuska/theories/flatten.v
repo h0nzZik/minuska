@@ -938,6 +938,62 @@ Proof.
     }
 Qed.
 
+Lemma AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC_iff
+    {Σ : Signature} ρ x t:
+    in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_app symbol builtin_value x) t
+    ↔ AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC ρ x t
+.
+Proof.
+ unfold OpenTermWSC in *.
+    unfold in_val_GroundTerm_satisfies_OpenTermWSC.
+    rewrite A_satisfies_B_WithASideCondition_comp_iff.
+    cbn.
+    revert x.
+    induction t; intros x; cbn.
+    {
+        split; intros H; inversion H; subst; clear H.
+        {
+            constructor. constructor.
+            assumption.
+        }
+        {
+            constructor. constructor. assumption.
+        }
+        {
+            destruct φ; cbn in *.
+            {
+                constructor.
+                inversion H2; subst; clear H2.
+                assumption.
+            }
+            {
+                constructor.
+                inversion H2; subst; clear H2.
+                assumption.
+            }
+        }
+    }
+    {
+        rewrite IHt.
+        split; intros H; constructor.
+        { 
+            inversion H; subst; clear H.
+            assumption.
+        }
+        {
+            apply H.
+        }
+        {
+            inversion H; subst; clear H.
+            assumption.
+        }
+        {
+            inversion H; subst; clear H.
+            assumption.
+        }
+    }
+Qed.
+
 Theorem correct_RewritingRule_to_FlattenedRewritingRule
     {Σ : Signature}
     (r : RewritingRule)
@@ -1033,11 +1089,28 @@ Proof.
             unfold GroundTerm_satisfies_left_LocalRewrite.
             unfold GroundTerm_satisfies_LhsPattern.
             destruct r0; simpl in *.
+
             
             ltac1:(replace ((@builtin_value_satisfies_OpenTermWSC Σ ρ))
             with ((in_val_GroundTerm_satisfies_OpenTermWSC ρ) ∘ (aoo_operand _ _))).
             {
-                admit.
+
+                ltac1:(replace((@AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC Σ ρ))
+                with ((in_val_GroundTerm_satisfies_OpenTermWSC ρ) ∘ (aoo_app _ _))
+                ).
+                {
+                    ltac1:(simple apply correct_AppliedOperator'_symbol_A_to_OpenTerm).
+                }
+                {
+                    apply functional_extensionality.
+                    intros x. cbn.
+                    apply functional_extensionality.
+                    intros t. cbn.
+                    apply propositional_extensionality.
+                    apply AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC_iff.
+                    Set Printing Implicit.            
+                }
+                
             }
             {
                 apply functional_extensionality.
@@ -1045,16 +1118,7 @@ Proof.
                 apply functional_extensionality.
                 intros t. cbn.
                 apply propositional_extensionality.
-                Search in_val_GroundTerm_satisfies_OpenTermWSC.
-
-                split; intros H; inversion H; subst; clear H.
-                {
-                    inversion H0; subst; clear H0.
-                    constructor. cbn. assumption.
-                }
-                unfold in_val_GroundTerm_satisfies_OpenTermWSC.
-                rewrite -> A_satisfies_B_WithASideCondition_comp_iff.
-                cbn.
+                apply builtin_value_satisfies_OpenTermWSC_iff.
             }
             Set Printing Implicit.
             rewrite correct_AppliedOperator'_symbol_A_to_OpenTerm.
