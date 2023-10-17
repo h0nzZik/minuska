@@ -429,6 +429,26 @@ Section with_decidable_signature.
         else None
     .
 
+    (*
+    Lemma Expression_evaluate_Some_app
+        ρ z aoxy:
+    Expression_evaluate ρ z = Some (aoo_app symbol builtin_value aoxy) ->
+    z = ft_element (aoo_app symbol builtin_value aoxy)
+    .
+    Proof.
+        revert aoxy.
+        induction z; intros aoxy H; cbn.
+        {
+            inversion H. reflexivity.
+        }
+        {
+            cbn in H.
+        }
+
+    Qed.
+    *)
+
+
     Lemma evaluate_rhs_pattern_correct
         (φ : RhsPattern)
         (ρ : Valuation)
@@ -531,10 +551,12 @@ Section with_decidable_signature.
                     }
                 }
                 {
+
                     remember (fun A B b => aoo_operand A B b) as b2e.
 
                     remember (b2e symbol _ <$> ao0) as lifted_ao0.
-                    exists (aoo_app _ _ lifted_ao0).
+                    (*exists (aoo_app _ _ lifted_ao0).*)
+                    exists (aoo_app _ _ (Expression_evaluate ρ <$> ao)).
                     cbn.
                     split.
                     {
@@ -542,6 +564,74 @@ Section with_decidable_signature.
                         subst.
                         repeat constructor.
                         clear -H.
+
+
+                        induction H.
+                        {
+                            cbn.
+                            reflexivity.
+                        }
+                        {
+                            cbn in H0.
+                            cbn.
+                            rewrite bind_Some.
+                            cbn.
+                            ltac1:(
+                                under [fun e => _]functional_extensionality => e
+                            ).
+                            {
+                                ltac1:(rewrite bind_Some).
+                                ltac1:(
+                                    under [fun e' => _]functional_extensionality => e'
+                                ).
+                                {
+                                    ltac1:(rewrite inj_iff).
+                                    ltac1:(over).
+                                }
+                                ltac1:(over).
+                            }
+                            cbn in *.
+                            eexists.
+                            split>[apply IHaoxy_satisfies_aoxz|].
+                            eexists.
+                            split>[apply H0|].
+                            reflexivity.
+                        }
+                        {
+                            cbn in H0.
+                            cbn.
+                            rewrite bind_Some.
+                            cbn in *.
+                            ltac1:(
+                                under [fun e => _]functional_extensionality => e
+                            ).
+                            {
+                                ltac1:(rewrite bind_Some).
+                                ltac1:(
+                                    under [fun e' => _]functional_extensionality => e'
+                                ).
+                                {
+                                    ltac1:(rewrite inj_iff).
+                                    ltac1:(over).
+                                }
+                                ltac1:(over).
+                            }
+                            cbn in *.
+                            eexists.
+                            split>[apply IHaoxy_satisfies_aoxz|].
+                            eexists.
+                            split>[apply H0|].
+                            reflexivity.
+                        }
+
+
+
+
+
+
+
+
+
                         revert ao0 H.
                         induction ao; intros ao0 H; cbn in *.
                         { 

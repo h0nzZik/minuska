@@ -229,3 +229,43 @@ match aoo with
     tmp ← op;
     Some (aoo_operand _ _ tmp)
 end.
+
+
+Fixpoint AppliedOperator'_zipWith
+    {A B C D : Type}
+    (fa : A -> A -> A)
+    (fbc : B -> C -> D)
+    (adef : A)
+    (bdef : B)
+    (cdef : C)
+    (ao1 : AppliedOperator' A B)
+    (ao2 : AppliedOperator' A C)
+    : AppliedOperator' A D
+:=
+match ao1,ao2 with
+| ao_operator o1, ao_operator o2 => ao_operator (fa o1 o2)
+| ao_operator o1, ao_app_operand app2 op2 =>
+    ao_operator (fa o1 adef)
+| ao_operator o1, ao_app_ao app21 app22 =>
+    ao_operator (fa o1 adef)
+| ao_app_operand app1 op1, ao_app_operand app2 op2 =>
+    ao_app_operand
+        (AppliedOperator'_zipWith fa fbc adef bdef cdef app1 app2)
+        (fbc op1 op2)
+| ao_app_operand app1 op1, ao_operator o2 =>
+    ao_operator (fa adef o2)
+| ao_app_operand app1 op1, ao_app_ao app21 app22 =>
+    ao_app_operand
+        ((AppliedOperator'_zipWith fa fbc adef bdef cdef app1 app21))
+        (fbc op1 cdef)
+| ao_app_ao app11 app12, ao_app_ao app21 app22 =>
+    ao_app_ao
+        (AppliedOperator'_zipWith fa fbc adef bdef cdef app11 app21)
+        (AppliedOperator'_zipWith fa fbc adef bdef cdef app12 app22)
+| ao_app_ao app11 app12, ao_operator op2 =>
+    ao_operator (fa adef op2)
+| ao_app_ao app11 app12, ao_app_operand app21 op22 =>
+    ao_app_operand 
+        (AppliedOperator'_zipWith fa fbc adef bdef cdef app11 app21)
+        (fbc bdef op22)
+end.

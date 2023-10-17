@@ -210,7 +210,8 @@ Section with_valuation.
     | ft_element e => Some e
     | ft_variable x => ρ !! x
     | ft_unary f t =>
-        e ← Expression_evaluate t; Some (builtin_unary_function_interp f e)
+        e ← Expression_evaluate t;
+        Some (builtin_unary_function_interp f e)
     | ft_binary f t1 t2 =>
         e1 ← Expression_evaluate t1;
         e2 ← Expression_evaluate t2;
