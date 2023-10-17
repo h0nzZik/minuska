@@ -458,10 +458,63 @@ Section with_decidable_signature.
             ).
             {
                 ltac1:(rewrite bind_Some).
+                ltac1:(
+                    under [fun e' => _]functional_extensionality => e'
+                ).
+                {
+                    ltac1:(rewrite inj_iff).
+                    ltac1:(over).
+                }
                 ltac1:(over).
             }
+            ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+            cbn.
+            destruct g; cbn.
+            {
+                split; intros H.
+                {
+                    destruct H as [e H].
+                    destruct H as [[e' [H'1 H'2]] H].
+                    subst.
+                    cbn in H.
+                    subst.
+                    assumption.
+                }
+                {
+                    eexists.
+                    split.
+                    {
+                        eexists. split>[|reflexivity].
+                        apply H.
+                    }
+                    {
+                        cbn. reflexivity.
+                    }
+                }
+            }
+            {
+                split; intros H.
+                {
+                    destruct H as [e H].
+                    destruct H as [[e' [H'1 H'2]] H].
+                    subst.
+                    cbn in H.
+                    subst.
+                    assumption.
+                }
+                {
+                    eexists.
+                    split.
+                    {
+                        eexists. split>[|reflexivity].
+                        apply H.
+                    }
+                    {
+                        cbn. reflexivity.
+                    }
+                }
+            }
         }
-        
     Qed.
 
     Fixpoint rhs_evaluate_rule
