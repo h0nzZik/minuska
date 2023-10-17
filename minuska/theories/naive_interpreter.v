@@ -450,7 +450,296 @@ Section with_decidable_signature.
         unfold GroundTerm_satisfies_RhsPattern.
         destruct φ; cbn.
         {
-            admit.
+            cbn.
+            ltac1:(
+                under [fun e => _]functional_extensionality => e
+            ).
+            {
+                ltac1:(rewrite bind_Some).
+                ltac1:(
+                    under [fun e' => _]functional_extensionality => e'
+                ).
+                {
+                    ltac1:(rewrite inj_iff).
+                    ltac1:(over).
+                }
+                ltac1:(over).
+            }
+            destruct g; cbn.
+            {
+                rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
+                cbn.
+                rewrite -> aoxy_satisfies_aoxz_comp_iff.
+
+                split; intros H.
+                {
+                    destruct H as [e H].
+                    destruct H as [H1 H2].
+                    destruct H1 as [e' [H11 H12]].
+                    cbn in *.
+                    subst.
+                    cbn in *.
+                    inversion H2; subst; clear H2.
+                    cbn in *.
+                    inversion H11; subst; clear H11.
+                    revert e' H0.
+                    induction ao; intros e' H0.
+                    {
+                        cbn in *.
+                        inversion H0; subst; clear H0.
+                        constructor.
+                    }
+                    {
+                        cbn in *.
+                        rewrite bind_Some in H0.
+                        destruct H0 as [x [H1 H2]].
+                        rewrite bind_Some in H2.
+                        destruct H2 as [x0 H2].
+                        destruct H2 as [H2 H3].
+                        inversion H3; subst; clear H3.
+                        cbn.
+                        destruct x0.
+                        {
+                            constructor.
+                            cbn in *.
+                            apply IHao.
+                            apply H1.
+                            cbn.
+                            apply H2.
+                        }
+                        {
+                            constructor.
+                            cbn in *.
+                            apply IHao.
+                            apply H1.
+                            cbn.
+                            apply H2.
+                        }
+                    }
+                    {
+                        cbn in *.
+                        rewrite bind_Some in H0.
+                        destruct H0 as [x [H1 H2]].
+                        rewrite bind_Some in H2.
+                        destruct H2 as [x0 H2].
+                        destruct H2 as [H2 H3].
+                        inversion H3; subst; clear H3.
+                        specialize (IHao1 _ H1).
+                        specialize (IHao2 _ H2).
+                        cbn.
+                        constructor; assumption.
+                    }
+                }
+                {
+                    remember (fun A B b => aoo_operand A B b) as b2e.
+
+                    remember (b2e symbol _ <$> ao0) as lifted_ao0.
+                    exists (aoo_app _ _ lifted_ao0).
+                    cbn.
+                    split.
+                    {
+                        exists lifted_ao0.
+                        subst.
+                        repeat constructor.
+                        clear -H.
+                        revert ao0 H.
+                        induction ao; intros ao0 H; cbn in *.
+                        { 
+                            inversion H; subst; clear H.
+                            cbn.
+                            reflexivity.
+                        }
+                        {
+                            rewrite bind_Some.
+                            cbn.
+                            ltac1:(
+                                under [fun e => _]functional_extensionality => e
+                            ).
+                            {
+                                ltac1:(rewrite bind_Some).
+                                ltac1:(
+                                    under [fun e' => _]functional_extensionality => e'
+                                ).
+                                {
+                                    ltac1:(rewrite inj_iff).
+                                    ltac1:(over).
+                                }
+                                ltac1:(over).
+                            }
+                            inversion H; subst; clear H.
+                            {
+                                specialize (IHao aoxy H3).
+                                rewrite IHao.
+                                eexists.
+                                split>[reflexivity|].
+                                cbn in H4.
+                                eexists.
+                                split>[exact H4|].
+                                cbn.
+                                reflexivity.
+                            }
+                            {
+                                cbn in H4.
+                                specialize (IHao aoxy H3).
+                                rewrite IHao.
+                                eexists.
+                                split>[reflexivity|].
+                                
+                                eexists.
+                                split>[exact H4|].
+                                cbn.
+                                reflexivity.
+                            }
+                        }
+                    }
+                    {
+                        apply f_equal.
+                        subst.
+                        clear.
+                        induction ao0; cbn in *.
+                        {
+                            reflexivity.
+                        }
+                        {
+                            rewrite IHao0.
+                            reflexivity.
+                        }
+                        {
+                            rewrite IHao0_1.
+                            rewrite IHao0_2.
+                            reflexivity.
+                        }
+                    }
+                    
+                    Print Expression.
+                    Search AppliedOperator' "fmap".
+                    .
+                }
+
+                revert ao0.
+                induction ao; intros ao0; cbn.
+                {
+                    split; intros H.
+                    {
+                        destruct H as [e H].
+                        destruct H as [H1 H2].
+                        destruct H1 as [e' [H11 H12]].
+                        cbn in *.
+                        subst.
+                        cbn in *.
+                        inversion H2; subst; clear H2.
+                        cbn in *.
+                        inversion H11; subst; clear H11.
+                        constructor.
+                    }
+                    {
+                        eexists.
+                        split.
+                        {
+                            eexists. split>[|reflexivity].
+                            reflexivity.
+                        }
+                        {
+                            inversion H; subst; clear H.
+                            reflexivity.
+                        }
+                    }
+                }
+                {
+                    split; intros H.
+                    {
+                        destruct H as [e H].
+                        destruct H as [H1 H2].
+                        destruct H1 as [e' [H11 H12]].
+                        cbn in *.
+                        subst.
+                        cbn in *.
+                        inversion H2; subst; clear H2.
+                        cbn in *.
+                        inversion H11; subst; clear H11.
+                        cbn in *.
+                        rewrite bind_Some in H0.
+                        destruct H0 as [x [H1 H2]].
+                        rewrite bind_Some in H2.
+                        destruct H2 as [x0 H2].
+                        destruct H2 as [H2 H3].
+                        ltac1:(rewrite inj_iff in H3).
+                        subst.
+                        
+                        destruct x0; cbn in *.
+                        {
+                            specialize (IHao ao0).
+                            destruct IHao as [IHao1 IHao2].
+                            ltac1:(ospecialize (IHao1 _)).
+                            {
+                                eexists.
+                                split.
+                                {
+                                    eexists.
+                                    split>[|reflexivity].
+                                    exact H1.
+                                }
+                                {
+                                    cbn in *.
+                                    apply f_equal.
+                                }
+                            }
+                        }
+
+
+                        
+                        ltac1:(rewrite <- IHao).
+
+                    }
+                }
+
+
+
+                Check @correct_AppliedOperator'_symbol_A_to_OpenTerm.
+                Set Printing Implicit.
+                Print Expression.
+                rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ)
+                with (B := @Expression Σ).
+                {
+                    split; intros H.
+                    {
+                        destruct H as [e H].
+                        destruct H as [H1 H2].
+                        destruct H1 as [e' [H11 H12]].
+                        subst. cbn in *.
+                        inversion H2; subst; clear H2.
+                        split.
+                        {
+                            constructor.
+                            
+                        }
+                        rewrite H2.
+                        
+                    }
+                    {
+
+                    }
+
+                }
+                {
+
+                }
+            }
+            {
+                rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
+                cbn.
+                split; intros H.
+                {
+                    destruct H as [e H].
+                    destruct H as [H1 H2].
+                    destruct H1 as [e' [H11 H12]].
+                    subst. cbn in *.
+                    inversion H2.
+                }
+                {
+                    inversion H.
+                }
+            }
         }
         {
             ltac1:(

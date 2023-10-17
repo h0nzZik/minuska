@@ -374,8 +374,8 @@ Section with_valuation.
         symbol
         builtin_value
         Expression
-        (fun b e => Expression_evaluate e = Some (aoo_operand _ _ b))
-        (fun ao e => Expression_evaluate e = Some (aoo_app _ _ ao))
+        ((fun x e => Expression_evaluate e = Some x) ∘ (aoo_operand _ _))
+        ((fun x e => Expression_evaluate e = Some x) ∘ (aoo_app _ _))
     .
 
     Definition GroundTerm_satisfies_VarWithSc:
