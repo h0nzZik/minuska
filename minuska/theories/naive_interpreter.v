@@ -1,3 +1,4 @@
+
 From Minuska Require Import
     prelude
     tactics
@@ -7,6 +8,11 @@ From Minuska Require Import
     flattened
     flatten
 .
+
+Require Import Logic.PropExtensionality.
+Require Import Setoid.
+Require Import Coq.Classes.Morphisms.
+Require Import Coq.Classes.Morphisms_Prop.
 
 (*
 #[export]
@@ -419,55 +425,43 @@ Section with_decidable_signature.
     :=
         ρ ← GroundTerm_try_match_OpenTerm g (fr_from r);
         if decide (Forall (evaluate_sc ρ) (fr_scs r)) then
-            None
+            evaluate_rhs_pattern ρ (fr_to r)
         else None
     .
-
-
- 
 
     Lemma evaluate_rhs_pattern_correct
         (φ : RhsPattern)
         (ρ : Valuation)
-        (e : Element)
-        : evaluate_rhs_pattern ρ φ = Some e <->
-        element_satisfies_rhs_pattern_in_valuation e φ ρ
+        (g : GroundTerm)
+        : evaluate_rhs_pattern ρ φ = Some g <->
+        GroundTerm_satisfies_RhsPattern ρ g φ
     .
     Proof.
-        split.
+        unfold evaluate_rhs_pattern.
+        rewrite bind_Some.
+        
+        ltac1:(
+            under [fun e => _]functional_extensionality => e
+        ).
         {
-        intros H.
-        unfold element_satisfies_rhs_pattern_in_valuation.
-
-        ltac1:(funelim (element_satisfies_rhs_pattern' ρ φ e));
-            ltac1:(simp element_satisfies_rhs_pattern');
-            simpl in *.
-        all: try (solve[ltac1:(simplify_eq /=);
-            try reflexivity;
-            repeat ltac1:(case_match);
-            ltac1:(simplify_eq /=);
-            try ltac1:(naive_solver)]).
+            ltac1:(rewrite inj_iff).
+            ltac1:(over).
+        }
+        unfold GroundTerm_satisfies_RhsPattern.
+        destruct φ; cbn.
+        {
+            admit.
         }
         {
-            unfold element_satisfies_rhs_pattern_in_valuation.
-            ltac1:(funelim (element_satisfies_rhs_pattern' ρ φ e));
-                cbn;
-                intros Hsat;
-                ltac1:(simp element_satisfies_rhs_pattern' in Hsat);
-                ltac1:(simplify_eq /=);
-                try reflexivity;
-                try ltac1:(contradiction)
-            .
-            all: destruct Heqcall;
-                ltac1:(destruct_and!);
-                (repeat ltac1:(case_match));
-                try ltac1:(specialize (H ltac:(assumption)));
-                try ltac1:(specialize (H0 ltac:(assumption)));
-                ltac1:(simplify_eq /=);
-                try ltac1:(contradiction)
-            .
-            all: try reflexivity.
+            ltac1:(
+                under [fun e => _]functional_extensionality => e
+            ).
+            {
+                ltac1:(rewrite bind_Some).
+                ltac1:(over).
+            }
         }
+        
     Qed.
 
     Fixpoint rhs_evaluate_rule
