@@ -908,7 +908,11 @@ Section with_decidable_signature.
             rewrite IHa.
             assert (H221' := H221).
             apply builtin_value_try_match_BuiltinOrVar_correct in H221.
+            assert (H222' := H222).
+            apply merge_valuations_correct in H222'.
+            destruct H222' as [Hsub1 Hsub2].
             destruct H221 as [H2211 H2212].
+            cbn.
             destruct H2212 as [HH1|HH2].
             {
                 subst.
@@ -920,6 +924,26 @@ Section with_decidable_signature.
                 destruct HH2 as [x1 [HH3 HH4]].
                 subst.
                 cbn in *.
+                inversion H221'; subst; clear H221'.
+                ltac1:(rewrite lookup_insert in H2211).
+                clear H2211.
+                assert (Htmp: ρ' !! x1 = Some (aoo_operand symbol builtin_value b)).
+                {
+                    clear -Hsub2 HH.
+                    unfold map_subseteq in *.
+                    unfold map_included in *.
+                    unfold map_relation in *.
+                    unfold option_relation in *.
+                    specialize (HH x1).
+                    specialize (Hsub2 x1).
+                    repeat ltac1:(case_match); subst;
+                        ltac1:(rewrite lookup_insert in H);
+                        inversion H; subst; clear H;
+                        try assumption.
+                    {
+                        ltac1:(rewrite H1).
+                    }
+                }
                 destruct (x0 !! x1) eqn:Hx0x1.
             }
             rewrite builtin_value_try_match_BuiltinOrVar_correct.
