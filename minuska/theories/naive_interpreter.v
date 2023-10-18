@@ -68,17 +68,20 @@ Section with_decidable_signature.
         (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
         (Operand1 Operand2 : Type)
-        (matches : Operand1 -> Operand2 -> bool)
+        (matches : Valuation -> Operand1 -> Operand2 -> bool)
         (matches_app_1 :
+            Valuation ->
             Operand1 ->
             AppliedOperator' Operator Operand2 ->
             bool
         )
         (matches_app_2 :
+            Valuation ->
             AppliedOperator' Operator Operand1 ->
             Operand2 ->
             bool
         )
+        (ρ : Valuation)
         (x : AppliedOperator' Operator Operand1)
         (y : AppliedOperator' Operator Operand2)
         : bool :=
@@ -96,9 +99,10 @@ Section with_decidable_signature.
             matches
             matches_app_1
             matches_app_2
+            ρ
             app1
             app2
-        && matches o1 o2
+        && matches ρ o1 o2
     | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
             Operator
@@ -107,9 +111,10 @@ Section with_decidable_signature.
             matches
             matches_app_1
             matches_app_2
+            ρ
             app1
             app2
-        && matches_app_1 o1 o2
+        && matches_app_1 ρ o1 o2
     | ao_app_ao app1 o1, ao_operator _ => false
     | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
@@ -119,9 +124,10 @@ Section with_decidable_signature.
             matches
             matches_app_1
             matches_app_2
+            ρ
             app1
             app2
-        && matches_app_2 o1 o2
+        && matches_app_2 ρ o1 o2
     | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
             Operator
@@ -130,6 +136,7 @@ Section with_decidable_signature.
             matches
             matches_app_1
             matches_app_2
+            ρ
             app1
             app2
         &&
@@ -140,6 +147,7 @@ Section with_decidable_signature.
             matches
             matches_app_1
             matches_app_2
+            ρ
             o1
             o2
     end.
@@ -148,17 +156,20 @@ Section with_decidable_signature.
         (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
         (Operand1 Operand2 : Type)
-        (matches : Operand1 -> Operand2 -> bool)
+        (matches : Valuation -> Operand1 -> Operand2 -> bool)
         (matches_app_1 :
+            Valuation ->
             Operand1 ->
             AppliedOperator' Operator Operand2 ->
             bool
         )
         (matches_app_2 :
+            Valuation ->
             AppliedOperator' Operator Operand1 ->
             Operand2 ->
             bool
         )
+        (ρ : Valuation)
         (x : AppliedOperatorOr' Operator Operand1)
         (y : AppliedOperatorOr' Operator Operand2)
         : bool :=
@@ -168,13 +179,14 @@ Section with_decidable_signature.
             Operator
             Operand1 Operand2
             matches matches_app_1 matches_app_2
+            ρ
             app1 app2
     | aoo_app _ _ app1, aoo_operand _ _ o2 =>
-        matches_app_2 app1 o2
+        matches_app_2 ρ app1 o2
     | aoo_operand _ _ o1, aoo_app _ _ app2 =>
-        matches_app_1 o1 app2
+        matches_app_1 ρ o1 app2
     | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
-        matches o1 o2
+        matches ρ o1 o2
     end.
 
     Definition use_left (og1 og2: option GroundTerm): option GroundTerm :=
@@ -373,9 +385,10 @@ Section with_decidable_signature.
             symbol
             builtin_value
             BuiltinOrVar
-            (builtin_value_matches_BuiltinOrVar ρ)
-            (fun x y => false)
-            (pure_GroundTerm_matches_BuiltinOrVar ρ)
+            (builtin_value_matches_BuiltinOrVar)
+            (fun ρ' x y => false)
+            (pure_GroundTerm_matches_BuiltinOrVar)
+            ρ
     .
 
     Definition GroundTerm_try_match_OpenTerm:
@@ -428,25 +441,6 @@ Section with_decidable_signature.
             evaluate_rhs_pattern ρ (fr_to r)
         else None
     .
-
-    (*
-    Lemma Expression_evaluate_Some_app
-        ρ z aoxy:
-    Expression_evaluate ρ z = Some (aoo_app symbol builtin_value aoxy) ->
-    z = ft_element (aoo_app symbol builtin_value aoxy)
-    .
-    Proof.
-        revert aoxy.
-        induction z; intros aoxy H; cbn.
-        {
-            inversion H. reflexivity.
-        }
-        {
-            cbn in H.
-        }
-
-    Qed.
-    *)
 
 
     Lemma evaluate_rhs_pattern_correct
@@ -766,6 +760,85 @@ Section with_decidable_signature.
                     }
                 }
             }
+        }
+    Qed.
+
+    Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
+        {Operator : Type} {op_eqdec : EqDecision Operator}
+        (Operand1 Operand2 : Type)
+        (match0 : Operand1 -> Operand2 -> option Valuation)
+        (match1: Operand1 → AppliedOperator' Operator Operand2 → option Valuation)
+        (match2 : AppliedOperator' Operator Operand1 → Operand2 → option Valuation)
+        (matches0 : Valuation -> Operand1 -> Operand2 -> bool)
+        (matches1 : Valuation → Operand1 → AppliedOperator' Operator Operand2 → bool)
+        (matches2 : Valuation → AppliedOperator' Operator Operand1 → Operand2 → bool)
+        (ρ : Valuation)
+        (a : AppliedOperator' Operator Operand1)
+        (b : AppliedOperator' Operator Operand2)
+        :
+        (
+            forall op1 op2 ρ',
+            match0 op1 op2 = Some ρ' ->
+            matches0 ρ' op1 op2
+        ) ->
+        (
+            forall op1 op2 ρ',
+            match1 op1 op2 = Some ρ' ->
+            matches1 ρ' op1 op2
+        ) ->
+        (
+            forall op1 op2 ρ',
+            match2 op1 op2 = Some ρ' ->
+            matches2 ρ' op1 op2
+        ) ->
+        @ApppliedOperator'_try_match_AppliedOperator'
+            Operator op_eqdec Operand1 Operand2
+            match0 match1 match2 a b = Some ρ ->
+        @ApppliedOperator'_matches_AppliedOperator'
+            Operator op_eqdec Operand1 Operand2
+            matches0 matches1 matches2 ρ a b = true
+    .
+    Proof.
+        revert b.
+        induction a; intros b'; destruct b'; cbn in *; intros.
+        {
+            intros.
+            unfold is_left in *.
+            unfold bool_decide.
+            repeat ltac1:(case_match); subst; simpl;
+                try reflexivity; ltac1:(congruence).
+        }
+        {
+            inversion H2.
+        }
+        {
+            inversion H2.
+        }
+        {
+            inversion H2.
+        }
+        {
+            rewrite IHa.
+            rewrite H.
+            reflexivity.
+            rewrite bind_Some in H2.
+            destruct H2 as [x [H21 H22]].
+            rewrite bind_Some in H22.
+            destruct H22 as [x0 [H221 H222]].
+            rewrite H221. clear H221.
+            unfold merge_valuations in H222.
+            repeat ltac1:(case_match).
+            {
+                inversion H222; subst; clear H222.
+                apply f_equal.
+                
+            }
+            {
+                inversion H222.
+            }
+        }
+        {
+
         }
     Qed.
 
