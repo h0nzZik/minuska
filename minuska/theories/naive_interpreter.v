@@ -763,40 +763,52 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma builtin_value_try_match_BuiltinOrVar_correct
+        b bov ρ:
+        builtin_value_try_match_BuiltinOrVar b bov = Some ρ ->
+        builtin_value_matches_BuiltinOrVar ρ b bov = true
+        /\ ( (bov = bov_builtin b) \/ (∃ x, bov = bov_variable x /\ ρ !! x = Some (aoo_operand _ _ b)))
+    .
+    Proof.
+        destruct bov; cbn;
+          unfold is_left; repeat (ltac1:(case_match)); subst;
+          unfold bool_decide; repeat (ltac1:(case_match)); subst;
+          intros HH; inversion HH; subst; clear HH; try reflexivity;
+          try ltac1:(congruence); subst; repeat split;
+          try (solve [left; reflexivity]).
+        all: try (
+            ltac1:(rewrite lookup_insert in H);
+            inversion H; subst; clear H;
+            ltac1:(congruence)
+        ).
+        {
+            ltac1:(rewrite lookup_insert in H).
+            inversion H; subst; clear H.
+            right.
+            eexists.
+            split>[reflexivity|].
+            ltac1:(rewrite lookup_insert).
+            reflexivity.
+        }
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
-        {Operator : Type} {op_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Type)
-        (match0 : Operand1 -> Operand2 -> option Valuation)
-        (match1: Operand1 → AppliedOperator' Operator Operand2 → option Valuation)
-        (match2 : AppliedOperator' Operator Operand1 → Operand2 → option Valuation)
-        (matches0 : Valuation -> Operand1 -> Operand2 -> bool)
-        (matches1 : Valuation → Operand1 → AppliedOperator' Operator Operand2 → bool)
-        (matches2 : Valuation → AppliedOperator' Operator Operand1 → Operand2 → bool)
         (ρ : Valuation)
-        (a : AppliedOperator' Operator Operand1)
-        (b : AppliedOperator' Operator Operand2)
+        (a : AppliedOperator' symbol builtin_value)
+        (b : AppliedOperator' symbol BuiltinOrVar)
         :
-        (
-            forall op1 op2 ρ',
-            match0 op1 op2 = Some ρ' ->
-            matches0 ρ' op1 op2
-        ) ->
-        (
-            forall op1 op2 ρ',
-            match1 op1 op2 = Some ρ' ->
-            matches1 ρ' op1 op2
-        ) ->
-        (
-            forall op1 op2 ρ',
-            match2 op1 op2 = Some ρ' ->
-            matches2 ρ' op1 op2
-        ) ->
         @ApppliedOperator'_try_match_AppliedOperator'
-            Operator op_eqdec Operand1 Operand2
-            match0 match1 match2 a b = Some ρ ->
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_try_match_BuiltinOrVar
+            (fun _ _ => None)
+            pure_GroundTerm_try_match_BuiltinOrVar
+            a b = Some ρ ->
         @ApppliedOperator'_matches_AppliedOperator'
-            Operator op_eqdec Operand1 Operand2
-            matches0 matches1 matches2 ρ a b = true
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_matches_BuiltinOrVar
+            (fun _ _ _ => false)
+            pure_GroundTerm_matches_BuiltinOrVar
+            ρ a b = true
     .
     Proof.
         revert b.
@@ -809,29 +821,32 @@ Section with_decidable_signature.
                 try reflexivity; ltac1:(congruence).
         }
         {
-            inversion H2.
+            inversion H.
         }
         {
-            inversion H2.
+            inversion H.
         }
         {
-            inversion H2.
+            inversion H.
         }
         {
-            rewrite IHa.
-            rewrite H.
-            reflexivity.
-            rewrite bind_Some in H2.
-            destruct H2 as [x [H21 H22]].
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
             rewrite bind_Some in H22.
             destruct H22 as [x0 [H221 H222]].
-            rewrite H221. clear H221.
+            rewrite IHa.
+            rewrite builtin_value_try_match_BuiltinOrVar_correct.
+            { reflexivity. }
+            { 
+                
+            }
+            rewrite H221.
             unfold merge_valuations in H222.
             repeat ltac1:(case_match).
             {
                 inversion H222; subst; clear H222.
                 apply f_equal.
-                
+
             }
             {
                 inversion H222.
