@@ -7,6 +7,7 @@ From stdpp Require Export
     base
     countable
     decidable
+    fin_maps
     gmap
     sets
     strings

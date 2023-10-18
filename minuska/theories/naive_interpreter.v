@@ -199,7 +199,7 @@ Section with_decidable_signature.
 
     Definition merge_valuations (ρ1 ρ2 : Valuation)
         : option Valuation :=
-    if decide (ρ1 ## ρ2) then Some (merge use_left ρ1 ρ2) else None.
+    if decide (ρ1 ##ₘ ρ2) then Some (merge use_left ρ1 ρ2) else None.
 
     Fixpoint ApppliedOperator'_try_match_AppliedOperator'
         (Operator : Type)
@@ -792,27 +792,98 @@ Section with_decidable_signature.
         }
     Qed.
 
+    #[export]
+    Instance Valuation_lookup : Lookup variable GroundTerm Valuation.
+    Proof.
+        apply gmap_lookup.
+    Qed.
+    
+    Lemma merge_valuations_correct (ρ1 ρ2 ρ : Valuation):
+        merge_valuations ρ1 ρ2 = Some ρ ->
+        map_subseteq ρ1 ρ /\
+        map_subseteq ρ2 ρ
+    .
+    Proof.
+        unfold merge_valuations.
+        unfold is_left.
+        destruct (decide (ρ1 ##ₘ ρ2)); intros H.
+        {
+            inversion H; subst; clear H.
+            rewrite map_disjoint_spec in m.
+            unfold map_subseteq.
+            unfold map_included.
+            unfold map_relation.
+            unfold option_relation.
+            split; intros i; (repeat ltac1:(case_match));
+                try (exact I).
+            {
+                rewrite lookup_merge in H0.
+                unfold diag_None in H0.
+                (repeat ltac1:(case_match));
+                    cbn in *;
+                    repeat ltac1:(case_match);
+                    try (ltac1:(simplify_eq /=));
+                    try reflexivity.
+            }
+            {
+                rewrite lookup_merge in H0.
+                unfold diag_None in H0.
+                (repeat ltac1:(case_match));
+                    cbn in *;
+                    repeat ltac1:(case_match);
+                    try (ltac1:(simplify_eq /=));
+                    try reflexivity.
+            }
+            {
+                rewrite lookup_merge in H0.
+                unfold diag_None in H0.
+                (repeat ltac1:(case_match));
+                    cbn in *;
+                    repeat ltac1:(case_match);
+                    try (ltac1:(simplify_eq /=));
+                    try reflexivity.
+                ltac1:(exfalso). eapply m.
+                { apply H1. }
+                { apply H2. }
+            }
+            {
+                rewrite lookup_merge in H0.
+                unfold diag_None in H0.
+                (repeat ltac1:(case_match));
+                    cbn in *;
+                    repeat ltac1:(case_match);
+                    try (ltac1:(simplify_eq /=));
+                    try reflexivity.
+            }
+        }
+        {
+            inversion H.
+        }
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
-        (ρ : Valuation)
+        (ρ ρ' : Valuation)
         (a : AppliedOperator' symbol builtin_value)
         (b : AppliedOperator' symbol BuiltinOrVar)
         :
+        map_subseteq ρ ρ' ->
         @ApppliedOperator'_try_match_AppliedOperator'
             symbol _ builtin_value BuiltinOrVar
             builtin_value_try_match_BuiltinOrVar
             (fun _ _ => None)
             pure_GroundTerm_try_match_BuiltinOrVar
             a b = Some ρ ->
+
         @ApppliedOperator'_matches_AppliedOperator'
             symbol _ builtin_value BuiltinOrVar
             builtin_value_matches_BuiltinOrVar
             (fun _ _ _ => false)
             pure_GroundTerm_matches_BuiltinOrVar
-            ρ a b = true
+            ρ' a b = true
     .
     Proof.
         revert b.
-        induction a; intros b'; destruct b'; cbn in *; intros.
+        induction a; intros b' HH H; destruct b'; cbn in *; intros.
         {
             intros.
             unfold is_left in *.
@@ -835,6 +906,22 @@ Section with_decidable_signature.
             rewrite bind_Some in H22.
             destruct H22 as [x0 [H221 H222]].
             rewrite IHa.
+            assert (H221' := H221).
+            apply builtin_value_try_match_BuiltinOrVar_correct in H221.
+            destruct H221 as [H2211 H2212].
+            destruct H2212 as [HH1|HH2].
+            {
+                subst.
+                cbn.
+                unfold bool_decide.
+                ltac1:(case_match; congruence).
+            }
+            {
+                destruct HH2 as [x1 [HH3 HH4]].
+                subst.
+                cbn in *.
+                destruct (x0 !! x1) eqn:Hx0x1.
+            }
             rewrite builtin_value_try_match_BuiltinOrVar_correct.
             { reflexivity. }
             { 
