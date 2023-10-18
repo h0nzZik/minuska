@@ -235,9 +235,8 @@ Fixpoint AppliedOperator'_zipWith
     {A B C D : Type}
     (fa : A -> A -> A)
     (fbc : B -> C -> D)
-    (adef : A)
-    (bdef : B)
-    (cdef : C)
+    (f1 : AppliedOperator' A B -> C -> D)
+    (f2 : B -> AppliedOperator' A C -> D)
     (ao1 : AppliedOperator' A B)
     (ao2 : AppliedOperator' A C)
     : AppliedOperator' A D
@@ -245,27 +244,27 @@ Fixpoint AppliedOperator'_zipWith
 match ao1,ao2 with
 | ao_operator o1, ao_operator o2 => ao_operator (fa o1 o2)
 | ao_operator o1, ao_app_operand app2 op2 =>
-    ao_operator (fa o1 adef)
+    ao_operator o1
 | ao_operator o1, ao_app_ao app21 app22 =>
-    ao_operator (fa o1 adef)
+    ao_operator o1
 | ao_app_operand app1 op1, ao_app_operand app2 op2 =>
     ao_app_operand
-        (AppliedOperator'_zipWith fa fbc adef bdef cdef app1 app2)
+        (AppliedOperator'_zipWith fa fbc f1 f2 app1 app2)
         (fbc op1 op2)
 | ao_app_operand app1 op1, ao_operator o2 =>
-    ao_operator (fa adef o2)
+    ao_operator o2
 | ao_app_operand app1 op1, ao_app_ao app21 app22 =>
     ao_app_operand
-        ((AppliedOperator'_zipWith fa fbc adef bdef cdef app1 app21))
-        (fbc op1 cdef)
+        ((AppliedOperator'_zipWith fa fbc f1 f2 app1 app21))
+        (f2 op1 app22)
 | ao_app_ao app11 app12, ao_app_ao app21 app22 =>
     ao_app_ao
-        (AppliedOperator'_zipWith fa fbc adef bdef cdef app11 app21)
-        (AppliedOperator'_zipWith fa fbc adef bdef cdef app12 app22)
+        (AppliedOperator'_zipWith fa fbc f1 f2 app11 app21)
+        (AppliedOperator'_zipWith fa fbc f1 f2 app12 app22)
 | ao_app_ao app11 app12, ao_operator op2 =>
-    ao_operator (fa adef op2)
+    ao_operator op2
 | ao_app_ao app11 app12, ao_app_operand app21 op22 =>
     ao_app_operand 
-        (AppliedOperator'_zipWith fa fbc adef bdef cdef app11 app21)
-        (fbc bdef op22)
+        (AppliedOperator'_zipWith fa fbc f1 f2 app11 app21)
+        (f1 app12 op22)
 end.

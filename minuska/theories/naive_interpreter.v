@@ -551,16 +551,25 @@ Section with_decidable_signature.
                     }
                 }
                 {
-
-                    remember (fun A B b => aoo_operand A B b) as b2e.
-
-                    remember (b2e symbol _ <$> ao0) as lifted_ao0.
-                    (*exists (aoo_app _ _ lifted_ao0).*)
-                    exists (aoo_app _ _ (Expression_evaluate ρ <$> ao)).
+                    remember (fun (v:builtin_value) (e':Expression) =>
+                        match Expression_evaluate ρ e' with
+                        | Some v' => v'
+                        | None => aoo_operand _ _ v
+                        end
+                    ) as zipper.
+                    remember (fun (s1 s2 : symbol) => s1) as symleft.
+                    remember (fun (g : AppliedOperator' symbol builtin_value) (e' : Expression) =>
+                        (aoo_app symbol _ g)
+                    ) as f1.
+                    remember (fun (b : builtin_value) (et : AppliedOperator' symbol Expression) =>
+                        (aoo_operand symbol _ b)
+                    ) as f2.
+                    remember (AppliedOperator'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
+                    exists (aoo_app _ _ zipped).
                     cbn.
                     split.
                     {
-                        exists lifted_ao0.
+                        exists zipped.
                         subst.
                         repeat constructor.
                         clear -H.
@@ -595,6 +604,8 @@ Section with_decidable_signature.
                             split>[apply IHaoxy_satisfies_aoxz|].
                             eexists.
                             split>[apply H0|].
+                            apply f_equal.
+                            rewrite H0.
                             reflexivity.
                         }
                         {
@@ -623,25 +634,11 @@ Section with_decidable_signature.
                             split>[apply H0|].
                             reflexivity.
                         }
-
-
-
-
-
-
-
-
-
-                        revert ao0 H.
-                        induction ao; intros ao0 H; cbn in *.
-                        { 
-                            inversion H; subst; clear H.
-                            cbn.
-                            reflexivity.
-                        }
                         {
-                            rewrite bind_Some.
+                            cbn in H0.
                             cbn.
+                            rewrite bind_Some.
+                            cbn in *.
                             ltac1:(
                                 under [fun e => _]functional_extensionality => e
                             ).
@@ -656,163 +653,39 @@ Section with_decidable_signature.
                                 }
                                 ltac1:(over).
                             }
-                            inversion H; subst; clear H.
-                            {
-                                specialize (IHao aoxy H3).
-                                rewrite IHao.
-                                eexists.
-                                split>[reflexivity|].
-                                cbn in H4.
-                                eexists.
-                                split>[exact H4|].
-                                cbn.
-                                reflexivity.
-                            }
-                            {
-                                cbn in H4.
-                                specialize (IHao aoxy H3).
-                                rewrite IHao.
-                                eexists.
-                                split>[reflexivity|].
-                                
-                                eexists.
-                                split>[exact H4|].
-                                cbn.
-                                reflexivity.
-                            }
+                            cbn in *.
+                            eexists.
+                            split>[apply IHaoxy_satisfies_aoxz1|].
+                            eexists.
+                            split>[apply IHaoxy_satisfies_aoxz2|].
+                            reflexivity.
                         }
                     }
                     {
+                        subst. cbn.
                         apply f_equal.
-                        subst.
-                        clear.
-                        induction ao0; cbn in *.
+                        induction H.
                         {
+                            cbn. reflexivity.
+                        }
+                        {
+                            cbn in *.
+                            rewrite H0.
+                            rewrite IHaoxy_satisfies_aoxz.
                             reflexivity.
                         }
                         {
-                            rewrite IHao0.
+                            cbn in *.
+                            rewrite IHaoxy_satisfies_aoxz.
                             reflexivity.
                         }
                         {
-                            rewrite IHao0_1.
-                            rewrite IHao0_2.
+                            cbn in *.
+                            rewrite IHaoxy_satisfies_aoxz1.
+                            rewrite IHaoxy_satisfies_aoxz2.
                             reflexivity.
                         }
                     }
-                    
-                    Print Expression.
-                    Search AppliedOperator' "fmap".
-                    .
-                }
-
-                revert ao0.
-                induction ao; intros ao0; cbn.
-                {
-                    split; intros H.
-                    {
-                        destruct H as [e H].
-                        destruct H as [H1 H2].
-                        destruct H1 as [e' [H11 H12]].
-                        cbn in *.
-                        subst.
-                        cbn in *.
-                        inversion H2; subst; clear H2.
-                        cbn in *.
-                        inversion H11; subst; clear H11.
-                        constructor.
-                    }
-                    {
-                        eexists.
-                        split.
-                        {
-                            eexists. split>[|reflexivity].
-                            reflexivity.
-                        }
-                        {
-                            inversion H; subst; clear H.
-                            reflexivity.
-                        }
-                    }
-                }
-                {
-                    split; intros H.
-                    {
-                        destruct H as [e H].
-                        destruct H as [H1 H2].
-                        destruct H1 as [e' [H11 H12]].
-                        cbn in *.
-                        subst.
-                        cbn in *.
-                        inversion H2; subst; clear H2.
-                        cbn in *.
-                        inversion H11; subst; clear H11.
-                        cbn in *.
-                        rewrite bind_Some in H0.
-                        destruct H0 as [x [H1 H2]].
-                        rewrite bind_Some in H2.
-                        destruct H2 as [x0 H2].
-                        destruct H2 as [H2 H3].
-                        ltac1:(rewrite inj_iff in H3).
-                        subst.
-                        
-                        destruct x0; cbn in *.
-                        {
-                            specialize (IHao ao0).
-                            destruct IHao as [IHao1 IHao2].
-                            ltac1:(ospecialize (IHao1 _)).
-                            {
-                                eexists.
-                                split.
-                                {
-                                    eexists.
-                                    split>[|reflexivity].
-                                    exact H1.
-                                }
-                                {
-                                    cbn in *.
-                                    apply f_equal.
-                                }
-                            }
-                        }
-
-
-                        
-                        ltac1:(rewrite <- IHao).
-
-                    }
-                }
-
-
-
-                Check @correct_AppliedOperator'_symbol_A_to_OpenTerm.
-                Set Printing Implicit.
-                Print Expression.
-                rewrite <- (@correct_AppliedOperator'_symbol_A_to_OpenTerm Σ)
-                with (B := @Expression Σ).
-                {
-                    split; intros H.
-                    {
-                        destruct H as [e H].
-                        destruct H as [H1 H2].
-                        destruct H1 as [e' [H11 H12]].
-                        subst. cbn in *.
-                        inversion H2; subst; clear H2.
-                        split.
-                        {
-                            constructor.
-                            
-                        }
-                        rewrite H2.
-                        
-                    }
-                    {
-
-                    }
-
-                }
-                {
-
                 }
             }
             {
