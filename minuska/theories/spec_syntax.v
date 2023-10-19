@@ -25,6 +25,7 @@ Inductive AppliedOperatorOr'
 .
 
 
+Polymorphic
 Definition GroundTerm' (symbol : Type) (builtin : Type)
     := (AppliedOperatorOr' symbol builtin)
 .

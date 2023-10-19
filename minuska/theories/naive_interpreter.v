@@ -796,7 +796,7 @@ Section with_decidable_signature.
     Instance Valuation_lookup : Lookup variable GroundTerm Valuation.
     Proof.
         apply gmap_lookup.
-    Qed.
+    Defined.
     
     Lemma merge_valuations_correct (ρ1 ρ2 ρ : Valuation):
         merge_valuations ρ1 ρ2 = Some ρ ->
@@ -939,12 +939,17 @@ Section with_decidable_signature.
                     repeat ltac1:(case_match); subst;
                         ltac1:(rewrite lookup_insert in H);
                         inversion H; subst; clear H;
-                        try assumption.
-                    {
-                        ltac1:(rewrite H1).
-                    }
+                        try assumption;
+                        try ltac1:(contradiction).
                 }
-                destruct (x0 !! x1) eqn:Hx0x1.
+                unfold Valuation_lookup in *.
+                rewrite Htmp.
+                unfold bool_decide.
+                ltac1:(case_match); try reflexivity; try ltac1:(congruence).
+            }
+            { assumption. }
+            { 
+                apply H21.
             }
             rewrite builtin_value_try_match_BuiltinOrVar_correct.
             { reflexivity. }
