@@ -992,6 +992,41 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma merge_valuations_empty_l x:
+        merge_valuations ∅ x = Some x
+    .
+    Proof.
+        unfold merge_valuations.
+        ltac1:(case_match).
+        {
+            clear H.
+            apply f_equal.
+            rewrite <- merge_Some.
+            intros i.
+            unfold use_left.
+            repeat ltac1:(case_match);
+                try reflexivity.
+            {
+                ltac1:(rewrite lookup_empty in H).
+                inversion H.
+            }
+            {
+                ltac1:(rewrite lookup_empty in H).
+                inversion H.
+            }
+            reflexivity.
+        }
+        {
+            unfold is_left in H.
+            ltac1:(case_match).
+            { inversion H. }
+            ltac1:(exfalso).
+            apply n.
+            unfold Valuation.
+            apply map_disjoint_empty_l.
+        }
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
         (ρ ρ' : Valuation)
         (a : AppliedOperator' symbol builtin_value)
@@ -1013,8 +1048,8 @@ Section with_decidable_signature.
             ρ' a b = true
     .
     Proof.
-        revert b.
-        induction a; intros b' HH H; destruct b'; cbn in *; intros.
+        revert b ρ ρ'.
+        induction a; intros b' ρ ρ' HH H; destruct b'; cbn in *; intros.
         {
             intros.
             unfold is_left in *.
@@ -1051,8 +1086,10 @@ Section with_decidable_signature.
                 unfold bool_decide.
                 repeat ltac1:(case_match).
                 rewrite andb_true_r.
+                (*
                 eapply matches_monotone.
                 { apply HH. }
+                *)
                 clear e H.
                 cbn in *.
                 clear H2211.
@@ -1060,8 +1097,14 @@ Section with_decidable_signature.
                 cbn in *.
                 inversion H221'; subst; clear H221'.
                 clear e.
-                apply IHa in H21.
+                rewrite merge_valuations_empty_r in H222.
+                inversion H222; subst; clear H222.
+                clear Hsub2.
+                clear Hsub1.
+                specialize (IHa b' ρ ρ' HH).
+                apply IHa.
                 apply H21.
+                ltac1:(congruence).
             }
             {
                 destruct HH2 as [x1 [HH3 HH4]].
@@ -1089,30 +1132,50 @@ Section with_decidable_signature.
                 rewrite Htmp.
                 unfold bool_decide.
                 ltac1:(case_match); try reflexivity; try ltac1:(congruence).
-            }
-            { assumption. }
-            { 
-                clear IHa.
-            }
-            rewrite builtin_value_try_match_BuiltinOrVar_correct.
-            { reflexivity. }
-            { 
-                
-            }
-            rewrite H221.
-            unfold merge_valuations in H222.
-            repeat ltac1:(case_match).
-            {
-                inversion H222; subst; clear H222.
-                apply f_equal.
-
-            }
-            {
-                inversion H222.
+                clear e H.
+                clear HH4.
+                assert (Htmp2 := IHa b').
+                remember (ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
+                    BuiltinOrVar builtin_value_matches_BuiltinOrVar
+                    (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
+                    symbol
+                    BuiltinOrVar),
+                    false)
+                    pure_GroundTerm_matches_BuiltinOrVar)
+                as f.
+                remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+                    builtin_value BuiltinOrVar
+                    builtin_value_try_match_BuiltinOrVar
+                    (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+                    BuiltinOrVar),
+                    None)
+                    pure_GroundTerm_try_match_BuiltinOrVar)
+                as g.
+                apply Htmp2 with (ρ' := ρ') in H21.
+                {
+                    rewrite H21. reflexivity.
+                }
+                {
+                    eapply transitivity.
+                    { apply Hsub1. }
+                    { apply HH. }
+                }
             }
         }
         {
-
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            inversion H22.
+        }
+        {
+            inversion H.
+        }
+        {
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            rewrite bind_Some in H22.
+            destruct H22 as [x0 [H221 H222]].
+            (* TODO: need a lemma about correctness of pure_GroundTerm_try_match_BuiltinOrVar *)
         }
     Qed.
 
