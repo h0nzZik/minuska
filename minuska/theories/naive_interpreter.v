@@ -861,6 +861,58 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma builtin_value_matches_BuiltinOrVar_monotone
+        (ρ ρ' : Valuation)
+        b bov:
+        map_subseteq ρ ρ' ->
+        builtin_value_matches_BuiltinOrVar ρ b bov ->
+        builtin_value_matches_BuiltinOrVar ρ' b bov
+    .
+    Proof.
+        destruct bov; cbn; auto with nocore.
+        unfold map_subseteq,map_included,map_relation,option_relation.
+        intros H.
+        specialize (H x).
+        unfold bool_decide.
+        unfold Valuation,Valuation_lookup,GroundTerm,GroundTerm' in *.
+        unfold Valuation_lookup in *.
+        destruct (ρ !! x) eqn:Heq1, (ρ' !! x) eqn:Heq2; subst; auto.
+    Qed.
+
+    Lemma matches_monotone
+        (ρ ρ' : Valuation)
+        (a : AppliedOperator' symbol builtin_value)
+        (b : AppliedOperator' symbol BuiltinOrVar)
+        :
+        map_subseteq ρ ρ' ->
+        @ApppliedOperator'_matches_AppliedOperator'
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_matches_BuiltinOrVar
+            (fun _ _ _ => false)
+            pure_GroundTerm_matches_BuiltinOrVar
+            ρ a b = true ->
+
+        @ApppliedOperator'_matches_AppliedOperator'
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_matches_BuiltinOrVar
+            (fun _ _ _ => false)
+            pure_GroundTerm_matches_BuiltinOrVar
+            ρ' a b = true
+    .
+    Proof.
+        revert a.
+        induction b; intros a HH1 HH2; destruct a; simpl in *;
+            try assumption.
+        {
+            apply andb_true_iff in HH2.
+            destruct HH2 as [HH21 HH22].
+            rewrite IHb.
+        }
+        {
+            
+        }
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
         (ρ ρ' : Valuation)
         (a : AppliedOperator' symbol builtin_value)
@@ -905,7 +957,7 @@ Section with_decidable_signature.
             destruct H as [x [H21 H22]].
             rewrite bind_Some in H22.
             destruct H22 as [x0 [H221 H222]].
-            rewrite IHa.
+
             assert (H221' := H221).
             apply builtin_value_try_match_BuiltinOrVar_correct in H221.
             assert (H222' := H222).
@@ -918,7 +970,7 @@ Section with_decidable_signature.
                 subst.
                 cbn.
                 unfold bool_decide.
-                ltac1:(case_match; congruence).
+                repeat ltac1:(case_match).
             }
             {
                 destruct HH2 as [x1 [HH3 HH4]].
@@ -949,7 +1001,7 @@ Section with_decidable_signature.
             }
             { assumption. }
             { 
-                apply H21.
+                clear IHa.
             }
             rewrite builtin_value_try_match_BuiltinOrVar_correct.
             { reflexivity. }
