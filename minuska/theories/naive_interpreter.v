@@ -958,6 +958,40 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma merge_valuations_empty_r x:
+        merge_valuations x ∅ = Some x
+    .
+    Proof.
+        unfold merge_valuations.
+        ltac1:(case_match).
+        {
+            clear H.
+            apply f_equal.
+            rewrite <- merge_Some.
+            intros i.
+            unfold use_left.
+            ltac1:(case_match).
+            {
+                ltac1:(rewrite lookup_empty).
+                reflexivity.
+            }
+            {
+                ltac1:(rewrite lookup_empty).
+                reflexivity.
+            }
+            reflexivity.
+        }
+        {
+            unfold is_left in H.
+            ltac1:(case_match).
+            { inversion H. }
+            ltac1:(exfalso).
+            apply n.
+            unfold Valuation.
+            apply map_disjoint_empty_r.
+        }
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
         (ρ ρ' : Valuation)
         (a : AppliedOperator' symbol builtin_value)
@@ -1016,6 +1050,18 @@ Section with_decidable_signature.
                 cbn.
                 unfold bool_decide.
                 repeat ltac1:(case_match).
+                rewrite andb_true_r.
+                eapply matches_monotone.
+                { apply HH. }
+                clear e H.
+                cbn in *.
+                clear H2211.
+                destruct (decide (b = b))>[|ltac1:(congruence)].
+                cbn in *.
+                inversion H221'; subst; clear H221'.
+                clear e.
+                apply IHa in H21.
+                apply H21.
             }
             {
                 destruct HH2 as [x1 [HH3 HH4]].
