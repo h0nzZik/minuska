@@ -865,8 +865,8 @@ Section with_decidable_signature.
         (ρ ρ' : Valuation)
         b bov:
         map_subseteq ρ ρ' ->
-        builtin_value_matches_BuiltinOrVar ρ b bov ->
-        builtin_value_matches_BuiltinOrVar ρ' b bov
+        builtin_value_matches_BuiltinOrVar ρ b bov = true ->
+        builtin_value_matches_BuiltinOrVar ρ' b bov = true
     .
     Proof.
         destruct bov; cbn; auto with nocore.
@@ -878,6 +878,26 @@ Section with_decidable_signature.
         unfold Valuation_lookup in *.
         destruct (ρ !! x) eqn:Heq1, (ρ' !! x) eqn:Heq2; subst; auto.
     Qed.
+
+    Lemma pure_GroundTerm_matches_BuiltinOrVar_monotone
+        (ρ ρ' : Valuation)
+        g bov:
+        map_subseteq ρ ρ' ->
+        pure_GroundTerm_matches_BuiltinOrVar ρ g bov ->
+        pure_GroundTerm_matches_BuiltinOrVar ρ' g bov
+    .
+    Proof.
+        unfold pure_GroundTerm_matches_BuiltinOrVar.
+        destruct bov; cbn; auto with nocore.
+        unfold map_subseteq,map_included,map_relation,option_relation.
+        intros H.
+        specialize (H x).
+        unfold bool_decide.
+        unfold Valuation,Valuation_lookup,GroundTerm,GroundTerm' in *.
+        unfold Valuation_lookup in *.
+        destruct (ρ !! x) eqn:Heq1, (ρ' !! x) eqn:Heq2; subst; auto.
+    Qed.
+
 
     Lemma matches_monotone
         (ρ ρ' : Valuation)
@@ -907,9 +927,34 @@ Section with_decidable_signature.
             apply andb_true_iff in HH2.
             destruct HH2 as [HH21 HH22].
             rewrite IHb.
+            cbn.
+            eapply builtin_value_matches_BuiltinOrVar_monotone.
+            { apply HH1. }
+            { apply HH22. }
+            { apply HH1. }
+            { exact HH21. }
         }
         {
-            
+            apply andb_true_iff in HH2.
+            destruct HH2 as [HH21 HH22].
+            rewrite IHb.
+            cbn.
+            eapply pure_GroundTerm_matches_BuiltinOrVar_monotone.
+            { apply HH1. }
+            { apply HH22. }
+            { apply HH1. }
+            { exact HH21. }
+        }
+        {
+            rewrite andb_comm in HH2.
+            cbn in HH2.
+            ltac1:(exfalso; congruence).
+        }
+        {
+            apply andb_true_iff in HH2.
+            destruct HH2 as [HH21 HH22].
+            rewrite IHb1. rewrite IHb2. reflexivity.
+            assumption. assumption. assumption. assumption.
         }
     Qed.
 
