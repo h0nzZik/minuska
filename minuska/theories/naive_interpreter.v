@@ -1372,6 +1372,7 @@ Section with_decidable_signature.
             pure_GroundTerm_matches_BuiltinOrVar
             ρ a b = true ->
         ∃ ρ',
+            vars_of_valuation ρ' = elements (vars_of_aosb b) /\
             map_subseteq ρ' ρ /\
             @ApppliedOperator'_try_match_AppliedOperator'
                 symbol _ builtin_value BuiltinOrVar
@@ -1409,7 +1410,13 @@ Section with_decidable_signature.
             unfold is_left.
             repeat ltac1:(case_match).
             {
-                exists ∅. split>[|reflexivity].
+                exists ∅.
+                unfold vars_of_valuation.
+                rewrite elements_empty.
+                ltac1:(rewrite map_to_list_empty).
+                split>[reflexivity|].
+                split>[|reflexivity].
+                unfold Valuation.
                 apply map_empty_subseteq.
             }
             { ltac1:(exfalso; congruence). }
@@ -1430,14 +1437,76 @@ Section with_decidable_signature.
                 destruct H as [H1 H2].
                 rewrite <- Heqf in H1.
                 specialize (IHa ρ b'' H1).
-                destruct IHa as [ρ' [IH1 IH2]].
+                destruct IHa as [ρ' [IH0 [IH1 IH2]]].
                 rewrite <- Heqg.
                 apply builtin_value_try_match_BuiltinOrVar_complete in H2.
-                destruct H2 as [ρ'' [Hρ''1 Hρ''2]].
+                destruct H2 as [ρ'' [Hρ''0 [Hρ''1 Hρ''2]]].
                 rewrite IH2.
                 cbn.
                 rewrite Hρ''2.
                 cbn.
+                assert (Hdisj: (ρ' ##ₘ ρ'')).
+                {
+                    cbn in *.
+                    destruct b0; cbn in *.
+                    {
+                        ltac1:(case_match); cbn in *.
+                        {
+                            inversion Hρ''2.
+                            subst.
+                            clear Hρ''2.
+                            unfold Valuation.
+                            apply map_disjoint_empty_r.
+                        }
+                        {
+                            inversion Hρ''2.
+                        }
+                    }
+                    {
+                        inversion Hρ''2;
+                          subst; clear Hρ''2.
+                        unfold vars_of_valuation in *.
+                        cbn in *.
+                        rewrite elements_singleton in Hρ''0.
+                        ltac1:(rewrite insert_empty in Hρ''1).
+                        ltac1:(rewrite insert_empty in Hρ''0).
+                        ltac1:(rewrite map_to_list_singleton in Hρ''0).
+                        inversion Hρ''0; subst; clear Hρ''0.
+                        unfold map_subseteq in *.
+                        unfold map_included in *.
+                        unfold map_relation in *.
+                        unfold option_relation in *.
+                        specialize (Hρ''1 x).
+                        rewrite lookup_singleton in Hρ''1.
+                        ltac1:(case_match).
+                        {
+                            unfold Valuation.
+                            apply map_disjoint_insert_r_2;
+                                subst.
+                            {
+                                assert (IH1' := IH1 x).
+                                repeat ltac1:(case_match); try reflexivity.
+                                {
+                                    inversion H; subst; clear H.
+                                    
+                                }
+                            }
+                            {
+                                apply map_disjoint_empty_r.
+                            }
+                        }
+                        {
+                            inversion Hρ''1.
+                        }
+                    }
+                }
+                destruct b0.
+                {
+
+                }
+                {
+
+                }
                 (* I would somehow need [b ## b0]. *)
             }
             {
