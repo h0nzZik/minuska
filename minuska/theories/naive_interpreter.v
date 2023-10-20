@@ -460,6 +460,7 @@ Section with_decidable_signature.
         reflexivity.
     Qed.
 
+    (*
     Lemma pure_GroundTerm_matches_BuiltinOrVar_monotone ρ1 ρ2 a b:
         map_subseteq ρ1 ρ2 ->
         pure_GroundTerm_matches_BuiltinOrVar ρ1 a b = true ->
@@ -497,6 +498,7 @@ Section with_decidable_signature.
             inversion H0.
         }
     Qed.
+    *)
 
     Lemma evaluate_rhs_pattern_correct
         (φ : RhsPattern)
@@ -1232,10 +1234,79 @@ Section with_decidable_signature.
             destruct H22 as [x0 [H221 H222]].
             (* TODO: need a lemma about correctness of pure_GroundTerm_try_match_BuiltinOrVar *)
             apply pure_GroundTerm_try_match_BuiltinOrVar_correct in H221.
-            rewrite H221.
-            Search pure_GroundTerm_try_match_BuiltinOrVar.
-            
+            assert (Hmv := H222).
+            apply merge_valuations_correct in Hmv.
+            destruct Hmv as [Hsub1 Hsub2].
+            assert (Hxrho': map_subseteq x ρ').
+            {
+                eapply transitivity.
+                apply Hsub1.
+                apply HH.
+            }
+            apply pure_GroundTerm_matches_BuiltinOrVar_monotone with (ρ' := ρ') in H221.
+            {
+                rewrite H221.
+                clear H221.
+                remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+                    builtin_value BuiltinOrVar
+                    builtin_value_try_match_BuiltinOrVar
+                    (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+                    BuiltinOrVar),
+                    None)
+                    pure_GroundTerm_try_match_BuiltinOrVar)
+                as f.
+                specialize (IHa1 b' x ρ' Hxrho' H21).
+                rewrite IHa1.
+                reflexivity.
+            }
+            {
+                eapply transitivity.
+                apply Hsub2.
+                apply HH.
+            }
         }
+        {
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            rewrite bind_Some in H22.
+            destruct H22 as [x0 [H221 H222]].
+            assert (Hsub := H222).
+            apply merge_valuations_correct in Hsub.
+            destruct Hsub as [Hsub1 Hsub2].
+            assert (Hxρ' : map_subseteq x ρ').
+            {
+                eapply transitivity.
+                apply Hsub1.
+                apply HH.
+            }
+            assert (Hx0ρ' : map_subseteq x0 ρ').
+            {
+                eapply transitivity.
+                apply Hsub2.
+                apply HH.
+            }
+            remember (
+                ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
+                BuiltinOrVar builtin_value_matches_BuiltinOrVar
+                (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
+                symbol
+                BuiltinOrVar),
+                false)
+                pure_GroundTerm_matches_BuiltinOrVar )
+            as f.
+            remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+                builtin_value BuiltinOrVar
+                builtin_value_try_match_BuiltinOrVar
+                (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+                BuiltinOrVar),
+                None)
+                pure_GroundTerm_try_match_BuiltinOrVar)
+            as g.
+            apply andb_true_iff.
+            ltac1:(naive_solver).
+        }
+        Unshelve.
+        all: apply map_subseteq_po.
     Qed.
 
     Fixpoint rhs_evaluate_rule
