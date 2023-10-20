@@ -1309,6 +1309,159 @@ Section with_decidable_signature.
         all: apply map_subseteq_po.
     Qed.
 
+    Lemma builtin_value_try_match_BuiltinOrVar_complete a b ρ:
+        builtin_value_matches_BuiltinOrVar ρ a b ->
+        ∃ ρ',
+            map_subseteq ρ' ρ /\
+            builtin_value_try_match_BuiltinOrVar a b = Some ρ'
+    .
+    Proof.
+        unfold builtin_value_matches_BuiltinOrVar.
+        unfold builtin_value_try_match_BuiltinOrVar.
+        unfold bool_decide.
+        destruct b.
+        {
+            repeat ltac1:(case_match); subst; try ltac1:(congruence);
+                intros _.
+            {
+                exists ∅.
+                split>[|reflexivity].
+                apply map_empty_subseteq.
+            }
+            {
+                inversion H0.
+            }
+        }
+        {
+            destruct (ρ!!x) eqn:Hρx.
+            {
+                destruct a0.
+                {
+                    intros H; inversion H.
+                }
+                {
+                    ltac1:(case_match).
+                    {
+                        intros _.
+                        exists (<[x:=aoo_operand symbol builtin_value a]> ∅).
+                        split>[|reflexivity].
+                        unfold map_subseteq.
+                        unfold map_included.
+                        unfold map_relation.
+                        unfold option_relation.
+                        intros i.
+                        destruct (decide (i = x)).
+                        {
+                            subst.
+                            rewrite lookup_insert.
+                            clear H.
+                            ltac1:(rewrite Hρx).
+                            reflexivity.
+                        }
+                        {
+                            rewrite lookup_insert_ne.
+                            {
+                                rewrite lookup_empty.
+                                ltac1:(case_match); exact I.
+                            }
+                            {
+                                intros HContra; apply n; subst; reflexivity.
+                            }
+                        }
+                    }
+                    {
+                        intros H'; inversion H'.
+                    }
+                }
+            }
+            {
+                intros H; inversion H.
+            }
+        }
+    Qed.
+
+    Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_complete
+        (ρ : Valuation)
+        (a : AppliedOperator' symbol builtin_value)
+        (b : AppliedOperator' symbol BuiltinOrVar)
+        :
+        @ApppliedOperator'_matches_AppliedOperator'
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_matches_BuiltinOrVar
+            (fun _ _ _ => false)
+            pure_GroundTerm_matches_BuiltinOrVar
+            ρ a b = true ->
+        ∃ ρ',
+            map_subseteq ρ' ρ /\
+            @ApppliedOperator'_try_match_AppliedOperator'
+                symbol _ builtin_value BuiltinOrVar
+                builtin_value_try_match_BuiltinOrVar
+                (fun _ _ => None)
+                pure_GroundTerm_try_match_BuiltinOrVar
+                a b = Some ρ'
+    .
+    Proof.
+        remember (ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
+            BuiltinOrVar builtin_value_matches_BuiltinOrVar
+            (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
+            symbol
+            BuiltinOrVar),
+            false)
+            pure_GroundTerm_matches_BuiltinOrVar)
+        as f.
+        remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+            builtin_value BuiltinOrVar
+            builtin_value_try_match_BuiltinOrVar
+            (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+            BuiltinOrVar),
+            None)
+            pure_GroundTerm_try_match_BuiltinOrVar)
+        as g.
+
+        revert ρ b.
+        induction a; intros ρ b''.
+        {
+            subst f. cbn. unfold bool_decide.
+            repeat ltac1:(case_match); subst;
+                intros H; try (ltac1:(congruence)).
+            clear H.
+            cbn.
+            unfold is_left.
+            repeat ltac1:(case_match).
+            {
+                exists ∅. split>[|reflexivity].
+                apply map_empty_subseteq.
+            }
+            { ltac1:(exfalso; congruence). }
+            { ltac1:(exfalso; congruence). }
+            { ltac1:(exfalso; congruence). }
+        }
+        {
+            rewrite Heqf.
+            rewrite Heqg.
+            cbn.
+            destruct b''.
+            {
+                intros H; inversion H.
+            }
+            {
+                intros H.
+                rewrite andb_true_iff in H.
+                destruct H as [H1 H2].
+                rewrite <- Heqf in H1.
+                specialize (IHa ρ b'' H1).
+                destruct IHa as [ρ' [IH1 IH2]].
+                rewrite <- Heqg.
+                Search builtin_value_matches_BuiltinOrVar.
+                apply IHa in H.
+            }
+            {
+
+            }
+        }
+
+    Qed.
+
     Fixpoint rhs_evaluate_rule
         (ρ : Valuation)
         (r : RewritingRule)
