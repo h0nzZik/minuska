@@ -442,6 +442,10 @@ Section with_decidable_signature.
         else None
     .
 
+    Definition vars_of_valuation (ρ : Valuation) : list variable :=
+        fst <$> map_to_list ρ
+    .
+
 
     Lemma pure_GroundTerm_try_match_BuiltinOrVar_correct a b ρ:
         pure_GroundTerm_try_match_BuiltinOrVar a b = Some ρ ->
@@ -459,46 +463,6 @@ Section with_decidable_signature.
         ltac1:(contradiction n).
         reflexivity.
     Qed.
-
-    (*
-    Lemma pure_GroundTerm_matches_BuiltinOrVar_monotone ρ1 ρ2 a b:
-        map_subseteq ρ1 ρ2 ->
-        pure_GroundTerm_matches_BuiltinOrVar ρ1 a b = true ->
-        pure_GroundTerm_matches_BuiltinOrVar ρ2 a b = true
-    .
-    Proof.
-        unfold pure_GroundTerm_matches_BuiltinOrVar.
-        unfold map_subseteq.
-        unfold map_included.
-        unfold map_relation.
-        unfold option_relation.
-        intros H.
-        destruct b; auto.
-        specialize (H x).
-        unfold bool_decide.
-        repeat (ltac1:(case_match)); subst; auto;
-        intros _.
-        {
-            clear H2 H3.
-            unfold Valuation,GroundTerm,GroundTerm' in *.
-            ltac1:(rewrite H1 in n).
-            ltac1:(rewrite H0 in e).
-            rewrite e in n.
-            ltac1:(contradiction n).
-            reflexivity.
-        }
-        {
-            clear H2 H3.
-            ltac1:(rewrite e in H0).
-            inversion H0.
-        }
-        {
-            clear H2 H3.
-            ltac1:(rewrite e in H0).
-            inversion H0.
-        }
-    Qed.
-    *)
 
     Lemma evaluate_rhs_pattern_correct
         (φ : RhsPattern)
@@ -1312,6 +1276,7 @@ Section with_decidable_signature.
     Lemma builtin_value_try_match_BuiltinOrVar_complete a b ρ:
         builtin_value_matches_BuiltinOrVar ρ a b ->
         ∃ ρ',
+            vars_of_valuation ρ' = elements (vars_of_BoV b) /\
             map_subseteq ρ' ρ /\
             builtin_value_try_match_BuiltinOrVar a b = Some ρ'
     .
@@ -1325,7 +1290,11 @@ Section with_decidable_signature.
                 intros _.
             {
                 exists ∅.
+                cbn.
+                split>[reflexivity|].
                 split>[|reflexivity].
+                cbn.
+                unfold Valuation.
                 apply map_empty_subseteq.
             }
             {
@@ -1344,6 +1313,17 @@ Section with_decidable_signature.
                     {
                         intros _.
                         exists (<[x:=aoo_operand symbol builtin_value a]> ∅).
+                        cbn.
+                        unfold vars_of_valuation.
+                        split.
+                        {
+                            rewrite elements_singleton.
+                            ltac1:(rewrite insert_empty).
+                            cbn.
+                            unfold map_to_list.
+                            ltac1:(rewrite map_fold_singleton).
+                            reflexivity.
+                        }
                         split>[|reflexivity].
                         unfold map_subseteq.
                         unfold map_included.
@@ -1353,19 +1333,19 @@ Section with_decidable_signature.
                         destruct (decide (i = x)).
                         {
                             subst.
-                            rewrite lookup_insert.
+                            ltac1:(rewrite lookup_insert).
                             clear H.
                             ltac1:(rewrite Hρx).
                             reflexivity.
                         }
                         {
-                            rewrite lookup_insert_ne.
-                            {
-                                rewrite lookup_empty.
-                                ltac1:(case_match); exact I.
-                            }
+                            ltac1:(rewrite lookup_insert_ne).
                             {
                                 intros HContra; apply n; subst; reflexivity.
+                            }
+                            {
+                                ltac1:(rewrite lookup_empty).
+                                ltac1:(case_match); exact I.
                             }
                         }
                     }
@@ -1452,8 +1432,13 @@ Section with_decidable_signature.
                 specialize (IHa ρ b'' H1).
                 destruct IHa as [ρ' [IH1 IH2]].
                 rewrite <- Heqg.
-                Search builtin_value_matches_BuiltinOrVar.
-                apply IHa in H.
+                apply builtin_value_try_match_BuiltinOrVar_complete in H2.
+                destruct H2 as [ρ'' [Hρ''1 Hρ''2]].
+                rewrite IH2.
+                cbn.
+                rewrite Hρ''2.
+                cbn.
+                (* I would somehow need [b ## b0]. *)
             }
             {
 

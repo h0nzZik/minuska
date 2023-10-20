@@ -34,14 +34,23 @@ match o with
 | ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
 end.
 
+Definition vars_of_BoV
+    {Σ : Signature}
+    (bov : BuiltinOrVar)
+    : gset variable
+:=
+match bov with
+| bov_variable x => {[x]}
+| bov_builtin _ => ∅
+end.
+
 Definition vars_of_OpenTerm
     {Σ : Signature}
     (φ : OpenTerm)
     : gset variable :=
 match φ with
 | aoo_app _ _ o => vars_of_aosb o
-| aoo_operand _ _ (bov_variable x) => {[x]}
-| aoo_operand _ _ (bov_builtin _) => ∅
+| aoo_operand _ _ bov => vars_of_BoV bov
 end.
 
 Definition vars_of_SideCondition
