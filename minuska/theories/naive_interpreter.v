@@ -443,6 +443,61 @@ Section with_decidable_signature.
     .
 
 
+    Lemma pure_GroundTerm_try_match_BuiltinOrVar_correct a b ρ:
+        pure_GroundTerm_try_match_BuiltinOrVar a b = Some ρ ->
+        pure_GroundTerm_matches_BuiltinOrVar ρ a b = true
+    .
+    Proof.
+        unfold pure_GroundTerm_matches_BuiltinOrVar.
+        unfold pure_GroundTerm_try_match_BuiltinOrVar.
+        destruct b; intros H; inversion H.
+        subst.
+        unfold bool_decide.
+        ltac1:(case_match); try reflexivity.
+        clear H0 H.
+        ltac1:(rewrite lookup_insert in n).
+        ltac1:(contradiction n).
+        reflexivity.
+    Qed.
+
+    Lemma pure_GroundTerm_matches_BuiltinOrVar_monotone ρ1 ρ2 a b:
+        map_subseteq ρ1 ρ2 ->
+        pure_GroundTerm_matches_BuiltinOrVar ρ1 a b = true ->
+        pure_GroundTerm_matches_BuiltinOrVar ρ2 a b = true
+    .
+    Proof.
+        unfold pure_GroundTerm_matches_BuiltinOrVar.
+        unfold map_subseteq.
+        unfold map_included.
+        unfold map_relation.
+        unfold option_relation.
+        intros H.
+        destruct b; auto.
+        specialize (H x).
+        unfold bool_decide.
+        repeat (ltac1:(case_match)); subst; auto;
+        intros _.
+        {
+            clear H2 H3.
+            unfold Valuation,GroundTerm,GroundTerm' in *.
+            ltac1:(rewrite H1 in n).
+            ltac1:(rewrite H0 in e).
+            rewrite e in n.
+            ltac1:(contradiction n).
+            reflexivity.
+        }
+        {
+            clear H2 H3.
+            ltac1:(rewrite e in H0).
+            inversion H0.
+        }
+        {
+            clear H2 H3.
+            ltac1:(rewrite e in H0).
+            inversion H0.
+        }
+    Qed.
+
     Lemma evaluate_rhs_pattern_correct
         (φ : RhsPattern)
         (ρ : Valuation)
@@ -1176,6 +1231,10 @@ Section with_decidable_signature.
             rewrite bind_Some in H22.
             destruct H22 as [x0 [H221 H222]].
             (* TODO: need a lemma about correctness of pure_GroundTerm_try_match_BuiltinOrVar *)
+            apply pure_GroundTerm_try_match_BuiltinOrVar_correct in H221.
+            rewrite H221.
+            Search pure_GroundTerm_try_match_BuiltinOrVar.
+            
         }
     Qed.
 
