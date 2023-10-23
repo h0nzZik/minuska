@@ -7,6 +7,8 @@ Definition Valuation {Σ : Signature}
         := gmap variable GroundTerm
     .
 
+(*Transparent Valuation.*)
+
 Definition val_satisfies_ap
     {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
     : Prop :=

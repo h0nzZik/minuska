@@ -462,8 +462,8 @@ Section with_decidable_signature.
         else None
     .
 
-    Definition vars_of_valuation (ρ : Valuation) : list variable :=
-        fst <$> map_to_list ρ
+    Definition vars_of_valuation (ρ : Valuation) : gset variable :=
+        dom ρ
     .
 
 
@@ -1296,7 +1296,7 @@ Section with_decidable_signature.
     Lemma builtin_value_try_match_BuiltinOrVar_complete a b ρ:
         builtin_value_matches_BuiltinOrVar ρ a b ->
         ∃ ρ',
-            vars_of_valuation ρ' = elements (vars_of_BoV b) /\
+            vars_of_valuation ρ' = (vars_of_BoV b) /\
             map_subseteq ρ' ρ /\
             builtin_value_try_match_BuiltinOrVar a b = Some ρ'
     .
@@ -1337,11 +1337,11 @@ Section with_decidable_signature.
                         unfold vars_of_valuation.
                         split.
                         {
-                            rewrite elements_singleton.
                             ltac1:(rewrite insert_empty).
                             cbn.
                             unfold map_to_list.
-                            ltac1:(rewrite map_fold_singleton).
+                            unfold Valuation.
+                            rewrite dom_singleton_L.
                             reflexivity.
                         }
                         split>[|reflexivity].
@@ -1380,6 +1380,57 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma merge_use_left_subseteq (ρ1 ρ2 : Valuation):
+        map_subseteq ρ1 ρ2 ->
+        merge use_left ρ1 ρ2 = ρ2
+    .
+    Proof.
+        unfold map_subseteq.
+        unfold map_included.
+        unfold map_relation.
+        unfold option_relation.
+        intros H.
+        apply map_subseteq_po.
+        {
+            unfold Valuation.
+            unfold Valuation_lookup.
+            rewrite map_subseteq_spec.
+            intros i x Hix.
+            rewrite lookup_merge in Hix.
+            unfold diag_None in Hix.
+            unfold use_left in Hix.
+            ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+            {
+                specialize (H i).
+                rewrite H0 in H.
+                rewrite H1 in H.
+                subst.
+                reflexivity.
+            }
+            {
+                specialize (H i).
+                rewrite H0 in H.
+                rewrite H1 in H.
+                inversion H.
+            }
+        }
+        {
+            unfold Valuation.
+            unfold Valuation_lookup.
+            rewrite map_subseteq_spec.
+            intros i x Hix.
+            rewrite lookup_merge.
+            unfold diag_None.
+            unfold use_left.
+            ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+            specialize (H i).
+            rewrite H1 in H.
+            rewrite H0 in H.
+            subst.
+            reflexivity.
+        }
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_complete
         (ρ : Valuation)
         (a : AppliedOperator' symbol builtin_value)
@@ -1392,7 +1443,7 @@ Section with_decidable_signature.
             pure_GroundTerm_matches_BuiltinOrVar
             ρ a b = true ->
         ∃ ρ',
-            vars_of_valuation ρ' = elements (vars_of_aosb b) /\
+            vars_of_valuation ρ' = vars_of_aosb b /\
             map_subseteq ρ' ρ /\
             @ApppliedOperator'_try_match_AppliedOperator'
                 symbol _ builtin_value BuiltinOrVar
@@ -1432,8 +1483,8 @@ Section with_decidable_signature.
             {
                 exists ∅.
                 unfold vars_of_valuation.
-                rewrite elements_empty.
-                ltac1:(rewrite map_to_list_empty).
+                unfold Valuation.
+                rewrite dom_empty_L.
                 split>[reflexivity|].
                 split>[|reflexivity].
                 unfold Valuation.
@@ -1494,15 +1545,85 @@ Section with_decidable_signature.
                         cbn.
                         unfold Valuation.
                         unfold Valuation_lookup.
-                        ltac1:(apply leibniz_equiv).
-                        ltac1:(setoid_rewrite <- leibniz_equiv_iff).
-                        ltac1:(fold_leibniz).
-                        Search eq equiv.
-                        Search map_to_list insert.
-                        Set Printing Implicit.
-                        Check map_to_list_insert.
-                        rewrite map_to_list_insert.
-                        
+                        ltac1:(rewrite dom_insert_L).
+                        ltac1:(set_solver).
+                    }
+                    {
+                        unfold map_subseteq in *.
+                        unfold map_included in *.
+                        unfold map_relation in *.
+                        unfold option_relation in *.
+                        intros i.
+                        unfold Valuation.
+                        unfold Valuation_lookup.
+                        destruct (decide (i = x)).
+                        {
+                            subst.
+                            rewrite lookup_insert.
+                            specialize (Hρ''1 x).
+                            unfold vars_of_valuation in Hρ''0.
+                            assert (Hxρ'' : x ∈ dom ρ'').
+                            {
+                                ltac1:(set_solver).
+                            }
+                            unfold Valuation in Hxρ''.
+                            rewrite elem_of_dom in Hxρ''.
+                            unfold is_Some in Hxρ''.
+                            destruct Hxρ'' as [xv Hxv].
+                            rewrite Hxv in Hρ''1.
+                            unfold Valuation in *.
+                            destruct (ρ !! x) eqn:Heqρx.
+                            {
+                                subst.
+                                inversion Hρ''2; subst; clear Hρ''2.
+                                rewrite lookup_insert in Hxv.
+                                inversion Hxv; subst; clear Hxv.
+                                reflexivity.
+                            }
+                            {
+                                inversion Hρ''1.
+                            }
+                        }
+                        {
+                            rewrite lookup_insert_ne.
+                            {
+                                inversion Hρ''2; subst; clear Hρ''2.
+                                clear Hρ''0.
+                                unfold Valuation in *.
+                                unfold Valuation_lookup in *.
+                                apply IH1.
+                            }
+                            {
+                                apply nesym.
+                                assumption.
+                            }
+                        }
+                    }
+                    {
+                        inversion Hρ''2; subst; clear Hρ''2.
+                        clear Hρ''0.
+                        unfold merge_valuations.
+                        unfold is_left.
+                        destruct (decide
+                            (valuations_compatible ρ' (<[x:=aoo_operand symbol builtin_value b]> ∅)))
+                        as [HCompat|HNotCompat].
+                        {
+                            apply f_equal.
+                            unfold valuations_compatible in *.
+                            rewrite Forall_forall in HCompat.
+                            Search merge subseteq.
+                            apply map_subseteq_po.
+                            {
+                                ltac1:(rewrite elem_of_subseteq).
+                                Search elem_of subseteq.
+                            }
+                            Search merge insert.
+                        }
+                        {
+                            ltac1:(exfalso).
+                            apply HNotCompat.
+                        }
+
                     }
                 }
                 (*

@@ -8,6 +8,7 @@ From stdpp Require Export
     countable
     decidable
     fin_maps
+    fin_sets
     gmap
     sets
     strings
