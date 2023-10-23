@@ -1465,6 +1465,47 @@ Section with_decidable_signature.
                 cbn.
                 rewrite Hρ''2.
                 cbn.
+                destruct b0.
+                {
+                    cbn in *.
+                    unfold is_left in *.
+                    destruct (decide (b = b0)).
+                    {
+                        subst. inversion Hρ''2; subst; clear Hρ''2.
+                        cbn.
+                        rewrite <- IH0.
+                        exists ρ'.
+                        split>[reflexivity|].
+                        split.
+                        { exact IH1. }
+                        apply merge_valuations_empty_r.
+                    }
+                    {
+                        inversion Hρ''2.
+                    }
+                }
+                {
+                    cbn in *.
+                    exists (<[x := aoo_operand _ _ b]>ρ').
+                    cbn.
+                    repeat split.
+                    {
+                        unfold vars_of_valuation.
+                        cbn.
+                        unfold Valuation.
+                        unfold Valuation_lookup.
+                        ltac1:(apply leibniz_equiv).
+                        ltac1:(setoid_rewrite <- leibniz_equiv_iff).
+                        ltac1:(fold_leibniz).
+                        Search eq equiv.
+                        Search map_to_list insert.
+                        Set Printing Implicit.
+                        Check map_to_list_insert.
+                        rewrite map_to_list_insert.
+                        
+                    }
+                }
+                (*
                 assert (Hdisj: (ρ' ##ₘ ρ'')).
                 {
                     cbn in *.
@@ -1508,6 +1549,7 @@ Section with_decidable_signature.
                                 repeat ltac1:(case_match); try reflexivity.
                                 {
                                     inversion H; subst; clear H.
+                                    clear IH1. (* trivial *)
 
                                 }
                             }
@@ -1520,6 +1562,7 @@ Section with_decidable_signature.
                         }
                     }
                 }
+                *)
                 destruct b0.
                 {
 
