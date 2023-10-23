@@ -1021,7 +1021,11 @@ Section with_decidable_signature.
             ltac1:(exfalso).
             apply n.
             unfold Valuation.
-            apply map_disjoint_empty_r.
+            unfold valuations_compatible.
+            ltac1:(rewrite dom_empty_L).
+            rewrite intersection_empty_r_L.
+            rewrite elements_empty.
+            apply Forall_nil.
         }
     Qed.
 
@@ -1056,7 +1060,11 @@ Section with_decidable_signature.
             ltac1:(exfalso).
             apply n.
             unfold Valuation.
-            apply map_disjoint_empty_l.
+            unfold valuations_compatible.
+            ltac1:(rewrite dom_empty_L).
+            rewrite intersection_empty_l_L.
+            rewrite elements_empty.
+            apply Forall_nil.
         }
     Qed.
 
