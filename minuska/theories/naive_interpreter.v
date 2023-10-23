@@ -197,10 +197,30 @@ Section with_decidable_signature.
     | Some g1, Some g2 => Some g1
     end.
 
+    Definition valuations_compatible (ρ1 ρ2 : Valuation) : Prop
+        := Forall (fun k => ρ1 !! k = ρ2 !! k) (elements (dom ρ1 ∩ dom ρ2))
+    .
+
+    Instance valautions_compatible_dec:
+        forall ρ1 ρ2, Decision (valuations_compatible ρ1 ρ2)
+    .
+    Proof.
+        intros.
+        unfold valuations_compatible.
+        ltac1:(solve_decision).
+    Defined.
+
+    (* TODO fix the case when ρ1 ≡ ρ2 ≡ {[x → 2]} *)
     Definition merge_valuations (ρ1 ρ2 : Valuation)
         : option Valuation :=
-    if decide (ρ1 ##ₘ ρ2) then Some (merge use_left ρ1 ρ2) else None.
+    if decide (valuations_compatible ρ1 ρ2)
+    then
+        Some (merge use_left ρ1 ρ2)
+    else
+        None
+    .
 
+    (* what if we match against `s x x` ?  *)
     Fixpoint ApppliedOperator'_try_match_AppliedOperator'
         (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
@@ -827,55 +847,47 @@ Section with_decidable_signature.
     Proof.
         unfold merge_valuations.
         unfold is_left.
-        destruct (decide (ρ1 ##ₘ ρ2)); intros H.
+        destruct (decide (valuations_compatible ρ1 ρ2)) as [Hcompat|Hnocompat]; intros H.
         {
             inversion H; subst; clear H.
-            rewrite map_disjoint_spec in m.
+            unfold valuations_compatible in Hcompat.
+            rewrite Forall_forall in Hcompat; cbn.
+            ltac1:(setoid_rewrite <- elem_of_list_In in Hcompat).
+            ltac1:(setoid_rewrite elem_of_elements in Hcompat).
             unfold map_subseteq.
             unfold map_included.
             unfold map_relation.
             unfold option_relation.
-            split; intros i; (repeat ltac1:(case_match));
-                try (exact I).
+            fold (@Valuation Σ) in *.
+            fold (@Valuation_lookup) in *.
+            split; intros i;
+                destruct (ρ1 !! i) eqn:Hρ1i;
+                destruct (ρ2 !! i) eqn:Hρ2i;
+                destruct (merge use_left ρ1 ρ2 !! i) eqn:Hmergei;
+                ltac1:(rewrite Hmergei);
+                try (exact I);
+                ltac1:(rewrite lookup_merge in Hmergei);
+                unfold diag_None in Hmergei;
+                specialize (Hcompat i);
+                ltac1:(rewrite Hρ1i in Hmergei);
+                ltac1:(rewrite Hρ2i in Hmergei);
+                unfold use_left in Hmergei;
+                ltac1:(simplify_eq /=);
+                try reflexivity
+            .
+            ltac1:(ospecialize (Hcompat _)).
             {
-                rewrite lookup_merge in H0.
-                unfold diag_None in H0.
-                (repeat ltac1:(case_match));
-                    cbn in *;
-                    repeat ltac1:(case_match);
-                    try (ltac1:(simplify_eq /=));
-                    try reflexivity.
+                rewrite elem_of_intersection.
+                do 2 ltac1:(rewrite elem_of_dom).
+                split; eexists.
+                {
+                    apply Hρ1i.
+                }
+                {
+                    apply Hρ2i.
+                }
             }
-            {
-                rewrite lookup_merge in H0.
-                unfold diag_None in H0.
-                (repeat ltac1:(case_match));
-                    cbn in *;
-                    repeat ltac1:(case_match);
-                    try (ltac1:(simplify_eq /=));
-                    try reflexivity.
-            }
-            {
-                rewrite lookup_merge in H0.
-                unfold diag_None in H0.
-                (repeat ltac1:(case_match));
-                    cbn in *;
-                    repeat ltac1:(case_match);
-                    try (ltac1:(simplify_eq /=));
-                    try reflexivity.
-                ltac1:(exfalso). eapply m.
-                { apply H1. }
-                { apply H2. }
-            }
-            {
-                rewrite lookup_merge in H0.
-                unfold diag_None in H0.
-                (repeat ltac1:(case_match));
-                    cbn in *;
-                    repeat ltac1:(case_match);
-                    try (ltac1:(simplify_eq /=));
-                    try reflexivity.
-            }
+            ltac1:(congruence).
         }
         {
             inversion H.
@@ -1488,7 +1500,7 @@ Section with_decidable_signature.
                                 repeat ltac1:(case_match); try reflexivity.
                                 {
                                     inversion H; subst; clear H.
-                                    
+
                                 }
                             }
                             {

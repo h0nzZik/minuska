@@ -8,7 +8,8 @@ Inductive AppliedOperator' (operator : Type) (operand : Type)
 :=
 | ao_operator (s : operator)
 | ao_app_operand
-    (aps : AppliedOperator' operator operand) (b : operand) 
+    (aps : AppliedOperator' operator operand)
+    (b : operand) 
 | ao_app_ao
     (aps : AppliedOperator' operator operand)
     (x : AppliedOperator' operator operand)
@@ -106,6 +107,7 @@ Definition GroundTerm {Σ : Signature}
     := GroundTerm' symbol builtin_value
 .
 
+(* TODO add equality of expressions *)
 Inductive AtomicProposition {Σ : Signature} :=
 | ap1 (p : builtin_unary_predicate) (x : variable)
 | ap2 (p : builtin_binary_predicate) (x y : variable)
