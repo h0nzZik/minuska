@@ -1838,6 +1838,68 @@ Section with_decidable_signature.
                     rewrite andb_true_iff in HH.
                     destruct HH as [HH1 HH2].
                     rewrite bool_decide_eq_true in HH2.
+                    ltac1:(setoid_rewrite bind_Some).
+                    rewrite <- Heqf in HH1.
+                    specialize (IHa1 _ _ HH1).
+                    destruct IHa1 as [ρ' [Hρ'1 [Hρ'2 Hρ'3]]].
+                    destruct (ρ' !! x) eqn:Hρ'x.
+                    {
+                        assert (g0 = (aoo_app symbol builtin_value a2)).
+                        {
+                            clear -HH2 Hρ'x Hρ'2.
+                            unfold map_subseteq in *.
+                            unfold map_included in *.
+                            unfold map_relation in *.
+                            unfold option_relation in *.
+                            specialize (Hρ'2 x).
+                            ltac1:(rewrite Hρ'x in Hρ'2).
+                            ltac1:(rewrite HH2 in Hρ'2).
+                            exact Hρ'2.
+                        }
+                        subst g0.
+                        exists ρ'.
+                        repeat split.
+                        {
+                            rewrite <- Hρ'1.
+                            clear -Hρ'x.
+                            unfold vars_of_valuation.
+                            rewrite set_eq.
+                            intros x0.
+                            unfold Valuation.
+                            rewrite elem_of_dom.
+                            rewrite elem_of_union.
+                            split; intros H.
+                            {
+                                destruct H as [v'' H].
+                                rewrite elem_of_dom.
+                                right.
+                                exists v''.
+                                apply H.
+                            }
+                            {
+                                destruct H as [H|H].
+                                {
+                                    rewrite elem_of_singleton in H.
+                                    inversion H; subst; clear H.
+                                    eexists. apply Hρ'x.
+                                }
+                                {
+                                    rewrite elem_of_dom in H.
+                                    exact H.
+                                }
+                            }
+                        }
+                        {
+                            
+                        }
+                        {
+
+                        }
+                    }
+                    {
+
+                    }
+
                 }
                 eexists.                
 
