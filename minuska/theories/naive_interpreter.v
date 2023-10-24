@@ -1537,6 +1537,85 @@ Section with_decidable_signature.
                 }
                 {
                     cbn in *.
+                    inversion Hρ''2; subst; clear Hρ''2.
+                    destruct (ρ' !! x) eqn:Hρ'x.
+                    {
+                        exists ρ'.
+                        cbn.
+                        repeat split.
+                        {
+                            unfold vars_of_valuation.
+                            cbn.
+                            unfold Valuation.
+                            unfold Valuation_lookup.
+                            rewrite <- IH0.
+                            unfold vars_of_valuation.
+                            clear -Hρ'x.
+                            apply leibniz_equiv.
+                            ltac1:(cut (x ∈ dom ρ')).
+                            {
+                                ltac1:(set_solver).
+                            }
+                            unfold Valuation.
+                            unfold Valuation_lookup.
+                            rewrite elem_of_dom.
+                            exists g.
+                            exact Hρ'x.
+                        }
+                        {
+                            exact IH1.
+                        }
+                        {
+                            (*clear -Hρ'x.*)
+                            unfold merge_valuations.
+                            unfold decide,is_left.
+                            repeat ltac1:(case_match).
+                            {
+                                apply f_equal.
+                            }
+                            {
+                                inversion H.
+                            }
+                            {
+                                inversion H.
+                            }
+                            {
+                                clear H0 H.
+                                unfold valuations_compatible in *.
+                                rewrite Forall_forall in n.
+                                ltac1:(contradiction n).
+                                clear n. intros x0.
+                                rewrite <- elem_of_list_In.
+                                rewrite elem_of_elements.
+                                rewrite elem_of_intersection.
+                                intros [HH1 HH2].
+                                unfold Valuation.
+                                unfold Valuation_lookup.
+                                ltac1:(rewrite elem_of_dom in HH1).
+                                ltac1:(rewrite elem_of_dom in HH2).
+                                destruct HH1 as [g' Hg'].
+                                destruct HH2 as [g'' Hg''].
+                                destruct (decide (x = x0)).
+                                {
+                                    subst.
+                                    ltac1:(rewrite lookup_insert in Hg'').
+                                    inversion Hg''; subst; clear Hg''.
+                                    ltac1:(rewrite Hρ'x in Hg').
+                                    inversion Hg'; subst; clear Hg'.
+                                    rewrite lookup_insert.
+                                    clear -IH1 Hρ''1 Hρ'x.
+                                    unfold map_subseteq in *.
+                                    unfold map_included in *.
+                                    unfold map_relation in *.
+                                    unfold option_relation in *.
+                                    specialize (IH1 x0).
+                                    specialize (Hρ''1 x0).
+                                    ltac1:(rewrite Hρ'x in IH1).
+                                    ltac1:(rewrite lookup_insert in Hρ''1).
+                                }
+                            }
+                        }
+                    }
                     exists (<[x := aoo_operand _ _ b]>ρ').
                     cbn.
                     repeat split.
@@ -1611,13 +1690,119 @@ Section with_decidable_signature.
                             apply f_equal.
                             unfold valuations_compatible in *.
                             rewrite Forall_forall in HCompat.
-                            Search merge subseteq.
+                            rewrite merge_use_left_subseteq.
+                            ltac1:(setoid_rewrite <- elem_of_list_In in HCompat).
+                            ltac1:(setoid_rewrite elem_of_elements in HCompat).
+                            unfold Valuation.
                             apply map_subseteq_po.
                             {
-                                ltac1:(rewrite elem_of_subseteq).
-                                Search elem_of subseteq.
+                                apply insert_mono.
+                                clear.
+                                unfold Valuation in *.
+                                unfold subseteq in *.
+                                unfold map_subseteq in *.
+                                unfold map_included in *.
+                                unfold map_relation in *.
+                                unfold option_relation in *.
+                                intros x0.
+                                repeat ltac1:(case_match);
+                                    try (exact I).
+                                {
+                                    rewrite lookup_empty in H.
+                                    inversion H.
+                                }
+                                {
+                                    rewrite lookup_empty in H.
+                                    inversion H.
+                                }
                             }
-                            Search merge insert.
+                            {
+                                unfold subseteq in *.
+                                unfold map_subseteq in *.
+                                unfold map_included in *.
+                                unfold map_relation in *.
+                                unfold option_relation in *.
+                                intros x0.
+                                
+                                destruct (<[x:=aoo_operand symbol builtin_value b]> ρ' !! x0)
+                                    eqn:Hx01.
+                                {
+                                    unfold Valuation_lookup in *. unfold Valuation in *.
+                                    rewrite Hx01.
+                                    destruct (<[x:=aoo_operand symbol builtin_value b]> ∅ !! x0)
+                                        eqn:Hx02.
+                                    {
+                                        destruct (decide (x0 = x)).
+                                        {
+                                            subst.
+                                            ltac1:(rewrite lookup_insert in Hx01).
+                                            ltac1:(rewrite lookup_insert in Hx02).
+                                            inversion Hx01. inversion Hx02. subst. reflexivity.
+                                        }
+                                        {
+                                            rewrite lookup_insert_ne in Hx02.
+                                            {
+                                                rewrite lookup_empty in Hx02.
+                                                inversion Hx02.
+                                            }
+                                            {
+                                                apply nesym. apply n.
+                                            }
+                                        }
+                                    }
+                                    {
+                                        destruct (decide (x0 = x)).
+                                        {
+                                            subst.
+                                            ltac1:(rewrite lookup_insert in Hx01).
+                                            ltac1:(rewrite lookup_insert in Hx02).
+                                            inversion Hx02.
+                                        }
+                                        {
+                                            rewrite lookup_insert_ne in Hx01.
+                                            {
+                                                clear Hx02.
+                                                specialize (IH1 x0).
+                                                rewrite Hx01 in IH1.
+                                                destruct (ρ !! x0) eqn:Hρx0.
+                                                {
+                                                    subst.
+                                                    specialize (Hρ''1 x).
+                                                    rewrite lookup_insert in Hρ''1.
+                                                    destruct (ρ!!x) eqn:Hρx.
+                                                    {
+                                                        subst.
+                                                        Search ρ.
+                                                    }
+                                                    {
+
+                                                    }
+                                                    specialize (HCompat x).
+                                                    ltac1:(ospecialize (HCompat _)).
+                                                    {
+                                                        rewrite elem_of_intersection.
+                                                        do 2 (rewrite elem_of_dom).
+                                                        split.
+                                                        {
+                                                            exists g0.
+                                                            exact Hx01.
+                                                        }
+                                                        {
+
+                                                        }
+                                                    }
+                                                }
+                                                {
+                                                    inversion IH1.
+                                                }
+                                            }
+                                            {
+                                                apply nesym. apply n.
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         {
                             ltac1:(exfalso).
