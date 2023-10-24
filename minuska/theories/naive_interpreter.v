@@ -2002,15 +2002,182 @@ Section with_decidable_signature.
                         }
                     }
                     {
-                        
+                        exists (<[x := aoo_app _ _ a2]>ρ').
+                        repeat split.
+                        {
+                            unfold vars_of_valuation.
+                            rewrite set_eq.
+                            intros x0.
+                            ltac1:(rewrite elem_of_dom).
+                            ltac1:(rewrite elem_of_union).
+                            ltac1:(rewrite elem_of_singleton).
+                            unfold is_Some.
+                            split; intros HHH.
+                            {
+                                destruct HHH as [v Hv].
+                                destruct (decide (x0 = x)).
+                                {
+                                    subst. left. reflexivity.
+                                }
+                                {
+                                    right.
+                                    ltac1:(rewrite lookup_insert_ne in Hv).
+                                    {
+                                        apply nesym. assumption.
+                                    }
+                                    {
+                                        rewrite <- Hρ'1.
+                                        unfold vars_of_valuation.
+                                        ltac1:(rewrite elem_of_dom).
+                                        exists v. exact Hv.
+                                    }
+                                }
+                            }
+                            {
+                                destruct HHH as [HHH|HHH].
+                                {
+                                    subst.
+                                    eexists.
+                                    ltac1:(rewrite lookup_insert).
+                                    reflexivity.
+                                }
+                                {
+                                    destruct (decide (x0 = x)).
+                                    {
+                                        subst.
+                                        eexists.
+                                        unfold Valuation.
+                                        rewrite lookup_insert.
+                                        reflexivity.
+                                    }
+                                    {
+                                        rewrite <- Hρ'1 in HHH.
+                                        unfold vars_of_valuation in HHH.
+                                        ltac1:(rewrite elem_of_dom in HHH).
+                                        destruct HHH as [myx Hmyx].
+                                        eexists.
+                                        unfold Valuation.
+                                        rewrite lookup_insert_ne.
+                                        {
+                                            apply Hmyx.
+                                        }
+                                        {
+                                            apply nesym. assumption.
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        {
+                            unfold map_subseteq in *.
+                            unfold map_included in *.
+                            unfold map_relation in *.
+                            unfold option_relation in *.
+                            intros i.
+                            destruct (decide (x = i)).
+                            {
+                                subst.
+                                unfold Valuation.
+                                rewrite lookup_insert.
+                                ltac1:(rewrite HH2).
+                                reflexivity.
+                            }
+                            {
+                                unfold Valuation.
+                                rewrite lookup_insert_ne.
+                                {
+                                    apply Hρ'2.
+                                }
+                                {
+                                    assumption.
+                                }    
+                            }
+                        }
+                        {
+                            rewrite <- Heqg.
+                            exists ρ'.
+                            split.
+                            {
+                                apply Hρ'3.
+                            }
+                            {
+                                unfold merge_valuations,is_left.
+                                ltac1:(repeat case_match).
+                                {
+                                    apply f_equal.
+                                    clear H0 H.
+                                    unfold Valuation.
+                                    ltac1:(
+                                        erewrite <- insert_merge_r
+                                    ).
+                                    {
+                                        rewrite merge_empty_r.
+                                        unfold flip,use_left,compose.
+                                        cbn.
+                                        rewrite omap_Some.
+                                        reflexivity.
+                                    }
+                                    {
+                                        unfold use_left.
+                                        ltac1:(rewrite Hρ'x).
+                                        reflexivity.
+                                    }
+                                }
+                                {
+                                    inversion H.
+                                }
+                                {
+                                    inversion H.
+                                }
+                                {
+                                    clear H0 H.
+                                    ltac1:(contradiction n).
+                                    clear n.
+                                    unfold valuations_compatible.
+                                    rewrite Forall_forall.
+                                    intros x0.
+                                    rewrite <- elem_of_list_In.
+                                    rewrite elem_of_elements.
+                                    rewrite elem_of_intersection.
+                                    unfold Valuation.
+                                    do 2 (rewrite elem_of_dom).
+                                    intros [HHH1 HHH2].
+                                    destruct HHH1 as [v1 Hv1].
+                                    destruct HHH2 as [v2 Hv2].
+                                    destruct (decide (x = x0)).
+                                    {
+                                        subst x.
+                                        rewrite lookup_insert.
+                                        rewrite lookup_insert in Hv2.
+                                        inversion Hv2; subst; clear Hv2.
+                                        ltac1:(rewrite Hρ'x in Hv1).
+                                        inversion Hv1.
+                                    }
+                                    {
+                                        rewrite lookup_insert_ne.
+                                        {
+                                            rewrite lookup_insert_ne in Hv2.
+                                            {
+                                                rewrite lookup_empty in Hv2.
+                                                inversion Hv2.
+                                            }
+                                            {
+                                                assumption.
+                                            }
+                                        }
+                                        {
+                                            assumption.
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-
                 }
-                eexists.                
-
             }
             {
-
+                rewrite andb_true_iff.
+                intros [H1 H2].
             }
         }
 
