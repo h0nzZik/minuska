@@ -1813,6 +1813,36 @@ Section with_decidable_signature.
                 }
             }
             {
+                intros HH.
+                rewrite andb_false_r in HH.
+                inversion HH.
+            }
+        }
+        {
+            rewrite Heqf.
+            rewrite Heqg.            
+            cbn.
+            destruct b''.
+            {
+                intros HH; inversion HH.
+            }
+            {
+                intros HH.
+                cbn.
+                destruct b; cbn in *.
+                {
+                    rewrite andb_false_r in HH.
+                    inversion HH.
+                }
+                {
+                    rewrite andb_true_iff in HH.
+                    destruct HH as [HH1 HH2].
+                    rewrite bool_decide_eq_true in HH2.
+                }
+                eexists.                
+
+            }
+            {
 
             }
         }
