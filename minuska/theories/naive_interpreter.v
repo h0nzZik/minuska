@@ -1890,14 +1890,119 @@ Section with_decidable_signature.
                             }
                         }
                         {
-                            
+                            exact Hρ'2.
                         }
                         {
-
+                            exists ρ'.
+                            split.
+                            {
+                                rewrite <- Heqg.
+                                exact Hρ'3.
+                            }
+                            {
+                                unfold merge_valuations.
+                                unfold is_left.
+                                ltac1:(repeat case_match).
+                                {
+                                    clear H0 H.
+                                    apply f_equal.
+                                    apply map_eq.
+                                    intros i.
+                                    rewrite lookup_merge.
+                                    unfold diag_None.
+                                    unfold Valuation in *.
+                                    unfold Valuation_lookup in *.
+                                    destruct (ρ' !! i) eqn:Hρ'i.
+                                    {
+                                        cbn.
+                                        destruct (decide (i = x)).
+                                        {
+                                            subst i.
+                                            rewrite lookup_insert.
+                                            reflexivity.
+                                        }
+                                        {
+                                            rewrite lookup_insert_ne.
+                                            {
+                                                rewrite lookup_empty.
+                                                reflexivity.
+                                            }
+                                            {
+                                                apply nesym. assumption.
+                                            }
+                                        }
+                                    }
+                                    {
+                                                                                cbn.
+                                        destruct (decide (i = x)).
+                                        {
+                                            subst i.
+                                            rewrite Hρ'i in Hρ'x.
+                                            inversion Hρ'x.
+                                        }
+                                        {
+                                            rewrite lookup_insert_ne.
+                                            {
+                                                rewrite lookup_empty.
+                                                reflexivity.
+                                            }
+                                            {
+                                                apply nesym. assumption.
+                                            }
+                                        }
+                                    }
+                                }
+                                {
+                                    inversion H.
+                                }
+                                {
+                                    inversion H.
+                                }
+                                {
+                                    clear H0 H.
+                                    ltac1:(contradiction n).
+                                    clear n.
+                                    unfold valuations_compatible.
+                                    rewrite Forall_forall.
+                                    intros x0.
+                                    rewrite <- elem_of_list_In.
+                                    rewrite elem_of_elements.
+                                    rewrite elem_of_intersection.
+                                    intros [HE1 HE2].
+                                    ltac1:(rewrite elem_of_dom in HE2).
+                                    destruct HE2 as [x'' Hx''].
+                                    destruct (decide (x0 = x)).
+                                    {
+                                        subst.
+                                        unfold Valuation.
+                                        rewrite lookup_insert.
+                                        ltac1:(rewrite lookup_insert in Hx'').
+                                        ltac1:(rewrite Hρ'x).
+                                        reflexivity.
+                                    }
+                                    {
+                                        unfold Valuation.
+                                        rewrite lookup_insert_ne.
+                                        {
+                                            ltac1:(rewrite lookup_insert_ne in Hx'').
+                                            {
+                                                apply nesym. assumption.
+                                            }
+                                            {
+                                                ltac1:(rewrite lookup_empty in Hx'').
+                                                inversion Hx''.
+                                            }
+                                        }
+                                        {
+                                            apply nesym. assumption.
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     {
-
+                        
                     }
 
                 }
