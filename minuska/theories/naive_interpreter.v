@@ -1431,6 +1431,15 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma omap_Some (ρ : Valuation):
+        omap [eta Some] ρ = ρ
+    .
+    Proof.
+        rewrite <- map_fmap_alt.
+        rewrite map_fmap_id.
+        reflexivity.
+    Qed.
+
     Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_complete
         (ρ : Valuation)
         (a : AppliedOperator' symbol builtin_value)
@@ -1572,6 +1581,44 @@ Section with_decidable_signature.
                             repeat ltac1:(case_match).
                             {
                                 apply f_equal.
+                                clear H0 H.
+                                unfold valuations_compatible in *.
+                                rewrite Forall_forall in v.
+                                specialize (v x).
+                                ltac1:(rewrite <- elem_of_list_In in v).
+                                rewrite elem_of_elements in v.
+                                rewrite elem_of_intersection in v.
+                                ltac1:(do 2 rewrite elem_of_dom in v).
+                                ltac1:(ospecialize (v _)).
+                                split; eexists.
+                                {
+                                    apply Hρ'x.
+                                }
+                                {
+                                    ltac1:(rewrite lookup_insert).
+                                    reflexivity.
+                                }
+                                ltac1:(rewrite lookup_insert in v).
+                                ltac1:(rewrite Hρ'x in v).
+                                inversion v; subst; clear v.
+                                clear Hρ''0.
+                                unfold Valuation.
+                                Check @insert_merge_r.
+                                ltac1:(
+                                    erewrite <- insert_merge_r
+                                ).
+                                rewrite merge_empty_r.
+                                unfold use_left, compose.
+                                cbn.
+                                rewrite omap_Some.
+                                rewrite insert_id.
+                                { reflexivity. }
+                                { apply Hρ'x. }
+                                {
+                                    unfold use_left.
+                                    ltac1:(rewrite Hρ'x).
+                                    reflexivity.
+                                }
                             }
                             {
                                 inversion H.
@@ -1612,69 +1659,73 @@ Section with_decidable_signature.
                                     specialize (Hρ''1 x0).
                                     ltac1:(rewrite Hρ'x in IH1).
                                     ltac1:(rewrite lookup_insert in Hρ''1).
+                                    unfold Valuation in *.
+                                    unfold Valuation_lookup in *.
+                                    destruct (ρ !! x0) eqn:Hρx0.
+                                    {
+                                        subst.
+                                        exact Hρ'x.
+                                    }
+                                    {
+                                        inversion IH1.
+                                    }
+                                }
+                                {
+                                    unfold Valuation in *.
+                                    rewrite lookup_insert_ne in Hg''.
+                                    {
+                                        rewrite lookup_empty in Hg''.
+                                        inversion Hg''.
+                                    }
+                                    {
+                                        assumption.
+                                    }
                                 }
                             }
                         }
                     }
-                    exists (<[x := aoo_operand _ _ b]>ρ').
-                    cbn.
-                    repeat split.
                     {
-                        unfold vars_of_valuation.
+                        exists (<[x := aoo_operand _ _ b]>ρ').
                         cbn.
-                        unfold Valuation.
-                        unfold Valuation_lookup.
-                        ltac1:(rewrite dom_insert_L).
-                        ltac1:(set_solver).
-                    }
-                    {
-                        unfold map_subseteq in *.
-                        unfold map_included in *.
-                        unfold map_relation in *.
-                        unfold option_relation in *.
-                        intros i.
-                        unfold Valuation.
-                        unfold Valuation_lookup.
-                        destruct (decide (i = x)).
+                        repeat split.
                         {
-                            subst.
-                            rewrite lookup_insert.
-                            specialize (Hρ''1 x).
-                            unfold vars_of_valuation in Hρ''0.
-                            assert (Hxρ'' : x ∈ dom ρ'').
-                            {
-                                ltac1:(set_solver).
-                            }
-                            unfold Valuation in Hxρ''.
-                            rewrite elem_of_dom in Hxρ''.
-                            unfold is_Some in Hxρ''.
-                            destruct Hxρ'' as [xv Hxv].
-                            rewrite Hxv in Hρ''1.
-                            unfold Valuation in *.
-                            destruct (ρ !! x) eqn:Heqρx.
-                            {
-                                subst.
-                                inversion Hρ''2; subst; clear Hρ''2.
-                                rewrite lookup_insert in Hxv.
-                                inversion Hxv; subst; clear Hxv.
-                                reflexivity.
-                            }
-                            {
-                                inversion Hρ''1.
-                            }
+                            unfold vars_of_valuation.
+                            cbn.
+                            unfold Valuation.
+                            unfold Valuation_lookup.
+                            ltac1:(rewrite dom_insert_L).
+                            ltac1:(set_solver).
                         }
                         {
-                            rewrite lookup_insert_ne.
+                            unfold map_subseteq in *.
+                            unfold map_included in *.
+                            unfold map_relation in *.
+                            unfold option_relation in *.
+                            intros i.
+                            unfold Valuation.
+                            unfold Valuation_lookup.
+                            destruct (decide (i = x)).
                             {
-                                inversion Hρ''2; subst; clear Hρ''2.
-                                clear Hρ''0.
+                                subst.
+                                rewrite lookup_insert.
+                                specialize (Hρ''1 x).
                                 unfold Valuation in *.
-                                unfold Valuation_lookup in *.
-                                apply IH1.
+                                rewrite lookup_insert in Hρ''1.
+                                apply Hρ''1.
                             }
                             {
-                                apply nesym.
-                                assumption.
+                                rewrite lookup_insert_ne.
+                                {
+                                    inversion Hρ''2; subst; clear Hρ''2.
+                                    clear Hρ''0.
+                                    unfold Valuation in *.
+                                    unfold Valuation_lookup in *.
+                                    apply IH1.
+                                }
+                                {
+                                    apply nesym.
+                                    assumption.
+                                }
                             }
                         }
                     }
