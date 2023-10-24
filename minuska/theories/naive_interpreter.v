@@ -2178,9 +2178,167 @@ Section with_decidable_signature.
             {
                 rewrite andb_true_iff.
                 intros [H1 H2].
+                rewrite <- Heqf in H1.
+                rewrite <- Heqf in H2.
+                specialize (IHa1 _ _ H1).
+                specialize (IHa2 _ _ H2).
+                destruct IHa1 as [ρ1 Hρ1].
+                destruct IHa2 as [ρ2 Hρ2].
+                destruct Hρ1 as [Hρ11 [Hρ12 Hρ13]].
+                destruct Hρ2 as [Hρ21 [Hρ22 Hρ23]].
+                ltac1:(setoid_rewrite bind_Some).
+                ltac1:(setoid_rewrite bind_Some).
+                cbn.
+                rewrite <- Hρ11.
+                rewrite <- Hρ21.
+                unfold merge_valuations,is_left.
+                exists ((merge use_left ρ1 ρ2)).
+
+
+                split.
+                {
+                    unfold vars_of_valuation.
+                    rewrite set_eq.
+                    intros x.
+                    unfold Valuation.
+                    rewrite elem_of_dom.
+                    rewrite elem_of_union.
+                    do 2 (rewrite elem_of_dom).
+                    split; intros HH.
+                    {
+                        destruct HH as [v Hv].
+                        rewrite lookup_merge in Hv.
+                        unfold diag_None in Hv.
+                        unfold Valuation in *.
+                        unfold is_Some.
+                        destruct (ρ1 !! x) eqn:ρ1x.
+                        {
+                            left.
+                            eexists.
+                            reflexivity.
+                        }
+                        {
+                            destruct (ρ2 !! x) eqn:ρ2x.
+                            {
+                                right.
+                                eexists.
+                                reflexivity.
+                            }
+                            {
+                                inversion Hv.
+                            }
+                        }
+                    }
+                    {
+                        rewrite lookup_merge.
+                        unfold diag_None.
+                        unfold Valuation in *.
+                        destruct HH as [HH|HH].
+                        {
+                            destruct HH as [x' Hx'].
+                            rewrite Hx'.
+                            unfold use_left,is_Some.
+                            cbn. exists x'.
+                            destruct (ρ2 !! x); reflexivity.
+                        }
+                        {
+                            destruct HH as [x' Hx'].
+                            rewrite Hx'.
+                            unfold use_left,is_Some.
+                            exists x'. cbn.
+                            destruct (ρ1 !! x) eqn:Hρ1x.
+                            {
+                                clear - Hρ12 Hρ22 Hx' Hρ1x.
+                                unfold map_subseteq in *.
+                                unfold map_included in *.
+                                unfold map_relation in *.
+                                unfold option_relation in *.
+                                specialize (Hρ12 x).
+                                specialize (Hρ22 x).
+                                rewrite Hρ1x in Hρ12.
+                                rewrite Hx' in Hρ22.
+                                destruct (ρ!!x) eqn:Hρx.
+                                {
+                                    ltac1:(congruence).
+                                }
+                                {
+                                    inversion Hρ12.
+                                }
+                            }
+                            {
+                                reflexivity.
+                            }
+                        }
+                    }
+                }
+                {
+                    split.
+                    {
+                        clear -Hρ12 Hρ22.
+                        unfold map_subseteq in *.
+                        unfold map_included in *.
+                        unfold map_relation in *.
+                        unfold option_relation in *.
+                        intros i.
+                        specialize (Hρ12 i).
+                        specialize (Hρ22 i).
+                        rewrite lookup_merge.
+                        unfold diag_None.
+                        unfold use_left.
+                        unfold Valuation in *.
+                        unfold Valuation_lookup in *.
+                        destruct (ρ1 !! i) eqn:Hρ1i;
+                            destruct (ρ2 !! i) eqn:Hρ2i;
+                            destruct (ρ !! i) eqn:Hρi;
+                            try (exact I);
+                            try (solve [subst;reflexivity]);
+                            try assumption
+                        .
+                    }
+                    {
+                        exists ρ1.
+                        split>[subst;assumption|].
+                        exists ρ2.
+                        split>[subst;assumption|].
+                        ltac1:(repeat case_match);
+                            try reflexivity.
+                        {
+                            inversion H.
+                        }
+                        {
+                            ltac1:(contradiction n).
+                            clear n H0 H.
+                            clear - Hρ12 Hρ22.
+                            unfold valuations_compatible.
+                            rewrite Forall_forall.
+                            intros x.
+                            rewrite <- elem_of_list_In.
+                            rewrite elem_of_elements.
+                            rewrite elem_of_intersection.
+                            do 2 ltac1:(rewrite elem_of_dom).
+                            unfold is_Some.
+                            intros [[x1 H1] [x2 H2]].
+                            unfold map_subseteq in *.
+                            unfold map_included in *.
+                            unfold map_relation in *.
+                            unfold option_relation in *.
+                            specialize (Hρ12 x).
+                            specialize (Hρ22 x).
+                            rewrite H1 in Hρ12.
+                            rewrite H2 in Hρ22.
+                            unfold Valuation in *.
+                            destruct (ρ !! x) eqn:Hρx.
+                            {
+                                ltac1:(congruence).
+                            }
+                            {
+                                inversion Hρ12.
+                            }
+                        }
+                    }
+                }
             }
         }
-
     Qed.
 
     Fixpoint rhs_evaluate_rule
