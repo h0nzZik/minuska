@@ -3,11 +3,23 @@ From Minuska Require Import
     spec_syntax
 .
 
+Fixpoint vars_of_Expression
+    {Σ : Signature}
+    (t : Expression)
+    : gset variable :=
+match t with
+| ft_element _ => ∅
+| ft_variable x => {[x]}
+| ft_unary _ t' => vars_of_Expression t'
+| ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
+end.
+
 Definition vars_of_AP
     {Σ : Signature}
     (ap : AtomicProposition)
     : gset variable :=
 match ap with
+| apeq e1 e2 => vars_of_Expression e1 ∪ vars_of_Expression e2
 | ap1 _ x => {[x]}
 | ap2 _ x y => {[x;y]}
 end.
@@ -91,17 +103,6 @@ Definition vars_of_LhsPattern
 match φ with
 | aoo_app _ _ aop => vars_of_AppliedOperator'_symbol_OpenTermWSC aop
 | aoo_operand _ _ otwsc => vars_of_OpenTermWSC otwsc
-end.
-
-Fixpoint vars_of_Expression
-    {Σ : Signature}
-    (t : Expression)
-    : gset variable :=
-match t with
-| ft_element _ => ∅
-| ft_variable x => {[x]}
-| ft_unary _ t' => vars_of_Expression t'
-| ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
 end.
 
 Fixpoint vars_of_AppliedOperator_sym_fterm

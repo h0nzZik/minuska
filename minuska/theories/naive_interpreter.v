@@ -48,6 +48,9 @@ Section with_decidable_signature.
         {
             apply _.
         }
+        {
+            apply _.
+        }
     Defined.
 
     #[export]

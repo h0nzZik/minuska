@@ -9,10 +9,28 @@ Definition Valuation {Σ : Signature}
 
 (*Transparent Valuation.*)
 
+Fixpoint Expression_evaluate
+    {Σ : Signature} (ρ : Valuation) (t : Expression) : option GroundTerm :=
+match t with
+| ft_element e => Some e
+| ft_variable x => ρ !! x
+| ft_unary f t =>
+    e ← Expression_evaluate ρ t;
+    Some (builtin_unary_function_interp f e)
+| ft_binary f t1 t2 =>
+    e1 ← Expression_evaluate ρ t1;
+    e2 ← Expression_evaluate ρ t2;
+    Some (builtin_binary_function_interp f e1 e2)
+end.
+
 Definition val_satisfies_ap
     {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
     : Prop :=
 match ap with
+| apeq e1 e2 => 
+    let v1 := Expression_evaluate ρ e1 in
+    let v2 := Expression_evaluate ρ e2 in
+    v1 = v2 /\ is_Some v1
 | ap1 p x =>
     match ρ !! x with
     | Some vx => builtin_unary_predicate_interp p vx
@@ -206,20 +224,6 @@ Section with_valuation.
         (ρ : Valuation)
     .
 
-    Fixpoint Expression_evaluate
-        (t : Expression) : option GroundTerm :=
-    match t with
-    | ft_element e => Some e
-    | ft_variable x => ρ !! x
-    | ft_unary f t =>
-        e ← Expression_evaluate t;
-        Some (builtin_unary_function_interp f e)
-    | ft_binary f t1 t2 =>
-        e1 ← Expression_evaluate t1;
-        e2 ← Expression_evaluate t2;
-        Some (builtin_binary_function_interp f e1 e2)
-    end.
-
     Definition GroundTerm_satisfies_BuiltinOrVar
         (g : GroundTerm)
         (bov : BuiltinOrVar)
@@ -377,8 +381,8 @@ Section with_valuation.
         symbol
         builtin_value
         Expression
-        ((fun x e => Expression_evaluate e = Some x) ∘ (aoo_operand _ _))
-        ((fun x e => Expression_evaluate e = Some x) ∘ (aoo_app _ _))
+        ((fun x e => Expression_evaluate ρ e = Some x) ∘ (aoo_operand _ _))
+        ((fun x e => Expression_evaluate ρ e = Some x) ∘ (aoo_app _ _))
     .
 
     Definition GroundTerm_satisfies_VarWithSc:

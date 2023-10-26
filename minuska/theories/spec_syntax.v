@@ -107,9 +107,19 @@ Definition GroundTerm {Σ : Signature}
     := GroundTerm' symbol builtin_value
 .
 
+Inductive Expression
+    {Σ : Signature}
+    :=
+| ft_element (e : GroundTerm)
+| ft_variable (x : variable)
+| ft_unary (f : builtin_unary_function) (t : Expression)
+| ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
+.
+
 (* TODO add equality of expressions *)
 Inductive AtomicProposition {Σ : Signature} :=
-| ap1 (p : builtin_unary_predicate) (x : variable)
+| apeq (e1 : Expression) (e2 : Expression)
+| ap1 (p : builtin_unary_predicate) (x : variable) (* TODO here (and below) should be expressions *)
 | ap2 (p : builtin_binary_predicate) (x y : variable)
 .
 
@@ -128,12 +138,6 @@ Inductive BuiltinOrVar {Σ : Signature} :=
 Definition OpenTerm {Σ : Signature}
     := AppliedOperatorOr' symbol BuiltinOrVar
 .
-(*
-Inductive OpenTerm {Σ : Signature} :=
-| ot_aop (aop : AppliedOperator' symbol BuiltinOrVar)
-| ot_bov (bov : BuiltinOrVar)
-.
-*)
 
 (* TODO make a plural *)
 Inductive SideCondition {Σ : Signature} :=
@@ -155,15 +159,6 @@ Definition OpenTermWSC {Σ : Signature}
 
 Definition LhsPattern {Σ : Signature} :=
     AppliedOperatorOr' symbol OpenTermWSC
-.
-
-Inductive Expression
-    {Σ : Signature}
-    :=
-| ft_element (e : GroundTerm)
-| ft_variable (x : variable)
-| ft_unary (f : builtin_unary_function) (t : Expression)
-| ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
 .
 
 Definition RhsPattern {Σ : Signature} :=
@@ -225,6 +220,14 @@ Section eqdec.
     Defined.
 
     #[export]
+    Instance Expression_eqdec {Σ : Signature}
+        : EqDecision (Expression)
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
+    #[export]
     Instance atomicProposition_eqdec {Σ : Signature}
         : EqDecision AtomicProposition
     .
@@ -257,15 +260,6 @@ Section eqdec.
         apply GroundTerm'_eqdec.
         apply builtin_value_eqdec.
     Defined.
-
-    #[export]
-    Instance Expression_eqdec {Σ : Signature}
-        : EqDecision (Expression)
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
 
     #[export]
     Instance  OpenTerm_eqdec {Σ : Signature}
