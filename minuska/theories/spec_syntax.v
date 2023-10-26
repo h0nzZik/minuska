@@ -119,8 +119,8 @@ Inductive Expression
 (* TODO add equality of expressions *)
 Inductive AtomicProposition {Σ : Signature} :=
 | apeq (e1 : Expression) (e2 : Expression)
-| ap1 (p : builtin_unary_predicate) (x : variable) (* TODO here (and below) should be expressions *)
-| ap2 (p : builtin_binary_predicate) (x y : variable)
+| ap1 (p : builtin_unary_predicate) (e1 : Expression)
+| ap2 (p : builtin_binary_predicate) (e1 e2 : Expression)
 .
 
 Inductive Constraint {Σ : Signature} :=

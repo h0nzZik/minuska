@@ -31,13 +31,16 @@ match ap with
     let v1 := Expression_evaluate ρ e1 in
     let v2 := Expression_evaluate ρ e2 in
     v1 = v2 /\ is_Some v1
-| ap1 p x =>
-    match ρ !! x with
+| ap1 p e =>
+    let v := Expression_evaluate ρ e in
+    match v with
     | Some vx => builtin_unary_predicate_interp p vx
     | None => False
     end
-| ap2 p x y =>
-    match ρ !! x, ρ !! y with
+| ap2 p e1 e2 =>
+    let v1 := Expression_evaluate ρ e1 in
+    let v2 := Expression_evaluate ρ e2 in
+    match v1,v2 with
     | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
     | _,_ => False
     end

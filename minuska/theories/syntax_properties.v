@@ -20,8 +20,8 @@ Definition vars_of_AP
     : gset variable :=
 match ap with
 | apeq e1 e2 => vars_of_Expression e1 ∪ vars_of_Expression e2
-| ap1 _ x => {[x]}
-| ap2 _ x y => {[x;y]}
+| ap1 _ e => vars_of_Expression e
+| ap2 _ e1 e2 => vars_of_Expression e1 ∪ vars_of_Expression e2
 end.
 
 Fixpoint vars_of_Constraint
