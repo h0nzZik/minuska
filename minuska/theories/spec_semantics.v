@@ -187,18 +187,26 @@ Definition in_val_GroundTerm_satisfies_OpenTerm
     : Prop := aoosb_satisfies_aoosbf ρ g φ
 .
 
+Definition valuation_satisfies_match
+    {Σ : Signature}
+    (ρ : Valuation)
+    (m : Match) : Prop :=
+match m with
+| m_match x φ =>
+    match ρ !! x with
+    | Some g
+        => in_val_GroundTerm_satisfies_OpenTerm ρ g φ
+    | _ => False
+    end
+end.
+
 Definition valuation_satisfies_sc
     {Σ : Signature}
     (ρ : Valuation)
     (sc : SideCondition) : Prop :=
 match sc with
 | sc_constraint c => val_satisfies_c ρ c
-| sc_match x φ =>
-    match ρ !! x with
-    | Some g
-        => in_val_GroundTerm_satisfies_OpenTerm ρ g φ
-    | _ => False
-    end
+| sc_match m => valuation_satisfies_match ρ m
 end.
 
 Inductive A_satisfies_B_WithASideCondition

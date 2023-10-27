@@ -424,7 +424,19 @@ Section with_decidable_signature.
             (fun x y => None)
             (pure_GroundTerm_try_match_BuiltinOrVar)
     .
-    
+
+    Definition evaluate_match
+        (ρ : Valuation)
+        (m : Match)
+        : bool :=
+    match m with
+    | m_match x φ =>
+        match ρ !! x with
+        | None => false
+        | Some g => GroundTerm_matches_OpenTerm ρ g φ
+        end
+    end.
+
     Definition evaluate_sc
         (ρ : Valuation)
         (sc : SideCondition)
@@ -432,11 +444,8 @@ Section with_decidable_signature.
     match sc with
     | sc_constraint c =>
         bool_decide (val_satisfies_c ρ c)
-    | sc_match x φ =>
-        match ρ !! x with
-        | None => false
-        | Some g => GroundTerm_matches_OpenTerm ρ g φ
-        end
+    | sc_match m =>
+        evaluate_match ρ m
     end.
 
     Definition evaluate_rhs_pattern

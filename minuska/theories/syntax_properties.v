@@ -65,13 +65,21 @@ match φ with
 | aoo_operand _ _ bov => vars_of_BoV bov
 end.
 
+Definition vars_of_Match
+    {Σ : Signature}
+    (m : Match)
+    : gset variable :=
+match m with
+| m_match x φ => {[x]} ∪ vars_of_OpenTerm φ
+end.
+
 Definition vars_of_SideCondition
     {Σ : Signature}
     (c : SideCondition)
     : gset variable :=
 match c with
 | sc_constraint c' => vars_of_Constraint c'
-| sc_match x φ => {[x]} ∪ vars_of_OpenTerm φ
+| sc_match m => vars_of_Match m
 end.
 
 Fixpoint vars_of_OpenTermWSC

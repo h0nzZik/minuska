@@ -139,10 +139,13 @@ Definition OpenTerm {Σ : Signature}
     := AppliedOperatorOr' symbol BuiltinOrVar
 .
 
-(* TODO make a plural *)
+Inductive Match {Σ : Signature} :=
+| m_match (v : variable) (φ : OpenTerm)
+.
+
 Inductive SideCondition {Σ : Signature} :=
 | sc_constraint (c : Constraint)
-| sc_match (v : variable) (φ : OpenTerm)
+| sc_match (m : Match)
 .
 
 Inductive WithASideCondition {Σ : Signature} (Base : Type) :=
@@ -264,6 +267,14 @@ Section eqdec.
     #[export]
     Instance  OpenTerm_eqdec {Σ : Signature}
         : EqDecision OpenTerm
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
+    #[export]
+    Instance  Match_eqdec {Σ : Signature}
+        : EqDecision Match
     .
     Proof.
         ltac1:(solve_decision).
