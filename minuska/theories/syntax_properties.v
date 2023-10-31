@@ -70,7 +70,7 @@ Definition vars_of_Match
     (m : Match)
     : gset variable :=
 match m with
-| m_match x φ => {[x]} ∪ vars_of_OpenTerm φ
+| mkMatch _ x φ => {[x]} ∪ vars_of_OpenTerm φ
 end.
 
 Definition vars_of_SideCondition

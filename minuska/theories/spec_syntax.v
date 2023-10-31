@@ -139,9 +139,10 @@ Definition OpenTerm {Σ : Signature}
     := AppliedOperatorOr' symbol BuiltinOrVar
 .
 
-Inductive Match {Σ : Signature} :=
-| m_match (v : variable) (φ : OpenTerm)
-.
+Record Match {Σ : Signature} := mkMatch {
+  m_variable : variable ;
+  m_term : OpenTerm ;
+}.
 
 Inductive SideCondition {Σ : Signature} :=
 | sc_constraint (c : Constraint)

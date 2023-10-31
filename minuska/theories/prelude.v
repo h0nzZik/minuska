@@ -48,6 +48,10 @@ Proof.
     apply eq_dec.
 Defined.
 
+(* "Inspect pattern", as in https://github.com/mattam82/Coq-Equations/issues/232 *)
+Definition inspect {Y} (x : Y) : {y | x = y}.
+Proof. now exists x. Qed.
+
 (* https://github.com/bedrocksystems/BRiCk/blob/master/theories/prelude/under_rel_proper.v *)
 #[export] Instance under_mono {T : Type} {R : relation T} `{!RewriteRelation R}
     `{!Symmetric R} `{!Transitive R}:

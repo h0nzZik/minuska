@@ -339,6 +339,97 @@ Definition RewritingRule_to_FlattenedRewritingRule
     fr_scs := lhs_RewritingRule_to_SCS r ;
 |}.
 
+Definition enables_match
+    {Σ : Signature}
+    (vars : gset variable)
+    (m : Match)
+: Prop :=
+    (m_variable m) ∈ vars
+.
+
+Instance enables_match_dec
+    {Σ : Signature}
+    (vars : gset variable)
+    (m : Match)
+    : Decision (enables_match vars m)
+.
+Proof.
+    unfold enables_match.
+    ltac1:(solve_decision).
+Defined.
+
+Definition choose_first_enabled_match
+    {Σ : Signature}
+    (initial_vars : gset variable)
+    (matches : list Match)
+: option (Match * list Match)%type
+:=
+    found ← list_find (enables_match initial_vars) matches;
+    match found with
+    | (i, m) => Some (m, delete i matches)
+    end
+.
+
+Lemma choose_first_enabled_match_shortens_list
+    {Σ : Signature}
+    (initial_vars : gset variable)
+    (matches : list Match)
+    (m : Match)
+    (resulting_matches : list Match)
+: 
+    choose_first_enabled_match initial_vars matches = Some (m, resulting_matches) ->
+    length matches = S (length resulting_matches)
+.
+Proof.
+    intros H.
+    unfold choose_first_enabled_match in H.
+    rewrite bind_Some in H.
+    destruct H as [[i' m'] [H1 H2]].
+    inversion H2; subst; clear H2.
+    destruct matches.
+    {
+        cbn in H1. inversion H1.
+    }
+    cbn.
+    rewrite length_delete; cbn.
+    { 
+        rewrite Nat.sub_0_r.
+        reflexivity.
+    }
+    {
+        rewrite list_find_Some in H1.
+        destruct H1 as [H1 H2].
+        rewrite H1.
+        unfold is_Some.
+        exists m.
+        reflexivity.
+    }
+Qed.
+
+
+Equations? order_enabled_first
+    {Σ : Signature}
+    (initial_vars : gset variable)
+    (matches : list Match)
+    : list Match
+    by wf (length matches) lt
+:=
+    order_enabled_first _ []
+        := [] ;
+    order_enabled_first vs (m::ms)
+        with (inspect (choose_first_enabled_match vs (m::ms))) => {
+            | exist _ None _ := m::ms
+            | exist _ (Some (m', rest)) H :=
+                m'::(order_enabled_first (vs ∪ vars_of_OpenTerm (m_term m')) rest)
+        };
+.
+Proof.
+    apply choose_first_enabled_match_shortens_list in H.
+    cbn in H.
+    inversion H; subst; clear H.
+    ltac1:(lia).
+Defined.
+
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
     (A B : Type)
@@ -852,8 +943,6 @@ Proof.
         clear; ltac1:(set_solver).
     }
 Qed.
-
-Check @correct_AppliedOperator'_symbol_A_to_OpenTerm.
 
 Lemma builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm
     {Σ : Signature}
