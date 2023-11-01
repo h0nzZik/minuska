@@ -428,6 +428,50 @@ Proof.
     ltac1:(lia).
 Defined.
 
+Lemma choose_first_enabled_match_perm
+    {Σ : Signature}
+    (initial_vars : gset variable)
+    (matches : list Match)
+    (m : Match)
+    (matches' : list Match)
+    : choose_first_enabled_match initial_vars matches = Some (m,matches') ->
+      (m::matches') ≡ₚ matches
+.
+Proof.
+    unfold choose_first_enabled_match.
+    rewrite bind_Some.
+    intros [[i' m'] [H1i'm' H2i'm']].
+    inversion H2i'm'; subst; clear H2i'm'.
+    symmetry.
+    apply delete_Permutation.
+    rewrite list_find_Some in H1i'm'.
+    destruct H1i'm' as [H1 [H2 H3]].
+    exact H1.
+Qed.
+
+
+Lemma order_enabled_first_perm
+    {Σ : Signature}
+    (initial_vars : gset variable)
+    (matches : list Match)
+    : order_enabled_first initial_vars matches ≡ₚ matches
+.
+Proof.
+    ltac1:(funelim (order_enabled_first initial_vars matches)).
+    {
+        assert (H' := H).
+        apply choose_first_enabled_match_perm in H'.
+        rewrite <- Heqcall. clear Heqcall.
+        rewrite H0.
+        exact H'.
+    }
+    {
+        rewrite Heqcall at 2.
+        apply reflexivity.
+    }
+Qed.
+
+
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
     (A B : Type)
