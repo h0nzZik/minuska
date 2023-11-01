@@ -2391,12 +2391,18 @@ Section with_decidable_signature.
     Lemma valuation_satisfies_all_matches_perm
         (l1 l2 : list Match) (ρ : Valuation)
     : l1 ≡ₚ l2 ->
-        (valuation_satisfies_all_matches ρ l1
-        <-> valuation_satisfies_all_matches ρ l2)
+        valuation_satisfies_all_matches ρ l1
+        -> valuation_satisfies_all_matches ρ l2
     .
     Proof.
-
-    Abort.
+        intros Hp.
+        unfold valuation_satisfies_all_matches.
+        intros H1 x ot Hin.
+        specialize (H1 x ot).
+        apply H1.
+        rewrite Hp.
+        exact Hin.
+    Qed.
 
     Lemma on_a_good_reordering:
         ∀(l0 : list Match) (initial_vars : gset variable),
