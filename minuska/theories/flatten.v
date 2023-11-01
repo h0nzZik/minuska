@@ -471,7 +471,6 @@ Proof.
     }
 Qed.
 
-
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
     (A B : Type)

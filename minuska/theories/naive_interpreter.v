@@ -430,7 +430,7 @@ Section with_decidable_signature.
         (m : Match)
         : bool :=
     match m with
-    | m_match x φ =>
+    | mkMatch _ x φ =>
         match ρ !! x with
         | None => false
         | Some g => GroundTerm_matches_OpenTerm ρ g φ
@@ -2353,6 +2353,37 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Print Match.
+    Search OpenTerm GroundTerm.
+
+    Definition apply_match
+        (ρ : Valuation)
+        (m : Match)
+        : option Valuation
+    :=
+        t ← ρ !! (m_variable m);
+        ρ' ← GroundTerm_try_match_OpenTerm t (m_term m);
+        merge_valuations ρ ρ'
+    .
+
+    Definition apply_match'
+        (oρ : option Valuation)
+        (m : Match)
+        : option Valuation
+    := ρ ← oρ; apply_match ρ m .
+
+    Definition reduce_matches
+        (oρ : option Valuation)
+        (matches : list Match)
+        : option Valuation
+    :=
+        fold_left apply_match' matches oρ
+    .
+
+    
+
+
+
     Fixpoint rhs_evaluate_rule
         (ρ : Valuation)
         (r : RewritingRule)
@@ -2690,11 +2721,12 @@ Section with_decidable_signature.
                     specialize (Hwwd e ρ Hsat).
                     destruct Hwwd as [e' Hsate'].
                     apply evaluate_rhs_rule_correct. in Heval.
-                    Search rhs_evaluate_rule.
                 }
-                Search rhs_evaluate_rule.
             }
         }
     Qed.
+
+
+
 
 End with_decidable_signature.
