@@ -414,11 +414,9 @@ Equations? order_enabled_first
     : list Match
     by wf (length matches) lt
 :=
-    order_enabled_first _ []
-        := [] ;
-    order_enabled_first vs (m::ms)
-        with (inspect (choose_first_enabled_match vs (m::ms))) => {
-            | exist _ None _ := m::ms
+    order_enabled_first vs ms
+        with (inspect (choose_first_enabled_match vs ms)) => {
+            | exist _ None _ := ms
             | exist _ (Some (m', rest)) H :=
                 m'::(order_enabled_first (vs ∪ vars_of_OpenTerm (m_term m')) rest)
         };
