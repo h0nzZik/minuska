@@ -2380,8 +2380,31 @@ Section with_decidable_signature.
         fold_left apply_match' matches oρ
     .
 
-    
+    Definition valuation_satisfies_all_matches
+        (ρ : Valuation) (l : list Match) : Prop
+    :=
+        ∀ x ot, (mkMatch _ x ot) ∈ l ->
+        ∃ t, ρ !! x = Some t /\
+        GroundTerm_matches_OpenTerm ρ t ot
+    .
 
+
+    Lemma on_a_good_reordering:
+        ∀(l0 : list Match) (initial_vars : gset variable),
+        (∃ ρ0 : Valuation,
+            valuation_satisfies_all_matches ρ0 l0
+        ) ->
+        ∃ (l : list Match),
+            l ≡ₚ l0 /\
+            ∀ (ρ : Valuation), initial_vars ⊆ dom ρ ->
+            ∃ (ρ' : Valuation),
+                reduce_matches (Some ρ) l = Some ρ' /\
+                map_subseteq ρ ρ' /\
+                valuation_satisfies_all_matches ρ' l0
+    .
+    Proof.
+
+    Abort.
 
 
     Fixpoint rhs_evaluate_rule
