@@ -2404,6 +2404,21 @@ Section with_decidable_signature.
         exact Hin.
     Qed.
 
+    Lemma order_enabled_first_nil initial_vars:
+        order_enabled_first initial_vars [] = []
+    .
+    Proof.
+        ltac1:(funelim (order_enabled_first initial_vars [])).
+        {
+            cbn in H.
+            inversion H.
+        }
+        {
+            rewrite <- Heqcall.
+            reflexivity.
+        }
+    Qed.
+
     Lemma on_a_good_reordering:
         ∀(l0 : list Match) (initial_vars : gset variable),
         (∃ ρ0 : Valuation,
@@ -2418,7 +2433,37 @@ Section with_decidable_signature.
                 valuation_satisfies_all_matches ρ' l0
     .
     Proof.
-
+        intros l0 initial_vars [ρ0 Hρ0].
+        exists (order_enabled_first initial_vars l0).
+        split.
+        {
+            apply order_enabled_first_perm.
+        }
+        intros ρ Hinit.
+        revert ρ0 Hρ0 ρ Hinit.
+        induction l0.
+        {
+            intros ρ0 Hρ0 ρ Hinit.
+            simpl.
+            rewrite order_enabled_first_nil.
+            simpl.
+            exists ρ.
+            split.
+            {
+                reflexivity.
+            }
+            split.
+            {
+                apply map_subseteq_po.
+            }
+            unfold valuation_satisfies_all_matches.
+            intros x ot H.
+            rewrite elem_of_nil in H.
+            inversion H.
+        }
+        {
+            
+        }
     Abort.
 
 

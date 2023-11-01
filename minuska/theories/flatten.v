@@ -426,7 +426,9 @@ Proof.
     cbn in H.
     inversion H; subst; clear H.
     ltac1:(lia).
-Defined.
+Qed.
+
+Opaque order_enabled_first.
 
 Lemma choose_first_enabled_match_perm
     {Σ : Signature}
