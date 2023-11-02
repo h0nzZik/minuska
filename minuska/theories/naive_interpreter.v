@@ -2411,15 +2411,23 @@ Section with_decidable_signature.
         reflexivity.
     Qed.
 
+
+    Definition vars_of_lm
+        (lm : list Match)
+        : gset variable
+    :=
+       union_list (vars_of_OpenTerm <$> (m_term <$> lm))
+    .
+
     Inductive nicely_ordered
         : gset variable -> list Match -> Prop
     :=
     | no_empty: forall initial, nicely_ordered initial []
     | no_cons: forall initial x xs,
         (m_variable x) ∈ initial ->
-        nicely_ordered initial xs ->
+        nicely_ordered (initial ∪ (vars_of_OpenTerm (m_term x))) xs ->
         nicely_ordered
-            (initial ∪ {[(m_variable x)]})
+            initial
             (x::xs)
     .
 
@@ -2437,22 +2445,10 @@ Section with_decidable_signature.
         }
         {
             inversion H2; subst; clear H2.
-            rewrite subseteq_disjoint_union_L in H1.
-            destruct H1 as [Ze [H1 H2]].
-            subst.
-            assert (Heq: ((initial ∪ {[m_variable a]} ∪ Ze)  = ((initial ∪ Ze) ∪ {[m_variable a]}))).
-            {
-                clear. ltac1:(set_solver).
-            }
-            rewrite Heq. clear Heq.
-            apply no_cons.
-            {
-                clear -H4. ltac1:(set_solver).
-            }
-            {
-                eapply IHl>[|apply H5].
-                ltac1:(set_solver).
-            }
+            constructor.
+            { ltac1:(set_solver). }
+            eapply IHl>[|apply H5].
+            ltac1:(set_solver).
         }
     Qed.
 
@@ -2460,7 +2456,7 @@ Section with_decidable_signature.
         nicely_ordered initial (x::l)
         <-> (
             (m_variable x) ∈ initial /\
-            nicely_ordered (initial ∪ {[(m_variable x)]}) l
+            nicely_ordered (initial ∪ (vars_of_OpenTerm (m_term x))) l
         )
     .
     Proof.
@@ -2478,24 +2474,10 @@ Section with_decidable_signature.
         }
         {
             destruct H as [H1 H2].
-            assert (Htmp : initial ∪ {[m_variable x]} = initial).
-            {
-                clear -H1.
-                ltac1:(set_solver).
-            }
-            rewrite Htmp in H2.
-            rewrite <- Htmp.
-            clear Htmp.
             apply no_cons; assumption.
         }
     Qed.
 
-    Definition vars_of_lm
-        (lm : list Match)
-        : gset variable
-    :=
-       union_list (singleton <$> (m_variable <$> lm))
-    .
 
     Lemma nicely_ordered_app initial l1 l2:
         nicely_ordered initial (l1 ++ l2)
@@ -2555,12 +2537,62 @@ Section with_decidable_signature.
         destruct HcanOrder as [l' [Hl'1 Hl'2]].
         destruct ms.
         { reflexivity. }
+        assert (Hl'1' := Hl'1).
         apply Permutation_vs_cons_inv in Hl'1.
         destruct Hl'1 as [l1 [l2 Hl1l2]].
         subst l'.
-        Print ex.
-        Locate "∃".
-        Search "≡ₚ" cons ex.
+        rewrite nicely_ordered_app in Hl'2.
+        destruct Hl'2 as [H1 H2].
+        destruct HnotChoose as [HH|HH].
+        {
+            assert (HH' := HH).
+            ltac1:(ospecialize (HH' m _)).
+            {
+                constructor. reflexivity.
+            }
+            inversion H2; subst; clear H2.
+            ltac1:(exfalso).
+            clear bp_dec up_dec.
+            assert (H6: m_variable m ∈ vars_of_lm l1).
+            {
+                ltac1:(set_solver).
+            }
+            clear H4.
+            unfold vars_of_lm in H6.
+            rewrite elem_of_union_list in H6.
+            destruct H6 as [X [HH1 HH2]].
+            ltac1:(rewrite elem_of_list_fmap in HH1).
+            destruct HH1 as [ot [Hot1 Hot2]].
+            subst X.
+            rewrite elem_of_list_fmap in Hot2.
+            destruct Hot2 as [m' [Hm'1 Hm'2]].
+            subst ot.
+            ltac1:(setoid_rewrite <- Hl'1' in HH).
+            apply elem_of_list_split in Hm'2.
+            destruct Hm'2 as [l3 [l4 Hl3l4]].
+            subst l1.
+            rewrite nicely_ordered_app in H1.
+            destruct H1 as [Hnol3 Hnol4].
+            rewrite nicely_ordered_cons in Hnol4.
+            destruct Hnol4 as [Hm' Hnol4].
+            rewrite elem_of_union in Hm'.
+            destruct Hm' as [Hm'|Hm'].
+            {
+                specialize (HH m').
+                apply HH.
+                {
+                    clear.
+                    rewrite  <- elem_of_list_In.
+                    ltac1:(set_solver).
+                }
+                {
+                    exact Hm'.
+                }
+            }
+            {
+                clear Hl'1'.
+            }
+        }
     Qed.
 
     Lemma order_enabled_first_nicely_ordered
