@@ -2353,9 +2353,6 @@ Section with_decidable_signature.
         }
     Qed.
 
-    Print Match.
-    Search OpenTerm GroundTerm.
-
     Definition apply_match
         (ρ : Valuation)
         (m : Match)
@@ -2408,16 +2405,184 @@ Section with_decidable_signature.
         order_enabled_first initial_vars [] = []
     .
     Proof.
-        ltac1:(funelim (order_enabled_first initial_vars [])).
+        ltac1:(simp order_enabled_first).
+        unfold order_enabled_first_unfold_clause_1.
+        simpl.
+        reflexivity.
+    Qed.
+
+    Inductive nicely_ordered
+        : gset variable -> list Match -> Prop
+    :=
+    | no_empty: forall initial, nicely_ordered initial []
+    | no_cons: forall initial x xs,
+        (m_variable x) ∈ initial ->
+        nicely_ordered initial xs ->
+        nicely_ordered
+            (initial ∪ {[(m_variable x)]})
+            (x::xs)
+    .
+
+    Lemma nicely_ordered_mono i1 i2 l:
+        i1 ⊆ i2 ->
+        nicely_ordered i1 l ->
+        nicely_ordered i2 l
+    .
+    Proof.
+        intros H1 H2.
+        revert i1 i2 H1 H2.
+        induction l; intros i1 i2 H1 H2.
         {
-            cbn in H.
-            inversion H.
+            constructor.
         }
         {
-            rewrite <- Heqcall.
-            reflexivity.
+            inversion H2; subst; clear H2.
+            rewrite subseteq_disjoint_union_L in H1.
+            destruct H1 as [Ze [H1 H2]].
+            subst.
+            assert (Heq: ((initial ∪ {[m_variable a]} ∪ Ze)  = ((initial ∪ Ze) ∪ {[m_variable a]}))).
+            {
+                clear. ltac1:(set_solver).
+            }
+            rewrite Heq. clear Heq.
+            apply no_cons.
+            {
+                clear -H4. ltac1:(set_solver).
+            }
+            {
+                eapply IHl>[|apply H5].
+                ltac1:(set_solver).
+            }
         }
     Qed.
+
+    Lemma nicely_ordered_cons initial x l:
+        nicely_ordered initial (x::l)
+        <-> (
+            (m_variable x) ∈ initial /\
+            nicely_ordered (initial ∪ {[(m_variable x)]}) l
+        )
+    .
+    Proof.
+        split; intros H.
+        {
+            inversion H; subst; clear H.
+            split.
+            {
+                clear -H3. ltac1:(set_solver).
+            }
+            {
+                eapply nicely_ordered_mono>[|apply H4].
+                clear. ltac1:(set_solver).
+            }
+        }
+        {
+            destruct H as [H1 H2].
+            assert (Htmp : initial ∪ {[m_variable x]} = initial).
+            {
+                clear -H1.
+                ltac1:(set_solver).
+            }
+            rewrite Htmp in H2.
+            rewrite <- Htmp.
+            clear Htmp.
+            apply no_cons; assumption.
+        }
+    Qed.
+
+    Definition vars_of_lm
+        (lm : list Match)
+        : gset variable
+    :=
+       union_list (singleton <$> (m_variable <$> lm))
+    .
+
+    Lemma nicely_ordered_app initial l1 l2:
+        nicely_ordered initial (l1 ++ l2)
+        <->
+        (nicely_ordered initial l1 /\
+         nicely_ordered (initial ∪ (vars_of_lm l1)) l2)
+    .
+    Proof.
+        revert l2 initial.
+        induction l1; intros l2 initial.
+        {
+            unfold vars_of_lm.
+            do 2 (rewrite fmap_nil).
+            rewrite union_list_nil.
+            rewrite union_empty_r_L.
+            simpl.
+            split.
+            {
+                intros H.
+                split.
+                { apply no_empty. }
+                exact H.
+            }
+            {
+                intros [_ H].
+                exact H.
+            }
+        }
+        {
+            unfold vars_of_lm.
+            do 2 (rewrite fmap_cons).
+            simpl.
+            do 2 (rewrite nicely_ordered_cons).
+            rewrite IHl1.
+            clear IHl1 up_dec bp_dec.
+            unfold vars_of_lm.
+            unfold union_list.
+            rewrite foldr_fmap.
+            simpl.
+            rewrite union_assoc_L.
+            ltac1:(naive_solver).
+        }
+    Qed.
+
+    Lemma order_enabled_first_no_enabled vs ms:
+        choose_first_enabled_match vs ms = None ->
+        (∃ l' : list Match, l' ≡ₚ ms ∧ nicely_ordered vs l') ->
+        ms = []
+    .
+    Proof.
+        intros HnotChoose HcanOrder.
+        unfold choose_first_enabled_match in HnotChoose.
+        rewrite bind_None in HnotChoose.
+        rewrite list_find_None in HnotChoose.
+        rewrite Forall_forall in HnotChoose.
+        unfold enables_match in HnotChoose.
+        destruct HcanOrder as [l' [Hl'1 Hl'2]].
+        destruct ms.
+        { reflexivity. }
+        apply Permutation_vs_cons_inv in Hl'1.
+        destruct Hl'1 as [l1 [l2 Hl1l2]].
+        subst l'.
+        Print ex.
+        Locate "∃".
+        Search "≡ₚ" cons ex.
+    Qed.
+
+    Lemma order_enabled_first_nicely_ordered
+        initial l
+        :
+        (∃ l', l' ≡ₚ l /\ nicely_ordered initial l' ) ->
+        nicely_ordered initial (order_enabled_first initial l)
+    .
+    Proof.
+        ltac1:(funelim (order_enabled_first initial l)).
+        {
+            intros Hcan_nicely_order.
+        }
+        {
+            intros Hcan_nicely_order.
+            clear Heq.
+            rewrite <- Heqcall.
+            clear Heqall.
+            destruct Hcan_nicely_order as [l' [Hll' Hl']].
+        }
+    Qed.
+
 
     Lemma on_a_good_reordering:
         ∀(l0 : list Match) (initial_vars : gset variable),
@@ -2462,7 +2627,19 @@ Section with_decidable_signature.
             inversion H.
         }
         {
-            
+            intros ρ0 Hρ0.
+            ltac1:(ospecialize (IHl0 ρ0 _)).
+            {
+                clear -Hρ0.
+                unfold valuation_satisfies_all_matches in *.
+                intros x ot Hxot.
+                ltac1:(ospecialize (Hρ0 x ot _)).
+                {
+                    clear -Hxot.
+                    ltac1:(set_solver).
+                }
+                apply Hρ0.
+            }
         }
     Abort.
 
