@@ -2553,6 +2553,45 @@ Section with_decidable_signature.
         ltac1:(clear; set_solver).
     Qed.
 
+    Lemma nicely_ordered_all_enable_match' vs l i m:
+        nicely_ordered vs l ->
+        l !! i = Some m ->
+        enables_match (vs ∪ vars_of_lm (take i l)) m
+    .
+    Proof.
+        intros Hord Hin.
+        assert (Hlt := Hin).
+        apply lookup_lt_Some in Hlt.   
+        rewrite <- (take_drop (i)) in Hord.
+        rewrite <- (take_drop (S i) l) in Hin.
+        rewrite nicely_ordered_app in Hord.
+        destruct Hord as [_ Hord].
+        rewrite lookup_app in Hin.
+        rewrite lookup_take in Hin>[|ltac1:(lia)].
+        remember (l !! i) as om.
+        destruct om.
+        {
+            inversion Hin; subst; clear Hin.
+            symmetry in Heqom.
+            apply elem_of_list_split_length in Heqom.
+            destruct Heqom as [l1 [l2 [H1 H2]]].
+            subst.
+            clear Hlt.
+            rewrite drop_app_length in Hord.
+            rewrite nicely_ordered_cons in Hord.
+            destruct Hord as [H1 H2].
+            unfold enables_match.
+            apply H1.
+        }
+        {
+            ltac1:(exfalso).
+            clear -Heqom Hlt.
+            symmetry in Heqom.
+            apply lookup_ge_None_1 in Heqom.
+            ltac1:(lia).
+        }
+    Qed.
+
     Lemma order_enabled_first_no_enabled00 vs ms l':
         l' ≡ₚ ms ->
         ms <> [] ->
@@ -2598,40 +2637,32 @@ Section with_decidable_signature.
     Proof.
         intros HnotChoose HcanOrder.
         destruct HcanOrder as [l' [Hl'ms Hno]].
-        revert ms Hl'ms HnotChoose.
-        induction Hno.
+        destruct ms.
+        { reflexivity. }
+        ltac1:(exfalso).
+
+        unfold choose_first_enabled_match in HnotChoose.
+        rewrite bind_None in HnotChoose.
+        destruct HnotChoose as [HnotFound|HfoundBut].
         {
-            intros ms Hl'ms HnotChoose.
-            apply Permutation_nil in Hl'ms.
-            exact Hl'ms.
+            rewrite list_find_None in HnotFound.
+            rewrite Forall_forall in HnotFound.
+
+            apply order_enabled_first_no_enabled00 with (vs := vs) in Hl'ms.
+            {
+                destruct Hl'ms as [i [g [vs' [H1 [H2 H3]]]]].
+                eapply HnotFound with (x := g).
+            
+            }
+            {
+                discriminate.
+            }
+            {
+                exact Hno.
+            }
         }
         {
-            intros ms Hl'ms HnotChoose.
-            destruct ms.
-            {
-                reflexivity.
-            }
-            ltac1:(exfalso).
-            destruct (decide (x = m)).
-            {
 
-            }
-            {
-                unfold choose_first_enabled_match in HnotChoose.
-                rewrite bind_None in HnotChoose.
-                destruct HnotChoose as [Hnc|Hnc].
-                {
-                    rewrite list_find_None in Hnc.
-                    inversion Hnc; subst; clear Hnc.
-                    unfold enables_match in H2.
-                    Search "≡ₚ" cons not eq.
-                }
-                {
-                    destruct Hnc as [[i' m'] [H1 H2]].
-                    inversion H2.
-                }
-            }
-            Search "≡ₚ" cons.
         }
     Qed.
 
