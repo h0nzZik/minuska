@@ -2522,6 +2522,119 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma enables_match_mono vs1 vs2 m:
+        vs1 ⊆ vs2 ->
+        enables_match vs1 m ->
+        enables_match vs2 m
+    .
+    Proof.
+        unfold enables_match.
+        ltac1:(set_solver).
+    Qed.
+
+    Lemma nicely_ordered_all_enable_match vs l m:
+        nicely_ordered vs l ->
+        m ∈ l ->
+        ∃ vs', vs ⊆ vs' /\
+            enables_match vs' m
+    .
+    Proof.
+        intros Hord Hin.
+        apply elem_of_list_split in Hin.
+        destruct Hin as [l1 [l2 Hl1l2]].
+        subst l.
+        rewrite nicely_ordered_app in Hord.
+        destruct Hord as [_ Hml2].
+        rewrite nicely_ordered_cons in Hml2.
+        destruct Hml2 as [Hmin Hl2].
+        unfold enables_match.
+        eexists.
+        split>[|apply Hmin].
+        ltac1:(clear; set_solver).
+    Qed.
+
+    Print choose_first_enabled_match.
+    Lemma order_enabled_first_no_enabled00 vs ms l':
+        l' ≡ₚ ms ->
+        ms <> [] ->
+        nicely_ordered vs l' ->
+        (∃ i x ot vs',
+            ms !! i = Some (mkMatch _ x ot)
+            /\ enables_match vs' (mkMatch _ x ot)
+            /\ vs ⊆ vs'
+        )
+    .
+    Proof.
+        intros Hperm Hnonempty.
+        induction Hperm; intros Hno.
+        {
+            ltac1:(contradiction Hnonempty).
+            reflexivity.
+        }
+        {
+
+        }
+        revert m ms.
+        induction l'; intros m ms Hperm Hord.
+        {
+            apply Permutation_nil in Hperm.
+            inversion Hperm.
+        }
+        {
+            inversion Hord; subst.
+            apply Permutation_vs_cons_inv in Hperm.
+            destruct Hperm as [l0 [l2 Hl0l2]].
+            Search "≡ₚ" cons ex.
+        }
+    
+    Qed.
+
+    Lemma order_enabled_first_no_enabled0 vs ms:
+        choose_first_enabled_match vs ms = None ->
+        (∃ l' : list Match, l' ≡ₚ ms ∧ nicely_ordered vs l') ->
+        ms = []
+    .
+    Proof.
+        intros HnotChoose HcanOrder.
+        destruct HcanOrder as [l' [Hl'ms Hno]].
+        revert ms Hl'ms HnotChoose.
+        induction Hno.
+        {
+            intros ms Hl'ms HnotChoose.
+            apply Permutation_nil in Hl'ms.
+            exact Hl'ms.
+        }
+        {
+            intros ms Hl'ms HnotChoose.
+            destruct ms.
+            {
+                reflexivity.
+            }
+            ltac1:(exfalso).
+            destruct (decide (x = m)).
+            {
+
+            }
+            {
+                unfold choose_first_enabled_match in HnotChoose.
+                rewrite bind_None in HnotChoose.
+                destruct HnotChoose as [Hnc|Hnc].
+                {
+                    rewrite list_find_None in Hnc.
+                    inversion Hnc; subst; clear Hnc.
+                    unfold enables_match in H2.
+                    Search "≡ₚ" cons not eq.
+                }
+                {
+                    destruct Hnc as [[i' m'] [H1 H2]].
+                    inversion H2.
+                }
+            }
+            Search "≡ₚ" cons.
+        }
+    Qed.
+
+
     Lemma order_enabled_first_no_enabled vs ms:
         choose_first_enabled_match vs ms = None ->
         (∃ l' : list Match, l' ≡ₚ ms ∧ nicely_ordered vs l') ->
@@ -2591,6 +2704,22 @@ Section with_decidable_signature.
             }
             {
                 clear Hl'1'.
+                unfold vars_of_lm in *.
+                rewrite elem_of_union_list in Hm'.
+                destruct Hm' as [X [H1X H2X]].
+                rewrite elem_of_list_fmap in H1X.
+                destruct H1X as [y [H1y H2y]].
+                subst X.
+                rewrite elem_of_list_fmap in H2y.
+                destruct H2y as [y0 [Hy01 Hy02]].
+                subst y.
+                apply elem_of_list_split in Hy02.
+                destruct Hy02 as [l11 [l12 H]].
+                subst l3.
+                rewrite nicely_ordered_app in Hnol3.
+                destruct Hnol3 as [H7 H8].
+                rewrite nicely_ordered_cons in H8.
+                destruct H8 as [H8 H9].
             }
         }
     Qed.
@@ -2616,7 +2745,8 @@ Section with_decidable_signature.
     Qed.
 
 
-    Lemma on_a_good_reordering:
+    Print OpenTerm.
+    Theorem on_a_good_reordering:
         ∀(l0 : list Match) (initial_vars : gset variable),
         (∃ ρ0 : Valuation,
             valuation_satisfies_all_matches ρ0 l0

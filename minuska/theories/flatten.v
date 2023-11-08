@@ -418,7 +418,11 @@ Equations? order_enabled_first
         with (inspect (choose_first_enabled_match vs ms)) => {
             | exist _ None _ := ms
             | exist _ (Some (m', rest)) H :=
-                m'::(order_enabled_first (vs ∪ vars_of_OpenTerm (m_term m')) rest)
+                m'::(
+                    order_enabled_first
+                    (vs ∪ vars_of_OpenTerm (m_term m'))
+                    rest
+                )
         };
 .
 Proof.
