@@ -2553,40 +2553,41 @@ Section with_decidable_signature.
         ltac1:(clear; set_solver).
     Qed.
 
-    Print choose_first_enabled_match.
     Lemma order_enabled_first_no_enabled00 vs ms l':
         l' ≡ₚ ms ->
         ms <> [] ->
         nicely_ordered vs l' ->
-        (∃ i x ot vs',
-            ms !! i = Some (mkMatch _ x ot)
-            /\ enables_match vs' (mkMatch _ x ot)
+        (∃ i g vs',
+            ms !! i = Some g
+            /\ enables_match vs' g
             /\ vs ⊆ vs'
         )
     .
     Proof.
-        intros Hperm Hnonempty.
-        induction Hperm; intros Hno.
+        intros Hperm Hnotnil Hno.
+        destruct ms.
         {
-            ltac1:(contradiction Hnonempty).
+            ltac1:(contradiction Hnotnil).
             reflexivity.
         }
+        clear Hnotnil.
+        apply Permutation_vs_cons_inv in Hperm.
+        destruct Hperm as [l1 [l2 Hl1l2]].
+        subst l'.
+        apply nicely_ordered_all_enable_match with (m := m) in Hno.
         {
-
+            destruct Hno as [vs' [Hsub Hen]].
+            exists 0.
+            exists m.
+            exists vs'.
+            cbn.
+            split>[reflexivity|].
+            split>[exact Hen|].
+            apply Hsub.
         }
-        revert m ms.
-        induction l'; intros m ms Hperm Hord.
         {
-            apply Permutation_nil in Hperm.
-            inversion Hperm.
+            clear. ltac1:(set_solver).
         }
-        {
-            inversion Hord; subst.
-            apply Permutation_vs_cons_inv in Hperm.
-            destruct Hperm as [l0 [l2 Hl0l2]].
-            Search "≡ₚ" cons ex.
-        }
-    
     Qed.
 
     Lemma order_enabled_first_no_enabled0 vs ms:
