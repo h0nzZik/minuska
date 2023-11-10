@@ -2660,14 +2660,14 @@ Section with_decidable_signature.
         subst ms.
         inversion Hordered; subst; clear Hordered.
         remember (choose_first_enabled_match vs l') as o.
-        destruct o as [[m' lm' ]|].
+        destruct o as [[[idx m'] lm' ]|].
         {
-            exists (m', lm'++m::l'').
+            exists (idx,m', lm'++m::l'').
             unfold choose_first_enabled_match in Heqo.
             unfold choose_first_enabled_match.
             symmetry in Heqo.
             rewrite bind_Some in Heqo.
-            destruct Heqo as [[idx Midx] [HH1 HH2]].
+            destruct Heqo as [[idx' Midx] [HH1 HH2]].
             inversion HH2; subst; clear HH2.
             rewrite bind_Some.
             exists (idx, m').
@@ -2706,7 +2706,7 @@ Section with_decidable_signature.
                 ltac1:(lia).
             }
         }
-        exists (m, l' ++ l'').
+        exists (length l', m, l' ++ l'').
         unfold choose_first_enabled_match.
         rewrite bind_Some.
         exists ((length l'), m).
@@ -2788,6 +2788,124 @@ Section with_decidable_signature.
             rewrite <- Heqcall.
             simpl.
             constructor.
+        }
+    Qed.
+
+    Lemma choose_first_really_first vs l i m rest:
+        choose_first_enabled_match vs l = Some (S i, m, rest) ->
+        Forall (λ x : Match, ¬ enables_match vs x) (take i l)
+    .
+    Proof.
+        intros H.
+        unfold choose_first_enabled_match in H.
+        rewrite bind_Some in H.
+        destruct H as [[i' m'] [H1 H2]].
+        inversion H2; subst; clear H2.
+        rewrite list_find_Some in H1.
+        destruct H1 as [H1 [H2 H3]].
+        rewrite Forall_forall.
+        intros x Hx.
+        rewrite <- elem_of_list_In in Hx.
+        
+        assert (Htmp: (i <= length l)).
+        {
+            apply lookup_lt_Some in H1.
+            ltac1:(lia).
+        }
+        rewrite elem_of_list_lookup in Hx.
+        destruct Hx as [i0 Hx].
+        apply lookup_lt_Some in Hx as Htmp2.
+        rewrite take_length in Htmp2.
+        eapply H3 with (j := i0).
+        {
+            rewrite lookup_take in Hx.
+            {
+                apply Hx.
+            }
+            {
+                ltac1:(lia).    
+            }
+        }
+        {
+            ltac1:(lia).
+        }
+    Qed.
+
+    (* This does not hold, as `l` might contain another copy of `m`. *)
+    Lemma choose_first_enabled_match_app_cons vs l1 m l2 rest:
+        choose_first_enabled_match vs (l1 ++ m :: l2) = Some (m, rest) ->
+        rest = l1 ++ l2
+    .
+    Proof.
+        unfold choose_first_enabled_match.
+        intros H.
+        rewrite bind_Some in H.
+        destruct H as [[idx m'] [H1 H2]].
+        inversion H2; subst; clear H2.
+        rewrite list_find_Some in H1.
+        destruct H1 as [H1 [H2 H3]].
+        rewrite delete_take_drop.
+    Abort.
+
+    Lemma order_enabled_first_2_empty_if_can_be_ordered
+        initial l :
+        (∃ l', l' ≡ₚ l /\ nicely_ordered initial l') ->
+        (order_enabled_first initial l).2 = []
+    .
+    Proof.
+        ltac1:(funelim (order_enabled_first initial l)).
+        {
+            intros [l' [Hl'1 Hl'2]].
+            rewrite <- Heqcall.
+            clear Heqcall.
+            repeat ltac1:(case_match).
+            simpl. simpl in *.
+            apply H0. clear H0.
+            clear H1.
+            assert(Hperm := choose_first_enabled_match_perm vs ms i m' rest H).
+            symmetry in Hperm.
+            apply Permutation_vs_cons_inv in Hperm.
+            destruct Hperm as [l1 [l2 Hl1l2]].
+            subst ms.
+            Search choose_first_enabled_match app.
+
+
+            
+            Search order_enabled_first nicely_ordered.
+        }
+        {
+            intros [l' [Hl'1 Hl'2]].
+            rewrite <- Heqcall.
+            clear Heqcall.
+            simpl.
+            clear H.
+            ltac1:(rename e into Hnone).
+            unfold choose_first_enabled_match in Hnone.
+            rewrite bind_None in Hnone.
+            destruct Hnone as [Hnone|Hnone].
+            {
+                rewrite list_find_None in Hnone.
+                destruct l'.
+                {
+                    apply Permutation_nil in Hl'1.
+                    exact Hl'1.
+                }
+                {
+                    ltac1:(exfalso).
+                    inversion Hl'2; subst; clear Hl'2.
+                    rewrite Forall_forall in Hnone.
+                    unfold enables_match in Hnone.
+                    eapply Hnone>[|apply H2].
+                    rewrite <- elem_of_list_In.
+                    apply elem_of_Permutation.
+                    exists l'.
+                    symmetry. exact Hl'1.
+                }
+            }
+            {
+                destruct Hnone as [[n m] [HH1 HH2]].
+                inversion HH2.
+            }
         }
     Qed.
 

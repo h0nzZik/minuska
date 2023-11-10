@@ -362,11 +362,11 @@ Definition choose_first_enabled_match
     {Σ : Signature}
     (initial_vars : gset variable)
     (matches : list Match)
-: option (Match * list Match)%type
+: option (nat*Match * list Match)%type
 :=
     found ← list_find (enables_match initial_vars) matches;
     match found with
-    | (i, m) => Some (m, delete i matches)
+    | (i, m) => Some (i, m, delete i matches)
     end
 .
 
@@ -374,10 +374,11 @@ Lemma choose_first_enabled_match_shortens_list
     {Σ : Signature}
     (initial_vars : gset variable)
     (matches : list Match)
+    (i : nat)
     (m : Match)
     (resulting_matches : list Match)
 : 
-    choose_first_enabled_match initial_vars matches = Some (m, resulting_matches) ->
+    choose_first_enabled_match initial_vars matches = Some (i, m, resulting_matches) ->
     length matches = S (length resulting_matches)
 .
 Proof.
@@ -417,7 +418,7 @@ Equations? order_enabled_first
     order_enabled_first vs ms
         with (inspect (choose_first_enabled_match vs ms)) => {
             | exist _ None _ := ([], ms)
-            | exist _ (Some (m', rest)) H :=
+            | exist _ (Some (i, m', rest)) H :=
                 match (order_enabled_first
                     (vs ∪ vars_of_OpenTerm (m_term m'))
                     rest) with
@@ -438,9 +439,10 @@ Lemma choose_first_enabled_match_perm
     {Σ : Signature}
     (initial_vars : gset variable)
     (matches : list Match)
+    (i : nat)
     (m : Match)
     (matches' : list Match)
-    : choose_first_enabled_match initial_vars matches = Some (m,matches') ->
+    : choose_first_enabled_match initial_vars matches = Some (i,m,matches') ->
       (m::matches') ≡ₚ matches
 .
 Proof.
