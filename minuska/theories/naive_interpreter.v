@@ -2629,130 +2629,131 @@ Section with_decidable_signature.
         }
     Qed.
 
-    Lemma order_enabled_first_no_enabled0 vs ms:
-        choose_first_enabled_match vs ms = None ->
-        (∃ l' : list Match, l' ≡ₚ ms ∧ nicely_ordered vs l') ->
-        ms = []
+    Lemma can_be_ordered_implies_choose_Some
+        vs ms ms':
+        ms <> [] ->
+        ms' ≡ₚ ms ->
+        nicely_ordered vs ms' ->
+        ∃ mlm,
+        choose_first_enabled_match vs ms = Some mlm
     .
     Proof.
-        intros HnotChoose HcanOrder.
-        destruct HcanOrder as [l' [Hl'ms Hno]].
-        destruct ms.
-        { reflexivity. }
-        ltac1:(exfalso).
-
-        unfold choose_first_enabled_match in HnotChoose.
-        rewrite bind_None in HnotChoose.
-        destruct HnotChoose as [HnotFound|HfoundBut].
+        intros Hnotnil Hperm Hordered.
+        assert (Hnotnil': ms' <> []).
         {
-            rewrite list_find_None in HnotFound.
-            rewrite Forall_forall in HnotFound.
-
-            apply order_enabled_first_no_enabled00 with (vs := vs) in Hl'ms.
+            clear -Hnotnil Hperm.
+            intros HContra.
+            apply Hnotnil.
+            subst ms'.
+            apply Permutation_nil.
+            exact Hperm.
+        }
+        destruct ms'.
+        {
+            ltac1:(contradiction Hnotnil').
+            reflexivity.
+        }
+        clear Hnotnil' Hnotnil.
+        symmetry in Hperm.
+        apply Permutation_vs_cons_inv in Hperm.
+        destruct Hperm as [l' [l'' Hms]].
+        subst ms.
+        inversion Hordered; subst; clear Hordered.
+        remember (choose_first_enabled_match vs l') as o.
+        destruct o as [[m' lm' ]|].
+        {
+            exists (m', lm'++m::l'').
+            unfold choose_first_enabled_match in Heqo.
+            unfold choose_first_enabled_match.
+            symmetry in Heqo.
+            rewrite bind_Some in Heqo.
+            destruct Heqo as [[idx Midx] [HH1 HH2]].
+            inversion HH2; subst; clear HH2.
+            rewrite bind_Some.
+            exists (idx, m').
+            split.
             {
-                destruct Hl'ms as [i [g [vs' [H1 [H2 H3]]]]].
-                eapply HnotFound with (x := g).
-            
+                apply list_find_app_l.
+                exact HH1.
+            }
+            apply f_equal.
+            rewrite list_find_Some in HH1.
+            destruct HH1 as [Hl'idx HH1].
+            rewrite delete_take_drop.
+            rewrite delete_take_drop.
+            rewrite <- app_assoc.
+            rewrite firstn_app.
+            apply lookup_lt_Some in Hl'idx as HH2.
+            destruct l'.
+            { simpl in HH2. ltac1:(lia). }
+            simpl.
+            ltac1:(f_equal).
+            rewrite <- app_assoc.
+            apply f_equal.
+            simpl in HH2.
+            assert (Hexp0: idx - (S (length l')) = 0).
+            {
+                ltac1:(lia).
+            }
+            rewrite Hexp0.
+            clear Hexp0.
+            simpl.
+            rewrite drop_app_le.
+            {
+                reflexivity.
             }
             {
-                discriminate.
+                ltac1:(lia).
+            }
+        }
+        exists (m, l' ++ l'').
+        unfold choose_first_enabled_match.
+        rewrite bind_Some.
+        exists ((length l'), m).
+        unfold choose_first_enabled_match in Heqo.
+        symmetry in Heqo.
+        rewrite bind_None in Heqo.
+        destruct Heqo as [Heqo|Heqo].
+        {
+            rewrite list_find_None in Heqo.
+            split.
+            {
+                rewrite list_find_Some.
+                split.
+                {
+                    rewrite lookup_app_r.
+                    {
+                        rewrite Nat.sub_diag.
+                        simpl.
+                        reflexivity.
+                    }
+                    {
+                        ltac1:(lia).
+                    }
+                }
+                {
+                    rewrite Forall_forall in Heqo.
+                    split.
+                    {
+                        apply H2.
+                    }
+                    intros i y HH1 HH2.
+                    apply Heqo.
+                    rewrite <- elem_of_list_In.
+                    rewrite lookup_app_l in HH1>[|apply HH2].
+                    rewrite elem_of_list_lookup.
+                    exists i.
+                    exact HH1.
+                }
             }
             {
-                exact Hno.
+                rewrite delete_middle.
+                reflexivity.
             }
         }
         {
-
-        }
-    Qed.
-
-
-    Lemma order_enabled_first_no_enabled vs ms:
-        choose_first_enabled_match vs ms = None ->
-        (∃ l' : list Match, l' ≡ₚ ms ∧ nicely_ordered vs l') ->
-        ms = []
-    .
-    Proof.
-        intros HnotChoose HcanOrder.
-        unfold choose_first_enabled_match in HnotChoose.
-        rewrite bind_None in HnotChoose.
-        rewrite list_find_None in HnotChoose.
-        rewrite Forall_forall in HnotChoose.
-        unfold enables_match in HnotChoose.
-        destruct HcanOrder as [l' [Hl'1 Hl'2]].
-        destruct ms.
-        { reflexivity. }
-        assert (Hl'1' := Hl'1).
-        apply Permutation_vs_cons_inv in Hl'1.
-        destruct Hl'1 as [l1 [l2 Hl1l2]].
-        subst l'.
-        rewrite nicely_ordered_app in Hl'2.
-        destruct Hl'2 as [H1 H2].
-        destruct HnotChoose as [HH|HH].
-        {
-            assert (HH' := HH).
-            ltac1:(ospecialize (HH' m _)).
-            {
-                constructor. reflexivity.
-            }
-            inversion H2; subst; clear H2.
-            ltac1:(exfalso).
-            clear bp_dec up_dec.
-            assert (H6: m_variable m ∈ vars_of_lm l1).
-            {
-                ltac1:(set_solver).
-            }
-            clear H4.
-            unfold vars_of_lm in H6.
-            rewrite elem_of_union_list in H6.
-            destruct H6 as [X [HH1 HH2]].
-            ltac1:(rewrite elem_of_list_fmap in HH1).
-            destruct HH1 as [ot [Hot1 Hot2]].
-            subst X.
-            rewrite elem_of_list_fmap in Hot2.
-            destruct Hot2 as [m' [Hm'1 Hm'2]].
-            subst ot.
-            ltac1:(setoid_rewrite <- Hl'1' in HH).
-            apply elem_of_list_split in Hm'2.
-            destruct Hm'2 as [l3 [l4 Hl3l4]].
-            subst l1.
-            rewrite nicely_ordered_app in H1.
-            destruct H1 as [Hnol3 Hnol4].
-            rewrite nicely_ordered_cons in Hnol4.
-            destruct Hnol4 as [Hm' Hnol4].
-            rewrite elem_of_union in Hm'.
-            destruct Hm' as [Hm'|Hm'].
-            {
-                specialize (HH m').
-                apply HH.
-                {
-                    clear.
-                    rewrite  <- elem_of_list_In.
-                    ltac1:(set_solver).
-                }
-                {
-                    exact Hm'.
-                }
-            }
-            {
-                clear Hl'1'.
-                unfold vars_of_lm in *.
-                rewrite elem_of_union_list in Hm'.
-                destruct Hm' as [X [H1X H2X]].
-                rewrite elem_of_list_fmap in H1X.
-                destruct H1X as [y [H1y H2y]].
-                subst X.
-                rewrite elem_of_list_fmap in H2y.
-                destruct H2y as [y0 [Hy01 Hy02]].
-                subst y.
-                apply elem_of_list_split in Hy02.
-                destruct Hy02 as [l11 [l12 H]].
-                subst l3.
-                rewrite nicely_ordered_app in Hnol3.
-                destruct Hnol3 as [H7 H8].
-                rewrite nicely_ordered_cons in H8.
-                destruct H8 as [H8 H9].
-            }
+            destruct Heqo as [[i' m'] [HH1 HH2]].
+            inversion HH2.
         }
     Qed.
 
