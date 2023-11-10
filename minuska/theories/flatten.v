@@ -411,18 +411,18 @@ Equations? order_enabled_first
     {Σ : Signature}
     (initial_vars : gset variable)
     (matches : list Match)
-    : list Match
+    : (list Match * list Match)%type
     by wf (length matches) lt
 :=
     order_enabled_first vs ms
         with (inspect (choose_first_enabled_match vs ms)) => {
-            | exist _ None _ := ms
+            | exist _ None _ := ([], ms)
             | exist _ (Some (m', rest)) H :=
-                m'::(
-                    order_enabled_first
+                match (order_enabled_first
                     (vs ∪ vars_of_OpenTerm (m_term m'))
-                    rest
-                )
+                    rest) with
+                | (good, bad) => (m'::good, bad)
+                end
         };
 .
 Proof.
@@ -460,7 +460,8 @@ Lemma order_enabled_first_perm
     {Σ : Signature}
     (initial_vars : gset variable)
     (matches : list Match)
-    : order_enabled_first initial_vars matches ≡ₚ matches
+    : let gb := order_enabled_first initial_vars matches in
+      (gb.1 ++ gb.2) ≡ₚ matches
 .
 Proof.
     ltac1:(funelim (order_enabled_first initial_vars matches)).
@@ -468,11 +469,15 @@ Proof.
         assert (H' := H).
         apply choose_first_enabled_match_perm in H'.
         rewrite <- Heqcall. clear Heqcall.
-        rewrite H0.
-        exact H'.
+        repeat (ltac1:(case_match)).
+        simpl in *.
+        eapply transitivity>[|apply H'].
+        constructor.
+        exact H0.
     }
     {
-        rewrite Heqcall at 2.
+        rewrite <- Heqcall.
+        simpl.
         apply reflexivity.
     }
 Qed.

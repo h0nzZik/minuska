@@ -2402,7 +2402,7 @@ Section with_decidable_signature.
     Qed.
 
     Lemma order_enabled_first_nil initial_vars:
-        order_enabled_first initial_vars [] = []
+        order_enabled_first initial_vars [] = ([],[])
     .
     Proof.
         ltac1:(simp order_enabled_first).
@@ -2592,7 +2592,7 @@ Section with_decidable_signature.
         }
     Qed.
 
-    Lemma order_enabled_first_no_enabled00 vs ms l':
+    Lemma nicely_ordered_exists_enables_match vs ms l':
         l' ≡ₚ ms ->
         ms <> [] ->
         nicely_ordered vs l' ->
@@ -2774,6 +2774,7 @@ Section with_decidable_signature.
             rewrite <- Heqcall.
             clear Heqall.
             destruct Hcan_nicely_order as [l' [Hll' Hl']].
+            clear H.
         }
     Qed.
 
