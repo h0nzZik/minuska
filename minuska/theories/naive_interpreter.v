@@ -2757,6 +2757,40 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma order_enabled_first_1_nicely_ordered
+        initial l :
+        nicely_ordered initial (order_enabled_first initial l).1
+    .
+    Proof.
+        ltac1:(funelim (order_enabled_first initial l)).
+        {
+            rewrite <- Heqcall.
+            clear Heqcall H1.
+            repeat ltac1:(case_match).
+            simpl. simpl in H0.
+            constructor.
+            {
+                clear -H.
+                unfold choose_first_enabled_match in H.
+                rewrite bind_Some in H.
+                destruct H as [[x m] [H1 H2]].
+                inversion H2; subst; clear H2.
+                rewrite list_find_Some in H1.
+                destruct H1 as [H1 [H2 H3]].
+                unfold enables_match in H2.
+                apply H2.
+            }
+            {
+                apply H0.
+            }
+        }
+        {
+            rewrite <- Heqcall.
+            simpl.
+            constructor.
+        }
+    Qed.
+
     Lemma order_enabled_first_nicely_ordered
         initial l
         :
