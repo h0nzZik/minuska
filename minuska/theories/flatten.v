@@ -443,18 +443,38 @@ Lemma choose_first_enabled_match_perm
     (m : Match)
     (matches' : list Match)
     : choose_first_enabled_match initial_vars matches = Some (i,m,matches') ->
-      (m::matches') ≡ₚ matches
+      (m::matches') ≡ₚ matches /\ take i matches = take i matches'
 .
 Proof.
     unfold choose_first_enabled_match.
     rewrite bind_Some.
     intros [[i' m'] [H1i'm' H2i'm']].
     inversion H2i'm'; subst; clear H2i'm'.
-    symmetry.
-    apply delete_Permutation.
     rewrite list_find_Some in H1i'm'.
     destruct H1i'm' as [H1 [H2 H3]].
-    exact H1.
+    split.
+    {
+        symmetry.
+        apply delete_Permutation.
+        exact H1.
+    }
+    {
+        rewrite delete_take_drop.
+        rewrite take_app_ge.
+        {
+            rewrite take_length.
+            apply lookup_lt_Some in H1.
+            ltac1:(replace (i `min` length matches) with (i) by lia).
+            rewrite Nat.sub_diag.
+            rewrite take_0.
+            rewrite app_nil_r.
+            reflexivity.
+        }
+        {
+            rewrite take_length.
+            ltac1:(lia).
+        }
+    }
 Qed.
 
 

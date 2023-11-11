@@ -2792,7 +2792,7 @@ Section with_decidable_signature.
     Qed.
 
     Lemma choose_first_really_first vs l i m rest:
-        choose_first_enabled_match vs l = Some (S i, m, rest) ->
+        choose_first_enabled_match vs l = Some (i, m, rest) ->
         Forall (λ x : Match, ¬ enables_match vs x) (take i l)
     .
     Proof.
@@ -2831,21 +2831,6 @@ Section with_decidable_signature.
         }
     Qed.
 
-    (* This does not hold, as `l` might contain another copy of `m`. *)
-    Lemma choose_first_enabled_match_app_cons vs l1 m l2 rest:
-        choose_first_enabled_match vs (l1 ++ m :: l2) = Some (m, rest) ->
-        rest = l1 ++ l2
-    .
-    Proof.
-        unfold choose_first_enabled_match.
-        intros H.
-        rewrite bind_Some in H.
-        destruct H as [[idx m'] [H1 H2]].
-        inversion H2; subst; clear H2.
-        rewrite list_find_Some in H1.
-        destruct H1 as [H1 [H2 H3]].
-        rewrite delete_take_drop.
-    Abort.
 
     Lemma order_enabled_first_2_empty_if_can_be_ordered
         initial l :
@@ -2867,7 +2852,7 @@ Section with_decidable_signature.
             apply Permutation_vs_cons_inv in Hperm.
             destruct Hperm as [l1 [l2 Hl1l2]].
             subst ms.
-            Search choose_first_enabled_match app.
+            apply choose_first_really_first in H as H'.
 
 
             
