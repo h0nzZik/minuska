@@ -2791,6 +2791,34 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma choose_first_enabled_match_lookup vs l i m rest:
+        choose_first_enabled_match vs l = Some (i, m, rest) ->
+        l !! i = Some m
+    .
+    Proof.
+        intros H.
+        unfold choose_first_enabled_match in H.
+        rewrite bind_Some in H.
+        destruct H as [[i' m'] [H1 H2]].
+        inversion H2; subst; clear H2.
+        rewrite list_find_Some in H1.
+        apply H1.
+    Qed.
+
+    Lemma choose_first_enabled_match_elem_of vs l i m rest:
+        choose_first_enabled_match vs l = Some (i, m, rest) ->
+        m_variable m ∈ vs
+    .
+    Proof.
+        intros H.
+        unfold choose_first_enabled_match in H.
+        rewrite bind_Some in H.
+        destruct H as [[i' m'] [H1 H2]].
+        inversion H2; subst; clear H2.
+        rewrite list_find_Some in H1.
+        apply H1.
+    Qed.
+
     Lemma choose_first_really_first vs l i m rest:
         choose_first_enabled_match vs l = Some (i, m, rest) ->
         Forall (λ x : Match, ¬ enables_match vs x) (take i l)
@@ -2891,28 +2919,18 @@ Section with_decidable_signature.
             assert(Hperm := choose_first_enabled_match_perm vs ms i m' rest H).
             destruct Hperm as [Hperm Hperm'].
             subst rest.
-
-            assert (Hp := order_enabled_first_perm (vs ∪ vars_of_OpenTerm (m_term m')) rest).
-            rewrite H2 in Hp.
-            simpl in Hp.
-            specialize (H0 (l ++ l0) Hp).
-            
-            destruct l' as [|x l'].
-            {
-                apply Permutation_nil in Hl'1.
-                subst ms.
-                symmetry in Hperm.
-                apply Permutation_nil in Hperm.
-                inversion Hperm.
-            }
-            subst rest.
-            inversion Hl'2; subst; clear Hl'2.
+            assert (Hno := delete_preserves_orderability vs ms l' i m').
             symmetry in Hl'1.
-            apply Permutation_vs_cons_inv in Hl'1.
-            destruct Hl'1 as [ll1 [ll2 Hll1ll2]].
-            subst ms.
-            
-            Search "≡ₚ" cons ex.
+            specialize (Hno Hl'1 Hl'2).
+            apply choose_first_enabled_match_elem_of in H as H'.
+            apply choose_first_enabled_match_lookup in H as H''.
+            specialize (Hno H' H'').
+            destruct Hno as [l'' [Hl'' Hnol'']].
+            symmetry in Hl''.
+            specialize (H0 l'' Hl'').
+            inversion Hnol''; subst; clear Hnol''.
+            specialize (H0 H6).
+            apply H0.
         }
         {
             rewrite <- Heqcall.
