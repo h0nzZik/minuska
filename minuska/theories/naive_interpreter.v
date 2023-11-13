@@ -2831,6 +2831,46 @@ Section with_decidable_signature.
         }
     Qed.
 
+    Lemma delete_preserves_orderability
+        vs l l' i m:
+        l ≡ₚ l' ->
+        nicely_ordered vs l' ->
+        m_variable m ∈ vs ->
+        l !! i = Some m ->
+        exists l'',
+            delete i l ≡ₚ l'' /\
+            nicely_ordered vs (m::l'')
+    .
+    Proof.
+        intros Hperm Hno Hmvs Hli.
+        apply elem_of_list_split_length in Hli.
+        destruct Hli as [l1 [l2 [H1 Hlen]]].
+        subst l i.
+        rewrite delete_middle.
+        symmetry in Hperm.
+        apply Permutation_vs_elt_inv in Hperm as Hperm'.
+        destruct Hperm' as [l'1 [l'2 H]].
+        subst l'.
+        rewrite nicely_ordered_app in Hno.
+        rewrite nicely_ordered_cons in Hno.
+        apply Permutation_app_inv in Hperm.
+        ltac1:(setoid_rewrite nicely_ordered_cons).
+        exists (l'1 ++ l'2).
+        split.
+        { symmetry. assumption. }
+        split>[assumption|].
+        rewrite nicely_ordered_app.
+        destruct Hno as [H1 [H2 H3]].
+        split.
+        {
+            eapply nicely_ordered_mono>[|apply H1].
+            ltac1:(set_solver).
+        }
+        {
+            eapply nicely_ordered_mono>[|apply H3].
+            ltac1:(set_solver).
+        }
+    Qed.
 
     Lemma order_enabled_first_2_empty_if_can_be_ordered
         initial l :
@@ -2838,28 +2878,43 @@ Section with_decidable_signature.
         (order_enabled_first initial l).2 = []
     .
     Proof.
+        Search choose_first_enabled_match nicely_ordered.
+        intros [l' [Hl'1 Hl'2]].
         ltac1:(funelim (order_enabled_first initial l)).
         {
-            intros [l' [Hl'1 Hl'2]].
             rewrite <- Heqcall.
             clear Heqcall.
             repeat ltac1:(case_match).
             simpl. simpl in *.
-            apply H0. clear H0.
             clear H1.
+
             assert(Hperm := choose_first_enabled_match_perm vs ms i m' rest H).
-            symmetry in Hperm.
-            apply Permutation_vs_cons_inv in Hperm.
-            destruct Hperm as [l1 [l2 Hl1l2]].
-            subst ms.
-            apply choose_first_really_first in H as H'.
+            destruct Hperm as [Hperm Hperm'].
+            subst rest.
 
-
+            assert (Hp := order_enabled_first_perm (vs ∪ vars_of_OpenTerm (m_term m')) rest).
+            rewrite H2 in Hp.
+            simpl in Hp.
+            specialize (H0 (l ++ l0) Hp).
             
-            Search order_enabled_first nicely_ordered.
+            destruct l' as [|x l'].
+            {
+                apply Permutation_nil in Hl'1.
+                subst ms.
+                symmetry in Hperm.
+                apply Permutation_nil in Hperm.
+                inversion Hperm.
+            }
+            subst rest.
+            inversion Hl'2; subst; clear Hl'2.
+            symmetry in Hl'1.
+            apply Permutation_vs_cons_inv in Hl'1.
+            destruct Hl'1 as [ll1 [ll2 Hll1ll2]].
+            subst ms.
+            
+            Search "≡ₚ" cons ex.
         }
         {
-            intros [l' [Hl'1 Hl'2]].
             rewrite <- Heqcall.
             clear Heqcall.
             simpl.
