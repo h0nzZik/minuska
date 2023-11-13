@@ -2971,25 +2971,21 @@ Section with_decidable_signature.
         initial l
         :
         (∃ l', l' ≡ₚ l /\ nicely_ordered initial l' ) ->
-        nicely_ordered initial (order_enabled_first initial l)
+        nicely_ordered initial ((order_enabled_first initial l).1 ++ (order_enabled_first initial l).2)
     .
     Proof.
-        ltac1:(funelim (order_enabled_first initial l)).
+        intros [l' Hl'].
+        rewrite order_enabled_first_2_empty_if_can_be_ordered.
         {
-            intros Hcan_nicely_order.
+            rewrite app_nil_r.
+            apply order_enabled_first_1_nicely_ordered.
         }
         {
-            intros Hcan_nicely_order.
-            clear Heq.
-            rewrite <- Heqcall.
-            clear Heqall.
-            destruct Hcan_nicely_order as [l' [Hll' Hl']].
-            clear H.
+            exists l'. apply Hl'.
         }
     Qed.
 
 
-    Print OpenTerm.
     Theorem on_a_good_reordering:
         ∀(l0 : list Match) (initial_vars : gset variable),
         (∃ ρ0 : Valuation,
