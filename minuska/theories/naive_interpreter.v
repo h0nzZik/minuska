@@ -2981,7 +2981,8 @@ Section with_decidable_signature.
             apply order_enabled_first_1_nicely_ordered.
         }
         {
-            exists l'. apply Hl'.
+            exists l'.
+            apply Hl'.
         }
     Qed.
 
@@ -3001,11 +3002,43 @@ Section with_decidable_signature.
     .
     Proof.
         intros l0 initial_vars [ρ0 Hρ0].
-        exists (order_enabled_first initial_vars l0).
+        exists ((order_enabled_first initial_vars l0).1 ++ (order_enabled_first initial_vars l0).2).
         split.
         {
             apply order_enabled_first_perm.
         }
+
+        intros ρ Hρinit.
+        ltac1:(cut(
+            forall (ll : list Match),
+                nicely_ordered initial_vars ll ->
+                l0 ≡ₚ ll ->
+                ∃ (ρρ' : Valuation),
+                    reduce_matches (Some ρ) ll = Some ρρ' /\
+                    map_subseteq ρ ρρ' /\
+                    valuation_satisfies_all_matches ρρ' ll
+        )).
+        {
+            intros H.
+            specialize (H ((order_enabled_first initial_vars l0).1 ++ (order_enabled_first initial_vars l0).2)).
+            ltac1:(ospecialize (H _ _)).
+            {
+                apply order_enabled_first_nicely_ordered.
+                exists ((order_enabled_first initial_vars l0).1 ++ (order_enabled_first initial_vars l0).2).
+                split.
+                {
+                    apply order_enabled_first_perm.
+                }
+            }
+            {
+
+            }
+        }
+        {
+            intros H.
+        }
+
+
         intros ρ Hinit.
         revert ρ0 Hρ0 ρ Hinit.
         induction l0.

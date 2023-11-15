@@ -3,6 +3,7 @@ From Minuska Require Import
     tactics
     spec_syntax
     spec_semantics
+    syntax_properties
 .
 
 
@@ -40,4 +41,17 @@ Definition flattened_rewrites_to
     (from to : GroundTerm)
     : Prop
 := exists ρ, flattened_rewrites_in_valuation_to ρ r from to
+.
+
+Definition FRR_wf
+    {Σ : Signature}
+    (r : FlattenedRewritingRule)
+    : Prop
+:=
+    vars_of_RhsPattern (fr_to r) ⊆ vars_of_OpenTerm (fr_from r)
+    (* TODO: add a requirement saying that all variables that occur on the lhs
+       of some constraint, and specifically a pattern matching constraint,
+       are reachable from the set of variables occuring in `fr_from r`
+       in the graph induced by the list of pattern matching goals
+    *)
 .
