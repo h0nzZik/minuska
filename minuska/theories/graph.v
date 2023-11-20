@@ -86,7 +86,7 @@ Proof.
     (* TODO *)
 Abort.
 
-Theorem is_reachable_from_nodes_dec
+Theorem all_are_reachable_from_nodes_dec
     {T : Type}
     {_eT : EqDecision T}
     (R : relation T)
