@@ -24,21 +24,46 @@ Inductive find_cycle_result : Type :=
 | has_cycle (c : list T)
 | reaches (r : TSet).
 
-Fixpoint take_until (P : T -> Prop) `{forall x, Decision (P x)} (l : list T) : list T :=
+Section sec_take_until.
+
+Context
+  (P : T -> Prop)
+  `{forall x, Decision (P x)}
+  .
+
+Fixpoint take_until (l : list T) : list T :=
   match l with
   | [] => []
   | x :: t =>x ::
-    if (decide (P x)) then [] else take_until P t
+    if (decide (P x)) then [] else take_until t
   end. 
 
-Lemma take_until_subseteq (P : T -> Prop) `{forall x, Decision (P x)} (l : list T) :
-  take_until P l ⊆ l.
+Lemma take_until_is_take (l : list T) :
+  exists n, take_until l = take n l.
 Proof.
-  induction l; cbn.
-  - reflexivity.
-  - apply list_subseteq_skip.
-    ltac1: (case_decide; cbn; set_solver).
+  induction l.
+  - exists 0; reflexivity.
+  - cbn; ltac1: (case_decide).
+    + exists 1; reflexivity.
+    + destruct IHl as [n ->].
+      exists (S n); reflexivity.
 Qed.
+
+Lemma take_until_subseteq (l : list T) :
+  take_until l ⊆ l.
+Proof.
+  destruct (take_until_is_take l) as [n ->].
+  apply subseteq_take.
+Qed.
+
+Lemma take_until_prefix (l : list T) :
+  take_until l `prefix_of` l.
+Proof.
+  destruct (take_until_is_take l) as [n ->].
+  apply prefix_take.
+Qed.
+
+End sec_take_until.
 
 Lemma find_cycle_obligation_helper :
   forall (explore path : list T) (x : T),
@@ -209,6 +234,9 @@ Proof.
     inversion Heq1; subst.
     inversion Hpath; subst.
     split.
+    + 
+Admitted.
+
 Definition is_reachable_from
     (from to : T)
 :=
