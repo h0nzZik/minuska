@@ -2,6 +2,7 @@
 
 theories/tactics.v
 theories/prelude.v
+theories/graph.v
 theories/spec_syntax.v
 theories/spec_semantics.v
 theories/spec_tools.v
