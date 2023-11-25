@@ -26,6 +26,7 @@
             coq
             coqPackages.equations
             coqPackages.stdpp
+            coqPackages.CoLoR
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
