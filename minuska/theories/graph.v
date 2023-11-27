@@ -66,6 +66,17 @@ Proof.
   apply prefix_take.
 Qed.
 
+Lemma take_until_last (l : list T) :
+  Exists P l -> exists x : T, last (take_until l) = Some x /\ P x.
+Proof.
+  induction 1; cbn;
+    [by exists x; rewrite decide_True |].
+  case_decide; [by exists x |].
+  destruct IHExists as (lst & Heq_lst & Hlst).
+  exists lst; split; [| done].
+  by rewrite last_cons, Heq_lst.
+Qed.
+
 End sec_take_until.
 
 Lemma find_cycle_obligation_helper :
@@ -152,10 +163,10 @@ Inductive graph_walk_from_to : T -> T -> list T -> Prop :=
 .
 
 Lemma graph_walk_from_to_last (x y : T) (w : list T) :
-  graph_walk_from_to x y w -> w <> [] -> list.last w = Some y.
+  graph_walk_from_to x y w -> last (x :: w) = Some y.
 Proof.
-  intros Hwalk Hnil.
-  induction Hwalk; [by contradict Hnil |].
+  intros Hwalk.
+  induction Hwalk; [done |].
   by inversion Hwalk; subst; [| apply IHHwalk].
 Qed.
 
@@ -169,6 +180,10 @@ Record graph_path_from_to (x y : T) (w : list T) : Prop :=
     gp_nodup : NoDup (x :: w);
 }.
 
+Lemma graph_path_from_to_last (x y : T) (w : list T) :
+  graph_path_from_to x y w -> last (x :: w) = Some y.
+Proof. by intros []; apply graph_walk_from_to_last. Qed.
+ 
 Inductive graph_path : list T -> Prop :=
 | gp : forall (x y : T) (w : list T),
     graph_path_from_to x y w -> graph_path (x :: w).
@@ -186,7 +201,6 @@ Proof.
   change (t0 :: pre ++ hsuf :: suf) with ((t0 :: pre) ++ (hsuf :: suf)) in Hnodup.
   apply NoDup_app in Hnodup as (_ & _ & Hnodup).
   split; [| done].
-    Search (List.last (_::_)).
   clear -Hwalk; revert t0 Hwalk; induction pre;
     [by inversion 1; subst |].
   by inversion 1; subst; eapply IHpre.
@@ -198,9 +212,13 @@ Record graph_cycle_from_to (x y : T) (w : list T) : Prop :=
     gc_closed : R y x;
 }.
 
+Lemma graph_cycle_from_to_last (x y : T) (w : list T) :
+  graph_cycle_from_to x y w -> last (x :: w) = Some y.
+Proof. by intros []; apply graph_path_from_to_last. Qed.
+
 Inductive graph_cycle : list T -> Prop :=
-| gc : forall (x : T) (w : list T),
-    graph_cycle_from_to x (List.last w x) w ->
+| gc : forall (x : T) (y : T) (w : list T),
+    graph_cycle_from_to x y w ->
     graph_cycle (x :: w).
 
 Record graph_contains_cycle_witness (nodes c : list T) : Prop :=
@@ -251,9 +269,8 @@ Proof.
     *)
     assert (y ∈ path /\ R x y) as [Hy Hxy].
     {
-      inversion H8 as [Hfilter].
       assert (Helem : y ∈ y :: l) by left.
-      rewrite <- Hfilter in Helem.
+      rewrite <- e0 in Helem.
       apply elem_of_list_filter in Helem as [Helem Hy].
       split; [done |].
       by apply elem_of_list_filter in Hy as [].
@@ -270,7 +287,26 @@ Proof.
       rewrite elem_of_cons; intros [-> |];
         [by apply Hsub; left |].
       by eapply Hpath_sub, take_until_subseteq.
-    + rewrite <- take_until_cons by done.
+    + assert (Hcycle_path : graph_path (reverse (take_until (λ z : T, z = y) (x :: path)))).
+      {
+        eapply graph_path_suffix; [..| done].
+        - by apply prefix_suffix_reverse, take_until_prefix.
+        - rewrite take_until_cons, reverse_cons by done.
+          by destruct (reverse (take_until _ _)).
+      }
+      rewrite take_until_cons, reverse_cons in Hcycle_path by done.
+      rewrite reverse_cons.
+      inversion Hcycle_path as [_y _x pyx Hpyx Heqpyx].
+      constructor 1 with _x; split; [done |].
+      apply graph_path_from_to_last in Hpyx.
+      rewrite Heqpyx, last_snoc in Hpyx.
+      apply Some_inj in Hpyx as <-.
+      assert (Hy_last : last (take_until (fun z => z = y) path) = Some y).
+      {
+        Check take_until_last.
+        apply take_until_last.
+      }
+      
       assert (exists path', take_until (λ z : T, z = y) (x :: path))
       
 Admitted.
