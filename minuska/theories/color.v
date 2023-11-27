@@ -27,6 +27,17 @@ Proof.
     ltac1:(solve_decision).
 Qed.
 
+Definition is_symbol
+    {Σ : spec_syntax.Signature}
+    (s : m2c_sig_symbols Σ)
+    : Prop
+:=
+match s with
+| c_sym_symbol _ _ => True
+| c_sym_builtin_value _ _ => False
+end
+.
+
 Definition beq_m2c_sig_symbols
     (Σ : spec_syntax.Signature)
     (a b : m2c_sig_symbols Σ)
@@ -226,5 +237,159 @@ match g with
 | aoo_app _ _ app => m2c_AppliedOperator'_symbol_builtin app
 | aoo_operand _ _ o =>
     @exist _ _ (@VTerm.Fun Σ (c_sym_builtin_value Σ o) []) _
+end
+.
+
+
+Definition vterm_wellformed
+    {Σ : spec_syntax.Signature}
+    (t : VTerm.term Σ)
+    : Prop
+:= @VTerm.term_rect
+    Σ
+    (fun _ => Prop)
+    (fun _ => Prop)
+    (fun (n:nat) => True)
+    (fun sym l pf => pf /\ @is_symbol Σ sym)
+    True
+    (fun x xs => and)
+    t
+.
+
+Definition get_symbol
+    {Σ : spec_syntax.Signature}
+    s args
+    (wf : vterm_wellformed (Fun s args))
+    : spec_syntax.symbol
+.
+Proof.
+    destruct s.
+    {
+        exact s.
+    }
+    {
+        cbn in wf.
+        destruct wf as [_ HFalse].
+        destruct HFalse.
+    }
+Defined.
+
+
+Definition closed_wf_vterm_proj_args0
+    {Σ : spec_syntax.Signature}
+    ( ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
+    : list (VTerm.term Σ)
+:=
+let t := `ct in
+match inspect t with
+| @exist _ _ (Var v) pfeq =>
+    match vterm_is_closed_implies_vterm_is_not_var t (proj1 (proj2_sig ct)) v pfeq with
+    end
+| @exist _ _ (Fun _ args) _ => args
+end
+.
+
+
+Lemma closed_wf_vterm_proj_args0_closed_wf
+    {Σ : spec_syntax.Signature}
+    ( ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
+    : Forall (fun t => vterm_is_closed t /\ vterm_wellformed t) (closed_wf_vterm_proj_args0 ct)
+.
+Proof.
+    rewrite (sig_eta ct).
+    remember (proj2_sig ct) as pf.
+    clear Heqpf.
+    remember (`ct) as t.
+    clear Heqt ct.
+
+    destruct t.
+    {
+        cbn in pf.
+        ltac1:(exfalso).
+        destruct pf as [pf _].
+        inversion pf.
+    }
+    cbn.
+    induction l.
+    {
+        apply Forall_nil.
+    }
+    {
+        cbn in pf.
+        destruct pf as [pf1 [pf2 pf3]].
+        apply Forall_cons.
+        {
+            ltac1:(naive_solver).   
+        }
+        {
+            apply IHl.
+            ltac1:(naive_solver).
+        }
+    }
+Qed.
+
+
+Definition closed_wf_vterm_proj_args
+    {Σ : spec_syntax.Signature}
+    ( ct : { t : VTerm.term Σ | (vterm_is_closed t /\ vterm_wellformed t) })
+    : list { t : VTerm.term Σ | (vterm_is_closed t /\ vterm_wellformed t) }
+.
+Proof.
+    assert (Htmp := closed_wf_vterm_proj_args0_closed_wf ct).
+    remember (closed_wf_vterm_proj_args0 ct) as l.
+    clear Heql.
+    clear ct.
+    rewrite Forall_forall in Htmp.
+    induction l.
+    {
+        exact [].
+    }
+    {
+        assert (pf: vterm_is_closed a /\ vterm_wellformed a).
+        {
+            ltac1:(naive_solver).
+        }
+        apply cons.
+        {
+            exists a. exact pf.
+        }
+        {
+            ltac1:(naive_solver).
+        }
+    }
+Defined.
+
+Print AppliedOperator'.
+About fold_right.
+Check inspect.
+About eq_rect.
+Fixpoint c2m_closed_vterm
+    {Σ : spec_syntax.Signature}
+    (ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
+    : AppliedOperator' spec_syntax.symbol builtin_value
+:=
+let t : VTerm.term Σ
+    := `ct in
+let it
+    := inspect t in
+match it as v1 return (AppliedOperator' spec_syntax.symbol builtin_value) with
+| @exist _ _ (Var v) pfeq =>
+    match vterm_is_closed_implies_vterm_is_not_var t (proj1 (proj2_sig ct)) v pfeq with
+    end
+| @exist _ _ (Fun s args) pfeq =>
+    let wf := proj2 (proj2_sig ct) in
+    let sym
+        := get_symbol s args (eq_rect t _ wf _ pfeq) in
+    let args' : list { t : VTerm.term Σ | (vterm_is_closed t /\ vterm_wellformed t) }
+        := closed_wf_vterm_proj_args ct in
+    let args'' : list (AppliedOperator' spec_syntax.symbol builtin_value)
+        := (c2m_closed_vterm <$> args') in
+    fold_right
+        (fun (app : (AppliedOperator' spec_syntax.symbol builtin_value)) a =>
+                @ao_app_ao spec_syntax.symbol builtin_value a app
+        )
+        (@ao_operator _ _ sym)
+        args''
+        
 end
 .
