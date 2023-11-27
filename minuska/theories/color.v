@@ -359,6 +359,32 @@ Proof.
     }
 Defined.
 
+Definition c2m_closed_vterm
+    {Σ : spec_syntax.Signature}
+    (ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
+    : AppliedOperator' spec_syntax.symbol builtin_value
+:= @VTerm.term_rect
+    Σ
+    (fun x => { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t /\ x = t} -> AppliedOperator' spec_syntax.symbol builtin_value)
+    (fun _ => list ({ t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t }) -> list (AppliedOperator' spec_syntax.symbol builtin_value))
+    (fun n ct =>
+        match inspect ct with
+        | @exist _ _ (@exist _ _ (Var v) pf) pfeq =>
+            match vterm_is_closed_implies_vterm_is_not_var (`ct) (proj1 (proj2_sig ct)) n
+                (eq_trans (@proj1_sig_eq _ _ _ _ pfeq) (eq_sym (proj2 (proj2 pf))))
+            with
+            end
+        end
+    )
+.
+    (fun (n:nat) => AppliedOperator' spec_syntax.symbol builtin_value)
+.
+    (fun sym l pf => pf /\ @is_symbol Σ sym)
+    True
+    (fun x xs => and)
+    t
+.
+
 Print AppliedOperator'.
 About fold_right.
 Check inspect.
