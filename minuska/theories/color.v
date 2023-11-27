@@ -217,3 +217,14 @@ match g with
 end
 .
 
+Program Definition m2c_GroundTerm
+    {Σ : spec_syntax.Signature}
+    (g : GroundTerm)
+    : { t : VTerm.term Σ | vterm_is_closed t }
+:=
+match g with
+| aoo_app _ _ app => m2c_AppliedOperator'_symbol_builtin app
+| aoo_operand _ _ o =>
+    @exist _ _ (@VTerm.Fun Σ (c_sym_builtin_value Σ o) []) _
+end
+.
