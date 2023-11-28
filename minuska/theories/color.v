@@ -166,15 +166,14 @@ Lemma vterm_is_closed_Fun
     {Σ : spec_syntax.Signature}
     s
     (l: list (term Σ)) :
-    Forall vterm_is_closed l ->
+    Forall vterm_is_closed l <->
     @vterm_is_closed Σ (@VTerm.Fun Σ s l)
 .
 Proof.
-    intros H.
     induction l; cbn.
-    { exact I. }
+    { split; intros H. exact I. apply Forall_nil. }
     {
-        inversion H; subst; clear H.
+        rewrite list.Forall_cons.
         ltac1:(naive_solver).
     }
 Qed.
@@ -201,8 +200,9 @@ match g with
         := (b'::args) in
     @exist _ _ 
         (@VTerm.Fun Σ sym args')
-        (@vterm_is_closed_Fun Σ sym args'
+        (proj1 (@vterm_is_closed_Fun Σ sym args')
             (Forall_cons vterm_is_closed b' args _ pf)
+        
         )
 | ao_app_ao aps1 aps2 =>
     let tpf1 : { t : VTerm.term Σ | vterm_is_closed t }
@@ -217,7 +217,7 @@ match g with
         := closed_vterm_proj_args0_closed tpf1 in
     @exist _ _
         (@VTerm.Fun Σ sym ((`tpf2)::args))
-        (@vterm_is_closed_Fun Σ sym ((`tpf2)::args)
+        (proj1 (@vterm_is_closed_Fun Σ sym ((`tpf2)::args))
             (Forall_cons vterm_is_closed (`tpf2) args _ (closed_vterm_proj_args0_closed _))
         )
 end
@@ -414,6 +414,7 @@ Proof.
     }
 Qed.
 
+Print fold_left.
 Definition c2m_closed_vterm
     {Σ : spec_syntax.Signature}
     (ct : { t : VTerm.term Σ | vterm_is_closed t })
@@ -434,15 +435,16 @@ Definition c2m_closed_vterm
         let l1 := rec pf1 in
         match sym with
         | c_sym_symbol _ sym' =>
-            aoo_app _ _ (fold_right
-                (fun (x : GroundTerm) (y : AppliedOperator' spec_syntax.symbol builtin_value) =>
+            aoo_app _ _ (fold_left
+                (fun (y : AppliedOperator' spec_syntax.symbol builtin_value) (x : GroundTerm) =>
                     match x with
                     | aoo_app _ _ app => @ao_app_ao spec_syntax.symbol builtin_value y app
                     | aoo_operand _ _ b => @ao_app_operand spec_syntax.symbol builtin_value y b
                     end
                 )
-                (@ao_operator spec_syntax.symbol builtin_value sym')
                 l1
+                (@ao_operator spec_syntax.symbol builtin_value sym')
+                
             )
         | c_sym_builtin_value _ b => aoo_operand _ _ b
         end
@@ -452,3 +454,101 @@ Definition c2m_closed_vterm
     (proj1_sig ct)
     (proj2_sig ct)
 .
+
+Definition zip_term_with_proof
+    {Σ : spec_syntax.Signature}
+    :
+    forall (l : list (term Σ)),
+    Forall vterm_is_closed l ->
+    list ({t : term Σ | vterm_is_closed t})
+.
+Proof.
+    intros l H.
+    rewrite Forall_forall in H.
+    revert H.
+    induction l; simpl.
+    { intros H. exact []. }
+    {
+        intros H.
+        ltac1:(ospecialize (IHl _)).
+        {
+            ltac1:(naive_solver).
+        }
+        assert (Hclosed: vterm_is_closed a) by (ltac1:(naive_solver)).
+        exact ((exist Hclosed)::IHl).
+    }
+Defined.
+
+Lemma c2m_closed_vterm__m2c_GroundTerm
+    {Σ : spec_syntax.Signature}
+    (g : GroundTerm)
+    : c2m_closed_vterm (m2c_GroundTerm g) = g
+.
+Proof.
+    destruct g; simpl.
+    {
+        
+        remember (m2c_AppliedOperator'_symbol_builtin_rev ao) as tr.
+        destruct tr as [t pf].
+        apply (f_equal proj1_sig) in Heqtr.
+        simpl in Heqtr.
+        assert (Hwf := vterm_wellformed_m2c_GroundTerm ao).
+        rewrite <- Heqtr in Hwf.
+        revert pf Hwf Heqtr.
+        pattern t.
+        eapply term_ind
+            with
+            (Sig := m2c_sig Σ)
+            (Q := (
+                fun (l : list (term Σ)) =>
+                    forall
+                    (pf : Forall vterm_is_closed l),
+                    ((@m2c_GroundTerm Σ <$> (@c2m_closed_vterm Σ <$> (zip_term_with_proof l pf))) = (zip_term_with_proof l pf))
+            ))
+        .
+        {
+            intros x. intros pf.
+            simpl in pf.
+            inversion pf.
+        }
+        {
+            intros sym l IH pf Hwf Heqtr.
+            apply vterm_is_closed_Fun in pf as pf'.
+            specialize (IH pf').
+            
+            destruct sym; cbn.
+            {
+                Print fold_right.
+            }
+            {
+
+                simpl in Hwf. simpl in pf.
+                ltac1:(exfalso).
+                assert (l = []) by (ltac1:(naive_solver)).
+                subst l.
+                clear Hwf.
+                simpl in *.
+                clear pf pf' IH.
+                destruct ao; simpl in *; inversion Heqtr.
+            }
+        }
+
+
+
+
+        induction ao; simpl.
+        {
+            reflexivity.
+        }
+        {
+            remember (m2c_AppliedOperator'_symbol_builtin_rev ao) as tr1.
+            destruct tr1 as [t1 pf1].
+            unfold c2m_closed_vterm.
+            simpl in *.
+            simpl.
+        }
+    }
+    {
+        cbn. reflexivity.
+    }
+Qed.
