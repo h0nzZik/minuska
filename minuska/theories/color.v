@@ -400,8 +400,8 @@ Qed.
 Lemma _helper_c2m_closed_vterm
     {Σ : spec_syntax.Signature}
     n l:
-    vterm_is_closed (Fun n l) ∧ vterm_wellformed (Fun n l) ->
-    Forall (fun e => vterm_is_closed e /\ vterm_wellformed e) l
+    vterm_is_closed (Fun n l) ->
+    Forall (fun e => vterm_is_closed e) l
 .
 Proof.
     revert n.
@@ -416,19 +416,19 @@ Qed.
 
 Definition c2m_closed_vterm
     {Σ : spec_syntax.Signature}
-    (ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
+    (ct : { t : VTerm.term Σ | vterm_is_closed t })
     : GroundTerm
 := @VTerm.term_rect
     Σ
     (fun t =>
-        vterm_is_closed t /\ vterm_wellformed t ->
+        vterm_is_closed t ->
         GroundTerm
     )
     (fun (l : list (VTerm.term Σ)) =>
-            Forall (fun e => vterm_is_closed e /\ vterm_wellformed e) l ->
+            Forall (fun e => vterm_is_closed e) l ->
             list (GroundTerm)
     )
-    (fun n pf => match (proj1 pf) with end)
+    (fun n pf => match pf with end)
     (fun sym l rec pf => 
         let pf1 := _helper_c2m_closed_vterm sym l pf in
         let l1 := rec pf1 in
