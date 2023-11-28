@@ -179,7 +179,7 @@ Proof.
     }
 Qed.
 
-Program Fixpoint m2c_AppliedOperator'_symbol_builtin
+Program Fixpoint m2c_AppliedOperator'_symbol_builtin_rev
     {Σ : spec_syntax.Signature}
     (g : AppliedOperator' spec_syntax.symbol builtin_value)
     : { t : VTerm.term Σ | vterm_is_closed t }
@@ -188,7 +188,7 @@ match g with
 | ao_operator s => @exist _ _ (@VTerm.Fun Σ (c_sym_symbol Σ s) []) _
 | ao_app_operand aps b =>
     let tpf : { t : VTerm.term Σ | vterm_is_closed t }
-        := m2c_AppliedOperator'_symbol_builtin aps in
+        := m2c_AppliedOperator'_symbol_builtin_rev aps in
     let sym : symbol Σ
         := closed_vterm_proj_sym tpf in
     let args : list (VTerm.term Σ)
@@ -198,19 +198,17 @@ match g with
     let b'
         := (@VTerm.Fun Σ (c_sym_builtin_value Σ b) []) in
     let args'
-        := (args ++ [b']) in
+        := (b'::args) in
     @exist _ _ 
         (@VTerm.Fun Σ sym args')
         (@vterm_is_closed_Fun Σ sym args'
-            (Forall_app_2 vterm_is_closed args [b'] pf
-                (Forall_cons vterm_is_closed b' [] _ (Forall_nil vterm_is_closed))
-            )
+            (Forall_cons vterm_is_closed b' args _ pf)
         )
 | ao_app_ao aps1 aps2 =>
     let tpf1 : { t : VTerm.term Σ | vterm_is_closed t }
-        := m2c_AppliedOperator'_symbol_builtin aps1 in
+        := m2c_AppliedOperator'_symbol_builtin_rev aps1 in
     let tpf2 : { t : VTerm.term Σ | vterm_is_closed t }
-        := m2c_AppliedOperator'_symbol_builtin aps2 in
+        := m2c_AppliedOperator'_symbol_builtin_rev aps2 in
     let sym : symbol Σ
         := closed_vterm_proj_sym tpf1 in
     let args : list (VTerm.term Σ)
@@ -218,12 +216,9 @@ match g with
     let pf
         := closed_vterm_proj_args0_closed tpf1 in
     @exist _ _
-        (@VTerm.Fun Σ sym (args ++ [`tpf2]))
-        (@vterm_is_closed_Fun Σ sym (args ++ [`tpf2])
-            (Forall_app_2 vterm_is_closed args [`tpf2]
-                (closed_vterm_proj_args0_closed _)
-                _
-            )
+        (@VTerm.Fun Σ sym ((`tpf2)::args))
+        (@vterm_is_closed_Fun Σ sym ((`tpf2)::args)
+            (Forall_cons vterm_is_closed (`tpf2) args _ (closed_vterm_proj_args0_closed _))
         )
 end
 .
@@ -234,7 +229,7 @@ Program Definition m2c_GroundTerm
     : { t : VTerm.term Σ | vterm_is_closed t }
 :=
 match g with
-| aoo_app _ _ app => m2c_AppliedOperator'_symbol_builtin app
+| aoo_app _ _ app => m2c_AppliedOperator'_symbol_builtin_rev app
 | aoo_operand _ _ o =>
     @exist _ _ (@VTerm.Fun Σ (c_sym_builtin_value Σ o) []) _
 end
@@ -254,6 +249,30 @@ Definition vterm_wellformed
     (fun x xs => and)
     t
 .
+
+Lemma vterm_wellformed_m2c_GroundTerm
+    {Σ : spec_syntax.Signature}
+    (g : AppliedOperator' spec_syntax.symbol builtin_value):
+    vterm_wellformed (proj1_sig (m2c_AppliedOperator'_symbol_builtin_rev g))
+.
+Proof.
+    induction g.
+    {
+        split; exact I.
+    }
+    {
+        simpl.
+        remember (m2c_AppliedOperator'_symbol_builtin g) as s.
+        split.
+        {
+
+        }
+        {
+            cbn.
+            Search sig.
+        }
+    }
+Qed.
 
 Definition get_symbol
     {Σ : spec_syntax.Signature}
