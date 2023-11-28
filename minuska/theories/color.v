@@ -397,24 +397,6 @@ Proof.
     }
 Qed.
 
-Definition get_symbol
-    {Σ : spec_syntax.Signature}
-    s args
-    (wf : vterm_wellformed (Fun s args))
-    : spec_syntax.symbol
-.
-Proof.
-    destruct s.
-    {
-        exact s.
-    }
-    {
-        cbn in wf.
-        destruct wf as [_ HFalse].
-        destruct HFalse.
-    }
-Defined.
-
 Lemma _helper_c2m_closed_vterm
     {Σ : spec_syntax.Signature}
     n l:
@@ -435,25 +417,35 @@ Qed.
 Definition c2m_closed_vterm
     {Σ : spec_syntax.Signature}
     (ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
-    : AppliedOperator' spec_syntax.symbol builtin_value
+    : GroundTerm
 := @VTerm.term_rect
     Σ
     (fun t =>
         vterm_is_closed t /\ vterm_wellformed t ->
-        AppliedOperator' spec_syntax.symbol builtin_value
+        GroundTerm
     )
     (fun (l : list (VTerm.term Σ)) =>
             Forall (fun e => vterm_is_closed e /\ vterm_wellformed e) l ->
-            list (AppliedOperator' spec_syntax.symbol builtin_value)
+            list (GroundTerm)
     )
     (fun n pf => match (proj1 pf) with end)
     (fun sym l rec pf => 
         let pf1 := _helper_c2m_closed_vterm sym l pf in
         let l1 := rec pf1 in
-        fold_right
-            (fun x => @ao_app_ao spec_syntax.symbol builtin_value x)
-            (@ao_operator spec_syntax.symbol builtin_value (get_symbol sym l (proj2 pf)))
-            l1
+        match sym with
+        | c_sym_symbol _ sym' =>
+            aoo_app _ _ (fold_right
+                (fun (x : GroundTerm) (y : AppliedOperator' spec_syntax.symbol builtin_value) =>
+                    match x with
+                    | aoo_app _ _ app => @ao_app_ao spec_syntax.symbol builtin_value y app
+                    | aoo_operand _ _ b => @ao_app_operand spec_syntax.symbol builtin_value y b
+                    end
+                )
+                (@ao_operator spec_syntax.symbol builtin_value sym')
+                l1
+            )
+        | c_sym_builtin_value _ b => aoo_operand _ _ b
+        end
     )
     (fun pf => [])
     (fun t v Pt Qv pf => Qv (Forall_inv_tail pf))
