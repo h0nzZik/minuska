@@ -359,63 +359,63 @@ Proof.
     }
 Defined.
 
+
+Lemma my_impossible_lemma_1
+    {Σ : spec_syntax.Signature}
+    n sym args
+    :
+    @Var Σ n = @Fun Σ sym args -> False
+.
+Proof.
+    intros H. inversion H.
+Qed.
+
+Search proj1_sig eq.
+Check @VTerm.term_rect.
+
+
+Lemma _helper_c2m_closed_vterm
+    {Σ : spec_syntax.Signature}
+    n l:
+    vterm_is_closed (Fun n l) ∧ vterm_wellformed (Fun n l) ->
+    Forall (fun e => vterm_is_closed e /\ vterm_wellformed e) l
+.
+Proof.
+    revert n.
+    induction l; simpl; intros n H.
+    { apply Forall_nil. }
+    {
+        apply Forall_cons.
+        { ltac1:(naive_solver). }
+        { ltac1:(naive_solver). }
+    }
+Qed.
+
 Definition c2m_closed_vterm
     {Σ : spec_syntax.Signature}
     (ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
     : AppliedOperator' spec_syntax.symbol builtin_value
 := @VTerm.term_rect
     Σ
-    (fun x => { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t /\ x = t} -> AppliedOperator' spec_syntax.symbol builtin_value)
-    (fun _ => list ({ t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t }) -> list (AppliedOperator' spec_syntax.symbol builtin_value))
-    (fun n ct =>
-        match inspect ct with
-        | @exist _ _ (@exist _ _ (Var v) pf) pfeq =>
-            match vterm_is_closed_implies_vterm_is_not_var (`ct) (proj1 (proj2_sig ct)) n
-                (eq_trans (@proj1_sig_eq _ _ _ _ pfeq) (eq_sym (proj2 (proj2 pf))))
-            with
-            end
-        end
+    (fun t =>
+        vterm_is_closed t /\ vterm_wellformed t ->
+        AppliedOperator' spec_syntax.symbol builtin_value
     )
-.
-    (fun (n:nat) => AppliedOperator' spec_syntax.symbol builtin_value)
-.
-    (fun sym l pf => pf /\ @is_symbol Σ sym)
-    True
-    (fun x xs => and)
-    t
-.
-
-Print AppliedOperator'.
-About fold_right.
-Check inspect.
-About eq_rect.
-Fixpoint c2m_closed_vterm
-    {Σ : spec_syntax.Signature}
-    (ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
-    : AppliedOperator' spec_syntax.symbol builtin_value
-:=
-let t : VTerm.term Σ
-    := `ct in
-let it
-    := inspect t in
-match it as v1 return (AppliedOperator' spec_syntax.symbol builtin_value) with
-| @exist _ _ (Var v) pfeq =>
-    match vterm_is_closed_implies_vterm_is_not_var t (proj1 (proj2_sig ct)) v pfeq with
-    end
-| @exist _ _ (Fun s args) pfeq =>
-    let wf := proj2 (proj2_sig ct) in
-    let sym
-        := get_symbol s args (eq_rect t _ wf _ pfeq) in
-    let args' : list { t : VTerm.term Σ | (vterm_is_closed t /\ vterm_wellformed t) }
-        := closed_wf_vterm_proj_args ct in
-    let args'' : list (AppliedOperator' spec_syntax.symbol builtin_value)
-        := (c2m_closed_vterm <$> args') in
-    fold_right
-        (fun (app : (AppliedOperator' spec_syntax.symbol builtin_value)) a =>
-                @ao_app_ao spec_syntax.symbol builtin_value a app
-        )
-        (@ao_operator _ _ sym)
-        args''
-        
-end
+    (fun (l : list (VTerm.term Σ)) =>
+            Forall (fun e => vterm_is_closed e /\ vterm_wellformed e) l ->
+            list (AppliedOperator' spec_syntax.symbol builtin_value)
+    )
+    (fun n pf => match (proj1 pf) with end)
+    (fun sym l rec pf => 
+        let pf1 := _helper_c2m_closed_vterm sym l pf in
+        let l1 := rec pf1 in
+        fold_right
+            (fun x => @ao_app_ao spec_syntax.symbol builtin_value x)
+            (@ao_operator spec_syntax.symbol builtin_value (get_symbol sym l (proj2 pf)))
+            l1
+    )
+    (fun pf => [])
+    (fun t v Pt Qv pf => Qv (Forall_inv_tail pf))
+    (proj1_sig ct)
+    (proj2_sig ct)
 .
