@@ -3,6 +3,8 @@ From Minuska Require Import
     spec_syntax
 .
 
+Require Import Coq.Logic.ProofIrrelevance.
+
 From CoLoR Require Import
     Term.Varyadic.VSignature
     Term.Varyadic.VTerm
@@ -464,17 +466,18 @@ Definition zip_term_with_proof
 .
 Proof.
     intros l H.
-    rewrite Forall_forall in H.
-    revert H.
+    assert (H' := proj1 (Forall_forall vterm_is_closed l) H).
+    clear H.
+    revert H'.
     induction l; simpl.
     { intros H. exact []. }
     {
         intros H.
         ltac1:(ospecialize (IHl _)).
         {
-            ltac1:(naive_solver).
+            abstract(ltac1:(naive_solver)).
         }
-        assert (Hclosed: vterm_is_closed a) by (ltac1:(naive_solver)).
+        assert (Hclosed: vterm_is_closed a) by (abstract(ltac1:(naive_solver))).
         exact ((exist Hclosed)::IHl).
     }
 Defined.
@@ -516,9 +519,85 @@ Proof.
             apply vterm_is_closed_Fun in pf as pf'.
             specialize (IH pf').
             
-            destruct sym; cbn.
+            destruct sym; simpl.
             {
-                Print fold_right.
+                destruct ao; simpl in Heqtr; inversion Heqtr.
+                {
+                    subst; clear Heqtr
+                    cbn. reflexivity.
+                }
+                {
+                    ltac1:(move: H0 => myH).
+                    revert t pf pf' Hwf IH H1 myH.
+                    clear Heqtr.
+                    induction l; intros t (*s*) pf pf' Hwf (*Heqtr*) IH H1 myH.
+                    {
+                        inversion H1.
+                    }
+                    {
+                        destruct pf as [pf1 pf2].
+                        assert (pf'_backup := pf').
+                        rewrite Forall_cons_iff in pf'_backup.
+                        destruct Hwf as [[Hwf0 Hwf1] Hwf2].
+                        clear Hwf2.
+                        inversion H1; subst; clear H1.
+                        specialize (IHl t).
+                        simpl in IH.
+                        inversion IH; subst; clear IH.
+
+                        unfold c2m_closed_vterm.
+                        unfold term_rect.
+                        unfold proj1_sig.
+                        (*ltac1:(f_equal).*)
+                        remember (Forall_inv_tail _) as some_proof.
+                        clear Heqsome_proof.
+                        remember (closed_vterm_proj_args0 (m2c_AppliedOperator'_symbol_builtin_rev ao)) as this_is_closed.
+                        destruct pf'_backup as [somepf1 somepf2].
+                        specialize (IHl ltac:(assumption) ltac:(assumption)).
+                        ltac1:(ospecialize (IHl _)).
+                        {
+                            simpl.
+                            split.
+                            {
+                                apply Hwf1.
+                            }
+                            {
+                                left. exact I.
+                            }
+                        }
+                        clear Hwf0.
+                        rewrite <- myH in IHl.
+                        rewrite <- IHl; clear IHl.
+                        {
+                            unfold c2m_closed_vterm.
+                            unfold term_rect.
+                            unfold proj1_sig.
+                            ltac1:(f_equal).
+                            subst.
+                            remember (_helper_c2m_closed_vterm _ _ _) as another_proof_2.
+                            ltac1:(cut (some_proof = another_proof_2)).
+                            {
+                                intros Hproofs_equal.
+                                rewrite Hproofs_equal.
+                                reflexivity.
+                            }
+                            {
+                                apply proof_irrelevance.
+                            }
+                        }
+                        {
+
+                        }
+                    }
+                    (* TODO move stuff here*)
+                }
+                {
+                    
+                }
+                
+
+                cbn.
+                
             }
             {
 
