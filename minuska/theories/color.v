@@ -240,7 +240,6 @@ match g with
 end
 .
 
-
 Definition vterm_wellformed
     {Σ : spec_syntax.Signature}
     (t : VTerm.term Σ)
@@ -273,106 +272,6 @@ Proof.
         destruct HFalse.
     }
 Defined.
-
-
-Definition closed_wf_vterm_proj_args0
-    {Σ : spec_syntax.Signature}
-    ( ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
-    : list (VTerm.term Σ)
-:=
-let t := `ct in
-match inspect t with
-| @exist _ _ (Var v) pfeq =>
-    match vterm_is_closed_implies_vterm_is_not_var t (proj1 (proj2_sig ct)) v pfeq with
-    end
-| @exist _ _ (Fun _ args) _ => args
-end
-.
-
-
-Lemma closed_wf_vterm_proj_args0_closed_wf
-    {Σ : spec_syntax.Signature}
-    ( ct : { t : VTerm.term Σ | vterm_is_closed t /\ vterm_wellformed t })
-    : Forall (fun t => vterm_is_closed t /\ vterm_wellformed t) (closed_wf_vterm_proj_args0 ct)
-.
-Proof.
-    rewrite (sig_eta ct).
-    remember (proj2_sig ct) as pf.
-    clear Heqpf.
-    remember (`ct) as t.
-    clear Heqt ct.
-
-    destruct t.
-    {
-        cbn in pf.
-        ltac1:(exfalso).
-        destruct pf as [pf _].
-        inversion pf.
-    }
-    cbn.
-    induction l.
-    {
-        apply Forall_nil.
-    }
-    {
-        cbn in pf.
-        destruct pf as [pf1 [pf2 pf3]].
-        apply Forall_cons.
-        {
-            ltac1:(naive_solver).   
-        }
-        {
-            apply IHl.
-            ltac1:(naive_solver).
-        }
-    }
-Qed.
-
-
-Definition closed_wf_vterm_proj_args
-    {Σ : spec_syntax.Signature}
-    ( ct : { t : VTerm.term Σ | (vterm_is_closed t /\ vterm_wellformed t) })
-    : list { t : VTerm.term Σ | (vterm_is_closed t /\ vterm_wellformed t) }
-.
-Proof.
-    assert (Htmp := closed_wf_vterm_proj_args0_closed_wf ct).
-    remember (closed_wf_vterm_proj_args0 ct) as l.
-    clear Heql.
-    clear ct.
-    rewrite Forall_forall in Htmp.
-    induction l.
-    {
-        exact [].
-    }
-    {
-        assert (pf: vterm_is_closed a /\ vterm_wellformed a).
-        {
-            ltac1:(naive_solver).
-        }
-        apply cons.
-        {
-            exists a. exact pf.
-        }
-        {
-            ltac1:(naive_solver).
-        }
-    }
-Defined.
-
-
-Lemma my_impossible_lemma_1
-    {Σ : spec_syntax.Signature}
-    n sym args
-    :
-    @Var Σ n = @Fun Σ sym args -> False
-.
-Proof.
-    intros H. inversion H.
-Qed.
-
-Search proj1_sig eq.
-Check @VTerm.term_rect.
-
 
 Lemma _helper_c2m_closed_vterm
     {Σ : spec_syntax.Signature}
