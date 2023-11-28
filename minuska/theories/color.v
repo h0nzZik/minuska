@@ -244,11 +244,37 @@ Definition vterm_wellformed
     (fun _ => Prop)
     (fun _ => Prop)
     (fun (n:nat) => True)
-    (fun sym l pf => pf /\ @is_symbol Σ sym)
+    (fun sym l pf => pf /\ (@is_symbol Σ sym \/ l = []))
     True
     (fun x xs => and)
     t
 .
+
+
+Lemma closed_vterm_proj_args0_wf
+    {Σ : spec_syntax.Signature}
+    ( ct : { t : VTerm.term Σ | vterm_is_closed t })
+    :
+    vterm_wellformed (`ct) ->
+    Forall vterm_wellformed (closed_vterm_proj_args0 ct)
+.
+Proof.
+    destruct ct as [t pf].
+    destruct t.
+    { inversion pf. }
+    simpl.
+    intros [H1 H2].
+    unfold closed_vterm_proj_args0.
+    simpl.
+    clear H2.
+    revert H1.
+    induction l; simpl; intros H1.
+    { apply Forall_nil. }
+    {
+        simpl in pf.
+        apply Forall_cons; ltac1:(naive_solver).
+    }
+Qed.
 
 Lemma vterm_wellformed_m2c_GroundTerm
     {Σ : spec_syntax.Signature}
@@ -258,18 +284,115 @@ Lemma vterm_wellformed_m2c_GroundTerm
 Proof.
     induction g.
     {
-        split; exact I.
+        simpl.
+        split>[exact I|].
+        left. exact I.
     }
     {
         simpl.
-        remember (m2c_AppliedOperator'_symbol_builtin g) as s.
-        split.
+        remember (m2c_AppliedOperator'_symbol_builtin_rev g) as tr.
+        destruct tr as [t pf].
+        repeat split.
+        { right. reflexivity. }
         {
-
+            simpl in IHg.
+            destruct t; simpl in *.
+            { inversion pf. }
+            { apply IHg. }
         }
         {
-            cbn.
-            Search sig.
+            simpl.
+            simpl in *.
+            destruct t; simpl in *.
+            { inversion pf. }
+            {
+                destruct IHg as [H1 H2].
+                destruct H2 as [H2|H2].
+                {
+                    left. apply H2.
+                }
+                {
+                    subst l.
+                    simpl.
+                    left.
+                    unfold closed_vterm_proj_sym.
+                    simpl.
+                    unfold is_symbol.
+                    destruct f,g; simpl in *; try (exact I);
+                        inversion Heqtr.
+                }
+            }
+        }
+    }
+    {
+        simpl.
+        repeat split.
+        { exact IHg2. }
+        {
+            remember (m2c_AppliedOperator'_symbol_builtin_rev g1) as tr.
+            assert (Htmp := closed_vterm_proj_args0_closed tr).
+            remember (closed_vterm_proj_args0 tr) as l.
+            destruct tr as [t pf].
+            simpl in *.
+            assert (Htmp2 := closed_vterm_proj_args0_wf (t ↾ pf)).
+            simpl in Htmp2.
+            specialize (Htmp2 IHg1).
+            simpl in *.
+            ltac1:(rewrite - Heql in Htmp2).
+            clear -Htmp Htmp2.
+            revert Htmp Htmp2.
+            induction l; simpl; intros Htmp Htmp2.
+            { exact I. }
+            {
+                inversion Htmp; subst; clear Htmp.
+                inversion Htmp2; subst; clear Htmp2.
+                split.
+                { assumption. }
+                { apply IHl; assumption. }
+            }
+        }
+        {
+            left.
+            (* We want to prove that `closed_vterm_proj_sym` always returns a symbol*)
+            destruct g1; simpl in *.
+            { exact I. }
+            {
+                destruct IHg1 as [H1 H2].
+                simpl in *.
+                destruct H2 as [H2|H2].
+                {
+                    remember (closed_vterm_proj_sym (m2c_AppliedOperator'_symbol_builtin_rev g1)) as tr.
+                    destruct tr; simpl in *.
+                    {
+                        exact I.
+                    }
+                    {
+                        inversion H2.
+                    }
+                }
+                {
+                    inversion H2.
+                }
+            }
+            {
+                destruct IHg1 as [[H1 H2] H3].
+                simpl in *.
+                destruct H3 as [H3|H3].
+                {
+                    simpl in *.
+                    remember (closed_vterm_proj_sym (m2c_AppliedOperator'_symbol_builtin_rev g1_1)) as tr.
+                    destruct tr; simpl in *.
+                    {
+                        exact I.
+                    }
+                    {
+                        inversion H3.
+                    }
+                }
+                {
+                    inversion H3.
+                }
+            }
         }
     }
 Qed.
