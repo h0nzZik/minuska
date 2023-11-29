@@ -452,7 +452,12 @@ Definition c2m_closed_vterm
         end
     )
     (fun pf => [])
-    (fun t v Pt Qv pf => Qv (Forall_inv_tail pf))
+
+    (fun t v Pt Qv pf =>
+        let x := Pt (Forall_inv pf) in
+        let xs := Qv (Forall_inv_tail pf) in
+        x::xs
+    )
     (proj1_sig ct)
     (proj2_sig ct)
 .
@@ -481,6 +486,29 @@ Proof.
         exact ((exist Hclosed)::IHl).
     }
 Defined.
+
+Example ex1_c2m_closed_vterm__m2c_GroundTerm
+    {Σ : spec_syntax.Signature}
+    (o : spec_syntax.symbol)
+    : 
+    let g := (aoo_app spec_syntax.symbol builtin_value (ao_operator o)) in
+    c2m_closed_vterm (m2c_GroundTerm g) = g
+.
+Proof. reflexivity. Qed.
+
+Example ex2_c2m_closed_vterm__m2c_GroundTerm
+    {Σ : spec_syntax.Signature}
+    (o : spec_syntax.symbol)
+    (b : builtin_value)
+    : 
+    let g : GroundTerm 
+        := (aoo_app _ _ (ao_app_operand (ao_operator o) b)) in
+    c2m_closed_vterm (m2c_GroundTerm g) = g
+.
+Proof.
+    reflexivity.
+Qed.
+
 
 Lemma c2m_closed_vterm__m2c_GroundTerm
     {Σ : spec_syntax.Signature}
@@ -515,6 +543,105 @@ Proof.
             inversion pf.
         }
         {
+            intros sym l. revert sym.
+            revert ao t.
+            induction l; intros ao t.
+            {
+                simpl; intros sym IH pf Hwf Heqtr.
+                destruct sym,ao; cbn in *; inversion Heqtr; subst; clear Heqtr.
+                reflexivity.
+            }
+            {
+                intros sym IH pf Hwf Heqtr.
+                unfold c2m_closed_vterm.
+                unfold proj1_sig.
+                unfold proj2_sig.
+                unfold term_rect.
+                destruct sym.
+                {
+                    ltac1:(unshelve(ospecialize (IH _))).
+                    {
+                        apply vterm_is_closed_Fun in pf.
+                        exact pf.
+                    }
+                    lazy_match! (Constr.type &IH) with
+                    | (_ <$> (_ <$> (zip_term_with_proof _ ?a)) = _) => remember $a as ugly_proof
+                    end.
+                    erewrite (@proof_irrelevance _ ugly_proof ?[mypf0]) in IH.
+                    clear Hequgly_proof.
+                    unfold zip_term_with_proof in IH at 1.
+                    unfold list_rect in IH at 1.
+                    ltac1:(rewrite [_ <$> _]/= in IH).
+                    ltac1:(rewrite [R in _ = R]/zip_term_with_proof in IH).
+                    ltac1:(rewrite [list_rect _ _ _ _]/= in IH).
+                    unfold zip_term_with_proof,list_rect in IH.
+                    ltac1:(rewrite [R in _ = R]/= in IH).
+                    inversion IH.
+                    
+                    (*
+                    lazy_match! (Constr.type &H0) with
+                    | ( (`(m2c_GroundTerm (c2n_closed_vterm (a ↾ ?pf)))) = _) => remember $pf as another_ugly_proof
+                    end.
+                    Search proj1_sig eq.
+                    *)
+
+                    specialize (IHl ao t (c_sym_symbol Σ s)).
+                    ltac1:(unshelve(ospecialize (IHl _))).
+                    {
+                        intros pf0.
+                        unfold fmap.
+                        clear -H1.
+
+                        remember ((zip_term_with_proof_subproof Σ a l
+                            (proj1 (Forall_forall vterm_is_closed (a :: l)) ?mypf0))) as pf1.
+                        rewrite <- Heqpf1 in H1.
+
+                        lazy_match! (Constr.type &H1) with
+                        | ( (list_fmap _ _ _ (list_fmap _ _ _ ?weird))  = _) => assert (Hweird: $weird = (zip_term_with_proof l pf0))
+                        end.
+                        {
+                            clear.
+                            induction l.
+                            { reflexivity. }
+                            {
+                                cbn.
+                                assert (Htmp: (proj1 (Forall_forall vterm_is_closed (a :: l)) pf0) = pf1).
+                                {
+                                    apply proof_irrelevance.
+                                }
+                                rewrite <- Htmp.
+                                ltac1:(f_equal).
+                            }
+                        }
+                        rewrite Hweird in H1.
+                        apply H1.
+                }
+                ltac1:(unshelve(ospecialize (IHl _ _))).
+                {
+                    cbn in pf.
+                    apply pf.
+                }
+                {
+                    cbn in Hwf.
+                    cbn.
+                    split.
+                    {
+                        apply Hwf.
+                    }
+                    {
+                        left. exact I.
+                    }
+                }
+                specialize (IHl Heqtr).
+                erewrite <- IHl.
+                {
+                    clear IHl.
+                }
+                
+            }
+
+
+
             intros sym l IH pf Hwf Heqtr.
             apply vterm_is_closed_Fun in pf as pf'.
             specialize (IH pf').
@@ -528,20 +655,74 @@ Proof.
                 }
                 {
                     ltac1:(move: H0 => myH).
+                    destruct l.
+                    { inversion H1. }
                     revert t pf pf' Hwf IH H1 myH.
                     clear Heqtr.
-                    induction l; intros t (*s*) pf pf' Hwf (*Heqtr*) IH H1 myH.
+                    revert ao b s.
+                    induction l; intros ao b s t (*s*) pf pf' Hwf (*Heqtr*) IH H1 myH.
                     {
-                        inversion H1.
+                        inversion H1; subst; clear H1.
+                        unfold c2m_closed_vterm.
+                        unfold term_rect.
+                        unfold proj1_sig.
+                        apply f_equal.
+                        simpl.
+                        destruct ao; simpl in H2; inversion H2; subst; clear H2.
+                        simpl in *.
+                        unfold closed_vterm_proj_sym in *.
+                        cbn in myH.
+                        inversion myH; subst; clear myH.
+
+
+                        ltac1:(exfalso).
                     }
                     {
+                        inversion H1; subst; clear H1.
+                        ltac1:(unshelve(erewrite <- (IHl _ _ s t))).
+                        {
+
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            eapply Forall_inv_tail.
+                            apply pf'.
+                        }
+                        {
+                            simpl in IH.
+                            inversion IH; subst; clear IH.
+                            Search b.
+                            ltac1:(f_equal).
+                        }
+                        {
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            
+                        }
+                        {
+                            
+                        }
+                        {
+
+                        }
+
+                        specialize (IHl t).
+
+
+
+
+
                         destruct pf as [pf1 pf2].
                         assert (pf'_backup := pf').
                         rewrite Forall_cons_iff in pf'_backup.
                         destruct Hwf as [[Hwf0 Hwf1] Hwf2].
                         clear Hwf2.
-                        inversion H1; subst; clear H1.
-                        specialize (IHl t).
+                        
+                        
                         simpl in IH.
                         inversion IH; subst; clear IH.
 
@@ -583,6 +764,65 @@ Proof.
                             }
                             {
                                 apply proof_irrelevance.
+                            }
+                        }
+                        {
+                            unfold fmap.
+                            remember (list_rect _ _ _ _) as lrect.
+                            remember (lrect _) as lrect1.
+                            remember ((zip_term_with_proof this_is_closed somepf2)) as something2.
+                            ltac1:(cut (something2 = lrect1)).
+                            {
+                                intros Heq. rewrite Heq. apply H0.
+                            }
+                            subst something2 lrect1 lrect.
+                            clear -some_proof.
+                            revert pf' some_proof.
+                            induction this_is_closed; simpl; intros pf' some_proof.
+                            {
+                                reflexivity.
+                            }
+                            {
+                                cbn.
+                                apply (f_equal2 cons).
+                                {
+                                    lazy_match! goal with
+                                    | [ |- (@exist _ _ _ ?xa) = (@exist _ _ _ ?xb)] => (ltac1:(xa xb |- cut (xa = xb)) (Ltac1.of_constr xa) (Ltac1.of_constr xb))
+                                    end.
+                                    {
+                                        intros Hmyeq. rewrite Hmyeq. reflexivity.
+                                    }
+                                    apply proof_irrelevance.
+                                }
+                                {
+                                    
+                                    inversion some_proof; subst; clear some_proof.
+                                    inversion somepf2; subst.
+                                    assert (HA : Forall vterm_is_closed (@Fun Σ (c_sym_builtin_value Σ b) [] :: this_is_closed)).
+                                    {
+                                        apply Forall_cons.
+                                        {
+                                            cbn. exact I.
+                                        }
+                                        {
+                                            exact H4.
+                                        }
+                                    }
+                                    
+                                    specialize (IHthis_is_closed ltac:(assumption)).
+                                    simpl in IHthis_is_closed.
+                                    ltac1:(unshelve(ospecialize (IHthis_is_closed _))).
+                                    {
+                                        apply HA.
+                                    }
+                                    specialize (IHthis_is_closed H4).
+                                    erewrite (@proof_irrelevance (Forall vterm_is_closed this_is_closed) H4 ?[mypf]) in IHthis_is_closed.
+                                    ltac1:(f_equal).
+                                    erewrite (@proof_irrelevance _ ((proj1 (Forall_forall vterm_is_closed (a :: this_is_closed))) ?[mypf2])).
+                                    reflexivity.
+                                    Unshelve.
+                                    inversion somepf2; subst; assumption.
+                                }
                             }
                         }
                         {
