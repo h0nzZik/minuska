@@ -1056,11 +1056,14 @@ Proof.
 Qed.
 
 Lemma builtin_value_satisfies_OpenTermWSC_iff
-    {Σ : Signature} ρ x t:
-    in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_operand symbol builtin_value x) t
-    ↔ builtin_value_satisfies_OpenTermWSC ρ x t
+    {Σ : Signature} ρ x:
+    in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_operand symbol builtin_value x)
+    = builtin_value_satisfies_OpenTermWSC ρ x
 .
 Proof.
+    apply functional_extensionality.
+    intros t.
+    apply propositional_extensionality.
     unfold OpenTermWSC in *.
     unfold in_val_GroundTerm_satisfies_OpenTermWSC.
     rewrite A_satisfies_B_WithASideCondition_comp_iff.
@@ -1101,12 +1104,15 @@ Proof.
 Qed.
 
 Lemma AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC_iff
-    {Σ : Signature} ρ x t:
-    in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_app symbol builtin_value x) t
-    ↔ AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC ρ x t
+    {Σ : Signature} ρ x:
+    in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_app symbol builtin_value x)
+    = AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC ρ x
 .
 Proof.
- unfold OpenTermWSC in *.
+    apply functional_extensionality.
+    intros t.
+    apply propositional_extensionality.
+    unfold OpenTermWSC in *.
     unfold in_val_GroundTerm_satisfies_OpenTermWSC.
     rewrite A_satisfies_B_WithASideCondition_comp_iff.
     cbn.
@@ -1174,6 +1180,7 @@ Proof.
     unfold rewrites_in_valuation_to.
     unfold in_val_GroundTerm_satisfies_OpenTerm.
     unfold GroundTerm_satisfies_RhsPattern.
+    unfold satisfies. simpl.
     unfold GroundTerm_satisfies_RewritingRule.
     unfold GroundTerm.
     unfold GroundTerm'.
@@ -1258,42 +1265,47 @@ Proof.
         unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
         destruct a.
         {
-            unfold GroundTerm_satisfies_LocalRewrite.
+            destruct r0. (*; simpl in *.*)
+            simpl in *|-.
+            simpl satisfies. simpl.
             unfold GroundTerm_satisfies_left_LocalRewrite.
+            simpl.
             unfold GroundTerm_satisfies_LhsPattern.
-            destruct r0; simpl in *.
-
-            
-            ltac1:(replace ((@builtin_value_satisfies_OpenTermWSC Σ ρ))
-            with ((in_val_GroundTerm_satisfies_OpenTermWSC ρ) ∘ (aoo_operand _ _))).
+            assert (HMyLemma1 := @getSCS_getBase_correct Σ).
+            ltac1:(epose proof (HMyLemma2 := @correct_AppliedOperator'_symbol_A_to_OpenTerm Σ ?[MyA] (@BuiltinOrVar Σ))).
+            specialize (HMyLemma2 getBase).
+            specialize (HMyLemma2 getSCS).
+            specialize (HMyLemma2 (@in_val_GroundTerm_satisfies_OpenTermWSC Σ ρ)).
+            specialize (HMyLemma2 (@AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar Σ ρ)).
+            specialize (HMyLemma2 (@builtin_satisfies_BuiltinOrVar Σ ρ)).
+            specialize (HMyLemma2 ρ).
+            ltac1:(specialize (HMyLemma2 lr_from)).
+            ltac1:(specialize (HMyLemma2 γ)).
+            specialize(HMyLemma1 GroundTerm OpenTerm (in_val_GroundTerm_satisfies_OpenTerm ρ)).
+            ltac1:(specialize (HMyLemma2 (fun x' y' UnusedHyp => HMyLemma1 y' x' ρ))).
+            unfold compose in HMyLemma2. cbn in HMyLemma2.
+            rewrite HMyLemma2.
+            clear.
+            unfold OpenTermWSC,OpenTerm.
+            cbn.
+            (*
+            unfold builtin_value_satisfies_OpenTermWSC.
+            unfold in_val_GroundTerm_satisfies_OpenTermWSC.*)
+            simpl.
+            assert (M2 := AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC_iff ρ).
+            assert (M3 := builtin_value_satisfies_OpenTermWSC_iff).
+            ltac1:(under [fun (e : AppliedOperator' _ _) => _]functional_extensionality => e).
             {
-
-                ltac1:(replace((@AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC Σ ρ))
-                with ((in_val_GroundTerm_satisfies_OpenTermWSC ρ) ∘ (aoo_app _ _))
-                ).
-                {
-                    ltac1:(simple apply correct_AppliedOperator'_symbol_A_to_OpenTerm).
-                    intros y0 a Ha.
-                    unfold in_val_GroundTerm_satisfies_OpenTermWSC.
-                    apply getSCS_getBase_correct.
-                }
-                {
-                    apply functional_extensionality.
-                    intros x. cbn.
-                    apply functional_extensionality.
-                    intros t. cbn.
-                    apply propositional_extensionality.
-                    apply AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC_iff.
-                }
+                ltac1:(rewrite -> M2 at 1).
+                ltac1:(over).
             }
+            ltac1:(under [fun e => _]functional_extensionality => e).
             {
-                apply functional_extensionality.
-                intros x. cbn.
-                apply functional_extensionality.
-                intros t. cbn.
-                apply propositional_extensionality.
-                apply builtin_value_satisfies_OpenTermWSC_iff.
+                ltac1:(rewrite M3).
+                ltac1:(over).
             }
+            Set Printing Implicit.
+            reflexivity.
         }
         {
             {
