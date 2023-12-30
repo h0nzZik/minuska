@@ -509,7 +509,7 @@ Proof.
     reflexivity.
 Qed.
 
-
+(*
 Lemma c2m_closed_vterm__m2c_GroundTerm
     {Σ : spec_syntax.Signature}
     (g : GroundTerm)
@@ -518,7 +518,23 @@ Lemma c2m_closed_vterm__m2c_GroundTerm
 Proof.
     destruct g; simpl.
     {
-        
+        Check term_ind.
+        eapply term_ind
+            with
+            (Sig := m2c_sig Σ)
+            (Q := (
+                fun (l : list (term Σ)) =>
+                    forall
+                    (pf : Forall vterm_is_closed l),
+                    ((@m2c_GroundTerm Σ <$> (@c2m_closed_vterm Σ <$> (zip_term_with_proof l pf))) = (zip_term_with_proof l pf))
+            ))
+        .
+        {
+            intros x. intros pf.
+            simpl in pf.
+            inversion pf.
+        }
+
         remember (m2c_AppliedOperator'_symbol_builtin_rev ao) as tr.
         destruct tr as [t pf].
         apply (f_equal proj1_sig) in Heqtr.
@@ -545,14 +561,17 @@ Proof.
         {
             intros sym l. revert sym.
             revert ao t.
-            induction l; intros ao t.
+
+            intros ao t sym Hfmap Hclosed Hwf Hretfun.
+            revert t Hfmap Hclosed Hwf.
+            revert ao Hretfun.
+            induction l; intros ao Hretfun t.
             {
-                simpl; intros sym IH pf Hwf Heqtr.
-                destruct sym,ao; cbn in *; inversion Heqtr; subst; clear Heqtr.
+                destruct sym,ao; cbn in *; inversion Hretfun; subst; clear Hretfun.
                 reflexivity.
             }
             {
-                intros sym IH pf Hwf Heqtr.
+                intros IH pf Hwf.
                 unfold c2m_closed_vterm.
                 unfold proj1_sig.
                 unfold proj2_sig.
@@ -871,3 +890,4 @@ Proof.
         cbn. reflexivity.
     }
 Qed.
+*)
