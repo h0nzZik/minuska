@@ -23,6 +23,10 @@ match t with
     Some (builtin_binary_function_interp f e1 e2)
 end.
 
+Class Satisfies (A B : Type) := {
+    satisfies : A -> B -> Prop ;
+}.
+
 Definition val_satisfies_ap
     {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
     : Prop :=
@@ -47,15 +51,30 @@ match ap with
 end
 .
 
+#[export]
+Instance Satisfies_val_ap
+    {Σ : Signature} : Satisfies Valuation AtomicProposition
+:= {|
+    satisfies := val_satisfies_ap ;
+|}.
+
 Fixpoint val_satisfies_c
     {Σ : Signature} (ρ : Valuation) (c : Constraint)
     : Prop :=
 match c with
 | c_True => True
-| c_atomic ap => val_satisfies_ap ρ ap
+| c_atomic ap => satisfies ρ ap
 | c_and c1 c2 => val_satisfies_c ρ c1 /\ val_satisfies_c ρ c2
 | c_not c' => ~ val_satisfies_c ρ c'
 end.
+
+#[export]
+Instance Satisfies_val_c
+    {Σ : Signature} : Satisfies Valuation Constraint
+:= {|
+    satisfies := val_satisfies_c ;
+|}.
+
 
 Inductive aoxy_satisfies_aoxz
     {X Y Z : Type}
@@ -96,6 +115,18 @@ Inductive aoxy_satisfies_aoxz
             (ao_app_ao aoxz1 aoxz2)
 .
 
+
+#[export]
+Instance Satisfies_aoxy_aoxz
+    {X Y Z : Type}
+    {Y_sat_Z : Y -> Z -> Prop}
+    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
+    Satisfies (AppliedOperator' X Y) (AppliedOperator' X Z)
+:= {|
+    satisfies := @aoxy_satisfies_aoxz X Y Z Y_sat_Z AOXY_sat_Z ;
+|}.
+
+
 Inductive aoxyo_satisfies_aoxzo
     {X Y Z : Type}
     {Y_sat_Z : Y -> Z -> Prop}
@@ -119,6 +150,15 @@ Inductive aoxyo_satisfies_aoxzo
         aoxyo_satisfies_aoxzo (@aoo_app _ _  axy) (@aoo_operand X Z axz)
 .
 
+#[export]
+Instance Satisfies_aoxyo_aoxzo
+    {X Y Z : Type}
+    {Y_sat_Z : Y -> Z -> Prop}
+    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
+    Satisfies (AppliedOperatorOr' X Y) (AppliedOperatorOr' X Z)
+:= {|
+    satisfies := @aoxyo_satisfies_aoxzo X Y Z Y_sat_Z AOXY_sat_Z ;
+|}.
 
 Inductive builtin_satisfies_BuiltinOrVar
     {Σ : Signature}
@@ -138,6 +178,22 @@ Inductive builtin_satisfies_BuiltinOrVar
         builtin_satisfies_BuiltinOrVar ρ b (bov_variable x)
 .
 
+Definition builtin_satisfies_BuiltinOrVar'
+    {Σ : Signature}
+    (ρb : (Valuation * builtin_value))
+    (bov : BuiltinOrVar)
+    : Prop
+:= builtin_satisfies_BuiltinOrVar ρb.1 ρb.2 bov.
+
+#[export]
+Instance Satisfies_builtin_BuiltinOrVar
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * builtin_value) BuiltinOrVar
+:= {|
+    satisfies := builtin_satisfies_BuiltinOrVar' ;
+|}.
+
 Definition AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
     {Σ : Signature}
     (ρ : Valuation)
@@ -148,6 +204,22 @@ match bov with
 | bov_builtin _ => False
 | bov_variable x => ρ !! x = Some (aoo_app symbol builtin_value aop)
 end.
+
+Definition AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar
+    {Σ : Signature}
+    (ρaop : (Valuation * (AppliedOperator' symbol builtin_value)))
+    (bov : BuiltinOrVar)
+    : Prop
+:= AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρaop.1 ρaop.2 bov.
+
+#[export]
+Instance Satisfies_AppliedOperator'_symbol_builtin_BuiltinOrVar
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * (AppliedOperator' symbol builtin_value)) BuiltinOrVar
+:= {|
+    satisfies := AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar ;
+|}.
 
 Definition aosb_satisfies_aosbf
     {Σ : Signature}
@@ -164,6 +236,16 @@ Definition aosb_satisfies_aosbf
         (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
 .
 
+#[export]
+Instance Satisfies_aosb_aosbf
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * (AppliedOperator' symbol builtin_value)) (AppliedOperator' symbol BuiltinOrVar)
+:= {|
+    satisfies := fun ρb bov => aosb_satisfies_aosbf ρb.1 ρb.2 bov;
+|}.
+
+
 Definition aoosb_satisfies_aoosbf
     {Σ : Signature}
     (ρ : Valuation)
@@ -179,6 +261,19 @@ Definition aoosb_satisfies_aoosbf
         (AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ)
 .
 
+(* I do not want to make this an Instance because it would overlap with Satisfies_valGroundTerm_OpenTerm defined later in this file. *)
+(*
+#[export]
+Instance
+*)
+Definition Satisfies_aoosb_aoosbf
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * (AppliedOperatorOr' symbol builtin_value)) (AppliedOperatorOr' symbol BuiltinOrVar)
+:= {|
+    satisfies := fun ρx y => aoosb_satisfies_aoosbf ρx.1 ρx.2 y ;
+|}.
+
 Definition in_val_GroundTerm_satisfies_OpenTerm
     {Σ : Signature}
     (ρ : Valuation)
@@ -186,6 +281,15 @@ Definition in_val_GroundTerm_satisfies_OpenTerm
     (φ : OpenTerm)
     : Prop := aoosb_satisfies_aoosbf ρ g φ
 .
+
+#[export]
+Instance Satisfies_valGroundTerm_OpenTerm
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * GroundTerm) OpenTerm
+:= {|
+    satisfies := fun ρx y => in_val_GroundTerm_satisfies_OpenTerm ρx.1 ρx.2 y ;
+|}.
 
 Definition valuation_satisfies_match
     {Σ : Signature}
@@ -195,10 +299,19 @@ match m with
 | mkMatch _ x φ =>
     match ρ !! x with
     | Some g
-        => in_val_GroundTerm_satisfies_OpenTerm ρ g φ
+        => satisfies (ρ, g) φ
     | _ => False
     end
 end.
+
+#[export]
+Instance Satisfies_val_match
+    {Σ : Signature}
+    :
+    Satisfies Valuation Match
+:= {|
+    satisfies := valuation_satisfies_match ;
+|}.
 
 Definition valuation_satisfies_sc
     {Σ : Signature}
@@ -208,6 +321,16 @@ match sc with
 | sc_constraint c => val_satisfies_c ρ c
 | sc_match m => valuation_satisfies_match ρ m
 end.
+
+#[export]
+Instance Satisfies_val_sc
+    {Σ : Signature}
+    :
+    Satisfies Valuation SideCondition
+:= {|
+    satisfies := valuation_satisfies_sc ;
+|}.
+
 
 Inductive A_satisfies_B_WithASideCondition
     {Σ : Signature}
@@ -228,263 +351,538 @@ Inductive A_satisfies_B_WithASideCondition
         A_satisfies_B_WithASideCondition A B A_sat_B ρ a (wsc_sc bsc sc)
 .
 
-
-Section with_valuation.
-    Context
-        {Σ : Signature}
-        (ρ : Valuation)
-    .
-
-    Definition GroundTerm_satisfies_BuiltinOrVar
-        (g : GroundTerm)
-        (bov : BuiltinOrVar)
-        : Prop :=
-    match bov with
-    | bov_builtin b =>
-        match g with
-        | aoo_app _ _ _ => False
-        | aoo_operand _ _ b' => b = b'
-        end
-    | bov_variable x => ρ !! x = Some g
-    end.
-
-
-    Definition in_val_GroundTerm_satisfies_OpenTermWSC:
-        GroundTerm ->
-        OpenTermWSC ->
-        Prop :=
+#[export]
+Instance Satisfies_A_Bsc
+    {Σ : Signature}
+    {A B : Type}
+    {A_sat_B : Satisfies (Valuation*A) B}
+    :
+    Satisfies (Valuation*A) (WithASideCondition B)
+:= {|
+    satisfies := fun ρx y =>
         A_satisfies_B_WithASideCondition
-            GroundTerm
-            OpenTerm
-            (in_val_GroundTerm_satisfies_OpenTerm ρ)
-            ρ
-    .
+        A B
+        (fun a b => @satisfies (Valuation*A) B A_sat_B (ρx.1,a) b)
+        ρx.1 ρx.2 y ;
+|}.
 
-    Definition builtin_value_satisfies_OpenTerm:
-        builtin_value ->
-        OpenTerm ->
-        Prop := fun b t =>
-    match t with
+Definition GroundTerm_satisfies_BuiltinOrVar
+    {Σ : Signature}
+    (ρ : Valuation)
+    (g : GroundTerm)
+    (bov : BuiltinOrVar)
+    : Prop :=
+match bov with
+| bov_builtin b =>
+    match g with
     | aoo_app _ _ _ => False
-    | aoo_operand _ _ bov =>
-        builtin_satisfies_BuiltinOrVar ρ b bov
-    end.
-
-    Definition builtin_value_satisfies_OpenTermWSC:
-        builtin_value ->
-        OpenTermWSC ->
-        Prop :=
-        A_satisfies_B_WithASideCondition
-            builtin_value
-            OpenTerm
-            builtin_value_satisfies_OpenTerm
-            ρ
-    .
-
-    (*
-    (* TODO prove that this is equivalent to aoxyo_satisfies_aoxzo. *)
-    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
-        (B : Type)
-        (AppliedOperator'_symbol_builtin_satisfies_B:
-            Valuation ->
-            AppliedOperator' symbol builtin_value ->
-            B ->
-            Prop
-        )
-        (builtin_satisfies_B:
-            Valuation ->
-            builtin_value ->
-            B ->
-            Prop
-        )
-        :
-        AppliedOperator' symbol builtin_value ->
-        AppliedOperatorOr' symbol B ->
-        Prop
-    := fun asb o =>
-    match o with
-    | aoo_app _ _ t =>
-        @aoxy_satisfies_aoxz
-        symbol
-        builtin_value
-        B
-        (builtin_satisfies_B ρ)
-        (AppliedOperator'_symbol_builtin_satisfies_B ρ)
-        asb t
-    | aoo_operand _ _ bov => AppliedOperator'_symbol_builtin_satisfies_B ρ asb bov
-    end.
-    *)
-
-    Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
-        (ao : AppliedOperator' symbol builtin_value)
-        (bov : BuiltinOrVar)
-        : Prop
-    :=
-    match bov with
-    | bov_builtin _ => False
-    | bov_variable x => ρ !! x = Some (aoo_app _ _ ao) 
+    | aoo_operand _ _ b' => b = b'
     end
-    .
+| bov_variable x => ρ !! x = Some g
+end.
 
-    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB'
-        (B : Type)
-        (builtin_satisfies_B : builtin_value -> B -> Prop)
-        AppliedOperator'_symbol_builtin_value_satisfies_B
-        :
-        AppliedOperator' symbol builtin_value ->
-        AppliedOperatorOr' symbol B ->
-        Prop
-    :=  fun a b => @aoxyo_satisfies_aoxzo symbol builtin_value B
-        builtin_satisfies_B
-        AppliedOperator'_symbol_builtin_value_satisfies_B
-        (aoo_app _ _ a) b
-    .
+#[export]
+Instance Satisfies_GroundTerm_BuiltinOrVar
+    {Σ : Signature}
+    :
+    Satisfies (Valuation*GroundTerm) BuiltinOrVar
+:= {|
+    satisfies := fun ρx y => GroundTerm_satisfies_BuiltinOrVar ρx.1 ρx.2 y ;
+|}.
 
-    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
-        (B : Type)
-        (builtin_satisfies_B : builtin_value -> B -> Prop)
-        AppliedOperator'_symbol_builtin_value_satisfies_B
-        :
-        AppliedOperatorOr' symbol builtin_value ->
-        AppliedOperatorOr' symbol B ->
-        Prop
-    :=  @aoxyo_satisfies_aoxzo symbol builtin_value B
-        builtin_satisfies_B
-        AppliedOperator'_symbol_builtin_value_satisfies_B
-    .
+Definition in_val_GroundTerm_satisfies_OpenTermWSC
+    {Σ : Signature}
+    (ρ : Valuation):
+    GroundTerm ->
+    OpenTermWSC ->
+    Prop :=
+    A_satisfies_B_WithASideCondition
+        GroundTerm
+        OpenTerm
+        (in_val_GroundTerm_satisfies_OpenTerm ρ)
+        ρ
+.
 
-    Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm:
-        AppliedOperator' symbol builtin_value ->
-        OpenTerm ->
-        Prop
-    :=  fun a b =>
-        AppliedOperator'_symbol_builtin_satisfies_OpenTermB
-            BuiltinOrVar
-            (builtin_satisfies_BuiltinOrVar ρ)
-            AppliedOperator'_symbol_builtin_value_satisfies_BOV
-            (aoo_app _ _ a) b
-    .
+#[export]
+Instance Satisfies_GroundTerm_OpenTermWSC
+    {Σ : Signature}
+    :
+    Satisfies (Valuation*GroundTerm) OpenTermWSC
+:= {|
+    satisfies := fun ρx y => in_val_GroundTerm_satisfies_OpenTermWSC ρx.1 ρx.2 y ;
+|}.
+
+Definition builtin_value_satisfies_OpenTerm
+    {Σ : Signature}
+    (ρ : Valuation)
+    :
+    builtin_value ->
+    OpenTerm ->
+    Prop := fun b t =>
+match t with
+| aoo_app _ _ _ => False
+| aoo_operand _ _ bov =>
+    satisfies (ρ, b) bov
+end.
+
+#[export]
+Instance Satisfies_builtin_value_OpenTerm
+    {Σ : Signature}
+    :
+    Satisfies (Valuation*builtin_value) OpenTerm
+:= {|
+    satisfies := fun ρx y => builtin_value_satisfies_OpenTerm ρx.1 ρx.2 y ;
+|}.
+
+Definition builtin_value_satisfies_OpenTermWSC
+    {Σ : Signature}
+    (ρ : Valuation):
+    builtin_value ->
+    OpenTermWSC ->
+    Prop :=
+    A_satisfies_B_WithASideCondition
+        builtin_value
+        OpenTerm
+        (builtin_value_satisfies_OpenTerm ρ)
+        ρ
+.
+
+#[export]
+Instance Satisfies_builtin_value_OpenTermWSC
+    {Σ : Signature}
+    :
+    Satisfies (Valuation*builtin_value) OpenTermWSC
+:= {|
+    satisfies := fun ρx y => builtin_value_satisfies_OpenTermWSC ρx.1 ρx.2 y ;
+|}.
+
+Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
+    {Σ : Signature}
+    (ρ : Valuation)
+    (ao : AppliedOperator' symbol builtin_value)
+    (bov : BuiltinOrVar)
+    : Prop
+:=
+match bov with
+| bov_builtin _ => False
+| bov_variable x => ρ !! x = Some (aoo_app _ _ ao) 
+end
+.
+
+#[export]
+Instance Satisfies__AppliedOperator'_symbol_builtin_value__BOV
+    {Σ : Signature}
+    :
+    Satisfies (Valuation*(AppliedOperator' symbol builtin_value)) BuiltinOrVar
+:= {|
+    satisfies := fun ρx y => AppliedOperator'_symbol_builtin_value_satisfies_BOV ρx.1 ρx.2 y ;
+|}.
+
+Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB'
+    {Σ : Signature}
+    (B : Type)
+    (builtin_satisfies_B : builtin_value -> B -> Prop)
+    AppliedOperator'_symbol_builtin_value_satisfies_B
+    :
+    AppliedOperator' symbol builtin_value ->
+    AppliedOperatorOr' symbol B ->
+    Prop
+:=  fun a b => @aoxyo_satisfies_aoxzo symbol builtin_value B
+    builtin_satisfies_B
+    AppliedOperator'_symbol_builtin_value_satisfies_B
+    (aoo_app _ _ a) b
+.
+
+#[export]
+Instance Satisfies__lift_builtin_to_aosb
+    {Σ : Signature}
+    {B : Type}
+    {bsB : Satisfies (Valuation*builtin_value) B}
+    (sat2 : Satisfies (Valuation*(AppliedOperator' symbol builtin_value)) B)
+    :
+    Satisfies
+        (Valuation*(AppliedOperator' symbol builtin_value))
+        (AppliedOperatorOr' symbol B)
+:= {|
+    satisfies := fun ρx y =>
+        AppliedOperator'_symbol_builtin_satisfies_OpenTermB' B
+            (fun a b => @satisfies _ _ bsB (ρx.1,a) b)
+            (fun a b => @satisfies _ _ sat2 (ρx.1,a) b)
+            ρx.2
+            y
+        ;
+|}.
+
+Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+    {Σ : Signature}
+    (B : Type)
+    (builtin_satisfies_B : builtin_value -> B -> Prop)
+    AppliedOperator'_symbol_builtin_value_satisfies_B
+    :
     
-    Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC:
-        AppliedOperator' symbol builtin_value ->
-        OpenTermWSC ->
-        Prop :=
-        A_satisfies_B_WithASideCondition
-            (AppliedOperator' symbol builtin_value)
-            OpenTerm
-            (AppliedOperator'_symbol_builtin_satisfies_OpenTerm)
-            ρ
-    .
+    AppliedOperatorOr' symbol builtin_value ->
+    AppliedOperatorOr' symbol B ->
+    Prop
+:=  
+    @aoxyo_satisfies_aoxzo symbol builtin_value B
+    builtin_satisfies_B
+    AppliedOperator'_symbol_builtin_value_satisfies_B
+.
 
-    Definition GroundTerm_satisfies_LhsPattern:
-        GroundTerm -> LhsPattern -> Prop
-    := @aoxyo_satisfies_aoxzo
-        symbol
-        builtin_value
+#[export]
+Instance Satisfies__lift_builtin_to_aosbo
+    {Σ : Signature}
+    {B : Type}
+    {bsB : Satisfies (Valuation*builtin_value) B}
+    (sat2 : Satisfies (Valuation*(AppliedOperator' symbol builtin_value)) B)
+    :
+    Satisfies
+        (Valuation*(AppliedOperatorOr' symbol builtin_value))
+        (AppliedOperatorOr' symbol B)
+:= {|
+    satisfies := fun ρx y =>
+        AppliedOperator'_symbol_builtin_satisfies_OpenTermB B
+            (fun a b => @satisfies _ _ bsB (ρx.1,a) b)
+            (fun a b => @satisfies _ _ sat2 (ρx.1,a) b)
+            ρx.2
+            y
+        ;
+|}.
+
+Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
+    {Σ : Signature}
+    (ρ : Valuation)
+    :
+    AppliedOperator' symbol builtin_value ->
+    OpenTerm ->
+    Prop
+:=  fun a b =>
+    AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+        BuiltinOrVar
+        (builtin_satisfies_BuiltinOrVar ρ)
+        (AppliedOperator'_symbol_builtin_value_satisfies_BOV ρ)
+        (aoo_app _ _ a) b
+.
+
+#[export]
+Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTerm
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*(AppliedOperator' symbol builtin_value))
+        OpenTerm
+:= {|
+    satisfies := fun ρx y =>
+        AppliedOperator'_symbol_builtin_satisfies_OpenTerm
+            ρx.1
+            ρx.2
+            y
+        ;
+|}.
+
+Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC
+    {Σ : Signature}
+    (ρ : Valuation)
+    :
+    AppliedOperator' symbol builtin_value ->
+    OpenTermWSC ->
+    Prop :=
+    A_satisfies_B_WithASideCondition
+        (AppliedOperator' symbol builtin_value)
+        OpenTerm
+        (AppliedOperator'_symbol_builtin_satisfies_OpenTerm ρ)
+        ρ
+.
+
+#[export]
+Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTermWSC
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*(AppliedOperator' symbol builtin_value))
         OpenTermWSC
-        builtin_value_satisfies_OpenTermWSC
+:= {|
+    satisfies := fun ρx y =>
         AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC
-    .
+            ρx.1
+            ρx.2
+            y
+        ;
+|}.
 
-    Definition GroundTerm_satisfies_RhsPattern:
-        GroundTerm -> RhsPattern -> Prop
-    := @aoxyo_satisfies_aoxzo
+
+Definition GroundTerm_satisfies_LhsPattern
+    {Σ : Signature}
+    (ρ : Valuation):
+    GroundTerm -> LhsPattern -> Prop
+:= @aoxyo_satisfies_aoxzo
+    symbol
+    builtin_value
+    OpenTermWSC
+    (builtin_value_satisfies_OpenTermWSC ρ)
+    (AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC ρ)
+.
+
+Instance Satisfies__GroundTerm__LhsPattern
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        LhsPattern
+:= {|
+    satisfies := fun ρx y =>
+        GroundTerm_satisfies_LhsPattern
+            ρx.1
+            ρx.2
+            y
+        ;
+|}.
+
+Definition GroundTerm_satisfies_RhsPattern
+    {Σ : Signature}
+    (ρ : Valuation):
+    GroundTerm -> RhsPattern -> Prop
+:= @aoxyo_satisfies_aoxzo
+    symbol
+    builtin_value
+    Expression
+    ((fun x e => Expression_evaluate ρ e = Some x) ∘ (aoo_operand _ _))
+    ((fun x e => Expression_evaluate ρ e = Some x) ∘ (aoo_app _ _))
+.
+
+Instance Satisfies__GroundTerm__RhsPattern
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        RhsPattern
+:= {|
+    satisfies := fun ρx y =>
+        GroundTerm_satisfies_RhsPattern
+            ρx.1
+            ρx.2
+            y
+        ;
+|}.
+
+Definition GroundTerm_satisfies_VarWithSc
+    {Σ : Signature}
+    (ρ : Valuation):
+    GroundTerm ->
+    WithASideCondition variable
+    -> Prop :=
+    A_satisfies_B_WithASideCondition
+        GroundTerm
+        variable
+        (fun g x => ρ !! x = Some g)
+        ρ
+.
+
+Instance Satisfies__GroundTerm__VarWithSc
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        (WithASideCondition variable)
+:= {|
+    satisfies := fun ρx y =>
+        GroundTerm_satisfies_VarWithSc
+            ρx.1
+            ρx.2
+            y
+        ;
+|}.
+
+
+(* No instance for these two, since they would overlap and it wouldn't be clear whether
+   we are interested in the left or right side of the local rewrite *)
+
+Definition GroundTerm_satisfies_left_LocalRewrite
+    {Σ : Signature}
+    (ρ : Valuation):
+    GroundTerm -> LocalRewrite -> Prop :=
+    fun g r => satisfies (ρ, g) (lr_from r)
+.
+
+Definition GroundTerm_satisfies_right_LocalRewrite
+    {Σ : Signature}
+    (ρ : Valuation):
+    GroundTerm -> LocalRewrite -> Prop :=
+    fun g r => satisfies (ρ,g) (lr_to r)
+.
+
+Definition GroundTerm_satisfies_LocalRewrite
+    {Σ : Signature}
+    (ρ : Valuation)
+    (lr : LeftRight) (v : GroundTerm) (r : LocalRewrite)
+    : Prop :=
+match lr with
+| LR_Left => GroundTerm_satisfies_left_LocalRewrite ρ v r
+| LR_Right => GroundTerm_satisfies_right_LocalRewrite ρ v r
+end.
+
+Instance Satisfies__GroundTerm__LocalRewrite
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        (LeftRight*LocalRewrite)
+:= {|
+    satisfies := fun ρx dy =>
+        GroundTerm_satisfies_LocalRewrite
+            ρx.1
+            dy.1
+            ρx.2
+            dy.2
+        ;
+|}.
+
+Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
+    {Σ : Signature}
+    (ρ : Valuation)
+    (lr : LeftRight)
+    (g : GroundTerm)
+    (rb : LocalRewriteOrOpenTermOrBOV)
+    : Prop :=
+match rb with
+| lp_rewrite r
+    => satisfies (ρ,g) (lr,r)
+| lp_basicpat φ
+    => satisfies (ρ,g) φ
+| lp_bov bx
+    => satisfies (ρ,g) bx
+end.
+
+
+Instance Satisfies__GroundTerm__LocalRewriteOrOpenTermOrBOV
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        (LeftRight*LocalRewriteOrOpenTermOrBOV)
+:= {|
+    satisfies := fun ρx dy =>
+        GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
+            ρx.1
+            dy.1
+            ρx.2
+            dy.2
+        ;
+|}.
+
+Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
+    {Σ : Signature}
+    (ρ : Valuation)
+    (lr : LeftRight)
+    (b : builtin_value)
+    (rb : LocalRewriteOrOpenTermOrBOV)
+    : Prop :=
+match rb with
+| lp_rewrite r
+    => satisfies (ρ,(aoo_operand _ _ b)) (lr,r)
+
+| lp_basicpat (aoo_app _ _ _)
+    => False
+
+| lp_basicpat (aoo_operand _ _ bov)
+    => satisfies (ρ,b) bov
+
+| lp_bov bx
+    => satisfies (ρ,b) bx
+end.
+
+#[export]
+Instance Satisfies__builtin_value__LocalRewriteOrOpenTermOrBOV
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*builtin_value)
+        (LeftRight*LocalRewriteOrOpenTermOrBOV)
+:= {|
+    satisfies := fun ρx dy =>
+        builtin_satisfies_LocalRewriteOrOpenTermOrBOV
+            ρx.1
+            dy.1
+            ρx.2
+            dy.2
+        ;
+|}.
+
+Definition GroundTerm_satisfies_UncondRewritingRule
+    {Σ : Signature}
+    (ρ : Valuation)
+    (lr : LeftRight)
+    : GroundTerm -> UncondRewritingRule -> Prop
+:= @aoxyo_satisfies_aoxzo
         symbol
         builtin_value
-        Expression
-        ((fun x e => Expression_evaluate ρ e = Some x) ∘ (aoo_operand _ _))
-        ((fun x e => Expression_evaluate ρ e = Some x) ∘ (aoo_app _ _))
-    .
+        LocalRewriteOrOpenTermOrBOV
+        (builtin_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr)
+        ((GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr) ∘ (aoo_app _ _))
+.
 
-    Definition GroundTerm_satisfies_VarWithSc:
-        GroundTerm ->
-        WithASideCondition variable
-        -> Prop :=
-        A_satisfies_B_WithASideCondition
-            GroundTerm
-            variable
-            (fun g x => ρ !! x = Some g)
-            ρ
-    .
+#[export]
+Instance Satisfies__GroundTerm__UncondRewritingRule
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        (LeftRight*UncondRewritingRule)
+:= {|
+    satisfies := fun ρx dy =>
+        GroundTerm_satisfies_UncondRewritingRule
+            ρx.1
+            dy.1
+            ρx.2
+            dy.2
+        ;
+|}.
 
-    Definition GroundTerm_satisfies_left_LocalRewrite:
-        GroundTerm -> LocalRewrite -> Prop :=
-        fun g r => GroundTerm_satisfies_LhsPattern g (lr_from r)
-    .
+Definition GroundTerm_satisfies_RewritingRule
+    {Σ : Signature}
+    (ρ : Valuation)
+    (lr : LeftRight)
+    : GroundTerm -> RewritingRule -> Prop :=
+    A_satisfies_B_WithASideCondition
+        GroundTerm
+        UncondRewritingRule
+        (GroundTerm_satisfies_UncondRewritingRule ρ lr)
+        ρ
+.
 
-    Definition GroundTerm_satisfies_right_LocalRewrite:
-        GroundTerm -> LocalRewrite -> Prop :=
-        fun g r => GroundTerm_satisfies_RhsPattern g (lr_to r)
-    .
-
-    Definition GroundTerm_satisfies_LocalRewrite
-        (lr : LeftRight) (v : GroundTerm) (r : LocalRewrite)
-        : Prop :=
-    match lr with
-    | LR_Left => GroundTerm_satisfies_left_LocalRewrite v r
-    | LR_Right => GroundTerm_satisfies_right_LocalRewrite v r
-    end.
-
-    Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
-        (lr : LeftRight)
-        (g : GroundTerm)
-        (rb : LocalRewriteOrOpenTermOrBOV)
-        : Prop :=
-    match rb with
-    | lp_rewrite r =>
-        GroundTerm_satisfies_LocalRewrite lr g r
-    | lp_basicpat φ =>
-        in_val_GroundTerm_satisfies_OpenTerm ρ g φ
-    | lp_bov bx => GroundTerm_satisfies_BuiltinOrVar g bx
-    end.
-
-    Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
-        (lr : LeftRight)
-        (b : builtin_value)
-        (rb : LocalRewriteOrOpenTermOrBOV)
-        : Prop :=
-    match rb with
-    | lp_rewrite r =>
-        GroundTerm_satisfies_LocalRewrite lr (aoo_operand _ _ b) r
-    | lp_basicpat (aoo_app _ _ _) =>
-        False
-    | lp_basicpat (aoo_operand _ _ bov) =>
-        builtin_satisfies_BuiltinOrVar ρ b bov
-    | lp_bov bx =>
-        builtin_satisfies_BuiltinOrVar ρ b bx
-    end.
-
-    Definition GroundTerm_satisfies_UncondRewritingRule
-        (lr : LeftRight)
-        : GroundTerm -> UncondRewritingRule -> Prop
-    := @aoxyo_satisfies_aoxzo
-            symbol
-            builtin_value
-            LocalRewriteOrOpenTermOrBOV
-            (builtin_satisfies_LocalRewriteOrOpenTermOrBOV lr)
-            ((GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV lr) ∘ (aoo_app _ _))
-    .
-
-
-    (* TODO: factor out the commonalities with GroundTerm_satisfies_VarWithSc *)
-    Definition GroundTerm_satisfies_RewritingRule
-        (lr : LeftRight)
-        : GroundTerm -> RewritingRule -> Prop :=
-        A_satisfies_B_WithASideCondition
-            GroundTerm
-            UncondRewritingRule
-            (GroundTerm_satisfies_UncondRewritingRule lr)
-            ρ
-    .
-
-End with_valuation.
-
+#[export]
+Instance Satisfies__GroundTerm__RewritingRule
+    {Σ : Signature}
+    :
+    Satisfies
+        (Valuation*GroundTerm)
+        (LeftRight*RewritingRule)
+:= {|
+    satisfies := fun ρx dy =>
+        GroundTerm_satisfies_RewritingRule
+            ρx.1
+            dy.1
+            ρx.2
+            dy.2
+        ;
+|}.
 
 Definition GroundTerm_satisfies_OpenTerm
     {Σ : Signature}
     : GroundTerm -> OpenTerm -> Prop :=
-    fun g φ => ∃ ρ, in_val_GroundTerm_satisfies_OpenTerm ρ g φ
+    fun g φ => ∃ ρ, satisfies (ρ, g) φ
 .
+
+#[export]
+Instance Satisfies__GroundTerm__OpenTerm_inall
+    {Σ : Signature}
+    :
+    Satisfies
+        GroundTerm
+        OpenTerm
+:= {|
+    satisfies := GroundTerm_satisfies_OpenTerm ;
+|}.
 
 Definition rewrites_in_valuation_to
     {Σ : Signature}
@@ -492,8 +890,8 @@ Definition rewrites_in_valuation_to
     (r : RewritingRule)
     (from to : GroundTerm)
     : Prop
-:= GroundTerm_satisfies_RewritingRule ρ LR_Left from r
-/\ GroundTerm_satisfies_RewritingRule ρ LR_Right to r
+:= satisfies (ρ,from) (LR_Left,r)
+/\ satisfies (ρ,to) (LR_Right,r)
 .
 
 Definition rewrites_to
@@ -533,8 +931,8 @@ Definition rule_weakly_well_defined
     (r : RewritingRule)
     : Prop
     := ∀ ρ from,
-        GroundTerm_satisfies_RewritingRule ρ LR_Left from r ->
-        ∃ to, GroundTerm_satisfies_RewritingRule ρ LR_Right to r
+        satisfies (ρ,from) (LR_Left,r) ->
+        ∃ to, satisfies (ρ,to) (LR_Right,r)
 .
 
 Definition thy_weakly_well_defined
