@@ -107,6 +107,70 @@ Section with_signature.
             o2
     end.
 
+    Set Typeclasses Debug.
+    Lemma reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
+        (Operand1 Operand2 : Type)
+        {Sat1 : Satisfies (Valuation * Operand1) Operand2}
+        {Sat2 : Satisfies (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
+        {Sat3 : Satisfies (Valuation * AppliedOperator' symbol Operand1) Operand2}
+        (matches : Valuation -> Operand1 -> Operand2 -> bool)
+        (matches_app_1 :
+            Valuation ->
+            Operand1 ->
+            AppliedOperator' symbol Operand2 ->
+            bool
+        )
+        (matches_app_2 :
+            Valuation ->
+            AppliedOperator' symbol Operand1 ->
+            Operand2 ->
+            bool
+        )
+        (reflect_matches : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches ρ o1 o2))
+        (reflect_matches_app_1 : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches_app_1 ρ o1 o2))
+        (reflect_matches_app_2 : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches_app_2 ρ o1 o2))
+        (ρ : Valuation)
+        (x : AppliedOperator' symbol Operand1)
+        (y : AppliedOperator' symbol Operand2)
+        :
+        reflect
+            (satisfies (ρ,x) y)
+            (ApppliedOperator'_matches_AppliedOperator'
+                symbol Operand1 Operand2
+                matches
+                matches_app_1
+                matches_app_2
+                 ρ x y
+            )
+    .
+    Proof.
+        revert y.
+        induction x; intros y; destruct y; simpl.
+        {
+            unfold bool_decide.
+            ltac1:(case_match).
+            {
+                apply ReflectT.
+                subst.
+                apply Sat4_refl.
+            }
+            {
+                apply ReflectF.
+                apply Sat4_reflonly.
+                assumption.
+            }
+        }
+        {
+
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+    Qed.
+
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
         (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
@@ -213,5 +277,64 @@ Section with_signature.
             (pure_GroundTerm_matches_BuiltinOrVar)
             ρ
     .
+
+    Lemma reflect__satisfies__GroundTerm_matches_OpenTerm
+        (ρ : Valuation) (g : GroundTerm) (φ : OpenTerm):
+        reflect (satisfies (ρ,g) φ) (GroundTerm_matches_OpenTerm ρ g φ)
+    .
+    Proof.
+        destruct g,φ; simpl.
+        {
+            revert ao0.
+            induction ao; intros ao0; destruct ao0; simpl.
+            {
+                unfold bool_decide,decide_rel.
+                ltac1:(case_match).
+                {
+                    subst.
+                    apply ReflectT.
+                    constructor.
+                    constructor.
+                }
+                {
+                    apply ReflectF.
+                    intros HContra.
+                    inversion HContra; subst; clear HContra.
+                    inversion pf; subst; clear pf.
+                    ltac1:(contradiction n).
+                    reflexivity.
+                }
+            }
+            {
+                apply ReflectF.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                inversion pf.
+            }
+            {
+                apply ReflectF.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                inversion pf.
+            }
+            {
+                apply ReflectF.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                inversion pf.
+            }
+            {
+                simpl.
+                destruct (builtin_value_matches_BuiltinOrVar ρ b b0).
+                {
+                    rewrite andb_true_r.
+                    apply IHao.
+                }
+                apply andPP.
+                Search ssrbool.reflect andb.
+                rewrite IHao.
+            }
+        }     
+    Qed.
 
 End with_signature.
