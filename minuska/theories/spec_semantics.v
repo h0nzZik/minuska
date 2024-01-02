@@ -528,35 +528,35 @@ Instance Satisfies__lift_builtin_to_aosb
         ;
 |}.
 
-Definition AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+Definition AppliedOperator'_symbol_A_satisfies_OpenTermB
     {Σ : Signature}
-    (B : Type)
-    (builtin_satisfies_B : builtin_value -> B -> Prop)
-    AppliedOperator'_symbol_builtin_value_satisfies_B
+    (A B : Type)
+    (A_satisfies_B : A -> B -> Prop)
+    AppliedOperator'_symbol_A_satisfies_B
     :
     
-    AppliedOperatorOr' symbol builtin_value ->
+    AppliedOperatorOr' symbol A ->
     AppliedOperatorOr' symbol B ->
     Prop
 :=  
-    @aoxyo_satisfies_aoxzo symbol builtin_value B
-    builtin_satisfies_B
-    AppliedOperator'_symbol_builtin_value_satisfies_B
+    @aoxyo_satisfies_aoxzo symbol A B
+    A_satisfies_B
+    AppliedOperator'_symbol_A_satisfies_B
 .
 
 #[export]
 Instance Satisfies__lift_builtin_to_aosbo
     {Σ : Signature}
-    {B : Type}
-    {bsB : Satisfies (Valuation*builtin_value) B}
-    {sat2 : Satisfies (Valuation*(AppliedOperator' symbol builtin_value)) B}
+    {A B : Type}
+    {bsB : Satisfies (Valuation*A) B}
+    {sat2 : Satisfies (Valuation*(AppliedOperator' symbol A)) B}
     :
     Satisfies
-        (Valuation*(AppliedOperatorOr' symbol builtin_value))
+        (Valuation*(AppliedOperatorOr' symbol A))
         (AppliedOperatorOr' symbol B)
 := {|
     satisfies := fun ρx y =>
-        AppliedOperator'_symbol_builtin_satisfies_OpenTermB B
+        AppliedOperator'_symbol_A_satisfies_OpenTermB A B
             (fun a b => @satisfies _ _ bsB (ρx.1,a) b)
             (fun a b => @satisfies _ _ sat2 (ρx.1,a) b)
             ρx.2
@@ -572,7 +572,8 @@ Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
     OpenTerm ->
     Prop
 :=  fun a b =>
-    AppliedOperator'_symbol_builtin_satisfies_OpenTermB
+    AppliedOperator'_symbol_A_satisfies_OpenTermB
+        builtin_value
         BuiltinOrVar
         (builtin_satisfies_BuiltinOrVar ρ)
         (AppliedOperator'_symbol_builtin_value_satisfies_BOV ρ)
@@ -962,4 +963,4 @@ Definition thy_weakly_well_defined
 .
 
 
-Search Satisfies AppliedOperator' symbol.
+Search Satisfies AppliedOperatorOr' symbol.

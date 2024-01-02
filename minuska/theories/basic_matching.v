@@ -19,6 +19,13 @@ Section with_signature.
         {Σ : Signature}
     .
 
+    Class Matches (A B : Type) := {
+        matchesb: A -> B -> bool ;
+        matchesb_Satisfies :: Satisfies A B ;
+        matchesb_satisfies : ∀ a b, reflect (satisfies a b) (matchesb a b) ;
+    }.
+
+
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
         (Operator : Type)
         {Operator_eqdec : EqDecision Operator}
@@ -107,18 +114,13 @@ Section with_signature.
             o2
     end.
 
-    Lemma reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
+    #[export]
+    Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
         (Operand1 Operand2 : Type)
         {Sat1 : Satisfies (Valuation * Operand1) Operand2}
         {Sat2 : Satisfies (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
         {Sat3 : Satisfies (Valuation * AppliedOperator' symbol Operand1) Operand2}
         (matches : Valuation -> Operand1 -> Operand2 -> bool)
-        (*matches_app_1 :
-            Valuation ->
-            Operand1 ->
-            AppliedOperator' symbol Operand2 ->
-            bool
-        *)
         (matches_app_2 :
             Valuation ->
             AppliedOperator' symbol Operand1 ->
@@ -127,25 +129,31 @@ Section with_signature.
         )
         (reflect_matches : ∀ ρ o1 o2,
             reflect (satisfies (ρ,o1) o2) (matches ρ o1 o2))
-        (*reflect_matches_app_1 : ∀ ρ o1 o2,
-            reflect (satisfies (ρ,o1) o2) (matches_app_1 ρ o1 o2)*)
         (reflect_matches_app_2 : ∀ ρ o1 o2,
             reflect (satisfies (ρ,o1) o2) (matches_app_2 ρ o1 o2))
-        (ρ : Valuation)
-        (x : AppliedOperator' symbol Operand1)
-        (y : AppliedOperator' symbol Operand2)
         :
-        reflect
-            (satisfies (ρ,x) y)
-            (ApppliedOperator'_matches_AppliedOperator'
-                symbol Operand1 Operand2
-                matches
-                (*matches_app_1*)
-                matches_app_2
-                 ρ x y
-            )
-    .
-    Proof.
+        Matches
+            (Valuation * (AppliedOperator' symbol Operand1))
+            (AppliedOperator' symbol Operand2)
+        := {|
+            matchesb := fun ρx y =>
+                ApppliedOperator'_matches_AppliedOperator'
+                    symbol
+                    Operand1
+                    Operand2
+                    matches
+                    matches_app_2
+                    ρx.1
+                    ρx.2
+                    y ;
+            matchesb_Satisfies := _ ;
+            matchesb_satisfies := _;
+        |}.
+    Next Obligation.
+        simpl.
+        ltac1:(rename v into ρ).
+        ltac1:(rename a into x).
+        ltac1:(rename b into y).
         revert y.
         induction x; intros y; destruct y.
         {
@@ -302,7 +310,7 @@ Section with_signature.
         ApppliedOperator'_matches_AppliedOperator'
             Operator
             Operand1 Operand2
-            matches matches_app_1 matches_app_2
+            matches (*matches_app_1*) matches_app_2
             ρ
             app1 app2
     | aoo_app _ _ app1, aoo_operand _ _ o2 =>
@@ -312,6 +320,48 @@ Section with_signature.
     | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
         matches ρ o1 o2
     end.
+
+    Lemma reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
+        (Operand1 Operand2 : Type)
+        {Sat1 : Satisfies (Valuation * Operand1) Operand2}
+        {Sat2 : Satisfies (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
+        {Sat3 : Satisfies (Valuation * AppliedOperator' symbol Operand1) Operand2}
+        (matches : Valuation -> Operand1 -> Operand2 -> bool)
+        (matches_app_1 :
+            Valuation ->
+            Operand1 ->
+            AppliedOperator' symbol Operand2 ->
+            bool
+        )
+        (matches_app_2 :
+            Valuation ->
+            AppliedOperator' symbol Operand1 ->
+            Operand2 ->
+            bool
+        )
+        (reflect_matches : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches ρ o1 o2))
+        (reflect_matches_app_1 : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches_app_1 ρ o1 o2))
+        (reflect_matches_app_2 : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches_app_2 ρ o1 o2))
+        (ρ : Valuation)
+        (x : AppliedOperatorOr' symbol Operand1)
+        (y : AppliedOperatorOr' symbol Operand2)
+        :
+        reflect (satisfies (ρ, x) y) (ApppliedOperatorOr'_matches_AppliedOperatorOr' symbol Operand1 Operand2 matches matches_app_1 matches_app_2 ρ x y).
+    Proof.
+        destruct x; simpl.
+        {
+            destruct y; simpl.
+            {
+                
+            }
+            {
+
+            }
+        }
+    Qed.
 
     Definition builtin_value_matches_BuiltinOrVar
         (ρ : Valuation)
