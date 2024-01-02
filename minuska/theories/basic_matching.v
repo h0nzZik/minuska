@@ -24,12 +24,12 @@ Section with_signature.
         {Operator_eqdec : EqDecision Operator}
         (Operand1 Operand2 : Type)
         (matches : Valuation -> Operand1 -> Operand2 -> bool)
-        (matches_app_1 :
+        (*matches_app_1 :
             Valuation ->
             Operand1 ->
             AppliedOperator' Operator Operand2 ->
             bool
-        )
+        *)
         (matches_app_2 :
             Valuation ->
             AppliedOperator' Operator Operand1 ->
@@ -52,13 +52,13 @@ Section with_signature.
             Operand1
             Operand2
             matches
-            matches_app_1
+            (*matches_app_1*)
             matches_app_2
             ρ
             app1
             app2
         && matches ρ o1 o2
-    | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+    | ao_app_operand app1 o1, ao_app_ao app2 o2 => false (*
         ApppliedOperator'_matches_AppliedOperator' 
             Operator
             Operand1
@@ -69,7 +69,7 @@ Section with_signature.
             ρ
             app1
             app2
-        && matches_app_1 ρ o1 o2
+        && matches_app_1 ρ o1 o2 *)
     | ao_app_ao app1 o1, ao_operator _ => false
     | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
@@ -77,7 +77,7 @@ Section with_signature.
             Operand1
             Operand2
             matches
-            matches_app_1
+            (*matches_app_1*)
             matches_app_2
             ρ
             app1
@@ -89,7 +89,7 @@ Section with_signature.
             Operand1
             Operand2
             matches
-            matches_app_1
+            (*matches_app_1*)
             matches_app_2
             ρ
             app1
@@ -100,26 +100,25 @@ Section with_signature.
             Operand1
             Operand2
             matches
-            matches_app_1
+            (*matches_app_1*)
             matches_app_2
             ρ
             o1
             o2
     end.
 
-    Set Typeclasses Debug.
     Lemma reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
         (Operand1 Operand2 : Type)
         {Sat1 : Satisfies (Valuation * Operand1) Operand2}
         {Sat2 : Satisfies (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
         {Sat3 : Satisfies (Valuation * AppliedOperator' symbol Operand1) Operand2}
         (matches : Valuation -> Operand1 -> Operand2 -> bool)
-        (matches_app_1 :
+        (*matches_app_1 :
             Valuation ->
             Operand1 ->
             AppliedOperator' symbol Operand2 ->
             bool
-        )
+        *)
         (matches_app_2 :
             Valuation ->
             AppliedOperator' symbol Operand1 ->
@@ -128,8 +127,8 @@ Section with_signature.
         )
         (reflect_matches : ∀ ρ o1 o2,
             reflect (satisfies (ρ,o1) o2) (matches ρ o1 o2))
-        (reflect_matches_app_1 : ∀ ρ o1 o2,
-            reflect (satisfies (ρ,o1) o2) (matches_app_1 ρ o1 o2))
+        (*reflect_matches_app_1 : ∀ ρ o1 o2,
+            reflect (satisfies (ρ,o1) o2) (matches_app_1 ρ o1 o2)*)
         (reflect_matches_app_2 : ∀ ρ o1 o2,
             reflect (satisfies (ρ,o1) o2) (matches_app_2 ρ o1 o2))
         (ρ : Valuation)
@@ -141,26 +140,28 @@ Section with_signature.
             (ApppliedOperator'_matches_AppliedOperator'
                 symbol Operand1 Operand2
                 matches
-                matches_app_1
+                (*matches_app_1*)
                 matches_app_2
                  ρ x y
             )
     .
     Proof.
         revert y.
-        induction x; intros y; destruct y; simpl.
+        induction x; intros y; destruct y.
         {
+            simpl.
             unfold bool_decide.
             ltac1:(case_match).
             {
                 apply ReflectT.
                 subst.
-                apply Sat4_refl.
+                constructor.
             }
             {
                 apply ReflectF.
-                apply Sat4_reflonly.
-                assumption.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                ltac1:(contradiction).
             }
         }
         {
@@ -168,6 +169,110 @@ Section with_signature.
             apply ReflectF.
             intros HContra.
             inversion HContra.
+        }
+        {
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            simpl.
+            specialize (IHx y).
+            simpl in IHx.
+            destruct ((ApppliedOperator'_matches_AppliedOperator' symbol Operand1 Operand2 matches (*matches_app_1*) matches_app_2 ρ x y)) eqn:Heqm1.
+            {
+                simpl.
+                apply reflect_iff in IHx.
+                apply proj2 in IHx.
+                specialize (IHx eq_refl).
+                destruct (matches ρ b b0) eqn:Heqm.
+                {
+                    apply ReflectT.
+                    constructor.
+                    apply IHx.
+                    specialize (reflect_matches ρ b b0).
+                    apply reflect_iff in reflect_matches.
+                    apply reflect_matches.
+                    exact Heqm.
+                }
+                {
+                    apply ReflectF.
+                    intros HContra.
+                    inversion HContra; subst; clear HContra.
+                    specialize (reflect_matches ρ b b0).
+                    apply reflect_iff in reflect_matches.
+                    apply reflect_matches in H4.
+                    rewrite Heqm in H4.
+                    inversion H4.
+                }
+            }
+            {
+                simpl.
+                apply ReflectF.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                simpl in H4.
+                apply reflect_iff in IHx.
+                apply proj1 in IHx.
+                specialize (IHx H2).
+                inversion IHx.
+            }
+        }
+        {
+            simpl.
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            simpl.
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            simpl.
+            specialize (IHx1 y).
+            apply reflect_iff in IHx1.
+            simpl in IHx1.
+            apply iff_reflect.
+            rewrite andb_true_iff.
+            rewrite <- IHx1.
+            ltac1:(cut ((satisfies (ρ, x2) b) <-> (matches_app_2 ρ x2 b = true))).
+            {
+                intros HH0. rewrite <- HH0.
+                simpl.    
+                split; intros HH.
+                {
+                    inversion HH; subst; clear HH.
+                    split; assumption.
+                }
+                {
+                    constructor;
+                    destruct HH; assumption.
+                }
+            }
+            specialize (reflect_matches_app_2 ρ x2 b).
+            apply reflect_iff in reflect_matches_app_2.
+            apply reflect_matches_app_2.
+        }
+        {
+            specialize (IHx1 y1).
+            specialize (IHx2 y2).
+            apply reflect_iff in IHx1.
+            apply reflect_iff in IHx2.
+            apply iff_reflect.
+            simpl.
+            rewrite andb_true_iff.
+            rewrite <- IHx1.
+            rewrite <- IHx2.
+            simpl.
+            split; intros HH; inversion HH; subst; clear HH; constructor; assumption.
         }
     Qed.
 

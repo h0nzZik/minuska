@@ -103,6 +103,7 @@ Inductive aoxy_satisfies_aoxz
         aoxy_satisfies_aoxz aoxy aoxz ->
         AOXY_sat_Z aoxy2 z ->
         aoxy_satisfies_aoxz
+        (* The right-side, the symbolic one, has more compact representation - so *)
             (ao_app_ao aoxy aoxy2)
             (ao_app_operand aoxz z)
 
