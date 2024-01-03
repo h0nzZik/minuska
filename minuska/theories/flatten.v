@@ -166,7 +166,7 @@ match x with
 | aoo_operand _ _ operand => A_to_OpenTermB operand
 end.
 
-
+(*
 Fixpoint A_satisfies_B_WithASideCondition_comp
     {Σ : Signature}
     (A B : Type)
@@ -241,7 +241,7 @@ match g, φ with
 | aoo_operand _ _ _, aoo_app _ _ _
     => False
 end.
-
+*)
 
 Definition LhsPattern_to_pair_OpenTerm_SC
     {Σ : Signature}
@@ -554,7 +554,7 @@ Qed.
 *)
 
 Lemma getSCS_getBase_correct
-    {Σ : Signature}
+    `{CΣ : ComputableSignature}
     {A B : Type}
     `{Matches (Valuation*A) B}
     (wscb : WithASideCondition B)
@@ -567,7 +567,7 @@ Lemma getSCS_getBase_correct
     satisfies (ρ,a) wscb
 .
 Proof.
-    revert a;
+    revert a.
     induction wscb; intros a; cbn.
     {
         split.
@@ -590,13 +590,40 @@ Proof.
         simpl.
         unfold valuation_satisfies_scs.
         ltac1:(rewrite Forall_cons_iff).
-        Search reflect true.
-        Check @matchesb_satisfies.
-        About reflect_iff.
-        rewrite Forall_forall.
+        
         rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ ρ (getSCS wscb))) in IHwscb.
-        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,a) (getBase wscb))).
-        ltac1:(naive_solver).
+        split; intros HH.
+        {
+            unfold satisfies. simpl. constructor.
+            apply IHwscb.
+            destruct HH as [HH1 [HH2 HH3]].
+            split>[assumption|].
+            unfold matchesb. simpl.
+            rewrite forallb_forall.
+            rewrite Forall_forall in HH3.
+            intros x HHH. specialize (HH3 x HHH).
+            eapply introT.
+            { apply matchesb_satisfies. }
+            { assumption. }
+            simpl. apply HH.
+        }
+        {
+            inversion HH; subst; clear HH.
+            simpl in *.
+            unfold satisfies at 2 in IHwscb. simpl in IHwscb.
+            rewrite <- IHwscb in H3. clear IHwscb.
+            destruct H3 as [H31 H32].
+            split>[assumption|].
+            split>[assumption|].
+            rewrite Forall_forall.
+            intros x HHH.
+            unfold matchesb in H32. simpl in H32.
+            rewrite forallb_forall in H32.
+            specialize (H32 x HHH).
+            eapply elimT.
+            { apply matchesb_satisfies. }
+            { assumption. }
+        }
     }
 Qed.
 
