@@ -8,6 +8,7 @@ From Minuska Require Import
     spec_semantics
     syntax_properties
     flattened
+    basic_matching
 .
 
 Fixpoint AppliedOperator'_size
@@ -366,6 +367,7 @@ Definition enables_match
     (m_variable m) ∈ vars
 .
 
+#[export]
 Instance enables_match_dec
     {Σ : Signature}
     (vars : gset variable)
@@ -509,6 +511,7 @@ Proof.
     }
 Qed.
 
+(*
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
     {A B : Type}
@@ -548,11 +551,12 @@ Proof.
     }
 Qed.
 
+*)
 
 Lemma getSCS_getBase_correct
     {Σ : Signature}
     {A B : Type}
-    `{Satisfies (Valuation*A) B}
+    `{Matches (Valuation*A) B}
     (wscb : WithASideCondition B)
     (a : A)
     (ρ : Valuation)
@@ -586,9 +590,12 @@ Proof.
         simpl.
         unfold valuation_satisfies_scs.
         ltac1:(rewrite Forall_cons_iff).
-        rewrite A_satisfies_B_WithASideCondition_comp_iff in IHwscb.
-        rewrite A_satisfies_B_WithASideCondition_comp_iff.
-        simpl. simpl in IHwscb.
+        Search reflect true.
+        Check @matchesb_satisfies.
+        About reflect_iff.
+        rewrite Forall_forall.
+        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ ρ (getSCS wscb))) in IHwscb.
+        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,a) (getBase wscb))).
         ltac1:(naive_solver).
     }
 Qed.
@@ -652,8 +659,6 @@ Proof.
     }
 Qed.
 
-Search Satisfies Valuation AppliedOperator' symbol.
-Set Typeclasses Debug.
 Lemma aoxy_satisfies_aoxz_comp_iff
     {Σ : Signature}
     {Y Z : Type}
@@ -676,7 +681,8 @@ Proof.
         try ltac1:(naive_solver).
     {
         destruct HH as [HH1 HH2].
-        Search aoxy_satisfies_aoxz_comp.
+        eapply elimT.
+        { apply matchesb_satisfies. }
         unfold satisfies.
         apply HH.
         unfold satisfies in H2.

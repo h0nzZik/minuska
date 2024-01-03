@@ -11,7 +11,6 @@ try (
     let h_type := Constr.type h_hyp in
     lazy_match! h_type with
 | (@ex _ _) => (
-        Message.print (Message.of_string "Here");
         let x := Fresh.in_goal ident:(x) in
         let hx := Fresh.in_goal ident:(Hx) in
         destruct $h_hyp as [ $x $hx ];

@@ -7,23 +7,6 @@ From Minuska Require Import
 .
 
 
-
-Definition valuation_satisfies_scs
-    {Σ : Signature}
-    (ρ : Valuation)
-    (scs : list SideCondition)
-    : Prop
-:= Forall (satisfies ρ) scs
-.
-
-#[export]
-Instance Satisfies_valuation_scs
-    {Σ : Signature}
-    : Satisfies Valuation (list SideCondition)
-:= {|
-    satisfies := valuation_satisfies_scs ;
-|}.
-
 Record FlattenedRewritingRule {Σ : Signature} := {
     fr_from : OpenTerm ;
     fr_to : RhsPattern ;

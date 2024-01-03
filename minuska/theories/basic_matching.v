@@ -4,9 +4,7 @@ From Minuska Require Import
     tactics
     spec_syntax
     spec_semantics
-    syntax_properties(*
-    flattened
-    flatten*)
+    syntax_properties
 .
 
 Require Import Logic.PropExtensionality.
@@ -236,6 +234,7 @@ Section with_signature.
         matchesb (ρ, o1) o2
     end.
 
+    #[export]
     Program Instance
         reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
@@ -351,8 +350,9 @@ Section with_signature.
     end.
 
 
+    #[export]
     Program Instance
-        reflect__satisfies__builtin_value__BuiltinOrVar
+        reflect__matches__builtin_value__BuiltinOrVar
         :
         Matches
             (Valuation * builtin_value)
@@ -428,8 +428,9 @@ Section with_signature.
         bool_decide (ρb.2 = b')
     end.
 
+    #[export]
     Program Instance
-        reflect__satisfies__builtin_value__OpenTerm
+        reflect__matches__builtin_value__OpenTerm
         :
         Matches
             (Valuation * builtin_value)
@@ -464,103 +465,256 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-    Definition builtin_value_try_match_BuiltinOrVar:
-        builtin_value -> BuiltinOrVar -> option Valuation :=
-    fun b bv =>
-    match bv with
-    | bov_builtin b' => if (decide (b = b')) then Some ∅ else None
-    | bov_variable x => Some (<[x := (aoo_operand _ _ b)]>∅)
-    end.
-
-
-    Definition pure_GroundTerm_matches_BuiltinOrVar
-        (ρ : Valuation)
-        : AppliedOperator' symbol builtin_value -> BuiltinOrVar -> bool
-    := fun t bov =>
+    Definition GroundTerm'_matches_BuiltinOrVar
+        : Valuation*(AppliedOperator' symbol builtin_value) ->
+            BuiltinOrVar ->
+            bool
+    := fun ρt bov =>
     match bov with
     | bov_builtin b => false
     | bov_variable x =>
-        bool_decide (ρ !! x = Some (aoo_app _ _ t))
+        bool_decide (ρt.1 !! x = Some (aoo_app _ _ ρt.2))
     end.
 
-    Definition pure_GroundTerm_try_match_BuiltinOrVar:
-        AppliedOperator' symbol builtin_value -> BuiltinOrVar -> option Valuation
-    := fun t bov =>
-    match bov with
-    | bov_builtin b => None
-    | bov_variable x =>
-        Some (<[x := (aoo_app _ _ t)]>∅)
-    end.
-
-    Definition GroundTerm_matches_OpenTerm
-        (ρ : Valuation):
-        GroundTerm -> OpenTerm -> bool :=
-        ApppliedOperatorOr'_matches_AppliedOperatorOr'
-            symbol
-            builtin_value
+    #[export]
+    Program Instance
+        matches__builtin_value__OpenTerm
+        :
+        Matches
+            (Valuation * (AppliedOperator' symbol builtin_value))
             BuiltinOrVar
-            (builtin_value_matches_BuiltinOrVar)
-            (fun ρ' x y => false)
-            (pure_GroundTerm_matches_BuiltinOrVar)
-            ρ
-    .
+        := {|
+            matchesb := GroundTerm'_matches_BuiltinOrVar;
+            matchesb_satisfies := _;
+        |}.
+    Next Obligation.
+        destruct b; simpl.
+        {
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            unfold bool_decide.
+            apply iff_reflect.
+            ltac1:(case_match; split; intros HH; inversion HH; simplify_eq/=).
+            { reflexivity. }
+            { 
+                unfold satisfies. simpl. assumption.
+            }
+        }
+    Qed.
+    Fail Next Obligation.
 
-    Lemma reflect__satisfies__GroundTerm_matches_OpenTerm
-        (ρ : Valuation) (g : GroundTerm) (φ : OpenTerm):
-        reflect (satisfies (ρ,g) φ) (GroundTerm_matches_OpenTerm ρ g φ)
+    #[export]
+    Program Instance Matches_bv_ao'
+        :
+        Matches (Valuation * builtin_value) (AppliedOperator' symbol BuiltinOrVar)
+    := {|
+        matchesb := fun _ _ => false ;
+    |}.
+    Next Obligation.
+        unfold satisfies. simpl.
+        apply ReflectF.
+        intros HContra.
+        exact HContra.
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Instance
+        matches__GroundTerm__OpenTerm
+        :
+        Matches
+            (Valuation * (GroundTerm))
+            OpenTerm
     .
     Proof.
-        destruct g,φ; simpl.
-        {
-            revert ao0.
-            induction ao; intros ao0; destruct ao0; simpl.
-            {
-                unfold bool_decide,decide_rel.
-                ltac1:(case_match).
-                {
-                    subst.
-                    apply ReflectT.
-                    constructor.
-                    constructor.
-                }
-                {
-                    apply ReflectF.
-                    intros HContra.
-                    inversion HContra; subst; clear HContra.
-                    inversion pf; subst; clear pf.
-                    ltac1:(contradiction n).
-                    reflexivity.
-                }
-            }
-            {
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                inversion pf.
-            }
-            {
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                inversion pf.
-            }
-            {
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                inversion pf.
-            }
-            {
-                simpl.
-                destruct (builtin_value_matches_BuiltinOrVar ρ b b0).
-                {
-                    rewrite andb_true_r.
-                    apply IHao.
-                }
-                apply andPP.
-                rewrite IHao.
-            }
-        }     
+        unfold GroundTerm.
+        unfold GroundTerm'.
+        unfold OpenTerm.
+        apply reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'.
     Qed.
 
 End with_signature.
+
+Class ComputableSignature {Σ : Signature} := {
+    builtin_unary_predicate_interp_bool :
+        builtin_unary_predicate -> GroundTerm -> bool ; 
+
+    builtin_binary_predicate_interp_bool :
+        builtin_binary_predicate -> GroundTerm -> GroundTerm -> bool ;         
+
+    cs_up :
+        forall p e,
+            reflect
+                (builtin_unary_predicate_interp p e)
+                (builtin_unary_predicate_interp_bool p e) ;
+
+    cs_bp :
+        forall p e1 e2,
+            reflect
+                (builtin_binary_predicate_interp p e1 e2)
+                (builtin_binary_predicate_interp_bool p e1 e2) ;
+}.
+
+Definition val_satisfies_ap_bool
+    `{ComputableSignature}
+    (ρ : Valuation)
+    (ap : AtomicProposition)
+    : bool :=
+match ap with
+| apeq e1 e2 => 
+    let v1 := Expression_evaluate ρ e1 in
+    let v2 := Expression_evaluate ρ e2 in
+    bool_decide (v1 = v2) && isSome v1
+| ap1 p e =>
+    let v := Expression_evaluate ρ e in
+    match v with
+    | Some vx => builtin_unary_predicate_interp_bool p vx
+    | None => false
+    end
+| ap2 p e1 e2 =>
+    let v1 := Expression_evaluate ρ e1 in
+    let v2 := Expression_evaluate ρ e2 in
+    match v1,v2 with
+    | Some vx, Some vy => builtin_binary_predicate_interp_bool p vx vy
+    | _,_ => false
+    end
+end
+.
+
+#[export]
+Program Instance Matches_val_ap
+    `{ComputableSignature}
+    : Matches Valuation AtomicProposition
+:= {|
+    matchesb := val_satisfies_ap_bool ;
+|}.
+Next Obligation.
+    induction b; simpl.
+    {
+        unfold satisfies.
+        simpl.
+        unfold is_Some, bool_decide.
+        ltac1:(case_match).
+        {
+            simpl.
+            apply iff_reflect.
+            split; intros HH.
+            {
+                destruct HH as [HH1 [x HHx]].
+                rewrite HHx.
+                reflexivity.
+            }
+            {
+                split.
+                {
+                    assumption.
+                }
+                {
+                    unfold isSome in *|-.
+                    ltac1:(case_match).
+                    {
+                        exists g. reflexivity.
+                    }
+                    {
+                        inversion HH.
+                    }
+                }
+            }
+        }
+        {
+            simpl.
+            apply ReflectF.
+            intros [HContra1 [x HContrax]].
+            ltac1:(simplify_eq/=).
+        }
+    }
+    {
+        unfold satisfies.
+        simpl.
+        ltac1:(case_match).
+        {
+            apply cs_up.
+        }
+        {
+            apply ReflectF. intros HContra. exact HContra.
+        }
+    }
+    {
+        unfold satisfies.
+        simpl.
+        ltac1:(repeat case_match).
+        {
+            apply cs_bp.
+        }
+        {
+            apply ReflectF. intros HContra. exact HContra.
+        }
+        {
+            apply ReflectF. intros HContra. exact HContra.
+        }
+    }
+Qed.
+Fail Next Obligation.
+
+Fixpoint val_satisfies_c_bool
+    `{ComputableSignature}
+    (ρ : Valuation)
+    (c : Constraint)
+    : Prop :=
+match c with
+| c_True => true
+| c_atomic ap => matchesb ρ ap
+| c_and c1 c2 => val_satisfies_c_bool ρ c1 /\ val_satisfies_c_bool ρ c2
+| c_not c' => ~ val_satisfies_c_bool ρ c'
+end.
+
+Definition valuation_satisfies_sc_bool
+    {Σ : Signature}
+    (ρ : Valuation)
+    (sc : SideCondition) : bool :=
+match sc with
+| sc_constraint c => val_satisfies_c ρ c
+| sc_match m => valuation_satisfies_match ρ m
+end.
+
+#[export]
+Program Instance Matches_valuation_sc
+    {Σ : Signature}
+    :
+    Matches Valuation (list SideCondition)
+:= {|
+    matchesb := fun ρ => forallb (@matchesb Valuation SideCondition Satisfies_val_sc _ ρ) ;
+|}.
+
+#[export]
+Program Instance Matches_valuation_scs
+    {Σ : Signature}
+    :
+    Matches Valuation (list SideCondition)
+:= {|
+    matchesb := fun ρ => forallb (@matchesb Valuation SideCondition Satisfies_val_sc _ ρ) ;
+|}.
+Next Obligation.
+    Search Valuation SideCondition.
+    Search Satisfies Valuation SideCondition.
+    unfold satisfies. simpl.
+    unfold valuation_satisfies_scs.
+    apply iff_reflect.
+    rewrite Forall_forall.
+    rewrite forallb_forall.
+    split; intros H' x Hin; specialize (H' x Hin).
+    {
+        eapply introT.
+        { apply matchesb_satisfies. }
+        {
+            apply H'.
+        }
+    }
+    ltac1:(setoid_rewrite matchesb_satisfies).
+    rewrite forallb_True.
+    Search Forall forallb.
+Qed.
+Fail Next Obligation.

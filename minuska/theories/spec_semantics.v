@@ -965,6 +965,15 @@ Instance Satisfies__GroundTerm__OpenTerm_inall
     satisfies := GroundTerm_satisfies_OpenTerm ;
 |}.
 
+#[export]
+Instance Satisfies_bv_ao'
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * builtin_value) (AppliedOperator' symbol BuiltinOrVar)
+:= {|
+    satisfies := fun _ _ => False ;
+|}.
+
 Definition rewrites_in_valuation_to
     {Σ : Signature}
     (ρ : Valuation)
@@ -1023,3 +1032,19 @@ Definition thy_weakly_well_defined
     := ∀ r, r ∈ Γ -> rule_weakly_well_defined r
 .
 
+
+Definition valuation_satisfies_scs
+    {Σ : Signature}
+    (ρ : Valuation)
+    (scs : list SideCondition)
+    : Prop
+:= Forall (satisfies ρ) scs
+.
+
+#[export]
+Instance Satisfies_valuation_scs
+    {Σ : Signature}
+    : Satisfies Valuation (list SideCondition)
+:= {|
+    satisfies := valuation_satisfies_scs ;
+|}.
