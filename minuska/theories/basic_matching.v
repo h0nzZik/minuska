@@ -338,18 +338,131 @@ Section with_signature.
     Qed.
 
     Definition builtin_value_matches_BuiltinOrVar
-        (ρ : Valuation)
-        : builtin_value -> BuiltinOrVar -> bool :=
-    fun b bv =>
+        : Valuation*builtin_value -> BuiltinOrVar -> bool :=
+    fun ρb bv =>
     match bv with
-    | bov_builtin b' => bool_decide (b = b')
+    | bov_builtin b' => bool_decide (ρb.2 = b')
     | bov_variable x =>
-        match ρ !! x with
+        match ρb.1 !! x with
         | None => false
         | Some (aoo_app _ _ _) => false
-        | Some (aoo_operand _ _ b') => bool_decide (b = b')
+        | Some (aoo_operand _ _ b') => bool_decide (ρb.2 = b')
         end
     end.
+
+
+    Program Instance
+        reflect__satisfies__builtin_value__BuiltinOrVar
+        :
+        Matches
+            (Valuation * builtin_value)
+            BuiltinOrVar
+        := {|
+            matchesb := 
+                builtin_value_matches_BuiltinOrVar;
+            matchesb_satisfies := _;
+        |}.
+    Next Obligation.
+        unfold satisfies; simpl.
+        destruct b; unfold builtin_satisfies_BuiltinOrVar'; simpl.
+        {
+            apply iff_reflect.
+            split; intros HH.
+            {
+                inversion HH; subst; clear HH.
+                unfold bool_decide.
+                ltac1:(case_match; subst; naive_solver).
+            }
+            {
+                unfold bool_decide in HH.
+                ltac1:(case_match; subst; try contradiction; try constructor; naive_solver).
+            }
+        }
+        {
+            destruct (v !! x) eqn:Hvx; simpl.
+            {
+                destruct a; simpl.
+                {
+                    apply ReflectF.
+                    intros HContra.
+                    inversion HContra; subst; clear HContra.
+                    ltac1:(simplify_eq/=).
+                }
+                {
+                    unfold bool_decide.
+                    ltac1:(case_match).
+                    {
+                        apply ReflectT.
+                        constructor. subst. assumption.
+                    }
+                    {
+                        apply ReflectF.
+                        intros HContra.
+                        inversion HContra; subst; clear HContra.
+                        ltac1:(simplify_eq/=).
+                    }
+                }
+            }
+            {
+                apply ReflectF.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                ltac1:(simplify_eq/=).
+            }
+        }
+    Qed.
+    Fail Next Obligation.
+
+    Definition builtin_value_matches_OpenTerm
+        : Valuation*builtin_value -> OpenTerm -> bool :=
+    fun ρb t =>
+    match t with
+    | aoo_app _ _ _ => false
+    | aoo_operand _ _ (bov_variable x) =>
+        match ρb.1 !! x with
+        | None => false
+        | Some (aoo_app _ _ _) => false
+        | Some (aoo_operand _ _ b') => bool_decide (ρb.2 = b')
+        end
+    | aoo_operand _ _ (bov_builtin b') =>
+        bool_decide (ρb.2 = b')
+    end.
+
+    Program Instance
+        reflect__satisfies__builtin_value__OpenTerm
+        :
+        Matches
+            (Valuation * builtin_value)
+            OpenTerm
+        := {|
+            matchesb := builtin_value_matches_OpenTerm;
+            matchesb_satisfies := _;
+        |}.
+    Next Obligation.
+        destruct b; simpl.
+        {
+            apply ReflectF.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            unfold bool_decide.
+            ltac1:((repeat case_match); simplify_eq/=);
+                try (apply ReflectF; intros HContra; inversion HContra; subst; clear HContra;
+                    ltac1:(simplify_eq/=)).
+            {
+                apply ReflectT.
+                constructor.
+            }
+            {
+                apply ReflectT.
+                constructor.
+                simpl.
+                assumption.
+            }
+        }
+    Qed.
+    Fail Next Obligation.
 
     Definition builtin_value_try_match_BuiltinOrVar:
         builtin_value -> BuiltinOrVar -> option Valuation :=
@@ -359,21 +472,6 @@ Section with_signature.
     | bov_variable x => Some (<[x := (aoo_operand _ _ b)]>∅)
     end.
 
-    Definition builtin_value_matches_pure_OpenTerm
-        (ρ : Valuation)
-        : builtin_value -> OpenTerm -> bool :=
-    fun b t =>
-    match t with
-    | aoo_app _ _ _ => false
-    | aoo_operand _ _ (bov_variable x) =>
-        match ρ !! x with
-        | None => false
-        | Some (aoo_app _ _ _) => false
-        | Some (aoo_operand _ _ b') => bool_decide (b = b')
-        end
-    | aoo_operand _ _ (bov_builtin b') =>
-        bool_decide (b = b')
-    end.
 
     Definition pure_GroundTerm_matches_BuiltinOrVar
         (ρ : Valuation)
@@ -460,7 +558,6 @@ Section with_signature.
                     apply IHao.
                 }
                 apply andPP.
-                Search ssrbool.reflect andb.
                 rewrite IHao.
             }
         }     
