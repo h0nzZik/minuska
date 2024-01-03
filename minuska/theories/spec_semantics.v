@@ -27,6 +27,8 @@ Class Satisfies (A B : Type) := mkSatisfies {
     satisfies : A -> B -> Prop ;
 }.
 
+Arguments satisfies : simpl never.
+
 Definition val_satisfies_ap
     {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
     : Prop :=
@@ -357,15 +359,15 @@ Inductive A_satisfies_B_WithASideCondition
     : (V*A) -> WithASideCondition B -> Prop :=
 
 | asbwsc_base:
-    forall (ρ : V) (a : A) (b : B),
-        satisfies (ρ,a) b ->
-        A_satisfies_B_WithASideCondition V A B (ρ, a) (wsc_base b)
+    forall (ρa : V*A) (b : B),
+        satisfies (ρa) b ->
+        A_satisfies_B_WithASideCondition V A B ρa (wsc_base b)
 
 | asbwsc_sc :
-    forall (ρ : V) (a : A) (bsc : WithASideCondition B) sc,
-        A_satisfies_B_WithASideCondition V A B (ρ, a) bsc ->
-        satisfies ρ sc ->
-        A_satisfies_B_WithASideCondition V A B (ρ, a) (wsc_sc bsc sc)
+    forall (ρa : V*A) (bsc : WithASideCondition B) sc,
+        A_satisfies_B_WithASideCondition V A B ρa bsc ->
+        satisfies ρa.1 sc ->
+        A_satisfies_B_WithASideCondition V A B ρa (wsc_sc bsc sc)
 .
 
 #[export]

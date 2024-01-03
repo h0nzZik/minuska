@@ -169,57 +169,76 @@ end.
 Fixpoint A_satisfies_B_WithASideCondition_comp
     {Σ : Signature}
     (A B : Type)
-    (A_sat_B : A -> B -> Prop)
-    (ρ : Valuation)
-    (a : A)
+    `{Satisfies (Valuation*A) B}
+    (ρa : Valuation*A)
     (wscb : WithASideCondition B)
 :=
+let ρ := ρa.1 in
 match wscb with
-| wsc_base b => A_sat_B a b
+| wsc_base b => satisfies ρa b
 | wsc_sc wscb' sc =>
-    A_satisfies_B_WithASideCondition_comp A B A_sat_B ρ a wscb'
-    /\ valuation_satisfies_sc ρ sc
+    A_satisfies_B_WithASideCondition_comp A B ρa wscb'
+    /\ satisfies ρ sc
 end
 .
 
-
 Fixpoint aoxy_satisfies_aoxz_comp
-    {X Y Z : Type}
-    (Y_sat_Z : Y -> Z -> Prop)
-    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
+    {V X Y Z : Type}
+    `{Satisfies (V*Y) Z}
+    `{Satisfies (V*(AppliedOperator' X Y)) Z}
+    (ρ : V)
     (g : AppliedOperator' X Y)
     (φ : AppliedOperator' X Z):
     Prop :=
 match g, φ with
-| ao_operator x1, ao_operator x2 => x1 = x2
-| ao_operator _, _ => False
-| ao_app_operand g1 g2, ao_app_operand φ1 φ2 =>
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
-    /\ Y_sat_Z g2 φ2
-| ao_app_operand _ _, _ => False
-| ao_app_ao g1 g2, ao_app_ao φ1 φ2 => 
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
-    /\ aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g2 φ2
-| ao_app_ao g1 g2, ao_app_operand φ1 φ2 =>
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g1 φ1
-    /\ AOXY_sat_Z g2 φ2
+| ao_operator x1, ao_operator x2
+    => x1 = x2
+
+| ao_operator _, _
+    => False
+
+| ao_app_operand g1 g2, ao_app_operand φ1 φ2
+    => aoxy_satisfies_aoxz_comp ρ g1 φ1
+    /\ satisfies (ρ,g2) φ2
+
+| ao_app_operand _ _, _
+    => False
+
+| ao_app_ao g1 g2, ao_app_ao φ1 φ2
+    => aoxy_satisfies_aoxz_comp ρ g1 φ1
+    /\ aoxy_satisfies_aoxz_comp ρ g2 φ2
+
+| ao_app_ao g1 g2, ao_app_operand φ1 φ2
+    => aoxy_satisfies_aoxz_comp ρ g1 φ1
+    /\ satisfies (ρ,g) φ2
+
 | ao_app_ao _ _, _ => False
 end.
 
 
 Definition aoxyo_satisfies_aoxzo_comp
-    {X Y Z : Type}
-    (Y_sat_Z : Y -> Z -> Prop)
-    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop):
-    AppliedOperatorOr' X Y ->
+    {V X Y Z : Type}
+    `{Satisfies (V*Y) Z }
+    `{Satisfies (V*(AppliedOperator' X Y)) Z}
+    :
+    (V*(AppliedOperatorOr' X Y)) ->
     AppliedOperatorOr' X Z ->
     Prop :=
-fun g φ =>
+fun ρg φ =>
+let ρ := ρg.1 in
+let g := ρg.2 in
 match g, φ with
-| aoo_app _ _ g0, aoo_app _ _ φ0 => aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g0 φ0
-| aoo_operand _ _ g0, aoo_operand _ _ φ0 => Y_sat_Z g0 φ0
-| aoo_app _ _ g0, aoo_operand _ _ φ0 => AOXY_sat_Z g0 φ0
-| aoo_operand _ _ _, aoo_app _ _ _ => False
+| aoo_app _ _ g0, aoo_app _ _ φ0
+    => aoxy_satisfies_aoxz_comp ρ g0 φ0
+
+| aoo_operand _ _ g0, aoo_operand _ _ φ0
+    => satisfies (ρ,g0) φ0
+
+| aoo_app _ _ g0, aoo_operand _ _ φ0
+    => satisfies (ρ,g0) φ0
+
+| aoo_operand _ _ _, aoo_app _ _ _
+    => False
 end.
 
 
@@ -492,32 +511,35 @@ Qed.
 
 Lemma A_satisfies_B_WithASideCondition_comp_iff
     {Σ : Signature}
-    (A B : Type)
-    (A_sat_B : A -> B -> Prop)
-    (ρ : Valuation)
-    (a : A)
-    (wscb : WithASideCondition B)
+    {A B : Type}
+    `{Satisfies (Valuation*A) B}
     :
-    A_satisfies_B_WithASideCondition A B A_sat_B ρ a wscb
-    <->
-    A_satisfies_B_WithASideCondition_comp A B A_sat_B ρ a wscb
+    @satisfies (Valuation*A) (WithASideCondition B) _
+    =
+    A_satisfies_B_WithASideCondition_comp A B
 .
 Proof.
+    apply functional_extensionality.
+    intros ρa.
+    apply functional_extensionality.
+    intros wscb.
+    apply propositional_extensionality.
     induction wscb; cbn.
     {
-        split; intros H.
+        split; intros H'.
         {
-            inversion H; subst; clear H.
+            inversion H'; subst; clear H'.
             assumption.
         }
         {
-            constructor. assumption.
+            apply asbwsc_base.
+            assumption.
         }
     }
     {
-        split; intros H.
+        split; intros H'.
         {
-            inversion H; subst; clear H.
+            inversion H'; subst; clear H'.
             ltac1:(naive_solver).
         }
         {
@@ -530,17 +552,17 @@ Qed.
 Lemma getSCS_getBase_correct
     {Σ : Signature}
     {A B : Type}
-    (A_sat_B : A -> B -> Prop)
+    `{Satisfies (Valuation*A) B}
     (wscb : WithASideCondition B)
     (a : A)
     (ρ : Valuation)
     : 
-    (A_sat_B a (getBase wscb) /\ valuation_satisfies_scs ρ (getSCS wscb))
+    (satisfies (ρ,a) (getBase wscb) /\
+    satisfies ρ (getSCS wscb))
     <->
-    A_satisfies_B_WithASideCondition A B A_sat_B ρ a wscb
+    satisfies (ρ,a) wscb
 .
 Proof.
-    unfold valuation_satisfies_scs.
     revert a;
     induction wscb; intros a; cbn.
     {
@@ -551,19 +573,22 @@ Proof.
             assumption.
         }
         {
-            intros H.
-            inversion H; subst; clear H.
+            intros H'.
+            inversion H'; subst; clear H'.
             split.
             { assumption. }
             { apply Forall_nil. }
         }
     }
     {
-        ltac1:(rewrite Forall_cons_iff).
-        rewrite A_satisfies_B_WithASideCondition_comp_iff.
         specialize (IHwscb a).
+        unfold satisfies at 2.
+        simpl.
+        unfold valuation_satisfies_scs.
+        ltac1:(rewrite Forall_cons_iff).
         rewrite A_satisfies_B_WithASideCondition_comp_iff in IHwscb.
-        cbn.
+        rewrite A_satisfies_B_WithASideCondition_comp_iff.
+        simpl. simpl in IHwscb.
         ltac1:(naive_solver).
     }
 Qed.

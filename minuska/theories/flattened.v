@@ -13,7 +13,7 @@ Definition valuation_satisfies_scs
     (ρ : Valuation)
     (scs : list SideCondition)
     : Prop
-:= Forall (valuation_satisfies_sc ρ) scs
+:= Forall (satisfies ρ) scs
 .
 
 #[export]
