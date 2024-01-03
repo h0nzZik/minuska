@@ -16,6 +16,14 @@ Definition valuation_satisfies_scs
 := Forall (valuation_satisfies_sc ρ) scs
 .
 
+#[export]
+Instance Satisfies_valuation_scs
+    {Σ : Signature}
+    : Satisfies Valuation (list SideCondition)
+:= {|
+    satisfies := valuation_satisfies_scs ;
+|}.
+
 Record FlattenedRewritingRule {Σ : Signature} := {
     fr_from : OpenTerm ;
     fr_to : RhsPattern ;
@@ -28,11 +36,11 @@ Definition flattened_rewrites_in_valuation_to
     (r : FlattenedRewritingRule)
     (from to : GroundTerm)
     : Prop
-:= in_val_GroundTerm_satisfies_OpenTerm
-    ρ from (fr_from r)
-/\ GroundTerm_satisfies_RhsPattern
-    ρ to (fr_to r)
-/\ valuation_satisfies_scs ρ (fr_scs r)
+:= satisfies
+    (ρ, from) (fr_from r)
+/\ satisfies
+    (ρ,to) (fr_to r)
+/\ satisfies ρ (fr_scs r)
 .
 
 Definition flattened_rewrites_to
