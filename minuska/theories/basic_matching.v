@@ -12,6 +12,7 @@ Require Import Setoid.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
+
 Class Matches (A B : Type) {_SAB : Satisfies A B} := {
     matchesb: A -> B -> bool ;
     matchesb_satisfies : ∀ a b, reflect (satisfies a b) (matchesb a b) ;
@@ -663,13 +664,64 @@ Fixpoint val_satisfies_c_bool
     `{ComputableSignature}
     (ρ : Valuation)
     (c : Constraint)
-    : Prop :=
+    : bool :=
 match c with
 | c_True => true
 | c_atomic ap => matchesb ρ ap
-| c_and c1 c2 => val_satisfies_c_bool ρ c1 /\ val_satisfies_c_bool ρ c2
-| c_not c' => ~ val_satisfies_c_bool ρ c'
+| c_and c1 c2 => val_satisfies_c_bool ρ c1 && val_satisfies_c_bool ρ c2
+| c_not c' => ~~ val_satisfies_c_bool ρ c'
 end.
+
+#[export]
+Program Instance Matches_val_c
+    `{CΣ : ComputableSignature}
+    : Matches Valuation Constraint
+:= {|
+    matchesb := val_satisfies_c_bool ;
+|}.
+Next Obligation.
+    induction b.
+    {
+        apply ReflectT. exact I.
+    }
+    {
+        unfold satisfies; simpl.
+        apply matchesb_satisfies.
+    }
+    {
+        apply reflect_iff in IHb1.
+        apply reflect_iff in IHb2.
+        unfold satisfies; simpl.
+        unfold val_satisfies_c_bool; simpl.
+        fold (@val_satisfies_c_bool Σ CΣ).
+        unfold satisfies in IHb1.
+        unfold satisfies in IHb2.
+        simpl in *|-.
+        apply iff_reflect.
+        rewrite -> IHb1.
+        rewrite -> IHb2.
+        symmetry.
+        apply andb_true_iff.
+    }
+    {
+        apply reflect_iff in IHb.
+        unfold satisfies in *; simpl in *.
+        apply iff_reflect.
+        rewrite IHb.
+        split; intros HH.
+        {
+            apply not_true_is_false in HH.
+            rewrite HH.
+            reflexivity.
+        }
+        {
+            intros HContra.
+            rewrite HContra in HH.
+            inversion HH.
+        }
+    }
+Qed.
+Fail Next Obligation.
 
 Definition valuation_satisfies_sc_bool
     {Σ : Signature}
