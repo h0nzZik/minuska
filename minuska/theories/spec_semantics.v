@@ -1048,3 +1048,13 @@ Instance Satisfies_valuation_scs
 := {|
     satisfies := valuation_satisfies_scs ;
 |}.
+
+
+#[export]
+Instance Satisfies_bv_pureterm
+    {Σ : Signature}:
+    Satisfies (Valuation * builtin_value)
+    (AppliedOperator' symbol Expression)
+:= {|
+    satisfies := fun _ _ => False;
+|}.

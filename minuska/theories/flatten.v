@@ -860,23 +860,68 @@ Proof.
 Qed.
 *)
 
-Search Satisfies GroundTerm RhsPattern.
 #[export]
-Program Instance Matches__GroundTerm__RhsPattern
+Program Instance Matchse__builtin__Expression
     `{CΣ : ComputableSignature}
-    `{Matches (Valuation * builtin_value) Expression}
-    `{Matches (Valuation * AppliedOperator' symbol builtin_value) Expression}
-    `{Matches
-        (Valuation * AppliedOperator' symbol builtin_value)
-        (AppliedOperator' symbol Expression)}
     :
-    Matches (Valuation * GroundTerm) RhsPattern
+    Matches (Valuation * builtin_value) Expression
 := {|
-    matchesb := _ ;
+    matchesb := fun ρb e =>
+        let ρ := ρb.1 in
+        let b := ρb.2 in
+        bool_decide (Expression_evaluate ρ e = Some (aoo_operand _ _ b))
+      ;
 |}.
 Next Obligation.
-    intros.
+    unfold satisfies. simpl.
+    apply bool_decide_reflect.
+Qed.
+Fail Next Obligation.
 
+#[export]
+Program Instance Matches_aopb_Expr
+    `{CΣ : ComputableSignature}
+    :
+    Matches
+        (Valuation * AppliedOperator' symbol builtin_value)
+    Expression
+:= {|
+    matchesb := fun ρx e =>
+        let ρ := ρx.1 in
+        let x := ρx.2 in
+        bool_decide (Expression_evaluate ρ e = Some (aoo_app _ _ x))
+     ;
+    matchesb_satisfies := _ ;
+|}.
+Next Obligation.
+    unfold satisfies. simpl.
+    apply bool_decide_reflect.
+Qed.
+Fail Next Obligation.
+
+#[export]
+Program Instance Matches_bv_pureterm
+    {Σ : Signature}:
+    Matches
+        (Valuation * builtin_value)
+        (AppliedOperator' symbol Expression)
+:= {|
+    matchesb := fun _ _ => false;
+|}.
+Next Obligation.
+    unfold satisfies. simpl.
+    apply ReflectF. ltac1:(tauto).
+Qed.
+Fail Next Obligation.
+
+#[export]
+Instance Matches__GroundTerm__RhsPattern
+    `{CΣ : ComputableSignature}
+    :
+    Matches (Valuation * GroundTerm) RhsPattern
+.
+Proof.
+    apply Matches__aoxyo_satisfies_aoxzo_bool.
 Defined.
 
 Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
@@ -891,6 +936,7 @@ Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
 .
 Proof.
     rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro))).
+
     unfold GroundTerm_satisfies_RhsPattern.
     unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
     unfold rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
