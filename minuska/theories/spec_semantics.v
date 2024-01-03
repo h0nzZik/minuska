@@ -77,54 +77,56 @@ Instance Satisfies_val_c
 
 
 Inductive aoxy_satisfies_aoxz
-    {X Y Z : Type}
-    {Y_sat_Z : Y -> Z -> Prop}
-    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
-    AppliedOperator' X Y ->
+    {V X Y Z : Type}
+    `{Satisfies (V*Y) Z}
+    `{Satisfies (V*(AppliedOperator' X Y)) Z }
+    :
+    (V*(AppliedOperator' X Y)) ->
     AppliedOperator' X Z ->
     Prop :=
 
 | asa_x:
-    forall x,
+    forall ρ x,
         aoxy_satisfies_aoxz
-            (@ao_operator X Y x)
+            (ρ,(@ao_operator X Y x))
             (@ao_operator X Z x)
 
 | asa_operand:
-    forall aoxy aoxz y z,
-        aoxy_satisfies_aoxz aoxy aoxz ->
-        Y_sat_Z y z ->
+    forall ρ aoxy aoxz y z,
+        aoxy_satisfies_aoxz (ρ,aoxy) aoxz ->
+        satisfies (ρ,y) z ->
         aoxy_satisfies_aoxz
-            (ao_app_operand aoxy y)
+            (ρ,(ao_app_operand aoxy y))
             (ao_app_operand aoxz z)
 
 | asa_operand_asa:
-    forall aoxy aoxz aoxy2 z,
-        aoxy_satisfies_aoxz aoxy aoxz ->
-        AOXY_sat_Z aoxy2 z ->
+    forall ρ aoxy aoxz aoxy2 z,
+        aoxy_satisfies_aoxz (ρ,aoxy) aoxz ->
+        satisfies (ρ,aoxy2) z ->
         aoxy_satisfies_aoxz
         (* The right-side, the symbolic one, has more compact representation - so *)
-            (ao_app_ao aoxy aoxy2)
+            (ρ,(ao_app_ao aoxy aoxy2))
             (ao_app_operand aoxz z)
 
 | asa_asa:
-    forall aoxy1 aoxy2 aoxz1 aoxz2,
-        aoxy_satisfies_aoxz aoxy1 aoxz1 ->
-        aoxy_satisfies_aoxz aoxy2 aoxz2 ->
+    forall ρ aoxy1 aoxy2 aoxz1 aoxz2,
+        aoxy_satisfies_aoxz (ρ,aoxy1) aoxz1 ->
+        aoxy_satisfies_aoxz (ρ,aoxy2) aoxz2 ->
         aoxy_satisfies_aoxz
-            (ao_app_ao aoxy1 aoxy2)
+            (ρ,(ao_app_ao aoxy1 aoxy2))
             (ao_app_ao aoxz1 aoxz2)
 .
 
 
 #[export]
 Instance Satisfies_aoxy_aoxz
-    {X Y Z : Type}
-    {Y_sat_Z : Y -> Z -> Prop}
-    {AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop}:
-    Satisfies (AppliedOperator' X Y) (AppliedOperator' X Z)
+    {V X Y Z : Type}
+    `{Satisfies (V*Y) Z}
+    `{Satisfies (V*(AppliedOperator' X Y)) Z }
+    :
+    Satisfies (V*(AppliedOperator' X Y)) (AppliedOperator' X Z)
 := {|
-    satisfies := @aoxy_satisfies_aoxz X Y Z Y_sat_Z AOXY_sat_Z ;
+    satisfies := aoxy_satisfies_aoxz ;
 |}.
 
 
@@ -241,17 +243,17 @@ Definition aosb_satisfies_aosbf
     {A B : Type}
     {SatAB : Satisfies (Valuation*A) B}
     {SatA'B : Satisfies (Valuation*(AppliedOperator' symbol A)) B}
-    (ρ : Valuation)
     :
-    AppliedOperator' symbol A ->
+    (Valuation * (AppliedOperator' symbol A)) ->
     AppliedOperator' symbol B ->
     Prop :=
     @aoxy_satisfies_aoxz
+        Valuation
         symbol
         A
         B
-        (fun x y => @satisfies _ _ SatAB (ρ,x) y)
-        (fun x y => @satisfies _ _ SatA'B (ρ,x) y)
+        _
+        _
 .
 
 #[export]
@@ -263,7 +265,7 @@ Instance Satisfies_aosb_aosbf
     :
     Satisfies (Valuation * (AppliedOperator' symbol A)) (AppliedOperator' symbol B)
 := {|
-    satisfies := fun ρb bov => aosb_satisfies_aosbf ρb.1 ρb.2 bov;
+    satisfies := aosb_satisfies_aosbf;
 |}.
 
 
@@ -349,33 +351,35 @@ Instance Satisfies_val_sc
 
 Inductive A_satisfies_B_WithASideCondition
     {Σ : Signature}
-    (A B : Type)
-    `{Satisfies (Valuation*A) B}
-    : (Valuation*A) -> WithASideCondition B -> Prop :=
+    (V A B : Type)
+    `{Satisfies V SideCondition}
+    `{Satisfies (V*A) B}
+    : (V*A) -> WithASideCondition B -> Prop :=
 
 | asbwsc_base:
-    forall (ρ : Valuation) (a : A) (b : B),
+    forall (ρ : V) (a : A) (b : B),
         satisfies (ρ,a) b ->
-        A_satisfies_B_WithASideCondition A B (ρ, a) (wsc_base b)
+        A_satisfies_B_WithASideCondition V A B (ρ, a) (wsc_base b)
 
 | asbwsc_sc :
-    forall (ρ : Valuation) (a : A) (bsc : WithASideCondition B) sc,
-        A_satisfies_B_WithASideCondition A B (ρ, a) bsc ->
+    forall (ρ : V) (a : A) (bsc : WithASideCondition B) sc,
+        A_satisfies_B_WithASideCondition V A B (ρ, a) bsc ->
         satisfies ρ sc ->
-        A_satisfies_B_WithASideCondition A B (ρ, a) (wsc_sc bsc sc)
+        A_satisfies_B_WithASideCondition V A B (ρ, a) (wsc_sc bsc sc)
 .
 
 #[export]
 Instance Satisfies_A_Bsc
     {Σ : Signature}
-    {A B : Type}
-    {A_sat_B : Satisfies (Valuation*A) B}
+    {V A B : Type}
+    `{Satisfies V SideCondition}
+    `{Satisfies (V*A) B}
     :
-    Satisfies (Valuation*A) (WithASideCondition B)
+    Satisfies (V*A) (WithASideCondition B)
 := {|
     satisfies :=
         A_satisfies_B_WithASideCondition
-        A B;
+        V A B;
 |}.
 
 Definition GroundTerm_satisfies_BuiltinOrVar
@@ -409,6 +413,7 @@ Definition in_val_GroundTerm_satisfies_OpenTermWSC
     OpenTermWSC ->
     Prop :=
     A_satisfies_B_WithASideCondition
+        Valuation
         GroundTerm
         OpenTerm
 .
@@ -450,6 +455,7 @@ Definition builtin_value_satisfies_OpenTermWSC
     OpenTermWSC ->
     Prop :=
     A_satisfies_B_WithASideCondition
+        Valuation
         builtin_value
         OpenTerm
 .
@@ -594,6 +600,7 @@ Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC
     OpenTermWSC ->
     Prop :=
     A_satisfies_B_WithASideCondition
+        Valuation
         (AppliedOperator' symbol builtin_value)
         OpenTerm
 .
@@ -719,6 +726,7 @@ Definition GroundTerm_satisfies_VarWithSc
     WithASideCondition variable
     -> Prop :=
     A_satisfies_B_WithASideCondition
+        Valuation
         GroundTerm
         variable
 .
@@ -849,7 +857,39 @@ Instance satLift1
     satisfies := fun ρdg => satisfies (ρdg.1.1,ρdg.1.2, aoo_app _ _ ρdg.2)
 |}.
 *)
-Set Typeclasses Debug.
+
+#[export]
+Instance Satisfies_vlrglrootob
+    {Σ : Signature}:
+    Satisfies
+        ((Valuation * LeftRight) * AppliedOperator' symbol builtin_value)
+        LocalRewriteOrOpenTermOrBOV
+:= {|
+    satisfies := fun ρdg =>
+        let ρ := ρdg.1.1 in
+        let d := ρdg.1.2 in
+        let g := ρdg.2 in
+        satisfies ((ρ,d), aoo_app _ _ g)
+        
+     ;
+|}.
+
+
+#[export]
+Instance Satisfies_aop_lrw {Σ : Signature}:
+    Satisfies
+        (Valuation * LeftRight * AppliedOperator' symbol builtin_value)
+        (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
+:= {|
+    satisfies := @aoxy_satisfies_aoxz
+        (Valuation*LeftRight)
+        symbol
+        builtin_value
+        LocalRewriteOrOpenTermOrBOV
+        _ _
+        ;
+|}.
+
 Definition GroundTerm_satisfies_UncondRewritingRule
     {Σ : Signature}
     : ((Valuation*LeftRight)*GroundTerm) -> UncondRewritingRule -> Prop
@@ -860,39 +900,37 @@ Definition GroundTerm_satisfies_UncondRewritingRule
         builtin_value
         LocalRewriteOrOpenTermOrBOV
 .
-        (ρ,g)
-.
-        (builtin_satisfies_LocalRewriteOrOpenTermOrBOV ρ fr.1)
-        ((GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV ρ lr) ∘ (aoo_app _ _))
-.
 
 #[export]
 Instance Satisfies__GroundTerm__UncondRewritingRule
     {Σ : Signature}
     :
     Satisfies
-        (Valuation*GroundTerm)
-        (LeftRight*UncondRewritingRule)
+        ((Valuation*LeftRight)*GroundTerm)
+        (UncondRewritingRule)
 := {|
-    satisfies := fun ρx dy =>
+    satisfies := 
         GroundTerm_satisfies_UncondRewritingRule
-            ρx.1
-            dy.1
-            ρx.2
-            dy.2
+        ;
+|}.
+
+Instance Satisfies_Valuation_LR_SideCondition
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * LeftRight) SideCondition
+:= {|
+    satisfies := fun ρd => let ρ := ρd.1 in
+        satisfies ρ
         ;
 |}.
 
 Definition GroundTerm_satisfies_RewritingRule
     {Σ : Signature}
-    (ρ : Valuation)
-    (lr : LeftRight)
-    : GroundTerm -> RewritingRule -> Prop :=
+    : ((Valuation*LeftRight)*GroundTerm) -> RewritingRule -> Prop :=
     A_satisfies_B_WithASideCondition
+        (Valuation*LeftRight)
         GroundTerm
         UncondRewritingRule
-        (GroundTerm_satisfies_UncondRewritingRule ρ lr)
-        ρ
 .
 
 #[export]
@@ -900,15 +938,11 @@ Instance Satisfies__GroundTerm__RewritingRule
     {Σ : Signature}
     :
     Satisfies
-        (Valuation*GroundTerm)
-        (LeftRight*RewritingRule)
+        ((Valuation*LeftRight)*GroundTerm)
+        (RewritingRule)
 := {|
-    satisfies := fun ρx dy =>
+    satisfies := 
         GroundTerm_satisfies_RewritingRule
-            ρx.1
-            dy.1
-            ρx.2
-            dy.2
         ;
 |}.
 
@@ -935,8 +969,8 @@ Definition rewrites_in_valuation_to
     (r : RewritingRule)
     (from to : GroundTerm)
     : Prop
-:= satisfies (ρ,from) (LR_Left,r)
-/\ satisfies (ρ,to) (LR_Right,r)
+:= satisfies ((ρ,LR_Left),from) r
+/\ satisfies ((ρ,LR_Right),to) r
 .
 
 Definition rewrites_to
@@ -976,8 +1010,8 @@ Definition rule_weakly_well_defined
     (r : RewritingRule)
     : Prop
     := ∀ ρ from,
-        satisfies (ρ,from) (LR_Left,r) ->
-        ∃ to, satisfies (ρ,to) (LR_Right,r)
+        satisfies ((ρ,LR_Left),from) r ->
+        ∃ to, satisfies ((ρ,LR_Right), to) r
 .
 
 Definition thy_weakly_well_defined
@@ -987,5 +1021,3 @@ Definition thy_weakly_well_defined
     := ∀ r, r ∈ Γ -> rule_weakly_well_defined r
 .
 
-
-Search Satisfies AppliedOperatorOr' symbol.
