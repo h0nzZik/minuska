@@ -723,35 +723,80 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Definition valuation_satisfies_sc_bool
+Definition valuation_satisfies_match_bool
     {Σ : Signature}
+    (ρ : Valuation)
+    (m : Match) : bool :=
+match m with
+| mkMatch _ x φ =>
+    match ρ !! x with
+    | Some g
+        => matchesb (ρ, g) φ
+    | _ => false
+    end
+end.
+
+#[export]
+Program Instance Matches_val_match
+    {Σ : Signature}
+    :
+    Matches Valuation Match
+:= {|
+    matchesb := valuation_satisfies_match_bool ;
+|}.
+Next Obligation.
+    destruct b; unfold satisfies; simpl.
+    ltac1:(case_match).
+    {
+        apply matchesb_satisfies.
+    }
+    {
+        apply ReflectF.
+        ltac1:(tauto).
+    }
+Qed.
+Fail Next Obligation.
+
+
+Definition valuation_satisfies_sc_bool
+    `{CΣ : ComputableSignature}
     (ρ : Valuation)
     (sc : SideCondition) : bool :=
 match sc with
-| sc_constraint c => val_satisfies_c ρ c
-| sc_match m => valuation_satisfies_match ρ m
+| sc_constraint c => matchesb ρ c
+| sc_match m => matchesb ρ m
 end.
 
 #[export]
 Program Instance Matches_valuation_sc
-    {Σ : Signature}
+    `{CΣ : ComputableSignature}
     :
-    Matches Valuation (list SideCondition)
+    Matches Valuation SideCondition
 := {|
-    matchesb := fun ρ => forallb (@matchesb Valuation SideCondition Satisfies_val_sc _ ρ) ;
+    matchesb := valuation_satisfies_sc_bool;
 |}.
+Next Obligation.
+    destruct b.
+    {
+        unfold satisfies; simpl.
+        apply matchesb_satisfies.
+    }
+    {
+        unfold satisfies; simpl.
+        apply matchesb_satisfies.
+    }
+Qed.
+Fail Next Obligation.
 
 #[export]
 Program Instance Matches_valuation_scs
-    {Σ : Signature}
+   `{CΣ : ComputableSignature}
     :
     Matches Valuation (list SideCondition)
 := {|
-    matchesb := fun ρ => forallb (@matchesb Valuation SideCondition Satisfies_val_sc _ ρ) ;
+    matchesb := fun ρ => forallb (@matchesb Valuation SideCondition Satisfies_val_sc Matches_valuation_sc ρ) ;
 |}.
 Next Obligation.
-    Search Valuation SideCondition.
-    Search Satisfies Valuation SideCondition.
     unfold satisfies. simpl.
     unfold valuation_satisfies_scs.
     apply iff_reflect.
@@ -765,8 +810,12 @@ Next Obligation.
             apply H'.
         }
     }
-    ltac1:(setoid_rewrite matchesb_satisfies).
-    rewrite forallb_True.
-    Search Forall forallb.
+    {
+        eapply elimT.
+        { apply matchesb_satisfies. }
+        {
+            apply H'.
+        }
+    }
 Qed.
 Fail Next Obligation.

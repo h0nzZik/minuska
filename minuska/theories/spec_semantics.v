@@ -337,8 +337,8 @@ Definition valuation_satisfies_sc
     (ρ : Valuation)
     (sc : SideCondition) : Prop :=
 match sc with
-| sc_constraint c => val_satisfies_c ρ c
-| sc_match m => valuation_satisfies_match ρ m
+| sc_constraint c => satisfies ρ c
+| sc_match m => satisfies ρ m
 end.
 
 #[export]
