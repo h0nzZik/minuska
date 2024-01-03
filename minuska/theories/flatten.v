@@ -597,16 +597,16 @@ Qed.
 Lemma separate_scs_correct
     {Σ : Signature}
     {A B : Type}
-    (A_sat_B : A -> B -> Prop)
+    `{Satisfies (Valuation*A) B}
     (wscb : WithASideCondition B)
     (a : A)
     (ρ : Valuation)
     :
     match separate_scs wscb with
-    | (b, scs) => A_sat_B a b /\ valuation_satisfies_scs ρ scs
+    | (b, scs) => satisfies (ρ,a) b /\ valuation_satisfies_scs ρ scs
     end
     <->
-    A_satisfies_B_WithASideCondition A B A_sat_B ρ a wscb
+    A_satisfies_B_WithASideCondition Valuation A B (ρ, a) wscb
 .
 Proof.
     unfold valuation_satisfies_scs.
@@ -619,8 +619,8 @@ Proof.
             exact H1.
         }
         {
-            intros H.
-            inversion H; subst.
+            intros H'.
+            inversion H'; subst.
             split.
             { assumption. }
             {
@@ -642,33 +642,50 @@ Proof.
             ltac1:(naive_solver).
         }
         {
-            inversion H0; subst.
+            inversion H1; subst.
             assumption.
         }
         {
-            inversion H0; subst.
+            inversion H1; subst.
             assumption.
         }
     }
 Qed.
 
-
+Search Satisfies Valuation AppliedOperator' symbol.
+Set Typeclasses Debug.
 Lemma aoxy_satisfies_aoxz_comp_iff
-    {X Y Z : Type}
-    (Y_sat_Z : Y -> Z -> Prop)
-    (AOXY_sat_Z : AppliedOperator' X Y -> Z -> Prop)
-    (g : AppliedOperator' X Y)
-    (φ : AppliedOperator' X Z)
+    {Σ : Signature}
+    {Y Z : Type}
+    `{Satisfies (Valuation * Y) Z}
+    `{Satisfies (Valuation * AppliedOperator' symbol Y) Z}
+    (ρ : Valuation)
+    (g : (AppliedOperator' symbol Y))
     :
-    aoxy_satisfies_aoxz_comp Y_sat_Z AOXY_sat_Z g φ
-    <->
-    @aoxy_satisfies_aoxz _ _ _ Y_sat_Z AOXY_sat_Z g φ
+    aoxy_satisfies_aoxz_comp ρ g
+    =
+    @satisfies _ (AppliedOperator' symbol Z) _ (ρ,g)
 .
 Proof.
+    apply functional_extensionality.
+    intros φ.
+    apply propositional_extensionality.
     revert g.
     induction φ; intros gg; destruct gg; cbn; split; intros HH;
         inversion HH; subst; try constructor;
         try ltac1:(naive_solver).
+    {
+        destruct HH as [HH1 HH2].
+        Search aoxy_satisfies_aoxz_comp.
+        unfold satisfies.
+        apply HH.
+        unfold satisfies in H2.
+        simpl in H2.
+        inversion H2.
+    }
+    {
+        apply HH.
+    }
 Qed.
 
 

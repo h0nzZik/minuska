@@ -4,9 +4,9 @@ From Minuska Require Import
     tactics
     spec_syntax
     spec_semantics
-    syntax_properties
+    syntax_properties(*
     flattened
-    flatten
+    flatten*)
 .
 
 Require Import Logic.PropExtensionality.
@@ -145,9 +145,9 @@ Section with_signature.
                     inversion HContra; subst; clear HContra.
                     assert(reflect_matches := matchesb_satisfies (ρ,b) b0).
                     apply reflect_iff in reflect_matches.
-                    apply reflect_matches in H7.
-                    rewrite Heqm in H7.
-                    inversion H7.
+                    apply reflect_matches in H8.
+                    rewrite Heqm in H8.
+                    inversion H8.
                 }
             }
             {
@@ -155,7 +155,7 @@ Section with_signature.
                 apply ReflectF.
                 intros HContra.
                 inversion HContra; subst; clear HContra.
-                simpl in H7.
+                simpl in H8.
                 apply reflect_iff in IHx.
                 apply proj1 in IHx.
                 specialize (IHx ltac:(assumption)).
@@ -231,7 +231,7 @@ Section with_signature.
     | aoo_app _ _ app1, aoo_operand _ _ o2 =>
         matchesb (ρ, app1) o2
     | aoo_operand _ _ o1, aoo_app _ _ app2 =>
-        matchesb (ρ, o1) app2
+        false (*matchesb (ρ, o1) app2*)
     | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
         matchesb (ρ, o1) o2
     end.
@@ -265,14 +265,74 @@ Section with_signature.
             {
                 unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
                 simpl.
-                unfold satisfies.
-                simpl.
-                apply matchesb_satisfies.
                 apply iff_reflect.
-                simpl.
+                split; intros H.
+                {
+                    inversion H; subst; clear H.
+                    eapply introT.
+                    { apply matchesb_satisfies. }
+                    { assumption. }
+                }
+                {
+                    constructor.
+                    eapply elimT.
+                    { apply matchesb_satisfies. }
+                    { assumption. }
+                }
             }
             {
-
+                unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+                simpl.
+                apply iff_reflect.
+                split; intros H.
+                {
+                    inversion H; subst; clear H.
+                    eapply introT.
+                    { apply matchesb_satisfies. }
+                    { assumption. }
+                }
+                {
+                    constructor.
+                    eapply elimT.
+                    { apply matchesb_satisfies. }
+                    { assumption. }
+                }
+            }
+        }
+        {
+            unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+            simpl.
+            destruct y; simpl.
+            {
+                unfold satisfies.
+                simpl.
+                apply iff_reflect.
+                split; intros H.
+                {
+                    inversion H; subst; clear H.
+                }
+                {
+                    ltac1:(exfalso).
+                    inversion H.
+                }
+            }
+            {
+                unfold satisfies.
+                simpl.
+                apply iff_reflect.
+                split; intros H.
+                {
+                    inversion H; subst; clear H.
+                    eapply introT.
+                    { apply matchesb_satisfies. }
+                    { assumption. }
+                }
+                {
+                    constructor.
+                    eapply elimT.
+                    { apply matchesb_satisfies. }
+                    { assumption. }
+                }
             }
         }
     Qed.
