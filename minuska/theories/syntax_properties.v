@@ -178,7 +178,7 @@ match ao with
 | ao_app_ao ao1 ao2 => ao_app_ao (AppliedOperator'_fmap f ao1) (AppliedOperator'_fmap f ao2)
 end.
 
-#[global]
+#[export]
 Instance AppliedOperator'_A_B_fmap (A : Type)
     : FMap (AppliedOperator' A)
     := @AppliedOperator'_fmap A
@@ -192,7 +192,7 @@ Definition AppliedOperatorOr'_fmap
     : AppliedOperatorOr' A C
 :=
 match aoo with
-| aoo_app _ _ ao => aoo_app _ _ (AppliedOperator'_fmap f ao)
+| aoo_app _ _ ao => aoo_app _ _ (f <$> ao)
 | aoo_operand _ _ o => aoo_operand _ _ (f o)
 end.
 

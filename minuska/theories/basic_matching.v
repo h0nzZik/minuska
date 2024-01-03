@@ -535,7 +535,7 @@ Section with_signature.
         unfold GroundTerm'.
         unfold OpenTerm.
         apply reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'.
-    Qed.
+    Defined.
 
 End with_signature.
 

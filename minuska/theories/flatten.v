@@ -419,7 +419,7 @@ Definition rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
 match lox with
 | lp_rewrite r => (lr_to r)
 | lp_basicpat φ =>
-    AppliedOperatorOr'_fmap BOV_to_Expression φ
+    BOV_to_Expression <$> φ
 | lp_bov bov => aoo_operand _ _ (BOV_to_Expression bov)
 end.
 
@@ -925,7 +925,7 @@ Proof.
 Defined.
 
 Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
-    {Σ : Signature} lro
+    `{CΣ : ComputableSignature} lro
     (ρ : Valuation)
     (g : GroundTerm):
     satisfies
@@ -937,30 +937,94 @@ Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
 Proof.
     rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro))).
 
+    (*
     unfold GroundTerm_satisfies_RhsPattern.
     unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
+    *)
     unfold rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
-    destruct lro; cbn.
+    destruct lro; simpl.
     {
-        unfold GroundTerm_satisfies_right_LocalRewrite.
-        unfold GroundTerm_satisfies_RhsPattern.
-        ltac1:(naive_solver).
+        unfold satisfies; simpl.
+        unfold satisfies; simpl.
+        unfold GroundTerm_satisfies_LocalRewrite; simpl.
+        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (lr_to r))).
+        reflexivity.
     }
     {
-        unfold in_val_GroundTerm_satisfies_OpenTerm.
-        unfold BOV_to_Expression.
-        unfold aoosb_satisfies_aoosbf.
-        do 2 (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
+        unfold satisfies; simpl.
+        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (φ))).
+        
         cbn.
         destruct φ,g; cbn.
         {
             revert ao.
             induction ao0; cbn; intros ao.
             {
-                repeat (ltac1:(case_match)); subst; inversion H; subst;
-                    ltac1:(naive_solver).
+                unfold matchesb; simpl.
+                unfold aoxyo_satisfies_aoxzo_bool; simpl.
+                unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
+                unfold matchesb; simpl.
+                destruct ao; reflexivity.
             }
             {
+                simpl.
+
+                destruct ao; simpl.
+                { reflexivity. }
+                { 
+                    specialize (IHao0 ao).
+                    cbn in *.
+                    unfold fmap in *.
+                    unfold matchesb in *; simpl in *.
+                    unfold aoxyo_satisfies_aoxzo_bool in *; simpl in *.
+                    unfold matchesb in *; simpl in *.
+                    rewrite -> andb_true_iff.
+                    rewrite -> IHao0.
+                    unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
+                    unfold matchesb at 3; simpl.
+                    rewrite -> andb_true_iff.
+                    unfold matchesb; simpl.
+                    destruct b0; simpl.
+                    {
+                        unfold bool_decide; simpl.
+                        ltac1:((repeat case_match); simplify_eq/=).
+                        { reflexivity. }
+                        {
+                            clear H.
+                            inversion e; subst.
+                            ltac1:(contradiction).
+                        }
+                        {
+                            reflexivity.
+                        }
+                    }
+                    {
+                        unfold bool_decide; simpl.
+                        ltac1:((repeat case_match); simplify_eq/=);
+                            clear H; ltac1:(simplify_eq/=); try reflexivity.
+                        {
+                            ltac1:(exfalso).
+                            ltac1:(rewrite e in H0).
+                            inversion H0.
+                        }
+                        {
+                            inversion H0; subst; clear H0.
+                            ltac1:(rewrite e in H1).
+                            inversion H1; subst; clear H1.
+                            ltac1:(contradiction).
+                        }
+                        {
+                            ltac1:(rewrite e in H0).
+                            inversion H0; subst; clear H0.
+                        }
+                    }
+                }
+                {
+                    
+                }
+                unfold ApppliedOperator'_matches_AppliedOperator'; simpl.
+
+                apply IHao0.
                 (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
                     simpl in *; try ltac1:(naive_solver).
                 do 1 (rewrite <- IHao0). clear IHao0.
@@ -993,9 +1057,10 @@ Proof.
             simpl.
             ltac1:(naive_solver).
         }
+        *)
     }
     {
-
+        (*
         ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
         destruct bx,g; cbn.
         {
@@ -1011,6 +1076,7 @@ Proof.
         {
             reflexivity.
         }
+        *)
     }
 Qed.
 
