@@ -217,31 +217,122 @@ match g, φ with
 end.
 
 
-Definition aoxyo_satisfies_aoxzo_comp
-    {V X Y Z : Type}
-    `{Satisfies (V*Y) Z }
-    `{Satisfies (V*(AppliedOperator' X Y)) Z}
+
+*)
+
+Definition aoxyo_satisfies_aoxzo_bool
+    `{CΣ : ComputableSignature}
+    {Y Z : Type}
+    `{Matches (Valuation*Y) Z }
+    `{Matches (Valuation*(AppliedOperator' symbol Y)) Z}
+    `{Matches (Valuation * AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
     :
-    (V*(AppliedOperatorOr' X Y)) ->
-    AppliedOperatorOr' X Z ->
-    Prop :=
+    (Valuation*(AppliedOperatorOr' symbol Y)) ->
+    AppliedOperatorOr' symbol Z ->
+    bool :=
 fun ρg φ =>
 let ρ := ρg.1 in
 let g := ρg.2 in
 match g, φ with
 | aoo_app _ _ g0, aoo_app _ _ φ0
-    => aoxy_satisfies_aoxz_comp ρ g0 φ0
+    => matchesb (ρ, g0) φ0
 
 | aoo_operand _ _ g0, aoo_operand _ _ φ0
-    => satisfies (ρ,g0) φ0
+    => matchesb (ρ,g0) φ0
 
 | aoo_app _ _ g0, aoo_operand _ _ φ0
-    => satisfies (ρ,g0) φ0
+    => matchesb (ρ,g0) φ0
 
 | aoo_operand _ _ _, aoo_app _ _ _
-    => False
+    => false
 end.
-*)
+
+#[export]
+Program Instance Matches__aoxyo_satisfies_aoxzo_bool
+    `{CΣ : ComputableSignature}
+    {Y Z : Type}
+    `{Matches (Valuation*Y) Z }
+    `{Matches (Valuation*(AppliedOperator' symbol Y)) Z}
+    `{Matches (Valuation * AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
+    :
+    Matches ((Valuation*(AppliedOperatorOr' symbol Y))) (AppliedOperatorOr' symbol Z)
+:= {|
+    matchesb := aoxyo_satisfies_aoxzo_bool ;
+|}.
+Next Obligation.
+    destruct a,b; simpl.
+    {
+        unfold satisfies.
+        unfold aoxyo_satisfies_aoxzo_bool.
+        simpl.
+        apply iff_reflect.
+        split; intros HH.
+        {
+            inversion HH; subst; clear HH.
+            eapply introT.
+            { apply matchesb_satisfies. }
+            assumption.
+        }
+        {
+            constructor.
+            eapply elimT.
+            { apply matchesb_satisfies. }
+            assumption.
+        }
+    }
+    {
+        unfold satisfies.
+        unfold aoxyo_satisfies_aoxzo_bool.
+        simpl.
+        apply iff_reflect.
+        split; intros HH.
+        {
+            inversion HH; subst; clear HH.
+            eapply introT.
+            { apply matchesb_satisfies. }
+            assumption.
+        }
+        {
+            constructor.
+            eapply elimT.
+            { apply matchesb_satisfies. }
+            assumption.
+        }
+    }
+    {
+        unfold satisfies.
+        unfold aoxyo_satisfies_aoxzo_bool.
+        simpl.
+        apply iff_reflect.
+        split; intros HH.
+        {
+            inversion HH.
+        }
+        {
+            inversion HH.
+        }
+    }
+    {
+        unfold satisfies.
+        unfold aoxyo_satisfies_aoxzo_bool.
+        simpl.
+        apply iff_reflect.
+        split; intros HH.
+        {
+            inversion HH; subst; clear HH.
+            eapply introT.
+            { apply matchesb_satisfies. }
+            assumption.
+        }
+        {
+            constructor.
+            eapply elimT.
+            { apply matchesb_satisfies. }
+            assumption.
+        }
+    }
+Qed.
+Fail Next Obligation.
 
 Definition LhsPattern_to_pair_OpenTerm_SC
     {Σ : Signature}
@@ -685,7 +776,7 @@ Proof.
         }
     }
 Qed.
-
+(*
 Lemma aoxy_satisfies_aoxz_comp_iff
     {Σ : Signature}
     {Y Z : Type}
@@ -767,23 +858,39 @@ Lemma builtin_satisfies_BuiltinOrVar_comp_iff
 Proof.
     destruct bov; cbn; split; intros H; subst; try (inversion H; subst); try constructor; try assumption.
 Qed.
+*)
+
+Search Satisfies GroundTerm RhsPattern.
+#[export]
+Program Instance Matches__GroundTerm__RhsPattern
+    `{CΣ : ComputableSignature}
+    `{Matches (Valuation * builtin_value) Expression}
+    `{Matches (Valuation * AppliedOperator' symbol builtin_value) Expression}
+    `{Matches
+        (Valuation * AppliedOperator' symbol builtin_value)
+        (AppliedOperator' symbol Expression)}
+    :
+    Matches (Valuation * GroundTerm) RhsPattern
+:= {|
+    matchesb := _ ;
+|}.
+Next Obligation.
+    intros.
+
+Defined.
 
 Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
     {Σ : Signature} lro
     (ρ : Valuation)
     (g : GroundTerm):
-    GroundTerm_satisfies_RhsPattern
-        ρ
-        g
+    satisfies
+        (ρ,g)
         (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro)
     <->
-    GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
-        ρ
-        LR_Right
-        g
-        lro
+    satisfies ((ρ,LR_Right),g) lro
 .
 Proof.
+    rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro))).
     unfold GroundTerm_satisfies_RhsPattern.
     unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
     unfold rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
