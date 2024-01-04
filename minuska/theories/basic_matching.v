@@ -28,6 +28,7 @@ Section with_signature.
     .
 
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
+        `{Matches (Valuation * symbol) Operand2}
         `{Matches (Valuation * Operand1) Operand2}
         `{Matches (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
         `{Matches (Valuation * AppliedOperator' symbol Operand1) Operand2}
@@ -47,7 +48,9 @@ Section with_signature.
             (ρ,app1)
             app2
         && matchesb (ρ, o1) o2
-    | ao_app_operand app1 o1, ao_app_ao app2 o2 => false
+    | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+        ApppliedOperator'_matches_AppliedOperator' (ρ, app1) app2
+        && matchesb (ρ, o1) o2
     | ao_app_ao app1 o1, ao_operator _ => false
     | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 

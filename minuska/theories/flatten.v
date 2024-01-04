@@ -141,14 +141,17 @@ Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
 match x with
 | ao_operator a => (ao_operator a)
 | ao_app_operand x' a =>
-    let t1 := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
+    let t1 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
     match A_to_OpenTermB a with
     | (aoo_app _ _ t2) => (ao_app_ao t1 t2)
     | (aoo_operand _ _ t2) => (ao_app_operand t1 t2)
     end
 | ao_app_ao x1 x2 =>
-    let t1 := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
-    let t2 := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
+    let t1 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
+    let t2 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
     ao_app_ao t1 t2
 end.
 
@@ -1114,25 +1117,21 @@ Proof.
 Qed.
 
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
-    {Σ : Signature}
+    `{CΣ : ComputableSignature}
     {A B : Type}
     (A_to_OpenTermB : A -> AppliedOperatorOr' symbol B)
     (A_to_SC : A -> list SideCondition )
-    (GroundTerm_satisfies_A:
-        GroundTerm ->
-        A ->
-        Prop
-    )
-    (AppliedOperator'_symbol_builtin_satisfies_B:
-            AppliedOperator' symbol builtin_value ->
-            B ->
-            Prop
-    )
-    (builtin_satisfies_B:
-        builtin_value ->
-        B ->
-        Prop
-    )
+    `{Matches (Valuation*builtin_value) A}
+    `{Matches (Valuation * AppliedOperator' symbol builtin_value) A}
+    `{Matches (Valuation*GroundTerm) A}
+    `{Matches (Valuation*(AppliedOperator' symbol builtin_value)) B}
+    `{Matches (Valuation*builtin_value) B}
+    `{Matches (Valuation*builtin_value) (AppliedOperator' symbol B)}
+    `{Matches (Valuation*builtin_value) (AppliedOperator' symbol A)}
+    (*
+    `{Matches (Valuation * GroundTerm) (AppliedOperatorOr' symbol A)}
+    `{Matches (Valuation * GroundTerm) (AppliedOperatorOr' symbol B)}
+    *)
     (ρ : Valuation)
     (x : AppliedOperatorOr' symbol A)
     (g : GroundTerm)
@@ -1142,58 +1141,124 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
           (a : A),
         a ∈ AppliedOperatorOr'_operands _ _ x ->
             (
-                @aoxyo_satisfies_aoxzo
-        symbol
-        builtin_value
-        B
-        (builtin_satisfies_B)
-        (AppliedOperator'_symbol_builtin_satisfies_B)
-                γ
-                (A_to_OpenTermB a)
+                satisfies (ρ,γ) (A_to_OpenTermB a)
             /\
-                valuation_satisfies_scs ρ (A_to_SC a)
+                satisfies ρ (A_to_SC a)
             )
             <->
-            GroundTerm_satisfies_A γ a
+            satisfies (ρ,γ) a
     )
     ->
     ((
-        @aoxyo_satisfies_aoxzo
-            symbol
-            builtin_value
-            B
-            (builtin_satisfies_B)
-            (AppliedOperator'_symbol_builtin_satisfies_B)
-            g
+        satisfies (ρ,g)
             (AppliedOperatorOr'_symbol_A_to_OpenTermB A_to_OpenTermB x)
-        /\ (valuation_satisfies_scs
+        /\ (satisfies
              ρ
              (AppliedOperatorOr'_symbol_A_to_SCS A_to_SC x)
             )
 
     )
     <->
-    @aoxyo_satisfies_aoxzo
-        symbol
-        builtin_value
-        A
-        ((GroundTerm_satisfies_A) ∘ (aoo_operand _ _))
-        ((GroundTerm_satisfies_A) ∘ (aoo_app _ _))
-        g x
+    satisfies (ρ,g) x
     )
 .
 Proof.
     intros correct_underlying.
+    rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ ρ (AppliedOperatorOr'_symbol_A_to_SCS A_to_SC x))).
+    rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (AppliedOperatorOr'_symbol_A_to_OpenTermB A_to_OpenTermB x))).
+    rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (x))).
+    (*
     unfold in_val_GroundTerm_satisfies_OpenTerm in *.
     unfold in_val_GroundTerm_satisfies_OpenTerm in *.
     unfold aoosb_satisfies_aoosbf in *.
-    destruct x, g; cbn.
+    *)
+    destruct x, g; simpl.
     {
-        repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).
-        unfold valuation_satisfies_scs.
+        unfold matchesb; simpl.
+        unfold aoxyo_satisfies_aoxzo_bool; simpl.
+
+        revert ao0; induction ao; simpl in *; intros ao0.
+        {
+            ltac1:(tauto).
+        }
+        {
+            (*unfold matchesb.*)
+            unfold matchesb; simpl.
+            assert (Hcu := correct_underlying (aoo_app _ _ ao0) b).
+            ltac1:(ospecialize (Hcu _)).
+            {
+                left.
+            }
+            rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ, aoo_app symbol builtin_value ao0) (A_to_OpenTermB b))) in Hcu.
+            unfold matchesb at 1 in Hcu; simpl in Hcu.
 
 
-        revert ao0; induction ao; cbn in *; intros ao0.
+            destruct (A_to_OpenTermB b) eqn:Hb, (ao0) eqn:Hao0.
+            {
+                unfold ApppliedOperator'_matches_AppliedOperator'; simpl.
+                rewrite <- andb_true_iff.
+                simpl.
+                ltac1:(tauto).
+            }
+            {
+                
+                ltac1:(ospecialize (IHao _)).
+                {
+                    intros γ a0 HH.
+                    specialize (correct_underlying γ a0).
+                    ltac1:(ospecialize (correct_underlying _)).
+                    {
+                        right. exact HH.
+                    }
+                    exact correct_underlying.
+                }
+
+                unfold ApppliedOperator'_matches_AppliedOperator' at 1; simpl.
+                unfold ApppliedOperator'_matches_AppliedOperator' in Hcu; simpl in Hcu.
+                unfold aoxyo_satisfies_aoxzo_bool in Hcu; simpl in Hcu.
+                unfold matchesb in Hcu; simpl in Hcu.
+                rewrite <- Hao0 in Hcu.
+                specialize (IHao a).
+                subst ao0.
+                (* rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ, aoo_app symbol builtin_value ao0) (A_to_OpenTermB b))) in Hcu. *)
+
+                destruct ao1; simpl.
+                {
+                    subst.
+                    
+                    unfold matchesb at 3 in IHao; simpl in IHao.
+                    rewrite -> andb_true_iff.
+                    
+                    destruct a; simpl in *.
+                    {
+                        destruct ao; simpl in *.
+                        {
+                            clear IHao.
+                        }
+                        {
+
+                        }
+                        rewrite <- IHao.
+                        rewrite <- (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,b0) (b))).
+                        ltac1:(rewrite <- (correct_underlying a b)).    
+                    }
+                    {
+
+                    }
+
+                    rewrite <- IHao.
+                    rewrite <- (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,b0) (b))).
+                    ltac1:(rewrite <- (correct_underlying a b)).
+                }
+                {
+
+                }
+                unfold ApppliedOperator'_matches_AppliedOperator'; simpl.
+                rewrite -> andb_true_iff.
+
+            }
+        }
+        (*
         {
             destruct ao0; cbn; try ltac1:(naive_solver).
         }
@@ -1275,6 +1340,7 @@ Proof.
                 clear.
                 ltac1:(naive_solver).
             }
+            
         }
         {
             destruct ao0; cbn.
@@ -1302,6 +1368,7 @@ Proof.
                 ltac1:(naive_solver).
             }
         }
+        *)
     }
     {
         repeat (rewrite <- aoxyo_satisfies_aoxzo_comp_iff).

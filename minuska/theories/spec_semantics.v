@@ -81,6 +81,7 @@ Instance Satisfies_val_c
 Inductive aoxy_satisfies_aoxz
     {V X Y Z : Type}
     `{Satisfies (V*Y) Z}
+    `{Satisfies (V*Y) (AppliedOperator' X Z)}
     `{Satisfies (V*(AppliedOperator' X Y)) Z }
     :
     (V*(AppliedOperator' X Y)) ->
@@ -110,6 +111,18 @@ Inductive aoxy_satisfies_aoxz
             (ρ,(ao_app_ao aoxy aoxy2))
             (ao_app_operand aoxz z)
 
+| asa_asa_operand:
+    forall
+        (ρ : V)
+        (aoxy : AppliedOperator' X Y)
+        (aoxz aoxz2 : AppliedOperator' X Z)
+        (y : Y),
+        aoxy_satisfies_aoxz (ρ,aoxy) aoxz ->
+        @satisfies (V*Y) (AppliedOperator' X Z) _ (ρ, y) aoxz2 ->
+        aoxy_satisfies_aoxz
+            (ρ, ao_app_operand aoxy y)
+            ((ao_app_ao aoxz aoxz2))
+
 | asa_asa:
     forall ρ aoxy1 aoxy2 aoxz1 aoxz2,
         aoxy_satisfies_aoxz (ρ,aoxy1) aoxz1 ->
@@ -124,6 +137,7 @@ Inductive aoxy_satisfies_aoxz
 Instance Satisfies_aoxy_aoxz
     {V X Y Z : Type}
     `{Satisfies (V*Y) Z}
+    `{Satisfies (V*Y) (AppliedOperator' X Z)}
     `{Satisfies (V*(AppliedOperator' X Y)) Z }
     :
     Satisfies (V*(AppliedOperator' X Y)) (AppliedOperator' X Z)
@@ -244,6 +258,7 @@ Definition aosb_satisfies_aosbf
     {Σ : Signature}
     {A B : Type}
     {SatAB : Satisfies (Valuation*A) B}
+    `{Satisfies (Valuation*A) (AppliedOperator' symbol B)}
     {SatA'B : Satisfies (Valuation*(AppliedOperator' symbol A)) B}
     :
     (Valuation * (AppliedOperator' symbol A)) ->
@@ -256,13 +271,38 @@ Definition aosb_satisfies_aosbf
         B
         _
         _
+        _
 .
+
+#[export]
+Instance Satisfies__builtin__ao'B
+    {Σ : Signature}
+    {B : Type}
+    :
+    Satisfies
+        (Valuation * builtin_value)
+        (AppliedOperator' symbol B)
+:= {| 
+    satisfies := fun _ _ => false ;
+|}.
+
+#[export]
+Instance Satisfies_aos__builtin_BuiltinOrVar
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * (AppliedOperator' symbol builtin_value)) (AppliedOperator' symbol BuiltinOrVar)
+.
+Proof.
+    apply _.
+Defined.
+
 
 #[export]
 Instance Satisfies_aosb_aosbf
     {Σ : Signature}
     {A B : Type}
     {SatAB : Satisfies (Valuation*A) B}
+    `{Satisfies (Valuation*A) (AppliedOperator' symbol B)}
     {SatA'B : Satisfies (Valuation*(AppliedOperator' symbol A)) B}
     :
     Satisfies (Valuation * (AppliedOperator' symbol A)) (AppliedOperator' symbol B)
@@ -878,6 +918,17 @@ Instance Satisfies_vlrglrootob
 
 
 #[export]
+Instance Satisfies_vlrblrootob
+    {Σ : Signature}:
+    Satisfies
+        ((Valuation * LeftRight) * builtin_value)
+        (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
+:= {|
+    satisfies := fun _ _ => False ;
+|}.
+
+
+#[export]
 Instance Satisfies_aop_lrw {Σ : Signature}:
     Satisfies
         (Valuation * LeftRight * AppliedOperator' symbol builtin_value)
@@ -888,7 +939,7 @@ Instance Satisfies_aop_lrw {Σ : Signature}:
         symbol
         builtin_value
         LocalRewriteOrOpenTermOrBOV
-        _ _
+        _ _ _
         ;
 |}.
 
