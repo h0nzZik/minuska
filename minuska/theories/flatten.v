@@ -936,11 +936,6 @@ Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
 .
 Proof.
     rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro))).
-
-    (*
-    unfold GroundTerm_satisfies_RhsPattern.
-    unfold GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV.
-    *)
     unfold rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
     destruct lro; simpl.
     {
@@ -1020,24 +1015,47 @@ Proof.
                     }
                 }
                 {
-                    
+                    clear IHao0.
+                    unfold matchesb; simpl.
+                    unfold aoxyo_satisfies_aoxzo_bool; simpl.
+                    unfold matchesb; simpl.
+                    unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
+                    unfold matchesb; simpl.
+                    ltac1:(tauto).
                 }
-                unfold ApppliedOperator'_matches_AppliedOperator'; simpl.
-
-                apply IHao0.
-                (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
-                    simpl in *; try ltac1:(naive_solver).
-                do 1 (rewrite <- IHao0). clear IHao0.
-                destruct b1; simpl in *;
-                rewrite builtin_satisfies_BuiltinOrVar_comp_iff;
-                cbn;
-                split; intros H;
-                ltac1:(naive_solver).
             }
             {
-                unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar in *.
-                (repeat (ltac1:(case_match))); subst; inversion H; subst; clear H;
-                    simpl in *; try ltac1:(naive_solver).
+                unfold matchesb; simpl.
+                unfold aoxyo_satisfies_aoxzo_bool; simpl.
+                unfold matchesb; simpl.
+                unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
+                unfold matchesb; simpl.
+                
+                destruct ao; simpl in *.
+                {
+                    ltac1:(tauto).
+                }
+                {
+                    do 2 (rewrite -> andb_true_iff).
+                    specialize (IHao0_1 ao).
+                    specialize (IHao0_2 ao).
+                    unfold matchesb in *|-; simpl in *|-.
+                    unfold aoxyo_satisfies_aoxzo_bool in *|-; simpl in *|-.
+                    rewrite IHao0_1.
+                    destruct b; simpl in *; unfold matchesb; simpl.
+                    { ltac1:(tauto). }
+                    { ltac1:(tauto). }
+                }
+                {
+                    do 2 (rewrite -> andb_true_iff).
+                    specialize (IHao0_1 ao1).
+                    specialize (IHao0_2 ao2).
+                    unfold matchesb in *|-; simpl in *|-.
+                    unfold aoxyo_satisfies_aoxzo_bool in *|-; simpl in *|-.
+                    rewrite IHao0_1.
+                    rewrite IHao0_2.
+                    reflexivity.
+                }
             }
         }
         {
@@ -1050,33 +1068,48 @@ Proof.
             ltac1:(naive_solver).
         }
         {
-            unfold AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar.
-            destruct operand; simpl in *.
-            split; intros H; inversion H; subst; constructor.
-            ltac1:(rewrite builtin_satisfies_BuiltinOrVar_comp_iff).
-            simpl.
-            ltac1:(naive_solver).
+            unfold matchesb; simpl.
+            unfold aoxyo_satisfies_aoxzo_bool; simpl.
+            unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
+            destruct operand; simpl in *; unfold matchesb; simpl;
+                unfold bool_decide; simpl; ltac1:(repeat case_match);
+                try (ltac1:(tauto)); ltac1:(try solve[clear H H0; simplify_eq/=]).
+            {
+                subst.
+                ltac1:(rewrite e in H0).
+                inversion H0.
+            }
+            {
+                subst.
+                ltac1:(rewrite e in H0).
+                inversion H0; subst; clear H0.
+                ltac1:(contradiction).
+            }
+            {
+                ltac1:(rewrite e in H0).
+                inversion H0.
+            }
+            {
+                subst.
+                clear H H2.
+                ltac1:(rewrite H0 in n).
+                ltac1:(contradiction n).
+                reflexivity.
+            }
         }
-        *)
     }
     {
-        (*
-        ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
-        destruct bx,g; cbn.
+        unfold matchesb; simpl.
+        unfold aoxyo_satisfies_aoxzo_bool; simpl.
+        unfold satisfies; simpl.
+        unfold satisfies; simpl.
+        unfold GroundTerm_satisfies_BuiltinOrVar; simpl.
+        unfold matchesb; simpl.
+        unfold bool_decide; simpl.
+        ltac1:(repeat case_match); subst; try (ltac1:(naive_solver)).
         {
-            split; intros H; inversion H.
+            clear H0. inversion e. ltac1:(naive_solver).
         }
-        {
-            split; intros H; inversion H;
-            subst; reflexivity.
-        }
-        {
-            reflexivity.
-        }
-        {
-            reflexivity.
-        }
-        *)
     }
 Qed.
 
