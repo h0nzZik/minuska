@@ -259,6 +259,7 @@ Section with_signature.
 
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
+        `{Matches (Valuation*symbol) Operand2}
         `{Matches (Valuation*Operand1) Operand2}
         `{Matches (Valuation*Operand1) (AppliedOperator' symbol Operand2)}
         `{Matches (Valuation*(AppliedOperator' symbol Operand1)) Operand2}
@@ -282,6 +283,7 @@ Section with_signature.
     Program Instance
         reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
+        `{Matches (Valuation*symbol) Operand2}
         `{M1 : Matches (Valuation * Operand1) Operand2}
         `{M2 : Matches (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
         `{M3 : Matches (Valuation * AppliedOperator' symbol Operand1) Operand2}
@@ -308,10 +310,13 @@ Section with_signature.
             {
                 unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
                 simpl.
+                unfold satisfies; simpl.
+                unfold AppliedOperator'_symbol_A_satisfies_OpenTermB; simpl.
+
                 apply iff_reflect.
-                split; intros H.
+                split; intros HH.
                 {
-                    inversion H; subst; clear H.
+                    inversion HH; subst; clear HH.
                     eapply introT.
                     { apply matchesb_satisfies. }
                     { assumption. }
@@ -327,9 +332,9 @@ Section with_signature.
                 unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
                 simpl.
                 apply iff_reflect.
-                split; intros H.
+                split; intros HH.
                 {
-                    inversion H; subst; clear H.
+                    inversion HH; subst; clear HH.
                     eapply introT.
                     { apply matchesb_satisfies. }
                     { assumption. }
@@ -350,22 +355,22 @@ Section with_signature.
                 unfold satisfies.
                 simpl.
                 apply iff_reflect.
-                split; intros H.
+                split; intros HH.
                 {
-                    inversion H; subst; clear H.
+                    inversion HH; subst; clear HH.
                 }
                 {
                     ltac1:(exfalso).
-                    inversion H.
+                    inversion HH.
                 }
             }
             {
                 unfold satisfies.
                 simpl.
                 apply iff_reflect.
-                split; intros H.
+                split; intros HH.
                 {
-                    inversion H; subst; clear H.
+                    inversion HH; subst; clear HH.
                     eapply introT.
                     { apply matchesb_satisfies. }
                     { assumption. }
@@ -561,7 +566,51 @@ Section with_signature.
         unfold satisfies. simpl.
         apply ReflectF.
         intros HContra.
-        exact HContra.
+        inversion HContra.
+    Qed.
+    Fail Next Obligation.
+
+
+    #[export]
+    Program Instance Matches_vlrblrootob:
+        Matches
+            ((Valuation * LeftRight) * builtin_value)
+            (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
+    := {|
+        matchesb := fun _ _ => false ;
+    |}.
+    Next Obligation.
+        unfold satisfies; simpl.
+        apply ReflectF. ltac1:(tauto).
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Matches_sym_bov
+        :
+        Matches (Valuation * symbol) BuiltinOrVar
+    := {|
+        matchesb := fun _ _ => false ;
+    |}.
+    Next Obligation.
+        unfold satisfies; simpl.
+        apply ReflectF. ltac1:(tauto).
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Matches__builtin__aosbov
+        :
+        Matches
+            (Valuation * builtin_value)
+            (AppliedOperator' symbol BuiltinOrVar)
+    := {|
+        matchesb := fun _ _ => false ;
+    |}.
+    Next Obligation.
+        apply ReflectF.
+        unfold satisfies; simpl.
+        intros HContra. inversion HContra.
     Qed.
     Fail Next Obligation.
 

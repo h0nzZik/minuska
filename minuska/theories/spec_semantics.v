@@ -929,6 +929,15 @@ Instance Satisfies_vlrblrootob
 
 
 #[export]
+Instance Satisfies_sym_bov
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * symbol) BuiltinOrVar
+:= {|
+    satisfies := fun _ _ => False ;
+|}.
+
+#[export]
 Instance Satisfies_aop_lrw {Σ : Signature}:
     Satisfies
         (Valuation * LeftRight * AppliedOperator' symbol builtin_value)
@@ -1016,6 +1025,7 @@ Instance Satisfies__GroundTerm__OpenTerm_inall
     satisfies := GroundTerm_satisfies_OpenTerm ;
 |}.
 
+(*
 #[export]
 Instance Satisfies_bv_ao'
     {Σ : Signature}
@@ -1024,6 +1034,7 @@ Instance Satisfies_bv_ao'
 := {|
     satisfies := fun _ _ => False ;
 |}.
+*)
 
 Definition rewrites_in_valuation_to
     {Σ : Signature}
