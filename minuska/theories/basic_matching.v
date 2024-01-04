@@ -70,6 +70,7 @@ Section with_signature.
     #[export]
     Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
         (Operand1 Operand2 : Type)
+        `{Matches (Valuation * symbol) Operand2}
         `{Matches (Valuation * Operand1) Operand2}
         `{Matches (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
         `{Matches (Valuation * AppliedOperator' symbol Operand1) Operand2}
@@ -147,9 +148,9 @@ Section with_signature.
                     inversion HContra; subst; clear HContra.
                     assert(reflect_matches := matchesb_satisfies (ρ,b) b0).
                     apply reflect_iff in reflect_matches.
-                    apply reflect_matches in H8.
-                    rewrite Heqm in H8.
-                    inversion H8.
+                    apply reflect_matches in H9.
+                    rewrite Heqm in H9.
+                    inversion H9.
                 }
             }
             {
@@ -157,7 +158,7 @@ Section with_signature.
                 apply ReflectF.
                 intros HContra.
                 inversion HContra; subst; clear HContra.
-                simpl in H8.
+                simpl in H9.
                 apply reflect_iff in IHx.
                 apply proj1 in IHx.
                 specialize (IHx ltac:(assumption)).
@@ -166,9 +167,48 @@ Section with_signature.
         }
         {
             simpl.
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
+            specialize (IHx y1).
+            simpl in IHx.
+            unfold satisfies; simpl.
+            unfold aosb_satisfies_aosbf; simpl.
+            destruct ((ApppliedOperator'_matches_AppliedOperator' (ρ,x) y1)) eqn:Heqm1.
+            {
+                simpl.
+                apply reflect_iff in IHx.
+                apply proj2 in IHx.
+                specialize (IHx eq_refl).
+                destruct (matchesb (ρ,b) y2) eqn:Heqm.
+                {
+                    apply ReflectT.
+                    constructor.
+                    apply IHx.
+                    assert(reflect_matches := matchesb_satisfies (ρ,b) y2).
+                    apply reflect_iff in reflect_matches.
+                    apply reflect_matches.
+                    exact Heqm.
+                }
+                {
+                    apply ReflectF.
+                    intros HContra.
+                    inversion HContra; subst; clear HContra.
+                    assert(reflect_matches := matchesb_satisfies (ρ,b) y2).
+                    apply reflect_iff in reflect_matches.
+                    apply reflect_matches in H9.
+                    rewrite Heqm in H9.
+                    inversion H9.
+                }
+            }
+            {
+                simpl.
+                apply ReflectF.
+                intros HContra.
+                inversion HContra; subst; clear HContra.
+                simpl in H9.
+                apply reflect_iff in IHx.
+                apply proj1 in IHx.
+                specialize (IHx ltac:(assumption)).
+                inversion IHx.
+            }
         }
         {
             simpl.
