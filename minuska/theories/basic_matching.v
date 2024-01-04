@@ -911,3 +911,19 @@ Next Obligation.
     }
 Qed.
 Fail Next Obligation.
+
+#[export]
+Program Instance
+    Matches_symbol_Expression
+    {Σ : Signature}
+    :
+    Matches (Valuation * symbol) Expression
+:= {|
+    matchesb := fun _ _ => false
+|}.
+Next Obligation.
+    apply ReflectF.
+    unfold satisfies; simpl.
+    ltac1:(tauto).
+Qed.
+Fail Next Obligation.

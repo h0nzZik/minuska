@@ -1111,7 +1111,7 @@ Instance Satisfies_valuation_scs
     satisfies := valuation_satisfies_scs ;
 |}.
 
-
+(*
 #[export]
 Instance Satisfies_bv_pureterm
     {Σ : Signature}:
@@ -1119,4 +1119,14 @@ Instance Satisfies_bv_pureterm
     (AppliedOperator' symbol Expression)
 := {|
     satisfies := fun _ _ => False;
+|}.
+*)
+#[export]
+Program Instance
+    Satisfies_symbol_Expression
+    {Σ : Signature}
+    :
+    Satisfies (Valuation * symbol) Expression
+:= {|
+    satisfies := fun _ _ => False ;
 |}.

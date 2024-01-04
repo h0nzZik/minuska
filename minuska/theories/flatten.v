@@ -913,7 +913,7 @@ Program Instance Matches_bv_pureterm
 |}.
 Next Obligation.
     unfold satisfies. simpl.
-    apply ReflectF. ltac1:(tauto).
+    apply ReflectF. intros HContra. inversion HContra.
 Qed.
 Fail Next Obligation.
 
@@ -945,8 +945,8 @@ Proof.
         unfold satisfies; simpl.
         unfold satisfies; simpl.
         unfold GroundTerm_satisfies_LocalRewrite; simpl.
-        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (lr_to r))).
-        reflexivity.
+        symmetry. apply reflect_iff.
+        apply matchesb_satisfies.
     }
     {
         unfold satisfies; simpl.
@@ -1018,13 +1018,19 @@ Proof.
                     }
                 }
                 {
-                    clear IHao0.
+                    assert(IH1 := IHao0 ao1).
+                    assert(IH2 := IHao0 ao2).
+                    unfold matchesb in *; simpl in *.
+                    unfold aoxyo_satisfies_aoxzo_bool in *; simpl in *.
+                    unfold matchesb in *; simpl in *.
+                    unfold ApppliedOperatorOr'_matches_AppliedOperatorOr' in *; simpl in *.
+                    unfold matchesb in *; simpl in *.
+                    rewrite -> andb_false_r.
+                    rewrite -> andb_true_iff.
                     unfold matchesb; simpl.
-                    unfold aoxyo_satisfies_aoxzo_bool; simpl.
-                    unfold matchesb; simpl.
-                    unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
-                    unfold matchesb; simpl.
-                    ltac1:(tauto).
+                    split.
+                    { intros HH. inversion HH. }
+                    { intros [HH1 HH2]. inversion HH2. }
                 }
             }
             {
