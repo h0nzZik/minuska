@@ -26,6 +26,43 @@ Class Matches
 Arguments satisfies : simpl never.
 Arguments matchesb : simpl never.
 
+Lemma matchesb_implies_satisfies
+    {Σ : Signature}
+    (V A B : Type)
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_SAB : Satisfies V A B}
+    {_MAB : Matches V A B}
+    :
+    forall v a b,
+    matchesb v a b = true ->
+    satisfies v a b
+.
+Proof.
+    intros.
+    assert (HR := matchesb_satisfies v a b).
+    apply reflect_iff in HR.
+    ltac1:(naive_solver).
+Qed.
+
+Lemma satisfies_implies_matchesb
+    {Σ : Signature}
+    (V A B : Type)
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_SAB : Satisfies V A B}
+    {_MAB : Matches V A B}
+    :
+    forall v a b,
+    satisfies v a b ->
+    matchesb v a b = true
+.
+Proof.
+    intros.
+    assert (HR := matchesb_satisfies v a b).
+    apply reflect_iff in HR.
+    ltac1:(naive_solver).
+Qed.
 
 Section with_signature.
     Context

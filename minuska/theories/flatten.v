@@ -224,27 +224,29 @@ end.
 *)
 
 Definition aoxyo_satisfies_aoxzo_bool
-    `{CΣ : ComputableSignature}
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
     {Y Z : Type}
-    `{Matches (Valuation*Y) Z }
-    `{Matches (Valuation*(AppliedOperator' symbol Y)) Z}
-    `{Matches (Valuation * AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
+    {_S1 : Satisfies Valuation (Y) Z }
+    {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z}
+    {_S3 : Satisfies Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
+    {_M1 : Matches Valuation (Y) Z }
+    {_M2 : Matches Valuation (AppliedOperator' symbol Y) Z}
+    {_M3 : Matches Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
     :
-    (Valuation*(AppliedOperatorOr' symbol Y)) ->
+    Valuation -> (AppliedOperatorOr' symbol Y) ->
     AppliedOperatorOr' symbol Z ->
     bool :=
-fun ρg φ =>
-let ρ := ρg.1 in
-let g := ρg.2 in
+fun ρ g φ =>
 match g, φ with
 | aoo_app _ _ g0, aoo_app _ _ φ0
-    => matchesb (ρ, g0) φ0
+    => matchesb ρ g0 φ0
 
 | aoo_operand _ _ g0, aoo_operand _ _ φ0
-    => matchesb (ρ,g0) φ0
+    => matchesb ρ g0 φ0
 
 | aoo_app _ _ g0, aoo_operand _ _ φ0
-    => matchesb (ρ,g0) φ0
+    => matchesb ρ g0 φ0
 
 | aoo_operand _ _ _, aoo_app _ _ _
     => false
@@ -254,11 +256,14 @@ end.
 Program Instance Matches__aoxyo_satisfies_aoxzo_bool
     `{CΣ : ComputableSignature}
     {Y Z : Type}
-    `{Matches (Valuation*Y) Z }
-    `{Matches (Valuation*(AppliedOperator' symbol Y)) Z}
-    `{Matches (Valuation * AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
+    {_S1 : Satisfies Valuation Y Z }
+    {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z}
+    {_S3 : Satisfies Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
+    {_M1 : Matches Valuation Y Z }
+    {_M2 : Matches Valuation (AppliedOperator' symbol Y) Z}
+    {_M3 : Matches Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
     :
-    Matches ((Valuation*(AppliedOperatorOr' symbol Y))) (AppliedOperatorOr' symbol Z)
+    Matches Valuation (((AppliedOperatorOr' symbol Y))) (AppliedOperatorOr' symbol Z)
 := {|
     matchesb := aoxyo_satisfies_aoxzo_bool ;
 |}.
@@ -648,17 +653,19 @@ Qed.
 *)
 
 Lemma getSCS_getBase_correct
-    `{CΣ : ComputableSignature}
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
     {A B : Type}
-    `{Matches (Valuation*A) B}
+    {_S1 : Satisfies Valuation A B}
+    {_M1 : Matches Valuation A B}
     (wscb : WithASideCondition B)
     (a : A)
     (ρ : Valuation)
     : 
-    (satisfies (ρ,a) (getBase wscb) /\
-    satisfies ρ (getSCS wscb))
+    (satisfies ρ a (getBase wscb) /\
+    satisfies ρ () (getSCS wscb))
     <->
-    satisfies (ρ,a) wscb
+    satisfies ρ a wscb
 .
 Proof.
     revert a.
@@ -682,24 +689,27 @@ Proof.
         specialize (IHwscb a).
         unfold satisfies at 2.
         simpl.
-        unfold valuation_satisfies_scs.
         ltac1:(rewrite Forall_cons_iff).
         
-        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ ρ (getSCS wscb))) in IHwscb.
+        rewrite (reflect_iff _ _ (matchesb_satisfies ρ () (getSCS wscb))) in IHwscb.
         split; intros HH.
         {
-            unfold satisfies. simpl. constructor.
-            apply IHwscb.
             destruct HH as [HH1 [HH2 HH3]].
-            split>[assumption|].
-            unfold matchesb. simpl.
-            rewrite forallb_forall.
-            rewrite Forall_forall in HH3.
-            intros x HHH. specialize (HH3 x HHH).
-            eapply introT.
-            { apply matchesb_satisfies. }
-            { assumption. }
-            simpl. apply HH.
+            unfold satisfies. simpl. constructor.
+            {
+                apply IHwscb.
+                split>[assumption|].
+                unfold matchesb. simpl.
+                rewrite forallb_forall.
+                rewrite Forall_forall in HH3.
+                intros x Hx.
+                specialize (HH3 x Hx).
+                apply satisfies_implies_matchesb.
+                assumption.
+            }
+            {
+                assumption.
+            }
         }
         {
             inversion HH; subst; clear HH.
@@ -716,7 +726,9 @@ Proof.
             specialize (H32 x HHH).
             eapply elimT.
             { apply matchesb_satisfies. }
-            { assumption. }
+            {
+                assumption.
+            }
         }
     }
 Qed.
@@ -725,19 +737,18 @@ Qed.
 Lemma separate_scs_correct
     {Σ : Signature}
     {A B : Type}
-    `{Satisfies (Valuation*A) B}
+    {_S1 : Satisfies Valuation (A) B}
     (wscb : WithASideCondition B)
     (a : A)
     (ρ : Valuation)
     :
     match separate_scs wscb with
-    | (b, scs) => satisfies (ρ,a) b /\ valuation_satisfies_scs ρ scs
+    | (b, scs) => satisfies ρ a b /\ satisfies ρ () scs
     end
     <->
-    A_satisfies_B_WithASideCondition Valuation A B (ρ, a) wscb
+    satisfies ρ a wscb
 .
 Proof.
-    unfold valuation_satisfies_scs.
     induction wscb; cbn.
     {
         split.
@@ -758,11 +769,13 @@ Proof.
     }
     {
         repeat (ltac1:(case_match)).
+        unfold satisfies at 2. simpl.
         rewrite Forall_cons_iff.
         
         ltac1:(rewrite [(valuation_satisfies_sc _ _) /\ _]and_comm).
         ltac1:(rewrite and_assoc).
         ltac1:(rewrite IHwscb).
+        
         clear IHwscb.
         (repeat split); intros.
         {
@@ -770,11 +783,11 @@ Proof.
             ltac1:(naive_solver).
         }
         {
-            inversion H1; subst.
+            inversion H0; subst.
             assumption.
         }
         {
-            inversion H1; subst.
+            inversion H0; subst.
             assumption.
         }
     }
@@ -867,11 +880,9 @@ Qed.
 Program Instance Matchse__builtin__Expression
     `{CΣ : ComputableSignature}
     :
-    Matches (Valuation * builtin_value) Expression
+    Matches Valuation builtin_value Expression
 := {|
-    matchesb := fun ρb e =>
-        let ρ := ρb.1 in
-        let b := ρb.2 in
+    matchesb := fun ρ b e =>
         bool_decide (Expression_evaluate ρ e = Some (aoo_operand _ _ b))
       ;
 |}.
@@ -886,12 +897,11 @@ Program Instance Matches_aopb_Expr
     `{CΣ : ComputableSignature}
     :
     Matches
-        (Valuation * AppliedOperator' symbol builtin_value)
+        Valuation
+        (AppliedOperator' symbol builtin_value)
     Expression
 := {|
-    matchesb := fun ρx e =>
-        let ρ := ρx.1 in
-        let x := ρx.2 in
+    matchesb := fun ρ x e =>
         bool_decide (Expression_evaluate ρ e = Some (aoo_app _ _ x))
      ;
     matchesb_satisfies := _ ;
@@ -906,10 +916,11 @@ Fail Next Obligation.
 Program Instance Matches_bv_pureterm
     {Σ : Signature}:
     Matches
-        (Valuation * builtin_value)
+        Valuation
+        builtin_value
         (AppliedOperator' symbol Expression)
 := {|
-    matchesb := fun _ _ => false;
+    matchesb := fun _ _ _ => false;
 |}.
 Next Obligation.
     unfold satisfies. simpl.
@@ -921,7 +932,7 @@ Fail Next Obligation.
 Instance Matches__GroundTerm__RhsPattern
     `{CΣ : ComputableSignature}
     :
-    Matches (Valuation * GroundTerm) RhsPattern
+    Matches Valuation (GroundTerm) RhsPattern
 .
 Proof.
     apply Matches__aoxyo_satisfies_aoxzo_bool.
@@ -932,13 +943,13 @@ Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
     (ρ : Valuation)
     (g : GroundTerm):
     satisfies
-        (ρ,g)
+        ρ g
         (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro)
     <->
-    satisfies ((ρ,LR_Right),g) lro
+    satisfies (ρ,LR_Right) g lro
 .
 Proof.
-    rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro))).
+    rewrite (reflect_iff _ _ (matchesb_satisfies ρ g (rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern lro))).
     unfold rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern.
     destruct lro; simpl.
     {
@@ -950,7 +961,7 @@ Proof.
     }
     {
         unfold satisfies; simpl.
-        rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,g) (φ))).
+        rewrite (reflect_iff _ _ (matchesb_satisfies ρ g (φ))).
         
         cbn.
         destruct φ,g; cbn.
@@ -979,7 +990,7 @@ Proof.
                     rewrite -> andb_true_iff.
                     rewrite -> IHao0.
                     unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'; simpl.
-                    unfold matchesb at 3; simpl.
+                    unfold matchesb at 2; simpl.
                     rewrite -> andb_true_iff.
                     unfold matchesb; simpl.
                     destruct b0; simpl.
