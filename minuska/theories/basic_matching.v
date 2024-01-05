@@ -64,6 +64,29 @@ Proof.
     ltac1:(naive_solver).
 Qed.
 
+Lemma matchesb_ext
+    {Σ : Signature}
+    (V A B : Type)
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_SAB : Satisfies V A B}
+    {_MAB : Matches V A B}
+    :
+    forall (v1 v2 : V),
+        v1 ⊆ v2 ->
+        forall a b,
+            matchesb v1 a b = true ->
+            matchesb v2 a b = true
+.
+Proof.
+    intros.
+    apply matchesb_implies_satisfies in H0.
+    apply satisfies_implies_matchesb.
+    eapply satisfies_ext.
+    { exact H. }
+    { assumption. }
+Qed.
+
 Section with_signature.
     Context
         {Σ : Signature}

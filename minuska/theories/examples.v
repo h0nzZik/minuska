@@ -6,6 +6,7 @@ From Minuska Require Import
     spec_semantics
     string_variables
     empty_builtin
+    naive_interpreter
 .
 
 
