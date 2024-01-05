@@ -19,11 +19,9 @@ Definition flattened_rewrites_in_valuation_to
     (r : FlattenedRewritingRule)
     (from to : GroundTerm)
     : Prop
-:= satisfies
-    (ρ, from) (fr_from r)
-/\ satisfies
-    (ρ,to) (fr_to r)
-/\ satisfies ρ (fr_scs r)
+:= satisfies ρ from (fr_from r)
+/\ satisfies ρ to (fr_to r)
+/\ satisfies ρ () (fr_scs r)
 .
 
 Definition flattened_rewrites_to

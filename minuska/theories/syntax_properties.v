@@ -50,7 +50,7 @@ match c with
 | c_True => ∅
 | c_atomic ap => vars_of ap
 | c_and c1 c2 => vars_of_Constraint c1 ∪ vars_of_Constraint c2
-| c_not c' => vars_of_Constraint c'
+(*| c_not c' => vars_of_Constraint c'*)
 end.
 
 #[export]

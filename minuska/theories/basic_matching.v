@@ -13,9 +13,14 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
 
-Class Matches (A B : Type) {_SAB : Satisfies A B} := {
-    matchesb: A -> B -> bool ;
-    matchesb_satisfies : ∀ a b, reflect (satisfies a b) (matchesb a b) ;
+Class Matches
+    {Σ : Signature}
+    (V A B : Type)
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_SAB : Satisfies V A B} := {
+    matchesb: V -> A -> B -> bool ;
+    matchesb_satisfies : ∀ v a b, reflect (satisfies v a b) (matchesb v a b) ;
 }.
 
 Arguments satisfies : simpl never.
@@ -27,16 +32,21 @@ Section with_signature.
         {Σ : Signature}
     .
 
+Search VarsOf Valuation.
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
-        `{Matches (Valuation * symbol) Operand2}
-        `{Matches (Valuation * Operand1) Operand2}
-        `{Matches (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
-        `{Matches (Valuation * AppliedOperator' symbol Operand1) Operand2}
-        (ρx : Valuation*(AppliedOperator' symbol Operand1))
+        {Operand1 Operand2 : Type}
+        {_S1 : Satisfies Valuation (symbol) Operand2}
+        {_S2 : Satisfies Valuation (Operand1) Operand2}
+        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_S4 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
+        {_M1 : Matches Valuation (symbol) Operand2}
+        {_M2 : Matches Valuation (Operand1) Operand2}
+        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_M4 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2}
+        (ρ : Valuation)
+        (x : (AppliedOperator' symbol Operand1))
         (y : AppliedOperator' symbol Operand2)
         : bool :=
-    let ρ := ρx.1 in
-    let x := ρx.2 in
     match x, y with
     | ao_operator a1, ao_operator a2 =>
         bool_decide (a1 = a2)
@@ -45,38 +55,43 @@ Section with_signature.
     | ao_app_operand _ _ , ao_operator _ => false
     | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
-            (ρ,app1)
+            ρ (app1)
             app2
-        && matchesb (ρ, o1) o2
+        && matchesb ρ (o1) o2
     | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
-        ApppliedOperator'_matches_AppliedOperator' (ρ, app1) app2
-        && matchesb (ρ, o1) o2
+        ApppliedOperator'_matches_AppliedOperator' ρ app1 app2
+        && matchesb ρ o1 o2
     | ao_app_ao app1 o1, ao_operator _ => false
     | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
-            (ρ,app1)
+            ρ app1
             app2
-        && matchesb (ρ, o1) o2
+        && matchesb ρ o1 o2
     | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
         ApppliedOperator'_matches_AppliedOperator' 
-            (ρ,app1)
+            ρ app1
             app2
         &&
         ApppliedOperator'_matches_AppliedOperator' 
-            (ρ,o1)
+            ρ o1
             o2
     end.
 
     #[export]
     Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
-        (Operand1 Operand2 : Type)
-        `{Matches (Valuation * symbol) Operand2}
-        `{Matches (Valuation * Operand1) Operand2}
-        `{Matches (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
-        `{Matches (Valuation * AppliedOperator' symbol Operand1) Operand2}
+        {Operand1 Operand2 : Type}
+        {_S1 : Satisfies Valuation (symbol) Operand2}
+        {_S2 : Satisfies Valuation (Operand1) Operand2}
+        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_S4 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
+        {_M1 : Matches Valuation (symbol) Operand2}
+        {_M2 : Matches Valuation (Operand1) Operand2}
+        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_M4 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2}
         :
         Matches
-            (Valuation * (AppliedOperator' symbol Operand1))
+            Valuation
+            ((AppliedOperator' symbol Operand1))
             (AppliedOperator' symbol Operand2)
         := {|
             matchesb :=
@@ -126,18 +141,18 @@ Section with_signature.
             simpl.
             specialize (IHx y).
             simpl in IHx.
-            destruct ((ApppliedOperator'_matches_AppliedOperator' (ρ,x) y)) eqn:Heqm1.
+            destruct ((ApppliedOperator'_matches_AppliedOperator' ρ x y)) eqn:Heqm1.
             {
                 simpl.
                 apply reflect_iff in IHx.
                 apply proj2 in IHx.
                 specialize (IHx eq_refl).
-                destruct (matchesb (ρ,b) b0) eqn:Heqm.
+                destruct (matchesb ρ b b0) eqn:Heqm.
                 {
                     apply ReflectT.
                     constructor.
                     apply IHx.
-                    assert(reflect_matches := matchesb_satisfies (ρ,b) b0).
+                    assert(reflect_matches := matchesb_satisfies ρ b b0).
                     apply reflect_iff in reflect_matches.
                     apply reflect_matches.
                     exact Heqm.
@@ -146,11 +161,11 @@ Section with_signature.
                     apply ReflectF.
                     intros HContra.
                     inversion HContra; subst; clear HContra.
-                    assert(reflect_matches := matchesb_satisfies (ρ,b) b0).
+                    assert(reflect_matches := matchesb_satisfies ρ b b0).
                     apply reflect_iff in reflect_matches.
-                    apply reflect_matches in H9.
-                    rewrite Heqm in H9.
-                    inversion H9.
+                    apply reflect_matches in H5.
+                    rewrite Heqm in H5.
+                    inversion H5.
                 }
             }
             {
@@ -158,7 +173,7 @@ Section with_signature.
                 apply ReflectF.
                 intros HContra.
                 inversion HContra; subst; clear HContra.
-                simpl in H9.
+                simpl in H5.
                 apply reflect_iff in IHx.
                 apply proj1 in IHx.
                 specialize (IHx ltac:(assumption)).
@@ -171,18 +186,18 @@ Section with_signature.
             simpl in IHx.
             unfold satisfies; simpl.
             unfold aosb_satisfies_aosbf; simpl.
-            destruct ((ApppliedOperator'_matches_AppliedOperator' (ρ,x) y1)) eqn:Heqm1.
+            destruct ((ApppliedOperator'_matches_AppliedOperator' ρ x y1)) eqn:Heqm1.
             {
                 simpl.
                 apply reflect_iff in IHx.
                 apply proj2 in IHx.
                 specialize (IHx eq_refl).
-                destruct (matchesb (ρ,b) y2) eqn:Heqm.
+                destruct (matchesb ρ b y2) eqn:Heqm.
                 {
                     apply ReflectT.
                     constructor.
                     apply IHx.
-                    assert(reflect_matches := matchesb_satisfies (ρ,b) y2).
+                    assert(reflect_matches := matchesb_satisfies ρ b y2).
                     apply reflect_iff in reflect_matches.
                     apply reflect_matches.
                     exact Heqm.
@@ -191,11 +206,11 @@ Section with_signature.
                     apply ReflectF.
                     intros HContra.
                     inversion HContra; subst; clear HContra.
-                    assert(reflect_matches := matchesb_satisfies (ρ,b) y2).
+                    assert(reflect_matches := matchesb_satisfies ρ b y2).
                     apply reflect_iff in reflect_matches.
-                    apply reflect_matches in H9.
-                    rewrite Heqm in H9.
-                    inversion H9.
+                    apply reflect_matches in H5.
+                    rewrite Heqm in H5.
+                    inversion H5.
                 }
             }
             {
@@ -203,7 +218,7 @@ Section with_signature.
                 apply ReflectF.
                 intros HContra.
                 inversion HContra; subst; clear HContra.
-                simpl in H9.
+                simpl in H5.
                 apply reflect_iff in IHx.
                 apply proj1 in IHx.
                 specialize (IHx ltac:(assumption)).
@@ -224,7 +239,7 @@ Section with_signature.
             apply iff_reflect.
             rewrite andb_true_iff.
             rewrite <- IHx1.
-            ltac1:(cut ((satisfies (ρ, x2) b) <-> (matchesb (ρ, x2) b = true))).
+            ltac1:(cut ((satisfies ρ x2 b) <-> (matchesb ρ x2 b = true))).
             {
                 intros HH0. rewrite <- HH0.
                 simpl.    
@@ -238,7 +253,7 @@ Section with_signature.
                     destruct HH; assumption.
                 }
             }
-            assert(reflect_matches_app_2 := matchesb_satisfies (ρ,x2) b).
+            assert(reflect_matches_app_2 := matchesb_satisfies ρ x2 b).
             apply reflect_iff in reflect_matches_app_2.
             apply reflect_matches_app_2.
         }
@@ -259,37 +274,45 @@ Section with_signature.
 
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
-        `{Matches (Valuation*symbol) Operand2}
-        `{Matches (Valuation*Operand1) Operand2}
-        `{Matches (Valuation*Operand1) (AppliedOperator' symbol Operand2)}
-        `{Matches (Valuation*(AppliedOperator' symbol Operand1)) Operand2}
-        (ρx : Valuation*(AppliedOperatorOr' symbol Operand1))
+        {_S1 : Satisfies Valuation (symbol) Operand2}
+        {_S2 : Satisfies Valuation (Operand1) Operand2}
+        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_S4 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+        {_M1 : Matches Valuation (symbol) Operand2}
+        {_M2 : Matches Valuation (Operand1) Operand2}
+        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_M4 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+        (ρ : Valuation)
+        (x : (AppliedOperatorOr' symbol Operand1))
         (y : AppliedOperatorOr' symbol Operand2)
         : bool :=
-    let ρ := ρx.1 in
-    let x := ρx.2 in
     match x, y with
     | aoo_app _ _ app1, aoo_app _ _ app2 =>
-        matchesb (ρ,app1) app2
+        matchesb ρ app1 app2
     | aoo_app _ _ app1, aoo_operand _ _ o2 =>
-        matchesb (ρ, app1) o2
+        matchesb ρ app1 o2
     | aoo_operand _ _ o1, aoo_app _ _ app2 =>
         false (*matchesb (ρ, o1) app2*)
     | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
-        matchesb (ρ, o1) o2
+        matchesb ρ o1 o2
     end.
 
     #[export]
     Program Instance
         reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
-        `{Matches (Valuation*symbol) Operand2}
-        `{M1 : Matches (Valuation * Operand1) Operand2}
-        `{M2 : Matches (Valuation * Operand1) (AppliedOperator' symbol Operand2)}
-        `{M3 : Matches (Valuation * AppliedOperator' symbol Operand1) Operand2}
+        {_S1 : Satisfies Valuation (symbol) Operand2}
+        {_S2 : Satisfies Valuation (Operand1) Operand2}
+        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_S4 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+        {_M1 : Matches Valuation (symbol) Operand2}
+        {_M2 : Matches Valuation (Operand1) Operand2}
+        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+        {_M4 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
         :
         Matches
-            (Valuation * (AppliedOperatorOr' symbol Operand1))
+            Valuation
+            (AppliedOperatorOr' symbol Operand1)
             (AppliedOperatorOr' symbol Operand2)
         := {|
             matchesb := 
@@ -311,7 +334,6 @@ Section with_signature.
                 unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
                 simpl.
                 unfold satisfies; simpl.
-                unfold AppliedOperator'_symbol_A_satisfies_OpenTermB; simpl.
 
                 apply iff_reflect.
                 split; intros HH.
@@ -386,15 +408,15 @@ Section with_signature.
     Qed.
 
     Definition builtin_value_matches_BuiltinOrVar
-        : Valuation*builtin_value -> BuiltinOrVar -> bool :=
-    fun ρb bv =>
+        : Valuation -> builtin_value -> BuiltinOrVar -> bool :=
+    fun ρ b bv =>
     match bv with
-    | bov_builtin b' => bool_decide (ρb.2 = b')
+    | bov_builtin b' => bool_decide (b = b')
     | bov_variable x =>
-        match ρb.1 !! x with
+        match ρ !! x with
         | None => false
         | Some (aoo_app _ _ _) => false
-        | Some (aoo_operand _ _ b') => bool_decide (ρb.2 = b')
+        | Some (aoo_operand _ _ b') => bool_decide (b = b')
         end
     end.
 
@@ -404,7 +426,8 @@ Section with_signature.
         reflect__matches__builtin_value__BuiltinOrVar
         :
         Matches
-            (Valuation * builtin_value)
+            Valuation
+            (builtin_value)
             BuiltinOrVar
         := {|
             matchesb := 
@@ -430,7 +453,7 @@ Section with_signature.
         {
             destruct (v !! x) eqn:Hvx; simpl.
             {
-                destruct a; simpl.
+                destruct a0; simpl.
                 {
                     apply ReflectF.
                     intros HContra.
@@ -463,18 +486,18 @@ Section with_signature.
     Fail Next Obligation.
 
     Definition builtin_value_matches_OpenTerm
-        : Valuation*builtin_value -> OpenTerm -> bool :=
-    fun ρb t =>
+        : Valuation -> builtin_value -> OpenTerm -> bool :=
+    fun ρ b t =>
     match t with
     | aoo_app _ _ _ => false
     | aoo_operand _ _ (bov_variable x) =>
-        match ρb.1 !! x with
+        match ρ !! x with
         | None => false
         | Some (aoo_app _ _ _) => false
-        | Some (aoo_operand _ _ b') => bool_decide (ρb.2 = b')
+        | Some (aoo_operand _ _ b') => bool_decide (b = b')
         end
     | aoo_operand _ _ (bov_builtin b') =>
-        bool_decide (ρb.2 = b')
+        bool_decide (b = b')
     end.
 
     #[export]
@@ -482,7 +505,8 @@ Section with_signature.
         reflect__matches__builtin_value__OpenTerm
         :
         Matches
-            (Valuation * builtin_value)
+            Valuation
+            (builtin_value)
             OpenTerm
         := {|
             matchesb := builtin_value_matches_OpenTerm;
@@ -515,14 +539,14 @@ Section with_signature.
     Fail Next Obligation.
 
     Definition GroundTerm'_matches_BuiltinOrVar
-        : Valuation*(AppliedOperator' symbol builtin_value) ->
+        : Valuation -> (AppliedOperator' symbol builtin_value) ->
             BuiltinOrVar ->
             bool
-    := fun ρt bov =>
+    := fun ρ t bov =>
     match bov with
     | bov_builtin b => false
     | bov_variable x =>
-        bool_decide (ρt.1 !! x = Some (aoo_app _ _ ρt.2))
+        bool_decide (ρ !! x = Some (aoo_app _ _ t))
     end.
 
     #[export]
@@ -530,7 +554,8 @@ Section with_signature.
         matches__builtin_value__OpenTerm
         :
         Matches
-            (Valuation * (AppliedOperator' symbol builtin_value))
+            Valuation
+            (AppliedOperator' symbol builtin_value)
             BuiltinOrVar
         := {|
             matchesb := GroundTerm'_matches_BuiltinOrVar;
@@ -559,9 +584,9 @@ Section with_signature.
     Program Instance Matches_bv_ao'
         {B : Type}
         :
-        Matches (Valuation * builtin_value) (AppliedOperator' symbol B)
+        Matches Valuation builtin_value (AppliedOperator' symbol B)
     := {|
-        matchesb := fun _ _ => false ;
+        matchesb := fun _ _ _ => false ;
     |}.
     Next Obligation.
         unfold satisfies. simpl.
@@ -575,10 +600,11 @@ Section with_signature.
     #[export]
     Program Instance Matches_vlrblrootob:
         Matches
-            ((Valuation * LeftRight) * builtin_value)
+            (Valuation * LeftRight)
+            (builtin_value)
             (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
     := {|
-        matchesb := fun _ _ => false ;
+        matchesb := fun _ _ _ => false ;
     |}.
     Next Obligation.
         unfold satisfies; simpl.
@@ -591,9 +617,9 @@ Section with_signature.
         Matches_symbol_B
         {B : Type}
         :
-        Matches (Valuation * symbol) B
+        Matches Valuation symbol B
     := {|
-        matchesb := fun _ _ => false
+        matchesb := fun _ _ _ => false
     |}.
     Next Obligation.
         apply ReflectF.
@@ -639,7 +665,8 @@ Section with_signature.
         matches__GroundTerm__OpenTerm
         :
         Matches
-            (Valuation * (GroundTerm))
+            Valuation
+            GroundTerm
             OpenTerm
     .
     Proof.
@@ -700,9 +727,9 @@ end
 #[export]
 Program Instance Matches_val_ap
     `{ComputableSignature}
-    : Matches Valuation AtomicProposition
+    : Matches Valuation unit AtomicProposition
 := {|
-    matchesb := val_satisfies_ap_bool ;
+    matchesb := fun a b c => val_satisfies_ap_bool a c;
 |}.
 Next Obligation.
     induction b; simpl.
@@ -773,23 +800,24 @@ Qed.
 Fail Next Obligation.
 
 Fixpoint val_satisfies_c_bool
-    `{ComputableSignature}
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
     (ρ : Valuation)
     (c : Constraint)
     : bool :=
 match c with
 | c_True => true
-| c_atomic ap => matchesb ρ ap
+| c_atomic ap => matchesb ρ () ap
 | c_and c1 c2 => val_satisfies_c_bool ρ c1 && val_satisfies_c_bool ρ c2
-| c_not c' => ~~ val_satisfies_c_bool ρ c'
+(* | c_not c' => ~~ val_satisfies_c_bool ρ c' *)
 end.
 
 #[export]
 Program Instance Matches_val_c
     `{CΣ : ComputableSignature}
-    : Matches Valuation Constraint
+    : Matches Valuation unit Constraint
 := {|
-    matchesb := val_satisfies_c_bool ;
+    matchesb := fun a b c => val_satisfies_c_bool a c;
 |}.
 Next Obligation.
     induction b.
@@ -815,6 +843,7 @@ Next Obligation.
         symmetry.
         apply andb_true_iff.
     }
+    (*
     {
         apply reflect_iff in IHb.
         unfold satisfies in *; simpl in *.
@@ -832,6 +861,7 @@ Next Obligation.
             inversion HH.
         }
     }
+    *)
 Qed.
 Fail Next Obligation.
 
@@ -843,7 +873,7 @@ match m with
 | mkMatch _ x φ =>
     match ρ !! x with
     | Some g
-        => matchesb (ρ, g) φ
+        => matchesb ρ g φ
     | _ => false
     end
 end.
@@ -852,9 +882,9 @@ end.
 Program Instance Matches_val_match
     {Σ : Signature}
     :
-    Matches Valuation Match
+    Matches Valuation unit Match
 := {|
-    matchesb := valuation_satisfies_match_bool ;
+    matchesb := fun a b c => valuation_satisfies_match_bool a c;
 |}.
 Next Obligation.
     destruct b; unfold satisfies; simpl.
@@ -875,17 +905,17 @@ Definition valuation_satisfies_sc_bool
     (ρ : Valuation)
     (sc : SideCondition) : bool :=
 match sc with
-| sc_constraint c => matchesb ρ c
-| sc_match m => matchesb ρ m
+| sc_constraint c => matchesb ρ () c
+| sc_match m => matchesb ρ () m
 end.
 
 #[export]
 Program Instance Matches_valuation_sc
     `{CΣ : ComputableSignature}
     :
-    Matches Valuation SideCondition
+    Matches Valuation unit SideCondition
 := {|
-    matchesb := valuation_satisfies_sc_bool;
+    matchesb := fun a b c => valuation_satisfies_sc_bool a c;
 |}.
 Next Obligation.
     destruct b.
@@ -904,13 +934,12 @@ Fail Next Obligation.
 Program Instance Matches_valuation_scs
    `{CΣ : ComputableSignature}
     :
-    Matches Valuation (list SideCondition)
+    Matches Valuation unit (list SideCondition)
 := {|
-    matchesb := fun ρ => forallb (@matchesb Valuation SideCondition Satisfies_val_sc Matches_valuation_sc ρ) ;
+    matchesb := fun ρ b c => forallb (matchesb ρ ()) c;
 |}.
 Next Obligation.
     unfold satisfies. simpl.
-    unfold valuation_satisfies_scs.
     apply iff_reflect.
     rewrite Forall_forall.
     rewrite forallb_forall.
@@ -932,6 +961,3 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-
-
-Search (Matches (Valuation*symbol) ?B).
