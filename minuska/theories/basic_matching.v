@@ -557,8 +557,9 @@ Section with_signature.
 
     #[export]
     Program Instance Matches_bv_ao'
+        {B : Type}
         :
-        Matches (Valuation * builtin_value) (AppliedOperator' symbol BuiltinOrVar)
+        Matches (Valuation * builtin_value) (AppliedOperator' symbol B)
     := {|
         matchesb := fun _ _ => false ;
     |}.
@@ -586,6 +587,22 @@ Section with_signature.
     Fail Next Obligation.
 
     #[export]
+    Program Instance
+        Matches_symbol_B
+        {B : Type}
+        :
+        Matches (Valuation * symbol) B
+    := {|
+        matchesb := fun _ _ => false
+    |}.
+    Next Obligation.
+        apply ReflectF.
+        unfold satisfies; simpl.
+        ltac1:(tauto).
+    Qed.
+    Fail Next Obligation.
+    (*
+    #[export]
     Program Instance Matches_sym_bov
         :
         Matches (Valuation * symbol) BuiltinOrVar
@@ -597,7 +614,9 @@ Section with_signature.
         apply ReflectF. ltac1:(tauto).
     Qed.
     Fail Next Obligation.
+    *)
 
+    (*
     #[export]
     Program Instance Matches__builtin__aosbov
         :
@@ -613,6 +632,7 @@ Section with_signature.
         intros HContra. inversion HContra.
     Qed.
     Fail Next Obligation.
+    *)
 
     #[export]
     Instance
@@ -912,18 +932,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-#[export]
-Program Instance
-    Matches_symbol_Expression
-    {Σ : Signature}
-    :
-    Matches (Valuation * symbol) Expression
-:= {|
-    matchesb := fun _ _ => false
-|}.
-Next Obligation.
-    apply ReflectF.
-    unfold satisfies; simpl.
-    ltac1:(tauto).
-Qed.
-Fail Next Obligation.
+
+
+Search (Matches (Valuation*symbol) ?B).

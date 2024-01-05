@@ -1121,7 +1121,8 @@ Proof.
         }
     }
 Qed.
-
+(*
+(*Set Typeclasses Debug.*)
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     `{CΣ : ComputableSignature}
     {A B : Type}
@@ -1132,8 +1133,8 @@ Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     `{Matches (Valuation*GroundTerm) A}
     `{Matches (Valuation*(AppliedOperator' symbol builtin_value)) B}
     `{Matches (Valuation*builtin_value) B}
-    `{Matches (Valuation*builtin_value) (AppliedOperator' symbol B)}
-    `{Matches (Valuation*builtin_value) (AppliedOperator' symbol A)}
+    (*`{Matches (Valuation*builtin_value) (AppliedOperator' symbol B)}
+    `{Matches (Valuation*builtin_value) (AppliedOperator' symbol A)} *)
     (*
     `{Matches (Valuation * GroundTerm) (AppliedOperatorOr' symbol A)}
     `{Matches (Valuation * GroundTerm) (AppliedOperatorOr' symbol B)}
@@ -1190,13 +1191,6 @@ Proof.
         {
             (*unfold matchesb.*)
             unfold matchesb; simpl.
-            assert (Hcu := correct_underlying (aoo_app _ _ ao0) b).
-            ltac1:(ospecialize (Hcu _)).
-            {
-                left.
-            }
-            rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ, aoo_app symbol builtin_value ao0) (A_to_OpenTermB b))) in Hcu.
-            unfold matchesb at 1 in Hcu; simpl in Hcu.
 
 
             destruct (A_to_OpenTermB b) eqn:Hb, (ao0) eqn:Hao0.
@@ -1218,49 +1212,71 @@ Proof.
                     }
                     exact correct_underlying.
                 }
-
-                unfold ApppliedOperator'_matches_AppliedOperator' at 1; simpl.
-                unfold ApppliedOperator'_matches_AppliedOperator' in Hcu; simpl in Hcu.
-                unfold aoxyo_satisfies_aoxzo_bool in Hcu; simpl in Hcu.
-                unfold matchesb in Hcu; simpl in Hcu.
-                rewrite <- Hao0 in Hcu.
-                specialize (IHao a).
-                subst ao0.
-                (* rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ, aoo_app symbol builtin_value ao0) (A_to_OpenTermB b))) in Hcu. *)
-
-                destruct ao1; simpl.
-                {
-                    subst.
-                    
-                    unfold matchesb at 3 in IHao; simpl in IHao.
-                    rewrite -> andb_true_iff.
-                    
-                    destruct a; simpl in *.
-                    {
-                        destruct ao; simpl in *.
-                        {
-                            clear IHao.
-                        }
-                        {
-
-                        }
-                        rewrite <- IHao.
-                        rewrite <- (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,b0) (b))).
-                        ltac1:(rewrite <- (correct_underlying a b)).    
-                    }
-                    {
-
-                    }
-
-                    rewrite <- IHao.
-                    rewrite <- (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ,b0) (b))).
-                    ltac1:(rewrite <- (correct_underlying a b)).
-                }
-                {
-
-                }
-                unfold ApppliedOperator'_matches_AppliedOperator'; simpl.
                 rewrite -> andb_true_iff.
+                rewrite forallb_app.
+                rewrite -> andb_true_iff.
+                
+                cbn.
+                rewrite -> andb_true_iff.
+                ltac1:(rewrite [matchesb (ρ, b0) ao1]/matchesb). simpl.
+
+
+                ltac1:(specialize (correct_underlying (aoo_app _ _ a) b)).
+                rewrite Hb in correct_underlying.
+                ltac1:(ospecialize (correct_underlying _)).
+                { left. }
+
+                ltac1:(rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ, aoo_app symbol builtin_value a) (aoo_app symbol B ao1))) in correct_underlying).
+                unfold matchesb in correct_underlying; simpl in correct_underlying.
+                unfold aoxyo_satisfies_aoxzo_bool in correct_underlying; simpl in correct_underlying.
+
+                ltac1:(rewrite [matchesb (ρ, b0) b]/matchesb). simpl.
+                specialize (IHao a).
+                split; intros HH.
+                {
+                    destruct HH as [[HH1 HH2] [HH3 HH4]].
+                    inversion HH2.
+                    (*
+                    destruct IHao as [IH1 IH2].
+                    subst ao0.
+                    ltac1:(ospecialize (IH1 _)).
+                    {
+                        split.
+                        { apply HH1. }
+                        {
+                            apply HH3.
+                        }
+                    }
+                    split.
+                    { apply IH1. }
+                    {
+                        unfold matchesb in HH2; simpl in HH2.
+                        inversion HH2.
+                    }*)
+                }
+                {
+                    ltac1:(exfalso).
+                    destruct IHao as [IH1 IH2].
+                    subst ao0.
+                    destruct HH as [HH1 HH2].
+                    
+                    ltac1:(ospecialize (IH1 _)).
+                    {
+
+                    }
+                }
+                (*
+                assert (Hcu := correct_underlying (aoo_app _ _ ao0) b).
+                ltac1:(ospecialize (Hcu _)).
+                {
+                    left.
+                }
+                rewrite (reflect_iff _ _ (@matchesb_satisfies _ _ _ _ (ρ, aoo_app symbol builtin_value ao0) (A_to_OpenTermB b))) in Hcu.
+                unfold matchesb at 1 in Hcu; simpl in Hcu.
+
+
+                specialize (IHao a).
+                *)
 
             }
         }
@@ -1907,3 +1923,4 @@ Proof.
     unfold GroundTerm_satisfies_RhsPattern.
     reflexivity.
 Qed.
+*)

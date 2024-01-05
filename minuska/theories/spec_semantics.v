@@ -1125,8 +1125,9 @@ Instance Satisfies_bv_pureterm
 Program Instance
     Satisfies_symbol_Expression
     {Σ : Signature}
+    {B : Type}
     :
-    Satisfies (Valuation * symbol) Expression
+    Satisfies (Valuation * symbol) B
 := {|
     satisfies := fun _ _ => False ;
 |}.
