@@ -465,6 +465,74 @@ Proof.
     }
 Qed.
 
+(*
+    I define this here only for Valuations
+    to behave extensionaly.
+*)
+#[local]
+Instance GTEquiv {Σ : Signature}
+    : Equiv GroundTerm := (=).
+
+#[local]
+Instance GTLeibnizEquiv {Σ : Signature}
+    : LeibnizEquiv GroundTerm.
+Proof.
+    intros x y H. apply H.
+Qed.
+
+(*
+    This does not work since even there might be
+    some key `k` in ρ2 that is not in ρ1
+    and it will get used by the merge.
+*)
+Lemma valuations_compatible_merge
+    {Σ : Signature}
+    (ρ1 ρ2 : gmap variable GroundTerm)
+    :
+    valuations_compatible ρ1 ρ2 = true  ->
+    merge use_left ρ1 ρ2 = ρ1 ∪ ρ2
+.
+Proof.
+    intros Hcompat.
+    unfold Valuation in *.
+    apply leibniz_equiv.
+    rewrite map_equiv_iff.
+    intros v.
+    rewrite lookup_merge.
+    unfold diag_None.
+    unfold valuations_compatible in Hcompat.
+    rewrite forallb_forall in Hcompat.
+    specialize (Hcompat v).
+    ltac1:(repeat case_match).
+    {
+        simpl.
+        ltac1:(case_match).
+        {
+            rewrite lookup_union_l.
+            {
+                symmetry.
+                rewrite H.
+                reflexivity.
+            }
+            {
+                ltac1:(ospecialize (Hcompat _)).
+                {
+                    rewrite <- elem_of_list_In.
+                    rewrite elem_of_elements.
+                    rewrite elem_of_intersection.
+                    ltac1:(do 2 rewrite elem_of_dom).
+                    split.
+                    { exists g. assumption. }
+                    { exists g0. assumption. }
+                }
+                apply bool_decide_eq_true_1 in Hcompat.
+                admit.
+            }
+        }
+        admit.
+    }
+Abort.
+
 Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
     {Σ : Signature}
     {Operand1 Operand2 : Type}
@@ -546,14 +614,58 @@ Proof.
             cbn.
             rewrite Hρ''2.
             cbn.
+            
+
+            exists (ρ' ∪ ρ'').
+            split.
+            {
+                unfold vars_of in IH0; simpl in IH0.
+                rewrite <- IH0.
+                rewrite <- Hρ''0.
+                unfold vars_of; simpl.
+                unfold Valuation in *.
+                rewrite dom_union_L.
+                clear. ltac1:(set_solver).
+            }
+            split.
+            {
+                clear -IH1 Hρ''1.
+                apply map_union_least; assumption.
+            }
             unfold merge_valuations.
-            unfold valuations_compatible.
+            ltac1:(repeat case_match).
+            {
+                apply bool_decide_eq_true_1 in H.
+                unfold is_true in H.
+                apply f_equal.
+                Search valuations_compatible.
+                Search "map" "ext".
+                Search merge.
+                rewrite forallb_forall in H.
+                
+                Search merge use_left.
+                (*rewrite merge_use_left_subseteq.*)
+                Search bool_decide true.
+            }
+            {
+
+            }
+            (*
             exists (merge use_left ρ' ρ'').
             simpl.
             split.
             {
+                rewrite merge_use_left_subseteq.
+                {
+                    
+                }
+                {
+
+                }
+                Search merge use_left.
                 Search merge.
             }
+            *)
             destruct b0.
             {
                 cbn in *.
