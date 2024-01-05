@@ -131,7 +131,7 @@ Inductive Constraint {Σ : Signature} :=
 | c_True
 | c_atomic (ap : AtomicProposition)
 | c_and (c1 c2 : Constraint)
-| c_not (c : Constraint)
+(*| c_not (c : Constraint) *) (* This is not extensive with respect to satisfaction*)
 .
 
 Inductive BuiltinOrVar {Σ : Signature} :=

@@ -24,12 +24,12 @@ Fixpoint Expression_evaluate
     (t : Expression)
     : option GroundTerm :=
 match t with
-| ft_element _ e => Some e
-| ft_variable _ x => ρ !! x
-| ft_unary _ f t =>
+| ft_element e => Some e
+| ft_variable x => ρ !! x
+| ft_unary f t =>
     e ← Expression_evaluate ρ t;
     Some (builtin_unary_function_interp f e)
-| ft_binary _ f t1 t2 =>
+| ft_binary f t1 t2 =>
     e1 ← Expression_evaluate ρ t1;
     e2 ← Expression_evaluate ρ t2;
     Some (builtin_binary_function_interp f e1 e2)
@@ -276,50 +276,71 @@ Fixpoint val_satisfies_c
     : Prop :=
 match c with
 | c_True => True
-| c_atomic ap => satisfies ρ ap
+| c_atomic ap => satisfies ρ () ap
 | c_and c1 c2 => val_satisfies_c ρ c1 /\ val_satisfies_c ρ c2
-| c_not c' => ~ val_satisfies_c ρ c'
+(* | c_not c' => ~ val_satisfies_c ρ c' *)
 end.
 
 #[export]
-Instance Satisfies_val_c
-    {Σ : Signature} : Satisfies Valuation Constraint
+Program Instance Satisfies_val_c
+    {Σ : Signature} : Satisfies (gmap variable GroundTerm) unit Constraint
 := {|
-    satisfies := val_satisfies_c ;
+    satisfies := fun a b c => val_satisfies_c a c;
 |}.
+Next Obligation.
+    induction b; simpl in *.
+    { exact I. }
+    {
+        eapply satisfies_ext.
+        { exact H. }
+        { assumption. }
+    }
+    {
+        ltac1:(naive_solver).
+    }
+Qed.
+Fail Next Obligation.
 
 
 Inductive aoxy_satisfies_aoxz
+    {Σ : Signature}
     {V X Y Z : Type}
-    `{Satisfies (V*Y) Z}
-    `{Satisfies (V*Y) (AppliedOperator' X Z)}
-    `{Satisfies (V*(AppliedOperator' X Y)) Z }
+    {_VV : VarsOf V}
+    {_SV : SubsetEq V}
+    {_S1 : Satisfies V (Y) Z}
+    {_S2 : Satisfies V (Y) (AppliedOperator' X Z)}
+    {_S3 : Satisfies V ((AppliedOperator' X Y)) Z }
+
     :
-    (V*(AppliedOperator' X Y)) ->
+    V ->
+    ((AppliedOperator' X Y)) ->
     AppliedOperator' X Z ->
     Prop :=
 
 | asa_x:
     forall ρ x,
         aoxy_satisfies_aoxz
-            (ρ,(@ao_operator X Y x))
+            ρ
+            (@ao_operator X Y x)
             (@ao_operator X Z x)
 
 | asa_operand:
     forall ρ aoxy aoxz y z,
-        aoxy_satisfies_aoxz (ρ,aoxy) aoxz ->
-        satisfies (ρ,y) z ->
+        aoxy_satisfies_aoxz ρ aoxy aoxz ->
+        satisfies ρ y z ->
         aoxy_satisfies_aoxz
-            (ρ,(ao_app_operand aoxy y))
+            ρ
+            (ao_app_operand aoxy y)
             (ao_app_operand aoxz z)
 
 | asa_operand_asa:
     forall ρ aoxy aoxz aoxy2 z,
-        aoxy_satisfies_aoxz (ρ,aoxy) aoxz ->
-        satisfies (ρ,aoxy2) z ->
+        aoxy_satisfies_aoxz ρ aoxy aoxz ->
+        satisfies ρ aoxy2 z ->
         aoxy_satisfies_aoxz
         (* The right-side, the symbolic one, has more compact representation - so *)
-            (ρ,(ao_app_ao aoxy aoxy2))
+            ρ
+            (ao_app_ao aoxy aoxy2)
             (ao_app_operand aoxz z)
 
 | asa_asa_operand:
@@ -328,33 +349,58 @@ Inductive aoxy_satisfies_aoxz
         (aoxy : AppliedOperator' X Y)
         (aoxz aoxz2 : AppliedOperator' X Z)
         (y : Y),
-        aoxy_satisfies_aoxz (ρ,aoxy) aoxz ->
-        @satisfies (V*Y) (AppliedOperator' X Z) _ (ρ, y) aoxz2 ->
+        aoxy_satisfies_aoxz ρ aoxy aoxz ->
+        satisfies ρ y aoxz2 ->
         aoxy_satisfies_aoxz
-            (ρ, ao_app_operand aoxy y)
+            ρ
+            (ao_app_operand aoxy y)
             ((ao_app_ao aoxz aoxz2))
 
 | asa_asa:
     forall ρ aoxy1 aoxy2 aoxz1 aoxz2,
-        aoxy_satisfies_aoxz (ρ,aoxy1) aoxz1 ->
-        aoxy_satisfies_aoxz (ρ,aoxy2) aoxz2 ->
+        aoxy_satisfies_aoxz ρ aoxy1 aoxz1 ->
+        aoxy_satisfies_aoxz ρ aoxy2 aoxz2 ->
         aoxy_satisfies_aoxz
-            (ρ,(ao_app_ao aoxy1 aoxy2))
+            ρ
+            (ao_app_ao aoxy1 aoxy2)
             (ao_app_ao aoxz1 aoxz2)
 .
 
 
 #[export]
-Instance Satisfies_aoxy_aoxz
+Program Instance Satisfies_aoxy_aoxz
+    {Σ : Signature}
     {V X Y Z : Type}
-    `{Satisfies (V*Y) Z}
-    `{Satisfies (V*Y) (AppliedOperator' X Z)}
-    `{Satisfies (V*(AppliedOperator' X Y)) Z }
+    {_VV : VarsOf V}
+    {_SV : SubsetEq V}
+    {_S1 : Satisfies V (Y) Z}
+    {_S2 : Satisfies V (Y) (AppliedOperator' X Z)}
+    {_S3 : Satisfies V ((AppliedOperator' X Y)) Z }
     :
-    Satisfies (V*(AppliedOperator' X Y)) (AppliedOperator' X Z)
+    Satisfies V ((AppliedOperator' X Y)) (AppliedOperator' X Z)
 := {|
     satisfies := aoxy_satisfies_aoxz ;
 |}.
+Next Obligation.
+    revert v2 H.
+    induction H0; intros v2 HH; constructor; try (ltac1:(naive_solver)).
+    {
+        eapply satisfies_ext.
+        { apply HH. }
+        { exact H. }
+    }
+    {
+        eapply satisfies_ext.
+        { apply HH. }
+        { exact H. }
+    }
+    {
+        eapply satisfies_ext.
+        { apply HH. }
+        { exact H. }
+    }
+Qed.
+Fail Next Obligation.
 
 
 Inductive aoxyo_satisfies_aoxzo
