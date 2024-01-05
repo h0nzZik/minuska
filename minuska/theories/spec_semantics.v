@@ -205,21 +205,67 @@ Next Obligation.
     destruct b; simpl in *.
     {
         destruct H0 as [H1 [x Hx]].
-        rewrite (Expression_evaluate_extensive v1 v2 _ x H Hx).
+        rewrite (Expression_evaluate_extensive_Some v1 v2 _ x H Hx).
         split>[|eexists; reflexivity].
         rewrite H1 in Hx.
-        rewrite (Expression_evaluate_extensive v1 v2 e2 x H Hx).
+        rewrite (Expression_evaluate_extensive_Some v1 v2 e2 x H Hx).
         reflexivity.
     }
     {
         destruct (Expression_evaluate v1 e1) eqn:Heq1, (Expression_evaluate v2 e1) eqn:Heq2.
         {
-            rewrite (Expression_evaluate_extensive v1 v2 e1 g H Heq1) in Heq2.
+            rewrite (Expression_evaluate_extensive_Some v1 v2 e1 g H Heq1) in Heq2.
             inversion Heq2; subst; clear Heq2.
             assumption.
         }
         {
-
+            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq2.
+            {
+                ltac1:(simplify_eq/=).
+            }
+            { assumption. }
+        }
+        {
+            inversion H0.
+        }
+        {
+            inversion H0.
+        }
+    }
+    {
+        destruct
+            (Expression_evaluate v1 e1) eqn:Heq1,
+            (Expression_evaluate v2 e1) eqn:Heq2,
+            (Expression_evaluate v1 e2) eqn:Heq3,
+            (Expression_evaluate v2 e2) eqn:Heq4;
+            try ltac1:(contradiction).
+        {
+            rewrite (Expression_evaluate_extensive_Some v1 v2 e1 g H Heq1) in Heq2.
+            inversion Heq2; subst; clear Heq2.
+            rewrite (Expression_evaluate_extensive_Some v1 v2 e2 g1 H Heq3) in Heq4.
+            inversion Heq4; subst; clear Heq4.
+            assumption.
+        }
+        {
+            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq4.
+            {
+                ltac1:(simplify_eq/=).
+            }
+            { assumption. }
+        }
+        {
+            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq2.
+            {
+                ltac1:(simplify_eq/=).
+            }
+            { assumption. }
+        }
+        {
+            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq2.
+            {
+                ltac1:(simplify_eq/=).
+            }
+            { assumption. }
         }
     }
 Qed.
