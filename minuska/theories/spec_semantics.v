@@ -488,19 +488,40 @@ Inductive builtin_satisfies_BuiltinOrVar
 
 Definition builtin_satisfies_BuiltinOrVar'
     {Σ : Signature}
-    (ρb : (Valuation * builtin_value))
+    (ρ : Valuation)
+    (b : builtin_value)
     (bov : BuiltinOrVar)
     : Prop
-:= builtin_satisfies_BuiltinOrVar ρb.1 ρb.2 bov.
+:= builtin_satisfies_BuiltinOrVar ρ b bov.
 
 #[export]
-Instance Satisfies_builtin_BuiltinOrVar
+Instance Subseteq_Valuation {Σ : Signature}
+    : SubsetEq Valuation
+.
+Proof.
+    unfold Valuation.
+    apply _.
+Defined.
+
+#[export]
+Program Instance Satisfies_builtin_BuiltinOrVar
     {Σ : Signature}
     :
-    Satisfies (Valuation * builtin_value) BuiltinOrVar
+    Satisfies Valuation (builtin_value) BuiltinOrVar
 := {|
     satisfies := builtin_satisfies_BuiltinOrVar' ;
 |}.
+Next Obligation.
+    inversion H0; constructor.
+    {
+        subst.
+        unfold Valuation in *.
+        eapply lookup_weaken.
+        { apply H1. }
+        { assumption. }
+    }
+Qed.
+Fail Next Obligation.
 
 Definition AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
     {Σ : Signature}
@@ -514,40 +535,65 @@ match bov with
 end.
 
 #[export]
-Instance Satisfies__AppliedOperator'_symbol_builtin__BuiltinOrVar
+Program Instance Satisfies__AppliedOperator'_symbol_builtin__BuiltinOrVar
     {Σ : Signature}
-    : Satisfies (Valuation*(AppliedOperator' symbol builtin_value)) BuiltinOrVar
+    : Satisfies Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar
 := {| 
-    satisfies := fun ρx y => AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρx.1 ρx.2 y
+    satisfies := AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
 |}.
+Next Obligation.
+    destruct b; simpl in *.
+    { ltac1:(contradiction). }
+    {
+        unfold Valuation in *.
+        eapply lookup_weaken.
+        { apply H0. }
+        { assumption. }
+    }
+Qed.
+Fail Next Obligation.
 
 Definition AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar
     {Σ : Signature}
-    (ρaop : (Valuation * (AppliedOperator' symbol builtin_value)))
+    (ρ : Valuation)
+    (aop : (AppliedOperator' symbol builtin_value))
     (bov : BuiltinOrVar)
     : Prop
-:= AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρaop.1 ρaop.2 bov.
+:= AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar ρ aop bov.
 
 #[export]
-Instance Satisfies_AppliedOperator'_symbol_builtin_BuiltinOrVar
+Program Instance Satisfies_AppliedOperator'_symbol_builtin_BuiltinOrVar
     {Σ : Signature}
     :
-    Satisfies (Valuation * (AppliedOperator' symbol builtin_value)) BuiltinOrVar
+    Satisfies Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar
 := {|
     satisfies := AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar ;
 |}.
+Next Obligation.
+    destruct b; simpl in *.
+    { ltac1:(contradiction). }
+    {
+        unfold Valuation in *.
+        eapply lookup_weaken.
+        { apply H0. }
+        { assumption. }
+    }
+Qed.
+Fail Next Obligation.
 
 Definition aosb_satisfies_aosbf
     {Σ : Signature}
     {A B : Type}
-    {SatAB : Satisfies (Valuation*A) B}
-    `{Satisfies (Valuation*A) (AppliedOperator' symbol B)}
-    {SatA'B : Satisfies (Valuation*(AppliedOperator' symbol A)) B}
+    {_S1 : Satisfies Valuation (A) B}
+    {_S2 : Satisfies Valuation (A) (AppliedOperator' symbol B)}
+    {_S3 : Satisfies Valuation ((AppliedOperator' symbol A)) B}
     :
-    (Valuation * (AppliedOperator' symbol A)) ->
+    Valuation ->
+    ((AppliedOperator' symbol A)) ->
     AppliedOperator' symbol B ->
     Prop :=
     @aoxy_satisfies_aoxz
+        Σ
         Valuation
         symbol
         A
@@ -555,25 +601,28 @@ Definition aosb_satisfies_aosbf
         _
         _
         _
+        _
+        _
 .
 
 #[export]
-Instance Satisfies__builtin__ao'B
+Program Instance Satisfies__builtin__ao'B
     {Σ : Signature}
     {B : Type}
     :
     Satisfies
-        (Valuation * builtin_value)
+        Valuation
+        (builtin_value)
         (AppliedOperator' symbol B)
 := {| 
-    satisfies := fun _ _ => false ;
+    satisfies := fun _ _ _ => false ;
 |}.
 
 #[export]
 Instance Satisfies_aos__builtin_BuiltinOrVar
     {Σ : Signature}
     :
-    Satisfies (Valuation * (AppliedOperator' symbol builtin_value)) (AppliedOperator' symbol BuiltinOrVar)
+    Satisfies Valuation ((AppliedOperator' symbol builtin_value)) (AppliedOperator' symbol BuiltinOrVar)
 .
 Proof.
     apply _.
@@ -584,20 +633,22 @@ Defined.
 Instance Satisfies_aosb_aosbf
     {Σ : Signature}
     {A B : Type}
-    {SatAB : Satisfies (Valuation*A) B}
-    `{Satisfies (Valuation*A) (AppliedOperator' symbol B)}
-    {SatA'B : Satisfies (Valuation*(AppliedOperator' symbol A)) B}
+    {SatAB : Satisfies Valuation (A) B}
+    {_S2 : Satisfies Valuation (A) (AppliedOperator' symbol B)}
+    {SatA'B : Satisfies Valuation ((AppliedOperator' symbol A)) B}
     :
-    Satisfies (Valuation * (AppliedOperator' symbol A)) (AppliedOperator' symbol B)
-:= {|
-    satisfies := aosb_satisfies_aosbf;
-|}.
+    Satisfies Valuation ((AppliedOperator' symbol A)) (AppliedOperator' symbol B)
+.
+Proof.
+    apply _.
+Defined.
 
 
 Definition aoosb_satisfies_aoosbf
     {Σ : Signature}
     :
-    (Valuation*(AppliedOperatorOr' symbol builtin_value)) ->
+    Valuation ->
+    (AppliedOperatorOr' symbol builtin_value) ->
     AppliedOperatorOr' symbol BuiltinOrVar ->
     Prop :=
     aoxyo_satisfies_aoxzo
@@ -612,26 +663,25 @@ Instance
 Satisfies_aoosb_aoosbf
     {Σ : Signature}
     :
-    Satisfies (Valuation * (AppliedOperatorOr' symbol builtin_value)) (AppliedOperatorOr' symbol BuiltinOrVar)
-:= {|
-    satisfies := aoosb_satisfies_aoosbf ;
-|}.
+    Satisfies Valuation ((AppliedOperatorOr' symbol builtin_value)) (AppliedOperatorOr' symbol BuiltinOrVar)
+.
+Proof. apply _. Defined.
 
 Definition in_val_GroundTerm_satisfies_OpenTerm
     {Σ : Signature}
-    (ρg : Valuation*GroundTerm)
+    (ρ : Valuation)
+    (g : GroundTerm)
     (φ : OpenTerm)
-    : Prop := aoosb_satisfies_aoosbf ρg φ
+    : Prop := aoosb_satisfies_aoosbf ρ g φ
 .
 
 #[export]
 Instance Satisfies_valGroundTerm_OpenTerm
     {Σ : Signature}
     :
-    Satisfies (Valuation * GroundTerm) OpenTerm
-:= {|
-    satisfies := in_val_GroundTerm_satisfies_OpenTerm ;
-|}.
+    Satisfies Valuation (GroundTerm) OpenTerm
+.
+Proof. apply _. Defined.
 
 Definition valuation_satisfies_match
     {Σ : Signature}
@@ -641,19 +691,42 @@ match m with
 | mkMatch _ x φ =>
     match ρ !! x with
     | Some g
-        => satisfies (ρ, g) φ
+        => satisfies ρ g φ
     | _ => False
     end
 end.
 
 #[export]
-Instance Satisfies_val_match
+Program Instance Satisfies_val_match
     {Σ : Signature}
     :
-    Satisfies Valuation Match
+    Satisfies Valuation unit Match
 := {|
-    satisfies := valuation_satisfies_match ;
+    satisfies := fun a b c => valuation_satisfies_match a c;
 |}.
+Next Obligation.
+    destruct b. simpl in *.
+    unfold Valuation in *.
+    ltac1:(repeat case_match).
+    {
+        eapply lookup_weaken in H1>[|apply H].
+        ltac1:(simplify_eq/=).
+        eapply satisfies_ext.
+        { apply H. }
+        { assumption. }
+    }
+    {
+        eapply lookup_weaken in H1>[|apply H].
+        ltac1:(simplify_eq/=).
+    }
+    {
+        ltac1:(contradiction).
+    }
+    {
+        ltac1:(contradiction).
+    }
+Qed.
+Fail Next Obligation.
 
 Definition valuation_satisfies_sc
     {Σ : Signature}
