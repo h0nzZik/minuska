@@ -36,7 +36,7 @@ match t with
 end.
 
 
-Lemma Expression_evaluate_extensive
+Lemma Expression_evaluate_extensive_Some
     {Σ : Signature}
     (ρ1 ρ2 : gmap variable GroundTerm)
     (t : Expression)
@@ -83,10 +83,74 @@ Proof.
     }
 Qed.
 
+Lemma Expression_evaluate_extensive_None
+    {Σ : Signature}
+    (ρ1 ρ2 : gmap variable GroundTerm)
+    (t : Expression)
+    :
+    ρ1 ⊆ ρ2 ->
+    Expression_evaluate ρ2 t = None ->
+    Expression_evaluate ρ1 t = None.
+Proof.
+    intros Hρ1ρ2.
+    induction t; simpl.
+    { ltac1:(tauto). }
+    {
+        unfold vars_of in Hρ1ρ2.
+        simpl in Hρ1ρ2.
+        intros H.
+        eapply (lookup_weaken_None ρ1 ρ2 x).
+        { apply H. }
+        { assumption. }
+    }
+    {
+        do 2 (rewrite bind_None).
+        intros [HNone|Hrest].
+        {
+            specialize (IHt HNone).
+            rewrite IHt.
+            left. reflexivity.
+        }
+        destruct Hrest as [x [Hx1 Hx2]].
+        inversion Hx2.
+    }
+    {
+        do 2 (rewrite bind_None).
+        intros [HNone|Hrest].
+        {
+            specialize (IHt1 HNone).
+            rewrite IHt1.
+            left. reflexivity.
+        }
+        destruct Hrest as [x [Hx1 Hx2]].
+        rewrite bind_None in Hx2.
+        destruct Hx2 as [HNone|Hx2].
+        {
+            specialize (IHt2 HNone).
+            destruct (Expression_evaluate ρ1 t1).
+            {
+                right.
+                exists g.
+                split>[reflexivity|].
+                rewrite bind_None.
+                left. exact IHt2.
+            }
+            {
+                left. reflexivity.
+            }
+        }
+        {
+            destruct Hx2 as [x2 [Hx21 Hx22]].
+            inversion Hx22.
+        }
+    }
+Qed.
+
 
 Class Satisfies
     {Σ : Signature}
     (V A B : Type)
+    `{SubsetEq V}
     {_VV: VarsOf V}
     :=
 mkSatisfies {
@@ -129,14 +193,34 @@ end
 
 #[export]
 Program Instance Satisfies_val_ap
-    {Σ : Signature} : Satisfies Valuation unit AtomicProposition
+    {Σ : Signature} :
+    Satisfies
+        (gmap variable GroundTerm)
+        unit
+        AtomicProposition
 := {|
     satisfies := fun ρ u ap => val_satisfies_ap ρ ap ;
 |}.
 Next Obligation.
     destruct b; simpl in *.
     {
+        destruct H0 as [H1 [x Hx]].
+        rewrite (Expression_evaluate_extensive v1 v2 _ x H Hx).
+        split>[|eexists; reflexivity].
+        rewrite H1 in Hx.
+        rewrite (Expression_evaluate_extensive v1 v2 e2 x H Hx).
+        reflexivity.
+    }
+    {
+        destruct (Expression_evaluate v1 e1) eqn:Heq1, (Expression_evaluate v2 e1) eqn:Heq2.
+        {
+            rewrite (Expression_evaluate_extensive v1 v2 e1 g H Heq1) in Heq2.
+            inversion Heq2; subst; clear Heq2.
+            assumption.
+        }
+        {
 
+        }
     }
 Qed.
 Fail Next Obligation.
