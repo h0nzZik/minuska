@@ -733,60 +733,71 @@ Definition valuation_satisfies_sc
     (ρ : Valuation)
     (sc : SideCondition) : Prop :=
 match sc with
-| sc_constraint c => satisfies ρ c
-| sc_match m => satisfies ρ m
+| sc_constraint c => satisfies ρ () c
+| sc_match m => satisfies ρ () m
 end.
 
 #[export]
-Instance Satisfies_val_sc
+Program Instance Satisfies_val_sc
     {Σ : Signature}
     :
-    Satisfies Valuation SideCondition
+    Satisfies Valuation unit SideCondition
 := {|
-    satisfies := valuation_satisfies_sc ;
+    satisfies := fun a b c => valuation_satisfies_sc a c ;
 |}.
-
+Next Obligation.
+    destruct b; simpl in *; eapply satisfies_ext>[apply H|]; assumption.
+Qed.
+Fail Next Obligation.
 
 Inductive A_satisfies_B_WithASideCondition
     {Σ : Signature}
     (V A B : Type)
-    `{Satisfies V SideCondition}
-    `{Satisfies (V*A) B}
-    : (V*A) -> WithASideCondition B -> Prop :=
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V unit SideCondition}
+    {_S2 : Satisfies V (A) B}
+    : V -> A -> WithASideCondition B -> Prop :=
 
 | asbwsc_base:
-    forall (ρa : V*A) (b : B),
-        satisfies (ρa) b ->
-        A_satisfies_B_WithASideCondition V A B ρa (wsc_base b)
+    forall ρ a (b : B),
+        satisfies ρ a b ->
+        A_satisfies_B_WithASideCondition V A B ρ a (wsc_base b)
 
 | asbwsc_sc :
-    forall (ρa : V*A) (bsc : WithASideCondition B) sc,
-        A_satisfies_B_WithASideCondition V A B ρa bsc ->
-        satisfies ρa.1 sc ->
-        A_satisfies_B_WithASideCondition V A B ρa (wsc_sc bsc sc)
+    forall ρ a (bsc : WithASideCondition B) sc,
+        A_satisfies_B_WithASideCondition V A B ρ a bsc ->
+        satisfies ρ () sc ->
+        A_satisfies_B_WithASideCondition V A B ρ a (wsc_sc bsc sc)
 .
 
 #[export]
-Instance Satisfies_A_Bsc
+Program Instance Satisfies_A_Bsc
     {Σ : Signature}
     {V A B : Type}
-    `{Satisfies V SideCondition}
-    `{Satisfies (V*A) B}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V unit SideCondition}
+    {_S2 : Satisfies V A B}
     :
-    Satisfies (V*A) (WithASideCondition B)
+    Satisfies V A (WithASideCondition B)
 := {|
     satisfies :=
         A_satisfies_B_WithASideCondition
         V A B;
 |}.
+Next Obligation.
+    induction H0; constructor; try (ltac1:(naive_solver));
+        eapply satisfies_ext>[apply H|]; assumption.
+Qed.
+Fail Next Obligation.
 
 Definition GroundTerm_satisfies_BuiltinOrVar
     {Σ : Signature}
-    (ρg : Valuation*GroundTerm)
+    (ρ : Valuation)
+    (g : GroundTerm)
     (bov : BuiltinOrVar)
     : Prop :=
-let ρ := ρg.1 in
-let g := ρg.2 in
 match bov with
 | bov_builtin b =>
     match g with
@@ -797,17 +808,25 @@ match bov with
 end.
 
 #[export]
-Instance Satisfies_GroundTerm_BuiltinOrVar
+Program Instance Satisfies_GroundTerm_BuiltinOrVar
     {Σ : Signature}
     :
-    Satisfies (Valuation*GroundTerm) BuiltinOrVar
+    Satisfies Valuation (GroundTerm) BuiltinOrVar
 := {|
     satisfies := GroundTerm_satisfies_BuiltinOrVar ;
 |}.
+Next Obligation.
+    destruct a,b; simpl in *; try ltac1:(naive_solver);
+        unfold Valuation in *; eapply lookup_weaken>[|apply H];
+        assumption.
+Qed.
+Fail Next Obligation.
 
 Definition in_val_GroundTerm_satisfies_OpenTermWSC
     {Σ : Signature}
-    : (Valuation*GroundTerm) ->
+    :
+    Valuation ->
+    GroundTerm ->
     OpenTermWSC ->
     Prop :=
     A_satisfies_B_WithASideCondition
@@ -820,36 +839,46 @@ Definition in_val_GroundTerm_satisfies_OpenTermWSC
 Instance Satisfies_GroundTerm_OpenTermWSC
     {Σ : Signature}
     :
-    Satisfies (Valuation*GroundTerm) OpenTermWSC
-:= {|
-    satisfies := in_val_GroundTerm_satisfies_OpenTermWSC ;
-|}.
+    Satisfies Valuation (GroundTerm) OpenTermWSC
+.
+Proof. apply _. Defined.
 
 Definition builtin_value_satisfies_OpenTerm
     {Σ : Signature}
     :
-    (Valuation*builtin_value) ->
+    Valuation ->
+    builtin_value ->
     OpenTerm ->
-    Prop := fun ρb t =>
+    Prop := fun ρ b t =>
 match t with
 | aoo_app _ _ _ => False
 | aoo_operand _ _ bov =>
-    satisfies ρb bov
+    satisfies ρ b bov
 end.
 
 #[export]
-Instance Satisfies_builtin_value_OpenTerm
+Program Instance Satisfies_builtin_value_OpenTerm
     {Σ : Signature}
     :
-    Satisfies (Valuation*builtin_value) OpenTerm
+    Satisfies Valuation (builtin_value) OpenTerm
 := {|
     satisfies :=  builtin_value_satisfies_OpenTerm ;
 |}.
+Next Obligation.
+    destruct b; simpl in *.
+    { assumption. }
+    {
+        eapply satisfies_ext>[apply H|].
+        assumption.
+    }
+Qed.
+Fail Next Obligation.
 
 Definition builtin_value_satisfies_OpenTermWSC
     {Σ : Signature}
     :
-    (Valuation*builtin_value) ->
+    Valuation ->
+    builtin_value ->
     OpenTermWSC ->
     Prop :=
     A_satisfies_B_WithASideCondition
@@ -862,19 +891,17 @@ Definition builtin_value_satisfies_OpenTermWSC
 Instance Satisfies_builtin_value_OpenTermWSC
     {Σ : Signature}
     :
-    Satisfies (Valuation*builtin_value) OpenTermWSC
-:= {|
-    satisfies := builtin_value_satisfies_OpenTermWSC ;
-|}.
+    Satisfies Valuation builtin_value OpenTermWSC
+.
+Proof. apply _. Defined.
 
 Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
     {Σ : Signature}
-    (ρao : Valuation * (AppliedOperator' symbol builtin_value))
+    (ρ : Valuation)
+    (ao : (AppliedOperator' symbol builtin_value))
     (bov : BuiltinOrVar)
     : Prop
 :=
-let ρ := ρao.1 in
-let ao := ρao.2 in
 match bov with
 | bov_builtin _ => False
 | bov_variable x => ρ !! x = Some (aoo_app _ _ ao) 
@@ -882,200 +909,195 @@ end
 .
 
 #[export]
-Instance Satisfies__AppliedOperator'_symbol_builtin_value__BOV
+Program Instance Satisfies__AppliedOperator'_symbol_builtin_value__BOV
     {Σ : Signature}
     {V : Type}
     :
-    Satisfies (Valuation*(AppliedOperator' symbol builtin_value)) BuiltinOrVar
+    Satisfies Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar
 := {|
     satisfies := AppliedOperator'_symbol_builtin_value_satisfies_BOV;
 |}.
+Next Obligation.
+    destruct b; simpl in *; try assumption.
+    {
+        unfold Valuation in *.
+        eapply lookup_weaken.
+        { apply H0. }
+        { assumption. }
+    }
+Qed.
+Fail Next Obligation.
 
 Definition AppliedOperator'_symbol_A_satisfies_OpenTermB'
     {Σ : Signature}
     (V A B : Type)
-    `{Satisfies (V*A) B}
-    `{Satisfies (V*(AppliedOperator' symbol A)) B}
-    `{Satisfies (V * AppliedOperator' symbol A) (AppliedOperator' symbol B)}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V (A) B}
+    {_S2 : Satisfies V ((AppliedOperator' symbol A)) B}
+    {_S3 : Satisfies V (AppliedOperator' symbol A) (AppliedOperator' symbol B)}
     :
-    (V*(AppliedOperator' symbol A)) ->
+    V ->
+    (AppliedOperator' symbol A) ->
     AppliedOperatorOr' symbol B ->
     Prop
-:=  fun ρa =>
-    let ρ := ρa.1 in
-    let a := ρa.2 in
-    aoxyo_satisfies_aoxzo V symbol A B
-    (ρ,(aoo_app _ _ a))
+:=  fun ρ a =>
+    satisfies
+    ρ (aoo_app _ _ a)
 .
 
 #[export]
-Instance Satisfies__lift_builtin_to_aosb
+Program Instance Satisfies__lift_builtin_to_aosb
     {Σ : Signature}
     {V A B : Type}
-    {AsB : Satisfies (V*A) B}
-    {sat2 : Satisfies (V*(AppliedOperator' symbol A)) B}
-    `{Satisfies (V * AppliedOperator' symbol A) (AppliedOperator' symbol B)}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V (A) B}
+    {_S2 : Satisfies V ((AppliedOperator' symbol A)) B}
+    {_S3 : Satisfies V (AppliedOperator' symbol A) (AppliedOperator' symbol B)}
     :
     Satisfies
-        (V*(AppliedOperator' symbol A))
+        V
+        ((AppliedOperator' symbol A))
         (AppliedOperatorOr' symbol B)
 := {|
     satisfies :=
         AppliedOperator'_symbol_A_satisfies_OpenTermB' V A B ;
 |}.
-
-Definition AppliedOperator'_symbol_A_satisfies_OpenTermB
-    {Σ : Signature}
-    (V A B : Type)
-    `{Satisfies (V*A) B}
-    `{Satisfies (V*(AppliedOperator' symbol A)) B}
-    `{Satisfies (V * AppliedOperator' symbol A) (AppliedOperator' symbol B)}
-    :
-    (V*(AppliedOperatorOr' symbol A)) ->
-    AppliedOperatorOr' symbol B ->
-    Prop
-:=  
-    aoxyo_satisfies_aoxzo V symbol A B
-.
+Next Obligation.
+    unfold AppliedOperator'_symbol_A_satisfies_OpenTermB' in *.
+    eapply satisfies_ext.
+    { apply H. }
+    { assumption. }
+Qed.    
+Fail Next Obligation.
 
 #[export]
 Instance Satisfies__lift_builtin_to_aosbo
     {Σ : Signature}
     {V A B : Type}
-    {bsB : Satisfies (V*A) B}
-    {sat2 : Satisfies (V*(AppliedOperator' symbol A)) B}
-    {sat2 : Satisfies (V*(AppliedOperator' symbol A)) (AppliedOperator' symbol B)}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {bsB : Satisfies V (A) B}
+    {sat2 : Satisfies V ((AppliedOperator' symbol A)) B}
+    {sat3 : Satisfies V ((AppliedOperator' symbol A)) (AppliedOperator' symbol B)}
     :
-    Satisfies
-        (V*(AppliedOperatorOr' symbol A))
+    Satisfies V
+        ((AppliedOperatorOr' symbol A))
         (AppliedOperatorOr' symbol B)
-:= {|
-    satisfies :=
-        AppliedOperator'_symbol_A_satisfies_OpenTermB V A B
-        ;
-|}.
+.
+Proof. apply _. Defined.
 
 Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
     {Σ : Signature}
     {V : Type}
-    `{Satisfies (V * builtin_value) BuiltinOrVar}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) BuiltinOrVar}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar)}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V (builtin_value) BuiltinOrVar}
+    {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) BuiltinOrVar}
+    {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar)}
     :
-    (V*(AppliedOperator' symbol builtin_value)) ->
+    V ->
+    ((AppliedOperator' symbol builtin_value)) ->
     OpenTerm ->
     Prop
-:=  fun ρa =>
-    let ρ := ρa.1 in
-    let a := ρa.2 in
-    AppliedOperator'_symbol_A_satisfies_OpenTermB
-        V
-        builtin_value
-        BuiltinOrVar
-        (ρ,(aoo_app _ _ a))
+:=  fun ρ a =>
+    satisfies ρ (aoo_app _ _ a)
 .
 
 #[export]
-Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTerm
+Program Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTerm
     {Σ : Signature}
     {V : Type}
-    `{Satisfies (V * builtin_value) BuiltinOrVar}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) BuiltinOrVar}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar)}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V (builtin_value) BuiltinOrVar}
+    {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) BuiltinOrVar}
+    {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar)}
     :
-    Satisfies
-        (V*(AppliedOperator' symbol builtin_value))
+    Satisfies V
+        ((AppliedOperator' symbol builtin_value))
         OpenTerm
 := {|
     satisfies :=
         AppliedOperator'_symbol_builtin_satisfies_OpenTerm ;
 |}.
-
-Definition AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC
-    {Σ : Signature}
-    :
-    (Valuation*(AppliedOperator' symbol builtin_value)) ->
-    OpenTermWSC ->
-    Prop :=
-    A_satisfies_B_WithASideCondition
-        Valuation
-        (AppliedOperator' symbol builtin_value)
-        OpenTerm
-.
+Next Obligation.
+    eapply satisfies_ext.
+    { apply H. }
+    { assumption. }
+Qed.
+Fail Next Obligation.
 
 #[export]
 Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTermWSC
     {Σ : Signature}
     :
     Satisfies
-        (Valuation*(AppliedOperator' symbol builtin_value))
+        Valuation (AppliedOperator' symbol builtin_value)
         OpenTermWSC
-:= {|
-    satisfies := 
-        AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC ;
-|}.
-
-
-Definition GroundTerm_satisfies_LhsPattern
-    {Σ : Signature}
-    {V : Type}
-    `{Satisfies (V * builtin_value) OpenTermWSC}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) OpenTermWSC}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) (AppliedOperator' symbol OpenTermWSC)}
-    :
-    (V*GroundTerm) -> LhsPattern -> Prop
-:= aoxyo_satisfies_aoxzo
-    V
-    symbol
-    builtin_value
-    OpenTermWSC
 .
+Proof. apply _. Defined.
+
 
 #[export]
 Instance Satisfies__GroundTerm__LhsPattern
     {Σ : Signature}
     {V : Type}
-    `{Satisfies (V * builtin_value) OpenTermWSC}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) OpenTermWSC}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) (AppliedOperator' symbol OpenTermWSC)}
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V (builtin_value) OpenTermWSC}
+    {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) OpenTermWSC}
+    {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol OpenTermWSC)}
     :
     Satisfies
-        (V*GroundTerm)
+        V
+        (GroundTerm)
         LhsPattern
-:= {|
-    satisfies := 
-        GroundTerm_satisfies_LhsPattern
-        ;
-|}.
+.
+Proof. apply _. Defined.
 
+#[local]
+Obligation Tactic := idtac.
 
 #[export]
-Instance Satisfies_builtin_expr
+Program Instance Satisfies_builtin_expr
     {Σ : Signature}:
-    Satisfies (Valuation * builtin_value) Expression
+    Satisfies Valuation (builtin_value) Expression
 := {|
-    satisfies := (fun ρb e =>
-        let ρ := ρb.1 in
-        let b := ρb.2 in
+    satisfies := (fun ρ b e =>
         Expression_evaluate ρ e = Some (aoo_operand _ _ b)
     ) ;
 |}.
+Next Obligation.
+    intros. simpl in *.
+    erewrite Expression_evaluate_extensive_Some>[|apply H|].
+    { reflexivity. }
+    { assumption. }
+Qed.
+Fail Next Obligation.
 
 #[export]
-Instance Satisfies_asb_expr
+Program Instance Satisfies_asb_expr
     {Σ : Signature}:
     Satisfies
-        (Valuation * (AppliedOperator' symbol builtin_value))
+        Valuation
+        ((AppliedOperator' symbol builtin_value))
         Expression
 := {|
-    satisfies := (fun ρx e =>
-        let ρ := ρx.1 in
-        let x := ρx.2 in
+    satisfies := (fun ρ x e =>
         Expression_evaluate ρ e = Some (aoo_app _ _ x)
     ) ;
 |}.
+Next Obligation.
+    intros. simpl in *.
+    erewrite Expression_evaluate_extensive_Some>[|apply H|].
+    { reflexivity. }
+    { assumption. }
+Qed.
+Fail Next Obligation.
 
-
+(*
 Definition GroundTerm_satisfies_RhsPattern
     {Σ : Signature}
     {V : Type}
@@ -1090,147 +1112,198 @@ Definition GroundTerm_satisfies_RhsPattern
     builtin_value
     Expression
 .
+*)
 
 #[export]
 Instance Satisfies__GroundTerm__RhsPattern
     {Σ : Signature}
     {V : Type}
-    `{Satisfies (V * builtin_value) Expression}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) Expression}
-    `{Satisfies (V * AppliedOperator' symbol builtin_value) (AppliedOperator' symbol Expression)}
-
+    {_SV : SubsetEq V}
+    {_VV : VarsOf V}
+    {_S1 : Satisfies V (builtin_value) Expression}
+    {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) Expression}
+    {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol Expression)}
     :
     Satisfies
-        (V*GroundTerm)
+        V (GroundTerm)
         RhsPattern
-:= {|
-    satisfies := 
-        GroundTerm_satisfies_RhsPattern
-        ;
-|}.
-
+.
+Proof. apply _. Defined.
 
 #[export]
-Instance Satisfies_gt_var
+Program Instance Satisfies_gt_var
     {Σ : Signature}:
-    Satisfies (Valuation * GroundTerm) variable
+    Satisfies Valuation (GroundTerm) variable
 := {|
-    satisfies := (fun ρg x => ρg.1 !! x = Some ρg.2)
+    satisfies := (fun ρ g x => ρ !! x = Some g)
 |}.
-
-Definition GroundTerm_satisfies_VarWithSc
-    {Σ : Signature}:
-    (Valuation*GroundTerm) ->
-    WithASideCondition variable
-    -> Prop :=
-    A_satisfies_B_WithASideCondition
-        Valuation
-        GroundTerm
-        variable
-.
+Next Obligation.
+    intros. simpl in *.
+    unfold Valuation in *.
+    eapply lookup_weaken.
+    { apply H0. }
+    { assumption. }
+Qed.
+Fail Next Obligation.
 
 #[export]
 Instance Satisfies__GroundTerm__VarWithSc
     {Σ : Signature}
     :
     Satisfies
-        (Valuation*GroundTerm)
+        Valuation
+        (GroundTerm)
         (WithASideCondition variable)
-:= {|
-    satisfies :=
-        GroundTerm_satisfies_VarWithSc
-        ;
-|}.
+.
+Proof. apply _. Defined.
 
 
 Definition GroundTerm_satisfies_LocalRewrite
     {Σ : Signature}
-    (ρdg : (Valuation*LeftRight)*GroundTerm) (r : LocalRewrite)
+    (ρd : (Valuation*LeftRight))
+    (g : GroundTerm)
+    (r : LocalRewrite)
     : Prop :=
-let ρ := ρdg.1.1 in
-let d := ρdg.1.2 in
-let g := ρdg.2 in
-match d with
-| LR_Left => satisfies (ρ,g) (lr_from r)
-| LR_Right => satisfies (ρ,g) (lr_to r)
+match ρd.2 with
+| LR_Left => satisfies ρd.1 g (lr_from r)
+| LR_Right => satisfies ρd.1 g (lr_to r)
 end.
 
 #[export]
-Instance Satisfies__GroundTerm__LocalRewrite
+Instance Subseteq_ValuationLR
+    {Σ : Signature}
+    : SubsetEq (Valuation * LeftRight)
+:= {
+    subseteq a b := subseteq a.1 b.1 /\ a.2 = b.2
+}.
+
+
+#[export]
+Instance VarsOf_ValuationLR
+    {Σ : Signature}
+    : VarsOf (Valuation * LeftRight)
+:= {
+    vars_of a := vars_of a.1
+}.
+
+#[export]
+Program Instance Satisfies__GroundTerm__LocalRewrite
     {Σ : Signature}
     :
     Satisfies
-        ((Valuation*LeftRight)*GroundTerm)
+        (Valuation*LeftRight)
+        (GroundTerm)
         (LocalRewrite)
 := {|
     satisfies := 
         GroundTerm_satisfies_LocalRewrite
         ;
 |}.
+Next Obligation.
+    intros.
+    unfold Valuation, GroundTerm_satisfies_LocalRewrite in *.
+    destruct v1,v2; simpl in *.
+    destruct l,l0; simpl in *; eapply satisfies_ext>[apply H|];
+        simpl; try assumption.
+    {
+        inversion H; subst; clear H. simpl in *. inversion H2.
+    }
+    {
+        inversion H; subst; clear H. simpl in *. inversion H2.
+    }
+Qed.
+Fail Next Obligation.
 
 Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
     {Σ : Signature}
-    (ρdg : (Valuation*LeftRight)*GroundTerm)
+    (ρd : (Valuation*LeftRight))
+    (g : GroundTerm)
     (rb : LocalRewriteOrOpenTermOrBOV)
     : Prop :=
-let ρ := ρdg.1.1 in
-let g := ρdg.2 in
+let ρ := ρd.1 in
 match rb with
 | lp_rewrite r
-    => satisfies ρdg r
+    => satisfies ρd g r
 | lp_basicpat φ
-    => satisfies (ρ,g) φ
+    => satisfies ρ g φ
 | lp_bov bx
-    => satisfies (ρ,g) bx
+    => satisfies ρ g bx
 end.
 
 #[export]
-Instance Satisfies__GroundTerm__LocalRewriteOrOpenTermOrBOV
+Program Instance Satisfies__GroundTerm__LocalRewriteOrOpenTermOrBOV
     {Σ : Signature}
     :
     Satisfies
-        ((Valuation*LeftRight)*GroundTerm)
+        (Valuation*LeftRight)
+        (GroundTerm)
         (LocalRewriteOrOpenTermOrBOV)
 := {|
     satisfies :=
         GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
         ;
 |}.
+Next Obligation.
+    intros. destruct b; simpl in *;
+        eapply satisfies_ext>[apply H|]; simpl; assumption.
+Qed.
+Fail Next Obligation.
 
 Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
     {Σ : Signature}
-    (ρdb : (Valuation*LeftRight)*builtin_value)
+    (ρd : (Valuation*LeftRight))
+    (b : builtin_value)
     (r : LocalRewriteOrOpenTermOrBOV)
     : Prop :=
-let ρ := ρdb.1.1 in
-let d := ρdb.1.2 in
-let b := ρdb.2 in
+let ρ := ρd.1 in
 match r with
 | lp_rewrite r'
-    => satisfies ((ρ,d),(aoo_operand _ _ b)) r'
+    => satisfies (ρd) (aoo_operand _ _ b) r'
 
 | lp_basicpat (aoo_app _ _ _)
     => False
 
 | lp_basicpat (aoo_operand _ _ bov)
-    => satisfies (ρ,b) bov
+    => satisfies ρ b bov
 
 | lp_bov bx
-    => satisfies (ρ,b) bx
+    => satisfies ρ b bx
 end.
 
 #[export]
-Instance Satisfies__builtin_value__LocalRewriteOrOpenTermOrBOV
+Program Instance Satisfies__builtin_value__LocalRewriteOrOpenTermOrBOV
     {Σ : Signature}
     :
     Satisfies
-        ((Valuation*LeftRight)*builtin_value)
+        (Valuation*LeftRight)
+        (builtin_value)
         (LocalRewriteOrOpenTermOrBOV)
 := {|
     satisfies :=
         builtin_satisfies_LocalRewriteOrOpenTermOrBOV
         ;
 |}.
+Next Obligation.
+    intros. destruct v1,v2,b; simpl in *;
+        inversion H; subst; simpl in *;
+        subst.
+    {
+        eapply satisfies_ext.
+        { apply H. }
+        { assumption. }
+    }
+    {
+        destruct φ.
+        { ltac1:(contradiction). }
+        eapply satisfies_ext>[apply H1|].
+        { assumption. }
+    }
+    {
+        eapply satisfies_ext>[apply H1|].
+        { assumption. }
+    }
+Qed.
+Fail Next Obligation.
 
 (*
 #[export]
@@ -1257,129 +1330,135 @@ Instance satLift1
 *)
 
 #[export]
-Instance Satisfies_vlrglrootob
+Program Instance Satisfies_vlrglrootob
     {Σ : Signature}:
     Satisfies
-        ((Valuation * LeftRight) * AppliedOperator' symbol builtin_value)
+        (Valuation * LeftRight)
+        (AppliedOperator' symbol builtin_value)
         LocalRewriteOrOpenTermOrBOV
 := {|
-    satisfies := fun ρdg =>
-        let ρ := ρdg.1.1 in
-        let d := ρdg.1.2 in
-        let g := ρdg.2 in
-        satisfies ((ρ,d), aoo_app _ _ g)
+    satisfies := fun ρd g =>
+        satisfies ρd (aoo_app _ _ g)
         
      ;
 |}.
+Next Obligation.
+    intros. simpl in *.
+    eapply satisfies_ext>[apply H|]. assumption.
+Qed.
+Fail Next Obligation.
 
 
 #[export]
-Instance Satisfies_vlrblrootob
+Program Instance Satisfies_vlrblrootob
     {Σ : Signature}:
     Satisfies
-        ((Valuation * LeftRight) * builtin_value)
+        (Valuation * LeftRight)
+        (builtin_value)
         (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
 := {|
-    satisfies := fun _ _ => False ;
+    satisfies := fun _ _ _ => False ;
 |}.
+Next Obligation.
+    intros. simpl in *. assumption.
+Qed.
+Fail Next Obligation.
 
 
 #[export]
-Instance Satisfies_sym_bov
+Program Instance Satisfies_sym_bov
     {Σ : Signature}
     :
-    Satisfies (Valuation * symbol) BuiltinOrVar
+    Satisfies Valuation (symbol) BuiltinOrVar
 := {|
-    satisfies := fun _ _ => False ;
+    satisfies := fun _ _ _ => False ;
 |}.
+Next Obligation.
+    simpl. auto with nocore.
+Qed.
+Fail Next Obligation.
 
 #[export]
 Instance Satisfies_aop_lrw {Σ : Signature}:
     Satisfies
-        (Valuation * LeftRight * AppliedOperator' symbol builtin_value)
+        (Valuation * LeftRight)
+        (AppliedOperator' symbol builtin_value)
         (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
-:= {|
-    satisfies := @aoxy_satisfies_aoxz
-        (Valuation*LeftRight)
-        symbol
-        builtin_value
-        LocalRewriteOrOpenTermOrBOV
-        _ _ _
-        ;
-|}.
-
-Definition GroundTerm_satisfies_UncondRewritingRule
-    {Σ : Signature}
-    : ((Valuation*LeftRight)*GroundTerm) -> UncondRewritingRule -> Prop
-:=
-    aoxyo_satisfies_aoxzo
-        (Valuation*LeftRight)
-        symbol
-        builtin_value
-        LocalRewriteOrOpenTermOrBOV
 .
+Proof. apply _. Defined.
 
 #[export]
 Instance Satisfies__GroundTerm__UncondRewritingRule
     {Σ : Signature}
     :
     Satisfies
-        ((Valuation*LeftRight)*GroundTerm)
+        (Valuation*LeftRight)
+        (GroundTerm)
         (UncondRewritingRule)
-:= {|
-    satisfies := 
-        GroundTerm_satisfies_UncondRewritingRule
-        ;
-|}.
+.
+Proof. apply _. Defined.
 
-Instance Satisfies_Valuation_LR_SideCondition
+Program Instance Satisfies_Valuation_LR_SideCondition
     {Σ : Signature}
     :
-    Satisfies (Valuation * LeftRight) SideCondition
+    Satisfies (Valuation * LeftRight) unit SideCondition
 := {|
     satisfies := fun ρd => let ρ := ρd.1 in
         satisfies ρ
         ;
 |}.
-
-Definition GroundTerm_satisfies_RewritingRule
-    {Σ : Signature}
-    : ((Valuation*LeftRight)*GroundTerm) -> RewritingRule -> Prop :=
-    A_satisfies_B_WithASideCondition
-        (Valuation*LeftRight)
-        GroundTerm
-        UncondRewritingRule
-.
+Next Obligation.
+    simpl. intros.
+    inversion H; subst.
+    eapply satisfies_ext.
+    { apply H1. }
+    { assumption. }
+Qed.
+Fail Next Obligation.
 
 #[export]
 Instance Satisfies__GroundTerm__RewritingRule
     {Σ : Signature}
     :
     Satisfies
-        ((Valuation*LeftRight)*GroundTerm)
+        (Valuation*LeftRight)
+        (GroundTerm)
         (RewritingRule)
-:= {|
-    satisfies := 
-        GroundTerm_satisfies_RewritingRule
-        ;
-|}.
+.
+Proof. apply _. Defined.
 
 Definition GroundTerm_satisfies_OpenTerm
     {Σ : Signature}
     : GroundTerm -> OpenTerm -> Prop :=
-    fun g φ => ∃ ρ, satisfies (ρ, g) φ
+    fun g φ => ∃ ρ, satisfies ρ g φ
 .
 
 #[export]
-Instance Satisfies__GroundTerm__OpenTerm_inall
+Instance VarsOf_unit {Σ : Signature}: VarsOf unit := {|
+    vars_of _ := ∅ ;
+|}.
+
+About SubsetEq.
+Instance Subseteq_unit {Σ : Signature}: SubsetEq unit := 
+    fun _ _ => true
+.
+
+#[export]
+Program Instance Satisfies__GroundTerm__OpenTerm_inall
     {Σ : Signature}
     :
     Satisfies
+        unit
         GroundTerm
         OpenTerm
 := {|
-    satisfies := GroundTerm_satisfies_OpenTerm ;
+    satisfies := fun _ => GroundTerm_satisfies_OpenTerm ;
 |}.
+Next Obligation.
+    simpl. intros. assumption.
+Qed.
+Fail Next Obligation.
+
 
 (*
 #[export]
@@ -1398,8 +1477,8 @@ Definition rewrites_in_valuation_to
     (r : RewritingRule)
     (from to : GroundTerm)
     : Prop
-:= satisfies ((ρ,LR_Left),from) r
-/\ satisfies ((ρ,LR_Right),to) r
+:= satisfies (ρ,LR_Left) (from) r
+/\ satisfies (ρ,LR_Right) (to) r
 .
 
 Definition rewrites_to
@@ -1439,8 +1518,8 @@ Definition rule_weakly_well_defined
     (r : RewritingRule)
     : Prop
     := ∀ ρ from,
-        satisfies ((ρ,LR_Left),from) r ->
-        ∃ to, satisfies ((ρ,LR_Right), to) r
+        satisfies (ρ,LR_Left) (from) r ->
+        ∃ to, satisfies (ρ,LR_Right) (to) r
 .
 
 Definition thy_weakly_well_defined
@@ -1451,21 +1530,22 @@ Definition thy_weakly_well_defined
 .
 
 
-Definition valuation_satisfies_scs
-    {Σ : Signature}
-    (ρ : Valuation)
-    (scs : list SideCondition)
-    : Prop
-:= Forall (satisfies ρ) scs
-.
-
 #[export]
-Instance Satisfies_valuation_scs
+Program Instance Satisfies_valuation_scs
     {Σ : Signature}
-    : Satisfies Valuation (list SideCondition)
+    : Satisfies Valuation unit (list SideCondition)
 := {|
-    satisfies := valuation_satisfies_scs ;
+    satisfies := fun ρ _ => Forall (satisfies ρ ());
 |}.
+Next Obligation.
+    intros. simpl in *.
+    rewrite Forall_forall. rewrite Forall_forall in H0.
+    intros x Hx. specialize (H0 x Hx).
+    eapply satisfies_ext.
+    { apply H. }
+    { assumption. }
+Qed.
+Fail Next Obligation.
 
 (*
 #[export]
@@ -1483,7 +1563,11 @@ Program Instance
     {Σ : Signature}
     {B : Type}
     :
-    Satisfies (Valuation * symbol) B
+    Satisfies Valuation (symbol) B
 := {|
-    satisfies := fun _ _ => False ;
+    satisfies := fun _ _ _ => False ;
 |}.
+Next Obligation.
+    auto with nocore.
+Qed.
+
