@@ -39,7 +39,7 @@ Definition FRR_wf
     (r : FlattenedRewritingRule)
     : Prop
 :=
-    vars_of_RhsPattern (fr_to r) ⊆ vars_of_OpenTerm (fr_from r)
+    vars_of (fr_to r) ⊆ vars_of (fr_from r)
     (* TODO: add a requirement saying that all variables that occur on the lhs
        of some constraint, and specifically a pattern matching constraint,
        are reachable from the set of variables occuring in `fr_from r`

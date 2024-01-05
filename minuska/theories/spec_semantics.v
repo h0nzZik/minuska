@@ -3,7 +3,6 @@ From Minuska Require Import
     spec_syntax
 .
 
-
 Definition Valuation {Σ : Signature}
         := gmap variable GroundTerm
     .
@@ -20,21 +19,86 @@ Instance VarsOf_valuation
 (*Transparent Valuation.*)
 
 Fixpoint Expression_evaluate
-    {Σ : Signature} (ρ : Valuation) (t : Expression) : option GroundTerm :=
+    {Σ : Signature}
+    (ρ : gmap variable GroundTerm)
+    (t : Expression)
+    : option GroundTerm :=
 match t with
-| ft_element e => Some e
-| ft_variable x => ρ !! x
-| ft_unary f t =>
+| ft_element _ e => Some e
+| ft_variable _ x => ρ !! x
+| ft_unary _ f t =>
     e ← Expression_evaluate ρ t;
     Some (builtin_unary_function_interp f e)
-| ft_binary f t1 t2 =>
+| ft_binary _ f t1 t2 =>
     e1 ← Expression_evaluate ρ t1;
     e2 ← Expression_evaluate ρ t2;
     Some (builtin_binary_function_interp f e1 e2)
 end.
 
-Class Satisfies (A B : Type) := mkSatisfies {
-    satisfies : A -> B -> Prop ;
+
+Lemma Expression_evaluate_extensive
+    {Σ : Signature}
+    (ρ1 ρ2 : gmap variable GroundTerm)
+    (t : Expression)
+    (gt : GroundTerm)
+    :
+    ρ1 ⊆ ρ2 ->
+    Expression_evaluate ρ1 t = Some gt ->
+    Expression_evaluate ρ2 t = Some gt.
+Proof.
+    intros Hρ1ρ2.
+    revert gt.
+    induction t; simpl; intros gt.
+    { ltac1:(tauto). }
+    {
+        unfold vars_of in Hρ1ρ2.
+        simpl in Hρ1ρ2.
+        intros H.
+        eapply (lookup_weaken ρ1 ρ2 x).
+        { apply H. }
+        { assumption. }
+    }
+    {
+        do 2 (rewrite bind_Some).
+        intros [x [Hx1 Hx2]].
+        exists x.
+        rewrite (IHt _ Hx1).
+        split>[reflexivity|].
+        assumption.
+    }
+    {
+        do 2 (rewrite bind_Some).
+        intros [x [Hx1 Hx2]].
+        exists x.
+        rewrite (IHt1 _ Hx1).
+        split>[reflexivity|].
+
+        rewrite bind_Some in Hx2.
+        destruct Hx2 as [x' [Hx'1 Hx'2]].
+        rewrite bind_Some.
+        exists x'.
+        rewrite (IHt2 _ Hx'1).
+        split>[reflexivity|].
+        assumption.
+    }
+Qed.
+
+
+Class Satisfies
+    {Σ : Signature}
+    (V A B : Type)
+    {_VV: VarsOf V}
+    :=
+mkSatisfies {
+    satisfies :
+        V -> A -> B -> Prop ;
+
+    satisfies_ext :
+        forall (v1 v2 : V),
+            v1 ⊆ v2 ->
+            forall a b,
+                satisfies v1 a b ->
+                satisfies v2 a b ;
 }.
 
 Arguments satisfies : simpl never.
@@ -64,11 +128,18 @@ end
 .
 
 #[export]
-Instance Satisfies_val_ap
-    {Σ : Signature} : Satisfies Valuation AtomicProposition
+Program Instance Satisfies_val_ap
+    {Σ : Signature} : Satisfies Valuation unit AtomicProposition
 := {|
-    satisfies := val_satisfies_ap ;
+    satisfies := fun ρ u ap => val_satisfies_ap ρ ap ;
 |}.
+Next Obligation.
+    destruct b; simpl in *.
+    {
+
+    }
+Qed.
+Fail Next Obligation.
 
 Fixpoint val_satisfies_c
     {Σ : Signature} (ρ : Valuation) (c : Constraint)

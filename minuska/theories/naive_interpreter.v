@@ -69,10 +69,10 @@ Class TryMatch
                 try_match a b = Some ρ' ;
 }.
 
-Set Typeclasses Debug.
 Fixpoint ApppliedOperator'_try_match_AppliedOperator'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
+    {_VOperand2 : VarsOf Operand2}
     {_S0 : Satisfies (Valuation*Operand1) Operand2}
     {_M0 : Matches (Valuation*Operand1) Operand2}
     {_TM0 : TryMatch Operand1 Operand2}
@@ -128,6 +128,18 @@ match x, y with
 end.
 
 Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
+    {Σ : Signature}
+    {Operand1 Operand2 : Type}
+    {_VOperand2 : VarsOf Operand2}
+    {_S0 : Satisfies (Valuation*Operand1) Operand2}
+    {_M0 : Matches (Valuation*Operand1) Operand2}
+    {_TM0 : TryMatch Operand1 Operand2}
+    {_S1 : Satisfies (Valuation*Operand1) (AppliedOperator' symbol Operand2)}
+    {_M1 : Matches (Valuation*Operand1) (AppliedOperator' symbol Operand2)}
+    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
+    {_TM2 : Satisfies (Valuation*(AppliedOperator' symbol Operand1)) Operand2}
+    {_TM2 : Matches (Valuation*(AppliedOperator' symbol Operand1)) Operand2}
+    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
         (ρ ρ' : Valuation)
         (a : AppliedOperator' symbol builtin_value)
         (b : AppliedOperator' symbol BuiltinOrVar)
