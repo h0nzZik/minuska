@@ -1398,6 +1398,7 @@ Instance Satisfies__GroundTerm__UncondRewritingRule
 .
 Proof. apply _. Defined.
 
+#[export]
 Program Instance Satisfies_Valuation_LR_SideCondition
     {Σ : Signature}
     :
@@ -1438,7 +1439,7 @@ Instance VarsOf_unit {Σ : Signature}: VarsOf unit := {|
     vars_of _ := ∅ ;
 |}.
 
-About SubsetEq.
+#[export]
 Instance Subseteq_unit {Σ : Signature}: SubsetEq unit := 
     fun _ _ => true
 .

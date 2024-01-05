@@ -185,7 +185,13 @@ match x, y with
     merge_valuations ρ1 ρ2
 end.
 
-Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
+(*
+    Note: I think that this lemma needs to be formulated in this
+    generalized way, with two valuations related by inclusion.
+    The interface, as represented by the `TryMatch` class,
+    hides this detail.
+*)
+Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
     {Σ : Signature}
     {Operand1 Operand2 : Type}
     {_VOperand2 : VarsOf Operand2}
@@ -313,38 +319,63 @@ Proof.
     }
 Qed.
 
-    Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
-        (Operator : Type)
-        {Operator_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Type)
-        (matches : Operand1 -> Operand2 -> option Valuation)
-        (matches_app_1 :
-            Operand1 ->
-            AppliedOperator' Operator Operand2 ->
-            option Valuation
-        )
-        (matches_app_2 :
-            AppliedOperator' Operator Operand1 ->
-            Operand2 ->
-            option Valuation
-        )
-        (x : AppliedOperatorOr' Operator Operand1)
-        (y : AppliedOperatorOr' Operator Operand2)
-        : option Valuation :=
-    match x, y with
-    | aoo_app _ _ app1, aoo_app _ _ app2 =>
-        ApppliedOperator'_try_match_AppliedOperator'
-            Operator
-            Operand1 Operand2
-            matches matches_app_1 matches_app_2
-            app1 app2
-    | aoo_app _ _ app1, aoo_operand _ _ o2 =>
-        matches_app_2 app1 o2
-    | aoo_operand _ _ o1, aoo_app _ _ app2 =>
-        matches_app_1 o1 app2
-    | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
-        matches o1 o2
-    end.
+#[export]
+Program Instance TryMatch_AppliedOperator'
+    {Σ : Signature}
+    {Operand1 Operand2 : Type}
+    {_VOperand2 : VarsOf Operand2}
+    {_S0 : Satisfies Valuation (Operand1) Operand2}
+    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_TM0 : TryMatch Operand1 Operand2}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+:
+    TryMatch (AppliedOperator' symbol Operand1) (AppliedOperator' symbol Operand2)
+:= {|
+    try_match := ApppliedOperator'_try_match_AppliedOperator' ;
+    try_match_correct := _;
+|}.
+Next Obligation.
+    apply ApppliedOperator'_try_match_AppliedOperator'_correct with (ρ := ρ).
+    { 
+        unfold Valuation in *.
+        apply reflexivity.
+    }
+    { apply H. }
+Qed.
+
+Set Typeclasses Debug.
+Search VarsOf AppliedOperator'.
+Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
+    {Σ : Signature}
+    {Operand1 Operand2 : Type}
+    {_V2 : VarsOf Operand2}
+    {_S1 : Satisfies Valuation Operand1 Operand2}
+    {_M1 : Matches Valuation Operand1 Operand2}
+    {_TM1 : TryMatch Operand1 Operand2}
+    {_S2 : Satisfies Valuation Operand1 (AppliedOperator' symbol Operand2)}
+    {_M2 : Matches Valuation Operand1 (AppliedOperator' symbol Operand2)}
+    {_TM2 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
+    {_S3 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
+    {_M3 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2}
+    {_TM3 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    (x : AppliedOperatorOr' symbol Operand1)
+    (y : AppliedOperatorOr' symbol Operand2)
+    : option Valuation :=
+match x, y with
+| aoo_app _ _ app1, aoo_app _ _ app2 =>
+    try_match app1 app2
+| aoo_app _ _ app1, aoo_operand _ _ o2 =>
+    try_match app1 o2
+| aoo_operand _ _ o1, aoo_app _ _ app2 =>
+    try_match o1 app2
+| aoo_operand _ _ o1, aoo_operand _ _ o2 =>
+    try_match o1 o2
+end.
 
     
 
