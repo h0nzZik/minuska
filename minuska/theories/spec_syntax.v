@@ -103,6 +103,10 @@ Class Signature := {
     variables :: MVariables variable ;
 }.
 
+Class VarsOf {Σ : Signature} (A : Type) := {
+    vars_of : A -> gset variable ;
+}.
+
 Definition GroundTerm {Σ : Signature}
     := GroundTerm' symbol builtin_value
 .

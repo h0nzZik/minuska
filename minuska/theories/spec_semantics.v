@@ -3,9 +3,19 @@ From Minuska Require Import
     spec_syntax
 .
 
+
 Definition Valuation {Σ : Signature}
         := gmap variable GroundTerm
     .
+
+#[export]
+Instance VarsOf_valuation
+    {Σ : Signature}
+    : VarsOf Valuation
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
+
 
 (*Transparent Valuation.*)
 

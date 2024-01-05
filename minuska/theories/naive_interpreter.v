@@ -6,7 +6,7 @@ From Minuska Require Import
     spec_semantics
     syntax_properties
     flattened
-    flatten
+    (*flatten*)
     basic_matching
 .
 
@@ -15,179 +15,342 @@ Require Import Setoid.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
-(*
-#[export]
-Instance rr_satisfies_dec
+
+
+Definition use_left
+{Σ : Signature}
+(og1 og2: option GroundTerm): option GroundTerm :=
+match og1, og2 with
+| None, None => None
+| Some g1, None => Some g1
+| None, Some g2 => Some g2
+| Some g1, Some g2 => Some g1
+end.
+
+Definition valuations_compatible
     {Σ : Signature}
-    (left_right : LR)
-    (ρ : Valuation)
-    (r : RewritingRule)
-    (e : Element)
-    : Decision (rr_satisfies left_right ρ r e)
+    (ρ1 ρ2 : Valuation) : bool
+    := forallb (fun k => bool_decide (ρ1 !! k = ρ2 !! k)) (elements (dom ρ1 ∩ dom ρ2))
 .
-Proof. Admitted.
-*)
 
-Section with_decidable_signature.
-    Context
-        {Σ : Signature}
-        (up_dec : forall p e, Decision (builtin_unary_predicate_interp p e))
-        (bp_dec : forall p e1 e2, Decision (builtin_binary_predicate_interp p e1 e2))
-    .
+Definition merge_valuations
+    {Σ : Signature}
+    (ρ1 ρ2 : Valuation)
+    : option Valuation :=
+if decide (valuations_compatible ρ1 ρ2)
+then
+    Some (merge use_left ρ1 ρ2)
+else
+    None
+.
 
-    #[export]
-    Instance val_satisfies_ap_dec
-        ρ ap
-        : Decision (val_satisfies_ap ρ ap)
+Class TryMatch
+    {Σ : Signature}
+    (A B : Type)
+    {_VB: VarsOf B}
+    {_SAB : Satisfies (Valuation*A) B}
+    {_MAB : Matches (Valuation*A) B}
+    :=
+{
+    try_match :
+        A -> B -> option Valuation ;
+
+    try_match_correct :
+        ∀ (a : A) (b : B) (ρ : Valuation),
+            try_match a b = Some ρ ->
+            matchesb (ρ,a) b = true ;
+
+    try_match_complete :
+        ∀ (a : A) (b : B) (ρ : Valuation),
+            matchesb (ρ,a) b = true ->
+            ∃ (ρ' : Valuation),
+                vars_of ρ' = vars_of b /\
+                map_subseteq ρ' ρ /\
+                try_match a b = Some ρ' ;
+}.
+
+Set Typeclasses Debug.
+Fixpoint ApppliedOperator'_try_match_AppliedOperator'
+    {Σ : Signature}
+    {Operand1 Operand2 : Type}
+    {_S0 : Satisfies (Valuation*Operand1) Operand2}
+    {_M0 : Matches (Valuation*Operand1) Operand2}
+    {_TM0 : TryMatch Operand1 Operand2}
+    {_S1 : Satisfies (Valuation*Operand1) (AppliedOperator' symbol Operand2)}
+    {_M1 : Matches (Valuation*Operand1) (AppliedOperator' symbol Operand2)}
+    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
+    {_TM2 : Satisfies (Valuation*(AppliedOperator' symbol Operand1)) Operand2}
+    {_TM2 : Matches (Valuation*(AppliedOperator' symbol Operand1)) Operand2}
+    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    (x : AppliedOperator' symbol Operand1)
+    (y : AppliedOperator' symbol Operand2)
+    :
+    option Valuation
+:=
+match x, y with
+| ao_operator a1, ao_operator a2 =>
+    if decide (a1 = a2) then Some ∅ else None
+| ao_operator _, ao_app_operand _ _ => None
+| ao_operator _, ao_app_ao _ _ => None
+| ao_app_operand _ _ , ao_operator _ => None
+| ao_app_operand app1 o1, ao_app_operand app2 o2 =>
+    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+        app1
+        app2;
+    ρ2 ← try_match o1 o2;
+    merge_valuations ρ1 ρ2
+
+| ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+        app1
+        app2 ;
+    ρ2 ← try_match o1 o2;
+    merge_valuations ρ1 ρ2
+
+(* TODO? *)
+| ao_app_ao app1 o1, ao_operator _ => None
+
+| ao_app_ao app1 o1, ao_app_operand app2 o2 =>
+    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+        app1
+        app2 ;
+    ρ2 ← try_match o1 o2;
+    merge_valuations ρ1 ρ2
+
+| ao_app_ao app1 o1, ao_app_ao app2 o2 =>
+    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+        app1
+        app2 ;
+    ρ2 ← ApppliedOperator'_try_match_AppliedOperator' 
+        o1
+        o2 ;
+    merge_valuations ρ1 ρ2
+end.
+
+Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
+        (ρ ρ' : Valuation)
+        (a : AppliedOperator' symbol builtin_value)
+        (b : AppliedOperator' symbol BuiltinOrVar)
+        :
+        map_subseteq ρ ρ' ->
+        @ApppliedOperator'_try_match_AppliedOperator'
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_try_match_BuiltinOrVar
+            (fun _ _ => None)
+            pure_GroundTerm_try_match_BuiltinOrVar
+            a b = Some ρ ->
+
+        @ApppliedOperator'_matches_AppliedOperator'
+            symbol _ builtin_value BuiltinOrVar
+            builtin_value_matches_BuiltinOrVar
+            (fun _ _ _ => false)
+            pure_GroundTerm_matches_BuiltinOrVar
+            ρ' a b = true
     .
     Proof.
-        destruct ap; cbn; repeat (ltac1:(case_match));
-            try (solve[right; intros []]).
+        revert b ρ ρ'.
+        induction a; intros b' ρ ρ' HH H; destruct b'; cbn in *; intros.
         {
-            apply _.
+            intros.
+            unfold is_left in *.
+            unfold bool_decide.
+            repeat ltac1:(case_match); subst; simpl;
+                try reflexivity; ltac1:(congruence).
         }
         {
-            apply _.
+            inversion H.
         }
         {
-            apply _.
+            inversion H.
         }
-    Defined.
+        {
+            inversion H.
+        }
+        {
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            rewrite bind_Some in H22.
+            destruct H22 as [x0 [H221 H222]].
 
-    #[export]
-    Instance val_satisfies_c_dec
-        ρ c
-        : Decision (val_satisfies_c ρ c)
-    .
-    Proof.
-        revert ρ.
-        induction c; intros ρ; cbn.
-        { left. exact I. }
-        { apply _. }
-        { apply and_dec; auto with nocore. }
-        { apply not_dec. apply IHc. }
-    Defined.
-
-
-
-    Definition use_left (og1 og2: option GroundTerm): option GroundTerm :=
-    match og1, og2 with
-    | None, None => None
-    | Some g1, None => Some g1
-    | None, Some g2 => Some g2
-    | Some g1, Some g2 => Some g1
-    end.
-
-    Definition valuations_compatible (ρ1 ρ2 : Valuation) : Prop
-        := Forall (fun k => ρ1 !! k = ρ2 !! k) (elements (dom ρ1 ∩ dom ρ2))
-    .
-
-    Instance valautions_compatible_dec:
-        forall ρ1 ρ2, Decision (valuations_compatible ρ1 ρ2)
-    .
-    Proof.
-        intros.
-        unfold valuations_compatible.
-        ltac1:(solve_decision).
-    Defined.
-
-    (* TODO fix the case when ρ1 ≡ ρ2 ≡ {[x → 2]} *)
-    Definition merge_valuations (ρ1 ρ2 : Valuation)
-        : option Valuation :=
-    if decide (valuations_compatible ρ1 ρ2)
-    then
-        Some (merge use_left ρ1 ρ2)
-    else
-        None
-    .
-
-    (* what if we match against `s x x` ?  *)
-    Fixpoint ApppliedOperator'_try_match_AppliedOperator'
-        (Operator : Type)
-        {Operator_eqdec : EqDecision Operator}
-        (Operand1 Operand2 : Type)
-        (matches : Operand1 -> Operand2 -> option Valuation)
-        (matches_app_1 :
-            Operand1 ->
-            AppliedOperator' Operator Operand2 ->
-            option Valuation
-        )
-        (matches_app_2 :
-            AppliedOperator' Operator Operand1 ->
-            Operand2 ->
-            option Valuation
-        )
-        (x : AppliedOperator' Operator Operand1)
-        (y : AppliedOperator' Operator Operand2)
-        : option Valuation :=
-    match x, y with
-    | ao_operator a1, ao_operator a2 =>
-        if decide (a1 = a2) then Some ∅ else None
-    | ao_operator _, ao_app_operand _ _ => None
-    | ao_operator _, ao_app_ao _ _ => None
-    | ao_app_operand _ _ , ao_operator _ => None
-    | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
-        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
-            Operator
-            Operand1
-            Operand2
-            matches
-            matches_app_1
-            matches_app_2
-            app1
-            app2;
-        ρ2 ← matches o1 o2;
-        merge_valuations ρ1 ρ2
-
-    | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
-        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
-            Operator
-            Operand1
-            Operand2
-            matches
-            matches_app_1
-            matches_app_2
-            app1
-            app2 ;
-        ρ2 ← matches_app_1 o1 o2;
-        merge_valuations ρ1 ρ2
-
-    | ao_app_ao app1 o1, ao_operator _ => None
-
-    | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
-        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
-            Operator
-            Operand1
-            Operand2
-            matches
-            matches_app_1
-            matches_app_2
-            app1
-            app2 ;
-        ρ2 ← matches_app_2 o1 o2;
-        merge_valuations ρ1 ρ2
-
-    | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
-        ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
-            Operator
-            Operand1
-            Operand2
-            matches
-            matches_app_1
-            matches_app_2
-            app1
-            app2 ;
-        ρ2 ← ApppliedOperator'_try_match_AppliedOperator' 
-            Operator
-            Operand1
-            Operand2
-            matches
-            matches_app_1
-            matches_app_2
-            o1
-            o2 ;
-        merge_valuations ρ1 ρ2
-    end.
+            assert (H221' := H221).
+            apply builtin_value_try_match_BuiltinOrVar_correct in H221.
+            assert (H222' := H222).
+            apply merge_valuations_correct in H222'.
+            destruct H222' as [Hsub1 Hsub2].
+            destruct H221 as [H2211 H2212].
+            cbn.
+            destruct H2212 as [HH1|HH2].
+            {
+                subst.
+                cbn.
+                unfold bool_decide.
+                repeat ltac1:(case_match).
+                rewrite andb_true_r.
+                (*
+                eapply matches_monotone.
+                { apply HH. }
+                *)
+                clear e H.
+                cbn in *.
+                clear H2211.
+                destruct (decide (b = b))>[|ltac1:(congruence)].
+                cbn in *.
+                inversion H221'; subst; clear H221'.
+                clear e.
+                rewrite merge_valuations_empty_r in H222.
+                inversion H222; subst; clear H222.
+                clear Hsub2.
+                clear Hsub1.
+                specialize (IHa b' ρ ρ' HH).
+                apply IHa.
+                apply H21.
+                ltac1:(congruence).
+            }
+            {
+                destruct HH2 as [x1 [HH3 HH4]].
+                subst.
+                cbn in *.
+                inversion H221'; subst; clear H221'.
+                ltac1:(rewrite lookup_insert in H2211).
+                clear H2211.
+                assert (Htmp: ρ' !! x1 = Some (aoo_operand symbol builtin_value b)).
+                {
+                    clear -Hsub2 HH.
+                    unfold map_subseteq in *.
+                    unfold map_included in *.
+                    unfold map_relation in *.
+                    unfold option_relation in *.
+                    specialize (HH x1).
+                    specialize (Hsub2 x1).
+                    repeat ltac1:(case_match); subst;
+                        ltac1:(rewrite lookup_insert in H);
+                        inversion H; subst; clear H;
+                        try assumption;
+                        try ltac1:(contradiction).
+                }
+                unfold Valuation_lookup in *.
+                rewrite Htmp.
+                unfold bool_decide.
+                ltac1:(case_match); try reflexivity; try ltac1:(congruence).
+                clear e H.
+                clear HH4.
+                assert (Htmp2 := IHa b').
+                remember (ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
+                    BuiltinOrVar builtin_value_matches_BuiltinOrVar
+                    (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
+                    symbol
+                    BuiltinOrVar),
+                    false)
+                    pure_GroundTerm_matches_BuiltinOrVar)
+                as f.
+                remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+                    builtin_value BuiltinOrVar
+                    builtin_value_try_match_BuiltinOrVar
+                    (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+                    BuiltinOrVar),
+                    None)
+                    pure_GroundTerm_try_match_BuiltinOrVar)
+                as g.
+                apply Htmp2 with (ρ' := ρ') in H21.
+                {
+                    rewrite H21. reflexivity.
+                }
+                {
+                    eapply transitivity.
+                    { apply Hsub1. }
+                    { apply HH. }
+                }
+            }
+        }
+        {
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            inversion H22.
+        }
+        {
+            inversion H.
+        }
+        {
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            rewrite bind_Some in H22.
+            destruct H22 as [x0 [H221 H222]].
+            (* TODO: need a lemma about correctness of pure_GroundTerm_try_match_BuiltinOrVar *)
+            apply pure_GroundTerm_try_match_BuiltinOrVar_correct in H221.
+            assert (Hmv := H222).
+            apply merge_valuations_correct in Hmv.
+            destruct Hmv as [Hsub1 Hsub2].
+            assert (Hxrho': map_subseteq x ρ').
+            {
+                eapply transitivity.
+                apply Hsub1.
+                apply HH.
+            }
+            apply pure_GroundTerm_matches_BuiltinOrVar_monotone with (ρ' := ρ') in H221.
+            {
+                rewrite H221.
+                clear H221.
+                remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+                    builtin_value BuiltinOrVar
+                    builtin_value_try_match_BuiltinOrVar
+                    (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+                    BuiltinOrVar),
+                    None)
+                    pure_GroundTerm_try_match_BuiltinOrVar)
+                as f.
+                specialize (IHa1 b' x ρ' Hxrho' H21).
+                rewrite IHa1.
+                reflexivity.
+            }
+            {
+                eapply transitivity.
+                apply Hsub2.
+                apply HH.
+            }
+        }
+        {
+            rewrite bind_Some in H.
+            destruct H as [x [H21 H22]].
+            rewrite bind_Some in H22.
+            destruct H22 as [x0 [H221 H222]].
+            assert (Hsub := H222).
+            apply merge_valuations_correct in Hsub.
+            destruct Hsub as [Hsub1 Hsub2].
+            assert (Hxρ' : map_subseteq x ρ').
+            {
+                eapply transitivity.
+                apply Hsub1.
+                apply HH.
+            }
+            assert (Hx0ρ' : map_subseteq x0 ρ').
+            {
+                eapply transitivity.
+                apply Hsub2.
+                apply HH.
+            }
+            remember (
+                ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
+                BuiltinOrVar builtin_value_matches_BuiltinOrVar
+                (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
+                symbol
+                BuiltinOrVar),
+                false)
+                pure_GroundTerm_matches_BuiltinOrVar )
+            as f.
+            remember (ApppliedOperator'_try_match_AppliedOperator' symbol
+                builtin_value BuiltinOrVar
+                builtin_value_try_match_BuiltinOrVar
+                (λ (_ : builtin_value) (_ : AppliedOperator' symbol
+                BuiltinOrVar),
+                None)
+                pure_GroundTerm_try_match_BuiltinOrVar)
+            as g.
+            apply andb_true_iff.
+            ltac1:(naive_solver).
+        }
+        Unshelve.
+        all: apply map_subseteq_po.
+    Qed.
 
     Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
         (Operator : Type)
@@ -283,10 +446,6 @@ Section with_decidable_signature.
         if decide (Forall (evaluate_sc ρ) (fr_scs r)) then
             evaluate_rhs_pattern ρ (fr_to r)
         else None
-    .
-
-    Definition vars_of_valuation (ρ : Valuation) : gset variable :=
-        dom ρ
     .
 
 
@@ -891,230 +1050,7 @@ Section with_decidable_signature.
         }
     Qed.
 
-    Lemma ApppliedOperatorOr'_try_match_AppliedOperatorOr'_correct
-        (ρ ρ' : Valuation)
-        (a : AppliedOperator' symbol builtin_value)
-        (b : AppliedOperator' symbol BuiltinOrVar)
-        :
-        map_subseteq ρ ρ' ->
-        @ApppliedOperator'_try_match_AppliedOperator'
-            symbol _ builtin_value BuiltinOrVar
-            builtin_value_try_match_BuiltinOrVar
-            (fun _ _ => None)
-            pure_GroundTerm_try_match_BuiltinOrVar
-            a b = Some ρ ->
-
-        @ApppliedOperator'_matches_AppliedOperator'
-            symbol _ builtin_value BuiltinOrVar
-            builtin_value_matches_BuiltinOrVar
-            (fun _ _ _ => false)
-            pure_GroundTerm_matches_BuiltinOrVar
-            ρ' a b = true
-    .
-    Proof.
-        revert b ρ ρ'.
-        induction a; intros b' ρ ρ' HH H; destruct b'; cbn in *; intros.
-        {
-            intros.
-            unfold is_left in *.
-            unfold bool_decide.
-            repeat ltac1:(case_match); subst; simpl;
-                try reflexivity; ltac1:(congruence).
-        }
-        {
-            inversion H.
-        }
-        {
-            inversion H.
-        }
-        {
-            inversion H.
-        }
-        {
-            rewrite bind_Some in H.
-            destruct H as [x [H21 H22]].
-            rewrite bind_Some in H22.
-            destruct H22 as [x0 [H221 H222]].
-
-            assert (H221' := H221).
-            apply builtin_value_try_match_BuiltinOrVar_correct in H221.
-            assert (H222' := H222).
-            apply merge_valuations_correct in H222'.
-            destruct H222' as [Hsub1 Hsub2].
-            destruct H221 as [H2211 H2212].
-            cbn.
-            destruct H2212 as [HH1|HH2].
-            {
-                subst.
-                cbn.
-                unfold bool_decide.
-                repeat ltac1:(case_match).
-                rewrite andb_true_r.
-                (*
-                eapply matches_monotone.
-                { apply HH. }
-                *)
-                clear e H.
-                cbn in *.
-                clear H2211.
-                destruct (decide (b = b))>[|ltac1:(congruence)].
-                cbn in *.
-                inversion H221'; subst; clear H221'.
-                clear e.
-                rewrite merge_valuations_empty_r in H222.
-                inversion H222; subst; clear H222.
-                clear Hsub2.
-                clear Hsub1.
-                specialize (IHa b' ρ ρ' HH).
-                apply IHa.
-                apply H21.
-                ltac1:(congruence).
-            }
-            {
-                destruct HH2 as [x1 [HH3 HH4]].
-                subst.
-                cbn in *.
-                inversion H221'; subst; clear H221'.
-                ltac1:(rewrite lookup_insert in H2211).
-                clear H2211.
-                assert (Htmp: ρ' !! x1 = Some (aoo_operand symbol builtin_value b)).
-                {
-                    clear -Hsub2 HH.
-                    unfold map_subseteq in *.
-                    unfold map_included in *.
-                    unfold map_relation in *.
-                    unfold option_relation in *.
-                    specialize (HH x1).
-                    specialize (Hsub2 x1).
-                    repeat ltac1:(case_match); subst;
-                        ltac1:(rewrite lookup_insert in H);
-                        inversion H; subst; clear H;
-                        try assumption;
-                        try ltac1:(contradiction).
-                }
-                unfold Valuation_lookup in *.
-                rewrite Htmp.
-                unfold bool_decide.
-                ltac1:(case_match); try reflexivity; try ltac1:(congruence).
-                clear e H.
-                clear HH4.
-                assert (Htmp2 := IHa b').
-                remember (ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
-                    BuiltinOrVar builtin_value_matches_BuiltinOrVar
-                    (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
-                    symbol
-                    BuiltinOrVar),
-                    false)
-                    pure_GroundTerm_matches_BuiltinOrVar)
-                as f.
-                remember (ApppliedOperator'_try_match_AppliedOperator' symbol
-                    builtin_value BuiltinOrVar
-                    builtin_value_try_match_BuiltinOrVar
-                    (λ (_ : builtin_value) (_ : AppliedOperator' symbol
-                    BuiltinOrVar),
-                    None)
-                    pure_GroundTerm_try_match_BuiltinOrVar)
-                as g.
-                apply Htmp2 with (ρ' := ρ') in H21.
-                {
-                    rewrite H21. reflexivity.
-                }
-                {
-                    eapply transitivity.
-                    { apply Hsub1. }
-                    { apply HH. }
-                }
-            }
-        }
-        {
-            rewrite bind_Some in H.
-            destruct H as [x [H21 H22]].
-            inversion H22.
-        }
-        {
-            inversion H.
-        }
-        {
-            rewrite bind_Some in H.
-            destruct H as [x [H21 H22]].
-            rewrite bind_Some in H22.
-            destruct H22 as [x0 [H221 H222]].
-            (* TODO: need a lemma about correctness of pure_GroundTerm_try_match_BuiltinOrVar *)
-            apply pure_GroundTerm_try_match_BuiltinOrVar_correct in H221.
-            assert (Hmv := H222).
-            apply merge_valuations_correct in Hmv.
-            destruct Hmv as [Hsub1 Hsub2].
-            assert (Hxrho': map_subseteq x ρ').
-            {
-                eapply transitivity.
-                apply Hsub1.
-                apply HH.
-            }
-            apply pure_GroundTerm_matches_BuiltinOrVar_monotone with (ρ' := ρ') in H221.
-            {
-                rewrite H221.
-                clear H221.
-                remember (ApppliedOperator'_try_match_AppliedOperator' symbol
-                    builtin_value BuiltinOrVar
-                    builtin_value_try_match_BuiltinOrVar
-                    (λ (_ : builtin_value) (_ : AppliedOperator' symbol
-                    BuiltinOrVar),
-                    None)
-                    pure_GroundTerm_try_match_BuiltinOrVar)
-                as f.
-                specialize (IHa1 b' x ρ' Hxrho' H21).
-                rewrite IHa1.
-                reflexivity.
-            }
-            {
-                eapply transitivity.
-                apply Hsub2.
-                apply HH.
-            }
-        }
-        {
-            rewrite bind_Some in H.
-            destruct H as [x [H21 H22]].
-            rewrite bind_Some in H22.
-            destruct H22 as [x0 [H221 H222]].
-            assert (Hsub := H222).
-            apply merge_valuations_correct in Hsub.
-            destruct Hsub as [Hsub1 Hsub2].
-            assert (Hxρ' : map_subseteq x ρ').
-            {
-                eapply transitivity.
-                apply Hsub1.
-                apply HH.
-            }
-            assert (Hx0ρ' : map_subseteq x0 ρ').
-            {
-                eapply transitivity.
-                apply Hsub2.
-                apply HH.
-            }
-            remember (
-                ApppliedOperator'_matches_AppliedOperator' symbol builtin_value
-                BuiltinOrVar builtin_value_matches_BuiltinOrVar
-                (λ (_ : Valuation) (_ : builtin_value) (_ : AppliedOperator'
-                symbol
-                BuiltinOrVar),
-                false)
-                pure_GroundTerm_matches_BuiltinOrVar )
-            as f.
-            remember (ApppliedOperator'_try_match_AppliedOperator' symbol
-                builtin_value BuiltinOrVar
-                builtin_value_try_match_BuiltinOrVar
-                (λ (_ : builtin_value) (_ : AppliedOperator' symbol
-                BuiltinOrVar),
-                None)
-                pure_GroundTerm_try_match_BuiltinOrVar)
-            as g.
-            apply andb_true_iff.
-            ltac1:(naive_solver).
-        }
-        Unshelve.
-        all: apply map_subseteq_po.
-    Qed.
+    
 
     Lemma builtin_value_try_match_BuiltinOrVar_complete a b ρ:
         builtin_value_matches_BuiltinOrVar ρ a b ->

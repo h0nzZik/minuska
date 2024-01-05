@@ -14,15 +14,33 @@ match t with
 | ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
 end.
 
+#[export]
+Instance VarsOf_Expression
+    {Σ : Signature}
+    : VarsOf Expression
+:= {|
+    vars_of := vars_of_Expression ; 
+|}.
+
+
 Definition vars_of_AP
     {Σ : Signature}
     (ap : AtomicProposition)
     : gset variable :=
 match ap with
-| apeq e1 e2 => vars_of_Expression e1 ∪ vars_of_Expression e2
-| ap1 _ e => vars_of_Expression e
-| ap2 _ e1 e2 => vars_of_Expression e1 ∪ vars_of_Expression e2
+| apeq e1 e2 => vars_of e1 ∪ vars_of e2
+| ap1 _ e => vars_of e
+| ap2 _ e1 e2 => vars_of e1 ∪ vars_of e2
 end.
+
+#[export]
+Instance VarsOf_AP
+    {Σ : Signature}
+    : VarsOf AtomicProposition
+:= {|
+    vars_of := vars_of_AP ; 
+|}.
+
 
 Fixpoint vars_of_Constraint
     { Σ : Signature }
@@ -30,21 +48,40 @@ Fixpoint vars_of_Constraint
     : gset variable :=
 match c with
 | c_True => ∅
-| c_atomic ap => vars_of_AP ap
+| c_atomic ap => vars_of ap
 | c_and c1 c2 => vars_of_Constraint c1 ∪ vars_of_Constraint c2
 | c_not c' => vars_of_Constraint c'
 end.
 
-Fixpoint vars_of_aosb
+#[export]
+Instance VarsOf_Constraint
     {Σ : Signature}
-    (o : AppliedOperator' symbol BuiltinOrVar)
+    : VarsOf Constraint
+:= {|
+    vars_of := vars_of_Constraint ; 
+|}.
+
+Fixpoint vars_of_aosB
+    {Σ : Signature}
+    {B : Type}
+    {_VB: VarsOf B}
+    (o : AppliedOperator' symbol B)
     : gset variable :=
 match o with
 | ao_operator _ => ∅
-| ao_app_operand o' (bov_builtin _) => vars_of_aosb o'
-| ao_app_operand o' (bov_variable x) => {[x]} ∪ vars_of_aosb o'
-| ao_app_ao o1 o2 => vars_of_aosb o1 ∪ vars_of_aosb o2
+| ao_app_operand o' b => vars_of b ∪ vars_of_aosB o'
+| ao_app_ao o1 o2 => vars_of_aosB o1 ∪ vars_of_aosB o2
 end.
+
+#[export]
+Instance VarsOf_aosB
+    {Σ : Signature}
+    {B : Type}
+    {_VB: VarsOf B}
+    : VarsOf (AppliedOperator' symbol B)
+:= {|
+    vars_of := vars_of_aosB ; 
+|}.
 
 Definition vars_of_BoV
     {Σ : Signature}
@@ -56,42 +93,88 @@ match bov with
 | bov_builtin _ => ∅
 end.
 
+#[export]
+Instance VarsOf_BoV
+    {Σ : Signature}
+    : VarsOf BuiltinOrVar
+:= {|
+    vars_of := vars_of_BoV ; 
+|}.
+
 Definition vars_of_OpenTerm
     {Σ : Signature}
     (φ : OpenTerm)
     : gset variable :=
 match φ with
-| aoo_app _ _ o => vars_of_aosb o
-| aoo_operand _ _ bov => vars_of_BoV bov
+| aoo_app _ _ o => vars_of o
+| aoo_operand _ _ bov => vars_of bov
 end.
+
+#[export]
+Instance VarsOf_OpenTerm 
+    {Σ : Signature}
+    : VarsOf OpenTerm
+:= {|
+    vars_of := vars_of_OpenTerm ; 
+|}.
 
 Definition vars_of_Match
     {Σ : Signature}
     (m : Match)
     : gset variable :=
 match m with
-| mkMatch _ x φ => {[x]} ∪ vars_of_OpenTerm φ
+| mkMatch _ x φ => {[x]} ∪ vars_of φ
 end.
+
+#[export]
+Instance VarsOf_Match
+    {Σ : Signature}
+    : VarsOf Match
+:= {|
+    vars_of := vars_of_Match ; 
+|}.
 
 Definition vars_of_SideCondition
     {Σ : Signature}
     (c : SideCondition)
     : gset variable :=
 match c with
-| sc_constraint c' => vars_of_Constraint c'
-| sc_match m => vars_of_Match m
+| sc_constraint c' => vars_of c'
+| sc_match m => vars_of m
 end.
 
-Fixpoint vars_of_OpenTermWSC
+#[export]
+Instance VarsOf_SideCondition
     {Σ : Signature}
-    (φc : OpenTermWSC)
+    : VarsOf SideCondition
+:= {|
+    vars_of := vars_of_SideCondition ; 
+|}.
+
+
+Fixpoint vars_of_WithASideConditionB
+    {Σ : Signature}
+    {B : Type}
+    {_VB : VarsOf B}
+    (φc : WithASideCondition B)
     : gset variable :=
 match φc with
-| wsc_base φ => vars_of_OpenTerm φ
+| wsc_base φ => vars_of φ
 | wsc_sc φ c
-    => vars_of_OpenTermWSC φ ∪ vars_of_SideCondition c
+    => vars_of_WithASideConditionB φ ∪ vars_of c
 end.
 
+#[export]
+Instance VarsOf_WithASideConditionB
+    {Σ : Signature}
+    {B : Type}
+    {_VB : VarsOf B}
+    : VarsOf (WithASideCondition B)
+:= {|
+    vars_of := vars_of_WithASideConditionB ; 
+|}.
+
+(*
 Fixpoint vars_of_AppliedOperator'_symbol_OpenTermWSC
     {Σ : Signature}
     (φ : AppliedOperator' symbol OpenTermWSC)
@@ -103,16 +186,30 @@ match φ with
 | ao_app_ao x y
     => vars_of_AppliedOperator'_symbol_OpenTermWSC x ∪ vars_of_AppliedOperator'_symbol_OpenTermWSC y
 end.
+*)
 
-Definition vars_of_LhsPattern
+Definition vars_of_AppliedOperatorOr'B
     {Σ : Signature}
-    (φ : LhsPattern)
+    {B : Type}
+    {_VB : VarsOf B}
+    (φ : AppliedOperatorOr' symbol B)
     : gset variable :=
 match φ with
-| aoo_app _ _ aop => vars_of_AppliedOperator'_symbol_OpenTermWSC aop
-| aoo_operand _ _ otwsc => vars_of_OpenTermWSC otwsc
+| aoo_app _ _ aop => vars_of aop
+| aoo_operand _ _ otwsc => vars_of otwsc
 end.
 
+#[export]
+Instance VarsOf_AppliedOperatorOr'
+    {Σ : Signature}
+    {B : Type}
+    {_VB : VarsOf B}
+    : VarsOf (AppliedOperatorOr' symbol B)
+:= {|
+    vars_of := vars_of_AppliedOperatorOr'B ; 
+|}.
+
+(*
 Fixpoint vars_of_AppliedOperator_sym_fterm
     {Σ : Signature}
     (op : AppliedOperator' symbol Expression)
@@ -154,6 +251,7 @@ match x with
 | wsc_base x' => x'
 | wsc_sc x' sc => var_of_WithASideCondition_variable x'
 end.
+*)
 
 Definition vars_of_LocalRewrite
     {Σ : Signature}
@@ -161,8 +259,8 @@ Definition vars_of_LocalRewrite
     (r : LocalRewrite)
     : gset variable :=
 match lr,r with
-| LR_Left, Build_LocalRewrite _ φ1 φ2 => vars_of_LhsPattern φ1
-| LR_Right, Build_LocalRewrite _ φ1 φ2 => vars_of_RhsPattern φ2
+| LR_Left, Build_LocalRewrite _ φ1 φ2 => vars_of φ1
+| LR_Right, Build_LocalRewrite _ φ1 φ2 => vars_of φ2
 end.
 
 
