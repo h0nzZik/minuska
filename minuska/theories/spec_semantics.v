@@ -404,43 +404,69 @@ Fail Next Obligation.
 
 
 Inductive aoxyo_satisfies_aoxzo
+    {Σ : Signature}
     (V X Y Z : Type)
-    `{Satisfies (V*Y) Z}
-    `{Satisfies (V*(AppliedOperator' X Y)) Z}
-    `{Satisfies (V*(AppliedOperator' X Y)) (AppliedOperator' X Z)}
-    : (V*(AppliedOperatorOr' X Y)) ->
-      (AppliedOperatorOr' X Z) ->
-      Prop
+    {_VV : VarsOf V}
+    {_SV : SubsetEq V}
+    {_S1 : Satisfies V Y Z}
+    {_S2 : Satisfies V ((AppliedOperator' X Y)) Z}
+    {_S3 : Satisfies V ((AppliedOperator' X Y)) (AppliedOperator' X Z)}
+    : V ->
+        ((AppliedOperatorOr' X Y)) ->
+        (AppliedOperatorOr' X Z) ->
+        Prop
 :=
 | axysaxz_app:
     forall
         (ρ : V)
         (xy : AppliedOperator' X Y)
         (xz : AppliedOperator' X Z)
-        (pf : satisfies (ρ,xy) xz),
-        aoxyo_satisfies_aoxzo V X Y Z (ρ,(@aoo_app _ _  xy)) (aoo_app _ _ xz)
+        (pf : satisfies ρ xy xz),
+        aoxyo_satisfies_aoxzo V X Y Z ρ (@aoo_app _ _  xy) (aoo_app _ _ xz)
 
 | axysaxz_operand:
-    forall (ρ : V) (y : Y) (z : Z) (pf : satisfies (ρ,y) z),
-        aoxyo_satisfies_aoxzo V X Y Z (ρ, @aoo_operand X Y y) (@aoo_operand X Z z)
+    forall (ρ : V) (y : Y) (z : Z) (pf : satisfies ρ y z),
+        aoxyo_satisfies_aoxzo V X Y Z ρ (@aoo_operand X Y y) (@aoo_operand X Z z)
 
 | axysaxz_combined:
     forall (ρ : V) axy axz,
-        satisfies (ρ,axy) axz ->
-        aoxyo_satisfies_aoxzo V X Y Z (ρ, @aoo_app _ _  axy) (@aoo_operand X Z axz)
+        satisfies ρ axy axz ->
+        aoxyo_satisfies_aoxzo V X Y Z ρ (@aoo_app _ _  axy) (@aoo_operand X Z axz)
 .
 
 #[export]
-Instance Satisfies_aoxyo_aoxzo
-    {V X Y Z : Type}
-    `{Satisfies (V*Y) Z}
-    `{Satisfies (V*(AppliedOperator' X Y)) Z}
-    `{Satisfies (V*(AppliedOperator' X Y)) (AppliedOperator' X Z)}
+Program Instance Satisfies_aoxyo_aoxzo
+    {Σ : Signature}
+    (V X Y Z : Type)
+    {_VV : VarsOf V}
+    {_SV : SubsetEq V}
+    {_S1 : Satisfies V Y Z}
+    {_S2 : Satisfies V ((AppliedOperator' X Y)) Z}
+    {_S3 : Satisfies V ((AppliedOperator' X Y)) (AppliedOperator' X Z)}
     :
-    Satisfies (V*(AppliedOperatorOr' X Y)) (AppliedOperatorOr' X Z)
+    Satisfies V ((AppliedOperatorOr' X Y)) (AppliedOperatorOr' X Z)
 := {|
     satisfies := aoxyo_satisfies_aoxzo V X Y Z;
 |}.
+Next Obligation.
+    destruct H0; constructor.
+    {
+        eapply satisfies_ext.
+        { exact H. }
+        { exact pf. }
+    }
+    {
+        eapply satisfies_ext.
+        { exact H. }
+        { exact pf. }
+    }
+    {
+        eapply satisfies_ext.
+        { exact H. }
+        { assumption. }
+    }
+Qed.
+Fail Next Obligation.
 
 Inductive builtin_satisfies_BuiltinOrVar
     {Σ : Signature}
