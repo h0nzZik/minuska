@@ -182,6 +182,72 @@ Proof.
     }
 Qed.
 
+
+Lemma merge_use_left_subseteq
+    {Σ : Signature}
+    (ρ1 ρ2 : Valuation):
+    ρ1 ⊆ ρ2 ->
+    merge use_left ρ1 ρ2 = ρ2
+.
+Proof.
+    unfold subseteq. simpl.
+    unfold Subseteq_Valuation.
+    unfold Valuation in *. simpl.
+    unfold map_subseteq.
+    unfold map_included.
+    unfold map_relation.
+    unfold option_relation.
+    intros H.
+    apply map_subseteq_po.
+    {
+        unfold Valuation.
+        rewrite map_subseteq_spec.
+        intros i x Hix.
+        rewrite lookup_merge in Hix.
+        unfold diag_None in Hix.
+        unfold use_left in Hix.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        {
+            specialize (H i).
+            rewrite H0 in H.
+            rewrite H1 in H.
+            subst.
+            reflexivity.
+        }
+        {
+            specialize (H i).
+            rewrite H0 in H.
+            rewrite H1 in H.
+            inversion H.
+        }
+    }
+    {
+        unfold Valuation.
+        rewrite map_subseteq_spec.
+        intros i x Hix.
+        rewrite lookup_merge.
+        unfold diag_None.
+        unfold use_left.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        specialize (H i).
+        rewrite H1 in H.
+        rewrite H0 in H.
+        subst.
+        reflexivity.
+    }
+Qed.
+
+Lemma omap_Some
+    {Σ : Signature}
+    (ρ : Valuation):
+    omap [eta Some] ρ = ρ
+.
+Proof.
+    rewrite <- map_fmap_alt.
+    rewrite map_fmap_id.
+    reflexivity.
+Qed.
+
 Class TryMatch
     {Σ : Signature}
     (A B : Type)
@@ -1992,65 +2058,7 @@ end.
         }
     Qed.
 
-    Lemma merge_use_left_subseteq (ρ1 ρ2 : Valuation):
-        map_subseteq ρ1 ρ2 ->
-        merge use_left ρ1 ρ2 = ρ2
-    .
-    Proof.
-        unfold map_subseteq.
-        unfold map_included.
-        unfold map_relation.
-        unfold option_relation.
-        intros H.
-        apply map_subseteq_po.
-        {
-            unfold Valuation.
-            unfold Valuation_lookup.
-            rewrite map_subseteq_spec.
-            intros i x Hix.
-            rewrite lookup_merge in Hix.
-            unfold diag_None in Hix.
-            unfold use_left in Hix.
-            ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
-            {
-                specialize (H i).
-                rewrite H0 in H.
-                rewrite H1 in H.
-                subst.
-                reflexivity.
-            }
-            {
-                specialize (H i).
-                rewrite H0 in H.
-                rewrite H1 in H.
-                inversion H.
-            }
-        }
-        {
-            unfold Valuation.
-            unfold Valuation_lookup.
-            rewrite map_subseteq_spec.
-            intros i x Hix.
-            rewrite lookup_merge.
-            unfold diag_None.
-            unfold use_left.
-            ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
-            specialize (H i).
-            rewrite H1 in H.
-            rewrite H0 in H.
-            subst.
-            reflexivity.
-        }
-    Qed.
-
-    Lemma omap_Some (ρ : Valuation):
-        omap [eta Some] ρ = ρ
-    .
-    Proof.
-        rewrite <- map_fmap_alt.
-        rewrite map_fmap_id.
-        reflexivity.
-    Qed.
+    
 
     
 
