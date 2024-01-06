@@ -631,44 +631,48 @@ Definition naive_interpreter
 .
 
 Lemma naive_interpreter_sound
-    (Γ : RewritingTheory)
-    : Interpreter_sound Γ (naive_interpreter Γ).
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (Γ : list FlattenedRewritingRule)
+    : FlatInterpreter_sound Γ (naive_interpreter Γ).
 Proof.
+    unfold naive_interpreter.
+    unfold FlatInterpreter_sound.
+    unfold flat_stuck,not_stuck_flat.
     split.
     {
-        unfold naive_interpreter.
-        unfold Interpreter_sound.
-        unfold stuck,not_stuck.
         intros e Hstuck.
-        destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
+        destruct (thy_lhs_match_one e Γ) eqn:Hmatch>[|reflexivity].
         {
             destruct p as [r ρ].
             {
                 apply thy_lhs_match_one_Some in Hmatch.
                 destruct Hmatch as [Hin Hsat].
-                ltac1:(rewrite -lhs_match_one_Some in Hsat).
-                unfold rewriting_relation, rewrites_to in Hstuck.
-                destruct (rhs_evaluate_rule ρ r) eqn:Heval; cbn in *.
+                assert (Hts := thy_lhs_match_one_Some).
+                unfold rewriting_relation_flat in Hstuck.
+                unfold flattened_rewrites_to in Hstuck.
+                unfold flattened_rewrites_in_valuation_to in Hstuck.
+                assert (Hev := evaluate_rhs_pattern_correct (fr_to r) ρ).
+                ltac1:(cut (~ ∃ g', evaluate_rhs_pattern ρ (fr_to r) = Some g')).
                 {
-                    apply lhs_match_one_Some in Hsat.
-                    apply rhs_evaluate_rule_correct_1 in Heval.
-                    ltac1:(exfalso).
-                    apply Hstuck. clear Hstuck.
-                    unfold rewrites_in_valuation_to.
-                    exists e0.
-                    exists r.
-                    split.
-                    { exact Hin. }
-                    exists ρ.
-                    split; assumption.
+                    intros HContra. clear -HContra.
+                    rewrite <- eq_None_ne_Some.
+                    ltac1:(naive_solver).
                 }
-                {
-                    reflexivity.
-                }
+                intros HContra.
+                destruct HContra as [pg' Hg'].
+                rewrite Hev in Hg'.
+                clear Hev.
+                apply matchesb_implies_satisfies in Hg'.
+                apply Hstuck. clear Hstuck.
+                exists pg'. exists r.
+                split>[assumption|].
+                exists ρ.
+                split>[assumption|].
+                split>[assumption|].
+                (* Almost there!*)
+                admit.
             }
-        }
-        {
-            reflexivity.
         }
     }
     {
@@ -679,9 +683,9 @@ Proof.
             destruct p as [r ρ]; cbn in *.
             apply thy_lhs_match_one_Some in Hmatch.
             destruct Hmatch as [Hin Hsat].
-            destruct (rhs_evaluate_rule ρ r) eqn:Heval.
+            destruct (evaluate_rhs_pattern ρ (fr_to r)) eqn:Heval.
             {
-                exists e0. reflexivity.
+                eexists. reflexivity.
             }
             {
                 ltac1:(exfalso).

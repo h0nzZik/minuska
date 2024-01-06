@@ -86,8 +86,8 @@ match x with
 | aoo_operand _ _ operand => A_to_OpenTermB operand
 end.
 
-Definition RewritingTheory {Σ : Signature}
-    := list RewritingRule
+Definition FlattenedRewritingTheory {Σ : Signature}
+    := list FlattenedRewritingRule
 .
 
 Definition rewriting_relation_flat
