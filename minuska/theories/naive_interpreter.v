@@ -590,30 +590,27 @@ Proof.
         subst.
         destruct H12 as [H121 H122].
         destruct H121 as [ρ' Hρ'].
-        rewrite list_find_Some in H.
-        inversion H; subst; clear H.
-        ltac1:(rewrite list_find_Some in H0).
-        ltac1:(rewrite list_lookup_fmap in H0).
-        ltac1:(rewrite H3 in H0).
-        ltac1:(rewrite fmap_Some in H0).
-        ltac1:(destruct_and!).
-        destruct_ex!.
-        ltac1:(destruct_and!).
-        ltac1:(simplify_eq /=).
-        symmetry in H0.
-        ltac1:(rewrite lhs_match_one_Some in H0).
-        split>[()|apply H0].
-        apply elem_of_list_lookup_2 in H3.
-        exact H3.
-    }
-    {
-        inversion H.
-    }
-    {
-        inversion H.
-    }
-    {
-        inversion H.
+        rewrite bind_Some in H2.
+        destruct H2 as [ρ'' [Hρ''1 Hρ''2]].
+        rewrite bind_Some in Hρ''2.
+        destruct Hρ''2 as [frr2 [Hfrr21 Hfrr22]].
+        inversion Hfrr22; subst; clear Hfrr22.
+        split.
+        {
+            rewrite elem_of_list_lookup.
+            exists idx. exact Hfrr21.
+        }
+        apply try_match_correct in Hρ'.
+        apply try_match_correct in Hρ''1.
+        unfold Valuation in *.
+        ltac1:(unshelve(eapply matchesb_implies_satisfies)).
+        ltac1:(cut (frr = r)).
+        {
+            intros ?. subst. assumption.
+        }
+        {
+            ltac1:(naive_solver).
+        }
     }
 Qed.
 
