@@ -443,218 +443,119 @@ Proof.
     }
 Qed.
 
+Definition thy_lhs_match_one
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (e : GroundTerm)
+    (Γ : list FlattenedRewritingRule)
+    : option (FlattenedRewritingRule * Valuation)%type
+:=
+    let froms : list OpenTerm
+        := fr_from <$> Γ
+    in
+    let vs : list (option Valuation)
+        := (try_match e) <$> froms
+    in
+    let found : option (nat * option Valuation)
+        := list_find is_Some vs
+    in
+    nov ← found;
+    let idx : nat := nov.1 in
+    let ov : option Valuation := nov.2 in
+    v ← ov;
+    r ← Γ !! idx;
+    Some (r, v)
+.
 
-
-
-
-    Fixpoint rhs_evaluate_rule
-        (ρ : Valuation)
-        (r : RewritingRule)
-        : option Element :=
-    match r with
-    | rr_local_rewrite lr =>
-        evaluate_rhs_pattern ρ (lr_to lr)
-    | rr_builtin b => Some (el_builtin b)
-    | rr_sym s => Some (el_appsym (aps_operator s))
-    | rr_app r1 r2 =>
-        let oe1 := rhs_evaluate_rule ρ r1 in
-        let oe2 := rhs_evaluate_rule ρ r2 in
-        match oe1,oe2 with
-        | Some (el_appsym aps1), Some (el_appsym aps2) =>
-            Some (el_appsym (aps_app_aps aps1 aps2))
-        | Some (el_appsym aps1), Some (el_builtin b) =>
-            Some (el_appsym (aps_app_operand aps1 b))
-        | _,_ => None
-        end
-    | rr_var x => ρ !! x
-    | rr_requires r' _ => rhs_evaluate_rule ρ r'
-    | rr_requires_match r' _ _ => rhs_evaluate_rule ρ r'
-    end
-    .
-
-
-    Lemma rhs_evaluate_rule_correct_1
-        (r : RewritingRule)
-        (ρ : Valuation)
-        (e : Element)
-        : 
-        rhs_evaluate_rule ρ r = Some e ->
-        rr_satisfies LR_Right ρ r e
-    .
-    Proof.
+Lemma thy_lhs_match_one_None
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (e : GroundTerm)
+    (Γ : list FlattenedRewritingRule)
+    :
+    thy_lhs_match_one e Γ = None ->
+    ~ exists (r : FlattenedRewritingRule) (ρ : Valuation),
+        r ∈ Γ /\ satisfies ρ e (fr_from r)
+.
+Proof.
+    unfold thy_lhs_match_one.
+    intros H [r [ρ [Hin HContra]]].
+    destruct (list_find is_Some (try_match e <$> (fr_from <$> Γ))) eqn:Heqfound.
+    {
+        destruct p as [n oρ].
+        rewrite list_find_Some in Heqfound.
+        ltac1:(destruct Heqfound as [Hfound [HSome HFirst]]).
+        destruct oρ.
         {
-            revert e. revert ρ.
-            induction r; intros ρ e Heval.
+            subst. clear HFirst.
+            rewrite bind_None in H.
+            destruct H as [H|H].
             {
-                destruct e;
-                ltac1:(simp rr_satisfies);
-                cbn in Heval;
-                destruct lr; cbn in *;
-                apply evaluate_rhs_pattern_correct;
-                exact Heval.
+                inversion H.
             }
-            all: cbn in Heval; ltac1:(simplify_eq /=); auto with nocore.
-            all: ltac1:(simp rr_satisfies); try reflexivity.
-            all: (repeat (ltac1:(case_match))); ltac1:(simplify_eq /=).
-            all: ltac1:(simp rr_satisfies); try ltac1:(naive_solver).
+            destruct H as [[idx oρ] [H1 H2]].
+            simpl in *.
+            inversion H1; subst; clear H1.
+            clear HSome.
+            rewrite bind_None in H2.
+            destruct H2 as [H|H].
             {
-                unfold rr_satisfies_unfold_clause_8.
-                destruct (ρ !! v) eqn:Hv; ltac1:(naive_solver).
+                inversion H.
             }
+            destruct H as [oρ2 [H21 H22]].
+            rewrite bind_None in H22.
+            inversion H21; subst; clear H21.
+            rewrite list_lookup_fmap in Hfound.
+            rewrite fmap_Some in Hfound.
+            destruct Hfound as [ot [Hot1 Hot2]].
+            rewrite list_lookup_fmap in Hot1.
+            rewrite fmap_Some in Hot1.
+            destruct Hot1 as [fr [Hfr1 Hfr2]].
+            rewrite Hfr1 in H22.
+            destruct H22 as [H|H].
+            { inversion H. }
+            subst ot.
+            destruct H as [frr [Hfrr1 Hfrr2]].
+            inversion Hfrr2.
         }
-    Qed.
-
-    Lemma rhs_evaluate_rule_correct_2
-        (r : RewritingRule)
-        (ρ : Valuation)
-        (e : Element)
-        : 
-            rr_satisfies LR_Right ρ r e ->
-            rhs_evaluate_rule ρ r = Some e
-    .
-    Proof.
-        intros Hsatr.
-        ltac1:(funelim (rr_satisfies LR_Right ρ r e));
-            cbn.
         {
-            apply evaluate_rhs_pattern_correct.
+            inversion HSome. inversion H0.
+        }
+    }
+    {
+        clear H.
+        rewrite list_find_None in Heqfound.
+        rewrite Forall_forall in Heqfound.
+        ltac1:(unshelve(eapply satisfies_implies_matchesb in HContra)).
+        {
+            unfold GroundTerm, OpenTerm.
+            apply _.
+        }
+        apply try_match_complete in HContra.
+        destruct HContra as [ρ' [H1 [H2 H3]]].
+
+        specialize (Heqfound (Some ρ')).
+        ltac1:(ospecialize (Heqfound _)).
+        {
+            rewrite <- elem_of_list_In.
+            unfold Valuation in *.
+            rewrite elem_of_list_fmap.
+            exists (fr_from r).
+            split.
+            {
+                symmetry. assumption.
+            }
+            rewrite elem_of_list_fmap.
+            exists r.
+            split>[reflexivity|].
             assumption.
         }
-        all: ltac1:(simp rr_satisfies in Hsatr).
-        all: ltac1:(simplify_eq /=).
-        all: try reflexivity.
-        all: try ltac1:(contradiction).
-        {
-            erewrite H by ltac1:(naive_solver);
-            erewrite H0 by ltac1:(naive_solver);
-            reflexivity.
-        }
-        {
-            erewrite H by ltac1:(naive_solver);
-            erewrite H0 by ltac1:(naive_solver);
-            reflexivity.
-        }
-        {
-            ltac1:(simp rr_satisfies in Heqcall).
-            apply H.
-            apply Hsatr.
-        }
-        {
-            apply H.
-            rewrite Heq in Hsatr.
-            unfold rr_satisfies_unfold_clause_8 in Hsatr.
-            apply Hsatr.
-        }{
-            apply H.
-            rewrite Heq in Hsatr.
-            unfold rr_satisfies_unfold_clause_8 in Hsatr.
-            apply Hsatr.
-        }
-    Qed.
-
-    Definition lhs_match_one
-        (e : Element)
-        (r : RewritingRule)
-        : option Valuation
-    .
-    Admitted.
-
-    Lemma lhs_match_one_Some
-        (e : Element)
-        (r : RewritingRule)
-        (ρ : Valuation)
-        :
-        lhs_match_one e r = Some ρ <->
-        rr_satisfies LR_Left ρ r e
-    .
-    Proof. Admitted.
-
-    Lemma lhs_match_one_None
-        (e : Element)
-        (r : RewritingRule)
-        :
-        lhs_match_one e r = None <-> 
-        ~ exists (ρ : Valuation),
-            rr_satisfies LR_Left ρ r e
-    .
-    Proof.
-    Admitted.
-
-
-    Definition thy_lhs_match_one
-        (e : Element)
-        (Γ : RewritingTheory)
-        : option (RewritingRule * Valuation)%type
-        := let vs : list (option Valuation) := lhs_match_one e <$> Γ in
-        let found : option (nat * option Valuation) := list_find is_Some vs in
-        match found with
-        | None => None
-        | Some (_, None) => None
-        | Some (n, Some v) => (
-            match Γ !! n with
-            | Some r => Some (r, v)
-            | None => None
-            end)
-        end
-    .
-
-    Lemma thy_lhs_match_one_None
-        (e : Element)
-        (Γ : RewritingTheory)
-        :
-        thy_lhs_match_one e Γ = None ->
-        ~ exists (r : RewritingRule) (ρ : Valuation),
-            r ∈ Γ /\ rr_satisfies LR_Left ρ r e
-    .
-    Proof.
-        unfold thy_lhs_match_one.
-        intros H [r [ρ [Hin HContra]]].
-        destruct (list_find is_Some (lhs_match_one e <$> Γ)) eqn:Heqfound.
-        {
-            destruct p as [n oρ].
-            rewrite list_find_Some in Heqfound.
-            ltac1:(destruct Heqfound as [Hfound [HSome HFirst]]).
-            destruct oρ.
-            {
-                subst. clear HFirst.
-                destruct (Γ !! n) eqn:Heq.
-                { inversion H. }
-                clear H. clear HSome.
-                rewrite list_lookup_fmap in Hfound.
-                ltac1:(rewrite Heq in Hfound).
-                cbn in Hfound.
-                inversion Hfound.
-            }
-            {
-                inversion HSome. inversion H0.
-            }
-        }
-        {
-            clear H.
-            rewrite list_find_None in Heqfound.
-            rewrite Forall_forall in Heqfound.
-            specialize (Heqfound (Some ρ)).
-            ltac1:(rewrite elem_of_list_fmap in Heqfound).
-            ltac1:(feed specialize Heqfound).
-            {
-                exists r.
-                split.
-                {
-                    symmetry.
-                    apply lhs_match_one_Some.
-                    exact HContra.
-                }
-                {
-                    exact Hin.
-                }
-            }
-            {
-                unfold is_Some.
-                exists ρ. reflexivity.
-            }
-            exact Heqfound.
-        }
-    Qed.
+        unfold is_Some in Heqfound.
+        apply Heqfound.
+        exists ρ'.
+        reflexivity.
+    }
+Qed.
 
 
     Lemma thy_lhs_match_one_Some
