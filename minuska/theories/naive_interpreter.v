@@ -927,6 +927,7 @@ Program Instance TryMatch_AppliedOperator'
 := {|
     try_match := ApppliedOperator'_try_match_AppliedOperator' ;
     try_match_correct := _;
+    try_match_complete := _;
 |}.
 Next Obligation.
     apply ApppliedOperator'_try_match_AppliedOperator'_correct with (ρ := ρ).
@@ -937,12 +938,11 @@ Next Obligation.
     { apply H. }
 Qed.
 Next Obligation.
-
+    apply ApppliedOperator'_try_match_AppliedOperator'_complete.
+    assumption.
 Qed.
 Fail Next Obligation.
 
-Set Typeclasses Debug.
-Search VarsOf AppliedOperator'.
 Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
@@ -965,24 +965,108 @@ match x, y with
 | aoo_app _ _ app1, aoo_operand _ _ o2 =>
     try_match app1 o2
 | aoo_operand _ _ o1, aoo_app _ _ app2 =>
-    try_match o1 app2
+    None (* try_match o1 app2 *)
 | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
     try_match o1 o2
 end.
 
-    
 
-    Definition GroundTerm_try_match_OpenTerm:
-        GroundTerm -> OpenTerm -> option Valuation :=
-        ApppliedOperatorOr'_try_match_AppliedOperatorOr'
-            symbol
-            builtin_value
-            BuiltinOrVar
-            (builtin_value_try_match_BuiltinOrVar)
-            (fun x y => None)
-            (pure_GroundTerm_try_match_BuiltinOrVar)
+#[export]
+Program Instance TryMatch_AppliedOperatorOr'
+    {Σ : Signature}
+    {Operand1 Operand2 : Type}
+    {_VOperand2 : VarsOf Operand2}
+    {_S0 : Satisfies Valuation (Operand1) Operand2}
+    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_TM0 : TryMatch Operand1 Operand2}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+:
+    TryMatch (AppliedOperatorOr' symbol Operand1) (AppliedOperatorOr' symbol Operand2)
+:= {|
+    try_match := ApppliedOperatorOr'_try_match_AppliedOperatorOr' ;
+    try_match_correct := _;
+    try_match_complete := _;
+|}.
+Next Obligation.
+    destruct a,b; simpl in *; unfold matchesb; simpl.
+    {
+        apply try_match_correct. apply H.
+    }
+    {
+        apply try_match_correct. apply H.
+    }
+    {
+        inversion H.
+    }
+    {
+        apply try_match_correct. apply H.
+    }
+Qed.
+Next Obligation.
+    destruct a,b; simpl in *; unfold matchesb in *; simpl in *.
+    {
+        apply try_match_complete in H.
+        assumption.
+    }
+    {
+        apply try_match_complete in H.
+        assumption.
+    }
+    {
+        inversion H.
+    }
+    {
+        apply try_match_complete in H.
+        assumption.
+    }
+Qed.
+Fail Next Obligation.
+
+
+    Lemma builtin_value_try_match_BuiltinOrVar_correct
+        b bov ρ:
+        builtin_value_try_match_BuiltinOrVar b bov = Some ρ ->
+        builtin_value_matches_BuiltinOrVar ρ b bov = true
+        /\ ( (bov = bov_builtin b) \/ (∃ x, bov = bov_variable x /\ ρ !! x = Some (aoo_operand _ _ b)))
     .
-
+    Proof.
+        destruct bov; cbn;
+          unfold is_left; repeat (ltac1:(case_match)); subst;
+          unfold bool_decide; repeat (ltac1:(case_match)); subst;
+          intros HH; inversion HH; subst; clear HH; try reflexivity;
+          try ltac1:(congruence); subst; repeat split;
+          try (solve [left; reflexivity]).
+        all: try (
+            ltac1:(rewrite lookup_insert in H);
+            inversion H; subst; clear H;
+            ltac1:(congruence)
+        ).
+        {
+            ltac1:(rewrite lookup_insert in H).
+            inversion H; subst; clear H.
+            right.
+            eexists.
+            split>[reflexivity|].
+            ltac1:(rewrite lookup_insert).
+            reflexivity.
+        }
+    Qed.
+    
+(*
+Definition GroundTerm_try_match_OpenTerm
+    {Σ : Signature}
+    :
+    GroundTerm -> OpenTerm -> option Valuation :=
+    ApppliedOperatorOr'_try_match_AppliedOperatorOr'
+        builtin_value
+        BuiltinOrVar
+.
+*)
     
     Definition evaluate_match
         (ρ : Valuation)
@@ -1371,34 +1455,6 @@ end.
         }
     Qed.
 
-    Lemma builtin_value_try_match_BuiltinOrVar_correct
-        b bov ρ:
-        builtin_value_try_match_BuiltinOrVar b bov = Some ρ ->
-        builtin_value_matches_BuiltinOrVar ρ b bov = true
-        /\ ( (bov = bov_builtin b) \/ (∃ x, bov = bov_variable x /\ ρ !! x = Some (aoo_operand _ _ b)))
-    .
-    Proof.
-        destruct bov; cbn;
-          unfold is_left; repeat (ltac1:(case_match)); subst;
-          unfold bool_decide; repeat (ltac1:(case_match)); subst;
-          intros HH; inversion HH; subst; clear HH; try reflexivity;
-          try ltac1:(congruence); subst; repeat split;
-          try (solve [left; reflexivity]).
-        all: try (
-            ltac1:(rewrite lookup_insert in H);
-            inversion H; subst; clear H;
-            ltac1:(congruence)
-        ).
-        {
-            ltac1:(rewrite lookup_insert in H).
-            inversion H; subst; clear H.
-            right.
-            eexists.
-            split>[reflexivity|].
-            ltac1:(rewrite lookup_insert).
-            reflexivity.
-        }
-    Qed.
 
     #[export]
     Instance Valuation_lookup : Lookup variable GroundTerm Valuation.
