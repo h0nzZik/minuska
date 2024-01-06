@@ -44,3 +44,44 @@ Definition FRR_wf
        in the graph induced by the list of pattern matching goals
     *)
 .
+
+
+Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
+    {Σ : Signature}
+    {A B : Type}
+    (A_to_OpenTermB : A ->
+        ((AppliedOperatorOr' symbol B))
+    )
+    (x : AppliedOperator' symbol A)
+    : ((AppliedOperator' symbol B))
+:=
+match x with
+| ao_operator a => (ao_operator a)
+| ao_app_operand x' a =>
+    let t1 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
+    match A_to_OpenTermB a with
+    | (aoo_app _ _ t2) => (ao_app_ao t1 t2)
+    | (aoo_operand _ _ t2) => (ao_app_operand t1 t2)
+    end
+| ao_app_ao x1 x2 =>
+    let t1 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
+    let t2 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
+    ao_app_ao t1 t2
+end.
+
+Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
+    {Σ : Signature}
+    {A B : Type}
+    (A_to_OpenTermB : A ->
+        ((AppliedOperatorOr' symbol B))
+    )
+    (x : AppliedOperatorOr' symbol A)
+    : ((AppliedOperatorOr' symbol B))
+:=
+match x with
+| aoo_app _ _ app => aoo_app _ _ (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
+| aoo_operand _ _ operand => A_to_OpenTermB operand
+end.

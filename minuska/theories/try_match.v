@@ -1137,7 +1137,9 @@ Fail Next Obligation.
 Definition pure_GroundTerm_try_match_BuiltinOrVar
     {Σ : Signature}
     :
-    AppliedOperator' symbol builtin_value -> BuiltinOrVar -> option Valuation
+    AppliedOperator' symbol builtin_value ->
+    BuiltinOrVar ->
+    option Valuation
 := fun t bov =>
 match bov with
 | bov_builtin b => None
@@ -1145,3 +1147,81 @@ match bov with
     Some (<[x := (aoo_app _ _ t)]>∅)
 end.
 
+#[export]
+Program Instance TryMatch__pure_GroundTerm__BoV
+    {Σ : Signature}
+:
+    TryMatch (AppliedOperator' symbol builtin_value) BuiltinOrVar
+:= {|
+    try_match := pure_GroundTerm_try_match_BuiltinOrVar ;
+    try_match_correct := _;
+    try_match_complete := _;
+|}.
+Next Obligation.
+    destruct b; unfold matchesb; simpl in *.
+    { inversion H. }
+    {
+        inversion H; subst; clear H.
+        apply bool_decide_eq_true.
+        unfold Valuation in *.
+        rewrite lookup_insert.
+        reflexivity.
+    }
+Qed.
+Next Obligation.
+    unfold Valuation in *.
+    destruct b; unfold matchesb in H; simpl in *.
+    {
+        inversion H.
+    }
+    {
+        apply bool_decide_eq_true in H.
+        exists (<[x:=aoo_app symbol builtin_value a]> ∅).
+        split.
+        {
+            unfold Valuation in *.
+            rewrite dom_insert_L.
+            clear.
+            ltac1:(set_solver).
+        }
+        split.
+        {
+            apply map_subseteq_spec.
+            intros i x0 Hix0.
+            destruct (decide (i = x)).
+            {
+                subst. 
+                rewrite lookup_insert in Hix0.
+                unfold Valuation in *.
+                inversion Hix0; subst. clear Hix0.
+                assumption.
+            }
+            {
+                rewrite lookup_insert_ne in Hix0.
+                {
+                    rewrite lookup_empty in Hix0.
+                    inversion Hix0.
+                }
+                {
+                    ltac1:(congruence).
+                }
+            }
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
+Fail Next Obligation.
+
+
+#[export]
+Program Instance TryMatch__builtin__BoV
+    {Σ : Signature}
+:
+    TryMatch builtin_value BuiltinOrVar
+:= {|
+    try_match := builtin_value_try_match_BuiltinOrVar ;
+    try_match_correct := _;
+    try_match_complete := _;
+|}.

@@ -8,6 +8,7 @@ From Minuska Require Import
     flattened
     (*flatten*)
     basic_matching
+    try_match
 .
 
 Require Import Logic.PropExtensionality.
@@ -18,37 +19,6 @@ Require Import Coq.Classes.Morphisms_Prop.
 
 
 
-    Lemma builtin_value_try_match_BuiltinOrVar_correct
-        {Σ : Signature}
-        (b : builtin_value) (bov : BuiltinOrVar) (ρ : Valuation)
-        :
-        builtin_value_try_match_BuiltinOrVar b bov = Some ρ ->
-        builtin_value_matches_BuiltinOrVar ρ b bov = true
-        /\ ( (bov = bov_builtin b) \/ (∃ x, bov = bov_variable x /\ ρ !! x = Some (aoo_operand _ _ b)))
-    .
-    Proof.
-        destruct bov; cbn;
-          unfold is_left; repeat (ltac1:(case_match)); subst;
-          unfold bool_decide; repeat (ltac1:(case_match)); subst;
-          intros HH; inversion HH; subst; clear HH; try reflexivity;
-          try ltac1:(congruence); subst; repeat split;
-          try (solve [left; reflexivity]).
-        all: try (
-            ltac1:(rewrite lookup_insert in H);
-            inversion H; subst; clear H;
-            ltac1:(congruence)
-        ).
-        {
-            ltac1:(rewrite lookup_insert in H).
-            inversion H; subst; clear H.
-            right.
-            eexists.
-            split>[reflexivity|].
-            ltac1:(rewrite lookup_insert).
-            reflexivity.
-        }
-    Qed.
-    
 (*
 Definition GroundTerm_try_match_OpenTerm
     {Σ : Signature}
@@ -60,54 +30,64 @@ Definition GroundTerm_try_match_OpenTerm
 .
 *)
     
-    Definition evaluate_match
-        (ρ : Valuation)
-        (m : Match)
-        : bool :=
-    match m with
-    | mkMatch _ x φ =>
-        match ρ !! x with
-        | None => false
-        | Some g => GroundTerm_matches_OpenTerm ρ g φ
-        end
-    end.
+Definition evaluate_match
+    {Σ : Signature}
+    (ρ : Valuation)
+    (m : Match)
+    : bool :=
+match m with
+| mkMatch _ x φ =>
+    match ρ !! x with
+    | None => false
+    | Some g => matchesb ρ g φ
+    end
+end.
 
-    Definition evaluate_sc
-        (ρ : Valuation)
-        (sc : SideCondition)
-        : bool :=
-    match sc with
-    | sc_constraint c =>
-        bool_decide (val_satisfies_c ρ c)
-    | sc_match m =>
-        evaluate_match ρ m
-    end.
+Definition evaluate_sc
+    `{CΣ : ComputableSignature}
+    (ρ : Valuation)
+    (sc : SideCondition)
+    : bool :=
+match sc with
+| sc_constraint c =>
+    matchesb ρ () c
+| sc_match m =>
+    evaluate_match ρ m
+end.
 
-    Definition evaluate_rhs_pattern
-            (ρ : Valuation)
-            (φ : AppliedOperatorOr' symbol Expression)
-            : option GroundTerm :=
-        let f : Expression -> option GroundTerm
-            := (Expression_evaluate ρ) in
-        let fφ  : AppliedOperatorOr' symbol (option GroundTerm)
-            := f <$> φ in 
-        let cfφ : option (AppliedOperatorOr' symbol GroundTerm)
-            := AppliedOperatorOr'_collapse_option fφ in
-        cfφ' ← cfφ;
-        let flat := AppliedOperatorOr'_symbol_A_to_OpenTermB id cfφ' in
-        Some flat
-    .
 
-    Definition rewrite_with
-        (r : FlattenedRewritingRule)
-        (g : GroundTerm)
-        : option GroundTerm
-    :=
-        ρ ← GroundTerm_try_match_OpenTerm g (fr_from r);
-        if decide (Forall (evaluate_sc ρ) (fr_scs r)) then
-            evaluate_rhs_pattern ρ (fr_to r)
-        else None
-    .
+Definition evaluate_rhs_pattern
+    {Σ : Signature}
+    (ρ : Valuation)
+    (φ : AppliedOperatorOr' symbol Expression)
+    : option GroundTerm :=
+    let f : Expression -> option GroundTerm
+        := (Expression_evaluate ρ) in
+    let fφ  : AppliedOperatorOr' symbol (option GroundTerm)
+        := f <$> φ in 
+    let cfφ : option (AppliedOperatorOr' symbol GroundTerm)
+        := AppliedOperatorOr'_collapse_option fφ in
+    cfφ' ← cfφ;
+    let flat := AppliedOperatorOr'_symbol_A_to_OpenTermB id cfφ' in
+    Some flat
+.
+
+Search Matches BuiltinOrVar.
+Locate VarsOf_OpenTerm.
+Set Typeclasses Debug.
+
+Definition rewrite_with
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (r : FlattenedRewritingRule)
+    (g : GroundTerm)
+    : option GroundTerm
+:=
+    ρ ← None; (*try_match g (fr_from r);*)
+    if (forallb (evaluate_sc ρ) (fr_scs r)) then
+        evaluate_rhs_pattern ρ (fr_to r)
+    else None
+.
 
 
     Lemma pure_GroundTerm_try_match_BuiltinOrVar_correct a b ρ:
