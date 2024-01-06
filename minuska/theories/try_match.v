@@ -1236,3 +1236,68 @@ Instance TryMatch__GroundTerm__OpenTerm
 Proof.
     apply _.
 Defined.
+
+
+Definition apply_match
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (ρ : Valuation)
+    (m : Match)
+    : option Valuation
+:=
+    t ← ρ !! (m_variable m);
+    ρ' ← try_match t (m_term m);
+    merge_valuations ρ ρ'
+.
+
+Definition apply_match'
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (oρ : option Valuation)
+    (m : Match)
+    : option Valuation
+:=
+    ρ ← oρ;
+    apply_match ρ m
+.
+
+Definition reduce_matches
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (oρ : option Valuation)
+    (matches : list Match)
+    : option Valuation
+:=
+    fold_left apply_match' matches oρ
+.
+
+Definition valuation_satisfies_all_matches
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (ρ : Valuation)
+    (l : list Match)
+    : Prop
+:=
+    ∀ x ot, (mkMatch _ x ot) ∈ l ->
+    ∃ t, ρ !! x = Some t /\
+    matchesb ρ t ot
+.
+
+Lemma valuation_satisfies_all_matches_perm
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (l1 l2 : list Match) (ρ : Valuation)
+: l1 ≡ₚ l2 ->
+    valuation_satisfies_all_matches ρ l1
+    -> valuation_satisfies_all_matches ρ l2
+.
+Proof.
+    intros Hp.
+    unfold valuation_satisfies_all_matches.
+    intros H1 x ot Hin.
+    specialize (H1 x ot).
+    apply H1.
+    rewrite Hp.
+    exact Hin.
+Qed.
+
