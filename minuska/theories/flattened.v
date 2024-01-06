@@ -85,3 +85,47 @@ match x with
 | aoo_app _ _ app => aoo_app _ _ (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
 | aoo_operand _ _ operand => A_to_OpenTermB operand
 end.
+
+Definition RewritingTheory {Σ : Signature}
+    := list RewritingRule
+.
+
+Definition rewriting_relation_flat
+    {Σ : Signature}
+    (Γ : list FlattenedRewritingRule)
+    : relation GroundTerm
+    := fun from to =>
+        exists r, r ∈ Γ /\ flattened_rewrites_to r from to
+.
+
+Definition not_stuck_flat
+    {Σ : Signature}
+    (Γ : list FlattenedRewritingRule)
+    (e : GroundTerm) : Prop
+:= exists e', rewriting_relation_flat Γ e e'.
+
+Definition flat_stuck
+    {Σ : Signature}
+    (Γ : list FlattenedRewritingRule)
+    (e : GroundTerm) : Prop
+:= not (not_stuck_flat Γ e).
+
+
+Definition FlatInterpreter
+    {Σ : Signature}
+    (Γ : list FlattenedRewritingRule)
+    : Type
+    := GroundTerm -> option GroundTerm
+.
+
+Definition FlatInterpreter_sound
+    {Σ : Signature}
+    (Γ : list FlattenedRewritingRule)
+    (interpreter : FlatInterpreter Γ)
+    : Prop
+    := (forall e,
+        flat_stuck Γ e -> interpreter e = None)
+    /\ (forall e,
+        not_stuck_flat Γ e ->
+        exists e', interpreter e = Some e')
+.
