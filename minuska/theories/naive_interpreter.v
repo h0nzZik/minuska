@@ -5,6 +5,7 @@ From Minuska Require Import
     spec_syntax
     spec_semantics
     syntax_properties
+    semantics_properties
     flattened
     (*flatten*)
     basic_matching
@@ -595,6 +596,21 @@ Proof.
                             destruct (Expression_evaluate ρ e1) eqn:Hev1.
                             {
                                 clear Hs2. symmetry in Hs1.
+                                assert (He1 := Expression_evalute_total_iff e1 ρ).
+                                rewrite Hev1 in He1.
+                                apply proj1 in He1.
+                                ltac1:(ospecialize (He1 _)).
+                                {
+                                    eexists. reflexivity.
+                                }
+                                assert (He2 := Expression_evalute_total_iff e2 ρ).
+                                rewrite Hs1 in He2.
+                                apply proj1 in He2.
+                                ltac1:(ospecialize (He2 _)).
+                                {
+                                    eexists. reflexivity.
+                                }
+                                Search Expression_evaluate.
                                 eapply Expression_evaluate_extensive_Some in Hs1.
                             }
                             {

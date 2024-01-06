@@ -89,3 +89,78 @@ Proof.
         }
     }
 Qed.
+
+(*
+Lemma Expression_evaluate_eq
+    {Σ : Signature}
+    (ρ1 ρ2 : gmap variable GroundTerm)
+    (t : Expression)
+    :
+    vars_of t ⊆ vars_of ρ1 ->
+    vars_of t ⊆ vars_of ρ2 ->
+    Expression_evaluate ρ1 t = Expression_evaluate ρ2 t.
+Proof.
+    intros H1 H2.
+    induction t; simpl.
+    { reflexivity. }
+    {
+        unfold vars_of in *; simpl in *.
+    }
+
+Qed.
+*)
+
+Lemma Expression_evalute_total_same
+    {Σ : Signature}
+    (t : Expression)
+    (ρ1 ρ2 ρ : Valuation)
+    :
+    ρ1 ⊆ ρ ->
+    ρ2 ⊆ ρ ->
+    vars_of t ⊆ vars_of ρ1 ->
+    vars_of t ⊆ vars_of ρ2 ->
+    Expression_evaluate ρ1 t = Expression_evaluate ρ2 t
+.
+Proof.
+    intros H1 H2 H3 H4.
+    induction t; simpl.
+    { reflexivity. }
+    {
+        unfold vars_of in *; simpl in *.
+        rewrite elem_of_subseteq in H3.
+        rewrite elem_of_subseteq in H4.
+        specialize (H3 x).
+        specialize (H4 x).
+        ltac1:(specialize(H3 ltac:(set_solver))).
+        ltac1:(specialize(H4 ltac:(set_solver))).
+        ltac1:(rewrite elem_of_dom in H3).
+        ltac1:(rewrite elem_of_dom in H4).
+        destruct H3 as [x1 Hx1].
+        destruct H4 as [x2 Hx2].
+        rewrite Hx1. rewrite Hx2.
+        eapply lookup_weaken in Hx1>[|apply H1].
+        eapply lookup_weaken in Hx2>[|apply H2].
+        rewrite Hx1 in Hx2.
+        inversion Hx2. subst; clear Hx2.
+        reflexivity.
+    }
+    {
+        unfold vars_of in *; simpl in *.
+        specialize (IHt ltac:(assumption)).
+        specialize (IHt ltac:(assumption)).
+        rewrite IHt.
+        reflexivity.
+    }
+    {
+        unfold vars_of in *; simpl in *.
+        rewrite union_subseteq in H3.
+        rewrite union_subseteq in H4.
+        destruct H3. destruct H4.
+        specialize (IHt1 ltac:(assumption)).
+        specialize (IHt2 ltac:(assumption)).
+        specialize (IHt1 ltac:(assumption)).
+        specialize (IHt2 ltac:(assumption)).
+        rewrite IHt1. rewrite IHt2.
+        reflexivity.
+    }
+Qed.
