@@ -442,6 +442,19 @@ Proof.
         }
     }
 Qed.
+Print FlattenedRewritingRule.
+
+Definition try_match_lhs_with_sc
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (g : GroundTerm)
+    (r : FlattenedRewritingRule)
+    : option Valuation
+:=
+    ρ ← try_match g (fr_from r);
+    let validates := matchesb ρ () (fr_scs r) in
+    if validates then Some ρ else None
+.
 
 Definition thy_lhs_match_one
     {Σ : Signature}
@@ -454,7 +467,7 @@ Definition thy_lhs_match_one
         := fr_from <$> Γ
     in
     let vs : list (option Valuation)
-        := (try_match e) <$> froms
+        := (try_match_lhs_with_sc e) <$> Γ
     in
     let found : option (nat * option Valuation)
         := list_find is_Some vs
@@ -475,58 +488,52 @@ Lemma thy_lhs_match_one_None
     :
     thy_lhs_match_one e Γ = None ->
     ~ exists (r : FlattenedRewritingRule) (ρ : Valuation),
-        r ∈ Γ /\ satisfies ρ e (fr_from r)
+        r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
 .
 Proof.
     unfold thy_lhs_match_one.
     intros H [r [ρ [Hin HContra]]].
-    destruct (list_find is_Some (try_match e <$> (fr_from <$> Γ))) eqn:Heqfound.
+    destruct (list_find is_Some (try_match_lhs_with_sc e <$> Γ)) eqn:Heqfound.
     {
         destruct p as [n oρ].
         rewrite list_find_Some in Heqfound.
+        rewrite bind_None in H.
+        ltac1:(destruct H as [H|H];[inversion H|]).
+        destruct H as [[idx ρ2][H1 H2]].
+        simpl in H2.
+        inversion H1; subst; clear H1.
         ltac1:(destruct Heqfound as [Hfound [HSome HFirst]]).
-        destruct oρ.
+        rewrite bind_None in H2.
+        destruct HSome as [ρ2' HSome].
+        subst.
+        (destruct H2 as [H2|H2])>[inversion H2|].
+        destruct H2 as [ρ3 [H2 H3]].
+        inversion H2; subst; clear H2.
+        rewrite bind_None in H3.
+        destruct H3 as [H3|H3].
         {
-            subst. clear HFirst.
-            rewrite bind_None in H.
-            destruct H as [H|H].
-            {
-                inversion H.
-            }
-            destruct H as [[idx oρ] [H1 H2]].
-            simpl in *.
-            inversion H1; subst; clear H1.
-            clear HSome.
-            rewrite bind_None in H2.
-            destruct H2 as [H|H].
-            {
-                inversion H.
-            }
-            destruct H as [oρ2 [H21 H22]].
-            rewrite bind_None in H22.
-            inversion H21; subst; clear H21.
+            unfold try_match_lhs_with_sc in Hfound.
             rewrite list_lookup_fmap in Hfound.
             rewrite fmap_Some in Hfound.
-            destruct Hfound as [ot [Hot1 Hot2]].
-            rewrite list_lookup_fmap in Hot1.
-            rewrite fmap_Some in Hot1.
-            destruct Hot1 as [fr [Hfr1 Hfr2]].
-            rewrite Hfr1 in H22.
-            destruct H22 as [H|H].
-            { inversion H. }
-            subst ot.
-            destruct H as [frr [Hfrr1 Hfrr2]].
-            inversion Hfrr2.
+            destruct Hfound as [r' [H1r' H2r']].
+            rewrite H3 in H1r'. inversion H1r'.
         }
         {
-            inversion HSome. inversion H0.
+            destruct H3 as [r' [H1r' H2r']].
+            inversion H2r'.
         }
     }
     {
         clear H.
         rewrite list_find_None in Heqfound.
         rewrite Forall_forall in Heqfound.
-        ltac1:(unshelve(eapply satisfies_implies_matchesb in HContra)).
+        destruct HContra as [Hsat1 Hsat2].
+        ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat1)).
+        {
+            unfold GroundTerm, OpenTerm.
+            apply _.
+        }
+        ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat2)).
         {
             unfold GroundTerm, OpenTerm.
             apply _.
@@ -567,7 +574,7 @@ Lemma thy_lhs_match_one_Some
     (ρ : Valuation)
     :
     thy_lhs_match_one e Γ = Some (r, ρ) ->
-    r ∈ Γ /\ satisfies ρ e (fr_from r)
+    r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
 .
 Proof.
     intros H.
