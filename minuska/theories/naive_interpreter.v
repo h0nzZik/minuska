@@ -558,46 +558,64 @@ Proof.
 Qed.
 
 
-    Lemma thy_lhs_match_one_Some
-        (e : Element)
-        (Γ : RewritingTheory)
-        (r : RewritingRule)
-        (ρ : Valuation)
-        :
-        thy_lhs_match_one e Γ = Some (r, ρ) ->
-        r ∈ Γ /\ rr_satisfies LR_Left ρ r e
-    .
-    Proof.
-        intros H.
-        unfold thy_lhs_match_one in H.
-        unfold is_Some in H.
-        (repeat ltac1:(case_match)); subst.
-        {
-            inversion H; subst; clear H.
-            ltac1:(rewrite list_find_Some in H0).
-            ltac1:(rewrite list_lookup_fmap in H0).
-            ltac1:(rewrite H3 in H0).
-            ltac1:(rewrite fmap_Some in H0).
-            ltac1:(destruct_and!).
-            destruct_ex!.
-            ltac1:(destruct_and!).
-            ltac1:(simplify_eq /=).
-            symmetry in H0.
-            ltac1:(rewrite lhs_match_one_Some in H0).
-            split>[()|apply H0].
-            apply elem_of_list_lookup_2 in H3.
-            exact H3.
-        }
-        {
-            inversion H.
-        }
-        {
-            inversion H.
-        }
-        {
-            inversion H.
-        }
-    Qed.
+Lemma thy_lhs_match_one_Some
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (e : GroundTerm)
+    (Γ : list FlattenedRewritingRule)
+    (r : FlattenedRewritingRule)
+    (ρ : Valuation)
+    :
+    thy_lhs_match_one e Γ = Some (r, ρ) ->
+    r ∈ Γ /\ satisfies ρ e (fr_from r)
+.
+Proof.
+    intros H.
+    unfold thy_lhs_match_one in H.
+    unfold is_Some in H.
+    (repeat ltac1:(case_match)); subst.
+    {
+        rewrite bind_Some in H.
+        destruct H as [[idx oρ][H1 H2]].
+        simpl in *.
+        rewrite list_find_Some in H1.
+        destruct H1 as [H11 H12].
+        rewrite list_lookup_fmap in H11.
+        rewrite fmap_Some in H11.
+        destruct H11 as [ot [Hot1 Hot2]].
+        subst.
+        rewrite list_lookup_fmap in Hot1.
+        rewrite fmap_Some in Hot1.
+        destruct Hot1 as [frr [Hfrr1 Hfrr2]].
+        subst.
+        destruct H12 as [H121 H122].
+        destruct H121 as [ρ' Hρ'].
+        rewrite list_find_Some in H.
+        inversion H; subst; clear H.
+        ltac1:(rewrite list_find_Some in H0).
+        ltac1:(rewrite list_lookup_fmap in H0).
+        ltac1:(rewrite H3 in H0).
+        ltac1:(rewrite fmap_Some in H0).
+        ltac1:(destruct_and!).
+        destruct_ex!.
+        ltac1:(destruct_and!).
+        ltac1:(simplify_eq /=).
+        symmetry in H0.
+        ltac1:(rewrite lhs_match_one_Some in H0).
+        split>[()|apply H0].
+        apply elem_of_list_lookup_2 in H3.
+        exact H3.
+    }
+    {
+        inversion H.
+    }
+    {
+        inversion H.
+    }
+    {
+        inversion H.
+    }
+Qed.
 
     Lemma weakly_well_defined_baked_in ρ r e:
         rr_satisfies LR_Left ρ r e ->

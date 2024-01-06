@@ -1236,3 +1236,5 @@ Instance TryMatch__GroundTerm__OpenTerm
 Proof.
     apply _.
 Defined.
+
+Arguments try_match : simpl never.
