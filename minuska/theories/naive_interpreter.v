@@ -614,96 +614,87 @@ Proof.
     }
 Qed.
 
-    Lemma weakly_well_defined_baked_in ρ r e:
-        rr_satisfies LR_Left ρ r e ->
-        exists e', rr_satisfies LR_Right ρ r e'
-    .
-    Proof.
-        intros H.
-        ltac1:(funelim (rr_satisfies LR_Left ρ r e));
-            ltac1:(simp rr_satisfies in H).
-        {
-            
-        }
-    Qed.
 
-    Definition naive_interpreter
-        (Γ : RewritingTheory)
-        (e : Element)
-        : option Element
-    :=
-        let oρ : option (RewritingRule*Valuation) := thy_lhs_match_one e Γ in
-        match oρ with
-        | None => None
-        | Some (r,ρ) => (rhs_evaluate_rule ρ r)
-        end
-    .
+Definition naive_interpreter
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (Γ : list FlattenedRewritingRule)
+    (e : GroundTerm)
+    : option GroundTerm
+:=
+    let oρ : option (FlattenedRewritingRule*Valuation)
+        := thy_lhs_match_one e Γ in
+    match oρ with
+    | None => None
+    | Some (r,ρ) => (evaluate_rhs_pattern ρ (fr_to r))
+    end
+.
 
-    Lemma naive_interpreter_sound
-        (Γ : RewritingTheory)
-     : Interpreter_sound Γ (naive_interpreter Γ).
-    Proof.
-        split.
+Lemma naive_interpreter_sound
+    (Γ : RewritingTheory)
+    : Interpreter_sound Γ (naive_interpreter Γ).
+Proof.
+    split.
+    {
+        unfold naive_interpreter.
+        unfold Interpreter_sound.
+        unfold stuck,not_stuck.
+        intros e Hstuck.
+        destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
         {
-            unfold naive_interpreter.
-            unfold Interpreter_sound.
-            unfold stuck,not_stuck.
-            intros e Hstuck.
-            destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
+            destruct p as [r ρ].
             {
-                destruct p as [r ρ].
-                {
-                    apply thy_lhs_match_one_Some in Hmatch.
-                    destruct Hmatch as [Hin Hsat].
-                    ltac1:(rewrite -lhs_match_one_Some in Hsat).
-                    unfold rewriting_relation, rewrites_to in Hstuck.
-                    destruct (rhs_evaluate_rule ρ r) eqn:Heval; cbn in *.
-                    {
-                        apply lhs_match_one_Some in Hsat.
-                        apply rhs_evaluate_rule_correct_1 in Heval.
-                        ltac1:(exfalso).
-                        apply Hstuck. clear Hstuck.
-                        unfold rewrites_in_valuation_to.
-                        exists e0.
-                        exists r.
-                        split.
-                        { exact Hin. }
-                        exists ρ.
-                        split; assumption.
-                    }
-                    {
-                        reflexivity.
-                    }
-                }
-            }
-            {
-                reflexivity.
-            }
-        }
-        {
-            intros e Hnotstuck.
-            unfold naive_interpreter.
-            destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
-            {
-                destruct p as [r ρ]; cbn in *.
                 apply thy_lhs_match_one_Some in Hmatch.
                 destruct Hmatch as [Hin Hsat].
-                destruct (rhs_evaluate_rule ρ r) eqn:Heval.
+                ltac1:(rewrite -lhs_match_one_Some in Hsat).
+                unfold rewriting_relation, rewrites_to in Hstuck.
+                destruct (rhs_evaluate_rule ρ r) eqn:Heval; cbn in *.
                 {
-                    exists e0. reflexivity.
+                    apply lhs_match_one_Some in Hsat.
+                    apply rhs_evaluate_rule_correct_1 in Heval.
+                    ltac1:(exfalso).
+                    apply Hstuck. clear Hstuck.
+                    unfold rewrites_in_valuation_to.
+                    exists e0.
+                    exists r.
+                    split.
+                    { exact Hin. }
+                    exists ρ.
+                    split; assumption.
                 }
                 {
-                    ltac1:(exfalso).
-                    unfold thy_weakly_well_defined in Hwwd.
-                    specialize (Hwwd r Hin).
-                    unfold rule_weakly_well_defined in Hwwd.
-                    specialize (Hwwd e ρ Hsat).
-                    destruct Hwwd as [e' Hsate'].
-                    apply evaluate_rhs_rule_correct. in Heval.
+                    reflexivity.
                 }
             }
         }
-    Qed.
+        {
+            reflexivity.
+        }
+    }
+    {
+        intros e Hnotstuck.
+        unfold naive_interpreter.
+        destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
+        {
+            destruct p as [r ρ]; cbn in *.
+            apply thy_lhs_match_one_Some in Hmatch.
+            destruct Hmatch as [Hin Hsat].
+            destruct (rhs_evaluate_rule ρ r) eqn:Heval.
+            {
+                exists e0. reflexivity.
+            }
+            {
+                ltac1:(exfalso).
+                unfold thy_weakly_well_defined in Hwwd.
+                specialize (Hwwd r Hin).
+                unfold rule_weakly_well_defined in Hwwd.
+                specialize (Hwwd e ρ Hsat).
+                destruct Hwwd as [e' Hsate'].
+                apply evaluate_rhs_rule_correct. in Heval.
+            }
+        }
+    }
+Qed.
 
 
 
