@@ -610,6 +610,16 @@ Proof.
                                 {
                                     eexists. reflexivity.
                                 }
+                                assert (Hsame1 := Expression_evalute_total_same e1).
+                                assert (Hsame2 := Expression_evalute_total_same e2).
+                                unfold vars_of in *. simpl in *.
+                                erewrite Hsame1 with (ρ2 := ρ).
+                                {
+
+                                }
+                                {
+                                    assumption.
+                                }
                                 Search Expression_evaluate.
                                 eapply Expression_evaluate_extensive_Some in Hs1.
                             }
