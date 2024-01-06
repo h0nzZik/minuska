@@ -72,10 +72,6 @@ Definition evaluate_rhs_pattern
     Some flat
 .
 
-Search Matches BuiltinOrVar.
-Locate VarsOf_OpenTerm.
-Set Typeclasses Debug.
-
 Definition rewrite_with
     {Σ : Signature}
     {CΣ : ComputableSignature}
@@ -83,349 +79,338 @@ Definition rewrite_with
     (g : GroundTerm)
     : option GroundTerm
 :=
-    ρ ← None; (*try_match g (fr_from r);*)
+    ρ ← try_match g (fr_from r);
     if (forallb (evaluate_sc ρ) (fr_scs r)) then
         evaluate_rhs_pattern ρ (fr_to r)
     else None
 .
 
+(* TODO: matches for expressions *)
+Search Satisfies Expression.
 
-    Lemma pure_GroundTerm_try_match_BuiltinOrVar_correct a b ρ:
-        pure_GroundTerm_try_match_BuiltinOrVar a b = Some ρ ->
-        pure_GroundTerm_matches_BuiltinOrVar ρ a b = true
-    .
-    Proof.
-        unfold pure_GroundTerm_matches_BuiltinOrVar.
-        unfold pure_GroundTerm_try_match_BuiltinOrVar.
-        destruct b; intros H; inversion H.
-        subst.
-        unfold bool_decide.
-        ltac1:(case_match); try reflexivity.
-        clear H0 H.
-        ltac1:(rewrite lookup_insert in n).
-        ltac1:(contradiction n).
-        reflexivity.
-    Qed.
-
-    Lemma evaluate_rhs_pattern_correct
-        (φ : RhsPattern)
-        (ρ : Valuation)
-        (g : GroundTerm)
-        : evaluate_rhs_pattern ρ φ = Some g <->
-        GroundTerm_satisfies_RhsPattern ρ g φ
-    .
-    Proof.
-        unfold evaluate_rhs_pattern.
-        rewrite bind_Some.
-        
+Set Typeclasses Debug.
+Lemma evaluate_rhs_pattern_correct
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (φ : RhsPattern)
+    (ρ : Valuation)
+    (g : GroundTerm)
+    :
+    evaluate_rhs_pattern ρ φ = Some g <->
+    matchesb ρ g φ = true
+.
+Proof.
+    unfold evaluate_rhs_pattern.
+    rewrite bind_Some.
+    
+    ltac1:(
+        under [fun e => _]functional_extensionality => e
+    ).
+    {
+        ltac1:(rewrite inj_iff).
+        ltac1:(over).
+    }
+    unfold GroundTerm_satisfies_RhsPattern.
+    destruct φ; cbn.
+    {
+        cbn.
         ltac1:(
             under [fun e => _]functional_extensionality => e
         ).
         {
-            ltac1:(rewrite inj_iff).
+            ltac1:(rewrite bind_Some).
+            ltac1:(
+                under [fun e' => _]functional_extensionality => e'
+            ).
+            {
+                ltac1:(rewrite inj_iff).
+                ltac1:(over).
+            }
             ltac1:(over).
         }
-        unfold GroundTerm_satisfies_RhsPattern.
-        destruct φ; cbn.
+        destruct g; cbn.
         {
+            rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
             cbn.
-            ltac1:(
-                under [fun e => _]functional_extensionality => e
-            ).
-            {
-                ltac1:(rewrite bind_Some).
-                ltac1:(
-                    under [fun e' => _]functional_extensionality => e'
-                ).
-                {
-                    ltac1:(rewrite inj_iff).
-                    ltac1:(over).
-                }
-                ltac1:(over).
-            }
-            destruct g; cbn.
-            {
-                rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
-                cbn.
-                rewrite -> aoxy_satisfies_aoxz_comp_iff.
+            rewrite -> aoxy_satisfies_aoxz_comp_iff.
 
-                split; intros H.
+            split; intros H.
+            {
+                destruct H as [e H].
+                destruct H as [H1 H2].
+                destruct H1 as [e' [H11 H12]].
+                cbn in *.
+                subst.
+                cbn in *.
+                inversion H2; subst; clear H2.
+                cbn in *.
+                inversion H11; subst; clear H11.
+                revert e' H0.
+                induction ao; intros e' H0.
                 {
-                    destruct H as [e H].
-                    destruct H as [H1 H2].
-                    destruct H1 as [e' [H11 H12]].
                     cbn in *.
-                    subst.
-                    cbn in *.
-                    inversion H2; subst; clear H2.
-                    cbn in *.
-                    inversion H11; subst; clear H11.
-                    revert e' H0.
-                    induction ao; intros e' H0.
-                    {
-                        cbn in *.
-                        inversion H0; subst; clear H0.
-                        constructor.
-                    }
-                    {
-                        cbn in *.
-                        rewrite bind_Some in H0.
-                        destruct H0 as [x [H1 H2]].
-                        rewrite bind_Some in H2.
-                        destruct H2 as [x0 H2].
-                        destruct H2 as [H2 H3].
-                        inversion H3; subst; clear H3.
-                        cbn.
-                        destruct x0.
-                        {
-                            constructor.
-                            cbn in *.
-                            apply IHao.
-                            apply H1.
-                            cbn.
-                            apply H2.
-                        }
-                        {
-                            constructor.
-                            cbn in *.
-                            apply IHao.
-                            apply H1.
-                            cbn.
-                            apply H2.
-                        }
-                    }
-                    {
-                        cbn in *.
-                        rewrite bind_Some in H0.
-                        destruct H0 as [x [H1 H2]].
-                        rewrite bind_Some in H2.
-                        destruct H2 as [x0 H2].
-                        destruct H2 as [H2 H3].
-                        inversion H3; subst; clear H3.
-                        specialize (IHao1 _ H1).
-                        specialize (IHao2 _ H2).
-                        cbn.
-                        constructor; assumption.
-                    }
+                    inversion H0; subst; clear H0.
+                    constructor.
                 }
                 {
-                    remember (fun (v:builtin_value) (e':Expression) =>
-                        match Expression_evaluate ρ e' with
-                        | Some v' => v'
-                        | None => aoo_operand _ _ v
-                        end
-                    ) as zipper.
-                    remember (fun (s1 s2 : symbol) => s1) as symleft.
-                    remember (fun (g : AppliedOperator' symbol builtin_value) (e' : Expression) =>
-                        (aoo_app symbol _ g)
-                    ) as f1.
-                    remember (fun (b : builtin_value) (et : AppliedOperator' symbol Expression) =>
-                        (aoo_operand symbol _ b)
-                    ) as f2.
-                    remember (AppliedOperator'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
-                    exists (aoo_app _ _ zipped).
+                    cbn in *.
+                    rewrite bind_Some in H0.
+                    destruct H0 as [x [H1 H2]].
+                    rewrite bind_Some in H2.
+                    destruct H2 as [x0 H2].
+                    destruct H2 as [H2 H3].
+                    inversion H3; subst; clear H3.
                     cbn.
-                    split.
+                    destruct x0.
                     {
-                        exists zipped.
-                        subst.
-                        repeat constructor.
-                        clear -H.
-
-
-                        induction H.
-                        {
-                            cbn.
-                            reflexivity.
-                        }
-                        {
-                            cbn in H0.
-                            cbn.
-                            rewrite bind_Some.
-                            cbn.
-                            ltac1:(
-                                under [fun e => _]functional_extensionality => e
-                            ).
-                            {
-                                ltac1:(rewrite bind_Some).
-                                ltac1:(
-                                    under [fun e' => _]functional_extensionality => e'
-                                ).
-                                {
-                                    ltac1:(rewrite inj_iff).
-                                    ltac1:(over).
-                                }
-                                ltac1:(over).
-                            }
-                            cbn in *.
-                            eexists.
-                            split>[apply IHaoxy_satisfies_aoxz|].
-                            eexists.
-                            split>[apply H0|].
-                            apply f_equal.
-                            rewrite H0.
-                            reflexivity.
-                        }
-                        {
-                            cbn in H0.
-                            cbn.
-                            rewrite bind_Some.
-                            cbn in *.
-                            ltac1:(
-                                under [fun e => _]functional_extensionality => e
-                            ).
-                            {
-                                ltac1:(rewrite bind_Some).
-                                ltac1:(
-                                    under [fun e' => _]functional_extensionality => e'
-                                ).
-                                {
-                                    ltac1:(rewrite inj_iff).
-                                    ltac1:(over).
-                                }
-                                ltac1:(over).
-                            }
-                            cbn in *.
-                            eexists.
-                            split>[apply IHaoxy_satisfies_aoxz|].
-                            eexists.
-                            split>[apply H0|].
-                            reflexivity.
-                        }
-                        {
-                            cbn in H0.
-                            cbn.
-                            rewrite bind_Some.
-                            cbn in *.
-                            ltac1:(
-                                under [fun e => _]functional_extensionality => e
-                            ).
-                            {
-                                ltac1:(rewrite bind_Some).
-                                ltac1:(
-                                    under [fun e' => _]functional_extensionality => e'
-                                ).
-                                {
-                                    ltac1:(rewrite inj_iff).
-                                    ltac1:(over).
-                                }
-                                ltac1:(over).
-                            }
-                            cbn in *.
-                            eexists.
-                            split>[apply IHaoxy_satisfies_aoxz1|].
-                            eexists.
-                            split>[apply IHaoxy_satisfies_aoxz2|].
-                            reflexivity.
-                        }
+                        constructor.
+                        cbn in *.
+                        apply IHao.
+                        apply H1.
+                        cbn.
+                        apply H2.
                     }
                     {
-                        subst. cbn.
-                        apply f_equal.
-                        induction H.
-                        {
-                            cbn. reflexivity.
-                        }
-                        {
-                            cbn in *.
-                            rewrite H0.
-                            rewrite IHaoxy_satisfies_aoxz.
-                            reflexivity.
-                        }
-                        {
-                            cbn in *.
-                            rewrite IHaoxy_satisfies_aoxz.
-                            reflexivity.
-                        }
-                        {
-                            cbn in *.
-                            rewrite IHaoxy_satisfies_aoxz1.
-                            rewrite IHaoxy_satisfies_aoxz2.
-                            reflexivity.
-                        }
+                        constructor.
+                        cbn in *.
+                        apply IHao.
+                        apply H1.
+                        cbn.
+                        apply H2.
                     }
+                }
+                {
+                    cbn in *.
+                    rewrite bind_Some in H0.
+                    destruct H0 as [x [H1 H2]].
+                    rewrite bind_Some in H2.
+                    destruct H2 as [x0 H2].
+                    destruct H2 as [H2 H3].
+                    inversion H3; subst; clear H3.
+                    specialize (IHao1 _ H1).
+                    specialize (IHao2 _ H2).
+                    cbn.
+                    constructor; assumption.
                 }
             }
             {
-                rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
+                remember (fun (v:builtin_value) (e':Expression) =>
+                    match Expression_evaluate ρ e' with
+                    | Some v' => v'
+                    | None => aoo_operand _ _ v
+                    end
+                ) as zipper.
+                remember (fun (s1 s2 : symbol) => s1) as symleft.
+                remember (fun (g : AppliedOperator' symbol builtin_value) (e' : Expression) =>
+                    (aoo_app symbol _ g)
+                ) as f1.
+                remember (fun (b : builtin_value) (et : AppliedOperator' symbol Expression) =>
+                    (aoo_operand symbol _ b)
+                ) as f2.
+                remember (AppliedOperator'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
+                exists (aoo_app _ _ zipped).
                 cbn.
-                split; intros H.
+                split.
                 {
-                    destruct H as [e H].
-                    destruct H as [H1 H2].
-                    destruct H1 as [e' [H11 H12]].
-                    subst. cbn in *.
-                    inversion H2.
+                    exists zipped.
+                    subst.
+                    repeat constructor.
+                    clear -H.
+
+
+                    induction H.
+                    {
+                        cbn.
+                        reflexivity.
+                    }
+                    {
+                        cbn in H0.
+                        cbn.
+                        rewrite bind_Some.
+                        cbn.
+                        ltac1:(
+                            under [fun e => _]functional_extensionality => e
+                        ).
+                        {
+                            ltac1:(rewrite bind_Some).
+                            ltac1:(
+                                under [fun e' => _]functional_extensionality => e'
+                            ).
+                            {
+                                ltac1:(rewrite inj_iff).
+                                ltac1:(over).
+                            }
+                            ltac1:(over).
+                        }
+                        cbn in *.
+                        eexists.
+                        split>[apply IHaoxy_satisfies_aoxz|].
+                        eexists.
+                        split>[apply H0|].
+                        apply f_equal.
+                        rewrite H0.
+                        reflexivity.
+                    }
+                    {
+                        cbn in H0.
+                        cbn.
+                        rewrite bind_Some.
+                        cbn in *.
+                        ltac1:(
+                            under [fun e => _]functional_extensionality => e
+                        ).
+                        {
+                            ltac1:(rewrite bind_Some).
+                            ltac1:(
+                                under [fun e' => _]functional_extensionality => e'
+                            ).
+                            {
+                                ltac1:(rewrite inj_iff).
+                                ltac1:(over).
+                            }
+                            ltac1:(over).
+                        }
+                        cbn in *.
+                        eexists.
+                        split>[apply IHaoxy_satisfies_aoxz|].
+                        eexists.
+                        split>[apply H0|].
+                        reflexivity.
+                    }
+                    {
+                        cbn in H0.
+                        cbn.
+                        rewrite bind_Some.
+                        cbn in *.
+                        ltac1:(
+                            under [fun e => _]functional_extensionality => e
+                        ).
+                        {
+                            ltac1:(rewrite bind_Some).
+                            ltac1:(
+                                under [fun e' => _]functional_extensionality => e'
+                            ).
+                            {
+                                ltac1:(rewrite inj_iff).
+                                ltac1:(over).
+                            }
+                            ltac1:(over).
+                        }
+                        cbn in *.
+                        eexists.
+                        split>[apply IHaoxy_satisfies_aoxz1|].
+                        eexists.
+                        split>[apply IHaoxy_satisfies_aoxz2|].
+                        reflexivity.
+                    }
                 }
                 {
-                    inversion H.
+                    subst. cbn.
+                    apply f_equal.
+                    induction H.
+                    {
+                        cbn. reflexivity.
+                    }
+                    {
+                        cbn in *.
+                        rewrite H0.
+                        rewrite IHaoxy_satisfies_aoxz.
+                        reflexivity.
+                    }
+                    {
+                        cbn in *.
+                        rewrite IHaoxy_satisfies_aoxz.
+                        reflexivity.
+                    }
+                    {
+                        cbn in *.
+                        rewrite IHaoxy_satisfies_aoxz1.
+                        rewrite IHaoxy_satisfies_aoxz2.
+                        reflexivity.
+                    }
                 }
             }
         }
         {
+            rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
+            cbn.
+            split; intros H.
+            {
+                destruct H as [e H].
+                destruct H as [H1 H2].
+                destruct H1 as [e' [H11 H12]].
+                subst. cbn in *.
+                inversion H2.
+            }
+            {
+                inversion H.
+            }
+        }
+    }
+    {
+        ltac1:(
+            under [fun e => _]functional_extensionality => e
+        ).
+        {
+            ltac1:(rewrite bind_Some).
             ltac1:(
-                under [fun e => _]functional_extensionality => e
+                under [fun e' => _]functional_extensionality => e'
             ).
             {
-                ltac1:(rewrite bind_Some).
-                ltac1:(
-                    under [fun e' => _]functional_extensionality => e'
-                ).
-                {
-                    ltac1:(rewrite inj_iff).
-                    ltac1:(over).
-                }
+                ltac1:(rewrite inj_iff).
                 ltac1:(over).
             }
-            ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
-            cbn.
-            destruct g; cbn.
+            ltac1:(over).
+        }
+        ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
+        cbn.
+        destruct g; cbn.
+        {
+            split; intros H.
             {
-                split; intros H.
-                {
-                    destruct H as [e H].
-                    destruct H as [[e' [H'1 H'2]] H].
-                    subst.
-                    cbn in H.
-                    subst.
-                    assumption.
-                }
-                {
-                    eexists.
-                    split.
-                    {
-                        eexists. split>[|reflexivity].
-                        apply H.
-                    }
-                    {
-                        cbn. reflexivity.
-                    }
-                }
+                destruct H as [e H].
+                destruct H as [[e' [H'1 H'2]] H].
+                subst.
+                cbn in H.
+                subst.
+                assumption.
             }
             {
-                split; intros H.
+                eexists.
+                split.
                 {
-                    destruct H as [e H].
-                    destruct H as [[e' [H'1 H'2]] H].
-                    subst.
-                    cbn in H.
-                    subst.
-                    assumption.
+                    eexists. split>[|reflexivity].
+                    apply H.
                 }
                 {
-                    eexists.
-                    split.
-                    {
-                        eexists. split>[|reflexivity].
-                        apply H.
-                    }
-                    {
-                        cbn. reflexivity.
-                    }
+                    cbn. reflexivity.
                 }
             }
         }
-    Qed.
+        {
+            split; intros H.
+            {
+                destruct H as [e H].
+                destruct H as [[e' [H'1 H'2]] H].
+                subst.
+                cbn in H.
+                subst.
+                assumption.
+            }
+            {
+                eexists.
+                split.
+                {
+                    eexists. split>[|reflexivity].
+                    apply H.
+                }
+                {
+                    cbn. reflexivity.
+                }
+            }
+        }
+    }
+Qed.
 
 
     #[export]
