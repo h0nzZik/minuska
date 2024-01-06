@@ -533,6 +533,114 @@ Proof.
     }
 Abort.
 
+Lemma dom_merge_use_left
+    {Σ : Signature}
+    (ρ' ρ'' : Valuation)
+    :
+    dom (merge use_left ρ' ρ'') = dom ρ'' ∪ dom ρ'
+.
+Proof.
+    unfold Valuation in *.
+    apply set_eq.
+    intros x.
+    rewrite elem_of_dom.
+    unfold is_Some.
+    rewrite lookup_merge.
+    unfold diag_None.
+    destruct (ρ' !! x) eqn:Heq1,(ρ'' !! x) eqn:Heq2; simpl.
+    {
+        split; intros H.
+        { 
+            destruct H as [x' Hx'].
+            inversion Hx'; subst; clear Hx'.
+            rewrite elem_of_union.
+            left.
+            rewrite elem_of_dom.
+            exists g0. assumption.
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            rewrite elem_of_union.
+            right.
+            rewrite elem_of_dom.
+            exists g.
+            assumption.
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            rewrite elem_of_union.
+            left.
+            rewrite elem_of_dom.
+            exists g.
+            assumption.
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            destruct H as [x' Hx'].
+            inversion Hx'.
+        }
+        {
+            rewrite elem_of_union in H.
+            destruct H as [H|H].
+            {
+                rewrite elem_of_dom in H.
+                destruct H as [g Hg].
+                ltac1:(simplify_eq/=).
+            }
+            {
+                rewrite elem_of_dom in H.
+                destruct H as [g Hg].
+                ltac1:(simplify_eq/=).
+            }
+        }
+    }
+Qed.
+
+Lemma merge_use_left_below {Σ : Signature} (ρ ρ' ρ'': Valuation) :
+    ρ' ⊆ ρ ->
+    ρ'' ⊆ ρ ->
+    merge use_left ρ' ρ'' ⊆ ρ
+.
+Proof.
+    intros H1 H2.
+    unfold Valuation in *.
+    apply map_subseteq_spec.
+    intros i x Hix.
+    rewrite lookup_merge in Hix.
+    unfold diag_None, use_left in Hix.
+    ltac1:(repeat case_match; simplify_eq/=).
+    {
+        eapply lookup_weaken.
+        { apply H. }
+        { assumption. }
+    }
+    {
+        eapply lookup_weaken.
+        { apply H. }
+        { assumption. }
+    }
+    {
+        eapply lookup_weaken.
+        { apply H0. }
+        { assumption. }
+    }
+Qed.
+
 Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
     {Σ : Signature}
     {Operand1 Operand2 : Type}
@@ -614,6 +722,35 @@ Proof.
             cbn.
             rewrite Hρ''2.
             cbn.
+            
+            exists (merge use_left ρ' ρ'').
+            split.
+            {
+                rewrite <- Hρ''0.
+                unfold vars_of in IH0. simpl in IH0.
+                rewrite <- IH0.
+                unfold Valuation in *.
+                rewrite dom_merge_use_left.
+                clear.
+                ltac1:(set_solver).
+            }
+            
+            unfold Valuation in *.
+            split.
+            {
+                unfold Valuation in *.
+                unfold subseteq.
+                unfold Subseteq_Valuation.
+                Search subseteq lookup.
+                Search subseteq map_agree.
+                rewrite elem_of_subseteq.
+                Search merge use_left.
+                eapply transitivity.
+                Check merge_use_left_subseteq.  
+            }
+            {
+
+            }
             
 
             exists (ρ' ∪ ρ'').
