@@ -1021,3 +1021,38 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+
+
+#[export]
+Program Instance Matches__builtin__Expr
+   `{CΣ : ComputableSignature}
+    :
+    Matches Valuation builtin_value (Expression)
+:= {|
+    matchesb := (fun ρ b e =>
+        bool_decide (Expression_evaluate ρ e = Some (aoo_operand _ _ b))
+    ) ;
+|}.
+Next Obligation.
+    unfold satisfies. simpl.
+    apply bool_decide_reflect.
+Qed.
+Fail Next Obligation.
+
+#[export]
+Program Instance Matches_asb_expr
+    {Σ : Signature}:
+    Matches
+        Valuation
+        ((AppliedOperator' symbol builtin_value))
+        Expression
+:= {|
+    matchesb := (fun ρ x e =>
+        bool_decide (Expression_evaluate ρ e = Some (aoo_app _ _ x))   ) ;
+|}.
+Next Obligation.
+    unfold satisfies. simpl.
+    apply bool_decide_reflect.
+Qed.
+Fail Next Obligation.
+

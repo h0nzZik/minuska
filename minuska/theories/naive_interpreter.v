@@ -85,10 +85,6 @@ Definition rewrite_with
     else None
 .
 
-(* TODO: matches for expressions *)
-Search Satisfies Expression.
-
-Set Typeclasses Debug.
 Lemma evaluate_rhs_pattern_correct
     {Σ : Signature}
     {CΣ : ComputableSignature}
@@ -110,7 +106,6 @@ Proof.
         ltac1:(rewrite inj_iff).
         ltac1:(over).
     }
-    unfold GroundTerm_satisfies_RhsPattern.
     destruct φ; cbn.
     {
         cbn.
@@ -130,9 +125,8 @@ Proof.
         }
         destruct g; cbn.
         {
-            rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
+            unfold matchesb; simpl.
             cbn.
-            rewrite -> aoxy_satisfies_aoxz_comp_iff.
 
             split; intros H.
             {
@@ -150,7 +144,9 @@ Proof.
                 {
                     cbn in *.
                     inversion H0; subst; clear H0.
-                    constructor.
+                    simpl. unfold matchesb; simpl.
+                    apply bool_decide_eq_true.
+                    reflexivity.
                 }
                 {
                     cbn in *.
@@ -163,20 +159,34 @@ Proof.
                     cbn.
                     destruct x0.
                     {
-                        constructor.
-                        cbn in *.
-                        apply IHao.
-                        apply H1.
-                        cbn.
-                        apply H2.
+                        unfold matchesb; simpl.
+                        rewrite andb_true_iff.
+                        unfold matchesb in IHao; simpl in IHao.
+                        rewrite IHao.
+                        {
+                            split>[reflexivity|].
+                            unfold matchesb; simpl.
+                            apply bool_decide_eq_true.
+                            assumption.
+                        }
+                        {
+                            assumption.
+                        }
                     }
                     {
-                        constructor.
-                        cbn in *.
-                        apply IHao.
-                        apply H1.
-                        cbn.
-                        apply H2.
+                        unfold matchesb; simpl.
+                        rewrite andb_true_iff.
+                        unfold matchesb in IHao; simpl in IHao.
+                        split.
+                        {
+                            apply IHao.
+                            exact H1.
+                        }
+                        {
+                            unfold matchesb; simpl.
+                            apply bool_decide_eq_true.
+                            assumption.
+                        }
                     }
                 }
                 {
@@ -190,10 +200,13 @@ Proof.
                     specialize (IHao1 _ H1).
                     specialize (IHao2 _ H2).
                     cbn.
-                    constructor; assumption.
+                    unfold matchesb; simpl.
+                    rewrite andb_true_iff.
+                    split; assumption.
                 }
             }
             {
+                
                 remember (fun (v:builtin_value) (e':Expression) =>
                     match Expression_evaluate ρ e' with
                     | Some v' => v'
@@ -216,10 +229,11 @@ Proof.
                     subst.
                     repeat constructor.
                     clear -H.
-
+                    apply matchesb_implies_satisfies in H.
 
                     induction H.
                     {
+                        simpl.
                         cbn.
                         reflexivity.
                     }
@@ -278,6 +292,10 @@ Proof.
                         reflexivity.
                     }
                     {
+                        unfold satisfies in H0; simpl in H0.
+                        inversion H0.
+                    }
+                    {
                         cbn in H0.
                         cbn.
                         rewrite bind_Some.
@@ -307,6 +325,7 @@ Proof.
                 {
                     subst. cbn.
                     apply f_equal.
+                    apply matchesb_implies_satisfies in H.
                     induction H.
                     {
                         cbn. reflexivity.
@@ -323,6 +342,10 @@ Proof.
                         reflexivity.
                     }
                     {
+                        unfold satisfies in H0; simpl in H0.
+                        inversion H0.
+                    }
+                    {
                         cbn in *.
                         rewrite IHaoxy_satisfies_aoxz1.
                         rewrite IHaoxy_satisfies_aoxz2.
@@ -332,7 +355,6 @@ Proof.
             }
         }
         {
-            rewrite <- aoxyo_satisfies_aoxzo_comp_iff.
             cbn.
             split; intros H.
             {
@@ -362,7 +384,6 @@ Proof.
             }
             ltac1:(over).
         }
-        ltac1:(rewrite -aoxyo_satisfies_aoxzo_comp_iff).
         cbn.
         destruct g; cbn.
         {
@@ -373,12 +394,18 @@ Proof.
                 subst.
                 cbn in H.
                 subst.
+                unfold matchesb; simpl.
+                unfold matchesb; simpl.
+                apply bool_decide_eq_true.
                 assumption.
             }
             {
                 eexists.
                 split.
                 {
+                    unfold matchesb in H; simpl in H.
+                    unfold matchesb in H; simpl in H.
+                    apply bool_decide_eq_true in H.
                     eexists. split>[|reflexivity].
                     apply H.
                 }
@@ -395,12 +422,16 @@ Proof.
                 subst.
                 cbn in H.
                 subst.
+                do 2 (unfold matchesb; simpl).
+                apply bool_decide_eq_true.
                 assumption.
             }
             {
                 eexists.
                 split.
                 {
+                    do 2 (unfold matchesb in H; simpl in H).
+                    apply bool_decide_eq_true in H.
                     eexists. split>[|reflexivity].
                     apply H.
                 }
@@ -412,14 +443,6 @@ Proof.
     }
 Qed.
 
-
-    #[export]
-    Instance Valuation_lookup : Lookup variable GroundTerm Valuation.
-    Proof.
-        apply gmap_lookup.
-    Defined.
-    
-    
 
     Lemma builtin_value_matches_BuiltinOrVar_monotone
         (ρ ρ' : Valuation)
