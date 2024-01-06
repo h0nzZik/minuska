@@ -147,6 +147,28 @@ Proof.
 Qed.
 
 
+Lemma Expression_evaluate_extensive'
+    {Σ : Signature}
+    (ρ1 ρ2 : gmap variable GroundTerm)
+    (t : Expression)
+    :
+    ρ1 ⊆ ρ2 ->
+    isSome (Expression_evaluate ρ1 t) ->
+    Expression_evaluate ρ1 t = Expression_evaluate ρ2 t.
+Proof.
+    intros H1 H2.
+    unfold isSome in H2.
+    ltac1:(case_match).
+    {
+        symmetry.
+        eapply Expression_evaluate_extensive_Some in H>[|apply H1].
+        assumption.
+    }
+    {
+        inversion H2.
+    }
+Qed.
+
 Class Satisfies
     {Σ : Signature}
     (V A B : Type)

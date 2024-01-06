@@ -538,8 +538,8 @@ Proof.
             unfold GroundTerm, OpenTerm.
             apply _.
         }
-        apply try_match_complete in HContra.
-        destruct HContra as [ρ' [H1 [H2 H3]]].
+        apply try_match_complete in Hsat1.
+        destruct Hsat1 as [ρ' [H1 [H2 H3]]].
 
         specialize (Heqfound (Some ρ')).
         ltac1:(ospecialize (Heqfound _)).
@@ -547,15 +547,68 @@ Proof.
             rewrite <- elem_of_list_In.
             unfold Valuation in *.
             rewrite elem_of_list_fmap.
-            exists (fr_from r).
+            exists (r).
             split.
             {
-                symmetry. assumption.
+                symmetry.
+                unfold try_match_lhs_with_sc.
+                rewrite bind_Some.
+                exists ρ'.
+                rewrite H3.
+                split>[reflexivity|].
+                clear -H2 Hsat2.
+                unfold matchesb in *; simpl in *.
+                rewrite forallb_forall in Hsat2.
+                ltac1:(case_match).
+                {
+                    reflexivity.
+                }
+                ltac1:(exfalso).
+                ltac1:(assert(H': ~ (forallb (matchesb ρ' ()) (fr_scs r) = true))).
+                {
+                    ltac1:(rewrite H).
+                    intros HContra. inversion HContra.
+                }
+                clear H.
+                rewrite forallb_forall in H'.
+                apply H'. intros x. specialize (Hsat2 x). clear H'.
+                intros Hin. specialize (Hsat2 Hin). clear Hin.
+                (* FIXME I should extract this to a separate proof but am too tired today. *)
+                unfold matchesb in *; simpl in *.
+                induction x; simpl in *.
+                {
+                    unfold matchesb in *; simpl in *.
+                    induction c; simpl in *.
+                    {
+                        reflexivity.
+                    }
+                    {
+                        unfold matchesb in *; simpl in *.
+                        induction ap; simpl in *.
+                        {
+                            rewrite andb_true_iff.
+                            rewrite andb_true_iff in Hsat2.
+                            destruct Hsat2 as [Hs1 Hs2].
+                            apply bool_decide_eq_true in Hs1.
+                            rewrite bool_decide_eq_true.
+                            unfold isSome in *.
+                            destruct (Expression_evaluate ρ e1) eqn:Hev1.
+                            {
+                                clear Hs2. symmetry in Hs1.
+                                eapply Expression_evaluate_extensive_Some in Hs1.
+                            }
+                            {
+                                inversion Hs2.
+                            }
+                            
+                            Search Expression_evaluate.
+                        }
+                    }
+                }
             }
-            rewrite elem_of_list_fmap.
-            exists r.
-            split>[reflexivity|].
-            assumption.
+            {
+                assumption.
+            }
         }
         unfold is_Some in Heqfound.
         apply Heqfound.
