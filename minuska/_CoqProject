@@ -17,3 +17,4 @@ theories/color.v
 theories/basic_matching.v
 theories/try_match.v
 theories/naive_interpreter.v
+theories/on_a_good_reordering.v

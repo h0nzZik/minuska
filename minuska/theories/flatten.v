@@ -2260,3 +2260,271 @@ Proof.
         inversion HH2.
     }
 Qed.
+
+Lemma order_enabled_first_1_nicely_ordered
+    {Σ : Signature}
+    initial l :
+    nicely_ordered initial (order_enabled_first initial l).1
+.
+Proof.
+    ltac1:(funelim (order_enabled_first initial l)).
+    {
+        rewrite <- Heqcall.
+        clear Heqcall H1.
+        repeat ltac1:(case_match).
+        simpl. simpl in H0.
+        constructor.
+        {
+            clear -H.
+            unfold choose_first_enabled_match in H.
+            rewrite bind_Some in H.
+            destruct H as [[x m] [H1 H2]].
+            inversion H2; subst; clear H2.
+            rewrite list_find_Some in H1.
+            destruct H1 as [H1 [H2 H3]].
+            unfold enables_match in H2.
+            apply H2.
+        }
+        {
+            apply H0.
+        }
+    }
+    {
+        rewrite <- Heqcall.
+        simpl.
+        constructor.
+    }
+Qed.
+
+Lemma choose_first_enabled_match_lookup
+    {Σ : Signature}
+    vs l i m rest:
+    choose_first_enabled_match vs l = Some (i, m, rest) ->
+    l !! i = Some m
+.
+Proof.
+    intros H.
+    unfold choose_first_enabled_match in H.
+    rewrite bind_Some in H.
+    destruct H as [[i' m'] [H1 H2]].
+    inversion H2; subst; clear H2.
+    rewrite list_find_Some in H1.
+    apply H1.
+Qed.
+
+Lemma choose_first_enabled_match_elem_of
+    {Σ : Signature} vs l i m rest:
+    choose_first_enabled_match vs l = Some (i, m, rest) ->
+    m_variable m ∈ vs
+.
+Proof.
+    intros H.
+    unfold choose_first_enabled_match in H.
+    rewrite bind_Some in H.
+    destruct H as [[i' m'] [H1 H2]].
+    inversion H2; subst; clear H2.
+    rewrite list_find_Some in H1.
+    apply H1.
+Qed.
+
+Lemma choose_first_really_first
+    {Σ : Signature} vs l i m rest:
+    choose_first_enabled_match vs l = Some (i, m, rest) ->
+    Forall (λ x : Match, ¬ enables_match vs x) (take i l)
+.
+Proof.
+    intros H.
+    unfold choose_first_enabled_match in H.
+    rewrite bind_Some in H.
+    destruct H as [[i' m'] [H1 H2]].
+    inversion H2; subst; clear H2.
+    rewrite list_find_Some in H1.
+    destruct H1 as [H1 [H2 H3]].
+    rewrite Forall_forall.
+    intros x Hx.
+    rewrite <- elem_of_list_In in Hx.
+    
+    assert (Htmp: (i <= length l)).
+    {
+        apply lookup_lt_Some in H1.
+        ltac1:(lia).
+    }
+    rewrite elem_of_list_lookup in Hx.
+    destruct Hx as [i0 Hx].
+    apply lookup_lt_Some in Hx as Htmp2.
+    rewrite take_length in Htmp2.
+    eapply H3 with (j := i0).
+    {
+        rewrite lookup_take in Hx.
+        {
+            apply Hx.
+        }
+        {
+            ltac1:(lia).    
+        }
+    }
+    {
+        ltac1:(lia).
+    }
+Qed.
+
+Lemma delete_preserves_orderability
+    {Σ : Signature}
+    vs l l' i m:
+    l ≡ₚ l' ->
+    nicely_ordered vs l' ->
+    m_variable m ∈ vs ->
+    l !! i = Some m ->
+    exists l'',
+        delete i l ≡ₚ l'' /\
+        nicely_ordered vs (m::l'')
+.
+Proof.
+    intros Hperm Hno Hmvs Hli.
+    apply elem_of_list_split_length in Hli.
+    destruct Hli as [l1 [l2 [H1 Hlen]]].
+    subst l i.
+    rewrite delete_middle.
+    symmetry in Hperm.
+    apply Permutation_vs_elt_inv in Hperm as Hperm'.
+    destruct Hperm' as [l'1 [l'2 H]].
+    subst l'.
+    rewrite nicely_ordered_app in Hno.
+    rewrite nicely_ordered_cons in Hno.
+    apply Permutation_app_inv in Hperm.
+    ltac1:(setoid_rewrite nicely_ordered_cons).
+    exists (l'1 ++ l'2).
+    split.
+    { symmetry. assumption. }
+    split>[assumption|].
+    rewrite nicely_ordered_app.
+    destruct Hno as [H1 [H2 H3]].
+    split.
+    {
+        eapply nicely_ordered_mono>[|apply H1].
+        ltac1:(set_solver).
+    }
+    {
+        eapply nicely_ordered_mono>[|apply H3].
+        ltac1:(set_solver).
+    }
+Qed.
+
+Lemma order_enabled_first_2_empty_if_can_be_ordered
+    {Σ : Signature}
+    initial l :
+    (∃ l', l' ≡ₚ l /\ nicely_ordered initial l') ->
+    (order_enabled_first initial l).2 = []
+.
+Proof.
+    intros [l' [Hl'1 Hl'2]].
+    ltac1:(funelim (order_enabled_first initial l)).
+    {
+        rewrite <- Heqcall.
+        clear Heqcall.
+        repeat ltac1:(case_match).
+        simpl. simpl in *.
+        clear H1.
+
+        assert(Hperm := choose_first_enabled_match_perm vs ms i m' rest H).
+        destruct Hperm as [Hperm Hperm'].
+        subst rest.
+        assert (Hno := delete_preserves_orderability vs ms l' i m').
+        symmetry in Hl'1.
+        specialize (Hno Hl'1 Hl'2).
+        apply choose_first_enabled_match_elem_of in H as H'.
+        apply choose_first_enabled_match_lookup in H as H''.
+        specialize (Hno H' H'').
+        destruct Hno as [l'' [Hl'' Hnol'']].
+        symmetry in Hl''.
+        specialize (H0 l'' Hl'').
+        inversion Hnol''; subst; clear Hnol''.
+        specialize (H0 H6).
+        apply H0.
+    }
+    {
+        rewrite <- Heqcall.
+        clear Heqcall.
+        simpl.
+        clear H.
+        ltac1:(rename e into Hnone).
+        unfold choose_first_enabled_match in Hnone.
+        rewrite bind_None in Hnone.
+        destruct Hnone as [Hnone|Hnone].
+        {
+            rewrite list_find_None in Hnone.
+            destruct l'.
+            {
+                apply Permutation_nil in Hl'1.
+                exact Hl'1.
+            }
+            {
+                ltac1:(exfalso).
+                inversion Hl'2; subst; clear Hl'2.
+                rewrite Forall_forall in Hnone.
+                unfold enables_match in Hnone.
+                eapply Hnone>[|apply H2].
+                rewrite <- elem_of_list_In.
+                apply elem_of_Permutation.
+                exists l'.
+                symmetry. exact Hl'1.
+            }
+        }
+        {
+            destruct Hnone as [[n m] [HH1 HH2]].
+            inversion HH2.
+        }
+    }
+Qed.
+
+Lemma order_enabled_first_nicely_ordered
+    {Σ : Signature}
+    initial l
+    :
+    (∃ l', l' ≡ₚ l /\ nicely_ordered initial l' ) ->
+    nicely_ordered initial ((order_enabled_first initial l).1 ++ (order_enabled_first initial l).2)
+.
+Proof.
+    intros [l' Hl'].
+    rewrite order_enabled_first_2_empty_if_can_be_ordered.
+    {
+        rewrite app_nil_r.
+        apply order_enabled_first_1_nicely_ordered.
+    }
+    {
+        exists l'.
+        apply Hl'.
+    }
+Qed.
+
+
+
+Definition valuation_satisfies_all_matches
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (ρ : Valuation)
+    (l : list Match)
+    : Prop
+:=
+    ∀ x ot, (mkMatch _ x ot) ∈ l ->
+    ∃ t, ρ !! x = Some t /\
+    matchesb ρ t ot
+.
+
+Lemma valuation_satisfies_all_matches_perm
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (l1 l2 : list Match) (ρ : Valuation)
+: l1 ≡ₚ l2 ->
+    valuation_satisfies_all_matches ρ l1
+    -> valuation_satisfies_all_matches ρ l2
+.
+Proof.
+    intros Hp.
+    unfold valuation_satisfies_all_matches.
+    intros H1 x ot Hin.
+    specialize (H1 x ot).
+    apply H1.
+    rewrite Hp.
+    exact Hin.
+Qed.
