@@ -480,59 +480,6 @@ Proof.
     intros x y H. apply H.
 Qed.
 
-(*
-    This does not work since even there might be
-    some key `k` in ρ2 that is not in ρ1
-    and it will get used by the merge.
-*)
-Lemma valuations_compatible_merge
-    {Σ : Signature}
-    (ρ1 ρ2 : gmap variable GroundTerm)
-    :
-    valuations_compatible ρ1 ρ2 = true  ->
-    merge use_left ρ1 ρ2 = ρ1 ∪ ρ2
-.
-Proof.
-    intros Hcompat.
-    unfold Valuation in *.
-    apply leibniz_equiv.
-    rewrite map_equiv_iff.
-    intros v.
-    rewrite lookup_merge.
-    unfold diag_None.
-    unfold valuations_compatible in Hcompat.
-    rewrite forallb_forall in Hcompat.
-    specialize (Hcompat v).
-    ltac1:(repeat case_match).
-    {
-        simpl.
-        ltac1:(case_match).
-        {
-            rewrite lookup_union_l.
-            {
-                symmetry.
-                rewrite H.
-                reflexivity.
-            }
-            {
-                ltac1:(ospecialize (Hcompat _)).
-                {
-                    rewrite <- elem_of_list_In.
-                    rewrite elem_of_elements.
-                    rewrite elem_of_intersection.
-                    ltac1:(do 2 rewrite elem_of_dom).
-                    split.
-                    { exists g. assumption. }
-                    { exists g0. assumption. }
-                }
-                apply bool_decide_eq_true_1 in Hcompat.
-                admit.
-            }
-        }
-        admit.
-    }
-Abort.
-
 Lemma dom_merge_use_left
     {Σ : Signature}
     (ρ' ρ'' : Valuation)
