@@ -1214,14 +1214,25 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+#[export]
+Program Instance TryMatch__builtin__AO'sB
+    {Σ : Signature}
+    {B : Type}
+    {_V1 : VarsOf (AppliedOperator' symbol B) }
+    :
+    TryMatch builtin_value (AppliedOperator' symbol B)
+:= {|
+    try_match := fun _ _ => None ;
+|}.
+Fail Next Obligation.
 
 #[export]
-Program Instance TryMatch__builtin__BoV
+Instance TryMatch__GroundTerm__OpenTerm
     {Σ : Signature}
-:
-    TryMatch builtin_value BuiltinOrVar
-:= {|
-    try_match := builtin_value_try_match_BuiltinOrVar ;
-    try_match_correct := _;
-    try_match_complete := _;
-|}.
+    {CΣ : ComputableSignature}
+    :
+    TryMatch GroundTerm OpenTerm
+.
+Proof.
+    apply _.
+Defined.
