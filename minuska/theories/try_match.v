@@ -332,6 +332,7 @@ Set Typeclasses Debug.
 Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
     {Σ : Signature}
     {Operand1 Operand2 : Type}
+    {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
     {_M0 : Matches Valuation (Operand1) Operand2 variable}
@@ -583,15 +584,16 @@ Qed.
 Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
     {Σ : Signature}
     {Operand1 Operand2 : Type}
-    {_VOperand2 : VarsOf Operand2}
-    {_S0 : Satisfies Valuation (Operand1) Operand2}
-    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_VOperand1 : VarsOf Operand1 variable}
+    {_VOperand2 : VarsOf Operand2 variable}
+    {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches Valuation (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (ρ : Valuation)
     (a : AppliedOperator' symbol Operand1)
