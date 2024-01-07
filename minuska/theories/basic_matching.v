@@ -1201,6 +1201,28 @@ match c with
 (* | c_not c' => ~~ val_satisfies_c_bool ρ c' *)
 end.
 
+Lemma val_satisfies_valuation
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    ρ c
+    :
+    val_satisfies_c_bool ρ c = true ->
+    vars_of c ⊆ vars_of ρ.
+Proof.
+    induction c; unfold vars_of; simpl; intros H.
+    { ltac1:(set_solver). }
+    {
+        apply matchesb_vars_of in H.
+        exact H.
+    }
+    {
+        rewrite union_subseteq.
+        rewrite andb_true_iff in H.
+        destruct H as [H1 H2].
+        auto with core.
+    }
+Qed.
+
 #[export]
 Program Instance Matches_val_c
     `{CΣ : ComputableSignature}
@@ -1262,7 +1284,9 @@ Next Obligation.
     {
         rewrite andb_true_iff in H.
         destruct H as [H1 H2].
-        Search vars_of_Constraint.
+        apply val_satisfies_valuation in H1.
+        apply val_satisfies_valuation in H2.
+        ltac1:(set_solver).
     }
 Qed.
 Fail Next Obligation.
@@ -1284,7 +1308,7 @@ end.
 Program Instance Matches_val_match
     {Σ : Signature}
     :
-    Matches Valuation unit Match
+    Matches Valuation unit Match variable
 := {|
     matchesb := fun a b c => valuation_satisfies_match_bool a c;
 |}.
@@ -1298,6 +1322,17 @@ Next Obligation.
         apply ReflectF.
         ltac1:(tauto).
     }
+Qed.
+Next Obligation.
+    destruct b; unfold vars_of; simpl in *.
+    unfold Valuation in *.
+    ltac1:(case_match).
+    {
+        apply matchesb_vars_of in H.
+        apply elem_of_dom_2 in H0.
+        ltac1:(set_solver).
+    }
+    { inversion H. }
 Qed.
 Fail Next Obligation.
 
@@ -1315,7 +1350,7 @@ end.
 Program Instance Matches_valuation_sc
     `{CΣ : ComputableSignature}
     :
-    Matches Valuation unit SideCondition
+    Matches Valuation unit SideCondition variable
 := {|
     matchesb := fun a b c => valuation_satisfies_sc_bool a c;
 |}.
@@ -1330,13 +1365,34 @@ Next Obligation.
         apply matchesb_satisfies.
     }
 Qed.
+Next Obligation.
+    destruct b; unfold vars_of; simpl in *.
+    {
+        apply matchesb_vars_of in H.
+        exact H.
+    }
+    {
+        apply matchesb_vars_of in H.
+        exact H.
+    }
+Qed.
 Fail Next Obligation.
+
+
+#[export]
+Program Instance VarsOf_list_SideCondition
+    {Σ : Signature}
+    : VarsOf (list SideCondition) variable
+:= {|
+    vars_of := fun scs => ⋃ (vars_of <$> scs)
+|}.
 
 #[export]
 Program Instance Matches_valuation_scs
-   `{CΣ : ComputableSignature}
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
     :
-    Matches Valuation unit (list SideCondition)
+    Matches Valuation unit (list SideCondition) variable
 := {|
     matchesb := fun ρ b c => forallb (matchesb ρ ()) c;
 |}.
@@ -1361,6 +1417,27 @@ Next Obligation.
         }
     }
 Qed.
+Next Obligation.
+    unfold vars_of; simpl.
+    rewrite forallb_forall in H.
+    rewrite elem_of_subseteq.
+    intros x Hx. 
+    rewrite elem_of_union_list in Hx.
+    destruct Hx as [X [H1X H2X]].
+    unfold Valuation in *.
+    rewrite elem_of_list_fmap in H1X.
+    destruct H1X as [y [H1y H2y]].
+    subst.
+    
+    specialize (H y).
+    rewrite <- elem_of_list_In in H.
+    specialize (H ltac:(assumption)).
+    apply matchesb_vars_of in H.
+    
+    rewrite elem_of_subseteq in H.
+    specialize (H x H2X).
+    exact H.
+Qed.
 Fail Next Obligation.
 
 
@@ -1369,7 +1446,7 @@ Fail Next Obligation.
 Program Instance Matches__builtin__Expr
    `{CΣ : ComputableSignature}
     :
-    Matches Valuation builtin_value (Expression)
+    Matches Valuation builtin_value (Expression) variable
 := {|
     matchesb := (fun ρ b e =>
         bool_decide (Expression_evaluate ρ e = Some (aoo_operand _ _ b))
@@ -1378,6 +1455,11 @@ Program Instance Matches__builtin__Expr
 Next Obligation.
     unfold satisfies. simpl.
     apply bool_decide_reflect.
+Qed.
+Next Obligation.
+    apply bool_decide_eq_true in H.
+    apply expression_evaluate_some_valuation in H.
+    assumption.
 Qed.
 Fail Next Obligation.
 
@@ -1388,6 +1470,7 @@ Program Instance Matches_asb_expr
         Valuation
         ((AppliedOperator' symbol builtin_value))
         Expression
+        variable
 := {|
     matchesb := (fun ρ x e =>
         bool_decide (Expression_evaluate ρ e = Some (aoo_app _ _ x))   ) ;
@@ -1395,6 +1478,11 @@ Program Instance Matches_asb_expr
 Next Obligation.
     unfold satisfies. simpl.
     apply bool_decide_reflect.
+Qed.
+Next Obligation.
+    apply bool_decide_eq_true in H.
+    apply expression_evaluate_some_valuation in H.
+    assumption.
 Qed.
 Fail Next Obligation.
 
