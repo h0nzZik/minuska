@@ -322,7 +322,6 @@ match x, y with
     merge_valuations ρ1 ρ2
 end.
 
-Set Typeclasses Debug.
 (*
     Note: I think that this lemma needs to be formulated in this
     generalized way, with two valuations related by inclusion.
@@ -648,6 +647,7 @@ Proof.
             exists (merge use_left ρ' ρ'').
             split.
             {
+                unfold vars_of; simpl.
                 rewrite <- Hρ''0.
                 unfold vars_of in IH0. simpl in IH0.
                 rewrite <- IH0.
@@ -713,6 +713,7 @@ Proof.
             split.
             {
                 unfold vars_of in Hρ''0. simpl in Hρ''0.
+                unfold vars_of; simpl.
                 rewrite <- Hρ''0.
                 unfold vars_of in IH0. simpl in IH0.
                 rewrite <- IH0.
@@ -786,6 +787,7 @@ Proof.
             exists (merge use_left ρ' ρ'').
             split.
             {
+                unfold vars_of; simpl.
                 rewrite <- Hρ''0.
                 unfold vars_of in IH0. simpl in IH0.
                 rewrite <- IH0.
@@ -848,6 +850,7 @@ Proof.
             {
                 unfold vars_of in *|-. simpl in *|-.
                 simpl.
+                unfold vars_of; simpl.
                 rewrite <- IH10.
                 rewrite <- IH20.
                 unfold Valuation in *.
@@ -906,15 +909,16 @@ Qed.
 Program Instance TryMatch_AppliedOperator'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
-    {_VOperand2 : VarsOf Operand2}
-    {_S0 : Satisfies Valuation (Operand1) Operand2}
-    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_VOperand1 : VarsOf Operand1 variable}
+    {_VOperand2 : VarsOf Operand2 variable}
+    {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches Valuation (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
     TryMatch (AppliedOperator' symbol Operand1) (AppliedOperator' symbol Operand2)
@@ -940,15 +944,16 @@ Fail Next Obligation.
 Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
-    {_V2 : VarsOf Operand2}
-    {_S1 : Satisfies Valuation Operand1 Operand2}
-    {_M1 : Matches Valuation Operand1 Operand2}
+    {_V1 : VarsOf Operand1 variable}
+    {_V2 : VarsOf Operand2 variable}
+    {_S1 : Satisfies Valuation Operand1 Operand2 variable}
+    {_M1 : Matches Valuation Operand1 Operand2 variable}
     {_TM1 : TryMatch Operand1 Operand2}
-    {_S2 : Satisfies Valuation Operand1 (AppliedOperator' symbol Operand2)}
-    {_M2 : Matches Valuation Operand1 (AppliedOperator' symbol Operand2)}
+    {_S2 : Satisfies Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
+    {_M2 : Matches Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
     {_TM2 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S3 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
-    {_M3 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2}
+    {_S3 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
+    {_M3 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
     {_TM3 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (x : AppliedOperatorOr' symbol Operand1)
     (y : AppliedOperatorOr' symbol Operand2)
@@ -969,15 +974,16 @@ end.
 Program Instance TryMatch_AppliedOperatorOr'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
-    {_VOperand2 : VarsOf Operand2}
-    {_S0 : Satisfies Valuation (Operand1) Operand2}
-    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_VOperand1 : VarsOf Operand1 variable}
+    {_VOperand2 : VarsOf Operand2 variable}
+    {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches Valuation (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
     TryMatch (AppliedOperatorOr' symbol Operand1) (AppliedOperatorOr' symbol Operand2)
@@ -1074,6 +1080,8 @@ Next Obligation.
         exists ∅.
         split.
         {
+            unfold vars_of; simpl.
+            unfold Valuation in *.
             rewrite dom_empty_L.
             reflexivity.
         }
@@ -1101,6 +1109,8 @@ Next Obligation.
             exists (<[x:=aoo_operand symbol builtin_value operand]> ∅).
             split.
             {
+                unfold vars_of; simpl.
+                unfold Valuation in *.
                 rewrite dom_insert_L.
                 ltac1:(set_solver).
             }
@@ -1182,6 +1192,7 @@ Next Obligation.
         exists (<[x:=aoo_app symbol builtin_value a]> ∅).
         split.
         {
+            unfold vars_of; simpl.
             unfold Valuation in *.
             rewrite dom_insert_L.
             clear.
@@ -1217,11 +1228,13 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+Set Typeclasses Debug.
 #[export]
 Program Instance TryMatch__builtin__AO'sB
     {Σ : Signature}
     {B : Type}
-    {_V1 : VarsOf (AppliedOperator' symbol B) }
+    {_VB : (VarsOf B variable) }
+    {_V1 : VarsOf (AppliedOperator' symbol B) variable}
     :
     TryMatch builtin_value (AppliedOperator' symbol B)
 := {|
