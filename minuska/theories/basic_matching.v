@@ -900,6 +900,7 @@ Section with_signature.
             set_map (fun x : LeftRight * variable => x.2) vs'
     |}.
 
+    (*
     Set Typeclasses Debug.
     #[export]
     Program Instance Matches_vlrblrootob
@@ -917,13 +918,22 @@ Section with_signature.
         apply ReflectF. ltac1:(tauto).
     Qed.
     Fail Next Obligation.
+    *)
 
+
+    Search (Satisfies _ symbol _ _).
+    Set Typeclasses Debug.
     #[export]
     Program Instance
         Matches_symbol_B
-        {B : Type}
+        {V B var : Type}
+        {_VarED : EqDecision var}
+        {_VarCnt : Countable var}
+        {_SV : SubsetEq V}
+        {_VB : VarsOf B var}
+        {_VV : VarsOf V var}
         :
-        Matches Valuation symbol B
+        Matches V symbol B var
     := {|
         matchesb := fun _ _ _ => false
     |}.
@@ -974,6 +984,7 @@ Section with_signature.
             Valuation
             GroundTerm
             OpenTerm
+            variable
     .
     Proof.
         unfold GroundTerm.
@@ -1030,10 +1041,53 @@ match ap with
 end
 .
 
+Lemma expression_evaluate_some_valuation
+    {Σ : Signature} ρ e x
+    :
+    Expression_evaluate ρ e = Some x ->
+    vars_of e ⊆ vars_of ρ.
+Proof.
+    revert x.
+    induction e; unfold vars_of; simpl; intros x' H.
+    {
+        ltac1:(set_solver).
+    }
+    {
+        rewrite elem_of_subseteq.
+        intros x1 Hx1.
+        rewrite elem_of_singleton in Hx1.
+        subst.
+        unfold Valuation in *.
+        rewrite elem_of_dom.
+        exists x'. assumption.
+    }
+    {
+        rewrite bind_Some in H.
+        destruct H as [x0 [H1x0 H2x0]].
+        inversion H2x0; subst; clear H2x0.
+        rewrite H1x0 in IHe. simpl in IHe.
+        specialize (IHe x0 eq_refl).
+        apply IHe.
+    }
+    {
+        rewrite bind_Some in H.
+        destruct H as [x0 [H1x0 H2x0]].
+        inversion H2x0; subst; clear H2x0.
+
+        rewrite bind_Some in H0.
+        destruct H0 as [x1 [H1x1 H2x1]].
+        inversion H2x1; subst; clear H2x1.
+        specialize (IHe1 _ H1x0).
+        specialize (IHe2 _ H1x1).
+        rewrite union_subseteq.
+        split; assumption.
+    }
+Qed.
+
 #[export]
 Program Instance Matches_val_ap
     `{ComputableSignature}
-    : Matches Valuation unit AtomicProposition
+    : Matches Valuation unit AtomicProposition variable
 := {|
     matchesb := fun a b c => val_satisfies_ap_bool a c;
 |}.
@@ -1103,6 +1157,35 @@ Next Obligation.
         }
     }
 Qed.
+Next Obligation.
+    destruct b; unfold vars_of in *; simpl in *.
+    {
+        rewrite andb_true_iff in H0.
+        rewrite bool_decide_eq_true in H0.
+        destruct H0 as [H1 H2].
+        unfold isSome in *.
+        destruct (Expression_evaluate v e1) eqn:Heq2>[|inversion H2].
+        clear H2. symmetry in H1.
+        unfold vars_of. simpl.
+        apply expression_evaluate_some_valuation in Heq2.
+        apply expression_evaluate_some_valuation in H1.
+        rewrite union_subseteq.
+        split; assumption.
+    }
+    {
+        destruct (Expression_evaluate v e1) eqn:Heq>[|inversion H0].
+        apply expression_evaluate_some_valuation in Heq.
+        assumption.
+    }
+    {
+        destruct (Expression_evaluate v e1) eqn:Heq1>[|inversion H0].
+        destruct (Expression_evaluate v e2) eqn:Heq2>[|inversion H0].
+        apply expression_evaluate_some_valuation in Heq1.
+        apply expression_evaluate_some_valuation in Heq2.
+        rewrite union_subseteq.
+        split; assumption.
+    }
+Qed.
 Fail Next Obligation.
 
 Fixpoint val_satisfies_c_bool
@@ -1121,7 +1204,7 @@ end.
 #[export]
 Program Instance Matches_val_c
     `{CΣ : ComputableSignature}
-    : Matches Valuation unit Constraint
+    : Matches Valuation unit Constraint variable
 := {|
     matchesb := fun a b c => val_satisfies_c_bool a c;
 |}.
@@ -1168,6 +1251,19 @@ Next Obligation.
         }
     }
     *)
+Qed.
+Next Obligation.
+    destruct b; unfold vars_of; simpl in *.
+    { ltac1:(set_solver). }
+    {
+        apply matchesb_vars_of in H.
+        assumption.
+    }
+    {
+        rewrite andb_true_iff in H.
+        destruct H as [H1 H2].
+        Search vars_of_Constraint.
+    }
 Qed.
 Fail Next Obligation.
 

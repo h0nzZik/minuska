@@ -1722,15 +1722,19 @@ Instance Satisfies_bv_pureterm
 *)
 #[export]
 Program Instance
-    Satisfies_symbol_Expression
+    Satisfies_symbol_B
     {Σ : Signature}
-    {B : Type}
+    {V B var : Type}
+    {_SV : SubsetEq V}
+    {_EDvar : EqDecision var}
+    {_Covar : Countable var}
+    {_VV : VarsOf V var}
     :
     Satisfies
-        Valuation
+        V
         symbol
         B
-        variable
+        var
 := {|
     satisfies := fun _ _ _ => False ;
 |}.
