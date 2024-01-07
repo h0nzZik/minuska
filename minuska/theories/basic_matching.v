@@ -867,32 +867,48 @@ Section with_signature.
         vars_of := fun (x : LocalRewriteOrOpenTermOrBOV) =>
             match x with
             | lp_rewrite r =>
-                let v1 : list variable := elements (vars_of (lr_from r)) in
-                let v2 : list variable := elements (vars_of (lr_to r)) in
-                let v1' : list (LeftRight*variable) := ((fun x : variable => (LR_Left, x)) <$> v1) in
-                let v2' : list (LeftRight*variable) := ((fun x : variable => (LR_Right, x)) <$> v2) in
-                list_to_set (v1' ++ v2')
+                let v1 := (vars_of (lr_from r)) in
+                let v2 := (vars_of (lr_to r)) in
+                let v1' := (set_map (fun x : variable => (LR_Left, x)) v1) in
+                let v2' := (set_map (fun x : variable => (LR_Right, x)) v2) in
+                v1' ∪ v2'
                 (*v1' ∪ v2'*)
             | lp_basicpat b =>
-                let vs := elements (vars_of b) in
-                let v1' : list (LeftRight*variable) := ((fun x : variable => (LR_Left, x)) <$> vs) in
-                let v2' : list (LeftRight*variable) := ((fun x : variable => (LR_Right, x)) <$> vs) in
-                list_to_set (v1' ++ v2')
+                let vs := (vars_of b) in
+                let v1' := (set_map (fun x : variable => (LR_Left, x)) vs) in
+                let v2' := (set_map (fun x : variable => (LR_Right, x)) vs) in
+                v1' ∪ v2'
             | lp_bov bov =>
-                let vs := elements (vars_of bov) in
-                let v1' : list (LeftRight*variable) := ((fun x : variable => (LR_Left, x)) <$> vs) in
-                let v2' : list (LeftRight*variable) := ((fun x : variable => (LR_Right, x)) <$> vs) in
-                list_to_set (v1' ++ v2')
+                let vs := (vars_of bov) in
+                let v1' := (set_map (fun x : variable => (LR_Left, x)) vs) in
+                let v2' := (set_map (fun x : variable => (LR_Right, x)) vs) in
+                v1' ∪ v2'
             end
+    |}.
+
+    #[export]
+    Instance VarsOf_LeftRight
+        {_VO : VarsOf Valuation (LeftRight * variable)}
+        :
+        VarsOf (Valuation * LeftRight) variable
+    := {|
+        vars_of := fun ρd =>
+            let ρ := ρd.1 in
+            let d := ρd.2 in
+            let vs : gset (LeftRight * variable) := vars_of ρ in
+            let vs' := filter (fun x => x.1 = d) vs in
+            set_map (fun x : LeftRight * variable => x.2) vs'
     |}.
 
     Set Typeclasses Debug.
     #[export]
-    Program Instance Matches_vlrblrootob:
+    Program Instance Matches_vlrblrootob
+        :
         Matches
             (Valuation * LeftRight)
             (builtin_value)
             (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
+            (variable)
     := {|
         matchesb := fun _ _ _ => false ;
     |}.
