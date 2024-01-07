@@ -13,16 +13,16 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
 
-Set Typeclasses Debug.
+
 Class Matches
     {Σ : Signature}
-    (V var A B : Type)
+    (V A B var : Type)
     {_SV : SubsetEq V}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VA : VarsOf B var}
     {_VV : VarsOf V var}
-    {_SAB : Satisfies V A B} :=
+    {_SAB : Satisfies V A B var} :=
 {
     matchesb:
         V -> A -> B -> bool ;
@@ -42,12 +42,14 @@ Arguments matchesb : simpl never.
 
 Lemma matchesb_implies_satisfies
     {Σ : Signature}
-    (V A B : Type)
+    (V A B var : Type)
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
     {_SV : SubsetEq V}
-    {_VA : VarsOf B}
-    {_VV : VarsOf V}
-    {_SAB : Satisfies V A B}
-    {_MAB : Matches V A B}
+    {_VA : VarsOf B var}
+    {_VV : VarsOf V var}
+    {_SAB : Satisfies V A B var}
+    {_MAB : Matches V A B var}
     :
     forall (v : V) (a : A) (b : B),
         matchesb v a b = true ->
@@ -62,12 +64,14 @@ Qed.
 
 Lemma satisfies_implies_matchesb
     {Σ : Signature}
-    (V A B : Type)
+    (V A B var : Type)
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
     {_SV : SubsetEq V}
-    {_VA : VarsOf B}
-    {_VV : VarsOf V}
-    {_SAB : Satisfies V A B}
-    {_MAB : Matches V A B}
+    {_VA : VarsOf B var}
+    {_VV : VarsOf V var}
+    {_SAB : Satisfies V A B var}
+    {_MAB : Matches V A B var}
     :
     forall (v : V) (a : A) (b : B),
         satisfies v a b ->
@@ -82,12 +86,14 @@ Qed.
 
 Lemma matchesb_ext
     {Σ : Signature}
-    (V A B : Type)
+    (V A B var : Type)
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
     {_SV : SubsetEq V}
-    {_VA : VarsOf B}
-    {_VV : VarsOf V}
-    {_SAB : Satisfies V A B}
-    {_MAB : Matches V A B}
+    {_VA : VarsOf B var}
+    {_VV : VarsOf V var}
+    {_SAB : Satisfies V A B var}
+    {_MAB : Matches V A B var}
     :
     forall (v1 v2 : V),
         v1 ⊆ v2 ->
@@ -108,20 +114,36 @@ Section with_signature.
     Context
         {Σ : Signature}
     .
-
+(*
+    #[global]
+    Instance Vars_of_id
+        {var T : Type}
+        {_TED : EqDecision T}
+        {_varED : EqDecision var}
+        {_varCnt : Countable var}
+        : VarsOf (gmap var T) var
+    := {|
+        vars_of := fun x => dom x
+    |}.
+*)
+  
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
-        {Operand1 Operand2 : Type}
-        {_S1 : Satisfies Valuation (symbol) Operand2}
-        {_S2 : Satisfies Valuation (Operand1) Operand2}
-        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_S4 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
-        {_V1 : VarsOf Operand1}
-        {_V2 : VarsOf Operand2}
-        {_M1 : Matches Valuation (symbol) Operand2}
-        {_M2 : Matches Valuation (Operand1) Operand2}
-        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_M4 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2}
-        (ρ : Valuation)
+        {V Operand1 Operand2 var : Type}
+        {_varED : EqDecision var}
+        {_varCnt : Countable var}
+        {_SV : SubsetEq V}
+        {_VVv : VarsOf V var}
+        {_S1 : Satisfies V (symbol) Operand2 var}
+        {_S2 : Satisfies V (Operand1) Operand2 var}
+        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies V (AppliedOperator' symbol Operand1) Operand2 var}
+        {_V1 : VarsOf Operand1 var}
+        {_V2 : VarsOf Operand2 var}
+        {_M1 : Matches V (symbol) Operand2 var}
+        {_M2 : Matches V (Operand1) Operand2 var}
+        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches V (AppliedOperator' symbol Operand1) Operand2 var}
+        (ρ : V)
         (x : (AppliedOperator' symbol Operand1))
         (y : AppliedOperator' symbol Operand2)
         : bool :=
@@ -157,22 +179,27 @@ Section with_signature.
 
     #[export]
     Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
-        {Operand1 Operand2 : Type}
-        {_V1 : VarsOf Operand1}
-        {_V2 : VarsOf Operand2}
-        {_S1 : Satisfies Valuation (symbol) Operand2}
-        {_S2 : Satisfies Valuation (Operand1) Operand2}
-        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_S4 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
-        {_M1 : Matches Valuation (symbol) Operand2}
-        {_M2 : Matches Valuation (Operand1) Operand2}
-        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_M4 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2}
+        {V Operand1 Operand2 var : Type}
+        {_varED : EqDecision var}
+        {_varCnt : Countable var}
+        {_SV : SubsetEq V}
+        {_VVv : VarsOf V var}
+        {_V1v : VarsOf Operand1 var}
+        {_V2v : VarsOf Operand2 var}
+        {_S1 : Satisfies V (symbol) Operand2 var}
+        {_S2 : Satisfies V (Operand1) Operand2 var}
+        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies V (AppliedOperator' symbol Operand1) Operand2 var}
+        {_M1 : Matches V (symbol) Operand2 var}
+        {_M2 : Matches V (Operand1) Operand2 var}
+        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches V (AppliedOperator' symbol Operand1) Operand2 var}
         :
         Matches
-            Valuation
+            V
             ((AppliedOperator' symbol Operand1))
             (AppliedOperator' symbol Operand2)
+            var
         := {|
             matchesb :=
                 ApppliedOperator'_matches_AppliedOperator' ;
@@ -265,7 +292,6 @@ Section with_signature.
             specialize (IHx y1).
             simpl in IHx.
             unfold satisfies; simpl.
-            unfold aosb_satisfies_aosbf; simpl.
             destruct ((ApppliedOperator'_matches_AppliedOperator' ρ x y1)) eqn:Heqm1.
             {
                 simpl.
@@ -404,19 +430,24 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
+    Set Typeclasses Debug.
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
-        {Operand1 Operand2 : Type}
-        {_V1 : VarsOf Operand1}
-        {_V2 : VarsOf Operand2}
-        {_S1 : Satisfies Valuation (symbol) Operand2}
-        {_S2 : Satisfies Valuation (Operand1) Operand2}
-        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_S4 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-        {_M1 : Matches Valuation (symbol) Operand2}
-        {_M2 : Matches Valuation (Operand1) Operand2}
-        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_M4 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-        (ρ : Valuation)
+        {V Operand1 Operand2 var : Type}
+        {_EDv : EqDecision var}
+        {_Cv : Countable var}
+        {_SV : SubsetEq V}
+        {_Vv : VarsOf V var}
+        {_V1 : VarsOf Operand1 var}
+        {_V2 : VarsOf Operand2 var}
+        {_S1 : Satisfies V (symbol) Operand2 var}
+        {_S2 : Satisfies V (Operand1) Operand2 var}
+        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies V ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_M1 : Matches V (symbol) Operand2 var}
+        {_M2 : Matches V (Operand1) Operand2 var}
+        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches V ((AppliedOperator' symbol Operand1)) Operand2 var}
+        (ρ : V)
         (x : (AppliedOperatorOr' symbol Operand1))
         (y : AppliedOperatorOr' symbol Operand2)
         : bool :=
@@ -434,22 +465,27 @@ Section with_signature.
     #[export]
     Program Instance
         reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
-        {Operand1 Operand2 : Type}
-        {_V1 : VarsOf Operand1}
-        {_V2 : VarsOf Operand2}
-        {_S1 : Satisfies Valuation (symbol) Operand2}
-        {_S2 : Satisfies Valuation (Operand1) Operand2}
-        {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_S4 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-        {_M1 : Matches Valuation (symbol) Operand2}
-        {_M2 : Matches Valuation (Operand1) Operand2}
-        {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-        {_M4 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+        {V Operand1 Operand2 var : Type}
+        {_EDv : EqDecision var}
+        {_Cv : Countable var}
+        {_SV : SubsetEq V}
+        {_Vv : VarsOf V var}
+        {_V1 : VarsOf Operand1 var}
+        {_V2 : VarsOf Operand2 var}
+        {_S1 : Satisfies V (symbol) Operand2 var}
+        {_S2 : Satisfies V (Operand1) Operand2 var}
+        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies V ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_M1 : Matches V (symbol) Operand2 var}
+        {_M2 : Matches V (Operand1) Operand2 var}
+        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches V ((AppliedOperator' symbol Operand1)) Operand2 var}
         :
         Matches
-            Valuation
+            V
             (AppliedOperatorOr' symbol Operand1)
             (AppliedOperatorOr' symbol Operand2)
+            var
         := {|
             matchesb := 
                 ApppliedOperatorOr'_matches_AppliedOperatorOr';
@@ -581,6 +617,7 @@ Section with_signature.
             (gmap variable GroundTerm)
             (builtin_value)
             BuiltinOrVar
+            variable
         := {|
             matchesb := 
                 builtin_value_matches_BuiltinOrVar;
@@ -686,6 +723,7 @@ Section with_signature.
             Valuation
             (builtin_value)
             OpenTerm
+            variable
         := {|
             matchesb := builtin_value_matches_OpenTerm;
             matchesb_satisfies := _;
@@ -756,6 +794,7 @@ Section with_signature.
             Valuation
             (AppliedOperator' symbol builtin_value)
             BuiltinOrVar
+            variable
         := {|
             matchesb := GroundTerm'_matches_BuiltinOrVar;
             matchesb_satisfies := _;
@@ -796,10 +835,18 @@ Section with_signature.
 
     #[export]
     Program Instance Matches_bv_ao'
-        {B : Type}
-        {_VB : VarsOf B}
+        {V B var : Type}
+        {_SV : SubsetEq V}
+        {_EDv : EqDecision var}
+        {_Cv : Countable var}
+        {_VV : VarsOf V var}
+        {_VB : VarsOf B var}
         :
-        Matches Valuation builtin_value (AppliedOperator' symbol B)
+        Matches
+            V
+            builtin_value
+            (AppliedOperator' symbol B)
+            var
     := {|
         matchesb := fun _ _ _ => false ;
     |}.
@@ -811,15 +858,22 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-
+Print LeftRight.
+    Print LocalRewriteOrOpenTermOrBOV.
+    Print LocalRewrite.
     #[export]
     Instance VarsOf_LocalRewriteOrOpenTermOrBOV
         :
-        VarsOf LocalRewriteOrOpenTermOrBOV
+        VarsOf
+            LocalRewriteOrOpenTermOrBOV
+            (LeftRight*variable)
     := {|
         vars_of := fun (x : LocalRewriteOrOpenTermOrBOV) =>
             match x with
-            | lp_rewrite r => vars_of r
+            | lp_rewrite r =>
+                let v1 := vars_of (lr_from r) in
+                let v2 := vars_of (lr_to r) in
+                ((fun x => (LR_Left, x)) <$> v1) ∪ () ((fun x => (LR_Right, x)) <$> v2)
             | lp_basicpat b => vars_of b
             | lp_bov bov => vars_of bov
             end

@@ -664,13 +664,17 @@ Definition aosb_satisfies_aosbf
 #[export]
 Program Instance Satisfies__builtin__ao'B
     {Σ : Signature}
-    {B : Type}
+    {V B var : Type}
+    {_SV : SubsetEq V}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VV : VarsOf V var}
     :
     Satisfies
-        Valuation
+        V
         (builtin_value)
         (AppliedOperator' symbol B)
-        variable
+        var
 := {| 
     satisfies := fun _ _ _ => false ;
 |}.

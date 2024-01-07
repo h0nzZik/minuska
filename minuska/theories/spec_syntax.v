@@ -1,3 +1,5 @@
+From stdpp Require Import finite.
+
 From Minuska Require Import
     prelude
 .
@@ -105,12 +107,12 @@ Class Signature := {
 
 Class VarsOf
     (A : Type)
-    (variable : Type)
-    {_Ev : EqDecision variable}
-    {_Cv : Countable variable}
+    (var: Type)
+    {_Ev : EqDecision var}
+    {_Cv : Countable var}
     :=
 {
-    vars_of : A -> gset variable ;
+    vars_of : A -> gset var ;
 }.
 
 Arguments vars_of : simpl never.
@@ -242,6 +244,29 @@ Section eqdec.
     Proof.
         ltac1:(solve_decision).
     Defined.
+
+    #[export]
+    Instance LeftRight_eqdec
+        : EqDecision LeftRight
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
+    #[export]
+    Program Instance LeftRight_fin
+        : Finite LeftRight
+    := {|
+        enum := [LR_Left;LR_Right];
+    |}.
+    Next Obligation.
+        ltac1:(compute_done).
+    Qed.
+    Next Obligation.
+        destruct x;
+        ltac1:(compute_done).
+    Qed.
+    Fail Next Obligation.
 
     #[export]
     Instance atomicProposition_eqdec {Σ : Signature}

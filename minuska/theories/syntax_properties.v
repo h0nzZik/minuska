@@ -63,10 +63,12 @@ Instance VarsOf_Constraint
 
 Fixpoint vars_of_aosB
     {Σ : Signature}
-    {B : Type}
-    {_VB: VarsOf B variable}
+    {B var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    {_VB: VarsOf B var}
     (o : AppliedOperator' symbol B)
-    : gset variable :=
+    : gset var :=
 match o with
 | ao_operator _ => ∅
 | ao_app_operand o' b => vars_of b ∪ vars_of_aosB o'
@@ -76,9 +78,11 @@ end.
 #[export]
 Instance VarsOf_aosB
     {Σ : Signature}
-    {B : Type}
-    {_VB: VarsOf B variable}
-    : VarsOf (AppliedOperator' symbol B) variable
+    {B var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    {_VB: VarsOf B var}
+    : VarsOf (AppliedOperator' symbol B) var
 := {|
     vars_of := vars_of_aosB ; 
 |}.
@@ -190,10 +194,12 @@ end.
 
 Definition vars_of_AppliedOperatorOr'B
     {Σ : Signature}
-    {B : Type}
-    {_VB : VarsOf B variable}
+    {B var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VB : VarsOf B var}
     (φ : AppliedOperatorOr' symbol B)
-    : gset variable :=
+    : gset var :=
 match φ with
 | aoo_app _ _ aop => vars_of aop
 | aoo_operand _ _ otwsc => vars_of otwsc
@@ -202,9 +208,11 @@ end.
 #[export]
 Instance VarsOf_AppliedOperatorOr'
     {Σ : Signature}
-    {B : Type}
-    {_VB : VarsOf B variable}
-    : VarsOf (AppliedOperatorOr' symbol B) variable
+    {B var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VB : VarsOf B var}
+    : VarsOf (AppliedOperatorOr' symbol B) var
 := {|
     vars_of := vars_of_AppliedOperatorOr'B ; 
 |}.
