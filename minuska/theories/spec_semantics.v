@@ -15,6 +15,22 @@ Instance VarsOf_valuation
     vars_of := fun ρ => dom ρ ; 
 |}.
 
+#[export]
+Instance VarsOf_symbol
+    {Σ : Signature}
+    : VarsOf symbol
+:= {|
+    vars_of := fun _ => ∅ ; 
+|}.
+
+#[export]
+Instance VarsOf_builtin
+    {Σ : Signature}
+    : VarsOf builtin_value
+:= {|
+    vars_of := fun _ => ∅ ; 
+|}.
+
 
 (*Transparent Valuation.*)
 

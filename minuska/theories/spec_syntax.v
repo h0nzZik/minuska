@@ -107,6 +107,8 @@ Class VarsOf {Σ : Signature} (A : Type) := {
     vars_of : A -> gset variable ;
 }.
 
+Arguments vars_of : simpl never.
+
 Definition GroundTerm {Σ : Signature}
     := GroundTerm' symbol builtin_value
 .

@@ -457,6 +457,66 @@ Definition try_match_lhs_with_sc
     if validates then Some ρ else None
 .
 
+#[global]
+Instance VarsOf_list_SideCondition
+    {Σ : Signature}
+    :
+    VarsOf (list SideCondition)
+:= {|
+    vars_of := fun scs => union_list (vars_of <$> scs) ;
+|}.
+
+Lemma try_match_lhs_with_sc_complete
+    {Σ : Signature}
+    {CΣ : ComputableSignature}
+    (g : GroundTerm)
+    (r : FlattenedRewritingRule)
+    (ρ : gmap variable GroundTerm)
+    :
+    try_match_lhs_with_sc g r = Some ρ ->
+    ∃ ρ' : (gmap variable GroundTerm),
+        vars_of ρ' = vars_of (fr_from r) ∪ vars_of (fr_scs r) ∧
+        ρ' ⊆ ρ ∧
+        try_match_lhs_with_sc g r = Some ρ'
+.
+Proof.
+    intros H.
+    unfold try_match_lhs_with_sc in H.
+    rewrite bind_Some in H.
+    destruct H as [ρ1 [H1ρ1 H2ρ1]].
+    destruct (matchesb ρ1 () (fr_scs r)) eqn:Hm>[|inversion H2ρ1].
+    inversion H2ρ1; subst; clear H2ρ1.
+    unfold try_match_lhs_with_sc.
+    ltac1:(setoid_rewrite bind_Some).
+    ltac1:(setoid_rewrite H1ρ1).
+    exists ρ.
+    split.
+    {
+        assert (H1 : vars_of ρ ⊆ vars_of (fr_from r) ∪ vars_of (fr_scs r)).
+        {
+            unfold vars_of; simpl.
+
+            apply try_match_correct in H1ρ1.
+            Search vars_of.
+            unfold matchesb in H1ρ1; simpl in H1ρ1.
+        }
+        assert (H2 : vars_of (fr_from r) ∪ vars_of (fr_scs r) ⊆ vars_of ρ).
+        {
+unfold vars_of; simpl.
+        unfold matchesb in Hm; simpl in Hm.
+        unfold matchesb in Hm; simpl in Hm.
+        rewrite forallb_forall in Hm.
+        unfold Valuation in *.
+        }
+        clear -H1 H2. ltac1:(set_solver).
+        
+
+        Search eq subseteq.
+        Search valuation_satisfies_sc_bool.
+        apply try_match_correct in H1ρ1.
+    }
+Qed.
+
 Definition thy_lhs_match_one
     {Σ : Signature}
     {CΣ : ComputableSignature}

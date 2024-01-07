@@ -17,10 +17,21 @@ Class Matches
     {Σ : Signature}
     (V A B : Type)
     {_SV : SubsetEq V}
+    {_VA : VarsOf B}
     {_VV : VarsOf V}
-    {_SAB : Satisfies V A B} := {
-    matchesb: V -> A -> B -> bool ;
-    matchesb_satisfies : ∀ v a b, reflect (satisfies v a b) (matchesb v a b) ;
+    {_SAB : Satisfies V A B} :=
+{
+    matchesb:
+        V -> A -> B -> bool ;
+
+    matchesb_satisfies :
+        ∀ (v : V) (a : A) (b : B),
+            reflect (satisfies v a b) (matchesb v a b) ;
+
+    matchesb_vars_of :
+        ∀ (v : V) (a : A) (b : B),
+            matchesb v a b = true ->
+            vars_of b ⊆ vars_of v ;
 }.
 
 Arguments satisfies : simpl never.
@@ -30,13 +41,14 @@ Lemma matchesb_implies_satisfies
     {Σ : Signature}
     (V A B : Type)
     {_SV : SubsetEq V}
+    {_VA : VarsOf B}
     {_VV : VarsOf V}
     {_SAB : Satisfies V A B}
     {_MAB : Matches V A B}
     :
-    forall v a b,
-    matchesb v a b = true ->
-    satisfies v a b
+    forall (v : V) (a : A) (b : B),
+        matchesb v a b = true ->
+        satisfies v a b
 .
 Proof.
     intros.
@@ -49,13 +61,14 @@ Lemma satisfies_implies_matchesb
     {Σ : Signature}
     (V A B : Type)
     {_SV : SubsetEq V}
+    {_VA : VarsOf B}
     {_VV : VarsOf V}
     {_SAB : Satisfies V A B}
     {_MAB : Matches V A B}
     :
-    forall v a b,
-    satisfies v a b ->
-    matchesb v a b = true
+    forall (v : V) (a : A) (b : B),
+        satisfies v a b ->
+        matchesb v a b = true
 .
 Proof.
     intros.
@@ -68,13 +81,14 @@ Lemma matchesb_ext
     {Σ : Signature}
     (V A B : Type)
     {_SV : SubsetEq V}
+    {_VA : VarsOf B}
     {_VV : VarsOf V}
     {_SAB : Satisfies V A B}
     {_MAB : Matches V A B}
     :
     forall (v1 v2 : V),
         v1 ⊆ v2 ->
-        forall a b,
+        forall (a : A) (b : B),
             matchesb v1 a b = true ->
             matchesb v2 a b = true
 .
@@ -92,13 +106,14 @@ Section with_signature.
         {Σ : Signature}
     .
 
-Search VarsOf Valuation.
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
         {Operand1 Operand2 : Type}
         {_S1 : Satisfies Valuation (symbol) Operand2}
         {_S2 : Satisfies Valuation (Operand1) Operand2}
         {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
         {_S4 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2}
+        {_V1 : VarsOf Operand1}
+        {_V2 : VarsOf Operand2}
         {_M1 : Matches Valuation (symbol) Operand2}
         {_M2 : Matches Valuation (Operand1) Operand2}
         {_M3 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
@@ -140,6 +155,8 @@ Search VarsOf Valuation.
     #[export]
     Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
         {Operand1 Operand2 : Type}
+        {_V1 : VarsOf Operand1}
+        {_V2 : VarsOf Operand2}
         {_S1 : Satisfies Valuation (symbol) Operand2}
         {_S2 : Satisfies Valuation (Operand1) Operand2}
         {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
@@ -331,9 +348,63 @@ Search VarsOf Valuation.
             split; intros HH; inversion HH; subst; clear HH; constructor; assumption.
         }
     Qed.
+    Next Obligation.
+        revert b H.
+        unfold vars_of; simpl.
+        induction a; simpl; intros b' H.
+        { 
+            destruct b'; simpl in *.
+            { ltac1:(set_solver). }
+            { inversion H. }
+            { inversion H. }
+        }
+        {
+            destruct b'.
+            { inversion H. }
+            {
+                rewrite andb_true_iff in H.
+                destruct H as [H1 H2].
+                specialize (IHa b' H1).
+                apply matchesb_vars_of in H2.
+                clear -IHa H2.
+                ltac1:(set_solver).
+            }
+            {
+                rewrite andb_true_iff in H.
+                destruct H as [H1 H2].
+                assert (IH1 := IHa b'1 H1).
+                apply matchesb_vars_of in H2.
+                clear -IH1 H2.
+                ltac1:(set_solver).
+            }
+        }
+        {
+            destruct b'.
+            { inversion H. }
+            {
+                rewrite andb_true_iff in H.
+                destruct H as [H1 H2].
+                specialize (IHa1 b' H1).
+                apply matchesb_vars_of in H2.
+                clear -IHa1 H2.
+                ltac1:(set_solver).
+            }
+            {
+                rewrite andb_true_iff in H.
+                destruct H as [H1 H2].
+                specialize (IHa1 b'1 H1).
+                specialize (IHa2 b'2 H2).
+                clear - IHa1 IHa2.
+                ltac1:(set_solver).
+            }
+        }
+    Qed.
+    Fail Next Obligation.
 
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
+        {_V1 : VarsOf Operand1}
+        {_V2 : VarsOf Operand2}
         {_S1 : Satisfies Valuation (symbol) Operand2}
         {_S2 : Satisfies Valuation (Operand1) Operand2}
         {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
@@ -361,6 +432,8 @@ Search VarsOf Valuation.
     Program Instance
         reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {Operand1 Operand2 : Type}
+        {_V1 : VarsOf Operand1}
+        {_V2 : VarsOf Operand2}
         {_S1 : Satisfies Valuation (symbol) Operand2}
         {_S2 : Satisfies Valuation (Operand1) Operand2}
         {_S3 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
@@ -466,6 +539,23 @@ Search VarsOf Valuation.
             }
         }
     Qed.
+    Next Obligation.
+        destruct a,b; simpl in *.
+        {
+            apply matchesb_vars_of in H.
+            assumption.
+        }
+        {
+            apply matchesb_vars_of in H.
+            assumption.
+        }
+        { inversion H. }
+        {
+            apply matchesb_vars_of in H.
+            assumption.
+        }
+    Qed.
+    Fail Next Obligation.
 
     Definition builtin_value_matches_BuiltinOrVar
         : Valuation -> builtin_value -> BuiltinOrVar -> bool :=
@@ -480,13 +570,12 @@ Search VarsOf Valuation.
         end
     end.
 
-
     #[export]
     Program Instance
         reflect__matches__builtin_value__BuiltinOrVar
         :
         Matches
-            Valuation
+            (gmap variable GroundTerm)
             (builtin_value)
             BuiltinOrVar
         := {|
@@ -511,6 +600,7 @@ Search VarsOf Valuation.
             }
         }
         {
+            unfold Valuation in *.
             destruct (v !! x) eqn:Hvx; simpl.
             {
                 destruct a0; simpl.
@@ -518,7 +608,8 @@ Search VarsOf Valuation.
                     apply ReflectF.
                     intros HContra.
                     inversion HContra; subst; clear HContra.
-                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite Hvx in H1).
+                    inversion H1.
                 }
                 {
                     unfold bool_decide.
@@ -531,7 +622,9 @@ Search VarsOf Valuation.
                         apply ReflectF.
                         intros HContra.
                         inversion HContra; subst; clear HContra.
-                        ltac1:(simplify_eq/=).
+                        ltac1:(rewrite Hvx in H2).
+                        inversion H2.
+                        ltac1:(congruence).
                     }
                 }
             }
@@ -539,12 +632,34 @@ Search VarsOf Valuation.
                 apply ReflectF.
                 intros HContra.
                 inversion HContra; subst; clear HContra.
-                ltac1:(simplify_eq/=).
+                ltac1:(rewrite Hvx in H1).
+                inversion H1.
+            }
+        }
+    Qed.
+    Next Obligation.
+        unfold vars_of; destruct b; simpl.
+        { ltac1:(clear; set_solver). }
+        {
+            simpl in H.
+            unfold Valuation in *.
+            destruct (v !! x) eqn:Hvx.
+            {
+                rewrite elem_of_subseteq.
+                intros x0 Hx0.
+                rewrite elem_of_singleton in Hx0.
+                subst.
+                rewrite elem_of_dom.
+                exists a0. assumption.
+            }
+            {
+                inversion H.
             }
         }
     Qed.
     Fail Next Obligation.
 
+    (* Can this be simplified? *)
     Definition builtin_value_matches_OpenTerm
         : Valuation -> builtin_value -> OpenTerm -> bool :=
     fun ρ b t =>
@@ -596,6 +711,20 @@ Search VarsOf Valuation.
             }
         }
     Qed.
+    Next Obligation.
+        destruct b; unfold vars_of at 1; simpl in *.
+        {
+            inversion H.
+        }
+        {
+            ltac1:(repeat case_match); subst; unfold vars_of; simpl.
+            { ltac1:(set_solver). }
+            { inversion H. }
+            {
+                
+            }
+        }
+    Qed.
     Fail Next Obligation.
 
     Definition GroundTerm'_matches_BuiltinOrVar
@@ -636,6 +765,16 @@ Search VarsOf Valuation.
             { 
                 unfold satisfies. simpl. assumption.
             }
+        }
+    Qed.
+    Next Obligation.
+        destruct b; simpl in *.
+        { inversion H. }
+        {
+            rewrite bool_decide_eq_true in H.
+            apply matchesb_vars_of.
+            unfold vars_of; simpl.
+            
         }
     Qed.
     Fail Next Obligation.
