@@ -430,7 +430,6 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-    Set Typeclasses Debug.
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
         {V Operand1 Operand2 var : Type}
         {_EDv : EqDecision var}
@@ -858,9 +857,6 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-Print LeftRight.
-    Print LocalRewriteOrOpenTermOrBOV.
-    Print LocalRewrite.
     #[export]
     Instance VarsOf_LocalRewriteOrOpenTermOrBOV
         :
@@ -871,11 +867,22 @@ Print LeftRight.
         vars_of := fun (x : LocalRewriteOrOpenTermOrBOV) =>
             match x with
             | lp_rewrite r =>
-                let v1 := vars_of (lr_from r) in
-                let v2 := vars_of (lr_to r) in
-                ((fun x => (LR_Left, x)) <$> v1) ∪ () ((fun x => (LR_Right, x)) <$> v2)
-            | lp_basicpat b => vars_of b
-            | lp_bov bov => vars_of bov
+                let v1 : list variable := elements (vars_of (lr_from r)) in
+                let v2 : list variable := elements (vars_of (lr_to r)) in
+                let v1' : list (LeftRight*variable) := ((fun x : variable => (LR_Left, x)) <$> v1) in
+                let v2' : list (LeftRight*variable) := ((fun x : variable => (LR_Right, x)) <$> v2) in
+                list_to_set (v1' ++ v2')
+                (*v1' ∪ v2'*)
+            | lp_basicpat b =>
+                let vs := elements (vars_of b) in
+                let v1' : list (LeftRight*variable) := ((fun x : variable => (LR_Left, x)) <$> vs) in
+                let v2' : list (LeftRight*variable) := ((fun x : variable => (LR_Right, x)) <$> vs) in
+                list_to_set (v1' ++ v2')
+            | lp_bov bov =>
+                let vs := elements (vars_of bov) in
+                let v1' : list (LeftRight*variable) := ((fun x : variable => (LR_Left, x)) <$> vs) in
+                let v2' : list (LeftRight*variable) := ((fun x : variable => (LR_Right, x)) <$> vs) in
+                list_to_set (v1' ++ v2')
             end
     |}.
 

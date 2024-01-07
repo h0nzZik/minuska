@@ -36,6 +36,7 @@ Add Search Blacklist "_graph_rect".
 Add Search Blacklist "_graph_equation".
 Add Search Blacklist "FunctionalElimination_".
 
+(*
 (* Convert Equations eq decision to stdpp's eq decision*)
 #[export]
 Instance EquationsEqdec
@@ -47,7 +48,7 @@ Proof.
     intros x y.
     apply eq_dec.
 Defined.
-
+*)
 (* "Inspect pattern", as in https://github.com/mattam82/Coq-Equations/issues/232 *)
 Definition inspect {Y} (x : Y) : {y | x = y}.
 Proof. now exists x. Defined.
