@@ -721,8 +721,15 @@ Section with_signature.
             { ltac1:(set_solver). }
             { inversion H. }
             {
-                
+                rewrite elem_of_subseteq.
+                intros x0 Hx0.
+                rewrite elem_of_singleton in Hx0.
+                subst.
+                unfold Valuation in *.
+                rewrite elem_of_dom.
+                eexists. ltac1:(eassumption).
             }
+            { inversion H. }
         }
     Qed.
     Fail Next Obligation.
@@ -772,9 +779,14 @@ Section with_signature.
         { inversion H. }
         {
             rewrite bool_decide_eq_true in H.
-            apply matchesb_vars_of.
             unfold vars_of; simpl.
-            
+            rewrite elem_of_subseteq.
+            intros x0 Hx0.
+            rewrite elem_of_singleton in Hx0.
+            subst.
+            unfold Valuation in *.
+            rewrite elem_of_dom.
+            eexists. ltac1:(eassumption).
         }
     Qed.
     Fail Next Obligation.
@@ -782,6 +794,7 @@ Section with_signature.
     #[export]
     Program Instance Matches_bv_ao'
         {B : Type}
+        {_VB : VarsOf B}
         :
         Matches Valuation builtin_value (AppliedOperator' symbol B)
     := {|
@@ -796,6 +809,20 @@ Section with_signature.
     Fail Next Obligation.
 
 
+    #[export]
+    Instance VarsOf_LocalRewriteOrOpenTermOrBOV
+        :
+        VarsOf LocalRewriteOrOpenTermOrBOV
+    := {|
+        vars_of := fun (x : LocalRewriteOrOpenTermOrBOV) =>
+            match x with
+            | lp_rewrite r => vars_of r
+            | lp_basicpat b => vars_of b
+            | lp_bov bov => vars_of bov
+            end
+    |}.
+
+    Set Typeclasses Debug.
     #[export]
     Program Instance Matches_vlrblrootob:
         Matches

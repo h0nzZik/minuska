@@ -17,7 +17,7 @@ end.
 #[export]
 Instance VarsOf_Expression
     {Σ : Signature}
-    : VarsOf Expression
+    : VarsOf Expression variable
 := {|
     vars_of := vars_of_Expression ; 
 |}.
@@ -36,7 +36,7 @@ end.
 #[export]
 Instance VarsOf_AP
     {Σ : Signature}
-    : VarsOf AtomicProposition
+    : VarsOf AtomicProposition variable
 := {|
     vars_of := vars_of_AP ; 
 |}.
@@ -56,7 +56,7 @@ end.
 #[export]
 Instance VarsOf_Constraint
     {Σ : Signature}
-    : VarsOf Constraint
+    : VarsOf Constraint variable
 := {|
     vars_of := vars_of_Constraint ; 
 |}.
@@ -64,7 +64,7 @@ Instance VarsOf_Constraint
 Fixpoint vars_of_aosB
     {Σ : Signature}
     {B : Type}
-    {_VB: VarsOf B}
+    {_VB: VarsOf B variable}
     (o : AppliedOperator' symbol B)
     : gset variable :=
 match o with
@@ -77,8 +77,8 @@ end.
 Instance VarsOf_aosB
     {Σ : Signature}
     {B : Type}
-    {_VB: VarsOf B}
-    : VarsOf (AppliedOperator' symbol B)
+    {_VB: VarsOf B variable}
+    : VarsOf (AppliedOperator' symbol B) variable
 := {|
     vars_of := vars_of_aosB ; 
 |}.
@@ -96,7 +96,7 @@ end.
 #[export]
 Instance VarsOf_BoV
     {Σ : Signature}
-    : VarsOf BuiltinOrVar
+    : VarsOf BuiltinOrVar variable
 := {|
     vars_of := vars_of_BoV ; 
 |}.
@@ -113,7 +113,7 @@ end.
 #[export]
 Instance VarsOf_OpenTerm 
     {Σ : Signature}
-    : VarsOf OpenTerm
+    : VarsOf OpenTerm variable
 := {|
     vars_of := vars_of_OpenTerm ; 
 |}.
@@ -129,7 +129,7 @@ end.
 #[export]
 Instance VarsOf_Match
     {Σ : Signature}
-    : VarsOf Match
+    : VarsOf Match variable
 := {|
     vars_of := vars_of_Match ; 
 |}.
@@ -146,7 +146,7 @@ end.
 #[export]
 Instance VarsOf_SideCondition
     {Σ : Signature}
-    : VarsOf SideCondition
+    : VarsOf SideCondition variable
 := {|
     vars_of := vars_of_SideCondition ; 
 |}.
@@ -155,7 +155,7 @@ Instance VarsOf_SideCondition
 Fixpoint vars_of_WithASideConditionB
     {Σ : Signature}
     {B : Type}
-    {_VB : VarsOf B}
+    {_VB : VarsOf B variable}
     (φc : WithASideCondition B)
     : gset variable :=
 match φc with
@@ -168,8 +168,8 @@ end.
 Instance VarsOf_WithASideConditionB
     {Σ : Signature}
     {B : Type}
-    {_VB : VarsOf B}
-    : VarsOf (WithASideCondition B)
+    {_VB : VarsOf B variable}
+    : VarsOf (WithASideCondition B) variable
 := {|
     vars_of := vars_of_WithASideConditionB ; 
 |}.
@@ -191,7 +191,7 @@ end.
 Definition vars_of_AppliedOperatorOr'B
     {Σ : Signature}
     {B : Type}
-    {_VB : VarsOf B}
+    {_VB : VarsOf B variable}
     (φ : AppliedOperatorOr' symbol B)
     : gset variable :=
 match φ with
@@ -203,8 +203,8 @@ end.
 Instance VarsOf_AppliedOperatorOr'
     {Σ : Signature}
     {B : Type}
-    {_VB : VarsOf B}
-    : VarsOf (AppliedOperatorOr' symbol B)
+    {_VB : VarsOf B variable}
+    : VarsOf (AppliedOperatorOr' symbol B) variable
 := {|
     vars_of := vars_of_AppliedOperatorOr'B ; 
 |}.

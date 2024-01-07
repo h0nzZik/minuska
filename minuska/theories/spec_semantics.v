@@ -10,7 +10,7 @@ Definition Valuation {Σ : Signature}
 #[export]
 Instance VarsOf_valuation
     {Σ : Signature}
-    : VarsOf Valuation
+    : VarsOf Valuation variable
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
@@ -18,7 +18,7 @@ Instance VarsOf_valuation
 #[export]
 Instance VarsOf_symbol
     {Σ : Signature}
-    : VarsOf symbol
+    : VarsOf symbol variable
 := {|
     vars_of := fun _ => ∅ ; 
 |}.
@@ -26,7 +26,7 @@ Instance VarsOf_symbol
 #[export]
 Instance VarsOf_builtin
     {Σ : Signature}
-    : VarsOf builtin_value
+    : VarsOf builtin_value variable
 := {|
     vars_of := fun _ => ∅ ; 
 |}.
@@ -189,7 +189,7 @@ Class Satisfies
     {Σ : Signature}
     (V A B : Type)
     `{SubsetEq V}
-    {_VV: VarsOf V}
+    {_VV: VarsOf V variable}
     :=
 mkSatisfies {
     satisfies :
@@ -343,7 +343,7 @@ Fail Next Obligation.
 Inductive aoxy_satisfies_aoxz
     {Σ : Signature}
     {V X Y Z : Type}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_SV : SubsetEq V}
     {_S1 : Satisfies V (Y) Z}
     {_S2 : Satisfies V (Y) (AppliedOperator' X Z)}
@@ -409,7 +409,7 @@ Inductive aoxy_satisfies_aoxz
 Program Instance Satisfies_aoxy_aoxz
     {Σ : Signature}
     {V X Y Z : Type}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_SV : SubsetEq V}
     {_S1 : Satisfies V (Y) Z}
     {_S2 : Satisfies V (Y) (AppliedOperator' X Z)}
@@ -444,7 +444,7 @@ Fail Next Obligation.
 Inductive aoxyo_satisfies_aoxzo
     {Σ : Signature}
     (V X Y Z : Type)
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_SV : SubsetEq V}
     {_S1 : Satisfies V Y Z}
     {_S2 : Satisfies V ((AppliedOperator' X Y)) Z}
@@ -476,7 +476,7 @@ Inductive aoxyo_satisfies_aoxzo
 Program Instance Satisfies_aoxyo_aoxzo
     {Σ : Signature}
     (V X Y Z : Type)
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_SV : SubsetEq V}
     {_S1 : Satisfies V Y Z}
     {_S2 : Satisfies V ((AppliedOperator' X Y)) Z}
@@ -792,7 +792,7 @@ Inductive A_satisfies_B_WithASideCondition
     {Σ : Signature}
     (V A B : Type)
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V unit SideCondition}
     {_S2 : Satisfies V (A) B}
     : V -> A -> WithASideCondition B -> Prop :=
@@ -814,7 +814,7 @@ Program Instance Satisfies_A_Bsc
     {Σ : Signature}
     {V A B : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V unit SideCondition}
     {_S2 : Satisfies V A B}
     :
@@ -970,7 +970,7 @@ Definition AppliedOperator'_symbol_A_satisfies_OpenTermB'
     {Σ : Signature}
     (V A B : Type)
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V (A) B}
     {_S2 : Satisfies V ((AppliedOperator' symbol A)) B}
     {_S3 : Satisfies V (AppliedOperator' symbol A) (AppliedOperator' symbol B)}
@@ -989,7 +989,7 @@ Program Instance Satisfies__lift_builtin_to_aosb
     {Σ : Signature}
     {V A B : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V (A) B}
     {_S2 : Satisfies V ((AppliedOperator' symbol A)) B}
     {_S3 : Satisfies V (AppliedOperator' symbol A) (AppliedOperator' symbol B)}
@@ -1015,7 +1015,7 @@ Instance Satisfies__lift_builtin_to_aosbo
     {Σ : Signature}
     {V A B : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {bsB : Satisfies V (A) B}
     {sat2 : Satisfies V ((AppliedOperator' symbol A)) B}
     {sat3 : Satisfies V ((AppliedOperator' symbol A)) (AppliedOperator' symbol B)}
@@ -1030,7 +1030,7 @@ Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
     {Σ : Signature}
     {V : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V (builtin_value) BuiltinOrVar}
     {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) BuiltinOrVar}
     {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar)}
@@ -1048,7 +1048,7 @@ Program Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTerm
     {Σ : Signature}
     {V : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V (builtin_value) BuiltinOrVar}
     {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) BuiltinOrVar}
     {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar)}
@@ -1083,7 +1083,7 @@ Instance Satisfies__GroundTerm__LhsPattern
     {Σ : Signature}
     {V : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V (builtin_value) OpenTermWSC}
     {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) OpenTermWSC}
     {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol OpenTermWSC)}
@@ -1157,7 +1157,7 @@ Instance Satisfies__GroundTerm__RhsPattern
     {Σ : Signature}
     {V : Type}
     {_SV : SubsetEq V}
-    {_VV : VarsOf V}
+    {_VV : VarsOf V variable}
     {_S1 : Satisfies V (builtin_value) Expression}
     {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) Expression}
     {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol Expression)}
@@ -1216,10 +1216,11 @@ Instance Subseteq_ValuationLR
 }.
 
 
+(* TODO *)
 #[export]
 Instance VarsOf_ValuationLR
     {Σ : Signature}
-    : VarsOf (Valuation * LeftRight)
+    : VarsOf (Valuation * LeftRight) variable
 := {
     vars_of a := vars_of a.1
 }.
@@ -1473,7 +1474,7 @@ Definition GroundTerm_satisfies_OpenTerm
 .
 
 #[export]
-Instance VarsOf_unit {Σ : Signature}: VarsOf unit := {|
+Instance VarsOf_unit {Σ : Signature}: VarsOf unit variable := {|
     vars_of _ := ∅ ;
 |}.
 

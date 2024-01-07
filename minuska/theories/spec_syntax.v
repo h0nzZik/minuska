@@ -103,7 +103,13 @@ Class Signature := {
     variables :: MVariables variable ;
 }.
 
-Class VarsOf {Σ : Signature} (A : Type) := {
+Class VarsOf
+    (A : Type)
+    (variable : Type)
+    {_Ev : EqDecision variable}
+    {_Cv : Countable variable}
+    :=
+{
     vars_of : A -> gset variable ;
 }.
 
