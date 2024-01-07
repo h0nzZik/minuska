@@ -13,12 +13,15 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
 
+Set Typeclasses Debug.
 Class Matches
     {Σ : Signature}
-    (V A B : Type)
+    (V var A B : Type)
     {_SV : SubsetEq V}
-    {_VA : VarsOf B}
-    {_VV : VarsOf V}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    {_VA : VarsOf B var}
+    {_VV : VarsOf V var}
     {_SAB : Satisfies V A B} :=
 {
     matchesb:
