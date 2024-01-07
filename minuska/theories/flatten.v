@@ -184,16 +184,17 @@ end.
 
 *)
 
+Set Typeclasses Debug.
 Definition aoxyo_satisfies_aoxzo_bool
     {Σ : Signature}
     {CΣ : ComputableSignature}
     {Y Z : Type}
-    {_S1 : Satisfies Valuation (Y) Z }
-    {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z}
-    {_S3 : Satisfies Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
-    {_M1 : Matches Valuation (Y) Z }
-    {_M2 : Matches Valuation (AppliedOperator' symbol Y) Z}
-    {_M3 : Matches Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z)}
+    {_S1 : Satisfies Valuation (Y) Z variable}
+    {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z variable}
+    {_S3 : Satisfies Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z) variable}
+    {_M1 : Matches Valuation (Y) Z variable}
+    {_M2 : Matches Valuation (AppliedOperator' symbol Y) Z variable}
+    {_M3 : Matches Valuation (AppliedOperator' symbol Y) (AppliedOperator' symbol Z) variable}
     :
     Valuation -> (AppliedOperatorOr' symbol Y) ->
     AppliedOperatorOr' symbol Z ->

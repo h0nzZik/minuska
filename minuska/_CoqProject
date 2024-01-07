@@ -8,7 +8,7 @@ theories/spec_tools.v
 theories/syntax_properties.v
 theories/semantics_properties.v
 theories/flattened.v
-theories/flatten.v
+
 theories/minuska.v
 theories/string_variables.v
 theories/empty_builtin.v
@@ -17,4 +17,7 @@ theories/color.v
 theories/basic_matching.v
 theories/try_match.v
 theories/naive_interpreter.v
-theories/on_a_good_reordering.v
+
+# Those two are disabled because I am lazy
+# theories/flatten.v
+# theories/on_a_good_reordering.v

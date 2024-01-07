@@ -242,9 +242,9 @@ Qed.
 Class TryMatch
     {Σ : Signature}
     (A B : Type)
-    {_VB: VarsOf B}
-    {_SAB : Satisfies Valuation A B}
-    {_MAB : Matches Valuation A B}
+    {_VB: VarsOf B variable}
+    {_SAB : Satisfies Valuation A B variable}
+    {_MAB : Matches Valuation A B variable}
     :=
 {
     try_match :
@@ -267,15 +267,15 @@ Class TryMatch
 Fixpoint ApppliedOperator'_try_match_AppliedOperator'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
-    {_VOperand2 : VarsOf Operand2}
-    {_S0 : Satisfies Valuation (Operand1) Operand2}
-    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_VOperand2 : VarsOf Operand2 variable}
+    {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches Valuation (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (x : AppliedOperator' symbol Operand1)
     (y : AppliedOperator' symbol Operand2)
@@ -322,6 +322,7 @@ match x, y with
     merge_valuations ρ1 ρ2
 end.
 
+Set Typeclasses Debug.
 (*
     Note: I think that this lemma needs to be formulated in this
     generalized way, with two valuations related by inclusion.
@@ -331,15 +332,15 @@ end.
 Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
     {Σ : Signature}
     {Operand1 Operand2 : Type}
-    {_VOperand2 : VarsOf Operand2}
-    {_S0 : Satisfies Valuation (Operand1) Operand2}
-    {_M0 : Matches Valuation (Operand1) Operand2}
+    {_VOperand2 : VarsOf Operand2 variable}
+    {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches Valuation (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2)}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2)}
+    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2}
+    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (ρ ρ' : Valuation)
     (a : AppliedOperator' symbol Operand1)
