@@ -457,14 +457,16 @@ Definition try_match_lhs_with_sc
     if validates then Some ρ else None
 .
 
+(*
 #[global]
 Instance VarsOf_list_SideCondition
     {Σ : Signature}
     :
-    VarsOf (list SideCondition)
+    VarsOf (list SideCondition) variable
 := {|
     vars_of := fun scs => union_list (vars_of <$> scs) ;
 |}.
+*)
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : Signature}
@@ -502,11 +504,13 @@ Proof.
         }
         assert (H2 : vars_of (fr_from r) ∪ vars_of (fr_scs r) ⊆ vars_of ρ).
         {
-unfold vars_of; simpl.
-        unfold matchesb in Hm; simpl in Hm.
-        unfold matchesb in Hm; simpl in Hm.
-        rewrite forallb_forall in Hm.
-        unfold Valuation in *.
+            clear H1.
+            unfold vars_of; simpl.
+            apply try_match_correct in H1ρ1.
+            apply matchesb_vars_of in Hm.
+            apply matchesb_vars_of in H1ρ1.
+            unfold vars_of in *; simpl in *.
+            ltac1:(set_solver).
         }
         clear -H1 H2. ltac1:(set_solver).
         

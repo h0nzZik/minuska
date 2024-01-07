@@ -262,6 +262,12 @@ Class TryMatch
                 vars_of ρ' = vars_of b /\
                 ρ' ⊆ ρ /\
                 try_match a b = Some ρ' ;
+
+    (* It does not invent variables out of thin air *)
+    try_match_noOOTA :
+        ∀ (a : A) (b : B) (ρ : Valuation),
+            try_match a b = Some ρ ->
+            vars_of ρ ⊆ vars_of b
 }.
 
 Fixpoint ApppliedOperator'_try_match_AppliedOperator'
@@ -938,6 +944,24 @@ Qed.
 Next Obligation.
     apply ApppliedOperator'_try_match_AppliedOperator'_complete.
     assumption.
+Qed.
+Next Obligation.
+    revert a ρ H H0.
+    induction b; unfold vars_of; simpl in *; intros a' ρ' H' H'0.
+    {
+        destruct a'; simpl in *; ltac1:(repeat case_match; simplify_eq/=).
+        apply H'0.
+    }
+    {
+        destruct a'; simpl in *; ltac1:(simplify_eq/=).
+        rewrite bind_Some in H'.
+        destruct H' as [x0 [H1x0 H2x0]].
+        rewrite bind_Some in H2x0.
+        destruct H2x0 as [x1 [H1x1 H2x1]].
+
+        specialize (IHb a').
+        specialize (IHb _ ltac:(assumption)).
+    }
 Qed.
 Fail Next Obligation.
 
