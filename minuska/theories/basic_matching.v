@@ -1727,15 +1727,35 @@ Next Obligation.
     induction b; intros v1 v2 HH; simpl in *.
     {
         unfold vars_of in HH; simpl in *.
+        (*
+        assert(HH' := HH).
+        unfold valuation_restrict in HH'. simpl in HH'.
+        rewrite map_eq_iff in HH'.
+        erewrite Expression_evaluate_val_restrict with (ρ2 := v2).
+        erewrite Expression_evaluate_val_restrict with (ρ1 := v1)(ρ2 := v2).
+        reflexivity.
+        {
+
+        }
         Search Expression_evaluate.
-        apply valuation_
+        apply valuation_*)
+
         unfold bool_decide.
         ltac1:(repeat case_match); simpl.
         {
             clear H0 H1.
             rewrite e,e0.
             clear e e0.
-            ltac1:(congruence).
+            unfold isSome.
+            ltac1:(repeat case_match); try reflexivity.
+            {
+                erewrite Expression_evaluate_val_restrict in H0.
+                rewrite H1 in H0.
+                inversion H0.
+            }
+            {
+                
+            }
 
         }
         {
