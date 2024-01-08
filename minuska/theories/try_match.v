@@ -324,6 +324,9 @@ Class TryMatch
             vars_of ρ ⊆ vars_of b
 }.
 
+
+Arguments try_match : simpl never.
+
 Fixpoint ApppliedOperator'_try_match_AppliedOperator'
     {Σ : Signature}
     {Operand1 Operand2 : Type}
@@ -1191,6 +1194,23 @@ Next Obligation.
         assumption.
     }
 Qed.
+Next Obligation.
+    destruct a,b; simpl in *;
+        unfold vars_of; simpl in *.
+    {
+        apply try_match_noOOTA in H.
+        ltac1:(set_solver).
+    }
+    {
+        apply try_match_noOOTA in H.
+        ltac1:(set_solver).
+    }
+    { inversion H. }
+    {
+        apply try_match_noOOTA in H.
+        ltac1:(set_solver).
+    }
+Qed.
 Fail Next Obligation.
 
 
@@ -1311,6 +1331,44 @@ Next Obligation.
         }
     }
 Qed.
+Next Obligation.
+    destruct b; simpl in *.
+    {
+        destruct (decide (a = b)); subst;
+            simpl in *.
+        {
+            inversion H; subst; clear H.
+            apply H0.
+        }
+        {
+            inversion H.
+        }
+    }
+    {
+        inversion H; subst; clear H.
+        unfold vars_of in *; simpl in *.
+        unfold Valuation in *.
+        rewrite elem_of_dom in H0.
+        destruct H0 as [y Hy].
+        destruct (decide (x = x0)).
+        {
+            subst.
+            rewrite lookup_insert in Hy.
+            rewrite elem_of_singleton.
+            reflexivity.
+        }
+        {
+            rewrite lookup_insert_ne in Hy.
+            {
+                rewrite lookup_empty in Hy.
+                inversion Hy.
+            }
+            {
+                symmetry. assumption.
+            }
+        }
+    }
+Qed.
 Fail Next Obligation.
 
 Definition pure_GroundTerm_try_match_BuiltinOrVar
@@ -1389,6 +1447,29 @@ Next Obligation.
         }
         {
             reflexivity.
+        }
+    }
+Qed.
+Next Obligation.
+    destruct b; unfold vars_of in *; simpl in *.
+    { inversion H. }
+    {
+        inversion H; subst; clear H.
+        rewrite elem_of_singleton.
+        unfold Valuation in *.
+        rewrite elem_of_dom in H0.
+        destruct H0 as [y Hy].
+        destruct (decide (x = x0)).
+        {
+            subst.
+            rewrite lookup_insert in Hy.
+            inversion Hy; subst. reflexivity.
+        }
+        {
+            rewrite lookup_insert_ne in Hy.
+            rewrite lookup_empty in Hy.
+            { inversion Hy. }
+            { symmetry. assumption. }
         }
     }
 Qed.
