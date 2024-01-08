@@ -228,6 +228,60 @@ Proof.
     }
 Qed.
 
+
+Lemma merge_valuations_dom
+    {Σ : Signature}
+    (ρ1 ρ2 ρ : Valuation):
+    merge_valuations ρ1 ρ2 = Some ρ ->
+    dom ρ = dom ρ1 ∪ dom ρ2
+.
+Proof.
+    assert (Hm := merge_valuations_correct ρ1 ρ2 ρ).
+    unfold merge_valuations in *.
+    destruct (decide (valuations_compatible ρ1 ρ2)); simpl in *;
+        intros H; inversion H; subst; clear H.
+    apply leibniz_equiv.
+    rewrite set_equiv_subseteq.
+    split.
+    {
+        clear Hm.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        unfold Valuation in *.
+        rewrite elem_of_dom in Hx.
+        rewrite elem_of_union.
+        rewrite elem_of_dom.
+        rewrite elem_of_dom.
+        destruct Hx as [y Hy].
+        rewrite lookup_merge in Hy.
+        unfold diag_None, use_left in Hy.
+        ltac1:(repeat case_match; simplify_eq/=);
+            unfold is_Some.
+        {
+            left; eexists; reflexivity.
+        }
+        {
+            left; eexists; reflexivity.
+        }
+        {
+            right; eexists; reflexivity.
+        }
+    }
+    {
+        specialize (Hm eq_refl).
+        destruct Hm as [Hm1 Hm2].
+        rewrite union_subseteq.
+        rewrite elem_of_subseteq.
+        rewrite elem_of_subseteq.
+        unfold Valuation in *.
+        split; intros x Hx; rewrite elem_of_dom in Hx;
+            destruct Hx as [y Hy]; rewrite elem_of_dom;
+            exists y; eapply lookup_weaken>[apply Hy|];
+            assumption.
+    }
+Qed.
+
+
 Lemma omap_Some
     {Σ : Signature}
     (ρ : Valuation):
@@ -959,8 +1013,28 @@ Next Obligation.
         rewrite bind_Some in H2x0.
         destruct H2x0 as [x1 [H1x1 H2x1]].
 
-        specialize (IHb a').
-        specialize (IHb _ ltac:(assumption)).
+        unfold Valuation in *.
+        rewrite elem_of_dom in H'0.
+        destruct H'0 as [y Hy].
+        apply try_match_noOOTA in H1x1.
+        apply merge_valuations_correct in H2x1.
+        specialize (IHb a' x0 H1x0).
+
+        ltac1:(ospecialize (IHb _)).
+        {
+            
+            
+            unfold vars_of in *; simpl in *.
+            clear - H2x1 H'0.
+            
+            unfold Valuation in *.
+            rewrite elem_of_dom.
+            exists y.
+            eapply lookup_weaken.
+            { apply Hy. }
+            { apply H2x1. }
+            
+        }
     }
 Qed.
 Fail Next Obligation.
