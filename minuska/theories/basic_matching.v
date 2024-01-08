@@ -199,6 +199,38 @@ Section with_signature.
         assumption.
     Qed.
 
+
+
+     Lemma vars_of_filter_2
+        {var B : Type}
+        {_EV : EqDecision var}
+        {_CV : Countable var}
+        {_VB : VarsOf B var}
+        (b' : B)
+        (v1 : gmap var GroundTerm)
+        :
+        vars_of (filter (λ x : var * GroundTerm, x.1 ∈ vars_of b') v1)
+        ⊆ vars_of v1
+    .
+    Proof.
+        rewrite elem_of_subseteq.
+        intros v Hv.
+        unfold vars_of in Hv at 1; simpl in Hv.
+        rewrite elem_of_dom in Hv.
+        destruct Hv as [w Hw].
+        rewrite map_lookup_filter in Hw.
+        rewrite bind_Some in Hw.
+        destruct Hw as [g [H1g H2g]].
+        unfold mguard,option_guard in H2g.
+        simpl in *.
+        ltac1:(case_match); inversion H2g;
+            subst; clear H2g.
+        unfold vars_of; simpl.
+        rewrite elem_of_dom.
+        exists w. assumption.
+    Qed.
+
+
     #[export]
     Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
         {Operand1 Operand2 var : Type}
@@ -454,16 +486,6 @@ Section with_signature.
             try reflexivity.
         {
             unfold vars_of at 3 in H'; simpl in H'.
-
-            (*
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v1) as newv1.
-            assert (Hnewv1: vars_of newv1 ⊆ vars_of b').
-            {
-                subst newv1.
-                apply vars_of_filter.
-            }
-            *)
-
             remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v2) as newv2.
             assert (Hnewv2: vars_of newv2 ⊆ vars_of b').
             {
@@ -478,22 +500,117 @@ Section with_signature.
                 apply vars_of_filter.
             }
 
-            (*rewrite IHa with (v1 := v1) (v2 := newv1) > [|ltac1:(set_solver)].*)
             rewrite IHa with (v1 := v1) (v2 := newv2) > [|ltac1:(set_solver)].
             rewrite IHa with (v1 := v2) (v2 := newv2) > [|ltac1:(set_solver)].
-            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2).
+            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2)>[|ltac1:(set_solver)].
+            rewrite matchesb_insensitive with (v1 := v2) (v2 := new2v2)>[|ltac1:(set_solver)].
+            reflexivity.
+        }
+        {
+            unfold vars_of at 3 in H'; simpl in H'.
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'1) v2) as newv2.
+            assert (Hnewv2: vars_of newv2 ⊆ vars_of b'1).
             {
-                reflexivity.
+                subst newv2.
+                apply vars_of_filter.
             }
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v2) as new2v2.
+            assert (Hnew2v2: vars_of new2v2 ⊆ vars_of b'2).
             {
-                ltac1:(set_solver).
+                subst new2v2.
+                apply vars_of_filter.
             }
-            
-             > [|ltac1:(set_solver)].
-            
+
+            rewrite IHa with (v1 := v1) (v2 := newv2) > [|ltac1:(set_solver)].
+            rewrite IHa with (v1 := v2) (v2 := newv2) > [|ltac1:(set_solver)].
+            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2)>[|ltac1:(set_solver)].
+            rewrite matchesb_insensitive with (v1 := v2) (v2 := new2v2)>[|ltac1:(set_solver)].
+            reflexivity.
+        }
+        {
+            unfold vars_of at 3 in H'; simpl in H'.
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v2) as newv2.
+            assert (Hnewv2: vars_of newv2 ⊆ vars_of b').
+            {
+                subst newv2.
+                apply vars_of_filter.
+            }
+
+            rewrite IHa1 with (v1 := v1) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
+            rewrite IHa1 with (v1 := v2) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b) v1) as new2v2.
+            assert (Hnew2v2: vars_of new2v2 ⊆ vars_of b).
+            {
+                subst new2v2.
+                apply vars_of_filter.
+            }
+            assert (Hnew2v2': vars_of new2v2 ⊆ vars_of v1).
+            {
+                subst.
+                apply vars_of_filter_2.
+            }
 
 
-            
+            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2)>[|clear IHa1 IHa2; ltac1:(set_solver)].
+            rewrite matchesb_insensitive with (v1 := v2) (v2 := new2v2)>[|clear IHa1 IHa2; ltac1:(set_solver)].
+            reflexivity.
+        }
+        
+        {
+            unfold vars_of at 3 in H'; simpl in H'.
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'1) v2) as newv2.
+            assert (Hnewv2: vars_of newv2 ⊆ vars_of b'1).
+            {
+                subst newv2.
+                apply vars_of_filter.
+            }
+
+            rewrite IHa1 with (v1 := v1) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
+            rewrite IHa1 with (v1 := v2) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
+
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v2) as newv'.
+            assert (Hnewv': vars_of newv' ⊆ vars_of b'2).
+            {
+                subst newv'.
+                apply vars_of_filter.
+            }
+
+            ltac1:(cut(ApppliedOperator'_matches_AppliedOperator' v1 a2 b'2 = ApppliedOperator'_matches_AppliedOperator' v2 a2 b'2)).
+            {
+                intros HHH. rewrite HHH. reflexivity.
+            }
+
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v1) as ahoj1.
+            assert (vars_of ahoj1 ⊆ vars_of b'2).
+            {
+                subst.
+                apply vars_of_filter.
+            }
+            assert (vars_of ahoj1 ⊆ vars_of v1).
+            {
+                subst.
+                apply vars_of_filter_2.
+            }
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v2) as ahoj2.
+            assert (vars_of ahoj2 ⊆ vars_of b'2).
+            {
+                subst.
+                apply vars_of_filter.
+            }
+            assert (vars_of ahoj2 ⊆ vars_of v2).
+            {
+                subst.
+                apply vars_of_filter_2.
+            }
+
+            rewrite IHa2 with (v1 := v1)(v2 := ahoj1)>[|ltac1:(set_solver)].
+            rewrite IHa2 with (v1 := v2)(v2 := ahoj1)>[|ltac1:(set_solver)].
+            reflexivity.
         }
     Qed.
     Fail Next Obligation.
