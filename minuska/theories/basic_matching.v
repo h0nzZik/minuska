@@ -1205,7 +1205,6 @@ Section with_signature.
         matches__builtin_value__OpenTerm
         :
         Matches
-            Valuation
             (AppliedOperator' symbol builtin_value)
             BuiltinOrVar
             variable
@@ -1243,6 +1242,42 @@ Section with_signature.
             unfold Valuation in *.
             rewrite elem_of_dom.
             eexists. ltac1:(eassumption).
+        }
+    Qed.
+    Next Obligation.
+        destruct b; simpl in *.
+        { reflexivity. }
+        unfold bool_decide.
+        ltac1:(repeat case_match); try reflexivity.
+        {
+            clear H0 H1.
+            ltac1:(exfalso).
+            apply n.
+            eapply valuation_restrict_eq_impl_lookup in H.
+            {
+                rewrite H in e.
+                ltac1:(rewrite e in n).
+                ltac1:(contradiction).
+            }
+            {
+                unfold vars_of; simpl.
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
+        }
+        {
+            eapply valuation_restrict_eq_impl_lookup in H.
+            {
+                clear H0 H1.
+                rewrite H in n.
+                ltac1:(rewrite e in n).
+                ltac1:(contradiction).
+            }
+            {
+                unfold vars_of; simpl.
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
         }
     Qed.
     Fail Next Obligation.
