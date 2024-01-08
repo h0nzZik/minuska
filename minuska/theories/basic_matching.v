@@ -1526,97 +1526,86 @@ Proof.
     }
 Qed.
 
-
 Lemma Expression_evaluate_val_restrict:
     ∀ {Σ : Signature}
         (ρ1 ρ2 : gmap variable GroundTerm)
         (t : Expression),
-            ρ1 ⊆ ρ2 →
-            Expression_evaluate ρ1 t →
+            valuation_restrict ρ1 (vars_of t) = valuation_restrict ρ2 (vars_of t) →
             Expression_evaluate ρ1 t = Expression_evaluate ρ2 t
 .
 Proof.
-    induction t; simpl.
+    intros Σ ρ1 ρ2 t.
+    revert ρ1 ρ2.
+    induction t; intros ρ1 ρ2; unfold vars_of in *; simpl in *.
     { solve[auto]. }
     {
-        intros H1 H2.
+        intros H1.
         unfold is_true, isSome in *.
-        ltac1:(case_match).
+        unfold valuation_restrict in H1.
+        rewrite map_eq_iff in H1.
+        specialize (H1 x).
+        do 2 (rewrite map_lookup_filter in H1).
+        destruct (ρ1!!x),(ρ2!!x); simpl in *; try reflexivity.
         {
-            symmetry.
-            eapply lookup_weaken.
+            unfold mguard,option_guard in H1.
+            ltac1:(repeat case_match).
             {
-                apply H.
+                assumption.
             }
-            { assumption. }
+            {
+                ltac1:(contradiction n).
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
         }
         {
-            inversion H2.
+            unfold mguard,option_guard in H1.
+            ltac1:(repeat case_match).
+            {
+                assumption.
+            }
+            {
+                ltac1:(contradiction n).
+                rewrite elem_of_singleton.
+                reflexivity. 
+            }
+        }
+        {
+            unfold mguard,option_guard in H1.
+            ltac1:(repeat case_match).
+            {
+                assumption.
+            }
+            {
+                ltac1:(contradiction n).
+                rewrite elem_of_singleton.
+                reflexivity. 
+            }
         }
     }
     {
-        intros H1 H2.
-        unfold is_true, isSome in *.
-        symmetry.
-        ltac1:(repeat case_match).
-        {
-            rewrite bind_Some.
-            rewrite bind_Some in H.
-            destruct H as [y [H1y H2y]].
-            specialize (IHt ltac:(assumption) ltac:(assumption)).
-            symmetry in IHt.
-            eexists.
-            split.
-            {
-                apply IHt.
-            }
-            inversion H2y; subst; clear H2y.
-            inversion H1y; subst; clear H1y.
-            reflexivity.
-        }
-        {
-            rewrite bind_Some.
-            rewrite bind_Some in H.
-            destruct H as [y [H1y H2y]].
-            inversion H1y.
-        }
-        {
-            inversion H2.
-        }
-        {
-            inversion H2.
-        }
+        intros H1.
+        specialize (IHt _ _ H1).
+        rewrite IHt.
+        reflexivity.
     }
     {
-        intros Hsub H1.
-        specialize (IHt1 Hsub).
-        specialize (IHt2 Hsub).
-        unfold mbind,option_bind in *.
-        ltac1:(repeat case_match);
-            try reflexivity.
+        intros H1.
+        assert (H2 : valuation_restrict ρ1 (vars_of_Expression t1) = valuation_restrict ρ2 (vars_of_Expression t1)).
         {
-            apply f_equal.
-            specialize (IHt1 ltac:(assumption)).
-            specialize (IHt2 ltac:(assumption)).
-            ltac1:(simplify_eq/=).
-            reflexivity.
+            eapply valuation_restrict_eq_subseteq>[|apply H1].
+            ltac1:(set_solver).
         }
+        assert (H3 : valuation_restrict ρ1 (vars_of_Expression t2) = valuation_restrict ρ2 (vars_of_Expression t2)).
         {
-            specialize (IHt1 ltac:(assumption)).
-            specialize (IHt2 ltac:(assumption)).
-            ltac1:(simplify_eq/=).
+            eapply valuation_restrict_eq_subseteq>[|apply H1].
+            ltac1:(set_solver).
         }
-        {
-            specialize (IHt1 ltac:(assumption)).
-            specialize (IHt2 ltac:(assumption)).
-            ltac1:(simplify_eq/=).
-        }
-        {
-            inversion H1.
-        }
-        {
-            inversion H1.
-        }
+        specialize (IHt1 _ _ H2).
+        specialize (IHt2 _ _ H3).
+        rewrite IHt1.
+        rewrite IHt2.
+        reflexivity.
     }
 Qed.
 
@@ -1727,19 +1716,38 @@ Next Obligation.
     induction b; intros v1 v2 HH; simpl in *.
     {
         unfold vars_of in HH; simpl in *.
-        (*
         assert(HH' := HH).
-        unfold valuation_restrict in HH'. simpl in HH'.
-        rewrite map_eq_iff in HH'.
-        erewrite Expression_evaluate_val_restrict with (ρ2 := v2).
-        erewrite Expression_evaluate_val_restrict with (ρ1 := v1)(ρ2 := v2).
-        reflexivity.
+        assert(HH1 := Expression_evaluate_val_restrict (valuation_restrict v1 (vars_of e1 ∪ vars_of e2)) v1 e1).
+        ltac1:(ospecialize (HH1 _)).
         {
-
+            unfold valuation_restrict.
+            apply map_filter_subseteq.            
         }
-        Search Expression_evaluate.
-        apply valuation_*)
 
+        assert(HH2 := Expression_evaluate_val_restrict (valuation_restrict v2 (vars_of e1 ∪ vars_of e2)) v2 e1).
+        ltac1:(ospecialize (HH2 _)).
+        {
+            unfold valuation_restrict.
+            apply map_filter_subseteq.            
+        }
+
+        assert(HH3 := Expression_evaluate_val_restrict (valuation_restrict v1 (vars_of e1 ∪ vars_of e2)) v1 e2).
+        ltac1:(ospecialize (HH3 _)).
+        {
+            unfold valuation_restrict.
+            apply map_filter_subseteq.            
+        }
+
+        assert(HH4 := Expression_evaluate_val_restrict (valuation_restrict v2 (vars_of e1 ∪ vars_of e2)) v2 e2).
+        ltac1:(ospecialize (HH4 _)).
+        {
+            unfold valuation_restrict.
+            apply map_filter_subseteq.            
+        }
+        (*
+        assert(HH3 := Expression_evaluate_val_restrict v1 (valuation_restrict v1 (vars_of e1 ∪ vars_of e2)) e1).
+        assert(HH4 := Expression_evaluate_val_restrict v2 (valuation_restrict v2 (vars_of e1 ∪ vars_of e2)) e1).*)
+        
         unfold bool_decide.
         ltac1:(repeat case_match); simpl.
         {
@@ -1749,12 +1757,18 @@ Next Obligation.
             unfold isSome.
             ltac1:(repeat case_match); try reflexivity.
             {
-                erewrite Expression_evaluate_val_restrict in H0.
-                rewrite H1 in H0.
-                inversion H0.
+                apply valuation_restrict_eq_subseteq with (r := vars_of e2) in HH'.
+                Search Expression_evaluate.
+                ltac1:(ospecialize (HH3 _)).
+                {
+                    eapply Expression_evaluate_extensive_Some in H0.
+                    unfold isSome.
+                    rewrite H0.
+                    reflexivity.
+                }
             }
             {
-                
+
             }
 
         }
