@@ -1008,32 +1008,100 @@ Next Obligation.
     }
     {
         destruct a'; simpl in *; ltac1:(simplify_eq/=).
-        rewrite bind_Some in H'.
-        destruct H' as [x0 [H1x0 H2x0]].
-        rewrite bind_Some in H2x0.
-        destruct H2x0 as [x1 [H1x1 H2x1]].
-
-        unfold Valuation in *.
-        rewrite elem_of_dom in H'0.
-        destruct H'0 as [y Hy].
-        apply try_match_noOOTA in H1x1.
-        apply merge_valuations_correct in H2x1.
-        specialize (IHb a' x0 H1x0).
-
-        ltac1:(ospecialize (IHb _)).
         {
-            
-            
-            unfold vars_of in *; simpl in *.
-            clear - H2x1 H'0.
-            
+            rewrite bind_Some in H'.
+            destruct H' as [x0 [H1x0 H2x0]].
+            rewrite bind_Some in H2x0.
+            destruct H2x0 as [x1 [H1x1 H2x1]].
+            assert (H2x1' := H2x1).
+            apply merge_valuations_dom in H2x1'.
             unfold Valuation in *.
-            rewrite elem_of_dom.
-            exists y.
-            eapply lookup_weaken.
-            { apply Hy. }
-            { apply H2x1. }
-            
+            rewrite H2x1' in H'0.
+            rewrite elem_of_union in H'0.
+            destruct H'0 as [H|H].
+            {
+                specialize (IHb a' x0 H1x0 H).
+                rewrite elem_of_union.
+                right. apply IHb.
+            }
+            {
+                apply try_match_noOOTA in H1x1.
+                clear - H1x1 H.
+                ltac1:(set_solver).
+            }
+        }
+        {
+            rewrite bind_Some in H'.
+            destruct H' as [x0 [H1x0 H2x0]].
+            rewrite bind_Some in H2x0.
+            destruct H2x0 as [x1 [H1x1 H2x1]].
+            assert (H2x1' := H2x1).
+            apply merge_valuations_dom in H2x1'.
+            unfold Valuation in *.
+            rewrite H2x1' in H'0.
+            rewrite elem_of_union in H'0.
+            destruct H'0 as [H|H].
+            {
+                assert (IH := IHb a'1).
+                specialize (IH x0 H1x0 H).
+                rewrite elem_of_union.
+                right. apply IH.
+            }
+            {
+                apply try_match_noOOTA in H1x1.
+                clear - H1x1 H.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        destruct a'; simpl in *; ltac1:(simplify_eq/=).
+        {
+            rewrite bind_Some in H'.
+            destruct H' as [x0 [H1x0 H2x0]].
+            rewrite bind_Some in H2x0.
+            destruct H2x0 as [x1 [H1x1 H2x1]].
+            assert (H2x1' := H2x1).
+            apply merge_valuations_dom in H2x1'.
+            unfold Valuation in *.
+            rewrite H2x1' in H'0.
+            rewrite elem_of_union in H'0.
+            destruct H'0 as [H|H].
+            {
+                assert (IH1 := IHb1 a').
+                specialize (IH1 x0 H1x0 H).
+                rewrite elem_of_union.
+                left. apply IH1.
+            }
+            {
+                apply try_match_noOOTA in H1x1.
+                clear - H1x1 H.
+                ltac1:(set_solver).
+            }
+        }
+        {
+            rewrite bind_Some in H'.
+            destruct H' as [x0 [H1x0 H2x0]].
+            rewrite bind_Some in H2x0.
+            destruct H2x0 as [x1 [H1x1 H2x1]].
+            assert (H2x1' := H2x1).
+            apply merge_valuations_dom in H2x1'.
+            unfold Valuation in *.
+            rewrite H2x1' in H'0.
+            rewrite elem_of_union in H'0.
+            destruct H'0 as [H|H].
+            {
+                assert (IH1 := IHb1 a'1).
+                specialize (IH1 _ H1x0 H).
+                rewrite elem_of_union.
+                left. apply IH1.
+            }
+            {
+                assert (IH2 := IHb2 a'2).
+                specialize (IH2 _ H1x1 H).
+                rewrite elem_of_union.
+                right. apply IH2.
+            }
         }
     }
 Qed.
