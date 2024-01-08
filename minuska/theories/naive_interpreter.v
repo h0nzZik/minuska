@@ -475,52 +475,63 @@ Lemma try_match_lhs_with_sc_complete
     (r : FlattenedRewritingRule)
     (ρ : gmap variable GroundTerm)
     :
-    try_match_lhs_with_sc g r = Some ρ ->
+    vars_of (fr_from r) ⊆ vars_of (fr_scs r) ->
+    matchesb ρ g (fr_from r) = true ->
+    matchesb ρ () (fr_scs r) = true ->
     ∃ ρ' : (gmap variable GroundTerm),
-        vars_of ρ' = vars_of (fr_from r) ∪ vars_of (fr_scs r) ∧
+        vars_of ρ' = vars_of (fr_from r) ∧
         ρ' ⊆ ρ ∧
         try_match_lhs_with_sc g r = Some ρ'
 .
 Proof.
-    intros H.
-    unfold try_match_lhs_with_sc in H.
-    rewrite bind_Some in H.
-    destruct H as [ρ1 [H1ρ1 H2ρ1]].
-    destruct (matchesb ρ1 () (fr_scs r)) eqn:Hm>[|inversion H2ρ1].
-    inversion H2ρ1; subst; clear H2ρ1.
-    unfold try_match_lhs_with_sc.
-    ltac1:(setoid_rewrite bind_Some).
-    ltac1:(setoid_rewrite H1ρ1).
-    exists ρ.
-    split.
+    (*
+        If a side condition `sc` contains a variable
+        that is not in the 'from' part `fr` of the rule,
+        then the side condition evaluates to `false`.
+        Why?
+        Because if it evaluated to `true`,
+        then `vars_of sc ⊆ vars_of ρ `.
+        But vars_of ρ = vars_of fr, because of
+        the NOOTA property.
+    *)
+    intros Hn H1 H2.
+    (*
+    assert (H10 := H1).
+    assert (H20 := H2).*)
+    apply try_match_complete in H1.
+    destruct H1 as [ρ1 [H1ρ1 H2ρ1]].
+    destruct H2ρ1 as [H2ρ1 H3ρ2].
+    (*destruct (matchesb ρ1 () (fr_scs r)) eqn:Hm.*)
     {
-        assert (H1 : vars_of ρ ⊆ vars_of (fr_from r) ∪ vars_of (fr_scs r)).
+        
+        unfold try_match_lhs_with_sc.
+        ltac1:(setoid_rewrite bind_Some).
+        exists ρ1.
+        split.
         {
-            unfold vars_of; simpl.
-            apply try_match_noOOTA in H1ρ1.
-            unfold vars_of in H1ρ1; simpl in H1ρ1.
-            ltac1:(set_solver).
+            unfold Valuation in *.
+            rewrite H1ρ1.
+            reflexivity.
         }
-        assert (H2 : vars_of (fr_from r) ∪ vars_of (fr_scs r) ⊆ vars_of ρ).
+        split.
         {
-            clear H1.
-            unfold vars_of; simpl.
-            apply try_match_correct in H1ρ1.
-            apply matchesb_vars_of in Hm.
-            apply matchesb_vars_of in H1ρ1.
-            unfold vars_of in *; simpl in *.
-            ltac1:(set_solver).
+            assumption.
         }
-        clear -H1 H2. ltac1:(set_solver).
+        exists ρ1.
+        split>[apply H3ρ2|].
+        unfold matchesb in *; simpl in *.
+        unfold matchesb in *; simpl in *.
+        Search valuation_satisfies_sc_bool.
+        About valuation_satisfies_sc_bool.
+        apply try_match_noOOTA in H3ρ2.
+        rewrite H2.
+        reflexivity.
     }
-    split.
     {
-        ltac1:(set_solver).
+        ltac1:(exfalso).
+        destruct H2ρ1 as [HH1 HH2].
+        rewrite Hm in H2.
     }
-    exists ρ.
-    split>[reflexivity|].
-    rewrite Hm.
-    reflexivity.
 Qed.
 
 Definition thy_lhs_match_one
@@ -600,9 +611,15 @@ Proof.
             unfold GroundTerm, OpenTerm.
             apply _.
         }
+        {
+            apply _.
+        }
         ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat2)).
         {
             unfold GroundTerm, OpenTerm.
+            apply _.
+        }
+        {
             apply _.
         }
         apply try_match_complete in Hsat1.
@@ -611,6 +628,8 @@ Proof.
         specialize (Heqfound (Some ρ')).
         ltac1:(ospecialize (Heqfound _)).
         {
+            clear Heqfound.
+            
             rewrite <- elem_of_list_In.
             unfold Valuation in *.
             rewrite elem_of_list_fmap.
@@ -618,6 +637,14 @@ Proof.
             split.
             {
                 symmetry.
+                assert (Hc := try_match_lhs_with_sc_complete e r).
+                specialize ()
+
+
+
+
+
+
                 unfold try_match_lhs_with_sc.
                 rewrite bind_Some.
                 exists ρ'.

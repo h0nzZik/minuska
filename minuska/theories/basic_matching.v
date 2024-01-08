@@ -13,28 +13,31 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
 
-
 Class Matches
     {Σ : Signature}
-    (V A B var : Type)
-    {_SV : SubsetEq V}
+    (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VA : VarsOf B var}
-    {_VV : VarsOf V var}
-    {_SAB : Satisfies V A B var} :=
+    {_SAB : Satisfies (gmap var GroundTerm) A B var} :=
 {
     matchesb:
-        V -> A -> B -> bool ;
+        (gmap var GroundTerm) -> A -> B -> bool ;
 
     matchesb_satisfies :
-        ∀ (v : V) (a : A) (b : B),
+        ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
             reflect (satisfies v a b) (matchesb v a b) ;
 
     matchesb_vars_of :
-        ∀ (v : V) (a : A) (b : B),
+        ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
             matchesb v a b = true ->
             vars_of b ⊆ vars_of v ;
+
+    matchesb_insensitive :
+        ∀ (v1 v2 : (gmap var GroundTerm)) (a : A) (b : B),
+            (vars_of v1) ∩ (vars_of v2) ⊆ vars_of b ->
+            matchesb v1 a b = matchesb v2 a b ;
+            
 }.
 
 Arguments satisfies : simpl never.
@@ -42,16 +45,14 @@ Arguments matchesb : simpl never.
 
 Lemma matchesb_implies_satisfies
     {Σ : Signature}
-    (V A B var : Type)
+    (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
-    {_SV : SubsetEq V}
     {_VA : VarsOf B var}
-    {_VV : VarsOf V var}
-    {_SAB : Satisfies V A B var}
-    {_MAB : Matches V A B var}
+    {_SAB : Satisfies (gmap var GroundTerm) A B var}
+    {_MAB : Matches A B var}
     :
-    forall (v : V) (a : A) (b : B),
+    forall (v : gmap var GroundTerm) (a : A) (b : B),
         matchesb v a b = true ->
         satisfies v a b
 .
@@ -64,16 +65,14 @@ Qed.
 
 Lemma satisfies_implies_matchesb
     {Σ : Signature}
-    (V A B var : Type)
+    (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
-    {_SV : SubsetEq V}
     {_VA : VarsOf B var}
-    {_VV : VarsOf V var}
-    {_SAB : Satisfies V A B var}
-    {_MAB : Matches V A B var}
+    {_SAB : Satisfies (gmap var GroundTerm) A B var}
+    {_MAB : Matches A B var}
     :
-    forall (v : V) (a : A) (b : B),
+    forall (v : (gmap var GroundTerm)) (a : A) (b : B),
         satisfies v a b ->
         matchesb v a b = true
 .
@@ -89,13 +88,11 @@ Lemma matchesb_ext
     (V A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
-    {_SV : SubsetEq V}
     {_VA : VarsOf B var}
-    {_VV : VarsOf V var}
-    {_SAB : Satisfies V A B var}
-    {_MAB : Matches V A B var}
+    {_SAB : Satisfies (gmap var GroundTerm) A B var}
+    {_MAB : Matches A B var}
     :
-    forall (v1 v2 : V),
+    forall (v1 v2 : (gmap var GroundTerm)),
         v1 ⊆ v2 ->
         forall (a : A) (b : B),
             matchesb v1 a b = true ->
@@ -128,22 +125,20 @@ Section with_signature.
 *)
   
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
-        {V Operand1 Operand2 var : Type}
+        {Operand1 Operand2 var : Type}
         {_varED : EqDecision var}
         {_varCnt : Countable var}
-        {_SV : SubsetEq V}
-        {_VVv : VarsOf V var}
-        {_S1 : Satisfies V (symbol) Operand2 var}
-        {_S2 : Satisfies V (Operand1) Operand2 var}
-        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies V (AppliedOperator' symbol Operand1) Operand2 var}
+        {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
+        {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) (AppliedOperator' symbol Operand1) Operand2 var}
         {_V1 : VarsOf Operand1 var}
         {_V2 : VarsOf Operand2 var}
-        {_M1 : Matches V (symbol) Operand2 var}
-        {_M2 : Matches V (Operand1) Operand2 var}
-        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches V (AppliedOperator' symbol Operand1) Operand2 var}
-        (ρ : V)
+        {_M1 : Matches (symbol) Operand2 var}
+        {_M2 : Matches (Operand1) Operand2 var}
+        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches (AppliedOperator' symbol Operand1) Operand2 var}
+        (ρ : (gmap var GroundTerm))
         (x : (AppliedOperator' symbol Operand1))
         (y : AppliedOperator' symbol Operand2)
         : bool :=
@@ -177,26 +172,50 @@ Section with_signature.
             o2
     end.
 
+    Lemma vars_of_filter
+        {var B : Type}
+        {_EV : EqDecision var}
+        {_CV : Countable var}
+        {_VB : VarsOf B var}
+        (b' : B)
+        (v1 : gmap var GroundTerm)
+        :
+        vars_of (filter (λ x : var * GroundTerm, x.1 ∈ vars_of b') v1)
+        ⊆ vars_of b'
+    .
+    Proof.
+        rewrite elem_of_subseteq.
+        intros v Hv.
+        unfold vars_of in Hv; simpl in Hv.
+        rewrite elem_of_dom in Hv.
+        destruct Hv as [w Hw].
+        rewrite map_lookup_filter in Hw.
+        rewrite bind_Some in Hw.
+        destruct Hw as [g [H1g H2g]].
+        unfold mguard,option_guard in H2g.
+        simpl in *.
+        ltac1:(case_match); inversion H2g;
+            subst; clear H2g.
+        assumption.
+    Qed.
+
     #[export]
     Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
-        {V Operand1 Operand2 var : Type}
+        {Operand1 Operand2 var : Type}
         {_varED : EqDecision var}
         {_varCnt : Countable var}
-        {_SV : SubsetEq V}
-        {_VVv : VarsOf V var}
         {_V1v : VarsOf Operand1 var}
         {_V2v : VarsOf Operand2 var}
-        {_S1 : Satisfies V (symbol) Operand2 var}
-        {_S2 : Satisfies V (Operand1) Operand2 var}
-        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies V (AppliedOperator' symbol Operand1) Operand2 var}
-        {_M1 : Matches V (symbol) Operand2 var}
-        {_M2 : Matches V (Operand1) Operand2 var}
-        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches V (AppliedOperator' symbol Operand1) Operand2 var}
+        {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
+        {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) (AppliedOperator' symbol Operand1) Operand2 var}
+        {_M1 : Matches (symbol) Operand2 var}
+        {_M2 : Matches (Operand1) Operand2 var}
+        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches (AppliedOperator' symbol Operand1) Operand2 var}
         :
         Matches
-            V
             ((AppliedOperator' symbol Operand1))
             (AppliedOperator' symbol Operand2)
             var
@@ -428,6 +447,55 @@ Section with_signature.
             }
         }
     Qed.
+    Next Obligation.
+        revert b v1 v2 H.
+        induction a; intros b' v1 v2 H'; destruct b';
+            simpl in *;
+            try reflexivity.
+        {
+            unfold vars_of at 3 in H'; simpl in H'.
+
+            (*
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v1) as newv1.
+            assert (Hnewv1: vars_of newv1 ⊆ vars_of b').
+            {
+                subst newv1.
+                apply vars_of_filter.
+            }
+            *)
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v2) as newv2.
+            assert (Hnewv2: vars_of newv2 ⊆ vars_of b').
+            {
+                subst newv2.
+                apply vars_of_filter.
+            }
+
+            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b0) v2) as new2v2.
+            assert (Hnew2v2: vars_of new2v2 ⊆ vars_of b0).
+            {
+                subst new2v2.
+                apply vars_of_filter.
+            }
+
+            (*rewrite IHa with (v1 := v1) (v2 := newv1) > [|ltac1:(set_solver)].*)
+            rewrite IHa with (v1 := v1) (v2 := newv2) > [|ltac1:(set_solver)].
+            rewrite IHa with (v1 := v2) (v2 := newv2) > [|ltac1:(set_solver)].
+            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2).
+            {
+                reflexivity.
+            }
+            {
+                ltac1:(set_solver).
+            }
+            
+             > [|ltac1:(set_solver)].
+            
+
+
+            
+        }
+    Qed.
     Fail Next Obligation.
 
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
@@ -435,6 +503,7 @@ Section with_signature.
         {_EDv : EqDecision var}
         {_Cv : Countable var}
         {_SV : SubsetEq V}
+        {_EV : Empty V}
         {_Vv : VarsOf V var}
         {_V1 : VarsOf Operand1 var}
         {_V2 : VarsOf Operand2 var}

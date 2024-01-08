@@ -10,7 +10,10 @@ Definition Valuation {Σ : Signature}
 #[export]
 Instance VarsOf_valuation
     {Σ : Signature}
-    : VarsOf Valuation variable
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    : VarsOf (gmap var GroundTerm) var
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
@@ -1588,7 +1591,7 @@ Proof. apply _. Defined.
 Definition GroundTerm_satisfies_OpenTerm
     {Σ : Signature}
     : GroundTerm -> OpenTerm -> Prop :=
-    fun g φ => ∃ ρ, satisfies ρ g φ
+    fun g φ => ∃ (ρ : Valuation), satisfies ρ g φ
 .
 
 #[export]
