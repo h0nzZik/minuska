@@ -1284,15 +1284,12 @@ Section with_signature.
 
     #[export]
     Program Instance Matches_bv_ao'
-        {V B var : Type}
-        {_SV : SubsetEq V}
+        {B var : Type}
         {_EDv : EqDecision var}
         {_Cv : Countable var}
-        {_VV : VarsOf V var}
         {_VB : VarsOf B var}
         :
         Matches
-            V
             builtin_value
             (AppliedOperator' symbol B)
             var
@@ -1371,19 +1368,15 @@ Section with_signature.
     *)
 
 
-    Search (Satisfies _ symbol _ _).
-    Set Typeclasses Debug.
     #[export]
     Program Instance
         Matches_symbol_B
-        {V B var : Type}
+        {B var : Type}
         {_VarED : EqDecision var}
         {_VarCnt : Countable var}
-        {_SV : SubsetEq V}
         {_VB : VarsOf B var}
-        {_VV : VarsOf V var}
         :
-        Matches V symbol B var
+        Matches symbol B var
     := {|
         matchesb := fun _ _ _ => false
     |}.
@@ -1431,7 +1424,6 @@ Section with_signature.
         matches__GroundTerm__OpenTerm
         :
         Matches
-            Valuation
             GroundTerm
             OpenTerm
             variable
@@ -1440,7 +1432,7 @@ Section with_signature.
         unfold GroundTerm.
         unfold GroundTerm'.
         unfold OpenTerm.
-        apply reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+        ltac1:(unshelve(eapply reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr')).
     Defined.
 
 End with_signature.
@@ -1534,10 +1526,104 @@ Proof.
     }
 Qed.
 
+
+Lemma Expression_evaluate_val_restrict:
+    ∀ {Σ : Signature}
+        (ρ1 ρ2 : gmap variable GroundTerm)
+        (t : Expression),
+            ρ1 ⊆ ρ2 →
+            Expression_evaluate ρ1 t →
+            Expression_evaluate ρ1 t = Expression_evaluate ρ2 t
+.
+Proof.
+    induction t; simpl.
+    { solve[auto]. }
+    {
+        intros H1 H2.
+        unfold is_true, isSome in *.
+        ltac1:(case_match).
+        {
+            symmetry.
+            eapply lookup_weaken.
+            {
+                apply H.
+            }
+            { assumption. }
+        }
+        {
+            inversion H2.
+        }
+    }
+    {
+        intros H1 H2.
+        unfold is_true, isSome in *.
+        symmetry.
+        ltac1:(repeat case_match).
+        {
+            rewrite bind_Some.
+            rewrite bind_Some in H.
+            destruct H as [y [H1y H2y]].
+            specialize (IHt ltac:(assumption) ltac:(assumption)).
+            symmetry in IHt.
+            eexists.
+            split.
+            {
+                apply IHt.
+            }
+            inversion H2y; subst; clear H2y.
+            inversion H1y; subst; clear H1y.
+            reflexivity.
+        }
+        {
+            rewrite bind_Some.
+            rewrite bind_Some in H.
+            destruct H as [y [H1y H2y]].
+            inversion H1y.
+        }
+        {
+            inversion H2.
+        }
+        {
+            inversion H2.
+        }
+    }
+    {
+        intros Hsub H1.
+        specialize (IHt1 Hsub).
+        specialize (IHt2 Hsub).
+        unfold mbind,option_bind in *.
+        ltac1:(repeat case_match);
+            try reflexivity.
+        {
+            apply f_equal.
+            specialize (IHt1 ltac:(assumption)).
+            specialize (IHt2 ltac:(assumption)).
+            ltac1:(simplify_eq/=).
+            reflexivity.
+        }
+        {
+            specialize (IHt1 ltac:(assumption)).
+            specialize (IHt2 ltac:(assumption)).
+            ltac1:(simplify_eq/=).
+        }
+        {
+            specialize (IHt1 ltac:(assumption)).
+            specialize (IHt2 ltac:(assumption)).
+            ltac1:(simplify_eq/=).
+        }
+        {
+            inversion H1.
+        }
+        {
+            inversion H1.
+        }
+    }
+Qed.
+
 #[export]
 Program Instance Matches_val_ap
     `{ComputableSignature}
-    : Matches Valuation unit AtomicProposition variable
+    : Matches unit AtomicProposition variable
 := {|
     matchesb := fun a b c => val_satisfies_ap_bool a c;
 |}.
@@ -1634,6 +1720,33 @@ Next Obligation.
         apply expression_evaluate_some_valuation in Heq2.
         rewrite union_subseteq.
         split; assumption.
+    }
+Qed.
+Next Obligation.
+    revert v1 v2 H0.
+    induction b; intros v1 v2 HH; simpl in *.
+    {
+        unfold vars_of in HH; simpl in *.
+        Search Expression_evaluate.
+        apply valuation_
+        unfold bool_decide.
+        ltac1:(repeat case_match); simpl.
+        {
+            clear H0 H1.
+            rewrite e,e0.
+            clear e e0.
+            ltac1:(congruence).
+
+        }
+        {
+
+        }
+        {
+
+        }
+        {
+            reflexivity.
+        }
     }
 Qed.
 Fail Next Obligation.
