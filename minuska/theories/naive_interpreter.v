@@ -497,10 +497,9 @@ Proof.
         assert (H1 : vars_of ρ ⊆ vars_of (fr_from r) ∪ vars_of (fr_scs r)).
         {
             unfold vars_of; simpl.
-
-            apply try_match_correct in H1ρ1.
-            Search vars_of.
-            unfold matchesb in H1ρ1; simpl in H1ρ1.
+            apply try_match_noOOTA in H1ρ1.
+            unfold vars_of in H1ρ1; simpl in H1ρ1.
+            ltac1:(set_solver).
         }
         assert (H2 : vars_of (fr_from r) ∪ vars_of (fr_scs r) ⊆ vars_of ρ).
         {
@@ -513,12 +512,15 @@ Proof.
             ltac1:(set_solver).
         }
         clear -H1 H2. ltac1:(set_solver).
-        
-
-        Search eq subseteq.
-        Search valuation_satisfies_sc_bool.
-        apply try_match_correct in H1ρ1.
     }
+    split.
+    {
+        ltac1:(set_solver).
+    }
+    exists ρ.
+    split>[reflexivity|].
+    rewrite Hm.
+    reflexivity.
 Qed.
 
 Definition thy_lhs_match_one
