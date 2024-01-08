@@ -60,6 +60,47 @@ Proof.
     { ltac1:(exfalso; naive_solver). }
 Qed.
 
+Lemma valuation_restrict_eq_impl_lookup
+    {Σ : Signature}
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    (ρ1 ρ2 : (gmap var GroundTerm))
+    (r : gset var)
+    (x : var)
+    :
+    x ∈ r ->
+    valuation_restrict ρ1 r = valuation_restrict ρ2 r ->
+    ρ1 !! x = ρ2 !! x
+.
+Proof.
+    intros H1 H2.
+    unfold valuation_restrict in H2.
+    rewrite map_eq_iff in H2.
+    specialize (H2 x).
+    do 2 (rewrite map_lookup_filter in H2).
+    unfold mguard,option_guard in H2.
+    simpl in H2.
+    destruct (decide_rel elem_of x r) eqn:Heq,
+        (ρ1 !! x) eqn:Heq2,
+        (ρ2 !! x) eqn:Heq3;
+        simpl in *;
+        try reflexivity;
+        ltac1:(simplify_eq/=).
+    {
+        reflexivity.
+    }
+    {
+        ltac1:(contradiction).
+    }
+    {
+        ltac1:(contradiction).
+    }
+    {
+        ltac1:(contradiction).
+    }
+Qed.
+
 Class Matches
     {Σ : Signature}
     (A B var : Type)
@@ -1006,7 +1047,6 @@ Section with_signature.
         reflect__matches__builtin_value__OpenTerm
         :
         Matches
-            Valuation
             (builtin_value)
             OpenTerm
             variable
@@ -1057,6 +1097,94 @@ Section with_signature.
                 eexists. ltac1:(eassumption).
             }
             { inversion H. }
+        }
+    Qed.
+    Next Obligation.
+        destruct b; simpl in *.
+        { reflexivity. }
+
+        unfold vars_of in *; simpl in *.
+        unfold vars_of in *; simpl in *.
+        ltac1:(repeat case_match);
+            try reflexivity.
+        {
+            symmetry.
+            apply bool_decide_eq_false.
+            intros HContra.
+            subst.
+            simpl in *.
+            apply valuation_restrict_eq_impl_lookup with (x := x) in H.
+            {
+                ltac1:(rewrite H in H1).
+                ltac1:(rewrite H3 in H1).
+                ltac1:(congruence).
+            }
+            {
+                ltac1:(set_solver).
+            }
+        }
+        {
+            subst.
+            apply bool_decide_eq_false.
+            intros HContra.
+            subst.
+            simpl in *.
+            apply valuation_restrict_eq_impl_lookup with (x := x) in H.
+            {
+                ltac1:(rewrite H in H1).
+                ltac1:(rewrite H3 in H1).
+                ltac1:(congruence).
+            }
+            {
+                ltac1:(set_solver).
+            }
+        }
+        {
+            subst.
+            simpl in *.
+            apply valuation_restrict_eq_impl_lookup with (x := x) in H.
+            {
+                ltac1:(rewrite H in H1).
+                ltac1:(rewrite H3 in H1).
+                inversion H1; subst; clear H1.
+                ltac1:(congruence).
+            }
+            {
+                ltac1:(set_solver).
+            }
+        }
+        {
+            subst.
+            apply bool_decide_eq_false.
+            intros HContra.
+            subst.
+            simpl in *.
+            apply valuation_restrict_eq_impl_lookup with (x := x) in H.
+            {
+                ltac1:(rewrite H in H1).
+                ltac1:(rewrite H3 in H1).
+                ltac1:(congruence).
+            }
+            {
+                ltac1:(set_solver).
+            }
+        }
+        {
+            subst.
+            symmetry.
+            apply bool_decide_eq_false.
+            intros HContra.
+            subst.
+            simpl in *.
+            apply valuation_restrict_eq_impl_lookup with (x := x) in H.
+            {
+                ltac1:(rewrite H in H1).
+                ltac1:(rewrite H1 in H2).
+                ltac1:(congruence).
+            }
+            {
+                ltac1:(set_solver).
+            }
         }
     Qed.
     Fail Next Obligation.
