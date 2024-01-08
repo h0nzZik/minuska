@@ -18,11 +18,13 @@ match og1, og2 with
 | Some g1, Some g2 => Some g1
 end.
 
+(*
 Definition valuations_compatible
     {Σ : Signature}
     (ρ1 ρ2 : Valuation) : bool
     := forallb (fun k => bool_decide (ρ1 !! k = ρ2 !! k)) (elements (dom ρ1 ∩ dom ρ2))
 .
+*)
 
 Definition merge_valuations
     {Σ : Signature}

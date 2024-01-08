@@ -13,6 +13,53 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
 
+Definition valuation_restrict
+    {Σ : Signature}
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    (ρ : (gmap var GroundTerm))
+    (r : gset var)
+    : gmap var GroundTerm
+:=
+    filter
+        (λ x : var * GroundTerm, x.1 ∈ r)
+        ρ
+.
+
+Lemma valuation_restrict_eq_subseteq
+    {Σ : Signature}
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    (ρ1 ρ2 : (gmap var GroundTerm))
+    (r r' : gset var)
+:
+    r ⊆ r' ->
+    valuation_restrict ρ1 r' = valuation_restrict ρ2 r' ->
+    valuation_restrict ρ1 r = valuation_restrict ρ2 r
+.
+Proof.
+    intros H1 H2.
+    unfold valuation_restrict in *.
+    rewrite map_eq_iff.
+    rewrite map_eq_iff in H2.
+    intros x.
+    specialize (H2 x).
+    do 2 (rewrite map_lookup_filter in H2).
+    do 2 (rewrite map_lookup_filter).
+    simpl in *.
+    rewrite elem_of_subseteq in H1.
+    specialize (H1 x).
+    unfold mbind,option_bind,mguard,option_guard in *; simpl in *.
+    ltac1:(repeat case_match); try reflexivity;
+        ltac1:(simplify_eq/=).
+    { reflexivity. }
+    { ltac1:(exfalso; naive_solver). }
+    { ltac1:(exfalso; naive_solver). }
+    { ltac1:(exfalso; naive_solver). }
+Qed.
+
 Class Matches
     {Σ : Signature}
     (A B var : Type)
@@ -35,9 +82,8 @@ Class Matches
 
     matchesb_insensitive :
         ∀ (v1 v2 : (gmap var GroundTerm)) (a : A) (b : B),
-            (vars_of v1) ∩ (vars_of v2) ⊆ vars_of b ->
-            matchesb v1 a b = matchesb v2 a b ;
-            
+            valuation_restrict v1 (vars_of b) = valuation_restrict v2 (vars_of b) ->
+            matchesb v1 a b = matchesb v2 a b ;            
 }.
 
 Arguments satisfies : simpl never.
@@ -485,7 +531,10 @@ Section with_signature.
             simpl in *;
             try reflexivity.
         {
-            unfold vars_of at 3 in H'; simpl in H'.
+            unfold vars_of in H'; simpl in H'.
+
+            erewrite IHa.
+
             remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v2) as newv2.
             assert (Hnewv2: vars_of newv2 ⊆ vars_of b').
             {
@@ -616,23 +665,20 @@ Section with_signature.
     Fail Next Obligation.
 
     Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
-        {V Operand1 Operand2 var : Type}
+        {Operand1 Operand2 var : Type}
         {_EDv : EqDecision var}
         {_Cv : Countable var}
-        {_SV : SubsetEq V}
-        {_EV : Empty V}
-        {_Vv : VarsOf V var}
         {_V1 : VarsOf Operand1 var}
         {_V2 : VarsOf Operand2 var}
-        {_S1 : Satisfies V (symbol) Operand2 var}
-        {_S2 : Satisfies V (Operand1) Operand2 var}
-        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies V ((AppliedOperator' symbol Operand1)) Operand2 var}
-        {_M1 : Matches V (symbol) Operand2 var}
-        {_M2 : Matches V (Operand1) Operand2 var}
-        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches V ((AppliedOperator' symbol Operand1)) Operand2 var}
-        (ρ : V)
+        {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
+        {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_M1 : Matches (symbol) Operand2 var}
+        {_M2 : Matches (Operand1) Operand2 var}
+        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches ((AppliedOperator' symbol Operand1)) Operand2 var}
+        (ρ : (gmap var GroundTerm))
         (x : (AppliedOperatorOr' symbol Operand1))
         (y : AppliedOperatorOr' symbol Operand2)
         : bool :=
@@ -650,24 +696,21 @@ Section with_signature.
     #[export]
     Program Instance
         reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
-        {V Operand1 Operand2 var : Type}
+        {Operand1 Operand2 var : Type}
         {_EDv : EqDecision var}
         {_Cv : Countable var}
-        {_SV : SubsetEq V}
-        {_Vv : VarsOf V var}
         {_V1 : VarsOf Operand1 var}
         {_V2 : VarsOf Operand2 var}
-        {_S1 : Satisfies V (symbol) Operand2 var}
-        {_S2 : Satisfies V (Operand1) Operand2 var}
-        {_S3 : Satisfies V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies V ((AppliedOperator' symbol Operand1)) Operand2 var}
-        {_M1 : Matches V (symbol) Operand2 var}
-        {_M2 : Matches V (Operand1) Operand2 var}
-        {_M3 : Matches V (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches V ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
+        {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_M1 : Matches (symbol) Operand2 var}
+        {_M2 : Matches (Operand1) Operand2 var}
+        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
+        {_M4 : Matches ((AppliedOperator' symbol Operand1)) Operand2 var}
         :
         Matches
-            V
             (AppliedOperatorOr' symbol Operand1)
             (AppliedOperatorOr' symbol Operand2)
             var
@@ -779,8 +822,25 @@ Section with_signature.
             assumption.
         }
     Qed.
+    Next Obligation.
+        destruct a,b; unfold vars_of in H; simpl in *.
+        {
+            apply matchesb_insensitive.
+            apply H.
+        }
+        {
+            apply matchesb_insensitive.
+            apply H.
+        }
+        { reflexivity. }
+        {
+            apply matchesb_insensitive.
+            apply H.
+        }
+    Qed.
     Fail Next Obligation.
 
+    About matchesb_insensitive.
     Definition builtin_value_matches_BuiltinOrVar
         : Valuation -> builtin_value -> BuiltinOrVar -> bool :=
     fun ρ b bv =>
@@ -799,7 +859,6 @@ Section with_signature.
         reflect__matches__builtin_value__BuiltinOrVar
         :
         Matches
-            (gmap variable GroundTerm)
             (builtin_value)
             BuiltinOrVar
             variable
@@ -879,6 +938,21 @@ Section with_signature.
             }
             {
                 inversion H.
+            }
+        }
+    Qed.
+    Next Obligation.
+        destruct b; unfold vars_of in H; simpl in *.
+        {
+            reflexivity.
+        }
+        {
+            ltac1:(repeat case_match); try reflexivity;
+                subst.
+            {
+                symmetry. apply bool_decide_eq_false.
+                intros HContra. subst.
+                
             }
         }
     Qed.
