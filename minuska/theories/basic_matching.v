@@ -531,135 +531,80 @@ Section with_signature.
             simpl in *;
             try reflexivity.
         {
+            
             unfold vars_of in H'; simpl in H'.
 
             erewrite IHa.
-
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v2) as newv2.
-            assert (Hnewv2: vars_of newv2 ⊆ vars_of b').
-            {
-                subst newv2.
-                apply vars_of_filter.
-            }
-
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b0) v2) as new2v2.
-            assert (Hnew2v2: vars_of new2v2 ⊆ vars_of b0).
-            {
-                subst new2v2.
-                apply vars_of_filter.
-            }
-
-            rewrite IHa with (v1 := v1) (v2 := newv2) > [|ltac1:(set_solver)].
-            rewrite IHa with (v1 := v2) (v2 := newv2) > [|ltac1:(set_solver)].
-            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2)>[|ltac1:(set_solver)].
-            rewrite matchesb_insensitive with (v1 := v2) (v2 := new2v2)>[|ltac1:(set_solver)].
+            erewrite matchesb_insensitive.
             reflexivity.
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                ltac1:(set_solver).
+            }
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                unfold vars_of at 1; simpl.
+                ltac1:(set_solver).
+            }
         }
         {
-            unfold vars_of at 3 in H'; simpl in H'.
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'1) v2) as newv2.
-            assert (Hnewv2: vars_of newv2 ⊆ vars_of b'1).
-            {
-                subst newv2.
-                apply vars_of_filter.
-            }
+            
+            unfold vars_of in H'; simpl in H'.
 
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v2) as new2v2.
-            assert (Hnew2v2: vars_of new2v2 ⊆ vars_of b'2).
-            {
-                subst new2v2.
-                apply vars_of_filter.
-            }
-
-            rewrite IHa with (v1 := v1) (v2 := newv2) > [|ltac1:(set_solver)].
-            rewrite IHa with (v1 := v2) (v2 := newv2) > [|ltac1:(set_solver)].
-            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2)>[|ltac1:(set_solver)].
-            rewrite matchesb_insensitive with (v1 := v2) (v2 := new2v2)>[|ltac1:(set_solver)].
+            erewrite IHa.
+            erewrite matchesb_insensitive.
             reflexivity.
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                ltac1:(set_solver).
+            }
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                unfold vars_of at 1; simpl.
+                ltac1:(set_solver).
+            }
         }
         {
-            unfold vars_of at 3 in H'; simpl in H'.
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b') v2) as newv2.
-            assert (Hnewv2: vars_of newv2 ⊆ vars_of b').
-            {
-                subst newv2.
-                apply vars_of_filter.
-            }
+            
+            unfold vars_of in H'; simpl in H'.
 
-            rewrite IHa1 with (v1 := v1) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
-            rewrite IHa1 with (v1 := v2) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
-
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b) v1) as new2v2.
-            assert (Hnew2v2: vars_of new2v2 ⊆ vars_of b).
-            {
-                subst new2v2.
-                apply vars_of_filter.
-            }
-            assert (Hnew2v2': vars_of new2v2 ⊆ vars_of v1).
-            {
-                subst.
-                apply vars_of_filter_2.
-            }
-
-
-            rewrite matchesb_insensitive with (v1 := v1) (v2 := new2v2)>[|clear IHa1 IHa2; ltac1:(set_solver)].
-            rewrite matchesb_insensitive with (v1 := v2) (v2 := new2v2)>[|clear IHa1 IHa2; ltac1:(set_solver)].
+            erewrite IHa1.
+            erewrite matchesb_insensitive.
             reflexivity.
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                ltac1:(set_solver).
+            }
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                unfold vars_of at 1; simpl.
+                ltac1:(set_solver).
+            }
         }
-        
         {
-            unfold vars_of at 3 in H'; simpl in H'.
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'1) v2) as newv2.
-            assert (Hnewv2: vars_of newv2 ⊆ vars_of b'1).
-            {
-                subst newv2.
-                apply vars_of_filter.
-            }
+            
+            unfold vars_of in H'; simpl in H'.
 
-            rewrite IHa1 with (v1 := v1) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
-            rewrite IHa1 with (v1 := v2) (v2 := newv2) > [|clear IHa1 IHa2; ltac1:(set_solver)].
-
-
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v2) as newv'.
-            assert (Hnewv': vars_of newv' ⊆ vars_of b'2).
-            {
-                subst newv'.
-                apply vars_of_filter.
-            }
-
-            ltac1:(cut(ApppliedOperator'_matches_AppliedOperator' v1 a2 b'2 = ApppliedOperator'_matches_AppliedOperator' v2 a2 b'2)).
-            {
-                intros HHH. rewrite HHH. reflexivity.
-            }
-
-
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v1) as ahoj1.
-            assert (vars_of ahoj1 ⊆ vars_of b'2).
-            {
-                subst.
-                apply vars_of_filter.
-            }
-            assert (vars_of ahoj1 ⊆ vars_of v1).
-            {
-                subst.
-                apply vars_of_filter_2.
-            }
-
-            remember (filter (fun (x : (var*GroundTerm)) => x.1 ∈ vars_of b'2) v2) as ahoj2.
-            assert (vars_of ahoj2 ⊆ vars_of b'2).
-            {
-                subst.
-                apply vars_of_filter.
-            }
-            assert (vars_of ahoj2 ⊆ vars_of v2).
-            {
-                subst.
-                apply vars_of_filter_2.
-            }
-
-            rewrite IHa2 with (v1 := v1)(v2 := ahoj1)>[|ltac1:(set_solver)].
-            rewrite IHa2 with (v1 := v2)(v2 := ahoj1)>[|ltac1:(set_solver)].
+            erewrite IHa1.
+            erewrite IHa2.
             reflexivity.
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                ltac1:(set_solver).
+            }
+            {
+                eapply valuation_restrict_eq_subseteq>[|apply H'].
+                clear.
+                unfold vars_of at 1; simpl.
+                ltac1:(set_solver).
+            }
         }
     Qed.
     Fail Next Obligation.
@@ -947,12 +892,94 @@ Section with_signature.
             reflexivity.
         }
         {
+            unfold valuation_restrict in H.
+            rewrite map_eq_iff in H.
+            specialize (H x).
+            rewrite map_lookup_filter in H.
+            rewrite map_lookup_filter in H.
             ltac1:(repeat case_match); try reflexivity;
                 subst.
             {
                 symmetry. apply bool_decide_eq_false.
                 intros HContra. subst.
-                
+
+                unfold Valuation in *.
+                ltac1:(rewrite H0 in H).
+                ltac1:(rewrite H2 in H).
+                simpl in H.
+                unfold mguard,option_guard in H.
+                ltac1:(case_match);
+                    inversion H; subst; clear H.
+                clear -n.
+                rewrite elem_of_singleton in n.
+                ltac1:(contradiction n).
+                reflexivity.
+            }
+            {
+                apply bool_decide_eq_false.
+                intros HContra. subst.
+
+                unfold Valuation in *.
+                ltac1:(rewrite H0 in H).
+                ltac1:(rewrite H2 in H).
+                simpl in H.
+                unfold mguard,option_guard in H.
+                ltac1:(case_match);
+                    inversion H; subst; clear H.
+                clear -n.
+                rewrite elem_of_singleton in n.
+                ltac1:(contradiction n).
+                reflexivity.
+            }
+            {
+                unfold bool_decide.
+                unfold Valuation in *.
+                ltac1:(rewrite H0 in H).
+                ltac1:(rewrite H2 in H).
+                simpl in H.
+                unfold mguard,option_guard in H.
+                ltac1:(case_match);
+                    inversion H; subst; clear H.
+                { reflexivity. }
+                clear -n.
+                ltac1:(contradiction n).
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
+            {
+                apply bool_decide_eq_false.
+                intros HContra.
+                subst.
+
+                unfold Valuation in *.
+                ltac1:(rewrite H0 in H).
+                ltac1:(rewrite H2 in H).
+                simpl in H.
+                unfold mguard,option_guard in H.
+                ltac1:(case_match);
+                    inversion H; subst; clear H.
+                clear -n.
+                apply n.
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
+            {
+                symmetry.
+                apply bool_decide_eq_false.
+                intros HContra.
+                subst.
+
+                unfold Valuation in *.
+                ltac1:(rewrite H0 in H).
+                ltac1:(rewrite H1 in H).
+                simpl in H.
+                unfold mguard,option_guard in H.
+                ltac1:(case_match);
+                    inversion H; subst; clear H.
+                clear -n.
+                apply n.
+                rewrite elem_of_singleton.
+                reflexivity.
             }
         }
     Qed.
