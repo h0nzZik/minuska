@@ -1791,7 +1791,7 @@ Qed.
 #[export]
 Program Instance Matches_val_c
     `{CΣ : ComputableSignature}
-    : Matches Valuation unit Constraint variable
+    : Matches unit Constraint variable
 := {|
     matchesb := fun a b c => val_satisfies_c_bool a c;
 |}.
@@ -1854,6 +1854,25 @@ Next Obligation.
         ltac1:(set_solver).
     }
 Qed.
+Next Obligation.
+    induction b; unfold vars_of in *; simpl in *.
+    { reflexivity. }
+    {
+        apply matchesb_insensitive.
+        exact H.
+    }
+    {
+        rewrite IHb1. rewrite IHb2. reflexivity.
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H].
+            ltac1:(set_solver).
+        }
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H].
+            ltac1:(set_solver).
+        }
+    }
+Qed.
 Fail Next Obligation.
 
 Definition valuation_satisfies_match_bool
@@ -1873,7 +1892,7 @@ end.
 Program Instance Matches_val_match
     {Σ : Signature}
     :
-    Matches Valuation unit Match variable
+    Matches unit Match variable
 := {|
     matchesb := fun a b c => valuation_satisfies_match_bool a c;
 |}.
@@ -1899,6 +1918,57 @@ Next Obligation.
     }
     { inversion H. }
 Qed.
+Next Obligation.
+    destruct b; unfold vars_of in *; simpl in *.
+    ltac1:(repeat case_match); simpl in *.
+    {
+        unfold Valuation in *.
+        ltac1:(erewrite (valuation_restrict_eq_impl_lookup v1 v2 {[m_variable]}) in H0).
+        rewrite H0 in H1.
+        inversion H1; subst; clear H1.
+        {
+            apply matchesb_insensitive.
+            eapply valuation_restrict_eq_subseteq>[|apply H].
+            ltac1:(set_solver).
+        }
+        {
+            ltac1:(set_solver).
+        }
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H].
+            ltac1:(set_solver).
+        }
+    }
+    {
+        unfold Valuation in *.
+        ltac1:(erewrite (valuation_restrict_eq_impl_lookup v1 v2 {[m_variable]}) in H0).
+        rewrite H0 in H1.
+        inversion H1; subst; clear H1.
+        {
+            ltac1:(set_solver).
+        }
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H].
+            ltac1:(set_solver).
+        }
+    }
+    {
+        unfold Valuation in *.
+        ltac1:(erewrite (valuation_restrict_eq_impl_lookup v1 v2 {[m_variable]}) in H0).
+        rewrite H0 in H1.
+        inversion H1; subst; clear H1.
+        {
+            ltac1:(set_solver).
+        }
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H].
+            ltac1:(set_solver).
+        }
+    }
+    {
+        reflexivity.
+    }
+Qed.
 Fail Next Obligation.
 
 
@@ -1915,7 +1985,7 @@ end.
 Program Instance Matches_valuation_sc
     `{CΣ : ComputableSignature}
     :
-    Matches Valuation unit SideCondition variable
+    Matches unit SideCondition variable
 := {|
     matchesb := fun a b c => valuation_satisfies_sc_bool a c;
 |}.
@@ -1941,6 +2011,17 @@ Next Obligation.
         exact H.
     }
 Qed.
+Next Obligation.
+    destruct b; unfold vars_of in H; simpl in *.
+    {
+        apply matchesb_insensitive.
+        exact H.
+    }
+    {
+        apply matchesb_insensitive.
+        exact H.
+    }
+Qed.
 Fail Next Obligation.
 
 
@@ -1957,7 +2038,7 @@ Program Instance Matches_valuation_scs
     {Σ : Signature}
     {CΣ : ComputableSignature}
     :
-    Matches Valuation unit (list SideCondition) variable
+    Matches unit (list SideCondition) variable
 := {|
     matchesb := fun ρ b c => forallb (matchesb ρ ()) c;
 |}.
@@ -2003,6 +2084,26 @@ Next Obligation.
     specialize (H x H2X).
     exact H.
 Qed.
+Next Obligation.
+    revert H.
+    induction b; simpl; intros HH.
+    { reflexivity. }
+    {
+        unfold vars_of in HH; simpl in HH.
+        ltac1:(ospecialize (IHb _)).
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply HH].
+            unfold vars_of at 1; simpl.
+            unfold fmap; simpl.
+            ltac1:(set_solver).
+        }
+        rewrite IHb.
+        erewrite matchesb_insensitive.
+        reflexivity.
+        eapply valuation_restrict_eq_subseteq>[|apply HH].
+        ltac1:(set_solver).
+    }
+Qed.
 Fail Next Obligation.
 
 
@@ -2011,7 +2112,7 @@ Fail Next Obligation.
 Program Instance Matches__builtin__Expr
    `{CΣ : ComputableSignature}
     :
-    Matches Valuation builtin_value (Expression) variable
+    Matches builtin_value (Expression) variable
 := {|
     matchesb := (fun ρ b e =>
         bool_decide (Expression_evaluate ρ e = Some (aoo_operand _ _ b))
@@ -2026,13 +2127,17 @@ Next Obligation.
     apply expression_evaluate_some_valuation in H.
     assumption.
 Qed.
+Next Obligation.
+    erewrite Expression_evaluate_val_restrict.
+    reflexivity.
+    exact H.
+Qed.
 Fail Next Obligation.
 
 #[export]
 Program Instance Matches_asb_expr
     {Σ : Signature}:
     Matches
-        Valuation
         ((AppliedOperator' symbol builtin_value))
         Expression
         variable
@@ -2048,6 +2153,11 @@ Next Obligation.
     apply bool_decide_eq_true in H.
     apply expression_evaluate_some_valuation in H.
     assumption.
+Qed.
+Next Obligation.
+    erewrite Expression_evaluate_val_restrict.
+    reflexivity.
+    exact H.
 Qed.
 Fail Next Obligation.
 
