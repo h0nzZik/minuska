@@ -87,15 +87,40 @@ match x with
 end.
 
 
-Definition FlattenedRewritingRule_wf
+Definition FlattenedRewritingRule_wf1
     {Σ : Signature}
     (r : FlattenedRewritingRule)
-    : bool
+    : Prop
 := 
     let vs1 : gset variable := vars_of (fr_scs r) in
     let vs2 : gset variable := vars_of (fr_from r) in
-    bool_decide (vs1 ⊆ vs2)
+    (vs1 ⊆ vs2)
 .
+
+(*
+    This is known as 'weakly well-defined rule'
+    in the literature.
+*)
+Definition FlattenedRewritingRule_wf2
+    {Σ : Signature}
+    (r : FlattenedRewritingRule)
+    : Prop
+:= 
+    forall (g : GroundTerm) (ρ : Valuation),
+        satisfies ρ g (fr_from r) ->
+        satisfies ρ () (fr_scs r) ->
+        exists (g' : GroundTerm),
+            satisfies ρ g' (fr_to r)
+.
+
+Definition FlattenedRewritingRule_wf
+    {Σ : Signature}
+    (r : FlattenedRewritingRule)
+    : Prop
+:=
+    FlattenedRewritingRule_wf1 r /\ FlattenedRewritingRule_wf2 r
+.
+
 
 Definition FlattenedRewritingTheory {Σ : Signature}
     := list FlattenedRewritingRule
@@ -104,9 +129,9 @@ Definition FlattenedRewritingTheory {Σ : Signature}
 Definition FlattenedRewritingTheory_wf
     {Σ : Signature}
     (Γ : FlattenedRewritingTheory)
-    : bool
+    : Prop
 :=
-    forallb FlattenedRewritingRule_wf Γ
+    Forall FlattenedRewritingRule_wf Γ
 .
 
 Definition rewriting_relation_flat

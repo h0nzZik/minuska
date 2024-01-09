@@ -879,8 +879,9 @@ Definition naive_interpreter
 Lemma naive_interpreter_sound
     {Σ : Signature}
     {CΣ : ComputableSignature}
-    (Γ : list FlattenedRewritingRule)
-    : FlatInterpreter_sound Γ (naive_interpreter Γ).
+    (Γ : FlattenedRewritingTheory)
+    (wfΓ : FlattenedRewritingTheory_wf Γ = true)
+    : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).
 Proof.
     unfold naive_interpreter.
     unfold FlatInterpreter_sound.
@@ -914,27 +915,49 @@ Proof.
                 exists pg'. exists r.
                 split>[assumption|].
                 exists ρ.
+                split>[apply Hsat|].
                 split>[assumption|].
-                split>[assumption|].
-                (* Almost there!*)
-                admit.
+                apply Hsat.
             }
         }
     }
     {
         intros e Hnotstuck.
         unfold naive_interpreter.
+
+        destruct Hnotstuck as [e' He'].
+        unfold rewriting_relation_flat in He'.
+        destruct He' as [r' [H1r' H2r']].
+        unfold flattened_rewrites_to in H2r'.
+        destruct H2r' as [ρ' Hρ'].
+        unfold flattened_rewrites_in_valuation_to in Hρ'.
+
+        
         destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
         {
             destruct p as [r ρ]; cbn in *.
             apply thy_lhs_match_one_Some in Hmatch.
             destruct Hmatch as [Hin Hsat].
+            
+            
             destruct (evaluate_rhs_pattern ρ (fr_to r)) eqn:Heval.
             {
                 eexists. reflexivity.
             }
             {
                 ltac1:(exfalso).
+                assert (Hn : ~ exists g, evaluate_rhs_pattern ρ (fr_to r) = Some g).
+                {
+                    intros HContra.
+                    destruct HContra as [g HContra].
+                    rewrite Heval in HContra.
+                    inversion HContra.
+                }
+                ltac1:(setoid_rewrite evaluate_rhs_pattern_correct in Hn).
+                apply Hn. clear Hn. clear Heval.
+    
+                Search evaluate_rhs_pattern.   
+                
                 unfold thy_weakly_well_defined in Hwwd.
                 specialize (Hwwd r Hin).
                 unfold rule_weakly_well_defined in Hwwd.
