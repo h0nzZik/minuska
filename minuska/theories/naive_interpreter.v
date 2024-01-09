@@ -986,7 +986,3 @@ Proof.
     }
 Qed.
 
-
-
-
-End with_decidable_signature.
