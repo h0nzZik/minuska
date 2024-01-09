@@ -825,32 +825,37 @@ Proof.
         rewrite fmap_Some in H11.
         destruct H11 as [ot [Hot1 Hot2]].
         subst.
-        rewrite list_lookup_fmap in Hot1.
-        rewrite fmap_Some in Hot1.
-        destruct Hot1 as [frr [Hfrr1 Hfrr2]].
-        subst.
-        destruct H12 as [H121 H122].
-        destruct H121 as [ρ' Hρ'].
         rewrite bind_Some in H2.
-        destruct H2 as [ρ'' [Hρ''1 Hρ''2]].
-        rewrite bind_Some in Hρ''2.
-        destruct Hρ''2 as [frr2 [Hfrr21 Hfrr22]].
-        inversion Hfrr22; subst; clear Hfrr22.
+        destruct H2 as [ρ' [H1ρ' H2ρ']].
+        rewrite bind_Some in H2ρ'.
+        destruct H2ρ' as [r' [H1r' H2r']].
+        inversion H2r'; subst; clear H2r'.
+        rewrite Hot1 in H1r'.
+        inversion H1r'; subst; clear H1r'.
         split.
         {
             rewrite elem_of_list_lookup.
-            exists idx. exact Hfrr21.
-        }
-        apply try_match_correct in Hρ'.
-        apply try_match_correct in Hρ''1.
-        unfold Valuation in *.
-        ltac1:(unshelve(eapply matchesb_implies_satisfies)).
-        ltac1:(cut (frr = r)).
-        {
-            intros ?. subst. assumption.
+            exists idx. apply Hot1.
         }
         {
-            ltac1:(naive_solver).
+            destruct H12 as [H1 H2].
+            destruct H1 as [x Hx].
+            rewrite Hx in H1ρ'.
+            inversion H1ρ'; subst; clear H1ρ'.
+            unfold try_match_lhs_with_sc in Hx.
+            rewrite bind_Some in Hx.
+            destruct Hx as [x [H1x H2x]].
+            destruct (matchesb x () (fr_scs r)) eqn:Heq.
+            {
+                inversion H2x; subst; clear H2x.
+                apply try_match_correct in H1x.
+                apply matchesb_implies_satisfies in Heq.
+                apply matchesb_implies_satisfies in H1x.
+                split; assumption.
+            }
+            {
+                inversion H2x.
+            }
         }
     }
 Qed.
