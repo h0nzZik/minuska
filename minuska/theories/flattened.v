@@ -86,8 +86,27 @@ match x with
 | aoo_operand _ _ operand => A_to_OpenTermB operand
 end.
 
+
+Definition FlattenedRewritingRule_wf
+    {Σ : Signature}
+    (r : FlattenedRewritingRule)
+    : bool
+:= 
+    let vs1 : gset variable := vars_of (fr_scs r) in
+    let vs2 : gset variable := vars_of (fr_from r) in
+    bool_decide (vs1 ⊆ vs2)
+.
+
 Definition FlattenedRewritingTheory {Σ : Signature}
     := list FlattenedRewritingRule
+.
+
+Definition FlattenedRewritingTheory_wf
+    {Σ : Signature}
+    (Γ : FlattenedRewritingTheory)
+    : bool
+:=
+    forallb FlattenedRewritingRule_wf Γ
 .
 
 Definition rewriting_relation_flat
@@ -121,6 +140,7 @@ Definition FlatInterpreter
 Definition FlatInterpreter_sound
     {Σ : Signature}
     (Γ : list FlattenedRewritingRule)
+    (wfΓ : FlattenedRewritingTheory_wf Γ)
     (interpreter : FlatInterpreter Γ)
     : Prop
     := (forall e,

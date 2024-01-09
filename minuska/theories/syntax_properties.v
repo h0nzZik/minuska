@@ -155,6 +155,13 @@ Instance VarsOf_SideCondition
     vars_of := vars_of_SideCondition ; 
 |}.
 
+#[export]
+Program Instance VarsOf_list_SideCondition
+    {Σ : Signature}
+    : VarsOf (list SideCondition) variable
+:= {|
+    vars_of := fun scs => ⋃ (vars_of <$> scs)
+|}.
 
 Fixpoint vars_of_WithASideConditionB
     {Σ : Signature}

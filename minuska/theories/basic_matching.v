@@ -2024,15 +2024,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-
-#[export]
-Program Instance VarsOf_list_SideCondition
-    {Σ : Signature}
-    : VarsOf (list SideCondition) variable
-:= {|
-    vars_of := fun scs => ⋃ (vars_of <$> scs)
-|}.
-
 #[export]
 Program Instance Matches_valuation_scs
     {Σ : Signature}

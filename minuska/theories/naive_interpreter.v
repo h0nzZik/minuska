@@ -597,6 +597,52 @@ Proof.
     }
 Qed.
 
+Lemma valuation_restrict_vars_of_self
+    {Σ : Signature}
+    (ρ' ρ : gmap variable GroundTerm)
+    :
+    ρ' ⊆ ρ  ->
+    valuation_restrict ρ' (vars_of ρ') = valuation_restrict ρ (vars_of ρ')
+.
+Proof.
+    intros H.
+    rewrite map_eq_iff.
+    unfold valuation_restrict.
+    intros i.
+    rewrite map_lookup_filter.
+    rewrite map_lookup_filter.
+    destruct (ρ' !! i) eqn:Hρ'i.
+    {
+        simpl.
+        unfold mguard,option_guard; simpl.
+        assert (Hρi: ρ !! i = Some g).
+        {
+            eapply lookup_weaken>[|apply H].
+            assumption.
+        }
+        rewrite Hρi.
+        simpl.
+        reflexivity.
+    }
+    {
+        simpl.
+        destruct (ρ!!i) eqn:Hρi; simpl.
+        {
+            unfold mguard, option_guard.
+            ltac1:(case_match)>[|reflexivity].
+            unfold vars_of in e. clear H0.
+            simpl in e.
+            rewrite elem_of_dom in e.
+            destruct e as [g' Hg'].
+            rewrite Hρ'i in Hg'.
+            inversion Hg'.
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
+
 Definition thy_lhs_match_one
     {Σ : Signature}
     {CΣ : ComputableSignature}
@@ -625,7 +671,8 @@ Lemma thy_lhs_match_one_None
     {Σ : Signature}
     {CΣ : ComputableSignature}
     (e : GroundTerm)
-    (Γ : list FlattenedRewritingRule)
+    (Γ : FlattenedRewritingTheory)
+    (wfΓ : FlattenedRewritingTheory_wf Γ)
     :
     thy_lhs_match_one e Γ = None ->
     ~ exists (r : FlattenedRewritingRule) (ρ : Valuation),
@@ -701,8 +748,40 @@ Proof.
             {
                 symmetry.
                 assert (Hc := try_match_lhs_with_sc_complete e r).
-                specialize ()
-
+                specialize (Hc ρ').
+                ltac1:(ospecialize (Hc _)).
+                {
+                    unfold FlattenedRewritingTheory_wf in wfΓ.
+                    unfold is_true in wfΓ.
+                    rewrite forallb_forall in wfΓ.
+                    specialize (wfΓ r).
+                    unfold FlattenedRewritingRule_wf in wfΓ.
+                    rewrite <- elem_of_list_In in wfΓ.
+                    specialize (wfΓ Hin).
+                    apply bool_decide_eq_true in wfΓ.
+                    apply wfΓ.
+                }
+                assert (H3' := H3).
+                apply try_match_correct in H3'.
+                specialize (Hc H3').
+                ltac1:(ospecialize (Hc _)).
+                {
+                    erewrite matchesb_insensitive.
+                    apply Hsat2.
+                    unfold FlattenedRewritingTheory_wf in wfΓ.
+                    unfold is_true in wfΓ.
+                    rewrite forallb_forall in wfΓ.
+                    specialize (wfΓ r).
+                    unfold FlattenedRewritingRule_wf in wfΓ.
+                    rewrite <- elem_of_list_In in wfΓ.
+                    specialize (wfΓ Hin).
+                    apply bool_decide_eq_true in wfΓ.
+                    eapply valuation_restrict_eq_subseteq.
+                    { apply wfΓ. }
+                    rewrite <- H1.
+                    clear -H2.
+                    Search matchesb.
+                }
 
 
 
