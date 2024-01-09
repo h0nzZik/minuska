@@ -153,6 +153,8 @@ Module example_1.
     Compute (my_number 2).
     Compute (interp (my_number 2)).
 
-    Extraction "example_lang" interp.
+    Definition interp_number := interp ∘ my_number.
+
+    Extraction "ExampleLang.ml" interp_number.
 
 End example_1.
