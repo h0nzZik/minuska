@@ -123,19 +123,9 @@ Module example_1.
 
     *)
 
-    Print GroundTerm.
-    Print BuiltinOrVar.
-    Print OpenTerm.
-    Print AppliedOperatorOr'.
-    Print AppliedOperator'.
-    Print RhsPattern.
-    Print Expression.
-
-    Definition rule_1 : FlattenedRewritingRule := {|
+    (* Here is a hand-crafted definition without using any notations *)
     (*
-        fr_from := aoo_app _ _  (ao_app_ao (ao_operator "s") ((ao_app_operand (ao_operator "s") (bov_variable "X"))));
-        fr_to := aoo_operand _ _  (ft_variable "X");
-    *)
+    Definition rule_1 : FlattenedRewritingRule := {|
         fr_from := aoo_app _ _ 
             (ao_app_ao (ao_operator "top")
                 (ao_app_ao
@@ -150,6 +140,97 @@ Module example_1.
         );
         fr_scs := [] ;
     |}.
+    *)
+
+    Structure MyApplyLhs := {
+        ma_T2 : Type ;
+        my_apply_lhs :
+            AppliedOperator' symbol BuiltinOrVar ->
+            ma_T2 ->
+            AppliedOperator' symbol BuiltinOrVar ;
+    }.
+
+    Arguments my_apply_lhs {m} _ _.
+    Arguments my_apply_lhs : simpl never.
+    
+    Definition MyApplyLhs_operand : MyApplyLhs := {|
+        my_apply_lhs := fun x y => ao_app_operand x y ;
+    |}.
+    Canonical MyApplyLhs_operand.
+
+    Definition MyApplyLhs_ao : MyApplyLhs := {|
+        my_apply_lhs := fun x y => @ao_app_ao symbol BuiltinOrVar x y ;
+    |}.
+    Canonical MyApplyLhs_ao.
+
+
+    Structure MyApplyRhs := {
+        mar_T2 : Type ;
+        my_apply_rhs :
+            AppliedOperator' symbol Expression ->
+            mar_T2 ->
+            AppliedOperator' symbol Expression ;
+    }.
+
+    Arguments my_apply_rhs {m} _ _.
+    Arguments my_apply_rhs : simpl never.
+    
+    Definition MyApplyRhs_operand : MyApplyRhs := {|
+        my_apply_rhs := fun x y => ao_app_operand x y ;
+    |}.
+    Canonical MyApplyRhs_operand.
+
+    Definition MyApplyRhs_ao : MyApplyRhs := {|
+        my_apply_rhs := fun x y => @ao_app_ao symbol Expression x y ;
+    |}.
+    Canonical MyApplyRhs_ao.
+
+    (* Here is a definition using the `my_apply_*` overloads. *)
+    (*
+    Definition rule_1 : FlattenedRewritingRule := {|
+        fr_from := aoo_app _ _ 
+            (my_apply_lhs (ao_operator "top")
+                (my_apply_lhs
+                    (ao_operator "s")
+                    ((my_apply_lhs (ao_operator "s") (bov_variable "X")))
+                )
+            );
+        fr_to := aoo_app symbol Expression  (
+            ao_app_operand
+                (ao_operator "top")
+                (ft_variable "X")
+        );
+        fr_scs := [] ;
+    |}.
+    *)
+
+
+    Notation "f [< y , .. , z >]"
+        := (my_apply_lhs .. (my_apply_lhs (ao_operator f) y) .. z)
+        (at level 90)
+    .
+
+    Notation "f [<* y , .. , z *>]"
+        := (my_apply_rhs .. (my_apply_rhs (ao_operator f) y) .. z)
+        (at level 90)
+    .
+
+    Notation "'$' x" := (bov_variable x) (at level 200).
+
+    Notation "'$*' x" := (ft_variable x) (at level 200).
+
+    (* Finally, here is a definition using fancy syntactic sugar. *)
+    Definition rule_1 : FlattenedRewritingRule := {|
+        fr_from := aoo_app _ _  (
+            "top" [< "s" [< "s" [< $ "X" >] >] >]
+        );
+        fr_to := aoo_app _ _ (
+            "top" [<* $* "X" *>]
+        );
+        fr_scs := [] ;
+    |}.
+
+    Print rule_1.
 
     Definition Γ : FlattenedRewritingTheory := [rule_1].
 
