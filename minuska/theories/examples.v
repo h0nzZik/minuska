@@ -1,6 +1,7 @@
 From Coq.Logic Require Import ProofIrrelevance.
 
 Require Extraction.
+Extraction Language OCaml.
 
 From Minuska Require Import
     prelude
@@ -12,6 +13,10 @@ From Minuska Require Import
     naive_interpreter
 .
 
+Extract Inductive nat => "int"
+  [ "0" "(fun x -> x + 1)" ]
+  "(fun zero succ n -> if n=0 then zero () else succ (n-1))"
+.
 
 Module example_1.
 
@@ -127,8 +132,22 @@ Module example_1.
     Print Expression.
 
     Definition rule_1 : FlattenedRewritingRule := {|
+    (*
         fr_from := aoo_app _ _  (ao_app_ao (ao_operator "s") ((ao_app_operand (ao_operator "s") (bov_variable "X"))));
         fr_to := aoo_operand _ _  (ft_variable "X");
+    *)
+        fr_from := aoo_app _ _ 
+            (ao_app_ao (ao_operator "top")
+                (ao_app_ao
+                    (ao_operator "s")
+                    ((ao_app_operand (ao_operator "s") (bov_variable "X")))
+                )
+            );
+        fr_to := aoo_app symbol Expression  (
+            ao_app_operand
+                (ao_operator "top")
+                (ft_variable "X")
+        );
         fr_scs := [] ;
     |}.
 
@@ -138,6 +157,17 @@ Module example_1.
         naive_interpreter Γ
     .
 
+    Fixpoint interp_loop
+        (fuel : nat)
+        (g : GroundTerm)
+        : option GroundTerm
+    :=
+    match fuel with
+    | 0 => Some g
+    | S fuel' => g' ← interp g; interp_loop fuel' g'
+    end
+    .
+
     Fixpoint my_number' (n : nat) : AppliedOperator' symbol builtin_value  :=
     match n with
     | 0 => ao_operator "0"
@@ -145,16 +175,66 @@ Module example_1.
     end
     .
 
-    Definition my_number (n : nat) : GroundTerm :=
-        aoo_app _ _ (my_number' n)
+    Fixpoint my_number'_inv
+        (g : AppliedOperator' symbol builtin_value)
+        : option nat
+    :=
+    match g with
+    | ao_operator s => if bool_decide (s = "0") then Some 0 else None
+    | ao_app_ao s arg =>
+        match s with
+        | ao_operator s => if bool_decide (s = "s") then
+            n ← my_number'_inv arg;
+            Some (S n)
+        else None
+        | _ => None
+        end
+    | ao_app_operand _ _ => None
+    end
     .
 
+    Definition my_number (n : nat) : GroundTerm :=
+        aoo_app _ _ (ao_app_ao (ao_operator "top") (my_number' n))
+    .
+
+    Definition my_number_inv (g : GroundTerm) : option nat
+    :=
+    match g with
+    | aoo_app _ _ (ao_app_ao (ao_operator "top") g') => my_number'_inv g'
+    | _ => None
+    end
+    .
+
+    Lemma my_number_inversion' : forall n,
+        my_number'_inv (my_number' n) = Some n
+    .
+    Proof.
+        induction n; simpl.
+        { reflexivity. }
+        {
+            rewrite bind_Some.
+            exists n.
+            auto.
+        }
+    Qed.
+
+    Lemma my_number_inversion : forall n,
+        my_number_inv (my_number n) = Some n
+    .
+    Proof.
+        intros n. simpl. apply my_number_inversion'.
+    Qed.
 
     Compute (my_number 2).
     Compute (interp (my_number 2)).
 
-    Definition interp_number := interp ∘ my_number.
+    Definition interp_loop_number fuel := 
+        fun n =>
+        let og' := ((interp_loop fuel) ∘ my_number) n in
+        g' ← og';
+        my_number_inv g'
+    .
 
-    Extraction "ExampleLang.ml" interp_number.
+    Extraction "ExampleLang.ml" interp_loop_number.
 
 End example_1.

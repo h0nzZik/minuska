@@ -1,2 +1,2 @@
 number_example: src/example_lang_driver.ml all
-	ocamlc -w -20 -w -26 -o $@  $<  example_lang.mli example_lang.ml 
+	ocamlc -w -20 -w -26 -o $@  ExampleLang.mli ExampleLang.ml $<
