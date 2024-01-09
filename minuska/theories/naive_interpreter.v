@@ -735,7 +735,45 @@ Proof.
         apply try_match_complete in Hsat1.
         destruct Hsat1 as [ρ' [H1 [H2 H3]]].
 
-        specialize (Heqfound (Some ρ')).
+        assert (Hc := try_match_lhs_with_sc_complete e r).
+        specialize (Hc ρ').
+        ltac1:(ospecialize (Hc _)).
+        {
+            unfold FlattenedRewritingTheory_wf in wfΓ.
+            unfold is_true in wfΓ.
+            rewrite forallb_forall in wfΓ.
+            specialize (wfΓ r).
+            unfold FlattenedRewritingRule_wf in wfΓ.
+            rewrite <- elem_of_list_In in wfΓ.
+            specialize (wfΓ Hin).
+            apply bool_decide_eq_true in wfΓ.
+            apply wfΓ.
+        }
+        assert (H3' := H3).
+        apply try_match_correct in H3'.
+        specialize (Hc H3').
+        ltac1:(ospecialize (Hc _)).
+        {
+            erewrite matchesb_insensitive.
+            apply Hsat2.
+            unfold FlattenedRewritingTheory_wf in wfΓ.
+            unfold is_true in wfΓ.
+            rewrite forallb_forall in wfΓ.
+            specialize (wfΓ r).
+            unfold FlattenedRewritingRule_wf in wfΓ.
+            rewrite <- elem_of_list_In in wfΓ.
+            specialize (wfΓ Hin).
+            apply bool_decide_eq_true in wfΓ.
+            eapply valuation_restrict_eq_subseteq.
+            { apply wfΓ. }
+            rewrite <- H1.
+            clear -H2.
+            apply valuation_restrict_vars_of_self.
+            assumption.
+        }
+        destruct Hc as [ρ'' [H1ρ'' [H2ρ'' H3ρ'']]].
+
+        specialize (Heqfound (Some ρ'')).
         ltac1:(ospecialize (Heqfound _)).
         {
             clear Heqfound.
@@ -747,133 +785,15 @@ Proof.
             split.
             {
                 symmetry.
-                assert (Hc := try_match_lhs_with_sc_complete e r).
-                specialize (Hc ρ').
-                ltac1:(ospecialize (Hc _)).
-                {
-                    unfold FlattenedRewritingTheory_wf in wfΓ.
-                    unfold is_true in wfΓ.
-                    rewrite forallb_forall in wfΓ.
-                    specialize (wfΓ r).
-                    unfold FlattenedRewritingRule_wf in wfΓ.
-                    rewrite <- elem_of_list_In in wfΓ.
-                    specialize (wfΓ Hin).
-                    apply bool_decide_eq_true in wfΓ.
-                    apply wfΓ.
-                }
-                assert (H3' := H3).
-                apply try_match_correct in H3'.
-                specialize (Hc H3').
-                ltac1:(ospecialize (Hc _)).
-                {
-                    erewrite matchesb_insensitive.
-                    apply Hsat2.
-                    unfold FlattenedRewritingTheory_wf in wfΓ.
-                    unfold is_true in wfΓ.
-                    rewrite forallb_forall in wfΓ.
-                    specialize (wfΓ r).
-                    unfold FlattenedRewritingRule_wf in wfΓ.
-                    rewrite <- elem_of_list_In in wfΓ.
-                    specialize (wfΓ Hin).
-                    apply bool_decide_eq_true in wfΓ.
-                    eapply valuation_restrict_eq_subseteq.
-                    { apply wfΓ. }
-                    rewrite <- H1.
-                    clear -H2.
-                    Search matchesb.
-                }
-
-
-
-
-
-                unfold try_match_lhs_with_sc.
-                rewrite bind_Some.
-                exists ρ'.
-                rewrite H3.
-                split>[reflexivity|].
-                clear -H2 Hsat2.
-                unfold matchesb in *; simpl in *.
-                rewrite forallb_forall in Hsat2.
-                ltac1:(case_match).
-                {
-                    reflexivity.
-                }
-                ltac1:(exfalso).
-                ltac1:(assert(H': ~ (forallb (matchesb ρ' ()) (fr_scs r) = true))).
-                {
-                    ltac1:(rewrite H).
-                    intros HContra. inversion HContra.
-                }
-                clear H.
-                rewrite forallb_forall in H'.
-                apply H'. intros x. specialize (Hsat2 x). clear H'.
-                intros Hin. specialize (Hsat2 Hin). clear Hin.
-                (* FIXME I should extract this to a separate proof but am too tired today. *)
-                unfold matchesb in *; simpl in *.
-                induction x; simpl in *.
-                {
-                    unfold matchesb in *; simpl in *.
-                    induction c; simpl in *.
-                    {
-                        reflexivity.
-                    }
-                    {
-                        unfold matchesb in *; simpl in *.
-                        induction ap; simpl in *.
-                        {
-                            rewrite andb_true_iff.
-                            rewrite andb_true_iff in Hsat2.
-                            destruct Hsat2 as [Hs1 Hs2].
-                            apply bool_decide_eq_true in Hs1.
-                            rewrite bool_decide_eq_true.
-                            unfold isSome in *.
-                            destruct (Expression_evaluate ρ e1) eqn:Hev1.
-                            {
-                                clear Hs2. symmetry in Hs1.
-                                assert (He1 := Expression_evalute_total_iff e1 ρ).
-                                rewrite Hev1 in He1.
-                                apply proj1 in He1.
-                                ltac1:(ospecialize (He1 _)).
-                                {
-                                    eexists. reflexivity.
-                                }
-                                assert (He2 := Expression_evalute_total_iff e2 ρ).
-                                rewrite Hs1 in He2.
-                                apply proj1 in He2.
-                                ltac1:(ospecialize (He2 _)).
-                                {
-                                    eexists. reflexivity.
-                                }
-                                assert (Hsame1 := Expression_evalute_total_same e1).
-                                assert (Hsame2 := Expression_evalute_total_same e2).
-                                unfold vars_of in *. simpl in *.
-                                erewrite Hsame1 with (ρ2 := ρ).
-                                {
-
-                                }
-                                {
-                                    assumption.
-                                }
-                                Search Expression_evaluate.
-                                eapply Expression_evaluate_extensive_Some in Hs1.
-                            }
-                            {
-                                inversion Hs2.
-                            }
-                            
-                            Search Expression_evaluate.
-                        }
-                    }
-                }
+                exact H3ρ''.
             }
             {
-                assumption.
+                exact Hin.
             }
         }
-        unfold is_Some in Heqfound.
         apply Heqfound.
-        exists ρ'.
+        unfold is_Some.
+        exists ρ''.
         reflexivity.
     }
 Qed.
