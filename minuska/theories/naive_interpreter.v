@@ -475,7 +475,7 @@ Lemma try_match_lhs_with_sc_complete
     (r : FlattenedRewritingRule)
     (ρ : gmap variable GroundTerm)
     :
-    vars_of (fr_from r) ⊆ vars_of (fr_scs r) ->
+    vars_of (fr_scs r) ⊆ vars_of (fr_from r) ->
     matchesb ρ g (fr_from r) = true ->
     matchesb ρ () (fr_scs r) = true ->
     ∃ ρ' : (gmap variable GroundTerm),
@@ -520,17 +520,80 @@ Proof.
         exists ρ1.
         split>[apply H3ρ2|].
         unfold matchesb in *; simpl in *.
-        unfold matchesb in *; simpl in *.
-        Search valuation_satisfies_sc_bool.
-        About valuation_satisfies_sc_bool.
-        apply try_match_noOOTA in H3ρ2.
-        rewrite H2.
-        reflexivity.
-    }
-    {
+        ltac1:(case_match).
+        { reflexivity. }
+        rewrite forallb_forall in H2.
+        assert (HH : ~ (forallb [eta matchesb ρ1 ()] (fr_scs r) = true)).
+        {
+            intros HContra.
+            unfold matchesb in *; simpl in *.
+            rewrite HContra in H. inversion H.
+        }
+        clear H.
+        rewrite forallb_forall in HH.
         ltac1:(exfalso).
-        destruct H2ρ1 as [HH1 HH2].
-        rewrite Hm in H2.
+        apply HH. clear HH.
+        intros x Hx.
+        specialize (H2 x Hx).
+        erewrite matchesb_insensitive in H2. apply H2.
+        unfold valuation_restrict.
+        rewrite map_eq_iff.
+        intros i.
+        do 2 (rewrite map_lookup_filter).
+        unfold Valuation in *.
+        
+        destruct (ρ!!i) eqn:Hρi, (ρ1!!i) eqn:Hρ1i; simpl in *.
+        {
+            unfold mguard,option_guard; simpl.
+            ltac1:(case_match).
+            {
+                ltac1:(rewrite map_subseteq_spec in H2ρ1).
+                specialize (H2ρ1 i).
+                specialize (H2ρ1 g1 Hρ1i).
+                ltac1:(simplify_eq/=).
+                reflexivity.
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+            unfold mguard,option_guard; simpl.
+            ltac1:(case_match)>[|reflexivity].
+            ltac1:(exfalso).
+            clear H.
+            ltac1:(cut(i ∈ vars_of ρ1)).
+            {
+                intros HHH. unfold vars_of in HHH; simpl in HHH.
+                rewrite elem_of_dom in HHH.
+                destruct HHH as [s Hs].
+                rewrite Hs in Hρ1i.
+                inversion Hρ1i.
+            }
+            clear H2ρ1.
+            rewrite H1ρ1.
+            clear H1ρ1.
+            eapply elem_of_weaken>[|apply Hn].
+            clear Hn.
+            rewrite <- elem_of_list_In in Hx.
+            unfold vars_of; simpl.
+            rewrite elem_of_union_list.
+            exists (vars_of x).
+            split>[|assumption].
+            rewrite elem_of_list_fmap.
+            exists x.
+            split>[reflexivity|].
+            exact Hx.
+        }
+        {
+            ltac1:(exfalso).
+            eapply lookup_weaken in Hρ1i>[|apply H2ρ1].
+            rewrite Hρi in Hρ1i.
+            inversion Hρ1i.
+        }
+        {
+            reflexivity.
+        }
     }
 Qed.
 
