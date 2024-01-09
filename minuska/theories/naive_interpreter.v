@@ -741,12 +741,11 @@ Proof.
         {
             unfold FlattenedRewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
-            rewrite forallb_forall in wfΓ.
+            rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             unfold FlattenedRewritingRule_wf in wfΓ.
             rewrite <- elem_of_list_In in wfΓ.
             specialize (wfΓ Hin).
-            apply bool_decide_eq_true in wfΓ.
             apply wfΓ.
         }
         assert (H3' := H3).
@@ -758,12 +757,11 @@ Proof.
             apply Hsat2.
             unfold FlattenedRewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
-            rewrite forallb_forall in wfΓ.
+            rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             unfold FlattenedRewritingRule_wf in wfΓ.
             rewrite <- elem_of_list_In in wfΓ.
             specialize (wfΓ Hin).
-            apply bool_decide_eq_true in wfΓ.
             eapply valuation_restrict_eq_subseteq.
             { apply wfΓ. }
             rewrite <- H1.
@@ -880,7 +878,7 @@ Lemma naive_interpreter_sound
     {Σ : Signature}
     {CΣ : ComputableSignature}
     (Γ : FlattenedRewritingTheory)
-    (wfΓ : FlattenedRewritingTheory_wf Γ = true)
+    (wfΓ : FlattenedRewritingTheory_wf Γ)
     : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).
 Proof.
     unfold naive_interpreter.
@@ -946,6 +944,26 @@ Proof.
             }
             {
                 ltac1:(exfalso).
+                unfold FlattenedRewritingTheory_wf in wfΓ.
+                unfold FlattenedRewritingRule_wf in wfΓ.
+                rewrite Forall_forall in wfΓ.
+                specialize (wfΓ r).
+                rewrite <- elem_of_list_In in wfΓ.
+                specialize (wfΓ ltac:(assumption)).
+                destruct wfΓ as [wf1 wf2].
+                unfold FlattenedRewritingRule_wf2 in wf2.
+                specialize (wf2 e ρ).
+                destruct Hsat as [Hsat1 Hsat2].
+                specialize (wf2 Hsat1 Hsat2).
+                destruct wf2 as [g' Hg'].
+                ltac1:(unshelve(eapply satisfies_implies_matchesb in Hg')).
+                {
+                    apply _.
+                }
+                {
+                    apply _.
+                }
+
                 assert (Hn : ~ exists g, evaluate_rhs_pattern ρ (fr_to r) = Some g).
                 {
                     intros HContra.
@@ -955,16 +973,15 @@ Proof.
                 }
                 ltac1:(setoid_rewrite evaluate_rhs_pattern_correct in Hn).
                 apply Hn. clear Hn. clear Heval.
-    
-                Search evaluate_rhs_pattern.   
-                
-                unfold thy_weakly_well_defined in Hwwd.
-                specialize (Hwwd r Hin).
-                unfold rule_weakly_well_defined in Hwwd.
-                specialize (Hwwd e ρ Hsat).
-                destruct Hwwd as [e' Hsate'].
-                apply evaluate_rhs_rule_correct. in Heval.
+                exists g'.
+                apply Hg'.
             }
+        }
+        {
+            ltac1:(exfalso).
+            apply thy_lhs_match_one_None in Hmatch.
+            { ltac1:(naive_solver). }
+            { assumption. }
         }
     }
 Qed.
