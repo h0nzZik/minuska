@@ -18,13 +18,11 @@ match og1, og2 with
 | Some g1, Some g2 => Some g1
 end.
 
-(*
 Definition valuations_compatible
     {Σ : Signature}
     (ρ1 ρ2 : Valuation) : bool
     := forallb (fun k => bool_decide (ρ1 !! k = ρ2 !! k)) (elements (dom ρ1 ∩ dom ρ2))
 .
-*)
 
 Definition merge_valuations
     {Σ : Signature}
@@ -300,7 +298,7 @@ Class TryMatch
     (A B : Type)
     {_VB: VarsOf B variable}
     {_SAB : Satisfies Valuation A B variable}
-    {_MAB : Matches Valuation A B variable}
+    {_MAB : Matches A B variable}
     :=
 {
     try_match :
@@ -334,13 +332,13 @@ Fixpoint ApppliedOperator'_try_match_AppliedOperator'
     {Operand1 Operand2 : Type}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
-    {_M0 : Matches Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (x : AppliedOperator' symbol Operand1)
     (y : AppliedOperator' symbol Operand2)
@@ -399,13 +397,13 @@ Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
-    {_M0 : Matches Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (ρ ρ' : Valuation)
     (a : AppliedOperator' symbol Operand1)
@@ -651,13 +649,13 @@ Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
-    {_M0 : Matches Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (ρ : Valuation)
     (a : AppliedOperator' symbol Operand1)
@@ -977,13 +975,13 @@ Program Instance TryMatch_AppliedOperator'
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
-    {_M0 : Matches Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
     TryMatch (AppliedOperator' symbol Operand1) (AppliedOperator' symbol Operand2)
@@ -1118,13 +1116,13 @@ Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
     {_V1 : VarsOf Operand1 variable}
     {_V2 : VarsOf Operand2 variable}
     {_S1 : Satisfies Valuation Operand1 Operand2 variable}
-    {_M1 : Matches Valuation Operand1 Operand2 variable}
+    {_M1 : Matches Operand1 Operand2 variable}
     {_TM1 : TryMatch Operand1 Operand2}
     {_S2 : Satisfies Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
-    {_M2 : Matches Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
+    {_M2 : Matches Operand1 (AppliedOperator' symbol Operand2) variable}
     {_TM2 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S3 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
-    {_M3 : Matches Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
+    {_M3 : Matches (AppliedOperator' symbol Operand1) Operand2 variable}
     {_TM3 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (x : AppliedOperatorOr' symbol Operand1)
     (y : AppliedOperatorOr' symbol Operand2)
@@ -1148,13 +1146,13 @@ Program Instance TryMatch_AppliedOperatorOr'
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
-    {_M0 : Matches Valuation (Operand1) Operand2 variable}
+    {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
     TryMatch (AppliedOperatorOr' symbol Operand1) (AppliedOperatorOr' symbol Operand2)

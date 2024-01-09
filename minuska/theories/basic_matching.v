@@ -172,7 +172,7 @@ Qed.
 
 Lemma matchesb_ext
     {Σ : Signature}
-    (V A B var : Type)
+    (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VA : VarsOf B var}
