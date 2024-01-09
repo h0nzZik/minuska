@@ -564,3 +564,25 @@ Section countable.
     Qed.
 
 End countable.
+
+
+
+Class ComputableSignature {Σ : Signature} := {
+    builtin_unary_predicate_interp_bool :
+        builtin_unary_predicate -> GroundTerm -> bool ; 
+
+    builtin_binary_predicate_interp_bool :
+        builtin_binary_predicate -> GroundTerm -> GroundTerm -> bool ;         
+
+    cs_up :
+        forall p e,
+            reflect
+                (builtin_unary_predicate_interp p e)
+                (builtin_unary_predicate_interp_bool p e) ;
+
+    cs_bp :
+        forall p e1 e2,
+            reflect
+                (builtin_binary_predicate_interp p e1 e2)
+                (builtin_binary_predicate_interp_bool p e1 e2) ;
+}.
