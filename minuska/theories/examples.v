@@ -234,9 +234,15 @@ End example_1.
 
 Module two_counters.
 
+    Definition top := "top".
+    Definition state := "state".
+    Definition s := "s".
+    Definition M := "M".
+    Definition N := "N".
+
     Definition rule_1 : FlattenedRewritingRule :=
-        rule ("top" [< "state" [< ( "s" [< $"M" >]), $"N" >] >])
-          => ("top" [< "state" [< $"M", "s" [< $"N" >]  >] >])
+        rule top [< state [< s [< $M >], $N >] >]
+          => top [< state [< $M, s [< $N >]  >] >]
           requires []
     .
 
