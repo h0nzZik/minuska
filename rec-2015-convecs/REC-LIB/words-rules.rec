@@ -38,8 +38,8 @@
 
 % ----------------------------------------------------------------------------
 
-   HalfU (buildBlock (O1, O2, O3, O4)) -> buildHalf (O1, O2)
-   HalfL (buildBlock (O1, O2, O3, O4)) -> buildHalf (O3, O4)
+   halfU (buildBlock (O1, O2, O3, O4)) -> buildHalf (O1, O2)
+   halfL (buildBlock (O1, O2, O3, O4)) -> buildHalf (O3, O4)
 
 % ----------------------------------------------------------------------------
 
