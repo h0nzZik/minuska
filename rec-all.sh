@@ -59,9 +59,20 @@ for src in ./rec-2015-convecs/REC/*.rec; do
     name=$(basename --suffix ".rec" "$src" )
     tgt="$outdir/$name.v"
     echo "$src -> $tgt"
+    #if grep -q 'if' "$src"; then
+    #    echo "(Skipping due to use of the conditional)"
+    #    continue
+    #fi
     > "$tgt"
     echo "$prefix" >> "$tgt"
     ./rec.sh "$src" >> "$tgt" 2>/dev/null
+    res="$?"
+    echo "TopRes: $res"
+    if [ "$res" -eq 3 ]; then
+        echo "Error in translation"
+        rm -f "$tgt"
+        continue
+    fi
     echo "$suffix" >> "$tgt"
     echo "Extraction \"$name\" result." >> "$tgt"
 done

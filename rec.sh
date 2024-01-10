@@ -7,7 +7,7 @@ INPUT_FILE=$(realpath "$1")
 # TODO handle this in a better way (mktemp?)
 TMP_FILE="$INPUT_FILE.tmp"
 
-"$DIR/rec-2015-convecs/com/rec_normalize" -nothing "$INPUT_FILE" > "$TMP_FILE"
+"$DIR/rec-2015-convecs/com/rec_normalize" -nothing "$INPUT_FILE" > "$TMP_FILE" 2>/dev/null
 
 #cat "$TMP_FILE"
 
@@ -53,6 +53,15 @@ evalSection() {
         | sed '/^\s*$/d' \
         | head -n 1
 }
+
+#evalSection | grep 'if'
+rules | grep -q 'if' -- > /dev/null 2>/dev/null
+res="$?"
+if [ "$res" -eq "0" ]; then
+    echo "(Skipping due to use of the conditional after preprocessing)"
+    exit 3
+fi
+
 
 cons \
     | cut --delimiter=':' --fields='1' \
@@ -107,3 +116,5 @@ evalSection \
 echo '].'
 
 echo 'Definition term_to_reduce := hd (aoo_app _ _ ("top"[<>])%concrete) terms_to_reduce.'
+
+exit 0
