@@ -20,14 +20,10 @@ let speclist =
 
 let () =
   Arg.parse speclist anon_fun usage_msg;
-  (* Main functionality here *)
-  print_string "Hello world!\n";
-  print_string (string_of_int !number1);
-  print_string (string_of_int !number2);
-  print_string (string_of_int !depth);
+  printf "Running from (%d,%d) for %d steps.\n" !number1 !number2 !depth;
   let result = TwoCounters.Coq_two_counters.interp_loop_number !depth !number1 !number2 in
   match result with
   | None -> print_string "None"
   | Some x ->
-    printf "Some (%d,%d)" (fst x) (snd x)
+    printf "Some (%d,%d)\n" (fst x) (snd x)
   
