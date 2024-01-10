@@ -88,7 +88,9 @@ Definition MyApplyRhs_ao : MyApplyRhs := {|
 |}.
 Canonical MyApplyRhs_ao.
 
-
+Notation "f [<>]" := (ao_operator f)
+    (at level 90)
+.
 
 Notation "f [< y , .. , z >]"
     := (my_apply_lhs .. (my_apply_lhs (ao_operator f) y) .. z)
@@ -315,4 +317,23 @@ Module two_counters.
     .
 
 End two_counters.
+
+Module fib.
+
+Definition d0 := "d0".
+Definition s := "s".
+Definition plus := "plus".
+Definition fibb := "fibb".
+Definition N := "N".
+Definition M := "M".
+Definition rules := [
+rule "top"[<plus[<d0[<>], $N>] >] => "top"[< $N>] requires [];
+rule "top"[<plus[<s[<$N>], $M>] >] => "top"[< s[<plus[<$N, $M>]>]>] requires [];
+rule "top"[<fibb[<d0[<>]>] >] => "top"[< d0[<>]>] requires [];
+rule "top"[<fibb[<s[<d0[<>]>]>] >] => "top"[< s[<d0[<>]>]>] requires [];
+rule "top"[<fibb[<s[<s[<$N>]>]>] >] => "top"[< plus[<fibb[<s[<$N>]>], fibb[<$N>]>]>] requires []].
+
+Check rules.
+
+End fib.
 

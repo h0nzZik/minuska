@@ -58,7 +58,13 @@ echo 'Definition rules := ['
 
 rules \
     | sed 's/^[ \t]*//;s/[ \t]*$//'  \
-    | sed -e 's/->/=>/g' \
+    | sed -e 's/\([a-z]\([[:alnum:]]\)*\),/\1(),/g' \
+    | sed -e 's/\([a-z]\([[:alnum:]]\)*\))/\1())/g' \
+    | sed -e 's/\([a-z]\([[:alnum:]]\)*\)$/\1()/g' \
+    | sed -e 's/\([A-Z]\)/$\1/g' \
+    | sed -e 's/(/[</g' \
+    | sed -e 's/)/>]/g' \
+    | sed -e 's/\(.*\)->\(.*\)/rule "top"[<\1>] => "top"[<\2>] requires []/g' \
     | sed -e 's/\(.*\)/\1;/' \
     | head --bytes=-2
 
