@@ -69,15 +69,19 @@ vars \
     | sed -e 's/ /\n/g' \
     | sed -e 's/\(.*\)/Definition \1 := \"\1\"\./'
 
+# We mark all identifiers with dollars
+# and then we remove the dollar and add parentheses after the identifiers
+# that start with a lowercase letter
 processSymbolicTerm() {
     cat - \
     | sed 's/^[ \t]*//;s/[ \t]*$//'  \
     | sed -e 's/ //g' \
-    | sed -e 's/\([a-z]\([a-zA-Z0-9]\)*\)\([,)$-]\)/\1()\3/g' \
-    | sed -e 's/\([a-z]\([a-zA-Z0-9]\)*\)$/\1()/g' \
+    | sed -e 's/\([[:alpha:]][[:alnum:]_]*\)/$\1/g' \
+    | sed -e 's/\(\$[[:lower:]][[:alnum:]_]*\)$/\1()/g' \
+    | sed -e 's/\(\$[[:lower:]][[:alnum:]_]*\)\(,\|)\)/\1()\2/g' \
+    | sed -e 's/\$\([[:lower:]][[:alnum:]_]*\)\((\|,\|)\)/\1\2/g' \
     | sed -e 's/(/[</g' \
     | sed -e 's/)/>]/g' \
-    | sed -e 's/\([^a-zA-Z0-9]\)\([A-Z]\)/\1$\2/g' \
     
 }
 
