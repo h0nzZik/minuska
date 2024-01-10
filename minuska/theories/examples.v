@@ -206,12 +206,14 @@ Definition fibb := "fibb".
 Definition N := "N".
 Definition M := "M".
 Definition rules := [
-rule "top"[<plus[<d0[<>], $N>] >] => "top"[< $N>] requires [];
-rule "top"[<plus[<s[<$N>], $M>] >] => "top"[< s[<plus[<$N, $M>]>]>] requires [];
-rule "top"[<fibb[<d0[<>]>] >] => "top"[< d0[<>]>] requires [];
-rule "top"[<fibb[<s[<d0[<>]>]>] >] => "top"[< s[<d0[<>]>]>] requires [];
-rule "top"[<fibb[<s[<s[<$N>]>]>] >] => "top"[< plus[<fibb[<s[<$N>]>], fibb[<$N>]>]>] requires []].
-
+rule "top"[<plus [<d0[<>], $N>] >] => "top"[< $N>] requires [];
+rule "top"[<plus [<s [<$N>], $M>] >] => "top"[< s [<plus [<$N, $M>]>]>] requires [];
+rule "top"[<fibb [<d0[<>]>] >] => "top"[< d0[<>]>] requires [];
+rule "top"[<fibb [<s [<d0[<>]>]>] >] => "top"[< s [<d0[<>]>]>] requires [];
+rule "top"[<fibb [<s [<s [<$N>]>]>] >] => "top"[< plus [<fibb [<s [<$N>]>], fibb [<$N>]>]>] requires []].
+Definition term_to_reduce :=
+(fibb [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<d0[<>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>])%concrete
+.
 
 End fib.
 

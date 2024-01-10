@@ -94,6 +94,8 @@ rules | processSymbolicTerm | processRule
 echo '].'
 
 echo 'Definition term_to_reduce :='
-evalSection | processSymbolicTerm
+evalSection \
+    | processSymbolicTerm \
+    | sed -e 's/\(.*\)/(\1)%concrete/'
 echo '.'
 

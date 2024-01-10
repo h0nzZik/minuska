@@ -10,9 +10,11 @@ From Minuska Require Import
 
 Declare Scope RuleLhsScope.
 Declare Scope RuleRhsScope.
+Declare Scope ConcreteScope.
 
 Delimit Scope RuleLhsScope with rule_lhs.
 Delimit Scope RuleRhsScope with rule_rhs.
+Delimit Scope ConcreteScope with concrete.
 
 Structure MyApplyLhs {Σ : StaticModel} := {
     mal_T2 : Type ;
@@ -57,6 +59,28 @@ Definition MyApplyRhs_ao {Σ : StaticModel} : MyApplyRhs := {|
 |}.
 Canonical MyApplyRhs_ao.
 
+
+Structure MyApplyConcrete {Σ : StaticModel} := {
+    mac_T2 : Type ;
+    my_apply_c :
+        AppliedOperator' symbol builtin_value ->
+        mac_T2 ->
+        AppliedOperator' symbol builtin_value ;
+}.
+
+Arguments my_apply_c {_} {m} _ _.
+Arguments my_apply_c : simpl never.
+
+Definition MyApplyConcrete_operand {Σ : StaticModel} : MyApplyConcrete := {|
+    my_apply_c := fun x y => ao_app_operand x y ;
+|}.
+Canonical MyApplyConcrete_operand.
+
+Definition MyApplyConcrete_ao {Σ : StaticModel} : MyApplyConcrete := {|
+    my_apply_c := fun x y => @ao_app_ao symbol builtin_value x y ;
+|}.
+Canonical MyApplyConcrete_ao.
+
 Notation "f [<>]" := (ao_operator f)
     (at level 90)
 .
@@ -71,6 +95,12 @@ Notation "f [< y , .. , z >]"
     := (my_apply_rhs .. (my_apply_rhs (ao_operator f) y) .. z)
     (at level 90)
     : RuleRhsScope
+.
+
+Notation "f [< y , .. , z >]"
+    := (my_apply_c .. (my_apply_c (ao_operator f) y) .. z)
+    (at level 90)
+    : ConcreteScope
 .
 
 Notation "'$' x" := (bov_variable x)
