@@ -518,7 +518,6 @@ Lemma c2m_closed_vterm__m2c_GroundTerm
 Proof.
     destruct g; simpl.
     {
-        Check term_ind.
         eapply term_ind
             with
             (Sig := m2c_sig Σ)
@@ -601,7 +600,6 @@ Proof.
                     lazy_match! (Constr.type &H0) with
                     | ( (`(m2c_GroundTerm (c2n_closed_vterm (a ↾ ?pf)))) = _) => remember $pf as another_ugly_proof
                     end.
-                    Search proj1_sig eq.
                     *)
 
                     specialize (IHl ao t (c_sym_symbol Σ s)).
@@ -710,7 +708,6 @@ Proof.
                         {
                             simpl in IH.
                             inversion IH; subst; clear IH.
-                            Search b.
                             ltac1:(f_equal).
                         }
                         {

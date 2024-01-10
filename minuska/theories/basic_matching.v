@@ -826,7 +826,6 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-    About matchesb_insensitive.
     Definition builtin_value_matches_BuiltinOrVar
         : Valuation -> builtin_value -> BuiltinOrVar -> bool :=
     fun ρ b bv =>

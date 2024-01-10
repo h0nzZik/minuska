@@ -212,7 +212,6 @@ rule "top"[<fibb[<d0[<>]>] >] => "top"[< d0[<>]>] requires [];
 rule "top"[<fibb[<s[<d0[<>]>]>] >] => "top"[< s[<d0[<>]>]>] requires [];
 rule "top"[<fibb[<s[<s[<$N>]>]>] >] => "top"[< plus[<fibb[<s[<$N>]>], fibb[<$N>]>]>] requires []].
 
-Check rules.
 
 End fib.
 
