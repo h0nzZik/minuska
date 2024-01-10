@@ -1475,7 +1475,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Set Typeclasses Debug.
 #[export]
 Program Instance TryMatch__builtin__AO'sB
     {Σ : StaticModel}

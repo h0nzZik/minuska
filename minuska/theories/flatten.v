@@ -184,7 +184,6 @@ end.
 
 *)
 
-Set Typeclasses Debug.
 Definition aoxyo_satisfies_aoxzo_bool
     {Σ : StaticModel}
     {CΣ : ComputableStaticModel}
@@ -1095,7 +1094,6 @@ Proof.
     }
 Qed.
 (*
-(*Set Typeclasses Debug.*)
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
     `{CΣ : ComputableStaticModel}
     {A B : Type}

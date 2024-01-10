@@ -1347,7 +1347,6 @@ Section with_signature.
     |}.
 
     (*
-    Set Typeclasses Debug.
     #[export]
     Program Instance Matches_vlrblrootob
         :
