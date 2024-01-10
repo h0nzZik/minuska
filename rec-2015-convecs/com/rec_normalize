@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/usr/bin/env bash
 
 # Hubert Garavel -- quick-and-dirty REC translators
 
@@ -127,7 +127,8 @@ fi
 # - removing empty lines
 
 cat "$TEMP" |
-cpp -P -I"$DIR/../REC-LIB" -x assembler-with-cpp |
+#cpp -P -I"$DIR/../REC-LIB" -x assembler-with-cpp |
+cpp -P -I"$DIR/../REC-LIB" |
 iconv -f "utf-8" -t "ascii//TRANSLIT" |
 sed -e 's/\r//' \
     -e 's/%.*$//' \
