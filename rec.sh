@@ -69,8 +69,3 @@ rules \
     | head --bytes=-2
 
 echo '].'
-
-#cat "$INPUT_FILE" \
-#    | cut -f1 -d"%" \
-#    | sed -e 's/\([A-Z]\)/$\1/g'
-
