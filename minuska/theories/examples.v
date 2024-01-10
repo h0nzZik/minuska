@@ -302,7 +302,7 @@ Module two_counters.
     Qed.
 
     Definition interp_loop_number fuel := 
-        fun m n =>
+        fun (m n : nat) =>
         let og' := ((interp_loop fuel) ∘ pair_to_state) (m,n) in
         g' ← og';
         state_to_pair g'

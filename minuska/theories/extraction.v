@@ -18,5 +18,5 @@ Extraction
 
 Extraction
     "TwoCounters.ml"
-    example_1.interp_loop_number
+    two_counters.interp_loop_number
 .
