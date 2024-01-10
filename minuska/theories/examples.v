@@ -18,219 +18,139 @@ Extract Inductive nat => "int"
   "(fun zero succ n -> if n=0 then zero () else succ (n-1))"
 .
 
+
+#[local]
+Instance MySymbols : Symbols string := Build_Symbols _ _ _.
+
+#[local]
+Program Instance Σ : Signature := {|
+    symbol := string ;
+    variable := string ;
+    symbols :=  MySymbols;
+    variables := StringVariables ;
+|}.
+Next Obligation.
+    apply EmptyBuiltin.
+Defined.
+
+
+Program Instance CΣ : @ComputableSignature Σ := {|
+    builtin_unary_predicate_interp_bool := fun _ _ => false ;
+    builtin_binary_predicate_interp_bool := fun _ _ _ => false ;
+|}.
+Next Obligation.
+    destruct p.
+Qed.
+Next Obligation.
+    destruct p.
+Qed.
+Fail Next Obligation.
+
+Declare Scope RuleLhsScope.
+Declare Scope RuleRhsScope.
+
+Delimit Scope RuleLhsScope with rule_lhs.
+Delimit Scope RuleRhsScope with rule_rhs.
+
+Structure MyApplyLhs := {
+    mal_T2 : Type ;
+    my_apply_lhs :
+        AppliedOperator' symbol BuiltinOrVar ->
+        mal_T2 ->
+        AppliedOperator' symbol BuiltinOrVar ;
+}.
+
+Arguments my_apply_lhs {m} _ _.
+Arguments my_apply_lhs : simpl never.
+
+Definition MyApplyLhs_operand : MyApplyLhs := {|
+    my_apply_lhs := fun x y => ao_app_operand x y ;
+|}.
+Canonical MyApplyLhs_operand.
+
+Definition MyApplyLhs_ao : MyApplyLhs := {|
+    my_apply_lhs := fun x y => @ao_app_ao symbol BuiltinOrVar x y ;
+|}.
+Canonical MyApplyLhs_ao.
+
+
+Structure MyApplyRhs := {
+    mar_T2 : Type ;
+    my_apply_rhs :
+        AppliedOperator' symbol Expression ->
+        mar_T2 ->
+        AppliedOperator' symbol Expression ;
+}.
+
+Arguments my_apply_rhs {m} _ _.
+Arguments my_apply_rhs : simpl never.
+
+Definition MyApplyRhs_operand : MyApplyRhs := {|
+    my_apply_rhs := fun x y => ao_app_operand x y ;
+|}.
+Canonical MyApplyRhs_operand.
+
+Definition MyApplyRhs_ao : MyApplyRhs := {|
+    my_apply_rhs := fun x y => @ao_app_ao symbol Expression x y ;
+|}.
+Canonical MyApplyRhs_ao.
+
+
+
+Notation "f [< y , .. , z >]"
+    := (my_apply_lhs .. (my_apply_lhs (ao_operator f) y) .. z)
+    (at level 90)
+    : RuleLhsScope
+.
+
+Notation "f [< y , .. , z >]"
+    := (my_apply_rhs .. (my_apply_rhs (ao_operator f) y) .. z)
+    (at level 90)
+    : RuleRhsScope
+.
+
+Notation "'$' x" := (bov_variable x)
+    (at level 200)
+    : RuleLhsScope
+.
+
+Notation "'$' x" := (ft_variable x)
+    (at level 200)
+    : RuleRhsScope
+.
+
+
+Notation "'llrule' l => r 'requires' s"
+    := (@mkFlattenedRewritingRule
+        _
+        (l)%rule_lhs
+        (r)%rule_rhs
+        (s)
+    )
+    (at level 200)
+.
+
+Notation "'rule' l => r 'requires' s"
+    := (llrule
+        (aoo_app _ _ l)
+        =>
+        (aoo_app _ _ r) 
+        requires
+        s
+    )
+    (at level 200)
+.
+
+
 Module example_1.
 
-    #[local]
-    Instance MySymbols : Symbols string := Build_Symbols _ _ _.
-
-    #[local]
-    Program Instance Σ : Signature := {|
-        symbol := string ;
-        variable := string ;
-        symbols :=  MySymbols;
-        variables := StringVariables ;
-    |}.
-    Next Obligation.
-        apply EmptyBuiltin.
-    Defined.
-
-
-    Program Instance CΣ : @ComputableSignature Σ := {|
-        builtin_unary_predicate_interp_bool := fun _ _ => false ;
-        builtin_binary_predicate_interp_bool := fun _ _ _ => false ;
-    |}.
-    Next Obligation.
-        destruct p.
-    Qed.
-    Next Obligation.
-        destruct p.
-    Qed.
-    Fail Next Obligation.
-
-    (*
-    Definition left_SSX : LhsPattern :=
-        (aoo_operand _ _
-            (wsc_base
-                (aoo_app _ _ 
-                    (ao_app_ao
-                        (ao_operator "Succ")
-                        (ao_app_operand
-                            (ao_operator "Succ")
-                            (bov_variable "X")
-                        )
-                    )
-                )
-            )
-        )
+    Definition rule_1 : FlattenedRewritingRule :=
+        rule ("top" [< "s" [< "s" [< $"X" >] >] >])
+          => ("top" [< $"X" >])
+          requires []
     .
 
-    Definition right_X : RhsPattern :=
-        (aoo_operand _ _ 
-            (ft_variable "X")
-        )
-    .
-
-    Definition rule_sub_2 : RewritingRule :=
-        wsc_base
-            (aoo_operand _ _
-                (
-                    (lp_rewrite
-                        {|
-                            lr_from := left_SSX;
-                            lr_to :=right_X;
-                        |}
-                    )
-                )
-            )
-    .
-
-    Notation "φ1 => φ2" := (Build_LocalRewrite _ φ1 φ2) (at level 90).
-
-    Print GroundTerm'.
-    Lemma rewrites_3_to_1:
-        rewrites_to rule_sub_2
-        (aoo_app _ _
-            (ao_app_ao
-                (ao_operator "Succ")
-                (ao_app_ao
-                    (ao_operator "Succ")
-                    (ao_app_ao
-                        (ao_operator "Succ")
-                        (ao_operator "Zero")
-                    )
-                )
-            )
-        )
-        (aoo_app _ _
-            (ao_app_ao
-                (ao_operator "Succ")
-                (ao_operator "Zero")
-            )
-        )
-    .
-    Proof.
-        unfold rewrites_to.
-        unfold rule_sub_2.
-        exists ({[
-            "X" := (aoo_app _ _ (ao_app_ao (ao_operator "Succ") (ao_operator "Zero")))
-        ]}).
-        unfold rewrites_in_valuation_to.
-        unfold GroundTerm_satisfies_RewritingRule.
-        unfold GroundTerm_satisfies_UncondRewritingRule.
-        unfold left_SSX, right_X.
-        repeat constructor.
-    Qed.
-
-    *)
-
-    (* Here is a hand-crafted definition without using any notations *)
-    (*
-    Definition rule_1 : FlattenedRewritingRule := {|
-        fr_from := aoo_app _ _ 
-            (ao_app_ao (ao_operator "top")
-                (ao_app_ao
-                    (ao_operator "s")
-                    ((ao_app_operand (ao_operator "s") (bov_variable "X")))
-                )
-            );
-        fr_to := aoo_app symbol Expression  (
-            ao_app_operand
-                (ao_operator "top")
-                (ft_variable "X")
-        );
-        fr_scs := [] ;
-    |}.
-    *)
-
-    Structure MyApplyLhs := {
-        ma_T2 : Type ;
-        my_apply_lhs :
-            AppliedOperator' symbol BuiltinOrVar ->
-            ma_T2 ->
-            AppliedOperator' symbol BuiltinOrVar ;
-    }.
-
-    Arguments my_apply_lhs {m} _ _.
-    Arguments my_apply_lhs : simpl never.
-    
-    Definition MyApplyLhs_operand : MyApplyLhs := {|
-        my_apply_lhs := fun x y => ao_app_operand x y ;
-    |}.
-    Canonical MyApplyLhs_operand.
-
-    Definition MyApplyLhs_ao : MyApplyLhs := {|
-        my_apply_lhs := fun x y => @ao_app_ao symbol BuiltinOrVar x y ;
-    |}.
-    Canonical MyApplyLhs_ao.
-
-
-    Structure MyApplyRhs := {
-        mar_T2 : Type ;
-        my_apply_rhs :
-            AppliedOperator' symbol Expression ->
-            mar_T2 ->
-            AppliedOperator' symbol Expression ;
-    }.
-
-    Arguments my_apply_rhs {m} _ _.
-    Arguments my_apply_rhs : simpl never.
-    
-    Definition MyApplyRhs_operand : MyApplyRhs := {|
-        my_apply_rhs := fun x y => ao_app_operand x y ;
-    |}.
-    Canonical MyApplyRhs_operand.
-
-    Definition MyApplyRhs_ao : MyApplyRhs := {|
-        my_apply_rhs := fun x y => @ao_app_ao symbol Expression x y ;
-    |}.
-    Canonical MyApplyRhs_ao.
-
-    (* Here is a definition using the `my_apply_*` overloads. *)
-    (*
-    Definition rule_1 : FlattenedRewritingRule := {|
-        fr_from := aoo_app _ _ 
-            (my_apply_lhs (ao_operator "top")
-                (my_apply_lhs
-                    (ao_operator "s")
-                    ((my_apply_lhs (ao_operator "s") (bov_variable "X")))
-                )
-            );
-        fr_to := aoo_app symbol Expression  (
-            ao_app_operand
-                (ao_operator "top")
-                (ft_variable "X")
-        );
-        fr_scs := [] ;
-    |}.
-    *)
-
-
-    Notation "f [< y , .. , z >]"
-        := (my_apply_lhs .. (my_apply_lhs (ao_operator f) y) .. z)
-        (at level 90)
-    .
-
-    Notation "f [<* y , .. , z *>]"
-        := (my_apply_rhs .. (my_apply_rhs (ao_operator f) y) .. z)
-        (at level 90)
-    .
-
-    Notation "'$' x" := (bov_variable x) (at level 200).
-
-    Notation "'$*' x" := (ft_variable x) (at level 200).
-
-    (* Finally, here is a definition using fancy syntactic sugar. *)
-    Definition rule_1 : FlattenedRewritingRule := {|
-        fr_from := aoo_app _ _  (
-            "top" [< "s" [< "s" [< $ "X" >] >] >]
-        );
-        fr_to := aoo_app _ _ (
-            "top" [<* $* "X" *>]
-        );
-        fr_scs := [] ;
-    |}.
-
-    Print rule_1.
+    (*Print rule_1.*)
 
     Definition Γ : FlattenedRewritingTheory := [rule_1].
 

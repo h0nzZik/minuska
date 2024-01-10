@@ -7,7 +7,9 @@ From Minuska Require Import
 .
 
 
-Record FlattenedRewritingRule {Σ : Signature} := {
+Record FlattenedRewritingRule {Σ : Signature}
+:= mkFlattenedRewritingRule
+{
     fr_from : OpenTerm ;
     fr_to : RhsPattern ;
     fr_scs : list SideCondition ;
