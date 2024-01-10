@@ -72,12 +72,12 @@ vars \
 processSymbolicTerm() {
     cat - \
     | sed 's/^[ \t]*//;s/[ \t]*$//'  \
-    | sed -e 's/\([a-z]\([[:alnum:]]\)*\),/\1(),/g' \
-    | sed -e 's/\([a-z]\([[:alnum:]]\)*\))/\1())/g' \
-    | sed -e 's/\([a-z]\([[:alnum:]]\)*\)$/\1()/g' \
-    | sed -e 's/\([A-Z]\)/$\1/g' \
+    | sed -e 's/ //g' \
+    | sed -e 's/\([a-z]\([a-zA-Z0-9]\)*\)\([,)$-]\)/\1()\3/g' \
+    | sed -e 's/\([a-z]\([a-zA-Z0-9]\)*\)$/\1()/g' \
     | sed -e 's/(/[</g' \
     | sed -e 's/)/>]/g' \
+    | sed -e 's/\([^a-zA-Z0-9]\)\([A-Z]\)/\1$\2/g' \
     
 }
 
