@@ -7,7 +7,7 @@ From Minuska Require Import
 .
 
 
-Record FlattenedRewritingRule {Σ : Signature}
+Record FlattenedRewritingRule {Σ : StaticModel}
 := mkFlattenedRewritingRule
 {
     fr_from : OpenTerm ;
@@ -16,7 +16,7 @@ Record FlattenedRewritingRule {Σ : Signature}
 }.
 
 Definition flattened_rewrites_in_valuation_to
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (r : FlattenedRewritingRule)
     (from to : GroundTerm)
@@ -27,7 +27,7 @@ Definition flattened_rewrites_in_valuation_to
 .
 
 Definition flattened_rewrites_to
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : FlattenedRewritingRule)
     (from to : GroundTerm)
     : Prop
@@ -35,7 +35,7 @@ Definition flattened_rewrites_to
 .
 
 Definition FRR_wf
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : FlattenedRewritingRule)
     : Prop
 :=
@@ -49,7 +49,7 @@ Definition FRR_wf
 
 
 Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A B : Type}
     (A_to_OpenTermB : A ->
         ((AppliedOperatorOr' symbol B))
@@ -75,7 +75,7 @@ match x with
 end.
 
 Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A B : Type}
     (A_to_OpenTermB : A ->
         ((AppliedOperatorOr' symbol B))
@@ -90,7 +90,7 @@ end.
 
 
 Definition FlattenedRewritingRule_wf1
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : FlattenedRewritingRule)
     : Prop
 := 
@@ -104,7 +104,7 @@ Definition FlattenedRewritingRule_wf1
     in the literature.
 *)
 Definition FlattenedRewritingRule_wf2
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : FlattenedRewritingRule)
     : Prop
 := 
@@ -116,7 +116,7 @@ Definition FlattenedRewritingRule_wf2
 .
 
 Definition FlattenedRewritingRule_wf
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : FlattenedRewritingRule)
     : Prop
 :=
@@ -124,12 +124,12 @@ Definition FlattenedRewritingRule_wf
 .
 
 
-Definition FlattenedRewritingTheory {Σ : Signature}
+Definition FlattenedRewritingTheory {Σ : StaticModel}
     := list FlattenedRewritingRule
 .
 
 Definition FlattenedRewritingTheory_wf
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : FlattenedRewritingTheory)
     : Prop
 :=
@@ -137,7 +137,7 @@ Definition FlattenedRewritingTheory_wf
 .
 
 Definition rewriting_relation_flat
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : list FlattenedRewritingRule)
     : relation GroundTerm
     := fun from to =>
@@ -145,27 +145,27 @@ Definition rewriting_relation_flat
 .
 
 Definition not_stuck_flat
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : list FlattenedRewritingRule)
     (e : GroundTerm) : Prop
 := exists e', rewriting_relation_flat Γ e e'.
 
 Definition flat_stuck
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : list FlattenedRewritingRule)
     (e : GroundTerm) : Prop
 := not (not_stuck_flat Γ e).
 
 
 Definition FlatInterpreter
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : list FlattenedRewritingRule)
     : Type
     := GroundTerm -> option GroundTerm
 .
 
 Definition FlatInterpreter_sound
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : list FlattenedRewritingRule)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
     (interpreter : FlatInterpreter Γ)

@@ -4,7 +4,7 @@ From Minuska Require Import
 .
 
 Fixpoint vars_of_Expression
-    {Σ : Signature}
+    {Σ : StaticModel}
     (t : Expression)
     : gset variable :=
 match t with
@@ -16,7 +16,7 @@ end.
 
 #[export]
 Instance VarsOf_Expression
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf Expression variable
 := {|
     vars_of := vars_of_Expression ; 
@@ -24,7 +24,7 @@ Instance VarsOf_Expression
 
 
 Definition vars_of_AP
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ap : AtomicProposition)
     : gset variable :=
 match ap with
@@ -35,7 +35,7 @@ end.
 
 #[export]
 Instance VarsOf_AP
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf AtomicProposition variable
 := {|
     vars_of := vars_of_AP ; 
@@ -43,7 +43,7 @@ Instance VarsOf_AP
 
 
 Fixpoint vars_of_Constraint
-    { Σ : Signature }
+    { Σ : StaticModel }
     (c : Constraint)
     : gset variable :=
 match c with
@@ -55,14 +55,14 @@ end.
 
 #[export]
 Instance VarsOf_Constraint
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf Constraint variable
 := {|
     vars_of := vars_of_Constraint ; 
 |}.
 
 Fixpoint vars_of_aosB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -77,7 +77,7 @@ end.
 
 #[export]
 Instance VarsOf_aosB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -88,7 +88,7 @@ Instance VarsOf_aosB
 |}.
 
 Definition vars_of_BoV
-    {Σ : Signature}
+    {Σ : StaticModel}
     (bov : BuiltinOrVar)
     : gset variable
 :=
@@ -99,14 +99,14 @@ end.
 
 #[export]
 Instance VarsOf_BoV
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf BuiltinOrVar variable
 := {|
     vars_of := vars_of_BoV ; 
 |}.
 
 Definition vars_of_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (φ : OpenTerm)
     : gset variable :=
 match φ with
@@ -116,14 +116,14 @@ end.
 
 #[export]
 Instance VarsOf_OpenTerm 
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf OpenTerm variable
 := {|
     vars_of := vars_of_OpenTerm ; 
 |}.
 
 Definition vars_of_Match
-    {Σ : Signature}
+    {Σ : StaticModel}
     (m : Match)
     : gset variable :=
 match m with
@@ -132,14 +132,14 @@ end.
 
 #[export]
 Instance VarsOf_Match
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf Match variable
 := {|
     vars_of := vars_of_Match ; 
 |}.
 
 Definition vars_of_SideCondition
-    {Σ : Signature}
+    {Σ : StaticModel}
     (c : SideCondition)
     : gset variable :=
 match c with
@@ -149,7 +149,7 @@ end.
 
 #[export]
 Instance VarsOf_SideCondition
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf SideCondition variable
 := {|
     vars_of := vars_of_SideCondition ; 
@@ -157,14 +157,14 @@ Instance VarsOf_SideCondition
 
 #[export]
 Program Instance VarsOf_list_SideCondition
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf (list SideCondition) variable
 := {|
     vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.
 
 Fixpoint vars_of_WithASideConditionB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B : Type}
     {_VB : VarsOf B variable}
     (φc : WithASideCondition B)
@@ -177,7 +177,7 @@ end.
 
 #[export]
 Instance VarsOf_WithASideConditionB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B : Type}
     {_VB : VarsOf B variable}
     : VarsOf (WithASideCondition B) variable
@@ -187,7 +187,7 @@ Instance VarsOf_WithASideConditionB
 
 (*
 Fixpoint vars_of_AppliedOperator'_symbol_OpenTermWSC
-    {Σ : Signature}
+    {Σ : StaticModel}
     (φ : AppliedOperator' symbol OpenTermWSC)
     : gset variable :=
 match φ with
@@ -200,7 +200,7 @@ end.
 *)
 
 Definition vars_of_AppliedOperatorOr'B
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
@@ -214,7 +214,7 @@ end.
 
 #[export]
 Instance VarsOf_AppliedOperatorOr'
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
@@ -226,7 +226,7 @@ Instance VarsOf_AppliedOperatorOr'
 
 (*
 Fixpoint vars_of_AppliedOperator_sym_fterm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (op : AppliedOperator' symbol Expression)
     : gset variable :=
 match op with
@@ -238,7 +238,7 @@ match op with
 end.
 
 Fixpoint vars_of_AppliedOperator'_symbol_Expression
-    {Σ : Signature}
+    {Σ : StaticModel}
     (φ : AppliedOperator' symbol Expression)
     : gset variable :=
 match φ with
@@ -250,7 +250,7 @@ match φ with
 end.
 
 Definition vars_of_RhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     (φ : RhsPattern)
     : gset variable :=
 match φ with
@@ -259,7 +259,7 @@ match φ with
 end.
 
 Fixpoint var_of_WithASideCondition_variable
-    {Σ : Signature}
+    {Σ : StaticModel}
     (x : WithASideCondition variable)
     : variable :=
 match x with
@@ -269,7 +269,7 @@ end.
 *)
 
 Definition vars_of_LocalRewrite
-    {Σ : Signature}
+    {Σ : StaticModel}
     (lr : LeftRight)
     (r : LocalRewrite)
     : gset variable :=
@@ -318,7 +318,7 @@ Instance AppliedOperatorOr'_A_B_fmap (A : Type)
 
 #[global]
 Instance AppliedOperatorOr_symbol_fmap
-    {Σ : Signature}
+    {Σ : StaticModel}
     : FMap (AppliedOperatorOr' symbol)
 .
 Proof.

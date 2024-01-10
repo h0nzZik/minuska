@@ -6,14 +6,14 @@ From Minuska Require Import
 
 
 Definition Interpreter
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     : Type
     := GroundTerm -> option GroundTerm
 .
 
 Definition Interpreter_sound
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (Γwwd : thy_weakly_well_defined Γ)
     (interpreter : Interpreter Γ)
@@ -26,14 +26,14 @@ Definition Interpreter_sound
 .
 
 Definition Explorer
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     : Type
     := GroundTerm -> list GroundTerm
 .
 
 Definition Explorer_sound
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (Γwwd : thy_weakly_well_defined Γ)
     (explorer : Explorer Γ)
@@ -43,14 +43,14 @@ Definition Explorer_sound
 .
 
 Definition SymbolicInterpreter
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     : Type :=
     OpenTerm -> list OpenTerm   
 .
 
 Definition OpenTerm_not_stuck
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (φ : OpenTerm)
     : Prop
@@ -60,7 +60,7 @@ Definition OpenTerm_not_stuck
 .
 
 Definition OpenTerm_stuck
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (φ : OpenTerm)
     : Prop
@@ -69,7 +69,7 @@ Definition OpenTerm_stuck
 
 
 Definition SymbolicInterpreter_sound
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (Γwwd : thy_weakly_well_defined Γ)
     (symbolic_interpreter : SymbolicInterpreter Γ)

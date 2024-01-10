@@ -16,7 +16,7 @@ From Minuska Require Import
 Instance MySymbols : Symbols string := Build_Symbols _ _ _.
 
 #[local]
-Program Instance Σ : Signature := {|
+Program Instance Σ : StaticModel := {|
     symbol := string ;
     variable := string ;
     symbols :=  MySymbols;
@@ -27,7 +27,7 @@ Next Obligation.
 Defined.
 
 
-Program Instance CΣ : @ComputableSignature Σ := {|
+Program Instance CΣ : @ComputableStaticModel Σ := {|
     builtin_unary_predicate_interp_bool := fun _ _ => false ;
     builtin_binary_predicate_interp_bool := fun _ _ _ => false ;
 |}.

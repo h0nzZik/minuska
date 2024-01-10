@@ -3,13 +3,13 @@ From Minuska Require Import
     spec_syntax
 .
 
-Definition Valuation {Σ : Signature}
+Definition Valuation {Σ : StaticModel}
         := gmap variable GroundTerm
     .
 
 #[export]
 Instance VarsOf_valuation
-    {Σ : Signature}
+    {Σ : StaticModel}
     {var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -20,7 +20,7 @@ Instance VarsOf_valuation
 
 #[export]
 Instance VarsOf_symbol
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf symbol variable
 := {|
     vars_of := fun _ => ∅ ; 
@@ -28,7 +28,7 @@ Instance VarsOf_symbol
 
 #[export]
 Instance VarsOf_builtin
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf builtin_value variable
 := {|
     vars_of := fun _ => ∅ ; 
@@ -38,7 +38,7 @@ Instance VarsOf_builtin
 (*Transparent Valuation.*)
 
 Fixpoint Expression_evaluate
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : gmap variable GroundTerm)
     (t : Expression)
     : option GroundTerm :=
@@ -56,7 +56,7 @@ end.
 
 
 Lemma Expression_evaluate_extensive_Some
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : gmap variable GroundTerm)
     (t : Expression)
     (gt : GroundTerm)
@@ -103,7 +103,7 @@ Proof.
 Qed.
 
 Lemma Expression_evaluate_extensive_None
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : gmap variable GroundTerm)
     (t : Expression)
     :
@@ -167,7 +167,7 @@ Qed.
 
 
 Lemma Expression_evaluate_extensive'
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : gmap variable GroundTerm)
     (t : Expression)
     :
@@ -189,7 +189,7 @@ Proof.
 Qed.
 
 Class Satisfies
-    {Σ : Signature}
+    {Σ : StaticModel}
     (V A B var : Type)
     {_SV : SubsetEq V}
     {_varED : EqDecision var}
@@ -211,7 +211,7 @@ mkSatisfies {
 Arguments satisfies : simpl never.
 
 Definition val_satisfies_ap
-    {Σ : Signature} (ρ : Valuation) (ap : AtomicProposition)
+    {Σ : StaticModel} (ρ : Valuation) (ap : AtomicProposition)
     : Prop :=
 match ap with
 | apeq e1 e2 => 
@@ -236,7 +236,7 @@ end
 
 #[export]
 Program Instance Satisfies_val_ap
-    {Σ : Signature} :
+    {Σ : StaticModel} :
     Satisfies
         (gmap variable GroundTerm)
         unit
@@ -316,7 +316,7 @@ Qed.
 Fail Next Obligation.
 
 Fixpoint val_satisfies_c
-    {Σ : Signature} (ρ : Valuation) (c : Constraint)
+    {Σ : StaticModel} (ρ : Valuation) (c : Constraint)
     : Prop :=
 match c with
 | c_True => True
@@ -327,7 +327,7 @@ end.
 
 #[export]
 Program Instance Satisfies_val_c
-    {Σ : Signature} :
+    {Σ : StaticModel} :
     Satisfies
         (gmap variable GroundTerm)
         unit
@@ -352,7 +352,7 @@ Fail Next Obligation.
 
 
 Inductive aoxy_satisfies_aoxz
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V X Y Z var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -420,7 +420,7 @@ Inductive aoxy_satisfies_aoxz
 
 #[export]
 Program Instance Satisfies_aoxy_aoxz
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V X Y Z var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -457,7 +457,7 @@ Fail Next Obligation.
 
 
 Inductive aoxyo_satisfies_aoxzo
-    {Σ : Signature}
+    {Σ : StaticModel}
     (V X Y Z var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -491,7 +491,7 @@ Inductive aoxyo_satisfies_aoxzo
 
 #[export]
 Program Instance Satisfies_aoxyo_aoxzo
-    {Σ : Signature}
+    {Σ : StaticModel}
     (V X Y Z var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -526,7 +526,7 @@ Qed.
 Fail Next Obligation.
 
 Inductive builtin_satisfies_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     :
     builtin_value ->
@@ -544,7 +544,7 @@ Inductive builtin_satisfies_BuiltinOrVar
 .
 
 Definition builtin_satisfies_BuiltinOrVar'
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (b : builtin_value)
     (bov : BuiltinOrVar)
@@ -552,7 +552,7 @@ Definition builtin_satisfies_BuiltinOrVar'
 := builtin_satisfies_BuiltinOrVar ρ b bov.
 
 #[export]
-Instance Subseteq_Valuation {Σ : Signature}
+Instance Subseteq_Valuation {Σ : StaticModel}
     : SubsetEq Valuation
 .
 Proof.
@@ -562,7 +562,7 @@ Defined.
 
 #[export]
 Program Instance Satisfies_builtin_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies Valuation (builtin_value) BuiltinOrVar variable
 := {|
@@ -581,7 +581,7 @@ Qed.
 Fail Next Obligation.
 
 Definition AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (aop : AppliedOperator' symbol builtin_value)
     (bov : BuiltinOrVar)
@@ -593,7 +593,7 @@ end.
 
 #[export]
 Program Instance Satisfies__AppliedOperator'_symbol_builtin__BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     : Satisfies Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar variable
 := {| 
     satisfies := AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
@@ -611,7 +611,7 @@ Qed.
 Fail Next Obligation.
 
 Definition AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (aop : (AppliedOperator' symbol builtin_value))
     (bov : BuiltinOrVar)
@@ -620,7 +620,7 @@ Definition AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar
 
 #[export]
 Program Instance Satisfies_AppliedOperator'_symbol_builtin_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar variable
 := {|
@@ -640,7 +640,7 @@ Fail Next Obligation.
 
 (*
 Definition aosb_satisfies_aosbf
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A B : Type}
     {_S1 : Satisfies Valuation (A) B}
     {_S2 : Satisfies Valuation (A) (AppliedOperator' symbol B)}
@@ -666,7 +666,7 @@ Definition aosb_satisfies_aosbf
 
 #[export]
 Program Instance Satisfies__builtin__ao'B
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V B var : Type}
     {_SV : SubsetEq V}
     {_EDv : EqDecision var}
@@ -684,7 +684,7 @@ Program Instance Satisfies__builtin__ao'B
 
 #[export]
 Instance Satisfies_aos__builtin_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -699,7 +699,7 @@ Defined.
 
 #[export]
 Instance Satisfies_aosb_aosbf
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A B : Type}
     {SatAB : Satisfies Valuation (A) B variable}
     {_S2 : Satisfies Valuation (A) (AppliedOperator' symbol B) variable}
@@ -713,7 +713,7 @@ Defined.
 
 (*
 Definition aoosb_satisfies_aoosbf
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Valuation ->
     (AppliedOperatorOr' symbol builtin_value) ->
@@ -730,7 +730,7 @@ Definition aoosb_satisfies_aoosbf
 #[export]
 Instance
 Satisfies_aoosb_aoosbf
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -742,7 +742,7 @@ Proof. apply _. Defined.
 
 (*
 Definition in_val_GroundTerm_satisfies_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (g : GroundTerm)
     (φ : OpenTerm)
@@ -752,7 +752,7 @@ Definition in_val_GroundTerm_satisfies_OpenTerm
 
 #[export]
 Instance Satisfies_valGroundTerm_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -763,7 +763,7 @@ Instance Satisfies_valGroundTerm_OpenTerm
 Proof. apply _. Defined.
 
 Definition valuation_satisfies_match
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (m : Match) : Prop :=
 match m with
@@ -777,7 +777,7 @@ end.
 
 #[export]
 Program Instance Satisfies_val_match
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -812,7 +812,7 @@ Qed.
 Fail Next Obligation.
 
 Definition valuation_satisfies_sc
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (sc : SideCondition) : Prop :=
 match sc with
@@ -822,7 +822,7 @@ end.
 
 #[export]
 Program Instance Satisfies_val_sc
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -838,7 +838,7 @@ Qed.
 Fail Next Obligation.
 
 Inductive A_satisfies_B_WithASideCondition
-    {Σ : Signature}
+    {Σ : StaticModel}
     (V A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -862,7 +862,7 @@ Inductive A_satisfies_B_WithASideCondition
 
 #[export]
 Program Instance Satisfies_A_Bsc
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V A B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -884,7 +884,7 @@ Qed.
 Fail Next Obligation.
 
 Definition GroundTerm_satisfies_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (g : GroundTerm)
     (bov : BuiltinOrVar)
@@ -900,7 +900,7 @@ end.
 
 #[export]
 Program Instance Satisfies_GroundTerm_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies Valuation (GroundTerm) BuiltinOrVar variable
 := {|
@@ -915,7 +915,7 @@ Fail Next Obligation.
 
 (*
 Definition in_val_GroundTerm_satisfies_OpenTermWSC
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Valuation ->
     GroundTerm ->
@@ -930,7 +930,7 @@ Definition in_val_GroundTerm_satisfies_OpenTermWSC
 
 #[export]
 Instance Satisfies_GroundTerm_OpenTermWSC
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -941,7 +941,7 @@ Instance Satisfies_GroundTerm_OpenTermWSC
 Proof. apply _. Defined.
 
 Definition builtin_value_satisfies_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Valuation ->
     builtin_value ->
@@ -955,7 +955,7 @@ end.
 
 #[export]
 Program Instance Satisfies_builtin_value_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -977,7 +977,7 @@ Fail Next Obligation.
 
 (*
 Definition builtin_value_satisfies_OpenTermWSC
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Valuation ->
     builtin_value ->
@@ -992,7 +992,7 @@ Definition builtin_value_satisfies_OpenTermWSC
 
 #[export]
 Instance Satisfies_builtin_value_OpenTermWSC
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -1003,7 +1003,7 @@ Instance Satisfies_builtin_value_OpenTermWSC
 Proof. apply _. Defined.
 
 Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (ao : (AppliedOperator' symbol builtin_value))
     (bov : BuiltinOrVar)
@@ -1017,7 +1017,7 @@ end
 
 #[export]
 Program Instance Satisfies__AppliedOperator'_symbol_builtin_value__BOV
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V : Type}
     :
     Satisfies
@@ -1040,7 +1040,7 @@ Qed.
 Fail Next Obligation.
 
 Definition AppliedOperator'_symbol_A_satisfies_OpenTermB'
-    {Σ : Signature}
+    {Σ : StaticModel}
     (V A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1061,7 +1061,7 @@ Definition AppliedOperator'_symbol_A_satisfies_OpenTermB'
 
 #[export]
 Program Instance Satisfies__lift_builtin_to_aosb
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V A B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1090,7 +1090,7 @@ Fail Next Obligation.
 
 #[export]
 Instance Satisfies__lift_builtin_to_aosbo
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V A B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1108,7 +1108,7 @@ Instance Satisfies__lift_builtin_to_aosbo
 Proof. apply _. Defined.
 
 Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1128,7 +1128,7 @@ Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
 
 #[export]
 Program Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1155,7 +1155,7 @@ Fail Next Obligation.
 
 #[export]
 Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTermWSC
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -1168,7 +1168,7 @@ Proof. apply _. Defined.
 
 #[export]
 Instance Satisfies__GroundTerm__LhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1191,7 +1191,7 @@ Obligation Tactic := idtac.
 
 #[export]
 Program Instance Satisfies_builtin_expr
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Satisfies
         Valuation
         builtin_value
@@ -1212,7 +1212,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Satisfies_asb_expr
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Satisfies
         Valuation
         ((AppliedOperator' symbol builtin_value))
@@ -1233,7 +1233,7 @@ Fail Next Obligation.
 
 (*
 Definition GroundTerm_satisfies_RhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V : Type}
     `{Satisfies (V * builtin_value) Expression}
     `{Satisfies (V * AppliedOperator' symbol builtin_value) Expression}
@@ -1250,7 +1250,7 @@ Definition GroundTerm_satisfies_RhsPattern
 
 #[export]
 Instance Satisfies__GroundTerm__RhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -1270,7 +1270,7 @@ Proof. apply _. Defined.
 
 #[export]
 Program Instance Satisfies_gt_var
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Satisfies
         Valuation
         GroundTerm
@@ -1290,7 +1290,7 @@ Fail Next Obligation.
 
 #[export]
 Instance Satisfies__GroundTerm__VarWithSc
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -1302,7 +1302,7 @@ Proof. apply _. Defined.
 
 
 Definition GroundTerm_satisfies_LocalRewrite
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρd : (Valuation*LeftRight))
     (g : GroundTerm)
     (r : LocalRewrite)
@@ -1314,7 +1314,7 @@ end.
 
 #[export]
 Instance Subseteq_ValuationLR
-    {Σ : Signature}
+    {Σ : StaticModel}
     : SubsetEq (Valuation * LeftRight)
 := {
     subseteq a b := subseteq a.1 b.1 /\ a.2 = b.2
@@ -1324,7 +1324,7 @@ Instance Subseteq_ValuationLR
 (* TODO *)
 #[export]
 Instance VarsOf_ValuationLR
-    {Σ : Signature}
+    {Σ : StaticModel}
     : VarsOf (Valuation * LeftRight) variable
 := {
     vars_of a := vars_of a.1
@@ -1332,7 +1332,7 @@ Instance VarsOf_ValuationLR
 
 #[export]
 Program Instance Satisfies__GroundTerm__LocalRewrite
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation*LeftRight)
@@ -1360,7 +1360,7 @@ Qed.
 Fail Next Obligation.
 
 Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρd : (Valuation*LeftRight))
     (g : GroundTerm)
     (rb : LocalRewriteOrOpenTermOrBOV)
@@ -1377,7 +1377,7 @@ end.
 
 #[export]
 Program Instance Satisfies__GroundTerm__LocalRewriteOrOpenTermOrBOV
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation*LeftRight)
@@ -1396,7 +1396,7 @@ Qed.
 Fail Next Obligation.
 
 Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρd : (Valuation*LeftRight))
     (b : builtin_value)
     (r : LocalRewriteOrOpenTermOrBOV)
@@ -1418,7 +1418,7 @@ end.
 
 #[export]
 Program Instance Satisfies__builtin_value__LocalRewriteOrOpenTermOrBOV
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation*LeftRight)
@@ -1455,7 +1455,7 @@ Fail Next Obligation.
 (*
 #[export]
 Instance satLift1
-    {Σ : Signature}
+    {Σ : StaticModel}
     {L R : Type}
     `{Satisfies (Valuation * L) R}
     :
@@ -1466,7 +1466,7 @@ Instance satLift1
 |}.*)
 (*
 #[export] Instance _tmp
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation * LeftRight * AppliedOperator' symbol builtin_value)
@@ -1478,7 +1478,7 @@ Instance satLift1
 
 #[export]
 Program Instance Satisfies_vlrglrootob
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Satisfies
         (Valuation * LeftRight)
         (AppliedOperator' symbol builtin_value)
@@ -1499,7 +1499,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Satisfies_vlrblrootob
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Satisfies
         (Valuation * LeftRight)
         (builtin_value)
@@ -1516,7 +1516,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Satisfies_sym_bov
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         Valuation
@@ -1532,7 +1532,7 @@ Qed.
 Fail Next Obligation.
 
 #[export]
-Instance Satisfies_aop_lrw {Σ : Signature}:
+Instance Satisfies_aop_lrw {Σ : StaticModel}:
     Satisfies
         (Valuation * LeftRight)
         (AppliedOperator' symbol builtin_value)
@@ -1543,7 +1543,7 @@ Proof. apply _. Defined.
 
 #[export]
 Instance Satisfies__GroundTerm__UncondRewritingRule
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation*LeftRight)
@@ -1555,7 +1555,7 @@ Proof. apply _. Defined.
 
 #[export]
 Program Instance Satisfies_Valuation_LR_SideCondition
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation * LeftRight)
@@ -1578,7 +1578,7 @@ Fail Next Obligation.
 
 #[export]
 Instance Satisfies__GroundTerm__RewritingRule
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         (Valuation*LeftRight)
@@ -1589,24 +1589,24 @@ Instance Satisfies__GroundTerm__RewritingRule
 Proof. apply _. Defined.
 
 Definition GroundTerm_satisfies_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     : GroundTerm -> OpenTerm -> Prop :=
     fun g φ => ∃ (ρ : Valuation), satisfies ρ g φ
 .
 
 #[export]
-Instance VarsOf_unit {Σ : Signature}: VarsOf unit variable := {|
+Instance VarsOf_unit {Σ : StaticModel}: VarsOf unit variable := {|
     vars_of _ := ∅ ;
 |}.
 
 #[export]
-Instance Subseteq_unit {Σ : Signature}: SubsetEq unit := 
+Instance Subseteq_unit {Σ : StaticModel}: SubsetEq unit := 
     fun _ _ => true
 .
 
 #[export]
 Program Instance Satisfies__GroundTerm__OpenTerm_inall
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies
         unit
@@ -1625,7 +1625,7 @@ Fail Next Obligation.
 (*
 #[export]
 Instance Satisfies_bv_ao'
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Satisfies (Valuation * builtin_value) (AppliedOperator' symbol BuiltinOrVar)
 := {|
@@ -1634,7 +1634,7 @@ Instance Satisfies_bv_ao'
 *)
 
 Definition rewrites_in_valuation_to
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (r : RewritingRule)
     (from to : GroundTerm)
@@ -1644,19 +1644,19 @@ Definition rewrites_in_valuation_to
 .
 
 Definition rewrites_to
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     (from to : GroundTerm)
     : Prop
 := exists ρ, rewrites_in_valuation_to ρ r from to
 .
 
-Definition RewritingTheory {Σ : Signature}
+Definition RewritingTheory {Σ : StaticModel}
     := list RewritingRule
 .
 
 Definition rewriting_relation
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     : relation GroundTerm
     := fun from to =>
@@ -1664,19 +1664,19 @@ Definition rewriting_relation
 .
 
 Definition not_stuck
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (e : GroundTerm) : Prop
 := exists e', rewriting_relation Γ e e'.
 
 Definition stuck
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     (e : GroundTerm) : Prop
 := not (not_stuck Γ e).
 
 Definition rule_weakly_well_defined
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     : Prop
     := ∀ ρ from,
@@ -1685,7 +1685,7 @@ Definition rule_weakly_well_defined
 .
 
 Definition thy_weakly_well_defined
-    {Σ : Signature}
+    {Σ : StaticModel}
     (Γ : RewritingTheory)
     : Prop
     := ∀ r, r ∈ Γ -> rule_weakly_well_defined r
@@ -1694,7 +1694,7 @@ Definition thy_weakly_well_defined
 
 #[export]
 Program Instance Satisfies_valuation_scs
-    {Σ : Signature}
+    {Σ : StaticModel}
     : Satisfies
         Valuation
         unit
@@ -1716,7 +1716,7 @@ Fail Next Obligation.
 (*
 #[export]
 Instance Satisfies_bv_pureterm
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Satisfies (Valuation * builtin_value)
     (AppliedOperator' symbol Expression)
 := {|
@@ -1726,7 +1726,7 @@ Instance Satisfies_bv_pureterm
 #[export]
 Program Instance
     Satisfies_symbol_B
-    {Σ : Signature}
+    {Σ : StaticModel}
     {V B var : Type}
     {_SV : SubsetEq V}
     {_EDvar : EqDecision var}

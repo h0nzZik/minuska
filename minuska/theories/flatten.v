@@ -56,7 +56,7 @@ end.
 
 
 Fixpoint separate_scs
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A : Type}
     (wsc : WithASideCondition A):
     A * (list SideCondition)
@@ -69,7 +69,7 @@ match wsc with
     end
 end.
 
-Fixpoint getSCS {Σ : Signature} {A : Type} (wsc : WithASideCondition A):
+Fixpoint getSCS {Σ : StaticModel} {A : Type} (wsc : WithASideCondition A):
     list SideCondition
 :=
 match wsc with
@@ -77,7 +77,7 @@ match wsc with
 | wsc_sc wsc' sc => sc::(getSCS wsc')
 end.
 
-Fixpoint getBase {Σ : Signature} {A : Type} (wsc : WithASideCondition A):
+Fixpoint getBase {Σ : StaticModel} {A : Type} (wsc : WithASideCondition A):
     A
 :=
 match wsc with
@@ -87,7 +87,7 @@ end.
 
 
 Lemma separate_scs_getSCS_getBase
-    {Σ : Signature} {A : Type}
+    {Σ : StaticModel} {A : Type}
     (wsc : WithASideCondition A)
     : separate_scs wsc = (getBase wsc, getSCS wsc)
 .
@@ -103,7 +103,7 @@ Qed.
 
 
 Fixpoint AppliedOperator'_symbol_A_to_SCS
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A : Type}
     (A_to_SC : A -> list SideCondition )
     (x : AppliedOperator' symbol A)
@@ -118,7 +118,7 @@ match x with
 end.
 
 Definition AppliedOperatorOr'_symbol_A_to_SCS
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A : Type}
     (A_to_SC : A -> list SideCondition )
     (x : AppliedOperatorOr' symbol A)
@@ -132,7 +132,7 @@ end.
 
 (*
 Fixpoint A_satisfies_B_WithASideCondition_comp
-    {Σ : Signature}
+    {Σ : StaticModel}
     (A B : Type)
     `{Satisfies (Valuation*A) B}
     (ρa : Valuation*A)
@@ -186,8 +186,8 @@ end.
 
 Set Typeclasses Debug.
 Definition aoxyo_satisfies_aoxzo_bool
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     {Y Z : Type}
     {_S1 : Satisfies Valuation (Y) Z variable}
     {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z variable}
@@ -216,7 +216,7 @@ end.
 
 #[export]
 Program Instance Matches__aoxyo_satisfies_aoxzo_bool
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     {Y Z : Type}
     {_S1 : Satisfies Valuation Y Z }
     {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z}
@@ -305,7 +305,7 @@ Qed.
 Fail Next Obligation.
 
 Definition LhsPattern_to_pair_OpenTerm_SC
-    {Σ : Signature}
+    {Σ : StaticModel}
     (l : LhsPattern)
     : (OpenTerm * (list SideCondition))
 := 
@@ -315,7 +315,7 @@ Definition LhsPattern_to_pair_OpenTerm_SC
 ).
 
 Definition lhs_LocalRewriteOrOpenTermOrBOV_to_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (lox : LocalRewriteOrOpenTermOrBOV)
     : OpenTerm
 :=
@@ -326,7 +326,7 @@ match lox with
 end.
 
 Definition lhs_LocalRewriteOrOpenTermOrBOV_to_SCS
-    {Σ : Signature}
+    {Σ : StaticModel}
     (lox : LocalRewriteOrOpenTermOrBOV)
     : list SideCondition
 :=
@@ -337,7 +337,7 @@ match lox with
 end.
 
 Definition lhs_UncondRewritingRule_to_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ur : UncondRewritingRule)
     : OpenTerm
 :=
@@ -345,7 +345,7 @@ Definition lhs_UncondRewritingRule_to_OpenTerm
 .
 
 Definition lhs_UncondRewritingRule_to_SCS
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ur : UncondRewritingRule)
     : list SideCondition
 :=
@@ -353,7 +353,7 @@ Definition lhs_UncondRewritingRule_to_SCS
 .
 
 Definition lhs_RewritingRule_to_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     : OpenTerm
 :=
@@ -361,7 +361,7 @@ Definition lhs_RewritingRule_to_OpenTerm
 .
 
 Definition lhs_RewritingRule_to_SCS
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     : list SideCondition
 :=
@@ -370,7 +370,7 @@ Definition lhs_RewritingRule_to_SCS
 .
 
 Definition BOV_to_Expression
-    {Σ : Signature}
+    {Σ : StaticModel}
     (bov : BuiltinOrVar)
     : Expression
 :=
@@ -382,7 +382,7 @@ end.
 
 
 Definition rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     (lox : LocalRewriteOrOpenTermOrBOV)
     : RhsPattern
 :=
@@ -394,7 +394,7 @@ match lox with
 end.
 
 Definition rhs_UncondRewritingRule_to_RhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ur : UncondRewritingRule)
     : RhsPattern
 :=
@@ -402,7 +402,7 @@ Definition rhs_UncondRewritingRule_to_RhsPattern
 .
 
 Definition rhs_RewritingRule_to_RhsPattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     : RhsPattern
 :=
@@ -410,7 +410,7 @@ Definition rhs_RewritingRule_to_RhsPattern
 .
 
 Definition RewritingRule_to_FlattenedRewritingRule
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     : FlattenedRewritingRule
 :=
@@ -421,7 +421,7 @@ Definition RewritingRule_to_FlattenedRewritingRule
 |}.
 
 Definition enables_match
-    {Σ : Signature}
+    {Σ : StaticModel}
     (vars : gset variable)
     (m : Match)
 : Prop :=
@@ -430,7 +430,7 @@ Definition enables_match
 
 #[export]
 Instance enables_match_dec
-    {Σ : Signature}
+    {Σ : StaticModel}
     (vars : gset variable)
     (m : Match)
     : Decision (enables_match vars m)
@@ -441,7 +441,7 @@ Proof.
 Defined.
 
 Definition choose_first_enabled_match
-    {Σ : Signature}
+    {Σ : StaticModel}
     (initial_vars : gset variable)
     (matches : list Match)
 : option (nat*Match * list Match)%type
@@ -453,7 +453,7 @@ Definition choose_first_enabled_match
 .
 
 Lemma choose_first_enabled_match_shortens_list
-    {Σ : Signature}
+    {Σ : StaticModel}
     (initial_vars : gset variable)
     (matches : list Match)
     (i : nat)
@@ -491,7 +491,7 @@ Qed.
 
 
 Equations? order_enabled_first
-    {Σ : Signature}
+    {Σ : StaticModel}
     (initial_vars : gset variable)
     (matches : list Match)
     : (list Match * list Match)%type
@@ -518,7 +518,7 @@ Qed.
 Opaque order_enabled_first.
 
 Lemma choose_first_enabled_match_perm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (initial_vars : gset variable)
     (matches : list Match)
     (i : nat)
@@ -547,7 +547,7 @@ Qed.
 
 
 Lemma order_enabled_first_perm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (initial_vars : gset variable)
     (matches : list Match)
     : let gb := order_enabled_first initial_vars matches in
@@ -574,7 +574,7 @@ Qed.
 
 (*
 Lemma A_satisfies_B_WithASideCondition_comp_iff
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A B : Type}
     `{Satisfies (Valuation*A) B}
     :
@@ -615,8 +615,8 @@ Qed.
 *)
 
 Lemma getSCS_getBase_correct
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     {A B : Type}
     {_S1 : Satisfies Valuation A B}
     {_M1 : Matches Valuation A B}
@@ -697,7 +697,7 @@ Qed.
 
 
 Lemma separate_scs_correct
-    {Σ : Signature}
+    {Σ : StaticModel}
     {A B : Type}
     {_S1 : Satisfies Valuation (A) B}
     (wscb : WithASideCondition B)
@@ -756,7 +756,7 @@ Proof.
 Qed.
 (*
 Lemma aoxy_satisfies_aoxz_comp_iff
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Y Z : Type}
     `{Satisfies (Valuation * Y) Z}
     `{Satisfies (Valuation * AppliedOperator' symbol Y) Z}
@@ -814,7 +814,7 @@ Proof.
 Qed.
 
 Definition builtin_satisfies_BuiltinOrVar_comp
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (b : builtin_value)
     (bov : BuiltinOrVar)
@@ -826,7 +826,7 @@ match bov with
 end.
 
 Lemma builtin_satisfies_BuiltinOrVar_comp_iff
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (b : builtin_value)
     (bov : BuiltinOrVar):
@@ -840,7 +840,7 @@ Qed.
 
 #[export]
 Program Instance Matchse__builtin__Expression
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     :
     Matches Valuation builtin_value Expression
 := {|
@@ -856,7 +856,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches_aopb_Expr
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     :
     Matches
         Valuation
@@ -876,7 +876,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches_bv_pureterm
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Matches
         Valuation
         builtin_value
@@ -892,7 +892,7 @@ Fail Next Obligation.
 
 #[export]
 Instance Matches__GroundTerm__RhsPattern
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     :
     Matches Valuation (GroundTerm) RhsPattern
 .
@@ -901,7 +901,7 @@ Proof.
 Defined.
 
 Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
-    `{CΣ : ComputableSignature} lro
+    `{CΣ : ComputableStaticModel} lro
     (ρ : Valuation)
     (g : GroundTerm):
     satisfies
@@ -1097,7 +1097,7 @@ Qed.
 (*
 (*Set Typeclasses Debug.*)
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     {A B : Type}
     (A_to_OpenTermB : A -> AppliedOperatorOr' symbol B)
     (A_to_SC : A -> list SideCondition )
@@ -1394,7 +1394,7 @@ Proof.
 Qed.
 
 Lemma builtin_satisfies_LocalRewriteOrOpenTermOrBOV_iff_GroundTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (lr : LeftRight)
     :
@@ -1445,7 +1445,7 @@ Proof.
 Qed.
 
 Lemma builtin_value_satisfies_OpenTermWSC_iff
-    {Σ : Signature} ρ x:
+    {Σ : StaticModel} ρ x:
     in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_operand symbol builtin_value x)
     = builtin_value_satisfies_OpenTermWSC ρ x
 .
@@ -1493,7 +1493,7 @@ Proof.
 Qed.
 
 Lemma AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC_iff
-    {Σ : Signature} ρ x:
+    {Σ : StaticModel} ρ x:
     in_val_GroundTerm_satisfies_OpenTermWSC ρ (aoo_app symbol builtin_value x)
     = AppliedOperator'_symbol_builtin_value_satisfies_OpenTermWSC ρ x
 .
@@ -1552,7 +1552,7 @@ Proof.
 Qed.
 
 Theorem correct_RewritingRule_to_FlattenedRewritingRule
-    {Σ : Signature}
+    {Σ : StaticModel}
     (r : RewritingRule)
     (ρ : Valuation)
     (from to : GroundTerm)
@@ -1900,8 +1900,8 @@ Qed.
 
 
 Lemma order_enabled_first_nil
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     initial_vars:
     order_enabled_first initial_vars [] = ([],[])
 .
@@ -1914,14 +1914,14 @@ Qed.
 
 
 Definition vars_of_lm
-    {Σ : Signature}
+    {Σ : StaticModel}
     (lm : list Match)
     : gset variable
 :=
     union_list (vars_of_OpenTerm <$> (m_term <$> lm))
 .
 
-Inductive nicely_ordered {Σ : Signature}
+Inductive nicely_ordered {Σ : StaticModel}
     : gset variable -> list Match -> Prop
 :=
 | no_empty: forall initial, nicely_ordered initial []
@@ -1934,7 +1934,7 @@ Inductive nicely_ordered {Σ : Signature}
 .
 
 Lemma nicely_ordered_mono
-    {Σ : Signature}
+    {Σ : StaticModel}
     i1 i2 l:
     i1 ⊆ i2 ->
     nicely_ordered i1 l ->
@@ -1956,7 +1956,7 @@ Proof.
     }
 Qed.
 
-Lemma nicely_ordered_cons {Σ : Signature} initial x l:
+Lemma nicely_ordered_cons {Σ : StaticModel} initial x l:
     nicely_ordered initial (x::l)
     <-> (
         (m_variable x) ∈ initial /\
@@ -1983,7 +1983,7 @@ Proof.
 Qed.
 
 
-Lemma nicely_ordered_app {Σ : Signature} initial l1 l2:
+Lemma nicely_ordered_app {Σ : StaticModel} initial l1 l2:
     nicely_ordered initial (l1 ++ l2)
     <->
     (nicely_ordered initial l1 /\
@@ -2026,7 +2026,7 @@ Proof.
     }
 Qed.
 
-Lemma enables_match_mono {Σ : Signature} vs1 vs2 m:
+Lemma enables_match_mono {Σ : StaticModel} vs1 vs2 m:
     vs1 ⊆ vs2 ->
     enables_match vs1 m ->
     enables_match vs2 m
@@ -2036,7 +2036,7 @@ Proof.
     ltac1:(set_solver).
 Qed.
 
-Lemma nicely_ordered_all_enable_match {Σ : Signature} vs l m:
+Lemma nicely_ordered_all_enable_match {Σ : StaticModel} vs l m:
     nicely_ordered vs l ->
     m ∈ l ->
     ∃ vs', vs ⊆ vs' /\
@@ -2057,7 +2057,7 @@ Proof.
     ltac1:(clear; set_solver).
 Qed.
 
-Lemma nicely_ordered_all_enable_match' {Σ : Signature} vs l i m:
+Lemma nicely_ordered_all_enable_match' {Σ : StaticModel} vs l i m:
     nicely_ordered vs l ->
     l !! i = Some m ->
     enables_match (vs ∪ vars_of_lm (take i l)) m
@@ -2096,7 +2096,7 @@ Proof.
     }
 Qed.
 
-Lemma nicely_ordered_exists_enables_match {Σ : Signature} vs ms l':
+Lemma nicely_ordered_exists_enables_match {Σ : StaticModel} vs ms l':
     l' ≡ₚ ms ->
     ms <> [] ->
     nicely_ordered vs l' ->
@@ -2134,7 +2134,7 @@ Proof.
 Qed.
 
 Lemma can_be_ordered_implies_choose_Some
-    {Σ : Signature}
+    {Σ : StaticModel}
     vs ms ms':
     ms <> [] ->
     ms' ≡ₚ ms ->
@@ -2263,7 +2263,7 @@ Proof.
 Qed.
 
 Lemma order_enabled_first_1_nicely_ordered
-    {Σ : Signature}
+    {Σ : StaticModel}
     initial l :
     nicely_ordered initial (order_enabled_first initial l).1
 .
@@ -2298,7 +2298,7 @@ Proof.
 Qed.
 
 Lemma choose_first_enabled_match_lookup
-    {Σ : Signature}
+    {Σ : StaticModel}
     vs l i m rest:
     choose_first_enabled_match vs l = Some (i, m, rest) ->
     l !! i = Some m
@@ -2314,7 +2314,7 @@ Proof.
 Qed.
 
 Lemma choose_first_enabled_match_elem_of
-    {Σ : Signature} vs l i m rest:
+    {Σ : StaticModel} vs l i m rest:
     choose_first_enabled_match vs l = Some (i, m, rest) ->
     m_variable m ∈ vs
 .
@@ -2329,7 +2329,7 @@ Proof.
 Qed.
 
 Lemma choose_first_really_first
-    {Σ : Signature} vs l i m rest:
+    {Σ : StaticModel} vs l i m rest:
     choose_first_enabled_match vs l = Some (i, m, rest) ->
     Forall (λ x : Match, ¬ enables_match vs x) (take i l)
 .
@@ -2370,7 +2370,7 @@ Proof.
 Qed.
 
 Lemma delete_preserves_orderability
-    {Σ : Signature}
+    {Σ : StaticModel}
     vs l l' i m:
     l ≡ₚ l' ->
     nicely_ordered vs l' ->
@@ -2412,7 +2412,7 @@ Proof.
 Qed.
 
 Lemma order_enabled_first_2_empty_if_can_be_ordered
-    {Σ : Signature}
+    {Σ : StaticModel}
     initial l :
     (∃ l', l' ≡ₚ l /\ nicely_ordered initial l') ->
     (order_enabled_first initial l).2 = []
@@ -2479,7 +2479,7 @@ Proof.
 Qed.
 
 Lemma order_enabled_first_nicely_ordered
-    {Σ : Signature}
+    {Σ : StaticModel}
     initial l
     :
     (∃ l', l' ≡ₚ l /\ nicely_ordered initial l' ) ->
@@ -2501,8 +2501,8 @@ Qed.
 
 
 Definition valuation_satisfies_all_matches
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (ρ : Valuation)
     (l : list Match)
     : Prop
@@ -2513,8 +2513,8 @@ Definition valuation_satisfies_all_matches
 .
 
 Lemma valuation_satisfies_all_matches_perm
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (l1 l2 : list Match) (ρ : Valuation)
 : l1 ≡ₚ l2 ->
     valuation_satisfies_all_matches ρ l1

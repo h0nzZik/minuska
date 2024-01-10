@@ -22,7 +22,7 @@ Require Import Coq.Classes.Morphisms_Prop.
 
 (*
 Definition GroundTerm_try_match_OpenTerm
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     GroundTerm -> OpenTerm -> option Valuation :=
     ApppliedOperatorOr'_try_match_AppliedOperatorOr'
@@ -32,7 +32,7 @@ Definition GroundTerm_try_match_OpenTerm
 *)
     
 Definition evaluate_match
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (m : Match)
     : bool :=
@@ -45,7 +45,7 @@ match m with
 end.
 
 Definition evaluate_sc
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     (ρ : Valuation)
     (sc : SideCondition)
     : bool :=
@@ -58,7 +58,7 @@ end.
 
 
 Definition evaluate_rhs_pattern
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (φ : AppliedOperatorOr' symbol Expression)
     : option GroundTerm :=
@@ -74,8 +74,8 @@ Definition evaluate_rhs_pattern
 .
 
 Definition rewrite_with
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (r : FlattenedRewritingRule)
     (g : GroundTerm)
     : option GroundTerm
@@ -87,8 +87,8 @@ Definition rewrite_with
 .
 
 Lemma evaluate_rhs_pattern_correct
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (φ : RhsPattern)
     (ρ : Valuation)
     (g : GroundTerm)
@@ -446,8 +446,8 @@ Qed.
 Print FlattenedRewritingRule.
 
 Definition try_match_lhs_with_sc
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (g : GroundTerm)
     (r : FlattenedRewritingRule)
     : option Valuation
@@ -460,7 +460,7 @@ Definition try_match_lhs_with_sc
 (*
 #[global]
 Instance VarsOf_list_SideCondition
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     VarsOf (list SideCondition) variable
 := {|
@@ -469,8 +469,8 @@ Instance VarsOf_list_SideCondition
 *)
 
 Lemma try_match_lhs_with_sc_complete
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (g : GroundTerm)
     (r : FlattenedRewritingRule)
     (ρ : gmap variable GroundTerm)
@@ -598,7 +598,7 @@ Proof.
 Qed.
 
 Lemma valuation_restrict_vars_of_self
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ' ρ : gmap variable GroundTerm)
     :
     ρ' ⊆ ρ  ->
@@ -644,8 +644,8 @@ Proof.
 Qed.
 
 Definition thy_lhs_match_one
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
     : option (FlattenedRewritingRule * Valuation)%type
@@ -668,8 +668,8 @@ Definition thy_lhs_match_one
 .
 
 Lemma thy_lhs_match_one_None
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (e : GroundTerm)
     (Γ : FlattenedRewritingTheory)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
@@ -798,8 +798,8 @@ Qed.
 
 
 Lemma thy_lhs_match_one_Some
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
     (r : FlattenedRewritingRule)
@@ -860,8 +860,8 @@ Qed.
 
 
 Definition naive_interpreter
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (Γ : list FlattenedRewritingRule)
     (e : GroundTerm)
     : option GroundTerm
@@ -875,8 +875,8 @@ Definition naive_interpreter
 .
 
 Lemma naive_interpreter_sound
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (Γ : FlattenedRewritingTheory)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
     : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).

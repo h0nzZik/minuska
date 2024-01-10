@@ -97,7 +97,7 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
         -> (GroundTerm' symbol builtin_value) ;
 }.
 
-Class Signature := {
+Class StaticModel := {
     symbol : Type ;
     variable : Type ;
     symbols :: Symbols symbol ;
@@ -117,12 +117,12 @@ Class VarsOf
 
 Arguments vars_of : simpl never.
 
-Definition GroundTerm {Σ : Signature}
+Definition GroundTerm {Σ : StaticModel}
     := GroundTerm' symbol builtin_value
 .
 
 Inductive Expression
-    {Σ : Signature}
+    {Σ : StaticModel}
     :=
 | ft_element (e : GroundTerm)
 | ft_variable (x : variable)
@@ -131,39 +131,39 @@ Inductive Expression
 .
 
 (* TODO add equality of expressions *)
-Inductive AtomicProposition {Σ : Signature} :=
+Inductive AtomicProposition {Σ : StaticModel} :=
 | apeq (e1 : Expression) (e2 : Expression)
 | ap1 (p : builtin_unary_predicate) (e1 : Expression)
 | ap2 (p : builtin_binary_predicate) (e1 e2 : Expression)
 .
 
-Inductive Constraint {Σ : Signature} :=
+Inductive Constraint {Σ : StaticModel} :=
 | c_True
 | c_atomic (ap : AtomicProposition)
 | c_and (c1 c2 : Constraint)
 (*| c_not (c : Constraint) *) (* This is not extensive with respect to satisfaction*)
 .
 
-Inductive BuiltinOrVar {Σ : Signature} :=
+Inductive BuiltinOrVar {Σ : StaticModel} :=
 | bov_builtin (b : builtin_value)
 | bov_variable (x : variable)
 .
 
-Definition OpenTerm {Σ : Signature}
+Definition OpenTerm {Σ : StaticModel}
     := AppliedOperatorOr' symbol BuiltinOrVar
 .
 
-Record Match {Σ : Signature} := mkMatch {
+Record Match {Σ : StaticModel} := mkMatch {
   m_variable : variable ;
   m_term : OpenTerm ;
 }.
 
-Inductive SideCondition {Σ : Signature} :=
+Inductive SideCondition {Σ : StaticModel} :=
 | sc_constraint (c : Constraint)
 | sc_match (m : Match)
 .
 
-Inductive WithASideCondition {Σ : Signature} (Base : Type) :=
+Inductive WithASideCondition {Σ : StaticModel} (Base : Type) :=
 |  wsc_base (φ : Base)
 |  wsc_sc (φc : WithASideCondition Base) (sc : SideCondition)
 .
@@ -171,34 +171,34 @@ Inductive WithASideCondition {Σ : Signature} (Base : Type) :=
 Arguments wsc_base {Σ} {Base}%type_scope φ.
 Arguments wsc_sc {Σ} {Base}%type_scope φc sc.
 
-Definition OpenTermWSC {Σ : Signature}
+Definition OpenTermWSC {Σ : StaticModel}
     := WithASideCondition (@OpenTerm Σ)
 .
 
-Definition LhsPattern {Σ : Signature} :=
+Definition LhsPattern {Σ : StaticModel} :=
     AppliedOperatorOr' symbol OpenTermWSC
 .
 
-Definition RhsPattern {Σ : Signature} :=
+Definition RhsPattern {Σ : StaticModel} :=
     AppliedOperatorOr' symbol Expression
 .
 
-Record LocalRewrite {Σ : Signature} := {
+Record LocalRewrite {Σ : StaticModel} := {
     lr_from : LhsPattern ;
     lr_to : RhsPattern ;
 }.
 
-Inductive LocalRewriteOrOpenTermOrBOV {Σ : Signature} :=
+Inductive LocalRewriteOrOpenTermOrBOV {Σ : StaticModel} :=
 | lp_rewrite (r : LocalRewrite)
 | lp_basicpat (φ : OpenTerm)
 | lp_bov (bx : BuiltinOrVar)
 . 
 
-Definition UncondRewritingRule {Σ : Signature}
+Definition UncondRewritingRule {Σ : StaticModel}
     := AppliedOperatorOr' symbol LocalRewriteOrOpenTermOrBOV
 .
 
-Definition RewritingRule {Σ : Signature}
+Definition RewritingRule {Σ : StaticModel}
     := WithASideCondition UncondRewritingRule
 .
 
@@ -238,7 +238,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance Expression_eqdec {Σ : Signature}
+    Instance Expression_eqdec {Σ : StaticModel}
         : EqDecision (Expression)
     .
     Proof.
@@ -269,7 +269,7 @@ Section eqdec.
     Fail Next Obligation.
 
     #[export]
-    Instance atomicProposition_eqdec {Σ : Signature}
+    Instance atomicProposition_eqdec {Σ : StaticModel}
         : EqDecision AtomicProposition
     .
     Proof.
@@ -277,7 +277,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance constraint_eqdec {Σ : Signature}
+    Instance constraint_eqdec {Σ : StaticModel}
         : EqDecision Constraint
     .
     Proof.
@@ -285,7 +285,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance BuiltinOrVar_eqdec {Σ : Signature}
+    Instance BuiltinOrVar_eqdec {Σ : StaticModel}
         : EqDecision BuiltinOrVar
     .
     Proof.
@@ -293,7 +293,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance GroundTerm_eqdec {Σ : Signature}
+    Instance GroundTerm_eqdec {Σ : StaticModel}
         : EqDecision GroundTerm
     .
     Proof.
@@ -303,7 +303,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  OpenTerm_eqdec {Σ : Signature}
+    Instance  OpenTerm_eqdec {Σ : StaticModel}
         : EqDecision OpenTerm
     .
     Proof.
@@ -311,7 +311,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  Match_eqdec {Σ : Signature}
+    Instance  Match_eqdec {Σ : StaticModel}
         : EqDecision Match
     .
     Proof.
@@ -319,7 +319,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  SideCondition_eqdec {Σ : Signature}
+    Instance  SideCondition_eqdec {Σ : StaticModel}
         : EqDecision SideCondition
     .
     Proof.
@@ -327,7 +327,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  OpenTermWSC_eqdec {Σ : Signature}
+    Instance  OpenTermWSC_eqdec {Σ : StaticModel}
         : EqDecision OpenTermWSC
     .
     Proof.
@@ -335,7 +335,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance LhsPattern_eqdec {Σ : Signature}
+    Instance LhsPattern_eqdec {Σ : StaticModel}
         : EqDecision LhsPattern
     .
     Proof.
@@ -343,7 +343,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance RhsPattern_eqdec {Σ : Signature}
+    Instance RhsPattern_eqdec {Σ : StaticModel}
         : EqDecision RhsPattern
     .
     Proof.
@@ -352,7 +352,7 @@ Section eqdec.
 
     #[export]
     Instance WithASideCondition_eqdec
-        {Σ : Signature}
+        {Σ : StaticModel}
         (A : Type)
         (A_eqdec : EqDecision A)
         : EqDecision (WithASideCondition A)
@@ -362,7 +362,7 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance LocalRewrite_eqdec {Σ : Signature}
+    Instance LocalRewrite_eqdec {Σ : StaticModel}
         : EqDecision LocalRewrite
     .
     Proof.
@@ -567,7 +567,7 @@ End countable.
 
 
 
-Class ComputableSignature {Σ : Signature} := {
+Class ComputableStaticModel {Σ : StaticModel} := {
     builtin_unary_predicate_interp_bool :
         builtin_unary_predicate -> GroundTerm -> bool ; 
 

@@ -10,7 +10,7 @@ From CoLoR Require Import
     Term.Varyadic.VTerm
 .
 
-Inductive m2c_sig_symbols (Σ : spec_syntax.Signature) : Type :=
+Inductive m2c_sig_symbols (Σ : spec_syntax.StaticModel) : Type :=
 | c_sym_symbol (s : @spec_syntax.symbol Σ)
 | c_sym_builtin_value
     (b : (@spec_syntax.builtin_value
@@ -22,7 +22,7 @@ Inductive m2c_sig_symbols (Σ : spec_syntax.Signature) : Type :=
 
 #[global]
 Instance m2c_sig_symbols_eqdec
-    (Σ : spec_syntax.Signature)
+    (Σ : spec_syntax.StaticModel)
     : EqDecision (m2c_sig_symbols Σ)
 .
 Proof.
@@ -30,7 +30,7 @@ Proof.
 Qed.
 
 Definition is_symbol
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (s : m2c_sig_symbols Σ)
     : Prop
 :=
@@ -41,13 +41,13 @@ end
 .
 
 Definition beq_m2c_sig_symbols
-    (Σ : spec_syntax.Signature)
+    (Σ : spec_syntax.StaticModel)
     (a b : m2c_sig_symbols Σ)
     : bool
 := bool_decide (a = b).
 
 Lemma beq_m2c_sig_symbols_ok
-    (Σ : spec_syntax.Signature)
+    (Σ : spec_syntax.StaticModel)
     :
     ∀ x y : (m2c_sig_symbols Σ),
         beq_m2c_sig_symbols Σ x y = true ↔ x = y
@@ -60,7 +60,7 @@ Qed.
 
 
 Definition m2c_sig
-    (Σ : spec_syntax.Signature)
+    (Σ : spec_syntax.StaticModel)
     : VSignature.Signature
 :=
     @VSignature.mkSignature
@@ -69,12 +69,12 @@ Definition m2c_sig
         (beq_m2c_sig_symbols_ok Σ)
 .
 
-Coercion m2c_sig : spec_syntax.Signature >-> VSignature.Signature.
+Coercion m2c_sig : spec_syntax.StaticModel >-> VSignature.Signature.
 
 Print VTerm.term.
 
 Definition vterm_is_closed
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (t : VTerm.term Σ)
     : Prop
 := @VTerm.term_rect
@@ -89,7 +89,7 @@ Definition vterm_is_closed
 .
 
 Lemma vterm_is_closed_implies_vterm_is_not_var
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (t : VTerm.term Σ)
     : vterm_is_closed t -> forall v, t <> Var v
 .
@@ -101,7 +101,7 @@ Proof.
 Qed.
 
 Definition closed_vterm_proj_sym
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     ( ct : { t : VTerm.term Σ | vterm_is_closed t })
     : VSignature.symbol (m2c_sig Σ)
 :=
@@ -115,7 +115,7 @@ end
 .
 
 Definition closed_vterm_proj_args0
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     ( ct : { t : VTerm.term Σ | vterm_is_closed t })
     : list (VTerm.term Σ)
 :=
@@ -129,7 +129,7 @@ end
 .
 
 Lemma closed_vterm_proj_args0_closed
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     ( ct : { t : VTerm.term Σ | vterm_is_closed t })
     : Forall vterm_is_closed (closed_vterm_proj_args0 ct)
 .
@@ -165,7 +165,7 @@ Proof.
 Qed.
 
 Lemma vterm_is_closed_Fun
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     s
     (l: list (term Σ)) :
     Forall vterm_is_closed l <->
@@ -181,7 +181,7 @@ Proof.
 Qed.
 
 Program Fixpoint m2c_AppliedOperator'_symbol_builtin_rev
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (g : AppliedOperator' spec_syntax.symbol builtin_value)
     : { t : VTerm.term Σ | vterm_is_closed t }
 :=
@@ -226,7 +226,7 @@ end
 .
 
 Program Definition m2c_GroundTerm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (g : GroundTerm)
     : { t : VTerm.term Σ | vterm_is_closed t }
 :=
@@ -238,7 +238,7 @@ end
 .
 
 Definition vterm_wellformed
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (t : VTerm.term Σ)
     : Prop
 := @VTerm.term_rect
@@ -254,7 +254,7 @@ Definition vterm_wellformed
 
 
 Lemma closed_vterm_proj_args0_wf
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     ( ct : { t : VTerm.term Σ | vterm_is_closed t })
     :
     vterm_wellformed (`ct) ->
@@ -279,7 +279,7 @@ Proof.
 Qed.
 
 Lemma vterm_wellformed_m2c_GroundTerm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (g : AppliedOperator' spec_syntax.symbol builtin_value):
     vterm_wellformed (proj1_sig (m2c_AppliedOperator'_symbol_builtin_rev g))
 .
@@ -400,7 +400,7 @@ Proof.
 Qed.
 
 Lemma _helper_c2m_closed_vterm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     n l:
     vterm_is_closed (Fun n l) ->
     Forall (fun e => vterm_is_closed e) l
@@ -418,7 +418,7 @@ Qed.
 
 Print fold_left.
 Definition c2m_closed_vterm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (ct : { t : VTerm.term Σ | vterm_is_closed t })
     : GroundTerm
 := @VTerm.term_rect
@@ -463,7 +463,7 @@ Definition c2m_closed_vterm
 .
 
 Definition zip_term_with_proof
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     :
     forall (l : list (term Σ)),
     Forall vterm_is_closed l ->
@@ -488,7 +488,7 @@ Proof.
 Defined.
 
 Example ex1_c2m_closed_vterm__m2c_GroundTerm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (o : spec_syntax.symbol)
     : 
     let g := (aoo_app spec_syntax.symbol builtin_value (ao_operator o)) in
@@ -497,7 +497,7 @@ Example ex1_c2m_closed_vterm__m2c_GroundTerm
 Proof. reflexivity. Qed.
 
 Example ex2_c2m_closed_vterm__m2c_GroundTerm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (o : spec_syntax.symbol)
     (b : builtin_value)
     : 
@@ -511,7 +511,7 @@ Qed.
 
 (*
 Lemma c2m_closed_vterm__m2c_GroundTerm
-    {Σ : spec_syntax.Signature}
+    {Σ : spec_syntax.StaticModel}
     (g : GroundTerm)
     : c2m_closed_vterm (m2c_GroundTerm g) = g
 .

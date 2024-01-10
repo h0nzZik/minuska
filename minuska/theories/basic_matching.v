@@ -14,7 +14,7 @@ Require Import Coq.Classes.Morphisms_Prop.
 
 
 Definition valuation_restrict
-    {Σ : Signature}
+    {Σ : StaticModel}
     {var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -28,7 +28,7 @@ Definition valuation_restrict
 .
 
 Lemma valuation_restrict_eq_subseteq
-    {Σ : Signature}
+    {Σ : StaticModel}
     {var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -61,7 +61,7 @@ Proof.
 Qed.
 
 Lemma valuation_restrict_eq_impl_lookup
-    {Σ : Signature}
+    {Σ : StaticModel}
     {var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -102,7 +102,7 @@ Proof.
 Qed.
 
 Class Matches
-    {Σ : Signature}
+    {Σ : StaticModel}
     (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -131,7 +131,7 @@ Arguments satisfies : simpl never.
 Arguments matchesb : simpl never.
 
 Lemma matchesb_implies_satisfies
-    {Σ : Signature}
+    {Σ : StaticModel}
     (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -151,7 +151,7 @@ Proof.
 Qed.
 
 Lemma satisfies_implies_matchesb
-    {Σ : Signature}
+    {Σ : StaticModel}
     (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -171,7 +171,7 @@ Proof.
 Qed.
 
 Lemma matchesb_ext
-    {Σ : Signature}
+    {Σ : StaticModel}
     (A B var : Type)
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -196,7 +196,7 @@ Qed.
 
 Section with_signature.
     Context
-        {Σ : Signature}
+        {Σ : StaticModel}
     .
 (*
     #[global]
@@ -1438,7 +1438,7 @@ Section with_signature.
 End with_signature.
 
 Definition val_satisfies_ap_bool
-    `{ComputableSignature}
+    `{ComputableStaticModel}
     (ρ : Valuation)
     (ap : AtomicProposition)
     : bool :=
@@ -1464,7 +1464,7 @@ end
 .
 
 Lemma expression_evaluate_some_valuation
-    {Σ : Signature} ρ e x
+    {Σ : StaticModel} ρ e x
     :
     Expression_evaluate ρ e = Some x ->
     vars_of e ⊆ vars_of ρ.
@@ -1507,7 +1507,7 @@ Proof.
 Qed.
 
 Lemma Expression_evaluate_val_restrict:
-    ∀ {Σ : Signature}
+    ∀ {Σ : StaticModel}
         (ρ1 ρ2 : gmap variable GroundTerm)
         (t : Expression),
             valuation_restrict ρ1 (vars_of t) = valuation_restrict ρ2 (vars_of t) →
@@ -1591,7 +1591,7 @@ Qed.
 
 #[export]
 Program Instance Matches_val_ap
-    `{ComputableSignature}
+    `{ComputableStaticModel}
     : Matches unit AtomicProposition variable
 := {|
     matchesb := fun a b c => val_satisfies_ap_bool a c;
@@ -1734,8 +1734,8 @@ Qed.
 Fail Next Obligation.
 
 Fixpoint val_satisfies_c_bool
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (ρ : Valuation)
     (c : Constraint)
     : bool :=
@@ -1747,8 +1747,8 @@ match c with
 end.
 
 Lemma val_satisfies_valuation
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     ρ c
     :
     val_satisfies_c_bool ρ c = true ->
@@ -1770,7 +1770,7 @@ Qed.
 
 #[export]
 Program Instance Matches_val_c
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     : Matches unit Constraint variable
 := {|
     matchesb := fun a b c => val_satisfies_c_bool a c;
@@ -1856,7 +1856,7 @@ Qed.
 Fail Next Obligation.
 
 Definition valuation_satisfies_match_bool
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation)
     (m : Match) : bool :=
 match m with
@@ -1870,7 +1870,7 @@ end.
 
 #[export]
 Program Instance Matches_val_match
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     Matches unit Match variable
 := {|
@@ -1953,7 +1953,7 @@ Fail Next Obligation.
 
 
 Definition valuation_satisfies_sc_bool
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     (ρ : Valuation)
     (sc : SideCondition) : bool :=
 match sc with
@@ -1963,7 +1963,7 @@ end.
 
 #[export]
 Program Instance Matches_valuation_sc
-    `{CΣ : ComputableSignature}
+    `{CΣ : ComputableStaticModel}
     :
     Matches unit SideCondition variable
 := {|
@@ -2006,8 +2006,8 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches_valuation_scs
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     :
     Matches unit (list SideCondition) variable
 := {|
@@ -2081,7 +2081,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches__builtin__Expr
-   `{CΣ : ComputableSignature}
+   `{CΣ : ComputableStaticModel}
     :
     Matches builtin_value (Expression) variable
 := {|
@@ -2107,7 +2107,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches_asb_expr
-    {Σ : Signature}:
+    {Σ : StaticModel}:
     Matches
         ((AppliedOperator' symbol builtin_value))
         Expression

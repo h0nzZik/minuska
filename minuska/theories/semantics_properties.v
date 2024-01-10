@@ -6,7 +6,7 @@ From Minuska Require Import
 .
 
 Lemma Expression_evalute_total_iff
-    {Σ : Signature}
+    {Σ : StaticModel}
     (t : Expression)
     (ρ : Valuation)
     :
@@ -92,7 +92,7 @@ Qed.
 
 (*
 Lemma Expression_evaluate_eq
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : gmap variable GroundTerm)
     (t : Expression)
     :
@@ -111,7 +111,7 @@ Qed.
 *)
 
 Lemma Expression_evalute_total_same
-    {Σ : Signature}
+    {Σ : StaticModel}
     (t : Expression)
     (ρ1 ρ2 ρ : Valuation)
     :

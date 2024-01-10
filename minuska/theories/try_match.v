@@ -9,7 +9,7 @@ From Minuska Require Import
 
 
 Definition use_left
-{Σ : Signature}
+{Σ : StaticModel}
 (og1 og2: option GroundTerm): option GroundTerm :=
 match og1, og2 with
 | None, None => None
@@ -19,13 +19,13 @@ match og1, og2 with
 end.
 
 Definition valuations_compatible
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : Valuation) : bool
     := forallb (fun k => bool_decide (ρ1 !! k = ρ2 !! k)) (elements (dom ρ1 ∩ dom ρ2))
 .
 
 Definition merge_valuations
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
     : option Valuation :=
 if decide (valuations_compatible ρ1 ρ2)
@@ -36,7 +36,7 @@ else
 .
 
 Lemma merge_valuations_correct
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 ρ : Valuation):
     merge_valuations ρ1 ρ2 = Some ρ ->
     ρ1 ⊆ ρ /\
@@ -94,7 +94,7 @@ Proof.
 Qed.
 
 Lemma merge_valuations_empty_r
-    {Σ : Signature} x
+    {Σ : StaticModel} x
     :
     merge_valuations x ∅ = Some x
 .
@@ -134,7 +134,7 @@ Proof.
 Qed.
 
 Lemma merge_valuations_empty_l
-    {Σ : Signature} x:
+    {Σ : StaticModel} x:
     merge_valuations ∅ x = Some x
 .
 Proof.
@@ -175,7 +175,7 @@ Qed.
 
 
 Lemma merge_use_left_subseteq
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 : Valuation):
     ρ1 ⊆ ρ2 ->
     merge use_left ρ1 ρ2 = ρ2
@@ -230,7 +230,7 @@ Qed.
 
 
 Lemma merge_valuations_dom
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ1 ρ2 ρ : Valuation):
     merge_valuations ρ1 ρ2 = Some ρ ->
     dom ρ = dom ρ1 ∪ dom ρ2
@@ -283,7 +283,7 @@ Qed.
 
 
 Lemma omap_Some
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ : Valuation):
     omap [eta Some] ρ = ρ
 .
@@ -294,7 +294,7 @@ Proof.
 Qed.
 
 Class TryMatch
-    {Σ : Signature}
+    {Σ : StaticModel}
     (A B : Type)
     {_VB: VarsOf B variable}
     {_SAB : Satisfies Valuation A B variable}
@@ -328,7 +328,7 @@ Class TryMatch
 Arguments try_match : simpl never.
 
 Fixpoint ApppliedOperator'_try_match_AppliedOperator'
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
@@ -392,7 +392,7 @@ end.
     hides this detail.
 *)
 Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
@@ -525,18 +525,18 @@ Qed.
     to behave extensionaly.
 *)
 #[local]
-Instance GTEquiv {Σ : Signature}
+Instance GTEquiv {Σ : StaticModel}
     : Equiv GroundTerm := (=).
 
 #[local]
-Instance GTLeibnizEquiv {Σ : Signature}
+Instance GTLeibnizEquiv {Σ : StaticModel}
     : LeibnizEquiv GroundTerm.
 Proof.
     intros x y H. apply H.
 Qed.
 
 Lemma dom_merge_use_left
-    {Σ : Signature}
+    {Σ : StaticModel}
     (ρ' ρ'' : Valuation)
     :
     dom (merge use_left ρ' ρ'') = dom ρ'' ∪ dom ρ'
@@ -613,7 +613,7 @@ Proof.
     }
 Qed.
 
-Lemma merge_use_left_below {Σ : Signature} (ρ ρ' ρ'': Valuation) :
+Lemma merge_use_left_below {Σ : StaticModel} (ρ ρ' ρ'': Valuation) :
     ρ' ⊆ ρ ->
     ρ'' ⊆ ρ ->
     merge use_left ρ' ρ'' ⊆ ρ
@@ -644,7 +644,7 @@ Proof.
 Qed.
 
 Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
@@ -970,7 +970,7 @@ Qed.
 
 #[export]
 Program Instance TryMatch_AppliedOperator'
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
@@ -1111,7 +1111,7 @@ Qed.
 Fail Next Obligation.
 
 Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_V1 : VarsOf Operand1 variable}
     {_V2 : VarsOf Operand2 variable}
@@ -1141,7 +1141,7 @@ end.
 
 #[export]
 Program Instance TryMatch_AppliedOperatorOr'
-    {Σ : Signature}
+    {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
@@ -1215,7 +1215,7 @@ Fail Next Obligation.
 
 
 Definition builtin_value_try_match_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     builtin_value -> BuiltinOrVar -> option Valuation :=
 fun b bv =>
@@ -1227,7 +1227,7 @@ end.
 
 #[export]
 Program Instance TryMatch__builtin__BoV
-    {Σ : Signature}
+    {Σ : StaticModel}
 :
     TryMatch builtin_value BuiltinOrVar
 := {|
@@ -1372,7 +1372,7 @@ Qed.
 Fail Next Obligation.
 
 Definition pure_GroundTerm_try_match_BuiltinOrVar
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     AppliedOperator' symbol builtin_value ->
     BuiltinOrVar ->
@@ -1386,7 +1386,7 @@ end.
 
 #[export]
 Program Instance TryMatch__pure_GroundTerm__BoV
-    {Σ : Signature}
+    {Σ : StaticModel}
 :
     TryMatch (AppliedOperator' symbol builtin_value) BuiltinOrVar
 := {|
@@ -1478,7 +1478,7 @@ Fail Next Obligation.
 Set Typeclasses Debug.
 #[export]
 Program Instance TryMatch__builtin__AO'sB
-    {Σ : Signature}
+    {Σ : StaticModel}
     {B : Type}
     {_VB : (VarsOf B variable) }
     {_V1 : VarsOf (AppliedOperator' symbol B) variable}
@@ -1491,8 +1491,8 @@ Fail Next Obligation.
 
 #[export]
 Instance TryMatch__GroundTerm__OpenTerm
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     :
     TryMatch GroundTerm OpenTerm
 .

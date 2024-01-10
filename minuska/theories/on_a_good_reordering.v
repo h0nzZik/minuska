@@ -13,8 +13,8 @@ From Minuska Require Import
 
 
 Definition apply_match
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (ρ : Valuation)
     (m : Match)
     : option Valuation
@@ -25,8 +25,8 @@ Definition apply_match
 .
 
 Definition apply_match'
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (oρ : option Valuation)
     (m : Match)
     : option Valuation
@@ -36,8 +36,8 @@ Definition apply_match'
 .
 
 Definition reduce_matches
-    {Σ : Signature}
-    {CΣ : ComputableSignature}
+    {Σ : StaticModel}
+    {CΣ : ComputableStaticModel}
     (oρ : option Valuation)
     (matches : list Match)
     : option Valuation
@@ -46,7 +46,7 @@ Definition reduce_matches
 .
 
 Theorem on_a_good_reordering
-    {Σ : Signature}
+    {Σ : StaticModel}
     :
     ∀(l0 : list Match) (initial_vars : gset variable),
     (∃ ρ0 : Valuation,
