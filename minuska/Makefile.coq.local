@@ -1,2 +1,6 @@
 number_example: src/example_lang_driver.ml all
 	ocamlc -w -20 -w -26 -o $@  ExampleLang.mli ExampleLang.ml $<
+
+
+two_counters: src/two_counters_driver.ml all
+	ocamlc -w -20 -w -26 -o $@  TwoCounters.mli TwoCounters.ml $<

@@ -1,8 +1,6 @@
 open ExampleLang
 
-let usage_msg = "example_langdriver [-verbose] <number>"
-
-let verbose = ref false
+let usage_msg = "example_langdriver <number>"
 
 let depth = ref 10
 
@@ -14,7 +12,6 @@ let anon_fun mynum =
 
 let speclist =
   [
-    ("-verbose", Arg.Set verbose, "Output debug information");
     ("-depth", Arg.Set_int depth, "Maximal execution depth")
   ]
 
