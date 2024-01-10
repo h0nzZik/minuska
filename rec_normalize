@@ -1,0 +1,354 @@
+#! /bin/sh
+
+# Hubert Garavel -- quick-and-dirty REC translators
+
+DIR=`dirname "$0"`
+COMMAND=`basename "$0"`
+
+# parse option if present to perform language-specific renamings
+
+case "$1" in
+	-aprove )
+		shift
+		;;
+	-cafeobj )
+		RENAME_BOOLEANS=1
+		RENAME_CAFEOBJ_KEYWORDS=1
+		shift
+		;;
+	-clean )
+		RENAME_BOOLEANS=1
+		RENAME_CLEAN_KEYWORDS=1
+		shift
+		;;
+	-haskell )
+		RENAME_BOOLEANS=1
+		RENAME_HASKELL_KEYWORDS=1
+		shift
+		;;
+	-lnt )
+		RENAME_BOOLEANS=1
+		RENAME_LNT_KEYWORDS=1
+		shift
+		;;
+	-lotos )
+		RENAME_BOOLEANS=1
+		shift
+		;;
+	-maude )
+		RENAME_BOOLEANS=1
+		RENAME_MAUDE_KEYWORDS=1
+		shift
+		;;
+	-mcrl2 )
+		RENAME_BOOLEANS=1
+		RENAME_MCRL2_KEYWORDS=1
+		shift
+		;;
+	-ocaml )
+		RENAME_OCAML_KEYWORDS=1
+		shift
+		;;
+	-opal )
+		RENAME_BOOLEANS=1
+		RENAME_OPAL_KEYWORDS=1	
+		shift
+		;;
+	-rascal )
+		RENAME_BOOLEANS=1
+		RENAME_RASCAL_KEYWORDS=1
+		shift
+		;;
+	-scala )
+		RENAME_SCALA_KEYWORDS=1
+		shift
+		;;
+	-sml )
+		RENAME_BOOLEANS=1
+		RENAME_SML_KEYWORDS=1
+		shift
+		;;
+	-stratego )
+		RENAME_STRATEGO_KEYWORDS=1
+		shift
+		;;
+	-tom )
+		RENAME_BOOLEANS=1
+		RENAME_TOM_KEYWORDS=1
+		shift
+		;;
+	-* )
+		# nothing
+		shift
+		;;
+	* )
+		# nothing
+esac
+
+# check that the input is not in the old REC-2010 format
+
+INPUT="$1"
+MODEL=`basename "$INPUT" .rec`
+
+TEMP=`mktemp -t "rec_XXXXXXXXXX"`
+cat "$INPUT" > $TEMP
+
+grep '\<OPS\>' $TEMP > /dev/null
+if [ $? = 0 ]
+then
+	if [ "$OLD_REC_FORMAT" = 1 ]
+	then
+		# the caller is aware
+		true
+	else
+		echo "$COMMAND: warning; $INPUT is in obsolete REC-2010 format" 1>&2
+		rm $TEMP
+		exit 1
+	fi
+fi
+
+# this script normalizes a REC file by
+# - expanding #include definitions inline (-x assembly option is used to stop
+#   cpp warnings about unmatched quotes, e.g., "x'")
+# - converting weird UTF-8 characters (e.g., non-breakable spaces)
+# - removing CR characters
+# - removing comments
+# - replacing ' with _prime (e.g., x' becomes x_prime)
+# - replacing " with _second (e.g., x" becomes x_second)
+# - replacing semicolons (";") with commas (",")
+# - inserting a space before each identifier preceded by '->'
+# - inserting a space after each identifier followed by '->'
+#   (not only followed by '-', because of "REC-DIFF")
+# - inserting a space after each identifier followed by '(' or ':'
+#   (otherwise, awk will treat them as the same record field)
+# - but removing spaces before and adding a space after ":" in
+#   "get normal form for:"
+# - removing extra spaces and tabulations
+# - removing empty lines
+
+cat "$TEMP" |
+cpp -P -I"$DIR/../REC-LIB" -x assembler-with-cpp |
+iconv -f "utf-8" -t "ascii//TRANSLIT" |
+sed -e 's/\r//' \
+    -e 's/%.*$//' \
+    -e "s/'/_prime/g" \
+    -e 's/"/_second/g' \
+    -e 's/;/,/g' \
+    -e 's/->\([A-Za-z0-9_]\)/-> \1/g' \
+    -e 's/\([A-Za-z0-9_]\)->/\1 ->/g' \
+    -e 's/\([A-Za-z0-9_]\)\([(:]\)/\1 \2/g' \
+    -e 's/get normal form for[ ]*:/get normal form for: /' \
+    -e 's/[ 	][ 	]*/ /g' \
+    -e 's/^ //' \
+    -e 's/ $//' \
+    -e '/^$/d' |
+if [ "$RENAME_BOOLEANS" = 1 ]
+then
+	# - replace "Bool" with "XBool" (case-insensitive)
+	# - replace "true" with "Xtrue" (case-insensitive)
+	# - replace "false" with "Xfalse" (case-insensitive)
+	sed -e 's/\<bool\>/Xbool/ig' \
+	    -e 's/\<true\>/Xtrue/ig' \
+	    -e 's/\<false\>/Xfalse/ig' \
+	    -e 's/\<not\>/Xnot/ig'
+else
+	cat
+fi |
+if [ "$RENAME_CAFEOBJ_KEYWORDS" = 1 ]
+then
+	# - replace "Nat" with "XNat" (case-insensitive)
+	sed -e 's/\<nat\>/Xnat/ig'
+else
+	cat
+fi |
+if [ "$RENAME_CLEAN_KEYWORDS" = 1 ]
+then
+	# (see the notes for Haskell)
+	sed -e 's/\<abs\>/Xabs/ig' \
+	    -e 's/\<and\>\([^-]\)/Xand\1/ig' \
+	    -e 's/\<dec\>/Xdec/ig' \
+	    -e 's/\<exp\>/Xexp/ig' \
+	    -e 's/\<filter\>/Xfilter/ig' \
+	    -e 's/\<flatten\>/Xflatten/ig' \
+	    -e 's/\<Int\>/Xint/ig' \
+	    -e 's/\<merge\>/Xmerge/ig' \
+	    -e 's/^REC-SPEC Xmerge\>/REC-SPEC merge/' \
+	    -e 's/\<Nil\>/XNil/ig' \
+	    -e 's/\<mod\>/Xmod/ig' \
+	    -e 's/\<one\>/Xone/ig' \
+	    -e 's/\<or\>/Yor/ig' \
+	    -e 's/\<rem\>/Xrem/ig' \
+	    -e 's/\<sort\>/Xsort/ig'
+else
+	cat
+fi |
+if [ "$RENAME_HASKELL_KEYWORDS" = 1 ]
+then
+	# the full list of identifiers predefined by Haskell is very long
+	# the list below was built from actual needs for REC examples only
+	# - note that "and-if" must not be renamed into "xand-if"
+	# - note that "or" is renamed to "yor" (because "xor" exists)
+	sed -e 's/\<abs\>/Xabs/ig' \
+	    -e 's/\<all\>/Xall/ig' \
+	    -e 's/\<and\>\([^-]\)/Xand\1/ig' \
+	    -e 's/\<div\>/Xdiv/ig' \
+	    -e 's/\<even\>/Xeven/ig' \
+	    -e 's/\<exp\>/Xexp/ig' \
+	    -e 's/\<filter\>/Xfilter/ig' \
+	    -e 's/\<int\>/Xint/ig' \
+	    -e 's/\<mod\>/Xmod/ig' \
+	    -e 's/\<odd\>/Xodd/ig' \
+	    -e 's/\<or\>/Yor/ig' \
+	    -e 's/\<pred\>/Xpred/ig' \
+	    -e 's/\<rem\>/Xrem/ig' \
+	    -e 's/\<succ\>/Xsucc/ig' \
+	    -e 's/\<val\>/Xval/ig'
+else
+	cat
+fi |
+if [ "$RENAME_LNT_KEYWORDS" = 1 ]
+then
+	# beware that REC has an "EVAL" keyword and LNT an "eval" keyword
+	# (we will rely on the case to distinguish them)
+	sed -e 's/\<and\>\([^-]\)/Xand\1/ig' \
+	    -e 's/\<eq\>/Xeq/ig' \
+	    -e 's/\<eval\>/Xeval/g' \
+	    -e 's/\<int\>/Xint/ig' \
+	    -e 's/\<list\>/Xlist/ig' \
+	    -e 's/\<nat\>/Xnat/ig' \
+	    -e 's/\<or\>/Yor/ig' \
+	    -e 's/\<set\>/Xset/ig'
+else
+	cat
+fi |
+if [ "$RENAME_MCRL2_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	# - the "CONS" keyword of REC (uppercase) must not be replaced
+	sed -e 's/\<cons\>/Xcons/g' \
+	    -e 's/\<div\>/Xdiv/ig' \
+	    -e 's/\<exp\>/Xexp/ig' \
+	    -e 's/\<init\>/Xinit/ig' \
+	    -e 's/\<int\>/Xint/ig' \
+	    -e 's/\<Int2Nat\>/XInt2Nat/ig' \
+	    -e 's/\<list\>/Xlist/ig' \
+	    -e 's/\<max\>/Xmax/ig' \
+	    -e 's/\<mod\>/Xmod/ig' \
+	    -e 's/\<nat\>/Xnat/ig' \
+	    -e 's/\<Nat2Pos\>/XNat2Pos/ig' \
+	    -e 's/\<pos\>/Xpos/ig' \
+	    -e 's/\<Pos2Nat\>/XPos2Nat/ig' \
+	    -e 's/\<pred\>/Xpred/ig' \
+	    -e 's/\<set\>/Xset/ig' \
+	    -e 's/\<sort\>/Xsort/ig' \
+	    -e 's/\<succ\>/Xsucc/ig' \
+	    -e 's/\<val\>/Xval/ig'
+	# list of other mCRL2 keywords: 
+	# abs act allow Bag block ceil comm delay delta end 
+	# eqn exists floor forall glob head hide in lambda
+	# map min mu nil nu pbes Pos Pos2Nat
+	# proc Real rename rhead round rtail struct
+	# sum tail tau var whr yaled
+else
+	cat
+fi |
+if [ "$RENAME_OCAML_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	# (see the notes for Haskell)
+	sed -e 's/\<and\>\([^-]\)/Xand\1/ig' \
+	    -e 's/\<or\>/Yor/ig' \
+	    -e 's/\<mod\>/Xmod/ig' \
+	    -e 's/\<try\>/Xtry/ig' \
+	    -e 's/\<val\>/Xval/ig'
+else
+	cat
+fi |
+if [ "$RENAME_OPAL_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	sed -e 's/\<nat\>/Xnat/ig'
+else
+	cat
+fi |
+if [ "$RENAME_RASCAL_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	# beware that REC has an "EVAL" keyword and RASCAL an "eval" keyword
+	# (we will rely on the case to distinguish them)
+	sed -e 's/\<abs\>/Xabs/ig' \
+	    -e 's/\<and\>\([^-]\)/Xand\1/ig' \
+	    -e 's/\<append\>/Xappend/ig' \
+	    -e 's/\<boolean\>/Xboolean/ig' \
+	    -e 's/\<eq\>/Xeq/ig' \
+	    -e 's/\<eval\>/Xeval/g' \
+	    -e 's/\<fail\>/Xfail/ig' \
+	    -e 's/\<filter\>/Xfilter/ig' \
+	    -e 's/\<insert\>/Xinsert/g' \
+	    -e 's/\<int\>/Xint/g' \
+	    -e 's/\<left\>/Xleft/ig' \
+	    -e 's/\<max\>/Xmax/ig' \
+	    -e 's/\<mod\>/Xmod/ig' \
+	    -e 's/\<node\>/Xnode/ig' \
+	    -e 's/\<o\>/Xo/ig' \
+	    -e 's/\<one\>/Xone/ig' \
+	    -e 's/\<or\>/Yor/ig' \
+	    -e 's/\<right\>/Xright/ig' \
+	    -e 's/\<solve\>/Xsolve/ig' \
+	    -e 's/\<text\>/Xtext/ig' \
+	    -e 's/\<tree\>/Xtree/ig' \
+	    -e 's/\<try\>/Xtry/ig'
+else
+	cat
+fi |
+if [ "$RENAME_SCALA_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	sed -e 's/\<final\>/Xfinal/ig' \
+	    -e 's/\<try\>/Xtry/ig' \
+	    -e 's/\<val\>/Xval/ig'
+else
+	cat
+fi |
+if [ "$RENAME_SML_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	# (see the notes for Haskell)
+	sed -e 's/\<and\>\([^-]\)/Xand\1/ig' \
+	    -e 's/\<cons\>/Xcons/g' \
+	    -e 's/\<div\>/Xdiv/g' \
+	    -e 's/\<fun\>/Xfun/ig' \
+	    -e 's/\<mod\>/Xmod/ig' \
+	    -e 's/\<or\>/Yor/ig' \
+	    -e 's/\<try\>/Xtry/ig' \
+	    -e 's/\<val\>/Xval/ig'
+else
+	cat
+fi |
+if [ "$RENAME_STRATEGO_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	sed -e 's/\<fail\>/Xfail/ig' \
+	    -e 's/\<not\>/Xnot/ig' \
+	    -e 's/\<one\>/Xone/ig'
+else
+	cat
+fi |
+if [ "$RENAME_TOM_KEYWORDS" = 1 ]
+then
+	# the list below was built from actual needs for REC examples only
+	# we rename each identifier that is identical to the filename $MODEL,
+	# but this does not apply to the identifier following "REC-SPEC"
+	sed -e 's/\<boolean\>/Xboolean/ig' \
+	    -e 's/\<int\>/Xint/ig' \
+	    -e 's/\<nat\>/Xnat/ig' \
+	    -e 's/\<sort\>/Xsort/ig' \
+	    -e 's/\<try\>/Xtry/ig' \
+	    -e "s/\<$MODEL\>/X$MODEL/ig" \
+	    -e "/^REC-SPEC/s/\<X$MODEL\>/$MODEL/ig"
+else
+	cat
+fi
+
+rm $TEMP
+
