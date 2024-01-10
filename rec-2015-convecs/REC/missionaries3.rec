@@ -1,0 +1,7 @@
+
+REC-SPEC Missionaries3
+#include "missionariescannibals.rec"
+EVAL
+
+   solve(pos(west, d3, d3, d0, d0), pos(east, d0, d0, d3, d3), nil_pl)
+END-SPEC

@@ -1,0 +1,8 @@
+
+REC-SPEC BubbleSort720
+#include "bubblesort.rec"
+EVAL
+
+   rev(fact(s(s(s(s(s(s(d0)))))))) % fact(6) = 720
+
+END-SPEC

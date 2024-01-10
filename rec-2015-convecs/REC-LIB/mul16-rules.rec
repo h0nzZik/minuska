@@ -1,0 +1,16 @@
+
+% definition of operations for 16-bit multiplier - H. Garavel 2016
+
+   mulHalf (buildHalf (O1, O2), buildHalf (O'1, O'2)) -> mulHalfA (mulOctet (O1, O'1), mulOctet (O1, O'2), mulOctet (O2, O'1), mulOctet (O2, O'2))
+
+   mulHalfA (buildHalf (O11U, O11L), buildHalf (O12U, O12L), buildHalf (O21U, O21L), buildHalf (O22U, O22L)) -> mulHalf4 (O11U, O11L, O12U, O12L, O21U, O21L; O22U; O22L)
+
+   mulHalf4 (O11U, O11L, O12U, O12L, O21U, O21L; O22U; O"4) -> mulHalf3 (O11U, O11L, O12U, O21U; addHalfOctet (O12L, addHalfOctets (O21L, O22U)); O"4)
+
+   mulHalf3 (O11U, O11L, O12U, O21U; buildHalf (Ocarry, O"3); O"4) -> mulHalf2 (O11U; addHalfOctet (Ocarry, addHalfOctet (O11L, addHalfOctets (O12U, O21U))); O"3, O"4)
+
+   mulHalf2 (O11U; buildHalf (Ocarry, O"2); O"3, O"4) -> mulHalf1 (addHalfOctets (Ocarry, O11U); O"2; O"3, O"4)
+
+   mulHalf1 (buildHalf (Ocarry, O"1); O"2; O"3, O"4) -> buildBlock (O"1, O"2, O"3, O"4)
+   % assert eqOctet (Ocarry, x00)
+

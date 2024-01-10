@@ -1,0 +1,116 @@
+
+% common definitions to be included in the REC/missionaries*.rec benchmarks
+
+SORTS
+  Bool Int Bank Text Position Move MoveList TextList PosList
+CONS
+  true : -> Bool 
+  false : -> Bool 
+  d0 : -> Int      % zero
+  s : Int -> Int   % succ
+  p : Int -> Int   % pred
+  % we guarantee that in each Int term, constructors 's' and 'p' are not present together
+  west : -> Bank
+  east : -> Bank
+  missionary_rows_east : -> Text 
+  two_missionaries_row_east : -> Text
+  missionary_and_cannibal_row_east : -> Text
+  cannibal_rows_east : -> Text
+  two_cannibals_row_east : -> Text
+  missionary_rows_west : -> Text
+  two_missionaries_row_west : -> Text
+  missionary_and_cannibal_row_west : -> Text
+  cannibal_rows_west : -> Text
+  two_cannibals_row_west : -> Text
+  pos : Bank Int Int Int Int -> Position
+  mov : Text Int Int Int Int Bank -> Move
+  nil_ml : -> MoveList
+  cm : Move MoveList -> MoveList
+  nil_pl : -> PosList
+  cp : Position PosList -> PosList
+  nil_tl : -> TextList
+  fail : -> TextList
+  ct : Text TextList -> TextList
+OPNS
+  d1 : -> Int
+  d2 : -> Int
+  d3 : -> Int
+  m1 : -> Int     % m1 is -1
+  m2 : -> Int     % m2 is -2
+  and : Bool Bool -> Bool
+  or : Bool Bool -> Bool
+  plus : Int Int -> Int
+  gte : Int Int -> Bool   % greater or equal
+  equal : Int Int -> Bool
+  moves : -> MoveList
+  member : Position PosList -> Bool
+  gte_tl : TextList TextList -> Bool
+  solve : Position Position PosList -> TextList
+  try : MoveList Position Position PosList -> TextList
+  apply : Move Position Position PosList -> TextList
+  check : Text Position Position PosList -> TextList
+  valid : Position -> Bool
+  evalct : Text TextList -> TextList
+  best : TextList TextList -> TextList
+VARS
+  NP Posi Final : Position
+  Prev : PosList
+  T T2 : Text
+  TL TL2 : TextList
+  B D : Bank
+  X Y DMW DCW DME DCE MW CW ME CE : Int
+  M : Move
+  ML : MoveList
+  L : Bool
+RULES
+  and(L, true) -> L
+  and(L, false) -> false
+  or(L, true) -> true
+  or(L, false) -> L
+  % s(p(X)) -> X   -- commented out because we want free constructors
+  % p(s(X)) -> X   -- commented out because we want free constructors
+  plus(X, d0) -> X
+  plus(d0, Y) -> Y
+  plus(s(X), s(Y)) -> s(s(plus(X, Y)))
+  plus(p(X), p(Y)) -> p(p(plus(X, Y)))
+  plus(s(X), p(Y)) -> plus(X, Y)
+  plus(p(X), s(Y)) -> plus(X, Y)
+  gte(d0, d0) -> true
+  gte(d0, s(Y)) -> false
+  gte(d0, p(Y)) -> true
+  gte(s(X), d0) -> true
+  gte(s(X), s(Y)) -> gte(X, Y)
+  gte(s(X), p(Y)) -> true
+  gte(p(X), d0) -> false
+  gte(p(X), s(Y)) -> false
+  gte(p(X), p(Y)) -> gte (X, Y)
+  equal(X, Y) -> and(gte(X, Y), gte(Y, X)) 
+  d1 -> s(d0)
+  d2 -> s(s(d0))
+  d3 -> s(s(s(d0)))
+  m1 -> p(d0)
+  m2 -> p(p(d0))
+  moves -> cm(mov(missionary_rows_east, m1, d0, d1, d0, east),cm(mov(two_missionaries_row_east, m2, d0, d2, d0, east),cm(mov(missionary_and_cannibal_row_east, m1, m1, d1, d1, east),cm(mov(cannibal_rows_east, d0, m1, d0, d1, east),cm(mov(two_cannibals_row_east, d0, m2, d0, d2, east),cm(mov(missionary_rows_west, d1, d0, m1, d0, west),cm(mov(two_missionaries_row_west, d2, d0, m2, d0, west),cm(mov(missionary_and_cannibal_row_west, d1, d1, m1, m1, west),cm(mov(cannibal_rows_west, d0, d1, d0, m1, west),cm(mov(two_cannibals_row_west, d0, d2, d0, m2, west), nil_ml))))))))))
+  member(NP, nil_pl) -> false
+  member(NP, cp(Posi, Prev)) -> true                 if NP -><- Posi
+  member(NP, cp(Posi, Prev)) -> member(NP, Prev)     if NP ->/<- Posi
+  evalct(T, fail) -> fail
+  evalct(T, TL) -> ct(T,TL) if TL ->/<- fail
+  gte_tl(TL, nil_tl) -> true
+  gte_tl(nil_tl, ct(T, TL)) -> false
+  gte_tl(ct(T, TL), ct(T2, TL2)) -> gte_tl(TL, TL2)
+  best(fail, TL) -> TL
+  best(TL, fail) -> TL
+  best(TL, TL2) -> TL2     if gte_tl(TL, TL2) -><- true  and-if TL ->/<- fail and-if TL2 ->/<- fail
+  best(TL, TL2) -> TL      if gte_tl(TL, TL2) -><- false and-if TL ->/<- fail and-if TL2 ->/<- fail
+  solve(Posi, Final, Prev) -> nil_tl                           if Posi -><- Final
+  solve(Posi, Final, Prev) -> try(moves, Posi, Final, Prev)    if Posi ->/<- Final
+  try(nil_ml, Posi, Final, Prev) -> fail
+  try(cm(M, ML), Posi, Final, Prev) -> best(apply(M, Posi, Final, Prev), try(ML, Posi, Final, Prev))
+  apply(mov(T, DMW, DCW, DME, DCE, D), pos(B, MW, CW, ME, CE), Final, Prev) -> check(T, pos(D, plus(MW, DMW), plus(CW, DCW), plus(ME, DME), plus(CE, DCE)), Final, Prev)    if D ->/<- B
+  apply(mov(T, DMW, DCW, DME, DCE, D), pos(B, MW, CW, ME, CE), Final, Prev) -> fail    if D -><- B
+  check(T, NP, Final, Prev) -> evalct(T, solve(NP, Final, cp(NP, Prev)))    if member(NP, Prev) -><- false and-if valid(NP) -><- true
+  check(T, NP, Final, Prev) -> fail    if member(NP, Prev) -><- true
+  check(T, NP, Final, Prev) -> fail    if valid(NP) -><- false
+  valid(pos(B, MW, CW, ME, CE)) -> and(gte(MW, d0), and(gte(CW, d0), and(gte(ME, d0), and(gte(CE, d0), and(or(equal(MW, d0), gte(MW, CW)), or(equal(ME, d0), gte(ME, CE)))))))
+

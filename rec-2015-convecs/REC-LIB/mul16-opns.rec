@@ -1,0 +1,13 @@
+
+% declaration of operations for 16-bit multiplier - H. Garavel 2016
+
+   mulHalf : Half Half -> Block
+   % the 1st part of the resulting Block is the highMul
+   % the 2nd part of the resulting Block is the lowMul
+
+   mulHalfA : Half Half Half Half -> Block
+   mulHalf4 : Octet Octet Octet Octet Octet Octet Octet Octet -> Block
+   mulHalf3 : Octet Octet Octet Octet Half Octet -> Block
+   mulHalf2 : Octet Half Octet Octet -> Block
+   mulHalf1 : Half Octet Octet Octet -> Block
+

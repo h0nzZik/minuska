@@ -1,0 +1,34 @@
+
+% definition of operations for 8-bit multiplier - H. Garavel 2016
+
+  mulOctet (buildOctet (B1, B2, B3, B4, B5, B6, B7, B8), O') -> mulOctet1 (B1, B2, B3, B4, B5, B6, B7, B8, O', x0000)
+
+  mulOctet1 (x0, B2, B3, B4, B5, B6, B7, B8, O', H) -> mulOctet2 (B2, B3, B4, B5, B6, B7, B8, O', H)
+  mulOctet1 (x1, B2, B3, B4, B5, B6, B7, B8, O', H) -> mulOctet2 (B2, B3, B4, B5, B6, B7, B8, O', mulOctetA (H, rightOctet1 (O'), leftOctet7 (O')))
+
+  mulOctet2 (x0, B3, B4, B5, B6, B7, B8, O', H) -> mulOctet3 (B3, B4, B5, B6, B7, B8, O', H)
+  mulOctet2 (x1, B3, B4, B5, B6, B7, B8, O', H) -> mulOctet3 (B3, B4, B5, B6, B7, B8, O', mulOctetA (H, rightOctet2 (O'), leftOctet6 (O')))
+
+  mulOctet3 (x0, B4, B5, B6, B7, B8, O', H) -> mulOctet4 (B4, B5, B6, B7, B8, O', H)
+  mulOctet3 (x1, B4, B5, B6, B7, B8, O', H) -> mulOctet4 (B4, B5, B6, B7, B8, O', mulOctetA (H, rightOctet3 (O'), leftOctet5 (O')))
+
+  mulOctet4 (x0, B5, B6, B7, B8, O', H) -> mulOctet5 (B5, B6, B7, B8, O', H)
+  mulOctet4 (x1, B5, B6, B7, B8, O', H) -> mulOctet5 (B5, B6, B7, B8, O', mulOctetA (H, rightOctet4 (O'), leftOctet4 (O')))
+
+  mulOctet5 (x0, B6, B7, B8, O', H) -> mulOctet6 (B6, B7, B8, O', H)
+  mulOctet5 (x1, B6, B7, B8, O', H) -> mulOctet6 (B6, B7, B8, O', mulOctetA (H, rightOctet5 (O'), leftOctet3 (O')))
+
+  mulOctet6 (x0, B7, B8, O', H) -> mulOctet7 (B7, B8, O', H)
+  mulOctet6 (x1, B7, B8, O', H) -> mulOctet7 (B7, B8, O', mulOctetA (H, rightOctet6 (O'), leftOctet2 (O')))
+
+  mulOctet7 (x0, B8, O', H) -> mulOctet8 (B8, O', H)
+  mulOctet7 (x1, B8, O', H) -> mulOctet8 (B8, O', mulOctetA (H, rightOctet7 (O'), leftOctet1 (O')))
+
+  mulOctet8 (x0, O', H) -> H
+  mulOctet8 (x1, O', H) -> mulOctetA (H, x00, O')
+
+   mulOctetA (buildHalf (O1, O2), O'1, O'2) -> mulOctetB (addOctet (O1, O'1), addOctetSum (O2, O'2, x0))
+ 
+   mulOctetB (O1, buildOctetSum (x0, O2)) -> buildHalf (O1, O2)
+   mulOctetB (O1, buildOctetSum (x1, O2)) -> buildHalf (addOctet (O1, x01), O2)
+

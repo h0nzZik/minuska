@@ -1,0 +1,16 @@
+REC-SPEC Check1
+  % Hubert Garavel : this example tests if the target language allows
+  % forward declarations for types
+SORTS
+  USingleton Nat
+CONS
+  Ucons : Nat -> USingleton
+  d0 : -> Nat
+  succ : Nat -> Nat
+OPNS
+VARS
+RULES
+EVAL
+   d0
+END-SPEC
+

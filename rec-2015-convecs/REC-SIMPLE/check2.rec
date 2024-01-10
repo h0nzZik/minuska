@@ -1,0 +1,55 @@
+REC-SPEC check2
+
+SORTS 
+
+   Bool 
+
+CONS
+
+   true : -> Bool
+   false : -> Bool
+
+OPNS
+
+   notBool : Bool -> Bool
+   andBool : Bool Bool -> Bool
+   orBool : Bool Bool -> Bool
+   xorBool : Bool Bool -> Bool
+   impliesBool : Bool Bool -> Bool
+   iffBool : Bool Bool -> Bool
+   eqBool : Bool Bool -> Bool
+   neBool : Bool Bool -> Bool
+
+VARS
+
+   P Q : Bool
+
+RULES
+
+   notBool(true) -> false
+   notBool (false) -> true
+
+   andBool (P, true) -> P
+   andBool (P, false) -> false
+
+   orBool (P, true) -> true
+   orBool (P, false) -> P
+
+   xorBool (P, Q) -> orBool (andBool (P, notBool (Q)), andBool (Q, notBool(P)))
+
+   impliesBool (P, Q) -> orBool (Q, notBool(P))
+
+   iffBool(P, Q) -> andBool (impliesBool(P, Q), impliesBool (Q, P))
+
+   eqBool (P, Q) -> iffBool (P, Q)
+
+   neBool (P, Q) -> xorBool (P, Q)
+
+EVAL
+
+   neBool (false, true)
+
+END-SPEC
+
+
+

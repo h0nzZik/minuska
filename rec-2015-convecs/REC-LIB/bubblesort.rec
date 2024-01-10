@@ -1,0 +1,42 @@
+
+% common definitions to be included in the REC/bubblesort*.rec benchmarks
+
+SORTS
+  Bool Nat NatList
+CONS
+  true : -> Bool
+  false : -> Bool
+  d0 : -> Nat                                           % zero
+  s : Nat -> Nat                                       % successor
+  nil : -> NatList
+  cons : Nat NatList -> NatList
+OPNS
+  d10 : -> Nat
+  lt : Nat Nat -> Bool                                 % less than 
+  bubsort : Nat NatList -> NatList
+  plus : Nat Nat -> Nat 
+  times : Nat Nat -> Nat 
+  rev : Nat -> NatList 
+  fact : Nat -> Nat
+VARS
+  N M : Nat
+  L : NatList
+RULES
+  d10 -> s(s(s(s(s(s(s(s(s(s(d0))))))))))
+  lt(d0,d0)  -> false
+  lt(d0, s(N)) -> true
+  lt(s(N), d0) -> false
+  lt(s(N), s(M)) -> lt(N, M)
+  plus(d0, N) -> N
+  plus(s(N), M) -> s(plus(N, M))
+  times(d0, N) -> d0
+  times(s(N), M) -> plus(M, times(N, M))
+  fact(d0) -> s(d0)
+  fact(s(N)) -> times(s(N), fact(N))
+  rev(s(N)) -> bubsort(s(N), rev(N))
+  rev(d0) -> cons(d0, nil)
+  bubsort(N, nil) -> cons (N, nil)
+  bubsort(N, cons(M, L)) -> cons(M, bubsort(N, L)) if lt(M, N) -><- true
+  bubsort(N, cons(M, L)) -> cons(N, bubsort(M, L)) if lt(M, N) -><- false
+
+

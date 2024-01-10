@@ -1,0 +1,48 @@
+REC-SPEC Merge
+SORTS
+  Bool Strg List
+CONS
+  true : -> Bool
+  false : -> Bool
+  a : -> Strg
+  b : -> Strg
+  c : Strg Strg -> Strg % {assoc}
+  nil : -> List
+  l : Strg List -> List
+OPNS
+  gte : Strg Strg -> Bool
+  merge : List List -> List
+  sort : List -> List
+  odd : List -> List
+  even : List -> List
+VARS
+  E E2 S S2 : Strg
+  L1 L2 : List
+RULES
+  gte(b, a) -> true
+  gte(a, b) -> false
+  gte(a, a) -> true
+  gte(b, b) -> true
+  % gte(E, E) -> true
+  gte(c(E, S), E2) -> gte(E, E2)
+  gte(E, c(E2, S2)) -> false            if E -><- E2
+  gte(E, c(E2, S2)) -> gte(E, E2) 	if E ->/<- E2
+  % gte(c(E, S), c(E, S2)) -> gte(S, S2)
+  % gte(c(E, S), c(E2, S2)) -> gte(E, E2) 	if E ->/<- E2
+  merge(nil, L1) -> L1
+  merge(L1, nil) -> L1
+  merge(l(S, L1), l(S2, L2)) -> l(S2, merge(l(S, L1), L2))	if gte(S, S2) -><- true
+  merge(l(S, L1), l(S2, L2)) -> l(S, merge(L1, l(S2, L2)))	if gte(S, S2) -><- false
+  odd(nil) -> nil
+  odd(l(S, nil)) -> l(S, nil)
+  odd(l(S, l(S2, L1))) -> l(S, odd(L1))
+  even(nil) -> nil
+  even(l(S, nil)) -> nil
+  even(l(S, l(S2, L1))) -> l(S2, even(L1))
+  sort(nil) -> nil
+  sort(l(S, nil)) -> l(S, nil)
+  sort(l(S, l(S2, L1))) -> merge(sort(odd(l(S, l(S2, L1)))), sort(even(l(S, l(S2, L1)))))
+EVAL
+
+   sort(l(c(a, c(b, c(a, b))), l(c(b, c(a, c(b, b))), l(c(a, c(b, c(a, a))), l(c(b, c(b, c(b, b))), l(c(b, c(b, c(b, a))),l(c(a, c(a, c(a, b))), l(c(b, c(b, c(a, a))), l(c(a, c(a, c(a, a))), l(c(a, c(a, c(b, b))), l(c(b, c(a, c(b, a))),l(c(a, c(b, c(a, b))), l(c(b, c(a, c(b, b))), l(c(a, c(b, c(a, a))), l(c(b, c(b, c(b, b))), l(c(b, c(b, c(b, a))),l(c(a, c(a, c(a, b))), l(c(b, c(b, c(a, a))), l(c(a, c(a, c(a, a))), l(c(a, c(a, c(b, b))), l(c(b, c(a, c(b, a))),l(c(a, c(b, c(a, b))), l(c(b, c(a, c(b, b))), l(c(a, c(b, c(a, a))), l(c(b, c(b, c(b, b))), l(c(b, c(b, c(b, a))),l(c(a, c(a, c(a, b))), l(c(b, c(b, c(a, a))), l(c(a, c(a, c(a, a))), l(c(a, c(a, c(b, b))), l(c(b, c(a, c(b, a))),l(c(a, c(b, c(a, b))), l(c(b, c(a, c(b, b))), l(c(a, c(b, c(a, a))), l(c(b, c(b, c(b, b))), l(c(b, c(b, c(b, a))),l(c(a, c(a, c(a, b))), l(c(b, c(b, c(a, a))), l(c(a, c(a, c(a, a))), l(c(a, c(a, c(b, b))), l(c(b, c(a, c(b, a))), l(c(a, c(b, c(a, b))), l(c(b, c(a, c(b, b))), l(c(a, c(b, c(a, a))), l(c(b, c(b, c(b, b))), l(c(b, c(b, c(b, a))), l(c(a, c(a, c(a, b))), l(c(b, c(b, c(a, a))), l(c(a, c(a, c(a, a))), l(c(a, c(a, c(b, b))), l(c(b, c(a, c(b, a))),nil)))))))))))))))))))))))))))))))))))))))))))))))))))
+END-SPEC

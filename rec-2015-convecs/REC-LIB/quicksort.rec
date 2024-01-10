@@ -1,0 +1,54 @@
+
+% common definitions to be included in the REC/quicksort*.rec benchmarks
+
+SORTS
+  Bool Nat NatList NatListPair
+CONS
+  true : -> Bool
+  false : -> Bool
+  d0 : -> Nat
+  s : Nat -> Nat
+  nil : -> NatList
+  cons : Nat NatList -> NatList
+  pair : NatList NatList -> NatListPair
+OPNS
+  not : Bool -> Bool
+  d10 : -> Nat
+  st : Nat Nat -> Bool 
+  get : Nat Nat -> Bool 
+  plus : Nat Nat -> Nat 
+  times : Nat Nat -> Nat 
+  rev : Nat -> NatList 
+  split : Nat NatList -> NatListPair
+  qsort : NatList -> NatList
+  append : NatList NatList -> NatList
+  p1 : NatListPair -> NatList
+  p2 : NatListPair -> NatList
+VARS
+  N M : Nat
+  L L1 L2 LT GT : NatList
+RULES
+  d10 -> s(s(s(s(s(s(s(s(s(s(d0))))))))))
+  not(true) -> false
+  not(false) -> true
+  st(d0, s(N)) -> true
+  st(s(N), d0) -> false
+  st(d0, d0) -> false
+  st(s(N), s(M)) -> st(N, M)
+  get(N, M) -> not(st(N, M))
+  plus(d0, N) -> N
+  plus(s(N), M) -> s(plus(N, M))
+  times(d0, N) -> d0
+  times(s(N), M) -> plus(M, times(N, M))
+  rev(s(N)) -> cons(s(N), rev(N))
+  rev(d0) -> cons(d0, nil) 
+  split(N, cons(M, L)) -> pair(p1(split(N, L)), cons(M, p2(split(N, L)))) if st(N, M) -><- true
+  split(N, cons(M, L)) -> pair(cons(M, p1(split(N, L))), p2(split(N, L))) if get(N, M) -><- true
+  split(N, nil) -> pair(nil, nil) 
+  append(cons(N, L), LT) -> cons(N, append(L, LT))
+  append(nil, L) -> L
+  qsort(nil) -> nil 
+  qsort(cons(N, L)) -> append(qsort(p1(split(N, L))), cons(N, qsort(p2(split(N, L)))))
+  p1(pair(L1, L2)) -> L1
+  p2(pair(L1, L2)) -> L2
+

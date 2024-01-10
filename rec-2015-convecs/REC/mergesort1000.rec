@@ -1,0 +1,7 @@
+
+REC-SPEC MergeSort1000
+#include "mergesort.rec"
+EVAL
+
+     mergesort(rev(times(d10, times(d10, d10))))
+END-SPEC

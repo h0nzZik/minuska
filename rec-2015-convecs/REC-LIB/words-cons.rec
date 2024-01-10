@@ -1,0 +1,64 @@
+
+% machine words of 1, 8, 9, 16, 17, 32, 33, and 64 bits - H. Garavel 2016
+
+% ----------------------------------------------------------------------------
+
+% constructors for sort Bool
+
+   false : -> Bool
+   true : -> Bool
+
+% ----------------------------------------------------------------------------
+
+% constructors for sort Bit (1 bit)
+
+   x0 : -> Bit
+   x1 : -> Bit
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort Octet (8 bits)
+
+   buildOctet : Bit Bit Bit Bit Bit Bit Bit Bit -> Octet
+   % the first argument of buildOctet contain the most significant bit
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort OctetSum (1 carry bit + 8 bits)
+
+   buildOctetSum : Bit Octet -> OctetSum
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort Half (16 bit)
+
+   buildHalf : Octet Octet -> Half
+   % the first argument of buildHalf contain the most significant bits
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort HalfSum (1 carry bit + 16 bits)
+
+   buildHalfSum : Bit Half -> HalfSum
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort Block (32 bits)
+% (the name Block comes from the Message Authentication Algorithm terminology)
+
+   buildBlock : Octet Octet Octet Octet -> Block
+   % the first argument of buildBlock contain the most significant bits
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort BlockSum (1 carry bit + 16 bits)
+
+   buildBlockSum : Bit Block -> BlockSum
+
+% ----------------------------------------------------------------------------
+
+% constructor for sort Pair (64 bits)
+% (the name Pair comes from the Message Authentication Algorithm terminology)
+
+   buildPair : Block Block -> Pair
+   % the first argument of buildPair contain the most significant bits

@@ -1,0 +1,8 @@
+REC-SPEC BenchSym22
+
+#include "asfsdfbenchmark.rec"
+
+EVAL
+
+     benchevalsym17(twentytwo)
+END-SPEC

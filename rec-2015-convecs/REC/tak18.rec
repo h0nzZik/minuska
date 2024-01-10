@@ -1,0 +1,7 @@
+
+REC-SPEC Tak18
+#include "tak.rec"
+EVAL
+
+   tak(Pos(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(d0))))))))))))))))))), Pos(s(s(s(s(s(s(s(s(s(s(s(s(d0))))))))))))), Pos(s(s(s(s(s(s(d0))))))))    % tak(18,12,6)
+END-SPEC

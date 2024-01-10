@@ -1,0 +1,62 @@
+REC-SPEC Logic3
+SORTS
+  Bool3
+CONS
+  d0 : -> Bool3 
+  d1 : -> Bool3 
+  d2 : -> Bool3 
+OPNS
+  a : -> Bool3
+  b : -> Bool3
+  c : -> Bool3
+  d : -> Bool3
+  e : -> Bool3
+  f : -> Bool3
+  g : -> Bool3
+  h : -> Bool3
+  plus : Bool3 Bool3 -> Bool3      %---- {assoc comm}
+  times : Bool3 Bool3 -> Bool3     %---- {assoc comm}
+  and : Bool3 Bool3 -> Bool3
+  or : Bool3 Bool3 -> Bool3
+  not : Bool3 -> Bool3
+  succ : Bool3 -> Bool3
+  eq : Bool3 Bool3 -> Bool3
+VARS
+  X Y Z : Bool3
+RULES
+  a -> d0
+  b -> d1
+  c -> d2
+  d -> d0
+  e -> d1
+  f -> d2
+  g -> d0
+  h -> d1
+  succ(d0) -> d1
+  succ(d1) -> d2
+  succ(d2) -> d0
+  plus(d0, X) -> X
+  plus(d1, X) -> succ(X)
+  plus(d2, X) -> succ(succ(X))
+  % plus(X, d0) -> X
+  % plus(d1, X) -> succ(X) if X->/<- d0
+  % plus(d2, X) -> succ(succ(X)) if X->/<- d0
+  % plus(X, plus(Y, Z)) -> d0    if X-><-Y and-if Y-><-Z
+  times(d0, X) -> d0
+  times(d1, X) -> X
+  times(d2, d0) -> d0
+  times(d2, d1) -> d2
+  times(d2, d2) -> d1
+  % times(plus(X, Y), Z) -> plus(times(X, Z), times(Y, Z))
+  % times(X, times(Y, Z)) -> X    if X-><-Y and-if Y-><-Z
+  and(X,Y) -> plus( times(times(X, X), times(Y, Y)),plus( times(d2, times(times(X, X), Y)),plus( times(d2, times(times(Y, Y), X)),times(d2, times(X, Y)) )))
+  or(X,Y) -> plus( times(d2, times(times(X, X), times(Y, Y))),plus( times(times(X, X), Y),plus( times(times(Y, Y), X),plus( times(X, Y),plus(X, Y) ))))
+  not(X) -> plus(times(d2, X), d1)
+  eq(X,Y) -> d1 if X -><- Y
+  eq(X,Y) -> d0 if X ->/<- Y
+EVAL
+
+   eq(and(and(and(a, b), and(c, d)), and(and(e, f), and(g, h))), not(or(or(or(not(a), not(b)), or(not(c), not(d))),or(or(not(e), not(f)), or(not(g), not(h))))))
+
+% check the confluence of:  and(and(and(a, b), and(c, d)), and(and(e, f), and(g, h)))-><- not(or(or(or(not(a), not(b)), or(not(c), not(d))),or(or(not(e), not(f)), or(not(g), not(h)))))
+END-SPEC

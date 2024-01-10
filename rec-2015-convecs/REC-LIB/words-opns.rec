@@ -1,0 +1,47 @@
+
+% declaration of usual operations on machine words - H. Garavel 2016
+
+   notBool : Bool -> Bool
+   andBool : Bool Bool -> Bool
+   orBool : Bool Bool -> Bool
+   xorBool : Bool Bool -> Bool
+
+% ----------------------------------------------------------------------------
+
+   notBit : Bit -> Bit
+   andBit : Bit Bit -> Bit
+   orBit : Bit Bit -> Bit
+   xorBit : Bit Bit -> Bit
+
+% ----------------------------------------------------------------------------
+
+   x00 : -> Octet
+   x01 : -> Octet
+
+% ----------------------------------------------------------------------------
+
+   x0000 : -> Half
+
+% ----------------------------------------------------------------------------
+
+   HalfU : Block -> Half
+   HalfL : Block -> Half
+
+% ----------------------------------------------------------------------------
+
+   eqBit : Bit Bit -> Bool
+
+   eqOctet : Octet Octet -> Bool
+
+   eqOctetSum : OctetSum OctetSum -> Bool
+
+   eqHalf : Half Half -> Bool
+
+   eqHalfSum : HalfSum HalfSum -> Bool
+
+   eqBlock : Block Block -> Bool
+
+   eqBlockSum : BlockSum BlockSum -> Bool
+
+   eqPair : Pair Pair -> Bool
+

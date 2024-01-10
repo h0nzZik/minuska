@@ -1,0 +1,7 @@
+
+REC-SPEC Permutations6
+#include "permutations.rec"
+EVAL
+
+     perm(s(s(s(s(s(s(d0))))))) % perm(6)
+END-SPEC

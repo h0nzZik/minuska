@@ -1,0 +1,8 @@
+
+REC-SPEC Hanoi4
+#include "hanoi.rec"
+
+EVAL
+   solve(a, b, d4)  
+END-SPEC
+

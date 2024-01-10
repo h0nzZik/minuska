@@ -1,0 +1,18 @@
+
+% definition of operations for 32-bit multiplier - H. Garavel 2016
+
+   mulBlock (W1, W2) -> mulBlockA (mulHalf (HalfU (W1), HalfU (W2)), mulHalf (HalfU (W1), HalfL (W2)), mulHalf (HalfL (W1), HalfU (W2)), mulHalf (HalfL (W1), HalfL (W2)))
+
+   mulBlockA (W11, W12, W21, W22) -> mulBlock4 (HalfU (W11), HalfL (W11), HalfU (W12), HalfL (W12), HalfU (W21), HalfL (W21); HalfU (W22); HalfL (W22))
+
+  mulBlock4 (H11U, H11L, H12U, H12L, H21U, H21L; H22U; H"4) -> mulBlock3 (H11U, H11L, H12U, H21U; addBlockHalf (H12L, addBlockHalves (H21L, H22U)); H"4)
+
+  mulBlock3 (H11U, H11L, H12U, H21U; W; H"4) -> mulBlock2 (H11U; addBlockHalf (HalfU (W), addBlockHalf (H11L, addBlockHalves (H12U, H21U))); HalfL (W), H"4)
+
+  mulBlock2 (H11U; W; H"3, H"4) -> mulBlock1 (addBlockHalves (HalfU (W), H11U); HalfL (W), H"3, H"4)
+
+  mulBlock1 (W; H"2, H"3, H"4) -> mulBlockB (HalfL (W), H"2, H"3, H"4)
+% assert eqHalf (HalfU (W), x0000)
+
+  mulBlockB (buildHalf (O1U, O1L), buildHalf (O2U, O2L), buildHalf (O3U, O3L), buildHalf (O4U, O4L)) -> buildPair (buildBlock (O1U, O1L, O2U, O2L), buildBlock (O3U, O3L, O4U, O4L))
+

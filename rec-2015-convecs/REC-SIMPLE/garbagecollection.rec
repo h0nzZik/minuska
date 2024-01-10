@@ -1,0 +1,36 @@
+REC-SPEC GarbageCollection
+SORTS 
+  Nat
+CONS
+  d0 : -> Nat 
+  s : Nat -> Nat 
+  p : -> Nat
+  n : -> Nat
+OPNS
+  d1 : -> Nat
+  f : Nat Nat Nat Nat Nat -> Nat 
+  c : Nat Nat -> Nat
+VARS
+  T U X Y Z : Nat
+RULES
+  d1 -> s(d0)
+
+  c(d0, Y) -> Y 
+  c(s(X), Y) -> s(c(X,Y))
+
+  f(X, Y, s(Z), T, U) -> f(X, Y, Z, c(T, T), U) 
+  f(X, s(Y), d0, T, U) -> f(X, Y, p, T, T) 
+  f(s(X), d0, d0, T, U) -> f(X, n, p, d1, d0) 
+  f(d0, d0, d0, T, U) -> T 
+  % The equations below have been added by Mohammad-Ali Tabikh
+  % to avoid cases where f is undefined
+  f(X, s(Y), p, T, U) -> f(X, Y, p, T, s(U))
+  f(X, d0, p, T, U) -> f(X, n, p, s(T), U) 
+  f(s(X), n, p, T, U) -> f(X, n, p, T, U) 
+  f(d0, n, p, T, U) -> U
+EVAL
+
+f(s(s(s(s(s(s(d0)))))), s(s(s(s(s(d0))))), s(s(d0)), d0, d1)
+
+f(s(s(s(s(d0)))), s(s(s(d0))), s(s(s(s(s(d0))))), d0, d1)
+END-SPEC

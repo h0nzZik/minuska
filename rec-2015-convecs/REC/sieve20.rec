@@ -1,0 +1,16 @@
+
+REC-SPEC Sieve20
+#include "sieve.rec"
+EVAL
+
+    sieve(intsBetween(s(s(z)), s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(z))))))))))))))))))))))
+
+% result:
+%    ll(dl(d2, nil), ll(dl(d3, nil), ll(dl(d5, nil), ll(dl(d7, nil), ll(dl(
+%    d1, dl(d1, nil)), ll(dl(d1, dl(d3, nil)), ll(dl(d1, dl(d7, nil)), ll(dl(d1, dl(d9,
+%    nil)), ll(dl(d2, dl(d3, nil)), ll(dl(d2, dl(d9, nil)), ll(dl(d3, dl(d1, nil)),
+%    ll(dl(d3, dl(d7, nil)), ll(dl(d4, dl(d1, nil)), ll(dl(d4, dl(d3, nil)), ll(dl(d4,
+%    dl(d7, nil)), ll(dl(d5, dl(d3, nil)), ll(dl(d5, dl(d9, nil)), ll(dl(d6, dl(d1,
+%    nil)), ll(dl(d6, dl(d7, nil)), ll(dl(d7, dl(d1, nil)), nil))))))))))))))))))))
+
+END-SPEC

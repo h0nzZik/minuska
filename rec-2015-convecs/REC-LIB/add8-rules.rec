@@ -1,0 +1,35 @@
+
+% definition of operations for 8-bit adder - H. Garavel 2016
+
+   addBit (B, B', Bcarry) -> xorBit (xorBit (B, B'), Bcarry)
+
+   carBit (B, B', Bcarry) -> orBit (andBit (andBit (B, B'), notBit (Bcarry)), andBit (orBit (B, B'), Bcarry))
+
+% ----------------------------------------------------------------------------
+
+   addOctetSum (buildOctet (B1, B2, B3, B4, B5, B6, B7, B8), buildOctet (B'1, B'2, B'3, B'4, B'5, B'6, B'7, B'8), Bcarry) -> addOctet8 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5, B6, B'6, B7, B'7, B8, B'8; Bcarry)
+
+   addOctet8 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5, B6, B'6, B7, B'7, B8, B'8; Bcarry) -> addOctet7 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5, B6, B'6, B7, B'7; carBit (B8, B'8, Bcarry); addBit (B8, B'8, Bcarry))
+
+   addOctet7 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5, B6, B'6, B7, B'7; Bcarry; B"8) -> addOctet6 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5, B6, B'6; carBit (B7, B'7, Bcarry); addBit (B7, B'7, Bcarry), B"8)
+
+   addOctet6 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5, B6, B'6; Bcarry; B"7, B"8) -> addOctet5 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5; carBit (B6, B'6, Bcarry); addBit (B6, B'6, Bcarry), B"7, B"8)
+
+   addOctet5 (B1, B'1, B2, B'2, B3, B'3, B4, B'4, B5, B'5; Bcarry; B"6, B"7, B"8) -> addOctet4 (B1, B'1, B2, B'2, B3, B'3, B4, B'4; carBit (B5, B'5, Bcarry); addBit (B5, B'5, Bcarry), B"6, B"7, B"8)
+
+   addOctet4 (B1, B'1, B2, B'2, B3, B'3, B4, B'4; Bcarry; B"5, B"6, B"7, B"8) -> addOctet3 (B1, B'1, B2, B'2, B3, B'3; carBit (B4, B'4, Bcarry); addBit (B4, B'4, Bcarry), B"5, B"6, B"7, B"8)
+
+   addOctet3 (B1, B'1, B2, B'2, B3, B'3; Bcarry; B"4, B"5, B"6, B"7, B"8) -> addOctet2 (B1, B'1, B2, B'2; carBit (B3, B'3, Bcarry); addBit (B3, B'3, Bcarry), B"4, B"5, B"6, B"7, B"8)
+
+   addOctet2 (B1, B'1, B2, B'2; Bcarry; B"3, B"4, B"5, B"6, B"7, B"8) -> addOctet1 (B1, B'1; carBit (B2, B'2, Bcarry); addBit (B2, B'2, Bcarry), B"3, B"4, B"5, B"6, B"7, B"8)
+
+   addOctet1 (B1, B'1; Bcarry; B"2, B"3, B"4, B"5, B"6, B"7, B"8) -> addOctet0 (carBit (B1, B'1, Bcarry); addBit (B1, B'1, Bcarry), B"2, B"3, B"4, B"5, B"6, B"7, B"8)
+
+   addOctet0 (Bcarry; B"1, B"2, B"3, B"4, B"5, B"6, B"7, B"8) -> buildOctetSum (Bcarry, buildOctet (B"1, B"2, B"3, B"4, B"5, B"6, B"7, B"8))
+
+% ----------------------------------------------------------------------------
+
+   dropCarryOctetSum (buildOctetSum (Bcarry, O)) -> O
+
+   addOctet (O, O') -> dropCarryOctetSum (addOctetSum (O, O', x0))
+

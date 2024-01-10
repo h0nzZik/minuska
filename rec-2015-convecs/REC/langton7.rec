@@ -1,0 +1,6 @@
+REC-SPEC Langton7
+#include "langton.rec"
+EVAL
+
+   next(d7,d7,d7,d7,d7)
+END-SPEC

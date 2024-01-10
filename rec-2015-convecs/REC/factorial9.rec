@@ -1,0 +1,7 @@
+
+REC-SPEC Factorial9
+#include "factorial.rec"
+EVAL
+
+   fact(s(s(s(s(s(s(s(s(s(d0)))))))))) % fact(9)
+END-SPEC

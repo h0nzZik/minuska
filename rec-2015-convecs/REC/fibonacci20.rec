@@ -1,0 +1,8 @@
+
+REC-SPEC Fibonacci20
+#include "fibonacci.rec"
+EVAL
+
+   fibb(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(d0))))))))))))))))))))) % fibb(20) should return 6765
+
+END-SPEC

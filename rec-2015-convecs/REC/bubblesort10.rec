@@ -1,0 +1,8 @@
+
+REC-SPEC BubbleSort10
+#include "bubblesort.rec"
+EVAL
+
+   rev(d10)
+
+END-SPEC

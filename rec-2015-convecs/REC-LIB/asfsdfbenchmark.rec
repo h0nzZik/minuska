@@ -1,0 +1,327 @@
+
+% common definitions to be included in the REC/bench*.rec benchmarks
+
+SORTS
+  Nat SNat Tree Boolean
+
+CONS
+  true : -> Boolean
+  false : -> Boolean
+
+  zero : -> Nat 
+  s : Nat -> Nat
+
+  exz : -> SNat
+  exone : -> SNat
+  exs : SNat -> SNat
+  explus : SNat SNat -> SNat
+  exmult : SNat SNat -> SNat
+  exexp : SNat SNat -> SNat
+
+  leaf : Nat -> Tree
+  node : Nat Nat Tree Tree -> Tree
+
+OPNS
+  or : Boolean Boolean -> Boolean
+  and : Boolean Boolean -> Boolean
+  neg : Boolean -> Boolean
+  equal : Nat Nat -> Boolean
+  less : Nat Nat -> Boolean
+  plus : Nat Nat -> Nat
+  mult : Nat Nat -> Nat
+  exp  : Nat Nat -> Nat
+  succ17 : Nat -> Nat
+  pred17 : Nat -> Nat
+  plus17 : Nat Nat -> Nat
+  mult17 : Nat Nat -> Nat
+  exp17 : Nat Nat -> Nat
+  buildtree : Nat Nat -> Tree
+  calctree17 : Nat -> Nat
+  getmax : Tree -> Nat
+  getval : Tree -> Nat
+  eval : SNat -> Nat
+  eval17 : SNat -> Nat
+  evalsym17 : SNat -> Nat
+  evalexp17 : SNat -> Nat 
+  benchevalsym17 : SNat -> Boolean
+  benchevalexp17 : SNat -> Boolean
+  benchevaltree17 : SNat -> Boolean 
+  one : -> SNat
+  two : -> SNat
+  three : -> SNat
+  four : -> SNat
+  five : -> SNat
+  six : -> SNat
+  seven : -> SNat
+  eight : -> SNat
+  nine : -> SNat
+  ten : -> SNat
+  eleven : -> SNat
+  twelve : -> SNat
+  thirteen : -> SNat
+  fourteen : -> SNat
+  fifteen : -> SNat
+  sixteen : -> SNat
+  seventeen : -> SNat
+  eighteen : -> SNat
+  nineteen : -> SNat
+  twenty : -> SNat
+  twentyone : -> SNat
+  twentytwo : -> SNat
+  twentythree : -> SNat
+  twentyfour  : -> SNat
+  twentyfive  : -> SNat
+  twentysix : -> SNat
+  twentyseven : -> SNat
+  twentyeight : -> SNat
+  twentynine  : -> SNat
+  thirty : -> SNat
+  thirtyone : -> SNat
+  thirtytwo : -> SNat
+  thirtythree : -> SNat
+  thirtyfour  : -> SNat
+  thirtyfive  : -> SNat
+  dec : SNat -> SNat
+  d0  : -> Nat
+  d1  : -> Nat
+  d2  : -> Nat
+  d3  : -> Nat
+  d4  : -> Nat
+  d5  : -> Nat
+  d6  : -> Nat
+  d7  : -> Nat
+  d8  : -> Nat
+  d9  : -> Nat
+  d10 : -> Nat
+  d11 : -> Nat
+  d12 : -> Nat
+  d13 : -> Nat
+  d14 : -> Nat
+  d15 : -> Nat
+  d16 : -> Nat
+  d17 : -> Nat
+  expand : SNat -> SNat
+  % nat2spoon : Nat Nat Nat -> Nat
+  nat2sym : Nat -> SNat
+
+VARS
+
+  B : Boolean 
+  X Y Val Max : Nat 
+  Xs Ys Zs : SNat 
+  Left Right : Tree 
+
+RULES
+
+  % equations for boolean expressions
+ 
+  or(true, B) -> true 
+  or(false, B) -> B 
+
+  and(true, B) -> B 
+  and(false, B) -> false 
+
+  neg(false) -> true 
+  neg(true)  -> false 
+
+  % constants for Nat
+
+  d0 -> zero 
+  d1 -> s(d0) 
+  d2 -> s(d1) 
+  d3 -> s(d2) 
+  d4 -> s(d3) 
+  d5 -> s(d4) 
+  d6 -> s(d5) 
+  d7 -> s(d6) 
+  d8 -> s(d7) 
+  d9 -> s(d8) 
+  d10 -> s(d9) 
+  d11 -> s(d10) 
+  d12 -> s(d11) 
+  d13 -> s(d12) 
+  d14 -> s(d13) 
+  d15 -> s(d14) 
+  d16 -> s(d15) 
+  d17 -> s(d16) 
+
+  % constants for SNat
+
+  one -> exs(exz) 
+  two -> exs(one) 
+  three -> exs(two) 
+  four -> exs(three) 
+  five -> exs(four) 
+  six -> exs(five) 
+  seven -> exs(six) 
+  eight -> exs(seven) 
+  nine -> exs(eight) 
+  ten -> exs(nine) 
+  eleven -> exs(ten) 
+  twelve -> exs(eleven) 
+  thirteen -> exs(twelve) 
+  fourteen -> exs(thirteen) 
+  fifteen -> exs(fourteen) 
+  sixteen -> exs(fifteen) 
+  seventeen -> exs(sixteen) 
+  eighteen -> exs(seventeen) 
+  nineteen -> exs(eighteen) 
+  twenty -> exs(nineteen) 
+  twentyone -> exs(twenty) 
+  twentytwo -> exs(twentyone) 
+  twentythree -> exs(twentytwo) 
+  twentyfour -> exs(twentythree) 
+  twentyfive -> exs(twentyfour) 
+  twentysix -> exs(twentyfive) 
+  twentyseven -> exs(twentysix) 
+  twentyeight -> exs(twentyseven) 
+  twentynine -> exs(twentyeight)   
+  thirty -> exs(twentynine) 
+  thirtyone -> exs(thirty) 
+  thirtytwo -> exs(thirtyone) 
+  thirtythree -> exs(thirtytwo) 
+  thirtyfour -> exs(thirtythree) 
+  thirtyfive -> exs(thirtyfour)
+
+  dec(exexp(Xs,exz)) -> exs(exz)
+  % dec(exexp(Xs,exone)) -> ???
+  dec(exexp(Xs,exs(Ys))) -> exmult(exexp(Xs,Ys),Xs)
+  dec(exexp(Xs,explus(Ys,Zs))) -> exmult(exexp(Xs,Ys),exexp(Xs,Zs))
+  dec(exexp(Xs,exmult(Ys,Zs))) -> dec(exexp(exexp(Xs,Ys),Zs))
+  dec(exexp(Xs,exexp(Ys,Zs))) -> dec(exexp(Xs, dec(exexp(Ys,Zs))))
+
+  % toplevel benchmarks
+
+  benchevalsym17(Xs) -> equal(eval17(exexp(two, Xs)), evalsym17(exexp(two, Xs)))
+
+  benchevalexp17(Xs) -> equal(eval17(exexp(two, Xs)), evalexp17(exexp(two, Xs)))
+
+  benchevaltree17(Xs) -> equal(calctree17(eval(Xs)), getval(buildtree(eval(Xs), zero)))
+
+  % equations for naturals modulo 17
+
+  % equal(X, X) -> true           %---- non linear
+  equal(zero, zero) -> true 
+  equal(zero, s(X)) -> false 
+  equal(s(X), zero) -> false 
+  equal(s(X), s(Y)) -> equal(X, Y) 
+
+  less(zero, Y) -> true 
+  less(s(X), s(Y)) -> less(X, Y) 
+  less(s(X), zero) -> false 
+
+  plus(X, zero) -> X 
+  plus(X, s(Y)) -> s(plus(X, Y)) 
+
+  mult(X, zero) -> zero 
+  mult(X, s(Y)) -> plus(mult(X, Y), X) 
+
+  exp(X, zero) -> s(zero) 
+  exp(X, s(Y)) -> mult(X, exp(X, Y)) 
+
+  succ17(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero))))))))))))))))) -> zero 
+  %succ17(X) -> s(X) 
+  succ17(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))))))) -> s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))))))) 
+  succ17(s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero))))))))))))))) -> s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero))))))))))))))) 
+  succ17(s(s(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))))) -> s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))))) 
+  succ17(s(s(s(s(s(s(s(s(s(s(s(s(zero))))))))))))) -> s(s(s(s(s(s(s(s(s(s(s(s(s(zero))))))))))))) 
+  succ17(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))) -> s(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))) 
+  succ17(s(s(s(s(s(s(s(s(s(s(zero))))))))))) -> s(s(s(s(s(s(s(s(s(s(s(zero))))))))))) 
+  succ17(s(s(s(s(s(s(s(s(s(zero)))))))))) -> s(s(s(s(s(s(s(s(s(s(zero)))))))))) 
+  succ17(s(s(s(s(s(s(s(s(zero))))))))) -> s(s(s(s(s(s(s(s(s(zero))))))))) 
+  succ17(s(s(s(s(s(s(s(zero)))))))) -> s(s(s(s(s(s(s(s(zero)))))))) 
+  succ17(s(s(s(s(s(s(zero))))))) -> s(s(s(s(s(s(s(zero))))))) 
+  succ17(s(s(s(s(s(zero)))))) -> s(s(s(s(s(s(zero)))))) 
+  succ17(s(s(s(s(zero))))) -> s(s(s(s(s(zero))))) 
+  succ17(s(s(s(zero)))) -> s(s(s(s(zero)))) 
+  succ17(s(s(zero))) -> s(s(s(zero))) 
+  succ17(s(zero)) -> s(s(zero)) 
+  succ17(zero) -> s(zero) 
+
+  pred17(s(X)) -> X 
+  pred17(zero) -> s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(s(zero)))))))))))))))) 
+
+  plus17(X, zero) -> X 
+  plus17(X, s(Y)) -> succ17(plus17(X, Y)) 
+
+  mult17(X, zero) -> zero 
+  mult17(X, s(Y)) -> plus17(X, mult17(X, Y)) 
+
+  exp17(X, zero) -> succ17(zero) 
+  exp17(X, s(Y)) -> mult17(X, exp17(X, Y)) 
+
+  eval(exz) -> zero 
+  eval(exs(Xs)) -> s(eval(Xs)) 
+  eval(explus(Xs, Ys)) -> plus(eval(Xs), eval(Ys)) 
+  eval(exmult(Xs, Ys)) -> mult(eval(Xs), eval(Ys)) 
+  eval(exexp(Xs, Ys)) -> exp(eval(Xs), eval(Ys)) 
+
+  eval17(exz) -> zero 
+  eval17(exone) -> s(zero) 
+  eval17(exs(Xs)) -> succ17(eval17(Xs)) 
+  eval17(explus(Xs, Ys)) -> plus17(eval17(Xs), eval17(Ys)) 
+  eval17(exmult(Xs, Ys)) -> mult17(eval17(Xs), eval17(Ys)) 
+  eval17(exexp(Xs, Ys)) -> exp17(eval17(Xs), eval(Ys)) 
+
+  evalsym17(exz) -> zero 
+  evalsym17(exs(Xs)) -> succ17(evalsym17(Xs)) 
+  evalsym17(explus(Xs, Ys)) -> plus17(evalsym17(Xs), evalsym17(Ys))
+  evalsym17(exmult(Xs, exz)) -> zero 
+  evalsym17(exmult(Xs, exs(Ys))) -> evalsym17(explus(exmult(Xs, Ys), Xs)) 
+  evalsym17(exmult(Xs, explus(Ys, Zs))) -> evalsym17(explus(exmult(Xs, Ys), exmult(Xs, Zs))) 
+  evalsym17(exmult(Xs, exmult(Ys, Zs))) -> evalsym17(exmult(exmult(Xs, Ys), Zs)) 
+  evalsym17(exmult(Xs, exexp(Ys, Zs))) -> evalsym17(exmult(Xs, dec(exexp(Ys, Zs)))) 
+  evalsym17(exexp(Xs, exz)) -> succ17(zero) 
+  evalsym17(exexp(Xs, exs(Ys))) -> evalsym17(exmult(exexp(Xs, Ys), Xs)) 
+  evalsym17(exexp(Xs, explus(Ys, Zs))) -> evalsym17(exmult(exexp(Xs, Ys), exexp(Xs, Zs))) 
+  evalsym17(exexp(Xs, exmult(Ys, Zs))) -> evalsym17(exexp(exexp(Xs, Ys), Zs)) 
+  evalsym17(exexp(Xs, exexp(Ys, Zs))) -> evalsym17(exexp(Xs, dec(exexp(Ys, Zs))))  
+
+  evalexp17(Xs) -> eval17(expand(Xs)) 
+
+  getval(leaf(Val)) -> Val 
+  getval(node(Val, Max, Left, Right)) -> Val 
+
+  getmax(leaf(Val)) -> Val 
+  getmax(node(Val, Max, Left, Right)) -> Max 
+
+  calctree17(X) -> mult17(exp17(s(s(zero)), pred17(X)), pred17(exp17(s(s(zero)), X)))
+
+  % other equations for SNat
+
+  nat2sym(zero) -> exz 
+  nat2sym(s(X)) -> exs(nat2sym(X)) 
+
+  expand(exz) -> exz 
+  expand(exone) -> exone 
+  expand(exs(Xs)) -> explus(exone, expand(Xs)) 
+  expand(explus(Xs, Ys)) -> explus(expand(Xs), expand(Ys)) 
+
+  expand(exmult(Xs, exz)) -> exz 
+  expand(exmult(Xs, exone)) -> expand(Xs) 
+  expand(exmult(Xs, explus(Ys, Zs))) -> expand(explus(exmult(Xs, Ys), exmult(Xs, Zs))) 
+  % Hubert: the following rule was an ASF+SDF default rule (lower priority)
+  %    expand(exmult(Xs, Ys)) -> expand(exmult(Xs, expand(Ys)))
+  % it causes non-termination if applied an infinite number of times
+  % I replaced it with three ordinary rules that do not assume priority
+  expand(exmult(Xs, exs(Ys))) -> expand(exmult(Xs, expand(exs(Ys))))
+  expand(exmult(Xs, exmult(Ys,Zs))) -> expand(exmult(Xs, expand(exmult(Ys,Zs))))
+  expand(exmult(Xs, exexp(Ys,Zs))) -> expand(exmult(Xs, expand(exexp(Ys,Zs))))
+
+  expand(exexp(Xs, exz)) -> exone 
+  expand(exexp(Xs, exone)) -> expand(Xs) 
+  expand(exexp(Xs, explus(Ys, Zs))) -> expand(exmult(exexp(Xs, Ys), exexp(Xs, Zs)))
+  % Hubert: the following rule was an ASF+SDF default rule (lower priority)
+  %    expand(exexp(Xs, Ys)) -> expand(exexp(Xs, expand(Ys)))
+  % it causes non-termination if applied an infinite number of times
+  % I replaced it with three ordinary rules that do not assume priority
+  expand(exexp(Xs, exs(Ys))) -> expand(exexp(Xs, expand(exs(Ys))))
+  expand(exexp(Xs, exmult(Ys,Zs))) -> expand(exexp(Xs, expand(exmult(Ys,Zs))))
+  expand(exexp(Xs, exexp(Ys,Zs))) -> expand(exexp(Xs, expand(exexp(Ys,Zs))))
+
+  % equations for trees
+
+  buildtree(zero, Val) -> leaf(Val) 
+
+  buildtree(s(X), Y) -> node(plus17(getval(buildtree(X, Y)),getval(buildtree(X, succ17(getmax(buildtree(X, Y)))))), getmax(buildtree(X, succ17(getmax(buildtree(X, Y))))), buildtree(X, Y),buildtree(X, succ17(getmax(buildtree(X, Y)))))
+

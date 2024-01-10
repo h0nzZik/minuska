@@ -1,0 +1,84 @@
+REC-SPEC TautologyHard
+SORTS
+  Prop
+CONS
+  tt : -> Prop
+  ff : -> Prop
+OPNS
+  and : Prop Prop -> Prop % {assoc comm}
+  xor : Prop Prop -> Prop % {assoc comm}
+  not : Prop -> Prop
+  or : Prop Prop -> Prop % {assoc comm}
+  implies : Prop Prop -> Prop
+  iff : Prop Prop -> Prop % S{assoc comm}
+  a : -> Prop
+  b : -> Prop
+  c : -> Prop
+  d : -> Prop
+  e : -> Prop
+  a1 : -> Prop
+  a2 : -> Prop
+  a3 : -> Prop
+  a4 : -> Prop
+  a5 : -> Prop
+  a6 : -> Prop
+  a7 : -> Prop
+  a8 : -> Prop
+  a9 : -> Prop
+  a10 : -> Prop
+  a11 : -> Prop
+  a12 : -> Prop
+  a13 : -> Prop
+  a14 : -> Prop
+  a15 : -> Prop
+  a16 : -> Prop
+  a17 : -> Prop
+  a18 : -> Prop
+VARS
+  P Q R : Prop
+RULES
+  and(P, tt) -> P
+  and(P, ff) -> ff
+  % and(P, P) -> P           %---- this equation was useless
+  xor(P, ff) -> P
+  xor(ff, tt) -> tt
+  xor(tt, tt) -> ff
+  % and(P, xor(Q, R)) -> xor(and(P, Q), and(P, R))  %---- xor is not a constructor
+  not(P) -> xor(P, tt)
+  or(P, Q) -> xor(and(P, Q), xor(P, Q))
+  implies(P, Q) -> not(xor(P, and(P, Q)))
+  iff(P, Q) -> not(xor(P, Q))
+  %---- replaced quantified symbols with constant values
+  a -> ff
+  b -> tt
+  c -> ff
+  d -> tt
+  e -> ff
+  a1 -> tt
+  a2 -> ff
+  a3 -> tt
+  a4 -> ff
+  a5 -> tt
+  a6 -> ff
+  a7 -> tt
+  a8 -> ff
+  a9 -> tt
+  a10 -> ff
+  a11 -> tt
+  a12 -> ff
+  a13 -> tt
+  a14 -> ff
+  a15 -> tt
+  a16 -> ff
+  a17 -> tt
+  a18 -> ff
+EVAL
+
+implies(and(iff(iff(or(a1, a2), or(not(a3), iff(xor(a4, a5),not(not(not(a6)))))), not(and(and(a7, a8), not(xor(xor(or(a9, and(a10,a11)), a2), and(and(a11, xor(a2, iff(a5, a5))), xor(xor(a7, a7),iff(a9, a4)))))))), implies(iff(iff(or(a1, a2), or(not(a3),iff(xor(a4, a5), not(not(not(a6)))))), not(and(and(a7, a8),not(xor(xor(or(a9, and(a10, a11)), a2), and(and(a11, xor(a2, iff(a5,a5))), xor(xor(a7, a7), iff(a9, a4)))))))), not(and(implies(and(a1,a2), not(xor(or(or(xor(implies(and(a3, a4), implies(a5, a6)), or(a7,a8)), xor(iff(a9, a10), a11)), xor(xor(a2, a2), a7)), iff(or(a4, a9),xor(not(a6), a6))))), not(iff(not(a11), not(a9))))))),not(and(implies(and(a1, a2), not(xor(or(or(xor(implies(and(a3, a4),implies(a5, a6)), or(a7, a8)), xor(iff(a9, a10), a11)), xor(xor(a2,a2), a7)), iff(or(a4, a9), xor(not(a6), a6))))), not(iff(not(a11),not(a9))))))
+
+implies(and(not(and(xor(a1, xor(or(a2, a3), a4)), xor(iff(xor(not(a5),or(xor(iff(a6, a7), iff(a8, a9)), and(a10, a9))), iff(not(not(a2)),implies(or(a9, a6), or(a10, a5)))), not(or(a9, implies(not(a8), or(a4,a9))))))), implies(not(and(xor(a1, xor(or(a2, a3), a4)),xor(iff(xor(not(a5), or(xor(iff(a6, a7), iff(a8, a9)), and(a10, a9))),iff(not(not(a2)), implies(or(a9, a6), or(a10, a5)))), not(or(a9,implies(not(a8), or(a4, a9))))))), not(implies(implies(and(or(a1,xor(xor(a2, a3), not(a4))), not(xor(a5, and(a6, a7)))),implies(xor(implies(a8, a9), a10), xor(and(a4, or(a4, a1)), a2))),or(or(xor(or(a4, a7), a2), and(a8, a1)), not(not(not(a6)))))))),not(implies(implies(and(or(a1, xor(xor(a2, a3), not(a4))), not(xor(a5,and(a6, a7)))), implies(xor(implies(a8, a9), a10), xor(and(a4, or(a4,a1)), a2))), or(or(xor(or(a4, a7), a2), and(a8, a1)),not(not(not(a6)))))))
+
+implies(and(not(and(xor(a1, xor(or(a2, a3), a4)), xor(iff(xor(not(a5),or(xor(iff(a6, a7), iff(a8, a9)), and(a10, a11))), implies(or(a4,and(a3, iff(a1, a2))), not(not(a4)))), xor(implies(implies(a6, a1),not(a1)), not(a9))))), implies(not(and(xor(a1, xor(or(a2, a3), a4)),xor(iff(xor(not(a5), or(xor(iff(a6, a7), iff(a8, a9)), and(a10,a11))), implies(or(a4, and(a3, iff(a1, a2))), not(not(a4)))),xor(implies(implies(a6, a1), not(a1)), not(a9))))),not(implies(implies(and(or(a1, xor(xor(a2, a3), not(a4))), not(xor(a5,and(a6, a7)))), implies(xor(implies(a8, a9), a10), xor(and(a11,implies(a2, a8)), a8))), not(or(implies(or(a5, or(a8, and(a8, a9))),not(a2)), not(a7))))))), not(implies(implies(and(or(a1, xor(xor(a2,a3), not(a4))), not(xor(a5, and(a6, a7)))), implies(xor(implies(a8,a9), a10), xor(and(a11, implies(a2, a8)), a8))), not(or(implies(or(a5,or(a8, and(a8, a9))), not(a2)), not(a7))))))
+
+END-SPEC
+

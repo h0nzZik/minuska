@@ -1,0 +1,16 @@
+
+% declaration of operations for 32-bit multiplier - H. Garavel 2016
+
+   mulBlock : Block Block -> Pair
+   % the 1st part of the resulting Pair is the highMul
+   % the 2nd part of the resulting Pair is the lowMul
+
+   mulBlockA : Block Block Block Block -> Pair
+
+   mulBlock4 : Half Half Half Half Half Half Half Half -> Pair
+   mulBlock3 : Half Half Half Half Block Half -> Pair
+   mulBlock2 : Half Block Half Half -> Pair
+   mulBlock1 : Block Half Half Half -> Pair
+
+   mulBlockB : Half Half Half Half -> Pair
+

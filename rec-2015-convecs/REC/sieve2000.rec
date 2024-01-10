@@ -1,0 +1,8 @@
+
+REC-SPEC Sieve2000
+#include "sieve.rec"
+EVAL
+
+    sieve(intsBetween(s(s(z)), mult (two, mult(ten, mult(ten, ten)))))
+
+END-SPEC

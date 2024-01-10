@@ -1,0 +1,112 @@
+REC-SPEC EvalTree
+SORTS
+  Bool Pos Tree SNat
+CONS
+  true : -> Bool
+  false : -> Bool
+  d1 : -> Pos
+  cDub : Bool Pos -> Pos
+  leaf : SNat -> Tree
+  node : SNat SNat Tree Tree -> Tree
+  Z : -> SNat
+  S : SNat -> SNat
+OPNS
+  eqBool : Bool Bool -> Bool
+  and : Bool Bool -> Bool
+  eqPos : Pos Pos -> Bool
+  eq : SNat SNat -> Bool
+  f : SNat -> Bool
+  lambda6 : SNat -> Bool
+  lambda5 : SNat Tree -> Tree
+  lambda4 : SNat Tree SNat SNat -> Tree
+  lambda3 : SNat Tree Tree -> Tree
+  lambda2 : SNat Tree Tree SNat SNat -> Tree
+  lambda1 : SNat Tree Tree SNat -> Tree
+  buildtree : SNat SNat -> Tree
+  lambda0 : SNat SNat -> SNat
+  % ifthenelse : Bool SNat SNat -> SNat % removed by CONVECS (no lazy)
+  succ17 : SNat -> SNat
+  pred17 : SNat -> SNat
+  plus17 : SNat SNat -> SNat
+  mult17 : SNat SNat -> SNat
+  exp17 : SNat SNat -> SNat
+  evaltree17 : SNat -> SNat
+  getval : Tree -> SNat
+  getmax : Tree -> SNat
+  seventeen : -> SNat
+VARS
+  b c : Bool
+  p q : Pos
+  left right : Tree
+  n o max : SNat
+RULES
+  
+  eqBool(true,b) -> b
+  % eqBool(b,true) -> b %---- this equation created ambiguity for eqBool(true,true); it was replaced by the previous equation
+  eqBool(false,true) -> false
+  eqBool(false,false) -> true
+
+  and(b,true) -> b
+  and(b,false) -> false
+
+  eqPos(d1,d1) -> true
+  eqPos(d1,cDub(b,p)) -> false
+  eqPos(cDub(b,p),d1) -> false
+  eqPos(cDub(b,p),cDub(c,q)) -> and(eqBool(b,c), eqPos(p,q))
+  % eqPos(cDub(b,p),cDub(b,q)) -> eqPos(p,q)
+  % eqPos(cDub(false,p),cDub(true,q)) -> false
+  % eqPos(cDub(true,p),cDub(false,q)) -> false
+  % eqPos(p,q) -> true if p -><- q
+
+  lambda6(n) -> eq(evaltree17(n),getval(buildtree(n,Z)))
+  lambda5(n,left) -> lambda4(n,left,getmax(left),getval(left))
+  lambda4(n,left,max,o) -> lambda3(o,left,buildtree(n,succ17(max)))
+  lambda3(n,left,right) -> lambda2(n,left,right,getval(right),getmax(right))
+  lambda2(n,left,right,o,max) -> lambda1(max,left,right,plus17(n,o))
+  lambda1(max,left,right,n) -> node(n,max,left,right)
+  lambda0(n,o) -> mult17(n,o)
+
+  % ifthenelse(true,n,o) -> n
+  % ifthenelse(false,n,o) -> o
+
+  eq(Z,Z) -> true
+  eq(Z,S(n)) -> false
+  eq(S(n),Z) -> false
+  eq(S(n),S(o)) -> eq(n,o)
+
+  % original rule using lazy evaluation (short-circuits)
+  % succ17(n) -> ifthenelse(eq(n,S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(Z))))))))))))))))),Z,S(n))
+  succ17(n) -> Z if eq(n,S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(Z))))))))))))))))) -><- true
+  succ17(n) -> S(n) if eq(n,S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(Z))))))))))))))))) -><- false
+
+  pred17(Z) -> S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(S(Z))))))))))))))))
+  pred17(S(n)) -> n
+
+  plus17(n,Z) -> n
+  plus17(n,S(o)) -> succ17(plus17(n,o))
+
+  mult17(n,Z) -> Z
+  mult17(n,S(o)) -> plus17(n,mult17(n,o))
+
+  exp17(n,Z) -> succ17(Z)
+  exp17(n,S(o)) -> mult17(n,exp17(n,o))
+
+  evaltree17(n) -> lambda0(exp17(S(S(Z)),pred17(n)),pred17(exp17(S(S(Z)),n)))
+
+  getval(leaf(n)) -> n
+  getval(node(n,max,left,right)) -> n
+
+  getmax(leaf(n)) -> n
+  getmax(node(n,max,left,right)) -> max
+
+  buildtree(Z,n) -> leaf(n)
+  buildtree(S(n),o) -> lambda5(n,buildtree(n,o))
+
+  seventeen -> S(S(S(S(S( S(S(S(S(S( S(S(S(S(S( S(S(S(S( Z )))) ))))) ))))) )))))
+
+  f(n) -> lambda6(seventeen)
+
+EVAL
+
+   f(seventeen)
+END-SPEC
