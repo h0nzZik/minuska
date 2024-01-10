@@ -49,7 +49,9 @@ rules() {
 evalSection() {
     inputWithoutComments \
         | sed -e '1,/EVAL/d' \
-        | sed -n '/END-SPEC/q;p'
+        | sed -n '/END-SPEC/q;p' \
+        | sed '/^\s*$/d' \
+        | head -n 1
 }
 
 cons \
@@ -97,9 +99,11 @@ rules | processSymbolicTerm | processRule
 
 echo '].'
 
-echo 'Definition term_to_reduce :='
+echo 'Definition terms_to_reduce := ['
 evalSection \
     | processSymbolicTerm \
-    | sed -e 's/\(.*\)/(\1)%concrete/'
-echo '.'
+    | sed -e 's/\(.*\)/(aoo_app _ _ (\1)%concrete) ;/' \
+    | head --bytes=-2
+echo '].'
 
+echo 'Definition term_to_reduce := hd (aoo_app _ _ ("top"[<>])%concrete) terms_to_reduce.'

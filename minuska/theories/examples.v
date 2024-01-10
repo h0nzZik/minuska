@@ -215,5 +215,8 @@ Definition term_to_reduce :=
 (fibb [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<d0[<>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>])%concrete
 .
 
+Check term_to_reduce.
+Compute GroundTerm.
+
 End fib.
 

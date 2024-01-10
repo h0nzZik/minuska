@@ -40,11 +40,11 @@ Fixpoint interp_loop
     match fuel with
     | 0 => Some g
     | S fuel' =>
-        match (interp g) wtih
+        match (interp g) with
         | None => Some g
         | Some g' => interp_loop fuel' g' 
         end
-    end
+    end.
 
 Definition result (fuel : nat) := interp_loop fuel term_to_reduce.
 
