@@ -111,7 +111,7 @@ echo '].'
 echo 'Definition terms_to_reduce := ['
 evalSection \
     | processSymbolicTerm \
-    | sed -e 's/\(.*\)/(aoo_app _ _ (\1)%concrete) ;/' \
+    | sed -e 's/\(.*\)/(aoo_app _ _ ("top"[<\1>])%concrete) ;/' \
     | head --bytes=-2
 echo '].'
 
