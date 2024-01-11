@@ -54,8 +54,8 @@ evalSection() {
         | head -n 1
 }
 
-#evalSection | grep 'if'
-rules | grep -q 'if' -- > /dev/null 2>/dev/null
+#evalSection | grep 'if '
+rules | grep -q 'if ' -- > /dev/null 2>/dev/null
 res="$?"
 if [ "$res" -eq "0" ]; then
     echo "(Skipping due to use of the conditional after preprocessing)"

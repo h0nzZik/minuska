@@ -51,18 +51,11 @@ Definition result (fuel : nat) := interp_loop fuel term_to_reduce.
 EOF
 )
 
-outdir="./generated"
-echo "Generating $outdir"
-rm -rf "$outdir"
-mkdir -p "$outdir"
-for src in ./rec-2015-convecs/REC/*.rec; do
-    name=$(basename --suffix ".rec" "$src" )
-    tgt="$outdir/$name.v"
+generateSingle() {
+    src="$1"
+    tgt="$2"
+
     echo "$src -> $tgt"
-    #if grep -q 'if' "$src"; then
-    #    echo "(Skipping due to use of the conditional)"
-    #    continue
-    #fi
     > "$tgt"
     echo "$prefix" >> "$tgt"
     ./rec.sh "$src" >> "$tgt" 2>/dev/null
@@ -71,8 +64,18 @@ for src in ./rec-2015-convecs/REC/*.rec; do
     if [ "$res" -eq 3 ]; then
         echo "Error in translation"
         rm -f "$tgt"
-        continue
+        return 3
     fi
     echo "$suffix" >> "$tgt"
     echo "Extraction \"$name\" result." >> "$tgt"
+}
+
+outdir="./generated"
+echo "Generating $outdir"
+rm -rf "$outdir"
+mkdir -p "$outdir"
+for src in ./rec-2015-convecs/REC/*.rec ./rec-2015-convecs/REC-SIMPLE/*.rec; do
+    name=$(basename --suffix ".rec" "$src" )
+    tgt="$outdir/$name.v"
+    generateSingle "$src" "$tgt"
 done

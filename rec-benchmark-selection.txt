@@ -6,6 +6,6 @@ benchsym2
 benchtree1
 langtonSmall
 mul8
-simple/revelt
+revelt
 revnat10
-simple/tautologyhard
+tautologyhard
