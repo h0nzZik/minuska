@@ -41,7 +41,7 @@ Fixpoint interp_loop
     | 0 => (g, 0)
     | S fuel' =>
         match (interp g) with
-        | None => (g, fuel')
+        | None => (g, fuel)
         | Some g' => interp_loop fuel' g' 
         end
     end.

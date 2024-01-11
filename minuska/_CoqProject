@@ -18,6 +18,7 @@ theories/try_match.v
 theories/naive_interpreter.v
 theories/default_static_model.v
 theories/notations.v
+theories/frontend.v
 theories/examples.v
 theories/extraction.v
 
