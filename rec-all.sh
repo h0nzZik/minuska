@@ -35,13 +35,13 @@ Definition interp :=
 Fixpoint interp_loop
         (fuel : nat)
         (g : GroundTerm)
-        : option GroundTerm
+        : (GroundTerm*nat)
     :=
     match fuel with
-    | 0 => Some g
+    | 0 => (g, 0)
     | S fuel' =>
         match (interp g) with
-        | None => Some g
+        | None => (g, fuel')
         | Some g' => interp_loop fuel' g' 
         end
     end.
