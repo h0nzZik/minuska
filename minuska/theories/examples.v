@@ -11,6 +11,7 @@ From Minuska Require Import
     naive_interpreter
     default_static_model
     notations
+    frontend
 .
 
 
@@ -18,15 +19,13 @@ From Minuska Require Import
 
 Module example_1.
 
-    Definition rule_1 : FlattenedRewritingRule :=
-        rule ("top" [< "s" [< "s" [< $"X" >] >] >])
-          => ("top" [< $"X" >])
-          requires []
-    .
-
-    (*Print rule_1.*)
-
-    Definition Γ : FlattenedRewritingTheory := [rule_1].
+    Definition Γ : FlattenedRewritingTheory
+        := Eval vm_compute in (to_theory (process_declarations ([
+            rule ["my_rule"]:
+                ("top" [< "s" [< "s" [< $"X" >] >] >])
+             => ("top" [< $"X" >])
+             requires []
+        ]))).
 
     Definition interp :=
         naive_interpreter Γ
