@@ -1,0 +1,11 @@
+add8
+factorial4
+fibonacci5
+benchexpr2
+benchsym2
+benchtree1
+langtonSmall
+mul8
+simple/revelt
+revnat10
+simple/tautologyhard

@@ -1,0 +1,8 @@
+
+REC-SPEC Fibonacci5
+#include "fibonacci.rec"
+EVAL
+
+   fibb(s(s(s(s(s(d0)))))) % fibb(5)
+
+END-SPEC
