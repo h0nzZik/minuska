@@ -120,15 +120,14 @@ Module two_counters.
     Definition M := "M".
     Definition N := "N".
 
-    Definition rule_1 : FlattenedRewritingRule :=
-        rule top [< state [< s [< $M >], $N >] >]
+    Definition Γ : FlattenedRewritingTheory :=
+    Eval vm_compute in (to_theory (process_declarations ([
+        rule ["my-rule"]:
+             top [< state [< s [< $M >], $N >] >]
           => top [< state [< $M, s [< $N >]  >] >]
-          requires []
-    .
-
-    (*Print rule_1.*)
-
-    Definition Γ : FlattenedRewritingTheory := [rule_1].
+             requires []
+    ]))).
+    
 
     Definition interp :=
         naive_interpreter Γ
