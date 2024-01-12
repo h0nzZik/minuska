@@ -14,7 +14,7 @@ From Minuska Require Import
 
 Definition apply_match
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (ρ : Valuation)
     (m : Match)
     : option Valuation
@@ -26,7 +26,7 @@ Definition apply_match
 
 Definition apply_match'
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (oρ : option Valuation)
     (m : Match)
     : option Valuation
@@ -37,7 +37,7 @@ Definition apply_match'
 
 Definition reduce_matches
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (oρ : option Valuation)
     (matches : list Match)
     : option Valuation

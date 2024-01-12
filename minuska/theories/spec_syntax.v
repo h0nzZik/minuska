@@ -28,6 +28,10 @@ Inductive AppliedOperatorOr'
 .
 
 
+Arguments aoo_operand {Operator Operand}%type_scope operand.
+Arguments aoo_app {Operator Operand}%type_scope ao.
+
+
 Polymorphic
 Definition GroundTerm' (symbol : Type) (builtin : Type)
     := (AppliedOperatorOr' symbol builtin)
@@ -500,10 +504,10 @@ Section countable.
         (e : GroundTerm' symbol builtin)
         : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
     :=
-        GroundTerm'_to_gen_tree _ _ (aoo_operand _ _ b)
+        GroundTerm'_to_gen_tree _ _ (aoo_operand b)
         := GenLeaf (inl _ b) ;
         
-        GroundTerm'_to_gen_tree _ _ (aoo_app _ _ s)
+        GroundTerm'_to_gen_tree _ _ (aoo_app s)
         := GenLeaf (inr _ s)
     .
 
@@ -519,10 +523,10 @@ Section countable.
         :  option (GroundTerm' symbol builtin)
     :=
         GroundTerm'_from_gen_tree _ _ (GenLeaf (inl _ b))
-        := Some (aoo_operand _ _ b);
+        := Some (aoo_operand b);
         
         GroundTerm'_from_gen_tree _ _ (GenLeaf (inr _ s))
-        := Some (aoo_app _ _ s);
+        := Some (aoo_app s);
         
         GroundTerm'_from_gen_tree _ _ _
         := None
@@ -567,21 +571,35 @@ End countable.
 
 
 
-Class ComputableStaticModel {Σ : StaticModel} := {
+Class ComputableBuiltins
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {Β : Builtin}
+:= {
     builtin_unary_predicate_interp_bool :
-        builtin_unary_predicate -> GroundTerm -> bool ; 
+        builtin_unary_predicate ->
+        (GroundTerm' symbol builtin_value) ->
+        bool ; 
 
     builtin_binary_predicate_interp_bool :
-        builtin_binary_predicate -> GroundTerm -> GroundTerm -> bool ;         
+        builtin_binary_predicate ->
+        (GroundTerm' symbol builtin_value) ->
+        (GroundTerm' symbol builtin_value) ->
+        bool ;
 
     cs_up :
-        forall p e,
+        forall
+            (p : builtin_unary_predicate)
+            (e : (GroundTerm' symbol builtin_value)),
             reflect
                 (builtin_unary_predicate_interp p e)
                 (builtin_unary_predicate_interp_bool p e) ;
 
     cs_bp :
-        forall p e1 e2,
+        forall
+            (p : builtin_binary_predicate)
+            (e1 : (GroundTerm' symbol builtin_value))
+            (e2 : (GroundTerm' symbol builtin_value)),
             reflect
                 (builtin_binary_predicate_interp p e1 e2)
                 (builtin_binary_predicate_interp_bool p e1 e2) ;

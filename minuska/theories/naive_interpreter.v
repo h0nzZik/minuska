@@ -45,7 +45,8 @@ match m with
 end.
 
 Definition evaluate_sc
-    `{CΣ : ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     (ρ : Valuation)
     (sc : SideCondition)
     : bool :=
@@ -75,7 +76,7 @@ Definition evaluate_rhs_pattern
 
 Definition rewrite_with
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (r : FlattenedRewritingRule)
     (g : GroundTerm)
     : option GroundTerm
@@ -88,7 +89,7 @@ Definition rewrite_with
 
 Lemma evaluate_rhs_pattern_correct
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (φ : RhsPattern)
     (ρ : Valuation)
     (g : GroundTerm)
@@ -211,18 +212,18 @@ Proof.
                 remember (fun (v:builtin_value) (e':Expression) =>
                     match Expression_evaluate ρ e' with
                     | Some v' => v'
-                    | None => aoo_operand _ _ v
+                    | None => aoo_operand v
                     end
                 ) as zipper.
                 remember (fun (s1 s2 : symbol) => s1) as symleft.
                 remember (fun (g : AppliedOperator' symbol builtin_value) (e' : Expression) =>
-                    (aoo_app symbol _ g)
+                    (aoo_app g)
                 ) as f1.
                 remember (fun (b : builtin_value) (et : AppliedOperator' symbol Expression) =>
-                    (aoo_operand symbol _ b)
+                    (@aoo_operand symbol _ b)
                 ) as f2.
                 remember (AppliedOperator'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
-                exists (aoo_app _ _ zipped).
+                exists (aoo_app zipped).
                 cbn.
                 split.
                 {
@@ -443,11 +444,10 @@ Proof.
         }
     }
 Qed.
-Print FlattenedRewritingRule.
 
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (g : GroundTerm)
     (r : FlattenedRewritingRule)
     : option Valuation
@@ -470,7 +470,7 @@ Instance VarsOf_list_SideCondition
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (g : GroundTerm)
     (r : FlattenedRewritingRule)
     (ρ : gmap variable GroundTerm)
@@ -645,7 +645,7 @@ Qed.
 
 Definition thy_lhs_match_one
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
     : option (FlattenedRewritingRule * Valuation)%type
@@ -669,7 +669,7 @@ Definition thy_lhs_match_one
 
 Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (e : GroundTerm)
     (Γ : FlattenedRewritingTheory)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
@@ -799,7 +799,7 @@ Qed.
 
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
     (r : FlattenedRewritingRule)
@@ -861,7 +861,7 @@ Qed.
 
 Definition naive_interpreter
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (Γ : list FlattenedRewritingRule)
     (e : GroundTerm)
     : option GroundTerm
@@ -876,7 +876,7 @@ Definition naive_interpreter
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (Γ : FlattenedRewritingTheory)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
     : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).

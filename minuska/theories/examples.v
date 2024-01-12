@@ -6,7 +6,7 @@ From Minuska Require Import
     spec_syntax
     spec_semantics
     string_variables
-    empty_builtin
+    builtins
     flattened
     naive_interpreter
     default_static_model
@@ -18,6 +18,11 @@ From Minuska Require Import
 
 
 Module example_1.
+
+    #[local]
+    Instance Σ : StaticModel := default_model (empty_builtin.β).
+    #[local]
+    Instance CΒ : ComputableBuiltins := empty_builtin.Cβ.
 
     Definition Γ : FlattenedRewritingTheory
         := Eval vm_compute in (to_theory (process_declarations ([
@@ -68,13 +73,13 @@ Module example_1.
     .
 
     Definition my_number (n : nat) : GroundTerm :=
-        aoo_app _ _ (ao_app_ao (ao_operator "top") (my_number' n))
+        aoo_app (ao_app_ao (ao_operator "top") (my_number' n))
     .
 
     Definition my_number_inv (g : GroundTerm) : option nat
     :=
     match g with
-    | aoo_app _ _ (ao_app_ao (ao_operator "top") g') => my_number'_inv g'
+    | aoo_app (ao_app_ao (ao_operator "top") g') => my_number'_inv g'
     | _ => None
     end
     .
@@ -114,6 +119,13 @@ End example_1.
 
 Module two_counters.
 
+Import empty_builtin.
+
+    #[local]
+    Instance Σ : StaticModel := default_model (empty_builtin.β).
+    #[local]
+    Instance CΒ : ComputableBuiltins := empty_builtin.Cβ.
+
     Definition top := "top".
     Definition state := "state".
     Definition s := "s".
@@ -145,7 +157,7 @@ Module two_counters.
     .
 
     Definition pair_to_state (mn : nat*nat) : GroundTerm :=
-        aoo_app _ _ (ao_app_ao (ao_operator "top")
+        aoo_app (ao_app_ao (ao_operator "top")
         (
             ao_app_ao
                 (
@@ -159,7 +171,7 @@ Module two_counters.
 
     Definition state_to_pair (g : GroundTerm) : option (nat*nat) :=
     match g with
-    | aoo_app _ _ (ao_app_ao (ao_operator "top")
+    | aoo_app (ao_app_ao (ao_operator "top")
         (ao_app_ao (ao_app_ao (ao_operator "state") (m')) n'))
         => 
             m ← example_1.my_number'_inv m';
@@ -195,26 +207,23 @@ Module two_counters.
 
 End two_counters.
 
-Module fib.
+Module computations.
 
-Definition d0 := "d0".
-Definition s := "s".
-Definition plus := "plus".
-Definition fibb := "fibb".
-Definition N := "N".
-Definition M := "M".
-Definition rules := [
-rule "top"[<plus [<d0[<>], $N>] >] => "top"[< $N>] requires [];
-rule "top"[<plus [<s [<$N>], $M>] >] => "top"[< s [<plus [<$N, $M>]>]>] requires [];
-rule "top"[<fibb [<d0[<>]>] >] => "top"[< d0[<>]>] requires [];
-rule "top"[<fibb [<s [<d0[<>]>]>] >] => "top"[< s [<d0[<>]>]>] requires [];
-rule "top"[<fibb [<s [<s [<$N>]>]>] >] => "top"[< plus [<fibb [<s [<$N>]>], fibb [<$N>]>]>] requires []].
-Definition term_to_reduce :=
-(fibb [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<s [<d0[<>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>]>])%concrete
-.
-
-Check term_to_reduce.
-Compute GroundTerm.
-
-End fib.
+    #[local]
+    Instance Σ : StaticModel := default_model (empty_builtin.β).
+    #[local]
+    
+    Instance CΒ : ComputableBuiltins := empty_builtin.Cβ.
+    Definition state := "state".
+    Definition cseq := "cseq".
+(*
+    Definition Γ : FlattenedRewritingTheory :=
+    Eval vm_compute in (to_theory (process_declarations ([
+        rule ["my-rule"]:
+             top [< cseq [< , >], state [< s [< $M >], $N >] >]
+          => top [< , state [< $M, s [< $N >]  >] >]
+             requires []
+    ]))).
+*)
+End computations.
 

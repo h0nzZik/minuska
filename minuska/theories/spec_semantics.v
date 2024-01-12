@@ -477,7 +477,7 @@ Inductive aoxyo_satisfies_aoxzo
         (xy : AppliedOperator' X Y)
         (xz : AppliedOperator' X Z)
         (pf : satisfies ρ xy xz),
-        aoxyo_satisfies_aoxzo V X Y Z var ρ (@aoo_app _ _  xy) (aoo_app _ _ xz)
+        aoxyo_satisfies_aoxzo V X Y Z var ρ (@aoo_app _ _  xy) (aoo_app xz)
 
 | axysaxz_operand:
     forall (ρ : V) (y : Y) (z : Z) (pf : satisfies ρ y z),
@@ -588,7 +588,7 @@ Definition AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
     : Prop :=
 match bov with
 | bov_builtin _ => False
-| bov_variable x => ρ !! x = Some (aoo_app symbol builtin_value aop)
+| bov_variable x => ρ !! x = Some (aoo_app aop)
 end.
 
 #[export]
@@ -892,8 +892,8 @@ Definition GroundTerm_satisfies_BuiltinOrVar
 match bov with
 | bov_builtin b =>
     match g with
-    | aoo_app _ _ _ => False
-    | aoo_operand _ _ b' => b = b'
+    | aoo_app _ => False
+    | aoo_operand b' => b = b'
     end
 | bov_variable x => ρ !! x = Some g
 end.
@@ -948,8 +948,8 @@ Definition builtin_value_satisfies_OpenTerm
     OpenTerm ->
     Prop := fun ρ b t =>
 match t with
-| aoo_app _ _ _ => False
-| aoo_operand _ _ bov =>
+| aoo_app _ => False
+| aoo_operand bov =>
     satisfies ρ b bov
 end.
 
@@ -1011,7 +1011,7 @@ Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
 :=
 match bov with
 | bov_builtin _ => False
-| bov_variable x => ρ !! x = Some (aoo_app _ _ ao) 
+| bov_variable x => ρ !! x = Some (aoo_app ao) 
 end
 .
 
@@ -1056,7 +1056,7 @@ Definition AppliedOperator'_symbol_A_satisfies_OpenTermB'
     Prop
 :=  fun ρ a =>
     satisfies
-    ρ (aoo_app _ _ a)
+    ρ (aoo_app a)
 .
 
 #[export]
@@ -1123,7 +1123,7 @@ Definition AppliedOperator'_symbol_builtin_satisfies_OpenTerm
     OpenTerm ->
     Prop
 :=  fun ρ a =>
-    satisfies ρ (aoo_app _ _ a)
+    satisfies ρ (aoo_app a)
 .
 
 #[export]
@@ -1199,7 +1199,7 @@ Program Instance Satisfies_builtin_expr
         variable
 := {|
     satisfies := (fun ρ b e =>
-        Expression_evaluate ρ e = Some (aoo_operand _ _ b)
+        Expression_evaluate ρ e = Some (aoo_operand b)
     ) ;
 |}.
 Next Obligation.
@@ -1220,7 +1220,7 @@ Program Instance Satisfies_asb_expr
         variable
 := {|
     satisfies := (fun ρ x e =>
-        Expression_evaluate ρ e = Some (aoo_app _ _ x)
+        Expression_evaluate ρ e = Some (aoo_app x)
     ) ;
 |}.
 Next Obligation.
@@ -1404,12 +1404,12 @@ Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
 let ρ := ρd.1 in
 match r with
 | lp_rewrite r'
-    => satisfies (ρd) (aoo_operand _ _ b) r'
+    => satisfies (ρd) (aoo_operand b) r'
 
-| lp_basicpat (aoo_app _ _ _)
+| lp_basicpat (aoo_app _)
     => False
 
-| lp_basicpat (aoo_operand _ _ bov)
+| lp_basicpat (aoo_operand bov)
     => satisfies ρ b bov
 
 | lp_bov bx
@@ -1486,7 +1486,7 @@ Program Instance Satisfies_vlrglrootob
         variable
 := {|
     satisfies := fun ρd g =>
-        satisfies ρd (aoo_app _ _ g)
+        satisfies ρd (aoo_app g)
         
      ;
 |}.

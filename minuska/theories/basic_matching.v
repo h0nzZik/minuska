@@ -669,13 +669,13 @@ Section with_signature.
         (y : AppliedOperatorOr' symbol Operand2)
         : bool :=
     match x, y with
-    | aoo_app _ _ app1, aoo_app _ _ app2 =>
+    | aoo_app app1, aoo_app app2 =>
         matchesb ρ app1 app2
-    | aoo_app _ _ app1, aoo_operand _ _ o2 =>
+    | aoo_app app1, aoo_operand o2 =>
         matchesb ρ app1 o2
-    | aoo_operand _ _ o1, aoo_app _ _ app2 =>
+    | aoo_operand o1, aoo_app app2 =>
         false (*matchesb (ρ, o1) app2*)
-    | aoo_operand _ _ o1, aoo_operand _ _ o2 =>
+    | aoo_operand o1, aoo_operand o2 =>
         matchesb ρ o1 o2
     end.
 
@@ -834,8 +834,8 @@ Section with_signature.
     | bov_variable x =>
         match ρ !! x with
         | None => false
-        | Some (aoo_app _ _ _) => false
-        | Some (aoo_operand _ _ b') => bool_decide (b = b')
+        | Some (aoo_app _) => false
+        | Some (aoo_operand b') => bool_decide (b = b')
         end
     end.
 
@@ -1030,14 +1030,14 @@ Section with_signature.
         : Valuation -> builtin_value -> OpenTerm -> bool :=
     fun ρ b t =>
     match t with
-    | aoo_app _ _ _ => false
-    | aoo_operand _ _ (bov_variable x) =>
+    | aoo_app _ => false
+    | aoo_operand (bov_variable x) =>
         match ρ !! x with
         | None => false
-        | Some (aoo_app _ _ _) => false
-        | Some (aoo_operand _ _ b') => bool_decide (b = b')
+        | Some (aoo_app _) => false
+        | Some (aoo_operand b') => bool_decide (b = b')
         end
-    | aoo_operand _ _ (bov_builtin b') =>
+    | aoo_operand (bov_builtin b') =>
         bool_decide (b = b')
     end.
 
@@ -1196,7 +1196,7 @@ Section with_signature.
     match bov with
     | bov_builtin b => false
     | bov_variable x =>
-        bool_decide (ρ !! x = Some (aoo_app _ _ t))
+        bool_decide (ρ !! x = Some (aoo_app t))
     end.
 
     #[export]
@@ -1436,7 +1436,8 @@ Section with_signature.
 End with_signature.
 
 Definition val_satisfies_ap_bool
-    `{ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     (ρ : Valuation)
     (ap : AtomicProposition)
     : bool :=
@@ -1589,7 +1590,8 @@ Qed.
 
 #[export]
 Program Instance Matches_val_ap
-    `{ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     : Matches unit AtomicProposition variable
 := {|
     matchesb := fun a b c => val_satisfies_ap_bool a c;
@@ -1663,9 +1665,9 @@ Qed.
 Next Obligation.
     destruct b; unfold vars_of in *; simpl in *.
     {
-        rewrite andb_true_iff in H0.
-        rewrite bool_decide_eq_true in H0.
-        destruct H0 as [H1 H2].
+        rewrite andb_true_iff in H.
+        rewrite bool_decide_eq_true in H.
+        destruct H as [H1 H2].
         unfold isSome in *.
         destruct (Expression_evaluate v e1) eqn:Heq2>[|inversion H2].
         clear H2. symmetry in H1.
@@ -1676,13 +1678,13 @@ Next Obligation.
         split; assumption.
     }
     {
-        destruct (Expression_evaluate v e1) eqn:Heq>[|inversion H0].
+        destruct (Expression_evaluate v e1) eqn:Heq>[|inversion H].
         apply expression_evaluate_some_valuation in Heq.
         assumption.
     }
     {
-        destruct (Expression_evaluate v e1) eqn:Heq1>[|inversion H0].
-        destruct (Expression_evaluate v e2) eqn:Heq2>[|inversion H0].
+        destruct (Expression_evaluate v e1) eqn:Heq1>[|inversion H].
+        destruct (Expression_evaluate v e2) eqn:Heq2>[|inversion H].
         apply expression_evaluate_some_valuation in Heq1.
         apply expression_evaluate_some_valuation in Heq2.
         rewrite union_subseteq.
@@ -1690,7 +1692,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
-    revert v1 v2 H0.
+    revert v1 v2 H.
     induction b; intros v1 v2 HH; simpl in *.
     {
         unfold vars_of in HH; simpl in *.
@@ -1733,7 +1735,7 @@ Fail Next Obligation.
 
 Fixpoint val_satisfies_c_bool
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (ρ : Valuation)
     (c : Constraint)
     : bool :=
@@ -1746,7 +1748,7 @@ end.
 
 Lemma val_satisfies_valuation
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     ρ c
     :
     val_satisfies_c_bool ρ c = true ->
@@ -1768,7 +1770,8 @@ Qed.
 
 #[export]
 Program Instance Matches_val_c
-    `{CΣ : ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     : Matches unit Constraint variable
 := {|
     matchesb := fun a b c => val_satisfies_c_bool a c;
@@ -1787,7 +1790,7 @@ Next Obligation.
         apply reflect_iff in IHb2.
         unfold satisfies; simpl.
         unfold val_satisfies_c_bool; simpl.
-        fold (@val_satisfies_c_bool Σ CΣ).
+        fold (@val_satisfies_c_bool Σ Cβ).
         unfold satisfies in IHb1.
         unfold satisfies in IHb2.
         simpl in *|-.
@@ -1951,7 +1954,8 @@ Fail Next Obligation.
 
 
 Definition valuation_satisfies_sc_bool
-    `{CΣ : ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     (ρ : Valuation)
     (sc : SideCondition) : bool :=
 match sc with
@@ -1961,7 +1965,8 @@ end.
 
 #[export]
 Program Instance Matches_valuation_sc
-    `{CΣ : ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     :
     Matches unit SideCondition variable
 := {|
@@ -2005,7 +2010,7 @@ Fail Next Obligation.
 #[export]
 Program Instance Matches_valuation_scs
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     :
     Matches unit (list SideCondition) variable
 := {|
@@ -2079,12 +2084,13 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches__builtin__Expr
-   `{CΣ : ComputableStaticModel}
+    {Σ : StaticModel}
+    {Cβ : ComputableBuiltins}
     :
     Matches builtin_value (Expression) variable
 := {|
     matchesb := (fun ρ b e =>
-        bool_decide (Expression_evaluate ρ e = Some (aoo_operand _ _ b))
+        bool_decide (Expression_evaluate ρ e = Some (aoo_operand b))
     ) ;
 |}.
 Next Obligation.
@@ -2112,7 +2118,7 @@ Program Instance Matches_asb_expr
         variable
 := {|
     matchesb := (fun ρ x e =>
-        bool_decide (Expression_evaluate ρ e = Some (aoo_app _ _ x))   ) ;
+        bool_decide (Expression_evaluate ρ e = Some (aoo_app x))   ) ;
 |}.
 Next Obligation.
     unfold satisfies. simpl.

@@ -110,8 +110,8 @@ Definition vars_of_OpenTerm
     (φ : OpenTerm)
     : gset variable :=
 match φ with
-| aoo_app _ _ o => vars_of o
-| aoo_operand _ _ bov => vars_of bov
+| aoo_app o => vars_of o
+| aoo_operand bov => vars_of bov
 end.
 
 #[export]
@@ -208,8 +208,8 @@ Definition vars_of_AppliedOperatorOr'B
     (φ : AppliedOperatorOr' symbol B)
     : gset var :=
 match φ with
-| aoo_app _ _ aop => vars_of aop
-| aoo_operand _ _ otwsc => vars_of otwsc
+| aoo_app aop => vars_of aop
+| aoo_operand otwsc => vars_of otwsc
 end.
 
 #[export]
@@ -305,8 +305,8 @@ Definition AppliedOperatorOr'_fmap
     : AppliedOperatorOr' A C
 :=
 match aoo with
-| aoo_app _ _ ao => aoo_app _ _ (f <$> ao)
-| aoo_operand _ _ o => aoo_operand _ _ (f o)
+| aoo_app ao => aoo_app (f <$> ao)
+| aoo_operand o => aoo_operand (f o)
 end.
 
 
@@ -353,12 +353,12 @@ Definition AppliedOperatorOr'_collapse_option
     : option (AppliedOperatorOr' A B)
 :=
 match aoo with
-| aoo_app _ _ ao =>
+| aoo_app ao =>
     tmp ← AppliedOperator'_collapse_option ao;
-    Some (aoo_app _ _ tmp)
-| aoo_operand _ _ op =>
+    Some (aoo_app tmp)
+| aoo_operand op =>
     tmp ← op;
-    Some (aoo_operand _ _ tmp)
+    Some (aoo_operand tmp)
 end.
 
 

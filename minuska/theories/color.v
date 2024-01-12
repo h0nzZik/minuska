@@ -231,8 +231,8 @@ Program Definition m2c_GroundTerm
     : { t : VTerm.term Σ | vterm_is_closed t }
 :=
 match g with
-| aoo_app _ _ app => m2c_AppliedOperator'_symbol_builtin_rev app
-| aoo_operand _ _ o =>
+| aoo_app app => m2c_AppliedOperator'_symbol_builtin_rev app
+| aoo_operand o =>
     @exist _ _ (@VTerm.Fun Σ (c_sym_builtin_value Σ o) []) _
 end
 .
@@ -437,18 +437,18 @@ Definition c2m_closed_vterm
         let l1 := rec pf1 in
         match sym with
         | c_sym_symbol _ sym' =>
-            aoo_app _ _ (fold_left
+            aoo_app (fold_left
                 (fun (y : AppliedOperator' spec_syntax.symbol builtin_value) (x : GroundTerm) =>
                     match x with
-                    | aoo_app _ _ app => @ao_app_ao spec_syntax.symbol builtin_value y app
-                    | aoo_operand _ _ b => @ao_app_operand spec_syntax.symbol builtin_value y b
+                    | aoo_app app => @ao_app_ao spec_syntax.symbol builtin_value y app
+                    | aoo_operand b => @ao_app_operand spec_syntax.symbol builtin_value y b
                     end
                 )
                 l1
                 (@ao_operator spec_syntax.symbol builtin_value sym')
                 
             )
-        | c_sym_builtin_value _ b => aoo_operand _ _ b
+        | c_sym_builtin_value _ b => aoo_operand b
         end
     )
     (fun pf => [])
@@ -491,7 +491,7 @@ Example ex1_c2m_closed_vterm__m2c_GroundTerm
     {Σ : spec_syntax.StaticModel}
     (o : spec_syntax.symbol)
     : 
-    let g := (aoo_app spec_syntax.symbol builtin_value (ao_operator o)) in
+    let g := (aoo_app (ao_operator o)) in
     c2m_closed_vterm (m2c_GroundTerm g) = g
 .
 Proof. reflexivity. Qed.
@@ -502,7 +502,7 @@ Example ex2_c2m_closed_vterm__m2c_GroundTerm
     (b : builtin_value)
     : 
     let g : GroundTerm 
-        := (aoo_app _ _ (ao_app_operand (ao_operator o) b)) in
+        := (aoo_app (ao_app_operand (ao_operator o) b)) in
     c2m_closed_vterm (m2c_GroundTerm g) = g
 .
 Proof.

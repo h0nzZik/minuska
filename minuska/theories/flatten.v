@@ -186,7 +186,7 @@ end.
 
 Definition aoxyo_satisfies_aoxzo_bool
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     {Y Z : Type}
     {_S1 : Satisfies Valuation (Y) Z variable}
     {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z variable}
@@ -215,7 +215,7 @@ end.
 
 #[export]
 Program Instance Matches__aoxyo_satisfies_aoxzo_bool
-    `{CΣ : ComputableStaticModel}
+    `{CΣ : ComputableBuiltins}
     {Y Z : Type}
     {_S1 : Satisfies Valuation Y Z }
     {_S2 : Satisfies Valuation (AppliedOperator' symbol Y) Z}
@@ -615,7 +615,7 @@ Qed.
 
 Lemma getSCS_getBase_correct
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     {A B : Type}
     {_S1 : Satisfies Valuation A B}
     {_M1 : Matches Valuation A B}
@@ -839,7 +839,7 @@ Qed.
 
 #[export]
 Program Instance Matchse__builtin__Expression
-    `{CΣ : ComputableStaticModel}
+    `{CΣ : ComputableBuiltins}
     :
     Matches Valuation builtin_value Expression
 := {|
@@ -855,7 +855,7 @@ Fail Next Obligation.
 
 #[export]
 Program Instance Matches_aopb_Expr
-    `{CΣ : ComputableStaticModel}
+    `{CΣ : ComputableBuiltins}
     :
     Matches
         Valuation
@@ -891,7 +891,7 @@ Fail Next Obligation.
 
 #[export]
 Instance Matches__GroundTerm__RhsPattern
-    `{CΣ : ComputableStaticModel}
+    `{CΣ : ComputableBuiltins}
     :
     Matches Valuation (GroundTerm) RhsPattern
 .
@@ -900,7 +900,7 @@ Proof.
 Defined.
 
 Lemma correct_rhs_LocalRewriteOrOpenTermOrBOV_to_RhsPattern
-    `{CΣ : ComputableStaticModel} lro
+    `{CΣ : ComputableBuiltins} lro
     (ρ : Valuation)
     (g : GroundTerm):
     satisfies
@@ -1095,7 +1095,7 @@ Proof.
 Qed.
 (*
 Lemma correct_AppliedOperator'_symbol_A_to_OpenTerm
-    `{CΣ : ComputableStaticModel}
+    `{CΣ : ComputableBuiltins}
     {A B : Type}
     (A_to_OpenTermB : A -> AppliedOperatorOr' symbol B)
     (A_to_SC : A -> list SideCondition )
@@ -1899,7 +1899,7 @@ Qed.
 
 Lemma order_enabled_first_nil
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     initial_vars:
     order_enabled_first initial_vars [] = ([],[])
 .
@@ -2500,7 +2500,7 @@ Qed.
 
 Definition valuation_satisfies_all_matches
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (ρ : Valuation)
     (l : list Match)
     : Prop
@@ -2512,7 +2512,7 @@ Definition valuation_satisfies_all_matches
 
 Lemma valuation_satisfies_all_matches_perm
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     (l1 l2 : list Match) (ρ : Valuation)
 : l1 ≡ₚ l2 ->
     valuation_satisfies_all_matches ρ l1

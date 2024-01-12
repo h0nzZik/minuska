@@ -63,8 +63,8 @@ match x with
     let t1 : (AppliedOperator' symbol B)
         := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
     match A_to_OpenTermB a with
-    | (aoo_app _ _ t2) => (ao_app_ao t1 t2)
-    | (aoo_operand _ _ t2) => (ao_app_operand t1 t2)
+    | (aoo_app t2) => (ao_app_ao t1 t2)
+    | (aoo_operand t2) => (ao_app_operand t1 t2)
     end
 | ao_app_ao x1 x2 =>
     let t1 : (AppliedOperator' symbol B)
@@ -84,8 +84,8 @@ Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
     : ((AppliedOperatorOr' symbol B))
 :=
 match x with
-| aoo_app _ _ app => aoo_app _ _ (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
-| aoo_operand _ _ operand => A_to_OpenTermB operand
+| aoo_app app => aoo_app (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
+| aoo_operand operand => A_to_OpenTermB operand
 end.
 
 

@@ -1128,13 +1128,13 @@ Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
     (y : AppliedOperatorOr' symbol Operand2)
     : option Valuation :=
 match x, y with
-| aoo_app _ _ app1, aoo_app _ _ app2 =>
+| aoo_app app1, aoo_app app2 =>
     try_match app1 app2
-| aoo_app _ _ app1, aoo_operand _ _ o2 =>
+| aoo_app app1, aoo_operand o2 =>
     try_match app1 o2
-| aoo_operand _ _ o1, aoo_app _ _ app2 =>
+| aoo_operand o1, aoo_app app2 =>
     None (* try_match o1 app2 *)
-| aoo_operand _ _ o1, aoo_operand _ _ o2 =>
+| aoo_operand o1, aoo_operand o2 =>
     try_match o1 o2
 end.
 
@@ -1221,7 +1221,7 @@ Definition builtin_value_try_match_BuiltinOrVar
 fun b bv =>
 match bv with
 | bov_builtin b' => if (decide (b = b')) then Some ∅ else None
-| bov_variable x => Some (<[x := (aoo_operand _ _ b)]>∅)
+| bov_variable x => Some (<[x := (aoo_operand b)]>∅)
 end.
 
 
@@ -1292,7 +1292,7 @@ Next Obligation.
         {
             apply bool_decide_eq_true in H.
             subst.
-            exists (<[x:=aoo_operand symbol builtin_value operand]> ∅).
+            exists (<[x:=aoo_operand operand]> ∅).
             split.
             {
                 unfold vars_of; simpl.
@@ -1381,7 +1381,7 @@ Definition pure_GroundTerm_try_match_BuiltinOrVar
 match bov with
 | bov_builtin b => None
 | bov_variable x =>
-    Some (<[x := (aoo_app _ _ t)]>∅)
+    Some (<[x := (aoo_app t)]>∅)
 end.
 
 #[export]
@@ -1413,7 +1413,7 @@ Next Obligation.
     }
     {
         apply bool_decide_eq_true in H.
-        exists (<[x:=aoo_app symbol builtin_value a]> ∅).
+        exists (<[x:=aoo_app a]> ∅).
         split.
         {
             unfold vars_of; simpl.
@@ -1491,7 +1491,7 @@ Fail Next Obligation.
 #[export]
 Instance TryMatch__GroundTerm__OpenTerm
     {Σ : StaticModel}
-    {CΣ : ComputableStaticModel}
+    {CΣ : ComputableBuiltins}
     :
     TryMatch GroundTerm OpenTerm
 .

@@ -126,9 +126,9 @@ Notation "'llrule' l => r 'requires' s"
 
 Notation "'rule' l => r 'requires' s"
     := (llrule
-        (aoo_app _ _ l)
+        (aoo_app l)
         =>
-        (aoo_app _ _ r) 
+        (aoo_app r) 
         requires
         s
     )
