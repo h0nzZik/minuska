@@ -1437,7 +1437,7 @@ End with_signature.
 
 Definition val_satisfies_ap_bool
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
+    
     (ρ : Valuation)
     (ap : AtomicProposition)
     : bool :=
@@ -1449,14 +1449,14 @@ match ap with
 | ap1 p e =>
     let v := Expression_evaluate ρ e in
     match v with
-    | Some vx => builtin_unary_predicate_interp_bool p vx
+    | Some vx => builtin_unary_predicate_interp p vx
     | None => false
     end
 | ap2 p e1 e2 =>
     let v1 := Expression_evaluate ρ e1 in
     let v2 := Expression_evaluate ρ e2 in
     match v1,v2 with
-    | Some vx, Some vy => builtin_binary_predicate_interp_bool p vx vy
+    | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
     | _,_ => false
     end
 end
@@ -1591,7 +1591,7 @@ Qed.
 #[export]
 Program Instance Matches_val_ap
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
+    
     : Matches unit AtomicProposition variable
 := {|
     matchesb := fun a b c => val_satisfies_ap_bool a c;
@@ -1641,7 +1641,7 @@ Next Obligation.
         simpl.
         ltac1:(case_match).
         {
-            apply cs_up.
+            apply idP.
         }
         {
             apply ReflectF. intros HContra. exact HContra.
@@ -1652,7 +1652,7 @@ Next Obligation.
         simpl.
         ltac1:(repeat case_match).
         {
-            apply cs_bp.
+            apply idP.
         }
         {
             apply ReflectF. intros HContra. exact HContra.
@@ -1735,7 +1735,6 @@ Fail Next Obligation.
 
 Fixpoint val_satisfies_c_bool
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
     (ρ : Valuation)
     (c : Constraint)
     : bool :=
@@ -1748,7 +1747,6 @@ end.
 
 Lemma val_satisfies_valuation
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
     ρ c
     :
     val_satisfies_c_bool ρ c = true ->
@@ -1771,7 +1769,7 @@ Qed.
 #[export]
 Program Instance Matches_val_c
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
+    
     : Matches unit Constraint variable
 := {|
     matchesb := fun a b c => val_satisfies_c_bool a c;
@@ -1789,8 +1787,6 @@ Next Obligation.
         apply reflect_iff in IHb1.
         apply reflect_iff in IHb2.
         unfold satisfies; simpl.
-        unfold val_satisfies_c_bool; simpl.
-        fold (@val_satisfies_c_bool Σ Cβ).
         unfold satisfies in IHb1.
         unfold satisfies in IHb2.
         simpl in *|-.
@@ -1955,7 +1951,7 @@ Fail Next Obligation.
 
 Definition valuation_satisfies_sc_bool
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
+    
     (ρ : Valuation)
     (sc : SideCondition) : bool :=
 match sc with
@@ -1966,7 +1962,7 @@ end.
 #[export]
 Program Instance Matches_valuation_sc
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
+    
     :
     Matches unit SideCondition variable
 := {|
@@ -2010,7 +2006,6 @@ Fail Next Obligation.
 #[export]
 Program Instance Matches_valuation_scs
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
     :
     Matches unit (list SideCondition) variable
 := {|
@@ -2085,7 +2080,7 @@ Fail Next Obligation.
 #[export]
 Program Instance Matches__builtin__Expr
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
+    
     :
     Matches builtin_value (Expression) variable
 := {|

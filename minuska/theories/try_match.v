@@ -1491,7 +1491,6 @@ Fail Next Obligation.
 #[export]
 Instance TryMatch__GroundTerm__OpenTerm
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
     :
     TryMatch GroundTerm OpenTerm
 .

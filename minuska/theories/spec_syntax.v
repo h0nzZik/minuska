@@ -81,13 +81,13 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
     builtin_unary_predicate_interp
         : builtin_unary_predicate 
         -> (GroundTerm' symbol builtin_value)
-        -> Prop ;
+        -> bool ;
 
     builtin_binary_predicate_interp
         : builtin_binary_predicate 
         -> (GroundTerm' symbol builtin_value)
         -> (GroundTerm' symbol builtin_value)
-        -> Prop ;
+        -> bool ;
     
     builtin_unary_function_interp
         : builtin_unary_function
@@ -568,39 +568,3 @@ Section countable.
     Qed.
 
 End countable.
-
-
-
-Class ComputableBuiltins
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    {Β : Builtin}
-:= {
-    builtin_unary_predicate_interp_bool :
-        builtin_unary_predicate ->
-        (GroundTerm' symbol builtin_value) ->
-        bool ; 
-
-    builtin_binary_predicate_interp_bool :
-        builtin_binary_predicate ->
-        (GroundTerm' symbol builtin_value) ->
-        (GroundTerm' symbol builtin_value) ->
-        bool ;
-
-    cs_up :
-        forall
-            (p : builtin_unary_predicate)
-            (e : (GroundTerm' symbol builtin_value)),
-            reflect
-                (builtin_unary_predicate_interp p e)
-                (builtin_unary_predicate_interp_bool p e) ;
-
-    cs_bp :
-        forall
-            (p : builtin_binary_predicate)
-            (e1 : (GroundTerm' symbol builtin_value))
-            (e2 : (GroundTerm' symbol builtin_value)),
-            reflect
-                (builtin_binary_predicate_interp p e1 e2)
-                (builtin_binary_predicate_interp_bool p e1 e2) ;
-}.

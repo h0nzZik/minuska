@@ -7,7 +7,6 @@ From Minuska Require Import
     syntax_properties
     semantics_properties
     flattened
-    (*flatten*)
     basic_matching
     try_match
 .
@@ -46,7 +45,6 @@ end.
 
 Definition evaluate_sc
     {Σ : StaticModel}
-    {Cβ : ComputableBuiltins}
     (ρ : Valuation)
     (sc : SideCondition)
     : bool :=
@@ -76,7 +74,7 @@ Definition evaluate_rhs_pattern
 
 Definition rewrite_with
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (r : FlattenedRewritingRule)
     (g : GroundTerm)
     : option GroundTerm
@@ -89,7 +87,7 @@ Definition rewrite_with
 
 Lemma evaluate_rhs_pattern_correct
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (φ : RhsPattern)
     (ρ : Valuation)
     (g : GroundTerm)
@@ -447,7 +445,7 @@ Qed.
 
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (g : GroundTerm)
     (r : FlattenedRewritingRule)
     : option Valuation
@@ -470,7 +468,7 @@ Instance VarsOf_list_SideCondition
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (g : GroundTerm)
     (r : FlattenedRewritingRule)
     (ρ : gmap variable GroundTerm)
@@ -645,7 +643,7 @@ Qed.
 
 Definition thy_lhs_match_one
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
     : option (FlattenedRewritingRule * Valuation)%type
@@ -669,7 +667,7 @@ Definition thy_lhs_match_one
 
 Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (e : GroundTerm)
     (Γ : FlattenedRewritingTheory)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
@@ -799,7 +797,7 @@ Qed.
 
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
     (r : FlattenedRewritingRule)
@@ -861,7 +859,7 @@ Qed.
 
 Definition naive_interpreter
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (Γ : list FlattenedRewritingRule)
     (e : GroundTerm)
     : option GroundTerm
@@ -876,7 +874,7 @@ Definition naive_interpreter
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
-    {CΣ : ComputableBuiltins}
+    
     (Γ : FlattenedRewritingTheory)
     (wfΓ : FlattenedRewritingTheory_wf Γ)
     : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).

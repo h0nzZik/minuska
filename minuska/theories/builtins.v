@@ -44,31 +44,16 @@ Module empty_builtin.
                 := fun p v1 v2 => match p with end ;
         |}.
 
-        #[export]
-        Program Instance Cβ
-            :
-            @ComputableBuiltins _ _ β
-        := {|
-            builtin_unary_predicate_interp_bool := fun _ _ => false ;
-            builtin_binary_predicate_interp_bool := fun _ _ _ => false ;
-        |}.
-        Next Obligation.
-            destruct p.
-        Qed.
-        Next Obligation.
-            destruct p.
-        Qed.
-        Fail Next Obligation.
-
     End sec.
 
 End empty_builtin.
 
 Module nat_builtin.
 
-    Inductive NatUnaryP : Set := 
+    Inductive NatUnaryP : Set :=
+    | Nat_isNat
     | Nat_isZero
-    | Nat_isSuccc
+    | Nat_isSucc
     .
 
     #[export]
@@ -167,34 +152,70 @@ Module nat_builtin.
                 := NatBinaryF ;
             builtin_unary_predicate_interp
                 := fun p v =>
-                match p, v with
-                | Nat_isZero, aoo_operand (Some 0) => True
-                | _, _ => False
-                end ;
+                match p with
+                | Nat_isZero =>
+                    match v with
+                    | aoo_operand (Some 0) => true
+                    | _ => false
+                    end
+                | Nat_isSucc =>
+                    match v with
+                    | aoo_operand (Some (S _)) => true
+                    | _ => false
+                    end
+                | Nat_isNat =>
+                    match v with
+                    | aoo_operand _ => true
+                    | _ => false
+                    end
+                end;
 
             builtin_binary_predicate_interp
                 := fun p v1 v2 =>
-                match p, v1, v2 with
-                | Nat_isLe, (aoo_operand (Some x)), (aoo_operand (Some y))
-                => x < y
-                | _,_,_ => False
-                end ;
-
+                match p with
+                | Nat_isLe =>
+                    match v1,v2 with
+                    | (aoo_operand (Some x)), (aoo_operand (Some y)) =>
+                        x <=? y
+                    | _, _ => false
+                    end
+                | Nat_isLt =>
+                    match v1,v2 with
+                    | (aoo_operand (Some x)), (aoo_operand (Some y)) =>
+                        x <? y
+                    | _, _ => false
+                    end
+                end;
+ 
             builtin_unary_function_interp
                 := fun p v =>
                 match p with
-                | Nat_succOf => S <b1$> v
-                | _ => err
-                end ;
+                | Nat_succOf =>
+                    S <b1$> v
+                | Nat_predOf =>
+                    match v with
+                    | aoo_operand (Some 0) => aoo_operand None
+                    | aoo_operand (Some (S n)) => (aoo_operand (Some n))
+                    | _ => err
+                    end
+                end;
 
             builtin_binary_function_interp
                 := fun p v1 v2 =>
-                match p, v1, v2 with
-                | Nat_plus, (aoo_operand (Some x)), (aoo_operand (Some y))
-                => aoo_operand (Some (x + y))
-                | _, _, _ => err
+                match p with
+                | Nat_plus =>
+                    match v1, v2 with
+                    | (aoo_operand (Some x)), (aoo_operand (Some y))
+                        => aoo_operand (Some (x + y))
+                    | _,_ => err
+                    end
+                | Nat_minus =>
+                    match v1, v2 with
+                    | (aoo_operand (Some x)), (aoo_operand (Some y))
+                        => aoo_operand (Some (x - y))
+                    | _,_ => err
+                    end
                 end ;
-    
         |}.
 
     End sec.

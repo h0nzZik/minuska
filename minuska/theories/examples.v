@@ -21,8 +21,7 @@ Module example_1.
 
     #[local]
     Instance Σ : StaticModel := default_model (empty_builtin.β).
-    #[local]
-    Instance CΒ : ComputableBuiltins := empty_builtin.Cβ.
+
 
     Definition Γ : FlattenedRewritingTheory
         := Eval vm_compute in (to_theory (process_declarations ([
@@ -123,8 +122,7 @@ Import empty_builtin.
 
     #[local]
     Instance Σ : StaticModel := default_model (empty_builtin.β).
-    #[local]
-    Instance CΒ : ComputableBuiltins := empty_builtin.Cβ.
+
 
     Definition top := "top".
     Definition state := "state".
@@ -207,23 +205,24 @@ Import empty_builtin.
 
 End two_counters.
 
-Module computations.
+Module arith.
 
     #[local]
     Instance Σ : StaticModel := default_model (empty_builtin.β).
-    #[local]
-    
-    Instance CΒ : ComputableBuiltins := empty_builtin.Cβ.
+
     Definition state := "state".
     Definition cseq := "cseq".
-(*
+    Definition emptyCseq := ".cseq".
+
+    (*
     Definition Γ : FlattenedRewritingTheory :=
     Eval vm_compute in (to_theory (process_declarations ([
         rule ["my-rule"]:
-             top [< cseq [< , >], state [< s [< $M >], $N >] >]
-          => top [< , state [< $M, s [< $N >]  >] >]
+             top [< cseq [< , >], $STATE >] >]
+          => top [< cseq [<, >] , $STATE >]
              requires []
     ]))).
-*)
-End computations.
+    *)
+
+End arith.
 
