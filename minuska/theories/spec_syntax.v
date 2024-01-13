@@ -58,15 +58,10 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
     builtin_value_eqdec
         :: EqDecision builtin_value ;
     
-    builtin_unary_predicate
+    builtin_nullary_function
         : Type ;
-    builtin_unary_predicate_eqdec
-        :: EqDecision builtin_unary_predicate ;
-    
-    builtin_binary_predicate
-        : Type ;
-    builtin_binary_predicate_eqdec
-        :: EqDecision builtin_binary_predicate ;
+    builtin_nullary_function_eqdec
+        :: EqDecision builtin_nullary_function ;
 
     builtin_unary_function
         : Type ;
@@ -77,18 +72,11 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
         : Type ;
     builtin_binary_function_eqdec
         :: EqDecision builtin_binary_function ;
-
-    builtin_unary_predicate_interp
-        : builtin_unary_predicate 
-        -> (GroundTerm' symbol builtin_value)
-        -> bool ;
-
-    builtin_binary_predicate_interp
-        : builtin_binary_predicate 
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value)
-        -> bool ;
     
+    builtin_nullary_function_interp
+        : builtin_nullary_function
+        -> (GroundTerm' symbol builtin_value) ;
+
     builtin_unary_function_interp
         : builtin_unary_function
         -> (GroundTerm' symbol builtin_value)
@@ -130,22 +118,13 @@ Inductive Expression
     :=
 | ft_element (e : GroundTerm)
 | ft_variable (x : variable)
+| ft_nullary (f : builtin_nullary_function)
 | ft_unary (f : builtin_unary_function) (t : Expression)
 | ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
 .
 
-(* TODO add equality of expressions *)
 Inductive AtomicProposition {Σ : StaticModel} :=
 | apeq (e1 : Expression) (e2 : Expression)
-| ap1 (p : builtin_unary_predicate) (e1 : Expression)
-| ap2 (p : builtin_binary_predicate) (e1 e2 : Expression)
-.
-
-Inductive Constraint {Σ : StaticModel} :=
-| c_True
-| c_atomic (ap : AtomicProposition)
-| c_and (c1 c2 : Constraint)
-(*| c_not (c : Constraint) *) (* This is not extensive with respect to satisfaction*)
 .
 
 Inductive BuiltinOrVar {Σ : StaticModel} :=
@@ -163,7 +142,7 @@ Record Match {Σ : StaticModel} := mkMatch {
 }.
 
 Inductive SideCondition {Σ : StaticModel} :=
-| sc_constraint (c : Constraint)
+| sc_constraint (c : AtomicProposition)
 | sc_match (m : Match)
 .
 
@@ -210,7 +189,6 @@ Inductive LeftRight : Set := LR_Left | LR_Right.
 
 Equations Derive NoConfusion for AppliedOperator'.
 Equations Derive NoConfusion for AtomicProposition.
-Equations Derive NoConfusion for Constraint.
 Equations Derive NoConfusion for Expression.
 Equations Derive NoConfusion for WithASideCondition.
 Equations Derive NoConfusion for LocalRewrite.
@@ -275,14 +253,6 @@ Section eqdec.
     #[export]
     Instance atomicProposition_eqdec {Σ : StaticModel}
         : EqDecision AtomicProposition
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance constraint_eqdec {Σ : StaticModel}
-        : EqDecision Constraint
     .
     Proof.
         ltac1:(solve_decision).

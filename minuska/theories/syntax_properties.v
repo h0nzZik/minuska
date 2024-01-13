@@ -10,6 +10,7 @@ Fixpoint vars_of_Expression
 match t with
 | ft_element _ => ∅
 | ft_variable x => {[x]}
+| ft_nullary _ => ∅
 | ft_unary _ t' => vars_of_Expression t'
 | ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
 end.
@@ -29,8 +30,6 @@ Definition vars_of_AP
     : gset variable :=
 match ap with
 | apeq e1 e2 => vars_of e1 ∪ vars_of e2
-| ap1 _ e => vars_of e
-| ap2 _ e1 e2 => vars_of e1 ∪ vars_of e2
 end.
 
 #[export]
@@ -39,26 +38,6 @@ Instance VarsOf_AP
     : VarsOf AtomicProposition variable
 := {|
     vars_of := vars_of_AP ; 
-|}.
-
-
-Fixpoint vars_of_Constraint
-    { Σ : StaticModel }
-    (c : Constraint)
-    : gset variable :=
-match c with
-| c_True => ∅
-| c_atomic ap => vars_of ap
-| c_and c1 c2 => vars_of_Constraint c1 ∪ vars_of_Constraint c2
-(*| c_not c' => vars_of_Constraint c'*)
-end.
-
-#[export]
-Instance VarsOf_Constraint
-    {Σ : StaticModel}
-    : VarsOf Constraint variable
-:= {|
-    vars_of := vars_of_Constraint ; 
 |}.
 
 Fixpoint vars_of_aosB

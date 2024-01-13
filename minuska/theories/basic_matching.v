@@ -1446,19 +1446,6 @@ match ap with
     let v1 := Expression_evaluate ρ e1 in
     let v2 := Expression_evaluate ρ e2 in
     bool_decide (v1 = v2) && isSome v1
-| ap1 p e =>
-    let v := Expression_evaluate ρ e in
-    match v with
-    | Some vx => builtin_unary_predicate_interp p vx
-    | None => false
-    end
-| ap2 p e1 e2 =>
-    let v1 := Expression_evaluate ρ e1 in
-    let v2 := Expression_evaluate ρ e2 in
-    match v1,v2 with
-    | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
-    | _,_ => false
-    end
 end
 .
 
@@ -1481,6 +1468,9 @@ Proof.
         unfold Valuation in *.
         rewrite elem_of_dom.
         exists x'. assumption.
+    }
+    {
+        ltac1:(set_solver).
     }
     {
         rewrite bind_Some in H.
@@ -1563,6 +1553,9 @@ Proof.
         }
     }
     {
+        intros ?. reflexivity.
+    }
+    {
         intros H1.
         specialize (IHt _ _ H1).
         rewrite IHt.
@@ -1636,31 +1629,6 @@ Next Obligation.
             ltac1:(simplify_eq/=).
         }
     }
-    {
-        unfold satisfies.
-        simpl.
-        ltac1:(case_match).
-        {
-            apply idP.
-        }
-        {
-            apply ReflectF. intros HContra. exact HContra.
-        }
-    }
-    {
-        unfold satisfies.
-        simpl.
-        ltac1:(repeat case_match).
-        {
-            apply idP.
-        }
-        {
-            apply ReflectF. intros HContra. exact HContra.
-        }
-        {
-            apply ReflectF. intros HContra. exact HContra.
-        }
-    }
 Qed.
 Next Obligation.
     destruct b; unfold vars_of in *; simpl in *.
@@ -1674,19 +1642,6 @@ Next Obligation.
         unfold vars_of. simpl.
         apply expression_evaluate_some_valuation in Heq2.
         apply expression_evaluate_some_valuation in H1.
-        rewrite union_subseteq.
-        split; assumption.
-    }
-    {
-        destruct (Expression_evaluate v e1) eqn:Heq>[|inversion H].
-        apply expression_evaluate_some_valuation in Heq.
-        assumption.
-    }
-    {
-        destruct (Expression_evaluate v e1) eqn:Heq1>[|inversion H].
-        destruct (Expression_evaluate v e2) eqn:Heq2>[|inversion H].
-        apply expression_evaluate_some_valuation in Heq1.
-        apply expression_evaluate_some_valuation in Heq2.
         rewrite union_subseteq.
         split; assumption.
     }
@@ -1705,147 +1660,6 @@ Next Obligation.
         }
         {
             eapply valuation_restrict_eq_subseteq>[|apply HH].
-            ltac1:(set_solver).
-        }
-    }
-    {
-        unfold vars_of in HH; simpl in *.
-        rewrite Expression_evaluate_val_restrict with (ρ1 := v1) (ρ2 := v2).
-        { reflexivity. }
-        { exact HH. }
-    }
-    {
-        unfold vars_of in HH; simpl in *.
-        rewrite Expression_evaluate_val_restrict with (ρ1 := v1) (ρ2 := v2).
-        {
-            rewrite Expression_evaluate_val_restrict with (ρ1 := v1) (ρ2 := v2).
-            reflexivity.
-            { 
-            eapply valuation_restrict_eq_subseteq>[|exact HH].
-            ltac1:(set_solver).
-            }
-        }
-        { 
-            eapply valuation_restrict_eq_subseteq>[|exact HH].
-            ltac1:(set_solver).
-        }
-    }
-Qed.
-Fail Next Obligation.
-
-Fixpoint val_satisfies_c_bool
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (c : Constraint)
-    : bool :=
-match c with
-| c_True => true
-| c_atomic ap => matchesb ρ () ap
-| c_and c1 c2 => val_satisfies_c_bool ρ c1 && val_satisfies_c_bool ρ c2
-(* | c_not c' => ~~ val_satisfies_c_bool ρ c' *)
-end.
-
-Lemma val_satisfies_valuation
-    {Σ : StaticModel}
-    ρ c
-    :
-    val_satisfies_c_bool ρ c = true ->
-    vars_of c ⊆ vars_of ρ.
-Proof.
-    induction c; unfold vars_of; simpl; intros H.
-    { ltac1:(set_solver). }
-    {
-        apply matchesb_vars_of in H.
-        exact H.
-    }
-    {
-        rewrite union_subseteq.
-        rewrite andb_true_iff in H.
-        destruct H as [H1 H2].
-        auto with core.
-    }
-Qed.
-
-#[export]
-Program Instance Matches_val_c
-    {Σ : StaticModel}
-    
-    : Matches unit Constraint variable
-:= {|
-    matchesb := fun a b c => val_satisfies_c_bool a c;
-|}.
-Next Obligation.
-    induction b.
-    {
-        apply ReflectT. exact I.
-    }
-    {
-        unfold satisfies; simpl.
-        apply matchesb_satisfies.
-    }
-    {
-        apply reflect_iff in IHb1.
-        apply reflect_iff in IHb2.
-        unfold satisfies; simpl.
-        unfold satisfies in IHb1.
-        unfold satisfies in IHb2.
-        simpl in *|-.
-        apply iff_reflect.
-        rewrite -> IHb1.
-        rewrite -> IHb2.
-        symmetry.
-        apply andb_true_iff.
-    }
-    (*
-    {
-        apply reflect_iff in IHb.
-        unfold satisfies in *; simpl in *.
-        apply iff_reflect.
-        rewrite IHb.
-        split; intros HH.
-        {
-            apply not_true_is_false in HH.
-            rewrite HH.
-            reflexivity.
-        }
-        {
-            intros HContra.
-            rewrite HContra in HH.
-            inversion HH.
-        }
-    }
-    *)
-Qed.
-Next Obligation.
-    destruct b; unfold vars_of; simpl in *.
-    { ltac1:(set_solver). }
-    {
-        apply matchesb_vars_of in H.
-        assumption.
-    }
-    {
-        rewrite andb_true_iff in H.
-        destruct H as [H1 H2].
-        apply val_satisfies_valuation in H1.
-        apply val_satisfies_valuation in H2.
-        ltac1:(set_solver).
-    }
-Qed.
-Next Obligation.
-    induction b; unfold vars_of in *; simpl in *.
-    { reflexivity. }
-    {
-        apply matchesb_insensitive.
-        exact H.
-    }
-    {
-        rewrite IHb1. rewrite IHb2. reflexivity.
-        {
-            eapply valuation_restrict_eq_subseteq>[|apply H].
-            ltac1:(set_solver).
-        }
-        {
-            eapply valuation_restrict_eq_subseteq>[|apply H].
             ltac1:(set_solver).
         }
     }

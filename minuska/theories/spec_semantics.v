@@ -45,6 +45,8 @@ Fixpoint Expression_evaluate
 match t with
 | ft_element e => Some e
 | ft_variable x => ρ !! x
+| ft_nullary f =>
+    Some (builtin_nullary_function_interp f)
 | ft_unary f t =>
     e ← Expression_evaluate ρ t;
     Some (builtin_unary_function_interp f e)
@@ -76,6 +78,9 @@ Proof.
         eapply (lookup_weaken ρ1 ρ2 x).
         { apply H. }
         { assumption. }
+    }
+    {
+        auto with nocore.
     }
     {
         do 2 (rewrite bind_Some).
@@ -121,6 +126,9 @@ Proof.
         eapply (lookup_weaken_None ρ1 ρ2 x).
         { apply H. }
         { assumption. }
+    }
+    {
+        auto with nocore.
     }
     {
         do 2 (rewrite bind_None).
@@ -218,19 +226,6 @@ match ap with
     let v1 := Expression_evaluate ρ e1 in
     let v2 := Expression_evaluate ρ e2 in
     v1 = v2 /\ is_Some v1
-| ap1 p e =>
-    let v := Expression_evaluate ρ e in
-    match v with
-    | Some vx => builtin_unary_predicate_interp p vx
-    | None => False
-    end
-| ap2 p e1 e2 =>
-    let v1 := Expression_evaluate ρ e1 in
-    let v2 := Expression_evaluate ρ e2 in
-    match v1,v2 with
-    | Some vx, Some vy => builtin_binary_predicate_interp p vx vy
-    | _,_ => False
-    end
 end
 .
 
@@ -255,101 +250,8 @@ Next Obligation.
         rewrite (Expression_evaluate_extensive_Some v1 v2 e2 x H Hx).
         reflexivity.
     }
-    {
-        destruct (Expression_evaluate v1 e1) eqn:Heq1, (Expression_evaluate v2 e1) eqn:Heq2.
-        {
-            rewrite (Expression_evaluate_extensive_Some v1 v2 e1 g H Heq1) in Heq2.
-            inversion Heq2; subst; clear Heq2.
-            assumption.
-        }
-        {
-            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq2.
-            {
-                ltac1:(simplify_eq/=).
-            }
-            { assumption. }
-        }
-        {
-            inversion H0.
-        }
-        {
-            inversion H0.
-        }
-    }
-    {
-        destruct
-            (Expression_evaluate v1 e1) eqn:Heq1,
-            (Expression_evaluate v2 e1) eqn:Heq2,
-            (Expression_evaluate v1 e2) eqn:Heq3,
-            (Expression_evaluate v2 e2) eqn:Heq4;
-            try ltac1:(contradiction).
-        {
-            rewrite (Expression_evaluate_extensive_Some v1 v2 e1 g H Heq1) in Heq2.
-            inversion Heq2; subst; clear Heq2.
-            rewrite (Expression_evaluate_extensive_Some v1 v2 e2 g1 H Heq3) in Heq4.
-            inversion Heq4; subst; clear Heq4.
-            assumption.
-        }
-        {
-            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq4.
-            {
-                ltac1:(simplify_eq/=).
-            }
-            { assumption. }
-        }
-        {
-            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq2.
-            {
-                ltac1:(simplify_eq/=).
-            }
-            { assumption. }
-        }
-        {
-            apply (Expression_evaluate_extensive_None) with (ρ1 := v1) in Heq2.
-            {
-                ltac1:(simplify_eq/=).
-            }
-            { assumption. }
-        }
-    }
 Qed.
 Fail Next Obligation.
-
-Fixpoint val_satisfies_c
-    {Σ : StaticModel} (ρ : Valuation) (c : Constraint)
-    : Prop :=
-match c with
-| c_True => True
-| c_atomic ap => satisfies ρ () ap
-| c_and c1 c2 => val_satisfies_c ρ c1 /\ val_satisfies_c ρ c2
-(* | c_not c' => ~ val_satisfies_c ρ c' *)
-end.
-
-#[export]
-Program Instance Satisfies_val_c
-    {Σ : StaticModel} :
-    Satisfies
-        (gmap variable GroundTerm)
-        unit
-        Constraint
-        variable
-:= {|
-    satisfies := fun a b c => val_satisfies_c a c;
-|}.
-Next Obligation.
-    induction b; simpl in *.
-    { exact I. }
-    {
-        eapply satisfies_ext.
-        { exact H. }
-        { assumption. }
-    }
-    {
-        ltac1:(naive_solver).
-    }
-Qed.
-Fail Next Obligation.
-
 
 Inductive aoxy_satisfies_aoxz
     {Σ : StaticModel}

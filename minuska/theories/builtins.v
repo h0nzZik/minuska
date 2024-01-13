@@ -26,18 +26,14 @@ Module empty_builtin.
             : Builtin := {|
             builtin_value
                 := Emptyset ;
-            builtin_unary_predicate
-                := Emptyset ;
-            builtin_binary_predicate
+            builtin_nullary_function
                 := Emptyset ;
             builtin_unary_function
                 := Emptyset ;
             builtin_binary_function
                 := Emptyset ;
-            builtin_unary_predicate_interp
-                := fun p v => match p with end ;
-            builtin_binary_predicate_interp
-                := fun p v1 v2 => match p with end ;
+            builtin_nullary_function_interp
+                := fun p => match p with end ;
             builtin_unary_function_interp
                 := fun p v => match p with end ;
             builtin_binary_function_interp
@@ -65,6 +61,16 @@ Module default_builtin.
     Proof.
         ltac1:(solve_decision).
     Defined.
+
+    Inductive NullaryF : Set :=
+    | b_false
+    | b_true
+    | b_zero
+    .
+
+    #[export]
+    Instance NullaryF_eqDec : EqDecision NullaryF.
+    Proof. ltac1:(solve_decision). Defined.
 
     Inductive UnaryF : Set :=
     | b_isBuiltin (* 'a -> bool *)
@@ -248,11 +254,8 @@ Module default_builtin.
             builtin_value
                 := BuiltinValue ;
 
-            builtin_unary_predicate
-                := UnaryP ;
-
-            builtin_binary_predicate
-                := BinaryP ;
+            builtin_nullary_function
+                := NullaryF;
 
             builtin_unary_function
                 := UnaryF ;
@@ -260,12 +263,13 @@ Module default_builtin.
             builtin_binary_function
                 := BinaryF ;
 
-            (* TODO remove predicates from the definition of builtin model. *)
-            builtin_unary_predicate_interp
-                := fun p v => match p with end;
-
-            builtin_binary_predicate_interp
-                := fun p v1 v2 => match p with end;
+            builtin_nullary_function_interp
+                := fun p =>
+                match p with
+                | b_false => aoo_operand (bv_bool false)
+                | b_true => aoo_operand (bv_bool true)
+                | b_zero => aoo_operand (bv_nat 0)
+                end ;
  
             builtin_unary_function_interp
                 := fun p v =>

@@ -50,7 +50,15 @@ Proof.
         }
     }
     {
-        
+        split; intros H.
+        {
+            ltac1:(set_solver).
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
         ltac1:(rewrite <- IHt).
         split; intros [e H].
         {
@@ -142,6 +150,9 @@ Proof.
         eapply lookup_weaken in Hx2>[|apply H2].
         rewrite Hx1 in Hx2.
         inversion Hx2. subst; clear Hx2.
+        reflexivity.
+    }
+    {
         reflexivity.
     }
     {
