@@ -15,21 +15,7 @@ Require Import Logic.PropExtensionality.
 Require Import Setoid.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
-
-
-
-
-(*
-Definition GroundTerm_try_match_OpenTerm
-    {Σ : StaticModel}
-    :
-    GroundTerm -> OpenTerm -> option Valuation :=
-    ApppliedOperatorOr'_try_match_AppliedOperatorOr'
-        builtin_value
-        BuiltinOrVar
-.
-*)
-    
+  
 Definition evaluate_match
     {Σ : StaticModel}
     (ρ : Valuation)

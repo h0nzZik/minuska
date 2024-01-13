@@ -3,8 +3,12 @@ From Minuska Require Import
     spec_syntax
     flattened
     notations
+    builtins
 .
 
+
+Import default_builtin.
+Export default_builtin.Notations.
 
 Definition label {Σ : StaticModel} :=
     string
@@ -40,9 +44,16 @@ Coercion decl_ctx :
 .
 *)
 
-Notation "'rule' '[' n ']:' l => r 'requires' s"
+Notation "'rule' '[' n ']:' l => r"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => r requires s)
+        n (rule l => r requires [])
+    ))
+    (at level 200)
+.
+
+Notation "'rule' '[' n ']:' l => r 'where' s"
+    := (decl_rule (mkRuleDeclaration
+        n (rule l => r requires [sc_constraint (apeq (true)%rule_scs s%rule_scs)])
     ))
     (at level 200)
 .

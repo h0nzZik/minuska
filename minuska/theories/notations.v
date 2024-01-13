@@ -121,7 +121,6 @@ Notation "'$' x" := (ft_variable x)
     : RuleScsScope
 .
 
-
 Notation "'llrule' l => r 'requires' s"
     := (@mkFlattenedRewritingRule
         _

@@ -28,7 +28,6 @@ Module example_1.
             rule ["my_rule"]:
                 ("top" [< "s" [< "s" [< $"X" >] >] >])
              => ("top" [< $"X" >])
-             requires []
         ]))).
 
     Definition interp :=
@@ -135,7 +134,6 @@ Import empty_builtin.
         rule ["my-rule"]:
              top [< state [< s [< $M >], $N >] >]
           => top [< state [< $M, s [< $N >]  >] >]
-             requires []
     ]))).
     
 
@@ -225,16 +223,17 @@ Module arith.
         rule ["plus-nat-nat"]:
              top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
           => top [< cseq [< (ft_binary default_builtin.b_plus ($X) ($Y)) , $REST_SEQ >] >]
-             requires
-             [ sc_constraint (apeq (ft_unary default_builtin.b_isNat ($X)) (ft_nullary default_builtin.b_true))
-             ; sc_constraint (apeq (ft_unary default_builtin.b_isNat ($Y)) (ft_nullary default_builtin.b_true))
-             ]
+             where (
+                (ft_unary default_builtin.b_isNat ($X))
+                &&
+                (ft_unary default_builtin.b_isNat ($Y))
+             )
         ;
         (* TODO *)
         rule ["plus-heat-any"]:
              top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
           => top [< cseq [< (ft_binary default_builtin.b_plus ($X) ($Y)) , $REST_SEQ >] >]
-             requires []
+             
 
     ]))).
 

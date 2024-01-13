@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec_syntax
+    notations
 .
 
 Module empty_builtin.
@@ -93,6 +94,8 @@ Module default_builtin.
     Defined.
 
     Inductive BinaryF : Set :=
+    | b_eq    (* 'a -> 'b -> bool *)
+
     | b_and   (* bool -> bool -> bool *)
     | b_or    (* bool -> bool -> bool *)
     | b_iff   (* bool -> bool -> bool *)
@@ -314,6 +317,8 @@ Module default_builtin.
             builtin_binary_function_interp
                 := fun p v1 v2 =>
                 match p with
+                | b_eq =>
+                    aoo_operand (bv_bool (bool_decide (v1 = v2)))
                 | b_and =>
                     bfmap_bool_bool__bool andb v1 v2
                 | b_or =>
@@ -334,4 +339,32 @@ Module default_builtin.
         |}.
 
     End sec.
+
+
+    Locate "&&".
+    Module Notations.
+        Notation "'constant' b " :=
+            (ft_nullary b)
+            (at level 90)
+            : RuleScsScope
+        .
+
+        Notation "'true'" := (ft_nullary b_true)
+            : RuleScsScope
+        .
+
+        Notation "'false'" := (ft_nullary b_false)
+            : RuleScsScope
+        .
+
+        Notation "b1 '&&' b2" :=
+            (ft_binary default_builtin.b_and
+                (b1)%rule_scs
+                (b2)%rule_scs
+            )
+            : RuleScsScope
+        .
+
+    End Notations.
+
 End default_builtin.
