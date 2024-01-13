@@ -48,49 +48,58 @@ Module empty_builtin.
 
 End empty_builtin.
 
-Module nat_builtin.
+Module default_builtin.
 
-    Inductive NatUnaryP : Set :=
-    | Nat_isNat
-    | Nat_isZero
-    | Nat_isSucc
-    .
+    Inductive UnaryP : Set := .
 
     #[export]
-    Instance NatUnaryP_eqdec : EqDecision NatUnaryP.
+    Instance UnaryP_eqdec : EqDecision UnaryP.
     Proof.
         ltac1:(solve_decision).
     Defined.
 
-    Inductive NatBinaryP : Set :=
-    | Nat_isLe
-    | Nat_isLt
-    .
+    Inductive BinaryP : Set := .
 
     #[export]
-    Instance NatBinaryP_eqdec : EqDecision NatBinaryP.
+    Instance BinaryP_eqdec : EqDecision BinaryP.
     Proof.
         ltac1:(solve_decision).
     Defined.
 
-    Inductive NatUnaryF : Set :=
-    | Nat_succOf
-    | Nat_predOf
+    Inductive UnaryF : Set :=
+    | b_isBuiltin (* 'a -> bool *)
+    | b_isError (* 'a -> bool *)
+    | b_isBool  (* 'a -> bool *)
+    | b_isNat   (* 'a -> bool *)
+
+    | b_neg (* bool -> bool *)
+
+    | b_isZero  (* 'a -> bool *)
+    | b_isSucc  (* 'a -> bool *)
+    | b_succOf  (* nat -> nat *)
+    | b_predOf  (* nat -> nat *)
     .
 
     #[export]
-    Instance NatUnaryF_eqdec : EqDecision NatUnaryF.
+    Instance UnaryF_eqdec : EqDecision UnaryF.
     Proof.
         ltac1:(solve_decision).
     Defined.
 
-    Inductive NatBinaryF : Set :=
-    | Nat_plus
-    | Nat_minus
+    Inductive BinaryF : Set :=
+    | b_and   (* bool -> bool -> bool *)
+    | b_or    (* bool -> bool -> bool *)
+    | b_iff   (* bool -> bool -> bool *)
+    | b_xor   (* bool -> bool -> bool *)
+
+    | b_isLe  (* nat -> nat -> bool *)
+    | b_isLt  (* nat -> nat -> bool *)
+    | b_plus  (* nat -> nat -> nat *)
+    | b_minus (* nat -> nat -> nat *)
     .
 
     #[export]
-    Instance NatBinaryF_eqdec : EqDecision NatBinaryF.
+    Instance BinaryF_eqdec : EqDecision BinaryF.
     Proof.
         ltac1:(solve_decision).
     Defined.
@@ -102,100 +111,198 @@ Module nat_builtin.
             {symbols : Symbols symbol}
         .
 
+        Inductive BuiltinValue :=
+        | bv_error
+        | bv_bool (b : bool)
+        | bv_nat (n : nat)
+        .
+
+        #[export]
+        Instance BuiltinValue_eqDec : EqDecision BuiltinValue.
+        Proof. ltac1:(solve_decision). Defined.
 
         Definition err
-            {T : Type}
-        := @aoo_operand symbol (option T) None
-        .
-
-        Definition b1fmap
-            {B : Type}
-            (f : B -> B)
-            (t : GroundTerm' symbol (option B))
-            : GroundTerm' symbol (option B)
         :=
-            match t with
-            | aoo_operand x => aoo_operand (f <$> x)
-            | _ => aoo_operand None
-            end
+            @aoo_operand symbol BuiltinValue bv_error
         .
 
-        Notation "f '<b1$>' t" := (b1fmap f t) (at level 90).
-
-        Definition b2fmap
-            {B : Type}
-            (f : B -> B -> B)
-            (t1 t2 : GroundTerm' symbol (option B))
-            : GroundTerm' symbol (option B)
+        Definition isBuiltin (bv : BuiltinValue) : BuiltinValue
         :=
-            match t1,t2 with
-            | aoo_operand (Some z1), aoo_operand (Some z2) =>
-                aoo_operand (Some (f z1 z2))
-            | _,_ => aoo_operand None
-            end
+            (bv_bool true)
         .
 
+        Definition isError (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_error => true | _ => false end
+        .
+
+        Definition isBool (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_bool _ => true | _ => false end
+        .
+
+        Definition isNat (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_nat _ => true | _ => false end
+        .
+
+        Definition bfmap1
+            (f : BuiltinValue -> BuiltinValue)
+            (x : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        match x with
+        | aoo_operand x' => aoo_operand (f x')
+        | _ => err
+        end.
+
+        Definition bfmap2
+            (f : BuiltinValue -> BuiltinValue -> BuiltinValue)
+            (x y : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        match x, y with
+        | aoo_operand x', aoo_operand y' => aoo_operand (f x' y')
+        | _,_ => err
+        end.
+
+        Definition bfmap_bool__bool
+            (f : bool -> bool)
+            (x : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap1
+            (fun x' =>
+            match x' with
+            | bv_bool x'' => bv_bool (f x'')
+            | _ => bv_error
+            end
+            )
+            x
+        .
+
+        Definition bfmap_bool_bool__bool
+            (f : bool -> bool -> bool)
+            (x y : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap2
+            (fun x' y' =>
+            match x', y' with
+            | bv_bool x'', bv_bool y'' => bv_bool (f x'' y'')
+            | _, _ => bv_error
+            end
+            )
+            x y
+        .
+
+        Definition bfmap_nat__nat
+            (f : nat -> nat)
+            (x : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap1
+            (fun x' =>
+            match x' with
+            | bv_nat x'' => bv_nat (f x'')
+            | _ => bv_error
+            end
+            )
+            x
+        .
+
+        Definition bfmap_nat_nat__nat
+            (f : nat -> nat -> nat)
+            (x y : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap2
+            (fun x' y' =>
+            match x', y' with
+            | bv_nat x'', bv_nat y'' => bv_nat (f x'' y'')
+            | _, _ => bv_error
+            end
+            )
+            x y
+        .
+
+        Definition bfmap_nat_nat__bool
+            (f : nat -> nat -> bool)
+            (x y : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap2
+            (fun x' y' =>
+            match x', y' with
+            | bv_nat x'', bv_nat y'' => bv_bool (f x'' y'')
+            | _, _ => bv_error
+            end
+            )
+            x y
+        .
 
         #[export]
         Instance β
             : Builtin
         := {|
             builtin_value
-                := option nat ;
+                := BuiltinValue ;
+
             builtin_unary_predicate
-                := NatUnaryP ;
+                := UnaryP ;
+
             builtin_binary_predicate
-                := NatBinaryP ;
+                := BinaryP ;
+
             builtin_unary_function
-                := NatUnaryF ;
+                := UnaryF ;
+
             builtin_binary_function
-                := NatBinaryF ;
+                := BinaryF ;
+
+            (* TODO remove predicates from the definition of builtin model. *)
             builtin_unary_predicate_interp
-                := fun p v =>
-                match p with
-                | Nat_isZero =>
-                    match v with
-                    | aoo_operand (Some 0) => true
-                    | _ => false
-                    end
-                | Nat_isSucc =>
-                    match v with
-                    | aoo_operand (Some (S _)) => true
-                    | _ => false
-                    end
-                | Nat_isNat =>
-                    match v with
-                    | aoo_operand _ => true
-                    | _ => false
-                    end
-                end;
+                := fun p v => match p with end;
 
             builtin_binary_predicate_interp
-                := fun p v1 v2 =>
-                match p with
-                | Nat_isLe =>
-                    match v1,v2 with
-                    | (aoo_operand (Some x)), (aoo_operand (Some y)) =>
-                        x <=? y
-                    | _, _ => false
-                    end
-                | Nat_isLt =>
-                    match v1,v2 with
-                    | (aoo_operand (Some x)), (aoo_operand (Some y)) =>
-                        x <? y
-                    | _, _ => false
-                    end
-                end;
+                := fun p v1 v2 => match p with end;
  
             builtin_unary_function_interp
                 := fun p v =>
                 match p with
-                | Nat_succOf =>
-                    S <b1$> v
-                | Nat_predOf =>
+                | b_isBuiltin => bfmap1 isBuiltin v
+                | b_isError =>
                     match v with
-                    | aoo_operand (Some 0) => aoo_operand None
-                    | aoo_operand (Some (S n)) => (aoo_operand (Some n))
+                    | aoo_operand x => aoo_operand (bv_bool (isError x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_isBool =>
+                    match v with
+                    | aoo_operand x => aoo_operand (bv_bool (isBool x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_neg =>
+                    bfmap_bool__bool negb v
+                | b_isNat =>
+                    match v with
+                    | aoo_operand x => aoo_operand (bv_bool (isNat x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_isZero =>
+                    match v with
+                    | aoo_operand (bv_nat 0) => aoo_operand (bv_bool true)
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_isSucc =>
+                    match v with
+                    | aoo_operand (bv_nat (S _)) => aoo_operand (bv_bool true)
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_succOf =>
+                    bfmap_nat__nat S v
+                | b_predOf =>
+                    match v with
+                    | aoo_operand (bv_nat (S n)) => (aoo_operand (bv_nat n))
                     | _ => err
                     end
                 end;
@@ -203,20 +310,24 @@ Module nat_builtin.
             builtin_binary_function_interp
                 := fun p v1 v2 =>
                 match p with
-                | Nat_plus =>
-                    match v1, v2 with
-                    | (aoo_operand (Some x)), (aoo_operand (Some y))
-                        => aoo_operand (Some (x + y))
-                    | _,_ => err
-                    end
-                | Nat_minus =>
-                    match v1, v2 with
-                    | (aoo_operand (Some x)), (aoo_operand (Some y))
-                        => aoo_operand (Some (x - y))
-                    | _,_ => err
-                    end
+                | b_and =>
+                    bfmap_bool_bool__bool andb v1 v2
+                | b_or =>
+                    bfmap_bool_bool__bool orb v1 v2
+                | b_iff =>
+                    bfmap_bool_bool__bool eqb v1 v2
+                | b_xor =>
+                    bfmap_bool_bool__bool xorb v1 v2                    
+                | b_isLe =>
+                    bfmap_nat_nat__bool Nat.leb v1 v2
+                | b_isLt =>
+                    bfmap_nat_nat__bool Nat.ltb v1 v2
+                | b_plus =>
+                    bfmap_nat_nat__nat plus v1 v2
+                | b_minus =>
+                    bfmap_nat_nat__nat minus v1 v2
                 end ;
         |}.
 
     End sec.
-End nat_builtin.
+End default_builtin.
