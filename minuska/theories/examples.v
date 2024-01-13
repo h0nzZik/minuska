@@ -208,21 +208,37 @@ End two_counters.
 Module arith.
 
     #[local]
-    Instance Σ : StaticModel := default_model (empty_builtin.β).
+    Instance Σ : StaticModel := default_model (nat_builtin.β).
 
+    Definition top := "top".
     Definition state := "state".
     Definition cseq := "cseq".
     Definition emptyCseq := ".cseq".
+    Definition plus := "plus".
+    Definition X := "X".
+    Definition Y := "Y".
+    Definition REST_SEQ := "REST_SEQ".
+    
+    Print Constraint.
+    Print AtomicProposition.
 
-    (*
-    Definition Γ : FlattenedRewritingTheory :=
-    Eval vm_compute in (to_theory (process_declarations ([
-        rule ["my-rule"]:
-             top [< cseq [< , >], $STATE >] >]
-          => top [< cseq [<, >] , $STATE >]
+    Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
+    (to_theory (process_declarations ([
+        rule ["plus-nat-nat"]:
+             top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
+          => top [< cseq [< (ft_binary nat_builtin.Nat_plus ($X) ($Y)) , $REST_SEQ >] >]
+             requires
+             [ sc_constraint (c_atomic (ap1 nat_builtin.Nat_isNat ($X)))
+             ; sc_constraint (c_atomic (ap1 nat_builtin.Nat_isNat ($Y)))
+             ]
+        ;
+        (* TODO *)
+        rule ["plus-heat-any"]:
+             top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
+          => top [< cseq [< (ft_binary nat_builtin.Nat_plus ($X) ($Y)) , $REST_SEQ >] >]
              requires []
+
     ]))).
-    *)
 
 End arith.
 

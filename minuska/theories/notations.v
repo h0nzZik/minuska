@@ -10,10 +10,12 @@ From Minuska Require Import
 
 Declare Scope RuleLhsScope.
 Declare Scope RuleRhsScope.
+Declare Scope RuleScsScope.
 Declare Scope ConcreteScope.
 
 Delimit Scope RuleLhsScope with rule_lhs.
 Delimit Scope RuleRhsScope with rule_rhs.
+Delimit Scope RuleScsScope with rule_scs.
 Delimit Scope ConcreteScope with concrete.
 
 Structure MyApplyLhs {Σ : StaticModel} := {
@@ -114,12 +116,18 @@ Notation "'$' x" := (ft_variable x)
 .
 
 
+Notation "'$' x" := (ft_variable x)
+    (at level 200)
+    : RuleScsScope
+.
+
+
 Notation "'llrule' l => r 'requires' s"
     := (@mkFlattenedRewritingRule
         _
         (l)%rule_lhs
         (r)%rule_rhs
-        (s)
+        (s)%rule_scs
     )
     (at level 200)
 .
