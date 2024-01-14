@@ -9,14 +9,32 @@ From Minuska Require Import
 
 
 Declare Scope RuleLhsScope.
-Declare Scope RuleRhsScope.
+Declare Scope ExprScope.
 Declare Scope RuleScsScope.
 Declare Scope ConcreteScope.
 
 Delimit Scope RuleLhsScope with rule_lhs.
-Delimit Scope RuleRhsScope with rule_rhs.
+Delimit Scope ExprScope with expr.
 Delimit Scope RuleScsScope with rule_scs.
 Delimit Scope ConcreteScope with concrete.
+
+Record ExprAndBoV {Σ : StaticModel} : Type := mkExprAndBoV {
+    eab_expr : Expression ;
+    eab_bov : BuiltinOrVar ;
+}.
+
+Arguments mkExprAndBoV {Σ} eab_expr eab_bov.
+
+(*
+(* #[reversible] *)
+Coercion eab_expr : ExprAndBoV >-> Expression.
+(* #[reversible] *)
+Coercion eab_bov : ExprAndBoV >-> BuiltinOrVar.
+*)
+Notation "'$' x" :=
+    (mkExprAndBoV (ft_variable x) (bov_variable x))
+    (at level 40)
+.
 
 Structure MyApplyLhs {Σ : StaticModel} := {
     mal_T2 : Type ;
@@ -30,7 +48,7 @@ Arguments my_apply_lhs {_} {m} _ _.
 Arguments my_apply_lhs : simpl never.
 
 Definition MyApplyLhs_operand {Σ : StaticModel} : MyApplyLhs := {|
-    my_apply_lhs := fun x y => ao_app_operand x y ;
+    my_apply_lhs := fun x y => ao_app_operand x (eab_bov y) ;
 |}.
 Canonical MyApplyLhs_operand.
 
@@ -38,7 +56,6 @@ Definition MyApplyLhs_ao {Σ : StaticModel} : MyApplyLhs := {|
     my_apply_lhs := fun x y => @ao_app_ao symbol BuiltinOrVar x y ;
 |}.
 Canonical MyApplyLhs_ao.
-
 
 Structure MyApplyRhs {Σ : StaticModel} := {
     mar_T2 : Type ;
@@ -52,7 +69,7 @@ Arguments my_apply_rhs {_} {m} _ _.
 Arguments my_apply_rhs : simpl never.
 
 Definition MyApplyRhs_operand {Σ : StaticModel} : MyApplyRhs := {|
-    my_apply_rhs := fun x y => ao_app_operand x y ;
+    my_apply_rhs := fun x y => ao_app_operand x (eab_expr y) ;
 |}.
 Canonical MyApplyRhs_operand.
 
@@ -96,7 +113,7 @@ Notation "f [< y , .. , z >]"
 Notation "f [< y , .. , z >]"
     := (my_apply_rhs .. (my_apply_rhs (ao_operator f) y) .. z)
     (at level 90)
-    : RuleRhsScope
+    : ExprScope
 .
 
 Notation "f [< y , .. , z >]"
@@ -105,27 +122,11 @@ Notation "f [< y , .. , z >]"
     : ConcreteScope
 .
 
-Notation "'$' x" := (bov_variable x)
-    (at level 200)
-    : RuleLhsScope
-.
-
-Notation "'$' x" := (ft_variable x)
-    (at level 200)
-    : RuleRhsScope
-.
-
-
-Notation "'$' x" := (ft_variable x)
-    (at level 200)
-    : RuleScsScope
-.
-
 Notation "'llrule' l => r 'requires' s"
     := (@mkFlattenedRewritingRule
         _
         (l)%rule_lhs
-        (r)%rule_rhs
+        (r)%expr
         (s)%rule_scs
     )
     (at level 200)

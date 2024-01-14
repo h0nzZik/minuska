@@ -341,14 +341,8 @@ Module default_builtin.
     End sec.
 
 
-    Locate "&&".
     Module Notations.
-        Notation "'constant' b " :=
-            (ft_nullary b)
-            (at level 90)
-            : RuleScsScope
-        .
-
+        
         Notation "'true'" := (ft_nullary b_true)
             : RuleScsScope
         .
@@ -359,10 +353,19 @@ Module default_builtin.
 
         Notation "b1 '&&' b2" :=
             (ft_binary default_builtin.b_and
-                (b1)%rule_scs
-                (b2)%rule_scs
+                (b1)%expr
+                (b2)%expr
             )
             : RuleScsScope
+        .
+
+        Notation "'isNat' t" :=
+            (ft_unary b_isNat t)
+            (at level 90)
+        .
+
+        Notation "'(' x '+Nat' y ')'" :=
+            (ft_binary b_plus (x)%expr (y)%expr)
         .
 
     End Notations.

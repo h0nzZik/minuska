@@ -14,20 +14,20 @@ From Minuska Require Import
     frontend
 .
 
-
-
-
 Module example_1.
 
     #[local]
     Instance Σ : StaticModel := default_model (empty_builtin.β).
 
+    Definition X : variable := "X".
+    Definition top : symbol := "top".
+    Definition s : symbol := "s".
 
     Definition Γ : FlattenedRewritingTheory
         := Eval vm_compute in (to_theory (process_declarations ([
             rule ["my_rule"]:
-                ("top" [< "s" [< "s" [< $"X" >] >] >])
-             => ("top" [< $"X" >])
+                (top [< s [< s [< $X >] >] >])
+             => (top [< $X >])
         ]))).
 
     Definition interp :=
@@ -205,6 +205,9 @@ End two_counters.
 
 Module arith.
 
+    Import default_builtin.
+    Import default_builtin.Notations.
+
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).
 
@@ -213,26 +216,41 @@ Module arith.
     Definition cseq := "cseq".
     Definition emptyCseq := ".cseq".
     Definition plus := "plus".
-    Definition X := "X".
-    Definition Y := "Y".
-    Definition REST_SEQ := "REST_SEQ".
-    
+    Definition X : variable := "X".
+    Definition Y : variable := "Y".
+    Definition REST_SEQ : variable := "$REST_SEQ".
+
+    Declare Scope LangArithScope.
+    Delimit Scope LangArithScope with larith.
+
+    (*
+        What type do we want this to have?
+        Either it occurs on the LHS, and then
+        both [x] and [y] need to be [OpenTerm]s;
+        or it occurs on the RHS, and then
+        both [x] and [y] need to be [RhsPattern].
+        In both cases, it is just [AppliedOperatorOr symbol ?T].
+
+        Regarding [$X], it has to be typeable as both [BuiltinOrVar]
+        and [Expression]
+    *)
+    Notation "x '+' y" := (plus [< x, y >]).
 
     Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
     (to_theory (process_declarations ([
         rule ["plus-nat-nat"]:
              top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
-          => top [< cseq [< (ft_binary default_builtin.b_plus ($X) ($Y)) , $REST_SEQ >] >]
+          => top [< cseq [< ($X +Nat $Y) , $REST_SEQ >] >]
              where (
-                (ft_unary default_builtin.b_isNat ($X))
+                (isNat $X)
                 &&
-                (ft_unary default_builtin.b_isNat ($Y))
+                (isNat $Y)
              )
         ;
         (* TODO *)
         rule ["plus-heat-any"]:
              top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
-          => top [< cseq [< (ft_binary default_builtin.b_plus ($X) ($Y)) , $REST_SEQ >] >]
+          => top [< cseq [< ($X +Nat $Y) , $REST_SEQ >] >]
              
 
     ]))).

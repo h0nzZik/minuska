@@ -10,6 +10,10 @@ From Minuska Require Import
 Import default_builtin.
 Export default_builtin.Notations.
 
+
+Arguments ft_unary {Σ} f (t)%expr.
+Arguments ft_binary {Σ} f (t1)%expr (t2)%expr.
+
 Definition label {Σ : StaticModel} :=
     string
 .
@@ -35,25 +39,16 @@ Inductive Declaration {Σ : StaticModel} :=
 | decl_ctx (c : ContextDeclaration)
 .
 
-(*
-Coercion decl_rule :
-    RuleDeclaration >-> Declaration
-.
-Coercion decl_ctx :
-    ContextDeclaration >-> Declaration
-.
-*)
-
 Notation "'rule' '[' n ']:' l => r"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => r requires [])
+        n (rule l => (r)%expr requires [])
     ))
     (at level 200)
 .
 
 Notation "'rule' '[' n ']:' l => r 'where' s"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => r requires [sc_constraint (apeq (true)%rule_scs s%rule_scs)])
+        n (rule l => (r)%expr requires [sc_constraint (apeq (true)%rule_scs (s)%expr)])
     ))
     (at level 200)
 .
