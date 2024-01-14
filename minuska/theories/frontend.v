@@ -11,8 +11,8 @@ Import default_builtin.
 Export default_builtin.Notations.
 
 
-Arguments ft_unary {Σ} f (t)%expr.
-Arguments ft_binary {Σ} f (t1)%expr (t2)%expr.
+Arguments ft_unary {Σ} f (t).
+Arguments ft_binary {Σ} f (t1) (t2).
 
 Definition label {Σ : StaticModel} :=
     string
@@ -41,14 +41,14 @@ Inductive Declaration {Σ : StaticModel} :=
 
 Notation "'rule' '[' n ']:' l => r"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => (r)%expr requires [])
+        n (rule l => (r) requires [])
     ))
     (at level 200)
 .
 
 Notation "'rule' '[' n ']:' l => r 'where' s"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => (r)%expr requires [sc_constraint (apeq (true)%rule_scs (s)%expr)])
+        n (rule l => (r) requires [sc_constraint (apeq ((ft_nullary b_true)) (s))])
     ))
     (at level 200)
 .

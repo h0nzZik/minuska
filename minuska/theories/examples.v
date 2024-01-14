@@ -22,7 +22,7 @@ Module example_1.
     Definition X : variable := "X".
     Definition top : symbol := "top".
     Definition s : symbol := "s".
-
+    
     Definition Γ : FlattenedRewritingTheory
         := Eval vm_compute in (to_theory (process_declarations ([
             rule ["my_rule"]:
@@ -117,7 +117,7 @@ End example_1.
 
 Module two_counters.
 
-Import empty_builtin.
+    Import empty_builtin.
 
     #[local]
     Instance Σ : StaticModel := default_model (empty_builtin.β).
@@ -126,9 +126,10 @@ Import empty_builtin.
     Definition top := "top".
     Definition state := "state".
     Definition s := "s".
-    Definition M := "M".
+    Definition M : variable := "M".
     Definition N := "N".
 
+    Set Typeclasses Debug.
     Definition Γ : FlattenedRewritingTheory :=
     Eval vm_compute in (to_theory (process_declarations ([
         rule ["my-rule"]:
@@ -236,10 +237,11 @@ Module arith.
     *)
     Notation "x '+' y" := (plus [< x, y >]).
 
+    Set Debug "unification".
     Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
     (to_theory (process_declarations ([
         rule ["plus-nat-nat"]:
-             top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
+             top [< cseq [< ($X + $Y), $REST_SEQ >] >]
           => top [< cseq [< ($X +Nat $Y) , $REST_SEQ >] >]
              where (
                 (isNat $X)

@@ -343,6 +343,7 @@ Module default_builtin.
 
     Module Notations.
         
+        (*
         Notation "'true'" := (ft_nullary b_true)
             : RuleScsScope
         .
@@ -350,14 +351,15 @@ Module default_builtin.
         Notation "'false'" := (ft_nullary b_false)
             : RuleScsScope
         .
-
+        *)
         Notation "b1 '&&' b2" :=
             (ft_binary default_builtin.b_and
-                (b1)%expr
-                (b2)%expr
+                (b1)
+                (b2)
             )
-            : RuleScsScope
+            : SymbolicScope
         .
+        
 
         Notation "'isNat' t" :=
             (ft_unary b_isNat t)
@@ -365,7 +367,7 @@ Module default_builtin.
         .
 
         Notation "'(' x '+Nat' y ')'" :=
-            (ft_binary b_plus (x)%expr (y)%expr)
+            (ft_binary b_plus (mycoerc x) (mycoerc y))
         .
 
     End Notations.
