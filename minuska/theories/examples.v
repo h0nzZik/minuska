@@ -254,25 +254,13 @@ Module arith.
     Declare Scope LangArithScope.
     Delimit Scope LangArithScope with larith.
 
-    (*
-        What type do we want this to have?
-        Either it occurs on the LHS, and then
-        both [x] and [y] need to be [OpenTerm]s;
-        or it occurs on the RHS, and then
-        both [x] and [y] need to be [RhsPattern].
-        In both cases, it is just [AppliedOperatorOr symbol ?T].
-
-        Regarding [$X], it has to be typeable as both [BuiltinOrVar]
-        and [Expression]
-    *)
     Notation "x '+' y" := (plus [ x, y ]).
 
-    Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
-    (to_theory (process_declarations ([
+    Set Printing All.
+    Definition Decls : list Declaration := [
         rule ["plus-nat-nat"]:
              cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
-          (* => top [< cseq [< ($X + $Y), $REST_SEQ >] >] *)
-          ~> cfg [ cseq [ (($X +Nat $Y) +Nat $Y) , $REST_SEQ ] ]
+          ~> (cfg [ (cseq [ (ft_binary b_plus ($X) ($Y)) (*(($X +Nat $Y) +Nat $Y)*) , $REST_SEQ ])%rs ])%rs
              (*where (
                 (isNat $X)
                 &&
@@ -285,7 +273,10 @@ Module arith.
           => top [< cseq [< ($X +Nat $Y) , $REST_SEQ >] >]
         *)   
 
-    ]))).
+    ].
+
+    Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
+    (to_theory (process_declarations (Decls))).
 
 End arith.
 

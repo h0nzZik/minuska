@@ -372,6 +372,7 @@ Module default_builtin.
         .
         *)
         Print ft_binary.
+        About ft_binary.
         Notation "'(' x '+Nat' y ')'" :=
             (ft_binary b_plus (x) (y))
         .

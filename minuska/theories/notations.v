@@ -325,22 +325,22 @@ Notation "'[' x ']'"
     (@cons
         ((AppliedOperatorOr' symbol _))
         (to_aoo_opt x)
-        (@nil ((AppliedOperatorOr' symbol _)))
+        (@nil ((AppliedOperatorOr' symbol operand_type)))
     )
     : RuleScope
 .
 
 Notation "'[' x , y , .. , z ']'"
 :=
-    (@cons ((AppliedOperatorOr' symbol _)) (to_aoo_opt x)
+    (@cons ((AppliedOperatorOr' symbol operand_type)) (to_aoo_opt x)
     (@cons 
-        ((AppliedOperatorOr' symbol _))
+        ((AppliedOperatorOr' symbol operand_type))
         (to_aoo_opt y)
         .. 
         (
-            @cons ((AppliedOperatorOr' symbol _))
+            @cons ((AppliedOperatorOr' symbol operand_type))
             (to_aoo_opt z)
-            (@nil ((AppliedOperatorOr' symbol _)))
+            (@nil ((AppliedOperatorOr' symbol operand_type)))
         )
         ..))
     : RuleScope
