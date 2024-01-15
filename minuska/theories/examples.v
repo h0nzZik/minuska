@@ -49,10 +49,11 @@ Module example_1.
     Arguments s {_br} _%rs.
 
     Definition Decls : list Declaration := [
-        rule ["my_rule"]:
-            cfg [ s [ s [ ($X) ] ] ]
-            ~> cfg [ $X ]
-        
+        decl_rule (
+            rule ["my_rule"]:
+                cfg [ s [ s [ ($X) ] ] ]
+                ~> cfg [ $X ]
+        )
     ].
 
     Definition Γ : FlattenedRewritingTheory
@@ -168,9 +169,11 @@ Module two_counters.
 
     Definition Γ : FlattenedRewritingTheory :=
     Eval vm_compute in (to_theory (process_declarations ([
-        rule ["my-rule"]:
-             cfg [ state [ s [ $M ], $N ] ]
-          ~> cfg [ state [ $M, s [ $N ]  ] ]
+        decl_rule (
+            rule ["my-rule"]:
+                cfg [ state [ s [ $M ], $N ] ]
+            ~> cfg [ state [ $M, s [ $N ]  ] ]
+        )
     ]))).
     
 
@@ -274,35 +277,43 @@ Module arith.
         (isNat x)
     .
 
+
+
     Definition Decls : list Declaration := [
-        rule ["plus-nat-nat"]:
-             cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
-          ~> (cfg [ (cseq [ ($X +Nat $Y) , $REST_SEQ ])%rs ])%rs
-             where (
-                (isNat ($X))
-                &&
-                (isNat ($Y))
-             )
-        ;
-        rule ["plus-heat-1"]:
-             cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-          ~> cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
-             where ( ~~ (isResult ($X)) )
-        ;
-        rule ["plus-cool-1"]: 
-             cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
-          ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-             where ((isResult ($X)) )
-        ;
-        rule ["plus-heat-2"]:
-             cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-          ~> cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
-             where ( isResult ($X) && ~~ (isResult ($Y)) )
-        ;
-        rule ["plus-cool-2"]: 
-             cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
-          ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-             where ((isResult ($Y)) )
+        decl_rule (
+            rule ["plus-nat-nat"]:
+                cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
+            ~> (cfg [ (cseq [ ($X +Nat $Y) , $REST_SEQ ])%rs ])%rs
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_rule (
+            rule ["plus-heat-1"]:
+                cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
+            ~> cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
+                where ( ~~ (isResult ($X)) )
+        );
+        decl_rule (
+            rule ["plus-cool-1"]: 
+                cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
+            ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
+                where ((isResult ($X)) )
+        );
+        decl_rule (
+            rule ["plus-heat-2"]:
+                cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
+            ~> cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
+                where ( isResult ($X) && ~~ (isResult ($Y)) )
+        );
+        decl_rule (
+            rule ["plus-cool-2"]: 
+                cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
+            ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
+                where ((isResult ($Y)) )
+        )
     ].
 
     Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
@@ -315,7 +326,7 @@ Module arith.
     Definition initial (x: nat) (ly : list nat) :=
         (ground (
             cfg [
-                cseq ([ 
+                cseq [ 
                     (foldr 
                         (fun a (b : AppliedOperatorOr' symbol builtin_value) =>
                             plus [((bv_nat a)) , b]
@@ -324,7 +335,7 @@ Module arith.
                         ly
                     ),
                     emptyCseq []
-                    ])%rs
+                    ]
                 ]
             )
         )

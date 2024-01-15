@@ -126,6 +126,19 @@ Definition to_AppliedOperator'
         (ao_operator s)
 .
 
+Definition apply_symbol'
+    {Σ : StaticModel}
+    {T : Type}
+    (s : symbol)
+: 
+    list ((AppliedOperatorOr' symbol T)) ->
+    AppliedOperatorOr' symbol T
+:=
+    fun l =>
+    (to_AppliedOperatorOr' (inr (to_AppliedOperator' ((s):symbol) l)))
+.
+
+
 Definition apply_symbol
     {Σ : StaticModel}
     {_br : BasicResolver}
