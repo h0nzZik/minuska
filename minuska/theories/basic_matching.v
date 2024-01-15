@@ -1830,8 +1830,10 @@ Next Obligation.
     apply iff_reflect.
     rewrite Forall_forall.
     rewrite forallb_forall.
-    split; intros H' x Hin; specialize (H' x Hin).
+    split; intros H' x Hin.
     {
+        apply elem_of_list_In in Hin.
+        specialize (H' x Hin).
         eapply introT.
         { apply matchesb_satisfies. }
         {
@@ -1839,6 +1841,8 @@ Next Obligation.
         }
     }
     {
+        apply elem_of_list_In in Hin.
+        specialize (H' x Hin).
         eapply elimT.
         { apply matchesb_satisfies. }
         {

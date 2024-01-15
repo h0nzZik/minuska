@@ -728,7 +728,6 @@ Proof.
             rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             unfold FlattenedRewritingRule_wf in wfΓ.
-            rewrite <- elem_of_list_In in wfΓ.
             specialize (wfΓ Hin).
             apply wfΓ.
         }
@@ -744,7 +743,6 @@ Proof.
             rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             unfold FlattenedRewritingRule_wf in wfΓ.
-            rewrite <- elem_of_list_In in wfΓ.
             specialize (wfΓ Hin).
             eapply valuation_restrict_eq_subseteq.
             { apply wfΓ. }
@@ -760,7 +758,6 @@ Proof.
         {
             clear Heqfound.
             
-            rewrite <- elem_of_list_In.
             unfold Valuation in *.
             rewrite elem_of_list_fmap.
             exists (r).
@@ -932,7 +929,6 @@ Proof.
                 unfold FlattenedRewritingRule_wf in wfΓ.
                 rewrite Forall_forall in wfΓ.
                 specialize (wfΓ r).
-                rewrite <- elem_of_list_In in wfΓ.
                 specialize (wfΓ ltac:(assumption)).
                 destruct wfΓ as [wf1 wf2].
                 unfold FlattenedRewritingRule_wf2 in wf2.

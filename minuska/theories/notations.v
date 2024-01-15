@@ -35,74 +35,78 @@ Arguments mkExprAndBoV {Σ} eab_expr eab_bov.
 
 Class TagLHS := mkTagLHS {}.
 Class TagRHS := mkTagRHS {}.
+Class TagGround := mkTagGround {}.
 
-Class Resolver {Σ : StaticModel} := {
+Class BasicResolver {Σ : StaticModel} := {
     operand_type : Type ;
+}.
+
+Class Resolver {Σ : StaticModel} {_BR : BasicResolver} := {
     inject_variable : variable -> operand_type ;
 }.
 
 #[export]
-Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {    
+Instance BasicResolver_lhs {Σ : StaticModel}
+    {_T1 : TagLHS}
+    : BasicResolver
+:= {    
     operand_type := BuiltinOrVar;
+}.
+
+#[export]
+Instance BasicResolver_rhs {Σ : StaticModel}
+    {_T2 : TagRHS}
+    : BasicResolver
+:= {
+    operand_type := Expression ;
+}.
+
+#[export]
+Instance BasicResolver_ground {Σ : StaticModel}
+    {_T2 : TagGround}
+    : BasicResolver
+:= {
+    operand_type := builtin_value ;
+}.
+
+#[export]
+Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {    
     inject_variable := bov_variable;
 }.
 
 #[export]
 Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
-    operand_type := Expression ;
     inject_variable := ft_variable;
 }.
 
-Class ToAOO {Σ : StaticModel} {_resolver : Resolver}
+
+Class ToAOO {Σ : StaticModel} {_basic_resolver : BasicResolver}
     (to_aoo_F : Type)
 := {
     to_aoo_opt : to_aoo_F -> (AppliedOperatorOr' symbol operand_type) ;
 }.
 
 #[export]
-Instance ToAOO_id {Σ : StaticModel}{_resolver : Resolver}
+Instance ToAOO_id {Σ : StaticModel} {_basic_resolver : BasicResolver}
     : ToAOO (AppliedOperatorOr' symbol operand_type) :=
 {|
     to_aoo_opt := fun x => x;
 |}.
 
 #[export]
-Instance ToAOO_inj {Σ : StaticModel}{_resolver : Resolver}
+Instance ToAOO_inj {Σ : StaticModel} {_basic_resolver : BasicResolver}
     : ToAOO  (operand_type)
 := {|
     to_aoo_opt := aoo_operand;
 |}.
 
 
-Arguments to_aoo_opt {Σ _resolver} {to_aoo_F}%type_scope {ToAOO} _.
+Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%type_scope {ToAOO} _.
 
 Notation "'$' x" :=
     (inject_variable x)
-    (* to_AppliedOperatorOr' (inl (inject_variable x)) *)
     (at level 40)
 .
-
-Structure MyApplyConcrete {Σ : StaticModel} := {
-    mac_T2 : Type ;
-    my_apply_c :
-        AppliedOperator' symbol builtin_value ->
-        mac_T2 ->
-        AppliedOperator' symbol builtin_value ;
-}.
-
-Arguments my_apply_c {_} {m} _ _.
-Arguments my_apply_c : simpl never.
-
-Definition MyApplyConcrete_operand {Σ : StaticModel} : MyApplyConcrete := {|
-    my_apply_c := fun x y => ao_app_operand x y ;
-|}.
-Canonical MyApplyConcrete_operand.
-
-Definition MyApplyConcrete_ao {Σ : StaticModel} : MyApplyConcrete := {|
-    my_apply_c := fun x y => @ao_app_ao symbol builtin_value x y ;
-|}.
-Canonical MyApplyConcrete_ao.
-
 
 Definition to_AppliedOperator'
     {Σ : StaticModel}
@@ -124,7 +128,7 @@ Definition to_AppliedOperator'
 
 Definition apply_symbol
     {Σ : StaticModel}
-    {_r : Resolver}
+    {_br : BasicResolver}
     (s : symbol)
 : 
     list ((AppliedOperatorOr' symbol operand_type)) ->
@@ -156,7 +160,8 @@ Notation "'[' x ']'"
 
 Notation "'[' x , y , .. , z ']'"
 :=
-    (@cons ((AppliedOperatorOr' symbol operand_type)) (to_aoo_opt x)
+    (@cons ((AppliedOperatorOr' symbol operand_type))
+        (myap _ (AppliedOperatorOr' symbol operand_type) x to_aoo_opt)
     (@cons 
         ((AppliedOperatorOr' symbol operand_type))
         (*(to_aoo_opt y)*)
@@ -195,3 +200,6 @@ Notation "'rule' l ~> r 'requires' s"
     )
     (at level 200)
 .
+
+
+Notation "( 'ground' g )" := ((fun (_:TagGround) => (g)) mkTagGround).

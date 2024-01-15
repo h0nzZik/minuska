@@ -16,6 +16,7 @@ From stdpp Require Export
     list
     list_numbers
     numbers
+    pretty
 .
 
 (* This is unset by stdpp. We need to set it again.*)

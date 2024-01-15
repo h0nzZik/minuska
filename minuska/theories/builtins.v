@@ -359,24 +359,20 @@ Module default_builtin.
             )
             : RuleScope
         .
+
+        Notation "~~ b" :=
+            (ft_unary default_builtin.b_neg (b))
+        .
         
 
         Notation "'isNat' t" :=
             (ft_unary
                 b_isNat
                 t
-                (*myap _ (AppliedOperatorOr' symbol operand_type) t to_aoo_opt*)
             )
             (at level 90)
         .
 
-        (*
-        Notation "'(' x '+Nat' y ')'" :=
-            (ft_binary b_plus (mycoerc x) (mycoerc y))
-        .
-        *)
-        Print ft_binary.
-        About ft_binary.
         Notation "'(' x '+Nat' y ')'" :=
             (ft_binary b_plus (x) (y))
         .
