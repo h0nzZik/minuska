@@ -70,6 +70,7 @@ Class ToAOO {Σ : StaticModel} {_resolver : Resolver}
 
 #[export]
 Instance ToAOO_id {Σ : StaticModel}{_resolver : Resolver}
+    (*{_cond : TCOr (TCEq operand_type Expression) (TCEq operand_type BuiltinOrVar)}*) (* THESE ARE PROBABLY NOT NECESSARY *)
     : ToAOO (AppliedOperatorOr' symbol operand_type) :=
 {|
     to_aoo_opt := fun x => x;
@@ -77,10 +78,14 @@ Instance ToAOO_id {Σ : StaticModel}{_resolver : Resolver}
 
 #[export]
 Instance ToAOO_inj {Σ : StaticModel}{_resolver : Resolver}
+    (*{_cond : TCOr (TCEq operand_type Expression) (TCEq operand_type BuiltinOrVar)}*) (* THESE ARE PROBABLY NOT NECESSARY *)
     : ToAOO  (operand_type)
 := {|
     to_aoo_opt := aoo_operand;
 |}.
+
+
+Arguments to_aoo_opt {Σ _resolver} {to_aoo_F}%type_scope {ToAOO} _.
 
 (*
 Class ToExpr {Σ : StaticModel} {_resolver : Resolver} := {
@@ -318,13 +323,21 @@ Definition apply_symbol
     (to_AppliedOperatorOr' (inr (to_AppliedOperator' ((s):symbol) l)))
 .
 
-Notation "[]" := ([]) : RuleScope.
+Notation "[]" := ([]%list) : RuleScope.
+
+(*
+    We need to infer the type of 'A' before choosing the function.
+*)
+Definition myap (A B : Type) (x : A) (f : A -> B) : B := f x.
+Definition myap2 (A B : Type) (f : A -> B) (x : A)  : B := f x.
 
 Notation "'[' x ']'"
 :=
     (@cons
-        ((AppliedOperatorOr' symbol _))
-        (to_aoo_opt x)
+        ((AppliedOperatorOr' symbol operand_type))
+        (myap _ (AppliedOperatorOr' symbol operand_type) x to_aoo_opt)
+        (*myap2 _ (AppliedOperatorOr' symbol operand_type) to_aoo_opt x*)
+        (*(@to_aoo_opt _ _ _ _ (x))*)
         (@nil ((AppliedOperatorOr' symbol operand_type)))
     )
     : RuleScope
@@ -335,11 +348,15 @@ Notation "'[' x , y , .. , z ']'"
     (@cons ((AppliedOperatorOr' symbol operand_type)) (to_aoo_opt x)
     (@cons 
         ((AppliedOperatorOr' symbol operand_type))
-        (to_aoo_opt y)
+        (*(to_aoo_opt y)*)
+        (myap _ (AppliedOperatorOr' symbol operand_type) y to_aoo_opt)
+        (*myap2 _ (AppliedOperatorOr' symbol operand_type) to_aoo_opt y*)
         .. 
         (
             @cons ((AppliedOperatorOr' symbol operand_type))
-            (to_aoo_opt z)
+            (* (to_aoo_opt z) *)
+            (myap _ (AppliedOperatorOr' symbol operand_type) z to_aoo_opt)
+            (*myap2 _ (AppliedOperatorOr' symbol operand_type) to_aoo_opt z*)
             (@nil ((AppliedOperatorOr' symbol operand_type)))
         )
         ..))

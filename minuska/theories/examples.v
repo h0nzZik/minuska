@@ -255,12 +255,12 @@ Module arith.
     Delimit Scope LangArithScope with larith.
 
     Notation "x '+' y" := (plus [ x, y ]).
-
     Set Printing All.
+    Set Typeclasses Debug.
     Definition Decls : list Declaration := [
         rule ["plus-nat-nat"]:
              cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
-          ~> (cfg [ (cseq [ (ft_binary b_plus ($X) ($Y)) (*(($X +Nat $Y) +Nat $Y)*) , $REST_SEQ ])%rs ])%rs
+          ~> (cfg [ (cseq [ (ft_binary b_plus ($X) ($Y)) (*(($X +Nat $Y) +Nat $Y)*) (*, $REST_SEQ*) ])%rs ])%rs
              (*where (
                 (isNat $X)
                 &&
