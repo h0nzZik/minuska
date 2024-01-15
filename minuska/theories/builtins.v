@@ -357,12 +357,16 @@ Module default_builtin.
                 (b1)
                 (b2)
             )
-            : SymbolicScope
+            : RuleScope
         .
         
 
         Notation "'isNat' t" :=
-            (ft_unary b_isNat t)
+            (ft_unary
+                b_isNat
+                t
+                (*myap _ (AppliedOperatorOr' symbol operand_type) t to_aoo_opt*)
+            )
             (at level 90)
         .
 

@@ -48,7 +48,7 @@ Notation "'rule' '[' n ']:' l ~> r"
 
 Notation "'rule' '[' n ']:' l ~> r 'where' s"
     := (decl_rule (mkRuleDeclaration
-        n (rule (l) ~> (r) requires [sc_constraint (apeq ((ft_nullary b_true)) (s))])
+        n (rule (l) ~> (r) requires (cons (sc_constraint (apeq ((ft_nullary b_true)) (s))) nil))
     ))
     (at level 200)
 .
