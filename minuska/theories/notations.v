@@ -45,7 +45,7 @@ Instance Resolver_2 {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
     (*operand_of_eab := eab_expr ;*)
     inject_variable := ft_variable;
 }.
-
+(*
 Class Coercer {Σ : StaticModel} (T : Type) := {
     mycoerc : T -> Expression ;
 }.
@@ -59,7 +59,7 @@ Instance Coercer_eab {Σ : StaticModel} {_T : TagRHS} : Coercer ExprAndBoV := {|
 Instance Coercer_expr {Σ : StaticModel} {_T : TagRHS} : Coercer Expression := {|
     mycoerc := fun x => x ;
 |}.
-
+*)
 (*
 Notation "'$' x" :=
     (mkExprAndBoV (ft_variable x) (bov_variable x))
@@ -68,7 +68,7 @@ Notation "'$' x" :=
 *)
 
 Notation "'$' x" :=
-    (inject_variable x)
+    (inl (inject_variable x))
     (at level 40)
 .
 
@@ -165,19 +165,115 @@ Definition MyApplyConcrete_ao {Σ : StaticModel} : MyApplyConcrete := {|
 |}.
 Canonical MyApplyConcrete_ao.
 
-Notation "f [<>]" := (ao_operator f)
+(*
+Definition AOBV {Σ : StaticModel} : Type
+:=
+    AppliedOperator' symbol BuiltinOrVar
+.
+
+Definition ArgTypeL {Σ : StaticModel} : Type
+:=
+    ((BuiltinOrVar)+(AOBV))
+.
+
+Definition AOBE {Σ : StaticModel} : Type
+:=
+    AppliedOperator' symbol Expression
+.
+
+
+Definition ArgTypeR {Σ : StaticModel} : Type
+:=
+    ((Expression)+(AOBE))
+.
+
+
+Definition inject_bov_l
+    {Σ : StaticModel}
+    (x : BuiltinOrVar)
+    : ArgTypeL
+:=
+    inl x
+.
+
+Definition inject_bov_r
+    {Σ : StaticModel}
+    (x : AOBV)
+    : ArgTypeL
+:=
+    inr x
+.
+
+
+Definition inject_expr_l
+    {Σ : StaticModel}
+    (x : Expression)
+    : ArgTypeR
+:=
+    inl x
+.
+
+Definition inject_expr_r
+    {Σ : StaticModel}
+    (x : AOBE)
+    : ArgTypeR
+:=
+    inr x
+.
+
+Coercion inject_bov_l : BuiltinOrVar >-> ArgTypeL.
+Coercion inject_bov_r : AOBV >-> ArgTypeL.
+Coercion inject_expr_l : Expression >-> ArgTypeR.
+Coercion inject_expr_r : AOBE >-> ArgTypeR.
+*)
+
+Definition to_AppliedOperator'
+    {Σ : StaticModel}
+    {T : Type}
+    (s : symbol)
+    (l : list ((T)+(AppliedOperator' symbol T)))
+    : AppliedOperator' symbol T
+:=
+    fold_left
+        (fun a b =>
+            match b with
+            | inl b' => ao_app_operand a b'
+            | inr b' => ao_app_ao a b'
+            end
+        )
+        l
+        (ao_operator s)
+.
+
+Definition to_AppliedOperatorOr'
+    {Σ : StaticModel}
+    {T : Type}
+    (x : ((T)+(AppliedOperator' symbol T)))
+    : AppliedOperatorOr' symbol T
+:=
+match x with
+| inl x' => aoo_operand x'
+| inr x' => aoo_app x'
+end
+.
+
+Notation "f [<>]" := (inr (ao_operator f))
     (at level 90)
 .
 
-Check @my_apply.
 
-Definition my_type_of {T : Type} (x : T) : Type := T.
-
+Notation "f [< y , .. , z >]"
+:=
+    (inr (to_AppliedOperator' f (@cons ((operand_type)+(AppliedOperator' symbol operand_type)) y .. (@cons ((operand_type)+(AppliedOperator' symbol operand_type)) z (@nil ((operand_type)+(AppliedOperator' symbol operand_type)))) ..)))
+    (at level 90)
+.
+(*
+    Definition my_type_of {T : Type} (x : T) : Type := T.
 Notation "f [< y , .. , z >]"
     := (@my_apply _ _ (my_type_of z) _ .. (@my_apply _ _ (my_type_of y) _ (ao_operator f) y) .. z)
     (at level 90)
 .
-
+*)
 Notation "f [< y , .. , z >]"
     := (my_apply_c .. (my_apply_c (ao_operator f) y) .. z)
     (at level 90)
@@ -189,7 +285,7 @@ About mkFlattenedRewritingRule.
 Notation "'llrule' l => r 'requires' s"
     := (@mkFlattenedRewritingRule
         _
-        ((fun (_:TagLHS) => l) mkTagLHS)
+        ((fun (_:TagLHS) => l) mkTagLHS) (* why not %symbolic ?*)
         ((fun (_:TagRHS) => r) mkTagRHS)%symbolic
         (s)%symbolic
     )
@@ -198,9 +294,9 @@ Notation "'llrule' l => r 'requires' s"
 
 Notation "'rule' l => r 'requires' s"
     := (llrule
-        (aoo_app l)
+        (to_AppliedOperatorOr' l)
         =>
-        (aoo_app r) 
+        (to_AppliedOperatorOr' r) 
         requires
         s
     )

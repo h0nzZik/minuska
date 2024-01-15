@@ -366,8 +366,14 @@ Module default_builtin.
             (at level 90)
         .
 
+        (*
         Notation "'(' x '+Nat' y ')'" :=
             (ft_binary b_plus (mycoerc x) (mycoerc y))
+        .
+        *)
+        Print ft_binary.
+        Notation "'(' x '+Nat' y ')'" :=
+            (ft_binary b_plus (to_AppliedOperatorOr' x) (to_AppliedOperatorOr' y))
         .
 
     End Notations.
