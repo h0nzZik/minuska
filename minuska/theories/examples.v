@@ -14,21 +14,33 @@ From Minuska Require Import
     frontend
 .
 
+
 Module example_1.
 
+    (*
+    Import empty_builtin.*)
     #[local]
-    Instance Σ : StaticModel := default_model (empty_builtin.β).
-
-    Definition X : variable := "X".
-    Definition top : symbol := "top".
-    Definition s : symbol := "s".
+    Instance Σ : StaticModel :=
+        default_model (empty_builtin.β)
+    .
     
+    Definition X : variable := "X".
+
+    Definition cfg {_r : Resolver} := (apply_symbol "cfg").
+    Arguments cfg {_r} _%rs.
+
+    Definition s {_r : Resolver} := (apply_symbol "s").
+    Arguments s {_r} _%rs.
+
+    Definition Decls : list Declaration := [
+        rule ["my_rule"]:
+            cfg [ s [ s [ ($X) ] ] ]
+            ~> cfg [ $X ]
+        
+    ].
+
     Definition Γ : FlattenedRewritingTheory
-        := Eval vm_compute in (to_theory (process_declarations ([
-            rule ["my_rule"]:
-                (top [< s [< s [< $X >] >] >])
-             => (top [< $X >])
-        ]))).
+        := Eval vm_compute in (to_theory (process_declarations (Decls))).
 
     Definition interp :=
         naive_interpreter Γ
@@ -71,13 +83,13 @@ Module example_1.
     .
 
     Definition my_number (n : nat) : GroundTerm :=
-        aoo_app (ao_app_ao (ao_operator "top") (my_number' n))
+        aoo_app (ao_app_ao (ao_operator "cfg") (my_number' n))
     .
 
     Definition my_number_inv (g : GroundTerm) : option nat
     :=
     match g with
-    | aoo_app (ao_app_ao (ao_operator "top") g') => my_number'_inv g'
+    | aoo_app (ao_app_ao (ao_operator "cfg") g') => my_number'_inv g'
     | _ => None
     end
     .
@@ -123,18 +135,23 @@ Module two_counters.
     Instance Σ : StaticModel := default_model (empty_builtin.β).
 
 
-    Definition top := "top".
-    Definition state := "state".
-    Definition s := "s".
     Definition M : variable := "M".
-    Definition N := "N".
+    Definition N : variable := "N".
+    
+    Definition cfg {_r : Resolver} := (apply_symbol "cfg").
+    Arguments cfg {_r} _%rs.
 
-    Set Typeclasses Debug.
+    Definition state {_r : Resolver} := (apply_symbol "state").
+    Arguments state {_r} _%rs.
+
+    Definition s {_r : Resolver} := (apply_symbol "s").
+    Arguments s {_r} _%rs.
+
     Definition Γ : FlattenedRewritingTheory :=
     Eval vm_compute in (to_theory (process_declarations ([
         rule ["my-rule"]:
-             top [< state [< s [< $M >], $N >] >]
-          => top [< state [< $M, s [< $N >]  >] >]
+             cfg [ state [ s [ $M ], $N ] ]
+          ~> cfg [ state [ $M, s [ $N ]  ] ]
     ]))).
     
 
@@ -154,7 +171,7 @@ Module two_counters.
     .
 
     Definition pair_to_state (mn : nat*nat) : GroundTerm :=
-        aoo_app (ao_app_ao (ao_operator "top")
+        aoo_app (ao_app_ao (ao_operator "cfg")
         (
             ao_app_ao
                 (
@@ -168,7 +185,7 @@ Module two_counters.
 
     Definition state_to_pair (g : GroundTerm) : option (nat*nat) :=
     match g with
-    | aoo_app (ao_app_ao (ao_operator "top")
+    | aoo_app (ao_app_ao (ao_operator "cfg")
         (ao_app_ao (ao_app_ao (ao_operator "state") (m')) n'))
         => 
             m ← example_1.my_number'_inv m';
@@ -212,14 +229,27 @@ Module arith.
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).
 
-    Definition top := "top".
-    Definition state := "state".
-    Definition cseq := "cseq".
-    Definition emptyCseq := ".cseq".
-    Definition plus := "plus".
     Definition X : variable := "X".
     Definition Y : variable := "Y".
     Definition REST_SEQ : variable := "$REST_SEQ".
+    
+    Definition cseq {_r : Resolver} := (apply_symbol "cseq").
+    Arguments cseq {_r} _%rs.
+
+    Definition emptyCseq {_r : Resolver} := (apply_symbol "emptyCseq").
+    Arguments emptyCseq {_r} _%rs.
+
+    Definition plus {_r : Resolver} := (apply_symbol "plus").
+    Arguments plus {_r} _%rs.
+
+    Definition cfg {_r : Resolver} := (apply_symbol "cfg").
+    Arguments cfg {_r} _%rs.
+
+    Definition state {_r : Resolver} := (apply_symbol "state").
+    Arguments state {_r} _%rs.
+
+    Definition s {_r : Resolver} := (apply_symbol "s").
+    Arguments s {_r} _%rs.
 
     Declare Scope LangArithScope.
     Delimit Scope LangArithScope with larith.
@@ -235,25 +265,25 @@ Module arith.
         Regarding [$X], it has to be typeable as both [BuiltinOrVar]
         and [Expression]
     *)
-    Notation "x '+' y" := (plus [< x, y >]).
+    Notation "x '+' y" := (plus [ x, y ]).
 
-    Set Debug "unification".
     Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
     (to_theory (process_declarations ([
         rule ["plus-nat-nat"]:
-             top [< cseq [< ($X + $Y), $REST_SEQ >] >]
-          => top [< cseq [< ($X +Nat $Y) , $REST_SEQ >] >]
-             where (
+             cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
+          (* => top [< cseq [< ($X + $Y), $REST_SEQ >] >] *)
+          ~> cfg [ cseq [ (($X +Nat $Y) +Nat $Y) , $REST_SEQ ] ]
+             (*where (
                 (isNat $X)
                 &&
                 (isNat $Y)
-             )
-        ;
+             )*)
+        (*;
         (* TODO *)
         rule ["plus-heat-any"]:
              top [< cseq [< plus [< $X, $Y >], $REST_SEQ >] >]
           => top [< cseq [< ($X +Nat $Y) , $REST_SEQ >] >]
-             
+        *)   
 
     ]))).
 

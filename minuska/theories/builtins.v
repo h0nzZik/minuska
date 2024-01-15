@@ -373,7 +373,7 @@ Module default_builtin.
         *)
         Print ft_binary.
         Notation "'(' x '+Nat' y ')'" :=
-            (ft_binary b_plus (to_AppliedOperatorOr' x) (to_AppliedOperatorOr' y))
+            (ft_binary b_plus (x) (y))
         .
 
     End Notations.

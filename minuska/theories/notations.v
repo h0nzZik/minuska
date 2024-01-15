@@ -7,13 +7,25 @@ From Minuska Require Import
     flattened
 .
 
-Declare Scope SymbolicScope.
+Declare Scope RuleScope.
 Declare Scope ConcreteScope.
 (*Declare Scope RuleScsScope.*)
 
-Delimit Scope SymbolicScope with symbolic.
+Delimit Scope RuleScope with rs.
 Delimit Scope ConcreteScope with concrete.
 (*Delimit Scope RuleScsScope with rule_scs.*)
+
+Definition to_AppliedOperatorOr'
+    {Σ : StaticModel}
+    {T : Type}
+    (x : ((T)+(AppliedOperator' symbol T)))
+    : AppliedOperatorOr' symbol T
+:=
+match x with
+| inl x' => aoo_operand x'
+| inr x' => aoo_app x'
+end
+.
 
 
 Record ExprAndBoV {Σ : StaticModel} : Type := mkExprAndBoV {
@@ -33,18 +45,57 @@ Class Resolver {Σ : StaticModel} := {
 }.
 
 #[export]
-Instance Resolver_1 {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {
-    operand_type := BuiltinOrVar ;
+Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {    
     (*operand_of_eab := eab_bov ;*)
+    (*
+    operand_type := AppliedOperatorOr' symbol BuiltinOrVar ;
+    inject_variable := aoo_operand ∘ bov_variable;
+    *)
+    operand_type := BuiltinOrVar;
     inject_variable := bov_variable;
 }.
 
 #[export]
-Instance Resolver_2 {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
+Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
     operand_type := Expression ;
     (*operand_of_eab := eab_expr ;*)
     inject_variable := ft_variable;
 }.
+
+Class ToAOO {Σ : StaticModel} {_resolver : Resolver}
+    (to_aoo_F : Type)
+:= {
+    to_aoo_opt : to_aoo_F -> (AppliedOperatorOr' symbol operand_type) ;
+}.
+
+#[export]
+Instance ToAOO_id {Σ : StaticModel}{_resolver : Resolver}
+    : ToAOO (AppliedOperatorOr' symbol operand_type) :=
+{|
+    to_aoo_opt := fun x => x;
+|}.
+
+#[export]
+Instance ToAOO_inj {Σ : StaticModel}{_resolver : Resolver}
+    : ToAOO  (operand_type)
+:= {|
+    to_aoo_opt := aoo_operand;
+|}.
+
+(*
+Class ToExpr {Σ : StaticModel} {_resolver : Resolver} := {
+    (* to_Expr : (AppliedOperatorOr' symbol operand_type) -> Expression ; *)
+    to_Expr : GroundTerm -> Expression ;
+}.
+
+#[export]
+Instance ToExpr_rhs {Σ : StaticModel} {_tag : TagRHS} {_resolver : Resolver}
+    : ToExpr :=
+{|
+    to_Expr := ft_element ;
+|}.
+*)
+
 (*
 Class Coercer {Σ : StaticModel} (T : Type) := {
     mycoerc : T -> Expression ;
@@ -68,10 +119,11 @@ Notation "'$' x" :=
 *)
 
 Notation "'$' x" :=
-    (inl (inject_variable x))
+    (inject_variable x)
+    (* to_AppliedOperatorOr' (inl (inject_variable x)) *)
     (at level 40)
 .
-
+(*
 Class MyApply
     {Σ : StaticModel}
     {_R : Resolver}
@@ -110,7 +162,9 @@ Instance MyApply_ao
 := {|
     my_apply := fun x y => @ao_app_ao symbol _ x y ;
 |}.
-
+*)
+(*Print Expression.
+Coercion ft_element : GroundTerm >-> Expression.*)
 
 (*
 
@@ -231,42 +285,69 @@ Definition to_AppliedOperator'
     {Σ : StaticModel}
     {T : Type}
     (s : symbol)
-    (l : list ((T)+(AppliedOperator' symbol T)))
+    (l : list ((AppliedOperatorOr' symbol T)))
     : AppliedOperator' symbol T
 :=
     fold_left
         (fun a b =>
             match b with
-            | inl b' => ao_app_operand a b'
-            | inr b' => ao_app_ao a b'
+            | aoo_operand b' => ao_app_operand a b'
+            | aoo_app b' => ao_app_ao a b'
             end
         )
         l
         (ao_operator s)
 .
+(*
+Notation "f [< x , .. , z >]"
+:=
+    ((to_AppliedOperatorOr' (inr (to_AppliedOperator' ((f):symbol) [x ; .. ; z]))
+    (at level 90)
+.
+*)
 
-Definition to_AppliedOperatorOr'
+Definition apply_symbol
     {Σ : StaticModel}
-    {T : Type}
-    (x : ((T)+(AppliedOperator' symbol T)))
-    : AppliedOperatorOr' symbol T
+    {_r : Resolver}
+    (s : symbol)
+: 
+    list ((AppliedOperatorOr' symbol operand_type)) ->
+    AppliedOperatorOr' symbol operand_type
 :=
-match x with
-| inl x' => aoo_operand x'
-| inr x' => aoo_app x'
-end
+    fun l =>
+    (to_AppliedOperatorOr' (inr (to_AppliedOperator' ((s):symbol) l)))
 .
 
-Notation "f [<>]" := (inr (ao_operator f))
-    (at level 90)
-.
+Notation "[]" := ([]) : RuleScope.
 
-
-Notation "f [< y , .. , z >]"
+Notation "'[' x ']'"
 :=
-    (inr (to_AppliedOperator' f (@cons ((operand_type)+(AppliedOperator' symbol operand_type)) y .. (@cons ((operand_type)+(AppliedOperator' symbol operand_type)) z (@nil ((operand_type)+(AppliedOperator' symbol operand_type)))) ..)))
-    (at level 90)
+    (@cons
+        ((AppliedOperatorOr' symbol _))
+        (to_aoo_opt x)
+        (@nil ((AppliedOperatorOr' symbol _)))
+    )
+    : RuleScope
 .
+
+Notation "'[' x , y , .. , z ']'"
+:=
+    (@cons ((AppliedOperatorOr' symbol _)) (to_aoo_opt x)
+    (@cons 
+        ((AppliedOperatorOr' symbol _))
+        (to_aoo_opt y)
+        .. 
+        (
+            @cons ((AppliedOperatorOr' symbol _))
+            (to_aoo_opt z)
+            (@nil ((AppliedOperatorOr' symbol _)))
+        )
+        ..))
+    : RuleScope
+.
+
+(*Notation "f [ l ]" := (f _ l) (at level 90) : RuleScope.*)
+
 (*
     Definition my_type_of {T : Type} (x : T) : Type := T.
 Notation "f [< y , .. , z >]"
@@ -274,29 +355,33 @@ Notation "f [< y , .. , z >]"
     (at level 90)
 .
 *)
+(*
 Notation "f [< y , .. , z >]"
     := (my_apply_c .. (my_apply_c (ao_operator f) y) .. z)
     (at level 90)
     : ConcreteScope
 .
+*)
 
-About mkFlattenedRewritingRule.
+(*
+Print Expression.
+Coercion ft_element : GroundTerm >-> Expression.*)
 
-Notation "'llrule' l => r 'requires' s"
+Notation "'llrule' l ~> r 'requires' s"
     := (@mkFlattenedRewritingRule
         _
-        ((fun (_:TagLHS) => l) mkTagLHS) (* why not %symbolic ?*)
-        ((fun (_:TagRHS) => r) mkTagRHS)%symbolic
-        (s)%symbolic
+        ((fun (_:TagLHS) => l) mkTagLHS)%rs
+        ((fun (_:TagRHS) => r) mkTagRHS)%rs
+        (s)
     )
     (at level 200)
 .
 
-Notation "'rule' l => r 'requires' s"
+Notation "'rule' l ~> r 'requires' s"
     := (llrule
-        (to_AppliedOperatorOr' l)
-        =>
-        (to_AppliedOperatorOr' r) 
+        (l)
+        ~>
+        (r) 
         requires
         s
     )

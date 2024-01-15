@@ -39,16 +39,16 @@ Inductive Declaration {Σ : StaticModel} :=
 | decl_ctx (c : ContextDeclaration)
 .
 
-Notation "'rule' '[' n ']:' l => r"
+Notation "'rule' '[' n ']:' l ~> r"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => (r) requires [])
+        n (rule (l) ~> (r) requires nil)
     ))
     (at level 200)
 .
 
-Notation "'rule' '[' n ']:' l => r 'where' s"
+Notation "'rule' '[' n ']:' l ~> r 'where' s"
     := (decl_rule (mkRuleDeclaration
-        n (rule l => (r) requires [sc_constraint (apeq ((ft_nullary b_true)) (s))])
+        n (rule (l) ~> (r) requires [sc_constraint (apeq ((ft_nullary b_true)) (s))])
     ))
     (at level 200)
 .
