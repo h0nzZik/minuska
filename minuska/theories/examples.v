@@ -267,6 +267,15 @@ Module arith.
     Definition plus {_br : BasicResolver} := (apply_symbol "plus").
     Arguments plus {_br} _%rs.
 
+    Definition minus {_br : BasicResolver} := (apply_symbol "minus").
+    Arguments minus {_br} _%rs.
+
+    Definition times {_br : BasicResolver} := (apply_symbol "times").
+    Arguments times {_br} _%rs.
+
+    Definition div {_br : BasicResolver} := (apply_symbol "div").
+    Arguments div {_br} _%rs.
+
     Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
     Arguments cfg {_br} _%rs.
 
@@ -287,16 +296,22 @@ Module arith.
     Delimit Scope LangArithScope with larith.
 
     Notation "x '+' y" := (plus [ x, y ])%larith.
+    Notation "x '-' y" := (minus [ x, y ])%larith.
+    Notation "x '*' y" := (times [ x, y ])%larith.
+    Notation "x '/' y" := (div [ x, y ])%larith.
+
+    Open Scope larith.
 
     Definition isResult (x : Expression) : Expression :=
         (isNat x)
     .
 
     Definition Decls : list Declaration := [
+        (* plus *)
         decl_rule (
             rule ["plus-nat-nat"]:
                 cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
-            ~> (cfg [ (cseq [ ($X +Nat $Y) , $REST_SEQ ])%rs ])%rs
+            ~> cfg [ cseq [ ($X +Nat $Y) , $REST_SEQ ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -306,6 +321,66 @@ Module arith.
         decl_strict (
             {|
                 sd_sym := "plus" ;
+                sd_arity := 2 ;
+                sd_positions := [0;1] ;
+                sd_isResult := isResult ;
+                sd_cseq_context := (fun _ t => cfg [t] )
+            |}
+        );
+        (* minus *)
+        decl_rule (
+            rule ["minus-nat-nat"]:
+                cfg [ cseq [ ($X - $Y), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X -Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (
+            {|
+                sd_sym := "minus" ;
+                sd_arity := 2 ;
+                sd_positions := [0;1] ;
+                sd_isResult := isResult ;
+                sd_cseq_context := (fun _ t => cfg [t] )
+            |}
+        );
+        (* times *)
+        decl_rule (
+            rule ["times-nat-nat"]:
+                cfg [ cseq [ (($X) * ($Y)), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X *Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (
+            {|
+                sd_sym := "times" ;
+                sd_arity := 2 ;
+                sd_positions := [0;1] ;
+                sd_isResult := isResult ;
+                sd_cseq_context := (fun _ t => cfg [t] )
+            |}
+        );
+        (* div *)
+        decl_rule (
+            rule ["div-nat-nat"]:
+                cfg [ cseq [ (($X) / ($Y)), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X /Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (
+            {|
+                sd_sym := "div" ;
                 sd_arity := 2 ;
                 sd_positions := [0;1] ;
                 sd_isResult := isResult ;
@@ -321,17 +396,11 @@ Module arith.
         (ground (cfg [ cseq [ ((@aoo_operand symbol _ (bv_nat x)) + (@aoo_operand symbol _ (bv_nat y))), emptyCseq [] ] ]))
     .
 
-    Definition initial (x: nat) (ly : list nat) :=
+    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
         (ground (
             cfg [
                 cseq [ 
-                    (foldr 
-                        (fun a (b : AppliedOperatorOr' symbol builtin_value) =>
-                            plus [((bv_nat a)) , b]
-                        )
-                        (@aoo_operand symbol builtin_value (bv_nat x))
-                        ly
-                    ),
+                    x,
                     emptyCseq []
                     ]
                 ]
@@ -339,12 +408,31 @@ Module arith.
         )
     .
 
-    Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
+    Definition initial (x: nat) (ly : list nat) :=
+        (ground (initial0 ((foldr 
+            (fun a (b : AppliedOperatorOr' symbol builtin_value) =>
+                plus [((bv_nat a)) , b]
+            )
+            (@aoo_operand symbol builtin_value (bv_nat x))
+            ly
+        ))))
+    .
+
+    Definition interp_from (fuel : nat) from
     :=
-        let res := interp_loop_ext (naive_interpreter_ext Γ.1) fuel (initial x ly) nil in
+        let res := interp_loop_ext (naive_interpreter_ext Γ.1)
+            fuel
+            from
+            nil
+        in
         (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
     .
 
+    Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
+    :=
+        interp_from fuel (initial x ly)
+    .
+     
     (*
     (* Debugging notations *)
     Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
@@ -358,5 +446,40 @@ Module arith.
     .
     Proof. eexists. reflexivity. Qed.
 
+
+    Eval vm_compute in (interp_from 10 (ground (initial0
+    (
+        ((bv_nat 3) + (bv_nat 4)) + ((bv_nat 5) + (bv_nat 6))
+    )))).
+
+    Lemma interp_test_2:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (
+                    ((bv_nat 3) + (bv_nat 4))
+                    +
+                    ((bv_nat 5) + (bv_nat 6))
+                ))))
+            = (rem, (ground (initial0 (aoo_operand (bv_nat 18)))), log)
+    .
+    Proof.
+        eexists. eexists. reflexivity.
+    Qed.
+
+
+    Lemma interp_test_3:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (
+                    ((bv_nat 5) * (bv_nat 6))
+                    /
+                    ((bv_nat 3) + (bv_nat 4))
+                    
+                ))))
+            = (rem, (ground (initial0 (aoo_operand (bv_nat 4)))), log)
+    .
+    Proof.
+        eexists. eexists. reflexivity.
+    Qed.
 End arith.
 

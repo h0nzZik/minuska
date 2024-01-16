@@ -105,6 +105,8 @@ Module default_builtin.
     | b_isLt  (* nat -> nat -> bool *)
     | b_plus  (* nat -> nat -> nat *)
     | b_minus (* nat -> nat -> nat *)
+    | b_times (* nat -> nat -> nat *)
+    | b_div (* nat -> nat -> nat *)
     .
 
     #[export]
@@ -335,6 +337,13 @@ Module default_builtin.
                     bfmap_nat_nat__nat plus v1 v2
                 | b_minus =>
                     bfmap_nat_nat__nat minus v1 v2
+                | b_times =>
+                    bfmap_nat_nat__nat mult v1 v2
+                | b_div =>
+                    match v2 with
+                    | aoo_operand (bv_nat (0)) => err
+                    | _ => bfmap_nat_nat__nat Nat.div v1 v2
+                    end
                 end ;
         |}.
 
@@ -375,6 +384,18 @@ Module default_builtin.
 
         Notation "'(' x '+Nat' y ')'" :=
             (ft_binary b_plus (x) (y))
+        .
+
+        Notation "'(' x '-Nat' y ')'" :=
+            (ft_binary b_minus (x) (y))
+        .
+
+        Notation "'(' x '*Nat' y ')'" :=
+            (ft_binary b_times (x) (y))
+        .
+
+        Notation "'(' x '/Nat' y ')'" :=
+            (ft_binary b_div (x) (y))
         .
 
     End Notations.
