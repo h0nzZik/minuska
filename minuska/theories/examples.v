@@ -302,9 +302,13 @@ Module arith.
 
     Open Scope larith.
 
-    Definition isResult (x : Expression) : Expression :=
-        (isNat x)
-    .
+    #[local]
+    Instance ArithDefaults : Defaults := {|
+        default_context_template
+            := (context-template cfg [ HOLE ] with HOLE) ;
+
+        default_isResult := fun x => (isNat x) ;
+    |}.
 
     Definition Decls : list Declaration := [
         (* plus *)
@@ -318,15 +322,7 @@ Module arith.
                     (isNat ($Y))
                 )
         );
-        decl_strict (
-            {|
-                sd_sym := "plus" ;
-                sd_arity := 2 ;
-                sd_positions := [0;1] ;
-                sd_isResult := isResult ;
-                sd_cseq_context := (fun _ t => cfg [t] )
-            |}
-        );
+        decl_strict (symbol "plus" of arity 2 strict in [0;1]);
         (* minus *)
         decl_rule (
             rule ["minus-nat-nat"]:
@@ -338,15 +334,7 @@ Module arith.
                     (isNat ($Y))
                 )
         );
-        decl_strict (
-            {|
-                sd_sym := "minus" ;
-                sd_arity := 2 ;
-                sd_positions := [0;1] ;
-                sd_isResult := isResult ;
-                sd_cseq_context := (fun _ t => cfg [t] )
-            |}
-        );
+        decl_strict (symbol "minus" of arity 2 strict in [0;1]);
         (* times *)
         decl_rule (
             rule ["times-nat-nat"]:
@@ -358,15 +346,7 @@ Module arith.
                     (isNat ($Y))
                 )
         );
-        decl_strict (
-            {|
-                sd_sym := "times" ;
-                sd_arity := 2 ;
-                sd_positions := [0;1] ;
-                sd_isResult := isResult ;
-                sd_cseq_context := (fun _ t => cfg [t] )
-            |}
-        );
+        decl_strict (symbol "times" of arity 2 strict in [0;1]);
         (* div *)
         decl_rule (
             rule ["div-nat-nat"]:
@@ -378,15 +358,7 @@ Module arith.
                     (isNat ($Y))
                 )
         );
-        decl_strict (
-            {|
-                sd_sym := "div" ;
-                sd_arity := 2 ;
-                sd_positions := [0;1] ;
-                sd_isResult := isResult ;
-                sd_cseq_context := (fun _ t => cfg [t] )
-            |}
-        )
+        decl_strict (symbol "div" of arity 2 strict in [0;1])
     ].
 
     Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 

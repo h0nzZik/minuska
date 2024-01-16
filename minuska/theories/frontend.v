@@ -50,6 +50,23 @@ Definition label {Σ : StaticModel} :=
 .
 
 
+Definition ContextTemplate
+    {Σ : StaticModel}
+:=
+    forall br:BasicResolver,
+    AppliedOperatorOr' symbol operand_type ->
+    AppliedOperatorOr' symbol operand_type
+.
+
+
+Notation
+    "( 'context-template' x 'with' h )"
+    :=
+    (fun (_:BasicResolver) (h : AppliedOperatorOr' symbol operand_type) => x)
+.
+
+
+
 Record ContextDeclaration {Σ : StaticModel}
 := mkContextDeclaration {
     cd_label : label ;
@@ -57,11 +74,7 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_arity : nat ;
     cd_position : nat ;
     cd_isResult : Expression -> Expression ;
-    cd_cseq_context :
-            forall {_br : BasicResolver},
-                AppliedOperatorOr' symbol operand_type ->
-                AppliedOperatorOr' symbol operand_type
-            ;
+    cd_cseq_context : ContextTemplate;
 }.
 
 Record StrictnessDeclaration {Σ : StaticModel}
@@ -70,12 +83,46 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_arity : nat ;
     sd_positions : list nat ;
     sd_isResult : Expression -> Expression ;
-    sd_cseq_context :
-            forall {_br : BasicResolver},
-                AppliedOperatorOr' symbol operand_type ->
-                AppliedOperatorOr' symbol operand_type
-    
+    sd_cseq_context : ContextTemplate ;
 }.
+
+
+Notation
+    "( 'symbol' s 'of' 'arity' a 'strict' 'in' l 'with-result' r 'by-template' t )"
+    :=
+    (
+        (
+            {|
+                sd_sym := s ;
+                sd_arity := a ;
+                sd_positions := l ;
+                sd_isResult := r ;
+                sd_cseq_context := t ;
+            |}
+        )
+    )
+.
+
+Class Defaults {Σ : StaticModel} := {
+    default_context_template : ContextTemplate ;
+    default_isResult : Expression -> Expression ;
+}.
+
+Notation
+    "( 'symbol' s 'of' 'arity' a 'strict' 'in' l )"
+:=
+    (
+        (
+            {|
+                sd_sym := s ;
+                sd_arity := a ;
+                sd_positions := l ;
+                sd_isResult := default_isResult ;
+                sd_cseq_context := default_context_template ;
+            |}
+        )
+    )
+.
 
 Definition strictness_to_contexts
     {Σ : StaticModel}
