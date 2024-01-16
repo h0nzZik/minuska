@@ -455,3 +455,214 @@ Module arith.
     Qed.
 End arith.
 
+
+
+Module imp.
+
+    Import default_builtin.
+    Import default_builtin.Notations.
+
+    #[local]
+    Instance Σ : StaticModel := default_model (default_builtin.β).
+
+    Definition X : variable := "X".
+    Definition Y : variable := "Y".
+    Definition REST_SEQ : variable := "$REST_SEQ".
+    
+    Definition cseq {_br : BasicResolver} := (apply_symbol "cseq").
+    Arguments cseq {_br} _%rs.
+
+    Definition emptyCseq {_br : BasicResolver} := (apply_symbol "emptyCseq").
+    Arguments emptyCseq {_br} _%rs.
+
+    Definition plus {_br : BasicResolver} := (apply_symbol "plus").
+    Arguments plus {_br} _%rs.
+
+    Definition minus {_br : BasicResolver} := (apply_symbol "minus").
+    Arguments minus {_br} _%rs.
+
+    Definition times {_br : BasicResolver} := (apply_symbol "times").
+    Arguments times {_br} _%rs.
+
+    Definition div {_br : BasicResolver} := (apply_symbol "div").
+    Arguments div {_br} _%rs.
+
+    Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
+    Arguments cfg {_br} _%rs.
+
+    Definition state {_br : BasicResolver} := (apply_symbol "state").
+    Arguments state {_br} _%rs.
+
+    Definition s {_br : BasicResolver} := (apply_symbol "s").
+    Arguments s {_br} _%rs.
+
+    Definition freezer {_br : BasicResolver} (sym : symbol) (position : nat)
+    :=
+        (apply_symbol ("freezer_" +:+ sym +:+ "_" +:+ (pretty position)))
+    .
+    Arguments freezer {_br} _%rs.
+
+
+    Declare Scope LangArithScope.
+    Delimit Scope LangArithScope with larith.
+
+    Notation "x '+' y" := (plus [ x, y ])%larith.
+    Notation "x '-' y" := (minus [ x, y ])%larith.
+    Notation "x '*' y" := (times [ x, y ])%larith.
+    Notation "x '/' y" := (div [ x, y ])%larith.
+
+    Open Scope larith.
+
+    #[local]
+    Instance ArithDefaults : Defaults := {|
+        default_context_template
+            := (context-template cfg [ HOLE ] with HOLE) ;
+
+        default_isResult := fun x => (isNat x) ;
+    |}.
+
+    Definition Decls : list Declaration := [
+        (* plus *)
+        decl_rule (
+            rule ["plus-nat-nat"]:
+                cfg [ cseq [ ($X + $Y), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X +Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "plus" of arity 2 strict in [0;1]);
+        (* minus *)
+        decl_rule (
+            rule ["minus-nat-nat"]:
+                cfg [ cseq [ ($X - $Y), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X -Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "minus" of arity 2 strict in [0;1]);
+        (* times *)
+        decl_rule (
+            rule ["times-nat-nat"]:
+                cfg [ cseq [ (($X) * ($Y)), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X *Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "times" of arity 2 strict in [0;1]);
+        (* div *)
+        decl_rule (
+            rule ["div-nat-nat"]:
+                cfg [ cseq [ (($X) / ($Y)), $REST_SEQ ] ]
+            ~> cfg [ cseq [ ($X /Nat $Y) , $REST_SEQ ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "div" of arity 2 strict in [0;1])
+    ].
+
+    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    (to_theory (process_declarations (Decls))).
+
+    Definition initial1 (x y : nat) :=
+        (ground (cfg [ cseq [ ((@aoo_operand symbol _ (bv_nat x)) + (@aoo_operand symbol _ (bv_nat y))), emptyCseq [] ] ]))
+    .
+
+    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
+        (ground (
+            cfg [
+                cseq [ 
+                    x,
+                    emptyCseq []
+                    ]
+                ]
+            )
+        )
+    .
+
+    Definition initial (x: nat) (ly : list nat) :=
+        (ground (initial0 ((foldr 
+            (fun a (b : AppliedOperatorOr' symbol builtin_value) =>
+                plus [((bv_nat a)) , b]
+            )
+            (@aoo_operand symbol builtin_value (bv_nat x))
+            ly
+        ))))
+    .
+
+    Definition interp_from (fuel : nat) from
+    :=
+        let res := interp_loop_ext (naive_interpreter_ext Γ.1)
+            fuel
+            from
+            nil
+        in
+        (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
+    .
+
+    Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
+    :=
+        interp_from fuel (initial x ly)
+    .
+     
+    (*
+    (* Debugging notations *)
+    Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
+    Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
+    Notation "( x )" := (ao_operator x) (only printing).
+    Eval vm_compute in (interp_list 7 1 [20;30;40]).
+    *)
+    Lemma interp_list_test_1:
+        exists log,
+        (interp_list 20 1 [20;30;40]) = (12, (initial 91 nil), log)
+    .
+    Proof. eexists. reflexivity. Qed.
+
+
+    Eval vm_compute in (interp_from 10 (ground (initial0
+    (
+        ((bv_nat 3) + (bv_nat 4)) + ((bv_nat 5) + (bv_nat 6))
+    )))).
+
+    Lemma interp_test_2:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (
+                    ((bv_nat 3) + (bv_nat 4))
+                    +
+                    ((bv_nat 5) + (bv_nat 6))
+                ))))
+            = (rem, (ground (initial0 (aoo_operand (bv_nat 18)))), log)
+    .
+    Proof.
+        eexists. eexists. reflexivity.
+    Qed.
+
+
+    Lemma interp_test_3:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (
+                    ((bv_nat 5) * (bv_nat 6))
+                    /
+                    ((bv_nat 3) + (bv_nat 4))
+                    
+                ))))
+            = (rem, (ground (initial0 (aoo_operand (bv_nat 4)))), log)
+    .
+    Proof.
+        eexists. eexists. reflexivity.
+    Qed.
+End imp.
+

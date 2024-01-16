@@ -126,11 +126,244 @@ Module default_builtin.
         | bv_error
         | bv_bool (b : bool)
         | bv_nat (n : nat)
+        | bv_list (m : list (AppliedOperatorOr' symbol BuiltinValue))
         .
+
+        Derive NoConfusion for BuiltinValue.
+
+        Equations BVsize (r : BuiltinValue) : nat :=
+            BVsize (bv_list m) := S (my_list_size m);
+            BVsize _ := 1 ;
+        where my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue)) : nat :=
+            my_list_size nil := 1 ;
+            my_list_size (cons (aoo_operand o) xs) := S ((BVsize o) + (my_list_size xs)) ;
+            my_list_size (cons (aoo_app ao) xs) := S ((myaosize ao) + (my_list_size xs)) ;
+        where myaosize (ao : AppliedOperator' symbol BuiltinValue) : nat :=
+            myaosize (ao_operator _) := 1 ;
+            myaosize (ao_app_operand ao' t) := S ((BVsize t) + (myaosize ao')) ;
+            myaosize (ao_app_ao ao1 ao2) := S ((myaosize ao1)+(myaosize ao2)) ;
+        .
+
+        Lemma BuiltinValue_eqdec_helper_1 (sz : nat):
+            ∀ x y : BuiltinValue, BVsize x <= sz ->
+                {x = y} + {x ≠ y}
+        with BuiltinValue_eqdec_helper_2 (sz : nat):
+            ∀ x y : list (AppliedOperatorOr' symbol BuiltinValue), my_list_size x <= sz ->
+                {x = y} + {x ≠ y}
+        with BuiltinValue_eqdec_helper_3 (sz : nat):
+            ∀ x y : (AppliedOperator' symbol BuiltinValue),
+                myaosize x <= sz ->
+                    {x = y} + {x ≠ y}
+        .
+        Proof.
+            {
+                intros x y Hsz.
+                revert x Hsz y.
+                induction sz; intros x Hsz y.
+                {
+                    destruct x; (ltac1:(simp BVsize in Hsz; lia)).
+                }
+                destruct x.
+                {
+                    destruct y;
+                    try (solve [left; reflexivity]);
+                    right; ltac1:(discriminate).
+                }
+                {
+                    destruct y;
+                    try (solve [left; reflexivity]);
+                    try ltac1:(right; discriminate).
+                    destruct (decide (b = b0)).
+                    {
+                        left. subst. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y;
+                    try (solve [left; reflexivity]);
+                    try ltac1:(right; discriminate).
+                    destruct (decide (n = n0)).
+                    {
+                        left. subst. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    ltac1:(simp BVsize in Hsz).
+                    assert(Hsz' : my_list_size m <= sz) by (ltac1:(lia)).
+                    destruct y;
+                    try (solve[ltac1:(right; discriminate)]).
+
+                    assert (IH := BuiltinValue_eqdec_helper_2 sz m m0 Hsz').
+                    destruct IH as [IH|IH].
+                    {
+                        left. subst. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+            }
+            {
+                intros x y Hsz.
+                revert x Hsz y.
+                induction sz; intros x Hsz y.
+                {
+                    destruct x; (ltac1:(simp BVsize in Hsz; lia)).
+                }
+                destruct x.
+                {
+                    destruct y.
+                    { left. reflexivity. }
+                    { right. ltac1:(discriminate). }
+                }
+                {
+                    destruct y.
+                    { right. ltac1:(discriminate). }
+                    destruct a,a0.
+                    {
+                        assert(IH := BuiltinValue_eqdec_helper_3 sz ao ao0).
+                        ltac1:(ospecialize (IH _)).
+                        {
+                            assert(Hsz' := Hsz).
+                            ltac1:(unfold my_list_size in Hsz'; fold myaosize in Hsz').
+                            ltac1:(lia).
+                        }
+                        destruct IH as [IH|IH].
+                        {
+                            specialize (IHsz x).
+                            ltac1:(ospecialize (IHsz _)).
+                            {
+                                ltac1:(rewrite my_list_size_equation_2 in Hsz).
+                                ltac1:(lia).
+                            }
+                            specialize (IHsz y).
+                            destruct IHsz as [IHsz|IHsz].
+                            {
+                                subst. left. reflexivity.
+                            }
+                            {
+                                right. ltac1:(congruence).
+                            }
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                    {
+                        assert(IH := BuiltinValue_eqdec_helper_1 sz operand operand0).
+                        ltac1:(ospecialize (IH _)).
+                        {
+                            assert(Hsz' := Hsz).
+                            ltac1:(unfold my_list_size in Hsz'; fold myaosize in Hsz').
+                            ltac1:(lia).
+                        }
+                        destruct IH as [IH|IH].
+                        {
+                            specialize (IHsz x).
+                            ltac1:(ospecialize (IHsz _)).
+                            {
+                                ltac1:(rewrite my_list_size_equation_3 in Hsz).
+                                ltac1:(lia).
+                            }
+                            specialize (IHsz y).
+                            destruct IHsz as [IHsz|IHsz].
+                            {
+                                subst. left. reflexivity.
+                            }
+                            {
+                                right. ltac1:(congruence).
+                            }
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                }
+            }
+            {
+                
+            }
+        Defined.
 
         #[export]
         Instance BuiltinValue_eqDec : EqDecision BuiltinValue.
-        Proof. ltac1:(solve_decision). Defined.
+        Proof.
+            ltac1:(unfold EqDecision, Decision).
+            intros x.
+            remember (BVsize x) as sz.
+            assert (Hsz : BVsize x <= sz) by (ltac1:(lia)).
+            clear Heqsz.
+            revert x Hsz.
+            induction sz; intros x Hsz y.
+            {
+                destruct x; (ltac1:(simp BVsize in Hsz; lia)).
+            }
+            destruct x.
+            {
+                destruct y;
+                try (solve [left; reflexivity]);
+                right; ltac1:(discriminate).
+            }
+            {
+                destruct y;
+                try (solve [left; reflexivity]);
+                try ltac1:(right; discriminate).
+                destruct (decide (b = b0)).
+                {
+                    left. subst. reflexivity.
+                }
+                {
+                    right. ltac1:(congruence).
+                }
+            }
+            {
+                destruct y;
+                try (solve [left; reflexivity]);
+                try ltac1:(right; discriminate).
+                destruct (decide (n = n0)).
+                {
+                    left. subst. reflexivity.
+                }
+                {
+                    right. ltac1:(congruence).
+                }
+            }
+            {
+                assert (Htmp := @list_eqdec (AppliedOperatorOr' symbol BuiltinValue)).
+                ltac1:(ospecialize (Htmp _)).
+                Check list_eqdec.
+                apply list_eqdec.
+            }
+            ;
+                try ltac1:(solve_decision).
+            ltac1:(unfold Decision).
+            ltac1:(decide equality).
+            {
+                ltac1:(solve_decision).
+            }
+            {
+                ltac1:(solve_decision).
+            }
+            {
+                apply list_eqdec.
+                Search list "dec".
+                ltac1:(solve_decision).
+            }
+        Defined.
+        
+         ltac1:(solve_decision). Defined.
 
         Definition err
         :=
