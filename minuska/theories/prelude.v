@@ -16,6 +16,7 @@ From stdpp Require Export
     list
     list_numbers
     numbers
+    pmap
     pretty
 .
 

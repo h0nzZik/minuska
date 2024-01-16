@@ -127,17 +127,32 @@ Module default_builtin.
         | bv_bool (b : bool)
         | bv_nat (n : nat)
         | bv_list (m : list (AppliedOperatorOr' symbol BuiltinValue))
+        | bv_pmap (m : Pmap (AppliedOperatorOr' symbol BuiltinValue))
         .
 
         Derive NoConfusion for BuiltinValue.
 
         Equations BVsize (r : BuiltinValue) : nat :=
             BVsize (bv_list m) := S (my_list_size m);
+            BVsize (bv_pmap (PNodes m)) := S (my_pmapne_size m);
+            BVsize (bv_pmap (PEmpty)) := 1;
             BVsize _ := 1 ;
         where my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue)) : nat :=
             my_list_size nil := 1 ;
             my_list_size (cons (aoo_operand o) xs) := S ((BVsize o) + (my_list_size xs)) ;
             my_list_size (cons (aoo_app ao) xs) := S ((myaosize ao) + (my_list_size xs)) ;
+        where my_pmapne_size (m : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) : nat :=
+            my_pmapne_size (PNode001 n) := S (my_pmapne_size n) ;
+            my_pmapne_size (PNode010 (aoo_operand o)) := S (BVsize o);
+            my_pmapne_size (PNode010 (aoo_app a)) := S (myaosize a);
+            my_pmapne_size (PNode011 (aoo_operand o) n) := S ((BVsize o) + (my_pmapne_size n));
+            my_pmapne_size (PNode011 (aoo_app a) n) := S ((myaosize a) + (my_pmapne_size n));
+            my_pmapne_size (PNode100 n) := S (my_pmapne_size n) ;
+            my_pmapne_size (PNode101 n1 n2) := S ((my_pmapne_size n1) + (my_pmapne_size n2)) ;
+            my_pmapne_size (PNode110 n (aoo_operand o)) := S ((BVsize o) + (my_pmapne_size n));
+            my_pmapne_size (PNode110 n (aoo_app a)) := S ((myaosize a) + (my_pmapne_size n));
+            my_pmapne_size (PNode111 n1 (aoo_app a) n2) := S ((myaosize a) + (my_pmapne_size n1) + (my_pmapne_size n2));
+            my_pmapne_size (PNode111 n1 (aoo_operand o) n2) := S ((BVsize o) + (my_pmapne_size n1) + (my_pmapne_size n2));
         where myaosize (ao : AppliedOperator' symbol BuiltinValue) : nat :=
             myaosize (ao_operator _) := 1 ;
             myaosize (ao_app_operand ao' t) := S ((BVsize t) + (myaosize ao')) ;
@@ -154,15 +169,21 @@ Module default_builtin.
             ∀ x y : (AppliedOperator' symbol BuiltinValue),
                 myaosize x <= sz ->
                     {x = y} + {x ≠ y}
+        with BuiltinValue_eqdec_helper_4 (sz : nat):
+            ∀ x y : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue),
+                my_pmapne_size x <= sz ->
+                    {x = y} + {x ≠ y}
         .
         Proof.
             {
-                clear BuiltinValue_eqdec_helper_1.
                 intros x y Hsz.
                 revert x Hsz y.
                 induction sz; intros x Hsz y.
                 {
-                    destruct x; (ltac1:(simp BVsize in Hsz; lia)).
+                    destruct x; (ltac1:(simpl in Hsz));
+                    try (ltac1:(lia)).
+                    destruct m; (ltac1:(simpl in Hsz));
+                    try (ltac1:(lia)).
                 }
                 destruct x.
                 {
@@ -207,6 +228,27 @@ Module default_builtin.
                     }
                     {
                         right. ltac1:(congruence).
+                    }
+                }
+                {
+                    {
+                        destruct y;
+                        try ltac1:(right; discriminate).
+                        destruct m,m0;
+                        try (solve[ltac1:(right; discriminate)]).
+                        {
+                            left. reflexivity.
+                        }
+                        simpl in Hsz.
+                        fold my_pmapne_size in *.
+                        assert(IH := BuiltinValue_eqdec_helper_4 sz p p0 ltac:(lia)).
+                        destruct IH as [IH|IH].
+                        {
+                            left. subst. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
                     }
                 }
             }
@@ -379,6 +421,185 @@ Module default_builtin.
                         {
                             right. ltac1:(congruence).
                         }
+                    }
+                }
+            }
+            {
+                induction sz; intros x y Hsz.
+                {
+                    destruct x; simpl in Hsz; try (ltac1:(lia));
+                    destruct a; simpl in Hsz; try (ltac1:(lia)).
+                }
+                destruct x.
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]).
+                    simpl in Hsz.
+                    assert (IH1 := IHsz x y ltac:(lia)).
+                    destruct IH1 as [IH1|IH1].
+                    {
+                        subst; left. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]);
+                    destruct a; try (solve [right; ltac1:(congruence)]);
+                    destruct a0; try (solve [right; ltac1:(congruence)]);
+                    simpl in Hsz; fold myaosize in *.
+                    {
+                        assert (IH1 := BuiltinValue_eqdec_helper_3 sz ao ao0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1].
+                        {
+                            subst; left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                    {
+                        assert (IH1 := BuiltinValue_eqdec_helper_1 sz operand operand0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1].
+                        {
+                            subst; left; reflexivity.
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                    }
+                }
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]);
+                    destruct a; try (solve [right; ltac1:(congruence)]);
+                    destruct a0; try (solve [right; ltac1:(congruence)]);
+                    simpl in Hsz; fold myaosize in *.
+                    {
+                        assert (IH1 := IHsz x y ltac:(lia)).
+                        assert (IH2 := BuiltinValue_eqdec_helper_3 sz ao ao0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                        {
+                            subst; left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                    {
+                        assert (IH1 := BuiltinValue_eqdec_helper_1 sz operand operand0 ltac:(lia)).
+                        assert (IH2 := IHsz x y ltac:(lia)).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                        {
+                            subst; left; reflexivity.
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                    }
+                }
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]).
+                    simpl in Hsz.
+                    assert (IH1 := IHsz x y ltac:(lia)).
+                    destruct IH1 as [IH1|IH1].
+                    {
+                        subst; left. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]).
+                    simpl in Hsz.
+                    assert (IH1 := IHsz x1 y1 ltac:(lia)).
+                    assert (IH2 := IHsz x2 y2 ltac:(lia)).
+                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                    {
+                        subst; left. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]);
+                    destruct a; try (solve [right; ltac1:(congruence)]);
+                    destruct a0; try (solve [right; ltac1:(congruence)]);
+                    simpl in Hsz. fold myaosize in *.
+                    {
+                        assert (IH1 := IHsz x y ltac:(lia)).
+                        assert (IH2 := BuiltinValue_eqdec_helper_3 sz ao ao0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                        {
+                            subst; left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                    {
+                        assert (IH1 := IHsz x y ltac:(lia)).
+                        assert (IH2 := BuiltinValue_eqdec_helper_1 sz operand operand0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                        {
+                            subst; left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                }
+                {
+                    destruct y; try (solve [right; ltac1:(congruence)]);
+                    destruct a; try (solve [right; ltac1:(congruence)]);
+                    destruct a0; try (solve [right; ltac1:(congruence)]);
+                    simpl in Hsz; fold myaosize in *.
+                    {
+                        assert (IH1 := IHsz x1 y1 ltac:(lia)).
+                        assert (IH2 := IHsz x2 y2 ltac:(lia)).
+                        assert (IH3 := BuiltinValue_eqdec_helper_3 sz ao ao0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2], IH3 as [IH3|IH3];
+                        try (solve [subst; left; reflexivity]);
+                        try (solve [right; ltac1:(congruence)]).
+                    }
+                    {
+                        assert (IH1 := IHsz x1 y1 ltac:(lia)).
+                        assert (IH2 := IHsz x2 y2 ltac:(lia)).
+                        assert (IH3 := BuiltinValue_eqdec_helper_1 sz operand operand0 ltac:(lia)).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2], IH3 as [IH3|IH3];
+                        try (solve [subst; left; reflexivity]);
+                        try (solve [right; ltac1:(congruence)]).
                     }
                 }
             }
