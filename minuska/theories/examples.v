@@ -286,7 +286,7 @@ Module arith.
     Declare Scope LangArithScope.
     Delimit Scope LangArithScope with larith.
 
-    Notation "x '+' y" := (plus [ x, y ]).
+    Notation "x '+' y" := (plus [ x, y ])%larith.
 
     Definition isResult (x : Expression) : Expression :=
         (isNat x)
@@ -303,24 +303,13 @@ Module arith.
                     (isNat ($Y))
                 )
         );
-        decl_ctx (
+        decl_strict (
             {|
-                cd_label := "plus-1" ;
-                cd_sym := "plus" ;
-                cd_arity := 2 ;
-                cd_position := 0 ;
-                cd_isResult := isResult ;
-                cd_cseq_context := (fun _ t => cfg [t] )
-            |}
-        );
-        decl_ctx (
-            {|
-                cd_label := "plus-2" ;
-                cd_sym := "plus" ;
-                cd_arity := 2 ;
-                cd_position := 1 ;
-                cd_isResult := isResult ;
-                cd_cseq_context := (fun _ t => cfg [t] )
+                sd_sym := "plus" ;
+                sd_arity := 2 ;
+                sd_positions := [0;1] ;
+                sd_isResult := isResult ;
+                sd_cseq_context := (fun _ t => cfg [t] )
             |}
         )
     ].
@@ -350,19 +339,19 @@ Module arith.
         )
     .
 
-    Print Γ.
     Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
     :=
         let res := interp_loop_ext (naive_interpreter_ext Γ.1) fuel (initial x ly) nil in
         (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
     .
 
+    (*
     (* Debugging notations *)
     Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
     Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
     Notation "( x )" := (ao_operator x) (only printing).
-    Eval vm_compute in (interp_list 2 1 [20;30;40]).
-
+    Eval vm_compute in (interp_list 7 1 [20;30;40]).
+    *)
     Lemma interp_list_test_1:
         exists log,
         (interp_list 20 1 [20;30;40]) = (12, (initial 91 nil), log)

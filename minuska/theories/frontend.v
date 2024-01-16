@@ -64,6 +64,37 @@ Record ContextDeclaration {Σ : StaticModel}
             ;
 }.
 
+Record StrictnessDeclaration {Σ : StaticModel}
+:= mkStrictnessDeclaration {
+    sd_sym : symbol ;
+    sd_arity : nat ;
+    sd_positions : list nat ;
+    sd_isResult : Expression -> Expression ;
+    sd_cseq_context :
+            forall {_br : BasicResolver},
+                AppliedOperatorOr' symbol operand_type ->
+                AppliedOperatorOr' symbol operand_type
+    
+}.
+
+Definition strictness_to_contexts
+    {Σ : StaticModel}
+    (sym_to_str : symbol -> string)
+    (str_to_sym : string -> symbol)
+    (str_to_label : string -> label)
+    (sd : StrictnessDeclaration)
+    : list ContextDeclaration
+:=
+    map (fun position => {|
+            cd_label := (str_to_label (sym_to_str (sd_sym sd) +:+ ("-" +:+ (pretty position)))) ;
+            cd_sym := sd_sym sd ;
+            cd_arity := sd_arity sd ;
+            cd_position := position ;
+            cd_isResult := sd_isResult sd ;
+            cd_cseq_context := @sd_cseq_context Σ sd ;
+        |})
+        (sd_positions sd)
+.
 
 Record RuleDeclaration {Σ : StaticModel}
 := mkRuleDeclaration {
@@ -76,6 +107,7 @@ Arguments mkRuleDeclaration {Σ} rd_label rd_rule.
 Inductive Declaration {Σ : StaticModel} :=
 | decl_rule (r : RuleDeclaration)
 | decl_ctx (c : ContextDeclaration)
+| decl_strict (s : StrictnessDeclaration)
 .
 
 (*Coercion decl_rule : RuleDeclaration >-> Declaration.*)
@@ -268,7 +300,6 @@ Section wsm.
             where (isResult (ft_variable selected_var))
     .
 
-    (* TODO implement *)
     Definition process_context_declaration
         (s : State)
         (c : ContextDeclaration)
@@ -300,6 +331,17 @@ Section wsm.
             cr
     .
 
+    Definition process_strictness_declaration
+        (s : State)
+        (c : StrictnessDeclaration)
+        : State
+    :=
+        foldr
+            (fun a b => process_context_declaration b a)
+            s
+            (strictness_to_contexts id id id c)
+    .
+
     Definition initialState
         {Σ : StaticModel}
         : State
@@ -318,6 +360,7 @@ Section wsm.
     match d with
     | decl_rule rd => process_rule_declaration s rd
     | decl_ctx cd => process_context_declaration s cd
+    | decl_strict sd => process_strictness_declaration s sd
     end.
 
     Definition process_declarations
