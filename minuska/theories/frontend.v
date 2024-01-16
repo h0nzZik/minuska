@@ -137,14 +137,19 @@ Section wsm.
         (@apply_symbol' Σ T (to_sym ("freezer_" +:+ sym +:+ "_" +:+ (pretty position))))
     .
 
-    Definition heating_rule
+    Check foldr.
+
+    Definition heating_rule_seq
         (lbl : label)
         (sym : symbol)
         (arity : nat)
         (position : nat)
-        (side_condition : Expression)
         (isResult : Expression -> Expression)
-        (cseq_context : AppliedOperatorOr' symbol BuiltinOrVar -> AppliedOperatorOr' symbol BuiltinOrVar)
+        (cseq_context :
+            forall {_br : BasicResolver},
+                AppliedOperatorOr' symbol operand_type ->
+                AppliedOperatorOr' symbol operand_type
+        )
         : RuleDeclaration
     :=
         let vars : list variable
@@ -157,12 +162,17 @@ Section wsm.
             := to_var (argument_name position) in
         let lhs_selected_var : (AppliedOperatorOr' symbol BuiltinOrVar)
             := aoo_operand (bov_variable selected_var) in
+        let force_cseq_context
+            := ((fun _:TagLHS => cseq_context) mkTagLHS) in
+        (* all operands on the left are already evaluated *)
+        let side_condition : Expression
+            := foldr (fun a b => (a && b)%rs) (true)%rs (isResult <$> (firstn (position) (ft_variable <$> vars) )) in
         rule [lbl]:
             cseq_context (cseq ([
                 (apply_symbol' sym lhs_vars);
                 (aoo_operand (bov_variable REST_SEQ))
             ])%list)
-         ~> OpenTerm_to_ExprTerm ((cseq_context (cseq ([
+         ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq ([
                 lhs_selected_var;
                 cseq ([
                     (freezer lbl position (delete position lhs_vars));
@@ -248,7 +258,8 @@ Definition process_declarations
 Definition to_theory
     {Σ : StaticModel}
     (s : State)
-    : FlattenedRewritingTheory
+    : FlattenedRewritingTheory*(list string)
 :=
-    (map_to_list (st_rules s)).*2
+    let l := (map_to_list (st_rules s)) in
+    (l.*2,l.*1)
 .

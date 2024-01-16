@@ -343,15 +343,15 @@ Module default_builtin.
 
     Module Notations.
         
-        (*
+        
         Notation "'true'" := (ft_nullary b_true)
-            : RuleScsScope
+            : RuleScope
         .
 
         Notation "'false'" := (ft_nullary b_false)
-            : RuleScsScope
+            : RuleScope
         .
-        *)
+    
         Notation "b1 '&&' b2" :=
             (ft_binary default_builtin.b_and
                 (b1)

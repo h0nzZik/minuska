@@ -31,6 +31,24 @@ match fuel with
 end
 .
 
+Fixpoint interp_loop_ext
+    {Σ : StaticModel}
+    (interp : GroundTerm -> option (GroundTerm*nat))
+    (fuel : nat)
+    (g : GroundTerm)
+    (log : list nat)
+    : (nat*GroundTerm*(list nat))
+:=
+match fuel with
+| 0 => (0,g,log)
+| S fuel' =>
+    match interp g with
+    | None => (fuel', g, log)
+    | Some (g',log_entry) => interp_loop_ext interp fuel' g' (cons log_entry log)
+    end
+end
+.
+
 Module example_1.
 
     (*
@@ -56,13 +74,14 @@ Module example_1.
         )
     ].
 
-    Definition Γ : FlattenedRewritingTheory
+    Definition Γ : FlattenedRewritingTheory*(list string)
         := Eval vm_compute in (to_theory (process_declarations (Decls))).
 
     Definition interp :=
-        naive_interpreter Γ
+        naive_interpreter Γ.1
     .
 
+    (* TODO remove *)
     Fixpoint interp_loop
         (fuel : nat)
         (g : GroundTerm)
@@ -167,7 +186,7 @@ Module two_counters.
     Definition s {_br : BasicResolver} := (apply_symbol "s").
     Arguments s {_br} _%rs.
 
-    Definition Γ : FlattenedRewritingTheory :=
+    Definition Γ : FlattenedRewritingTheory*(list string) :=
     Eval vm_compute in (to_theory (process_declarations ([
         decl_rule (
             rule ["my-rule"]:
@@ -178,7 +197,7 @@ Module two_counters.
     
 
     Definition interp :=
-        naive_interpreter Γ
+        naive_interpreter Γ.1
     .
 
     Definition pair_to_state (mn : nat*nat) : GroundTerm :=
@@ -277,7 +296,14 @@ Module arith.
         (isNat x)
     .
 
-
+    Compute (heating_rule_seq
+                "plus-heat-2"
+                ("plus":symbol)
+                2
+                1
+                isResult
+                (fun _ t => cfg [t] )
+            ).
 
     Definition Decls : list Declaration := [
         decl_rule (
@@ -291,32 +317,52 @@ Module arith.
                 )
         );
         decl_rule (
+            (heating_rule_seq
+                "plus-1"
+                ("plus":symbol)
+                2
+                0
+                isResult
+                (fun _ t => cfg [t] )
+            )
+            (*
             rule ["plus-heat-1"]:
                 cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
             ~> cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
                 where ( ~~ (isResult ($X)) )
+            *)
         );
         decl_rule (
             rule ["plus-cool-1"]: 
-                cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
+                cfg [ cseq [$X, cseq [ (freezer "plus-1" 0) [$Y] , $REST_SEQ ]]]
             ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
                 where ((isResult ($X)) )
         );
         decl_rule (
+            (heating_rule_seq
+                "plus-2"
+                ("plus":symbol)
+                2
+                1
+                isResult
+                (fun _ t => cfg [t] )
+            )
+            (*
             rule ["plus-heat-2"]:
                 cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
             ~> cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
                 where ( isResult ($X) && ~~ (isResult ($Y)) )
+            *)
         );
         decl_rule (
             rule ["plus-cool-2"]: 
-                cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
+                cfg [ cseq [$Y, cseq [ (freezer "plus-2" 1) [$X] , $REST_SEQ ]]]
             ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
                 where ((isResult ($Y)) )
         )
     ].
 
-    Definition Γ : FlattenedRewritingTheory := Eval vm_compute in 
+    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls))).
 
     Definition initial1 (x y : nat) :=
@@ -341,12 +387,24 @@ Module arith.
         )
     .
 
+    Print Γ.
     Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
     :=
-        interp_loop (naive_interpreter Γ) fuel (initial x ly)
+        let res := interp_loop_ext (naive_interpreter_ext Γ.1) fuel (initial x ly) nil in
+        (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
     .
 
-    Eval vm_compute in (interp_list 20 1 [20;30;40]).
+    (* Debugging notations *)
+    Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
+    Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
+    Notation "( x )" := (ao_operator x) (only printing).
+    Eval vm_compute in (interp_list 7 1 [20;30;40]).
+
+    Lemma interp_list_test_1:
+        exists log,
+        (interp_list 20 1 [20;30;40]) = (12, (initial 91 nil), log)
+    .
+    Proof. eexists. reflexivity. Qed.
 
 End arith.
 

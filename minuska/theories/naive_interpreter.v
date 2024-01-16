@@ -632,7 +632,7 @@ Definition thy_lhs_match_one
     
     (e : GroundTerm)
     (Γ : list FlattenedRewritingRule)
-    : option (FlattenedRewritingRule * Valuation)%type
+    : option (FlattenedRewritingRule * Valuation * nat)%type
 :=
     let froms : list OpenTerm
         := fr_from <$> Γ
@@ -648,7 +648,7 @@ Definition thy_lhs_match_one
     let ov : option Valuation := nov.2 in
     v ← ov;
     r ← Γ !! idx;
-    Some (r, v)
+    Some (r, v, idx)
 .
 
 Lemma thy_lhs_match_one_None
@@ -785,8 +785,9 @@ Lemma thy_lhs_match_one_Some
     (Γ : list FlattenedRewritingRule)
     (r : FlattenedRewritingRule)
     (ρ : Valuation)
+    (rule_idx : nat)
     :
-    thy_lhs_match_one e Γ = Some (r, ρ) ->
+    thy_lhs_match_one e Γ = Some (r, ρ, rule_idx) ->
     r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
 .
 Proof.
@@ -814,7 +815,7 @@ Proof.
         split.
         {
             rewrite elem_of_list_lookup.
-            exists idx. apply Hot1.
+            exists rule_idx. apply Hot1.
         }
         {
             destruct H12 as [H1 H2].
@@ -840,20 +841,34 @@ Proof.
 Qed.
 
 
+Definition naive_interpreter_ext
+    {Σ : StaticModel}
+    
+    (Γ : list FlattenedRewritingRule)
+    (e : GroundTerm)
+    : option (GroundTerm*nat)
+:=
+    let oρ : option (FlattenedRewritingRule*Valuation*nat)
+        := thy_lhs_match_one e Γ in
+    match oρ with
+    | None => None
+    | Some (r,ρ,idx) =>
+        e' ← (evaluate_rhs_pattern ρ (fr_to r));
+        Some (e',idx)
+    end
+.
+
 Definition naive_interpreter
     {Σ : StaticModel}
     
     (Γ : list FlattenedRewritingRule)
     (e : GroundTerm)
-    : option GroundTerm
+    : option (GroundTerm)
 :=
-    let oρ : option (FlattenedRewritingRule*Valuation)
-        := thy_lhs_match_one e Γ in
-    match oρ with
-    | None => None
-    | Some (r,ρ) => (evaluate_rhs_pattern ρ (fr_to r))
-    end
+    ei ← naive_interpreter_ext Γ e;
+    Some ei.1
 .
+
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
@@ -865,12 +880,13 @@ Proof.
     unfold naive_interpreter.
     unfold FlatInterpreter_sound.
     unfold flat_stuck,not_stuck_flat.
+    unfold naive_interpreter_ext.
     split.
     {
         intros e Hstuck.
         destruct (thy_lhs_match_one e Γ) eqn:Hmatch>[|reflexivity].
         {
-            destruct p as [r ρ].
+            destruct p as [[r ρ] rule_idx].
             {
                 apply thy_lhs_match_one_Some in Hmatch.
                 destruct Hmatch as [Hin Hsat].
@@ -883,6 +899,11 @@ Proof.
                 {
                     intros HContra. clear -HContra.
                     rewrite <- eq_None_ne_Some.
+                    intros x HC.
+                    rewrite bind_Some in HC.
+                    destruct HC as [x0 [HC1 HC2]].
+                    inversion HC2; subst; clear HC2.
+                    rewrite bind_Some in HC1.
                     ltac1:(naive_solver).
                 }
                 intros HContra.
@@ -914,7 +935,7 @@ Proof.
         
         destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
         {
-            destruct p as [r ρ]; cbn in *.
+            destruct p as [[r ρ] rule_idx]; cbn in *.
             apply thy_lhs_match_one_Some in Hmatch.
             destruct Hmatch as [Hin Hsat].
             
