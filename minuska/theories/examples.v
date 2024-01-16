@@ -365,9 +365,10 @@ Module arith.
     (to_theory (process_declarations (Decls))).
 
 
+    (*
     Definition initial1 (x y : nat) :=
         (ground (cfg [ cseq [ ((@aoo_operand symbol _ (bv_nat x)) + (@aoo_operand symbol _ (bv_nat y))), emptyCseq [] ] ]))
-    .
+    .*)
 
     Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
         (ground (

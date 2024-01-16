@@ -93,13 +93,19 @@ Instance ToAOO_id {Σ : StaticModel} {_basic_resolver : BasicResolver}
     to_aoo_opt := fun x => x;
 |}.
 
+(* I have no idea why I need the indirection through T. *)
 #[export]
 Instance ToAOO_inj {Σ : StaticModel} {_basic_resolver : BasicResolver}
-    : ToAOO  (operand_type)
+    {T : Type}
+    {_eq: TCEq T operand_type}
+    : ToAOO  (T)
+.
+Proof. inversion _eq. subst. constructor. apply aoo_operand. Defined.
+(*
 := {|
     to_aoo_opt := aoo_operand;
 |}.
-
+*)
 
 Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%type_scope {ToAOO} _.
 

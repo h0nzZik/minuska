@@ -384,7 +384,7 @@ Module default_builtin.
             }
         Defined.
 
-        #[export]
+        #[local]
         Instance BuiltinValue_eqdec : EqDecision BuiltinValue.
         Proof.
             intros x y.
