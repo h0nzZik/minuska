@@ -51,11 +51,9 @@ end
 
 Module example_1.
 
-    (*
-    Import empty_builtin.*)
     #[local]
     Instance Σ : StaticModel :=
-        default_model (empty_builtin.β)
+        default_model (default_builtin.β)
     .
     
     Definition X : variable := "X".
@@ -168,10 +166,8 @@ End example_1.
 
 Module two_counters.
 
-    Import empty_builtin.
-
     #[local]
-    Instance Σ : StaticModel := default_model (empty_builtin.β).
+    Instance Σ : StaticModel := default_model (default_builtin.β).
 
 
     Definition M : variable := "M".
@@ -296,15 +292,6 @@ Module arith.
         (isNat x)
     .
 
-    Compute (heating_rule_seq
-                "plus-heat-2"
-                ("plus":symbol)
-                2
-                1
-                isResult
-                (fun _ t => cfg [t] )
-            ).
-
     Definition Decls : list Declaration := [
         decl_rule (
             rule ["plus-nat-nat"]:
@@ -316,49 +303,25 @@ Module arith.
                     (isNat ($Y))
                 )
         );
-        decl_rule (
-            (heating_rule_seq
-                "plus-1"
-                ("plus":symbol)
-                2
-                0
-                isResult
-                (fun _ t => cfg [t] )
-            )
-            (*
-            rule ["plus-heat-1"]:
-                cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-            ~> cfg [ cseq [$X, cseq [ (freezer "plus" 0) [$Y] , $REST_SEQ ]]]
-                where ( ~~ (isResult ($X)) )
-            *)
+        decl_ctx (
+            {|
+                cd_label := "plus-1" ;
+                cd_sym := "plus" ;
+                cd_arity := 2 ;
+                cd_position := 0 ;
+                cd_isResult := isResult ;
+                cd_cseq_context := (fun _ t => cfg [t] )
+            |}
         );
-        decl_rule (
-            rule ["plus-cool-1"]: 
-                cfg [ cseq [$X, cseq [ (freezer "plus-1" 0) [$Y] , $REST_SEQ ]]]
-            ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-                where ((isResult ($X)) )
-        );
-        decl_rule (
-            (heating_rule_seq
-                "plus-2"
-                ("plus":symbol)
-                2
-                1
-                isResult
-                (fun _ t => cfg [t] )
-            )
-            (*
-            rule ["plus-heat-2"]:
-                cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-            ~> cfg [ cseq [$Y, cseq [ (freezer "plus" 1) [$X] , $REST_SEQ ]]]
-                where ( isResult ($X) && ~~ (isResult ($Y)) )
-            *)
-        );
-        decl_rule (
-            rule ["plus-cool-2"]: 
-                cfg [ cseq [$Y, cseq [ (freezer "plus-2" 1) [$X] , $REST_SEQ ]]]
-            ~> cfg [ cseq [ plus [ $X, $Y ], $REST_SEQ ]]
-                where ((isResult ($Y)) )
+        decl_ctx (
+            {|
+                cd_label := "plus-2" ;
+                cd_sym := "plus" ;
+                cd_arity := 2 ;
+                cd_position := 1 ;
+                cd_isResult := isResult ;
+                cd_cseq_context := (fun _ t => cfg [t] )
+            |}
         )
     ].
 
@@ -398,7 +361,7 @@ Module arith.
     Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
     Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
     Notation "( x )" := (ao_operator x) (only printing).
-    Eval vm_compute in (interp_list 7 1 [20;30;40]).
+    Eval vm_compute in (interp_list 2 1 [20;30;40]).
 
     Lemma interp_list_test_1:
         exists log,

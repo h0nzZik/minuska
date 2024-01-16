@@ -53,8 +53,15 @@ Definition label {Σ : StaticModel} :=
 Record ContextDeclaration {Σ : StaticModel}
 := mkContextDeclaration {
     cd_label : label ;
-    cd_variable : variable ;
-    cd_pattern : AppliedOperatorOr' symbol BuiltinOrVar ;
+    cd_sym : symbol ;
+    cd_arity : nat ;
+    cd_position : nat ;
+    cd_isResult : Expression -> Expression ;
+    cd_cseq_context :
+            forall {_br : BasicResolver},
+                AppliedOperatorOr' symbol operand_type ->
+                AppliedOperatorOr' symbol operand_type
+            ;
 }.
 
 
@@ -103,6 +110,40 @@ Definition argument_sequence
     to_var <$> (argument_name <$> (seq 0 arity))
 .
 
+Definition NamedFlattenedRewritingRule
+    {Σ : StaticModel}
+    : Type
+:=
+    prod label FlattenedRewritingRule
+.
+
+
+Record State {Σ : StaticModel}
+:= mkState {
+    st_rules : gmap label FlattenedRewritingRule ;
+    st_log : string ;
+}.
+
+Arguments mkState {Σ} st_rules st_log%string_scope.
+
+Definition process_rule_declaration
+    {Σ : StaticModel}
+    (s : State)
+    (r : RuleDeclaration)
+    : State
+:=
+match (st_rules s) !! (rd_label r) with
+| Some _
+    => (mkState
+        (st_rules s)
+        ((st_log s) +:+ ("Rule with name '" +:+ (rd_label r) ++ "' already present"))%string)
+| None
+    => mkState
+        (<[(rd_label r) := (rd_rule r)]>(st_rules s))
+        (st_log s)
+end
+.
+
 Section wsm.
 (*
     Context
@@ -141,6 +182,7 @@ Section wsm.
 
     Definition heating_rule_seq
         (lbl : label)
+        (freezerLbl : label)
         (sym : symbol)
         (arity : nat)
         (position : nat)
@@ -175,91 +217,126 @@ Section wsm.
          ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq ([
                 lhs_selected_var;
                 cseq ([
-                    (freezer lbl position (delete position lhs_vars));
+                    (freezer freezerLbl position (delete position lhs_vars));
                     (aoo_operand (bov_variable REST_SEQ))
                 ])%list
             ])%list)))
             where (( ~~ (isResult (ft_variable selected_var)) ) && side_condition )
     .
 
+
+    Definition cooling_rule
+        (lbl : label)
+        (freezerLbl : label)
+        (sym : symbol)
+        (arity : nat)
+        (position : nat)
+        (isResult : Expression -> Expression)
+        (cseq_context :
+            forall {_br : BasicResolver},
+                AppliedOperatorOr' symbol operand_type ->
+                AppliedOperatorOr' symbol operand_type
+        )
+        : RuleDeclaration
+    :=
+        let vars : list variable
+            := argument_sequence to_var arity in
+        let lhs_vars : list (AppliedOperatorOr' symbol BuiltinOrVar)
+            := (aoo_operand <$> (bov_variable <$> vars)) in
+        let rhs_vars : list (AppliedOperatorOr' symbol Expression)
+            := (aoo_operand <$> (ft_variable <$> vars)) in
+        let selected_var : variable
+            := to_var (argument_name position) in
+        let lhs_selected_var : (AppliedOperatorOr' symbol BuiltinOrVar)
+            := aoo_operand (bov_variable selected_var) in
+        let force_cseq_context
+            := ((fun _:TagLHS => cseq_context) mkTagLHS) in
+        rule [lbl]:
+            cseq_context (cseq (
+                ([
+                lhs_selected_var;
+                cseq ([
+                    (freezer freezerLbl position (delete position lhs_vars));
+                    (aoo_operand (bov_variable REST_SEQ))
+                ])%list
+            ])%list
+           ))
+         ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq [
+                (apply_symbol' sym lhs_vars);
+                (aoo_operand (bov_variable REST_SEQ))
+            ])%list))
+            where (isResult (ft_variable selected_var))
+    .
+
+    (* TODO implement *)
+    Definition process_context_declaration
+        (s : State)
+        (c : ContextDeclaration)
+        : State
+    := 
+        let hr : RuleDeclaration
+            := heating_rule_seq
+                    ((cd_label c) +:+ "-heat")
+                    (cd_label c)
+                    (cd_sym c)
+                    (cd_arity c)
+                    (cd_position c)
+                    (cd_isResult c)
+                    (@cd_cseq_context Σ c)
+            in
+        let cr : RuleDeclaration
+            := cooling_rule
+                    ((cd_label c) +:+ "-cool")
+                    (cd_label c)
+                    (cd_sym c)
+                    (cd_arity c)
+                    (cd_position c)
+                    (cd_isResult c)
+                    (@cd_cseq_context Σ c)
+            in
+        
+        process_rule_declaration
+            (process_rule_declaration s hr)
+            cr
+    .
+
+    Definition initialState
+        {Σ : StaticModel}
+        : State
+    := {|
+        st_rules := ∅ ;
+        st_log := "";
+    |}.
+
+
+
+    Definition process_declaration
+        (s : State)
+        (d : Declaration)
+        : State
+    :=
+    match d with
+    | decl_rule rd => process_rule_declaration s rd
+    | decl_ctx cd => process_context_declaration s cd
+    end.
+
+    Definition process_declarations
+        (ld : list Declaration)
+        : State
+    :=
+        fold_left process_declaration ld initialState
+    .
+
+    Definition to_theory
+        {Σ : StaticModel}
+        (s : State)
+        : FlattenedRewritingTheory*(list string)
+    :=
+        let l := (map_to_list (st_rules s)) in
+        (l.*2,l.*1)
+    .
+
 End wsm.
 
-Definition NamedFlattenedRewritingRule
-    {Σ : StaticModel}
-    : Type
-:=
-    prod label FlattenedRewritingRule
-.
 
 
-Record State {Σ : StaticModel}
-:= mkState {
-    st_rules : gmap label FlattenedRewritingRule ;
-    st_log : string ;
-}.
-
-Arguments mkState {Σ} st_rules st_log%string_scope.
-
-
-Definition initialState
-    {Σ : StaticModel}
-    : State
-:= {|
-    st_rules := ∅ ;
-    st_log := "";
-|}.
-
-Definition process_rule_declaration
-    {Σ : StaticModel}
-    (s : State)
-    (r : RuleDeclaration)
-    : State
-:=
-match (st_rules s) !! (rd_label r) with
-| Some _
-    => (mkState
-        (st_rules s)
-        ((st_log s) +:+ ("Rule with name '" +:+ (rd_label r) ++ "' already present"))%string)
-| None
-    => mkState
-        (<[(rd_label r) := (rd_rule r)]>(st_rules s))
-        (st_log s)
-end
-.
-
-(* TODO implement *)
-Definition process_context_declaration
-    {Σ : StaticModel}
-    (s : State)
-    (c : ContextDeclaration)
-    : State
-:= s.
-
-Definition process_declaration
-    {Σ : StaticModel}
-    (s : State)
-    (d : Declaration)
-    : State
-:=
-match d with
-| decl_rule rd => process_rule_declaration s rd
-| decl_ctx cd => process_context_declaration s cd
-end.
-
-Definition process_declarations
-    {Σ : StaticModel}
-    (ld : list Declaration)
-    : State
-:=
-    fold_left process_declaration ld initialState
-.
-
-
-Definition to_theory
-    {Σ : StaticModel}
-    (s : State)
-    : FlattenedRewritingTheory*(list string)
-:=
-    let l := (map_to_list (st_rules s)) in
-    (l.*2,l.*1)
-.
