@@ -157,6 +157,7 @@ Module default_builtin.
         .
         Proof.
             {
+                clear BuiltinValue_eqdec_helper_1.
                 intros x y Hsz.
                 revert x Hsz y.
                 induction sz; intros x Hsz y.
@@ -210,11 +211,18 @@ Module default_builtin.
                 }
             }
             {
+                clear BuiltinValue_eqdec_helper_2.
                 intros x y Hsz.
                 revert x Hsz y.
                 induction sz; intros x Hsz y.
                 {
-                    destruct x; (ltac1:(simp BVsize in Hsz; lia)).
+                    destruct x; (ltac1:(simpl in Hsz)).
+                    {
+                        ltac1:(lia).
+                    }
+                    {
+                        destruct a; simpl in Hsz; ltac1:(lia).
+                    }
                 }
                 destruct x.
                 {
@@ -293,77 +301,98 @@ Module default_builtin.
                 }
             }
             {
-                
+                clear BuiltinValue_eqdec_helper_3.
+                intros x y Hsz.
+                revert x Hsz y.
+                induction sz; intros x Hsz y.
+                {
+                    destruct x; (ltac1:(simp BVsize in Hsz; lia)).
+                }
+                destruct x.
+                {
+                    destruct y.
+                    {
+                        destruct (decide (s = s0)).
+                        {
+                            subst. left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                    {
+                        right. ltac1:(discriminate).
+                    }
+                    {
+                        right. ltac1:(discriminate).
+                    }
+                }
+                {
+                    destruct y.
+                    {
+                        right. ltac1:(discriminate).
+                    }
+                    {
+                        ltac1:(unshelve(simpl in Hsz)).
+                        specialize (IHsz x ltac:(lia) y).
+                        assert(IH2 := BuiltinValue_eqdec_helper_1 sz b b0 ltac:(lia)).
+                        destruct IHsz as [IHsz|IHsz], IH2 as [IH2|IH2].
+                        {
+                            subst. left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                    {
+                        right. ltac1:(discriminate).
+                    }
+                }
+                {
+                    destruct y.
+                    {
+                        right. ltac1:(discriminate).
+                    }
+                    {
+                        right. ltac1:(discriminate).
+                    }
+                    {
+                        ltac1:(unshelve(simpl in Hsz)).
+                        assert (IH1 := IHsz x1 ltac:(lia) y1).
+                        assert (IH2 := IHsz x2 ltac:(lia) y2).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                        {
+                            subst. left. reflexivity.
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                        {
+                            right. ltac1:(congruence).
+                        }
+                    }
+                }
             }
         Defined.
 
         #[export]
-        Instance BuiltinValue_eqDec : EqDecision BuiltinValue.
+        Instance BuiltinValue_eqdec : EqDecision BuiltinValue.
         Proof.
-            ltac1:(unfold EqDecision, Decision).
-            intros x.
-            remember (BVsize x) as sz.
-            assert (Hsz : BVsize x <= sz) by (ltac1:(lia)).
-            clear Heqsz.
-            revert x Hsz.
-            induction sz; intros x Hsz y.
-            {
-                destruct x; (ltac1:(simp BVsize in Hsz; lia)).
-            }
-            destruct x.
-            {
-                destruct y;
-                try (solve [left; reflexivity]);
-                right; ltac1:(discriminate).
-            }
-            {
-                destruct y;
-                try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
-                destruct (decide (b = b0)).
-                {
-                    left. subst. reflexivity.
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-            }
-            {
-                destruct y;
-                try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
-                destruct (decide (n = n0)).
-                {
-                    left. subst. reflexivity.
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-            }
-            {
-                assert (Htmp := @list_eqdec (AppliedOperatorOr' symbol BuiltinValue)).
-                ltac1:(ospecialize (Htmp _)).
-                Check list_eqdec.
-                apply list_eqdec.
-            }
-            ;
-                try ltac1:(solve_decision).
-            ltac1:(unfold Decision).
-            ltac1:(decide equality).
-            {
-                ltac1:(solve_decision).
-            }
-            {
-                ltac1:(solve_decision).
-            }
-            {
-                apply list_eqdec.
-                Search list "dec".
-                ltac1:(solve_decision).
-            }
-        Defined.
-        
-         ltac1:(solve_decision). Defined.
+            intros x y.
+            unfold Decision.
+            eapply BuiltinValue_eqdec_helper_1.
+            apply reflexivity.
+        Defined.        
+
 
         Definition err
         :=
