@@ -459,7 +459,7 @@ End arith.
 
 
 
-Module imp.
+Module fib.
 
     Import default_builtin.
     Import default_builtin.Notations.
@@ -469,34 +469,119 @@ Module imp.
 
     Definition X : variable := "X".
     Definition Y : variable := "Y".
+    Definition Curr : variable := "Curr".
+    Definition Tgt : variable := "Tgt".
     Definition REST_SEQ : variable := "$REST_SEQ".
     
-    Definition cseq {_br : BasicResolver} := (apply_symbol "cseq").
-    Arguments cseq {_br} _%rs.
+    Definition initialState {_br : BasicResolver} := (apply_symbol "initialState").
+    Arguments initialState {_br} _%rs.
 
-    Definition emptyCseq {_br : BasicResolver} := (apply_symbol "emptyCseq").
-    Arguments emptyCseq {_br} _%rs.
-
-    Definition plus {_br : BasicResolver} := (apply_symbol "plus").
-    Arguments plus {_br} _%rs.
-
-    Definition minus {_br : BasicResolver} := (apply_symbol "minus").
-    Arguments minus {_br} _%rs.
-
-    Definition times {_br : BasicResolver} := (apply_symbol "times").
-    Arguments times {_br} _%rs.
-
-    Definition div {_br : BasicResolver} := (apply_symbol "div").
-    Arguments div {_br} _%rs.
-
-    Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
-    Arguments cfg {_br} _%rs.
+    Definition resultState {_br : BasicResolver} := (apply_symbol "resultState").
+    Arguments resultState {_br} _%rs.
 
     Definition state {_br : BasicResolver} := (apply_symbol "state").
     Arguments state {_br} _%rs.
 
-    Definition s {_br : BasicResolver} := (apply_symbol "s").
-    Arguments s {_br} _%rs.
+    Definition Decls : list Declaration := [
+        decl_rule (
+            rule ["just-0"]:
+               initialState [ (bov_builtin (bv_nat 0)) ]
+            ~> resultState [ (ft_element (aoo_operand (bv_nat 0))) ]
+        );
+        decl_rule (
+            rule ["just-1"]:
+               initialState [ (bov_builtin (bv_nat 1)) ]
+            ~> resultState [ (ft_element (aoo_operand (bv_nat 1))) ]
+        );
+        decl_rule (
+            rule ["two-or-more"]:
+               initialState [ $Tgt ]
+            ~> state [
+                $Tgt,
+                (ft_element (aoo_operand (bv_nat 2))),
+                (ft_element (aoo_operand (bv_nat 1))),
+                (ft_element (aoo_operand (bv_nat 1))) 
+               ]
+            where ((~~ ($Tgt ==Nat (ft_element (aoo_operand (bv_nat 0)))))
+                && (~~ ($Tgt ==Nat (ft_element (aoo_operand (bv_nat 1))))))
+        );
+        decl_rule (
+            rule ["step"]:
+               state [ $Tgt, $Curr, $X, $Y ]
+            ~> state [ $Tgt, ($Curr +Nat (ft_element (aoo_operand (bv_nat 1)))), ($X +Nat $Y), $X ]
+            where (~~ ($Curr ==Nat $Tgt))
+        );
+        decl_rule (
+            rule ["result"]:
+               state [ $Tgt, $Curr, $X, $Y ]
+            ~> resultState [ $X ]
+                where (($Curr ==Nat $Tgt))
+        )
+    ].
 
-End imp.
+    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    (to_theory (process_declarations (Decls))).
+
+    Definition interp_from (fuel : nat) from
+    :=
+        let res := interp_loop_ext (naive_interpreter_ext Γ.1)
+            fuel
+            from
+            nil
+        in
+        (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
+    .
+
+    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
+        (ground (
+            initialState [ x ]
+        ))
+    .
+
+    Eval vm_compute in (interp_from 50 (ground (initial0
+    (
+        (aoo_operand (bv_nat 7))
+    )))).
+
+    Lemma interp_test_fib_0:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (aoo_operand (bv_nat 0)))))
+            = (rem, (ground (resultState [(aoo_operand (bv_nat 0))])), log)
+    .
+    Proof. eexists. eexists. reflexivity. Qed.
+
+    Lemma interp_test_fib_1:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (aoo_operand (bv_nat 1)))))
+            = (rem, (ground (resultState [(aoo_operand (bv_nat 1))])), log)
+    .
+    Proof. eexists. eexists. reflexivity. Qed.
+
+    Lemma interp_test_fib_2:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (aoo_operand (bv_nat 2)))))
+            = (rem, (ground (resultState [(aoo_operand (bv_nat 1))])), log)
+    .
+    Proof. eexists. eexists. reflexivity. Qed.
+
+    Lemma interp_test_fib_3:
+        exists rem log,
+            (interp_from 10 (ground (initial0
+                (aoo_operand (bv_nat 3)))))
+            = (rem, (ground (resultState [(aoo_operand (bv_nat 2))])), log)
+    .
+    Proof. eexists. eexists. reflexivity. Qed.
+
+
+    Lemma interp_test_fib_11:
+        exists rem log,
+            (interp_from 20 (ground (initial0
+                (aoo_operand (bv_nat 11)))))
+            = (rem, (ground (resultState [(aoo_operand (bv_nat 89))])), log)
+    .
+    Proof. eexists. eexists. reflexivity. Qed.
+End fib.
 

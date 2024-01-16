@@ -881,6 +881,10 @@ Module default_builtin.
             (ft_binary b_div (x) (y))
         .
 
+        Notation "'(' x '==Nat' y ')'" :=
+            (ft_binary b_eq (x) (y))
+        .
+
     End Notations.
 
 End default_builtin.
