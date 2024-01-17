@@ -73,7 +73,7 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_sym : symbol ;
     cd_arity : nat ;
     cd_position : nat ;
-    cd_isResult : Expression -> Expression ;
+    cd_isValue : Expression -> Expression ;
     cd_cseq_context : ContextTemplate;
 }.
 
@@ -82,7 +82,7 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_sym : symbol ;
     sd_arity : nat ;
     sd_positions : list nat ;
-    sd_isResult : Expression -> Expression ;
+    sd_isValue : Expression -> Expression ;
     sd_cseq_context : ContextTemplate ;
 }.
 
@@ -96,7 +96,7 @@ Notation
                 sd_sym := s ;
                 sd_arity := a ;
                 sd_positions := l ;
-                sd_isResult := r ;
+                sd_isValue := r ;
                 sd_cseq_context := t ;
             |}
         )
@@ -105,7 +105,7 @@ Notation
 
 Class Defaults {Σ : StaticModel} := {
     default_context_template : ContextTemplate ;
-    default_isResult : Expression -> Expression ;
+    default_isValue : Expression -> Expression ;
 }.
 
 Notation
@@ -117,7 +117,7 @@ Notation
                 sd_sym := s ;
                 sd_arity := a ;
                 sd_positions := l ;
-                sd_isResult := default_isResult ;
+                sd_isValue := default_isValue ;
                 sd_cseq_context := default_context_template ;
             |}
         )
@@ -137,7 +137,7 @@ Definition strictness_to_contexts
             cd_sym := sd_sym sd ;
             cd_arity := sd_arity sd ;
             cd_position := position ;
-            cd_isResult := sd_isResult sd ;
+            cd_isValue := sd_isValue sd ;
             cd_cseq_context := @sd_cseq_context Σ sd ;
         |})
         (sd_positions sd)
@@ -265,7 +265,7 @@ Section wsm.
         (sym : symbol)
         (arity : nat)
         (position : nat)
-        (isResult : Expression -> Expression)
+        (isValue : Expression -> Expression)
         (cseq_context :
             forall {_br : BasicResolver},
                 AppliedOperatorOr' symbol operand_type ->
@@ -287,7 +287,7 @@ Section wsm.
             := ((fun _:TagLHS => cseq_context) mkTagLHS) in
         (* all operands on the left are already evaluated *)
         let side_condition : Expression
-            := foldr (fun a b => (a && b)%rs) (true)%rs (isResult <$> (firstn (position) (ft_variable <$> vars) )) in
+            := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> (firstn (position) (ft_variable <$> vars) )) in
         rule [lbl]:
             cseq_context (cseq ([
                 (apply_symbol' sym lhs_vars);
@@ -300,7 +300,7 @@ Section wsm.
                     (aoo_operand (bov_variable REST_SEQ))
                 ])%list
             ])%list)))
-            where (( ~~ (isResult (ft_variable selected_var)) ) && side_condition )
+            where (( ~~ (isValue (ft_variable selected_var)) ) && side_condition )
     .
 
 
@@ -310,7 +310,7 @@ Section wsm.
         (sym : symbol)
         (arity : nat)
         (position : nat)
-        (isResult : Expression -> Expression)
+        (isValue : Expression -> Expression)
         (cseq_context :
             forall {_br : BasicResolver},
                 AppliedOperatorOr' symbol operand_type ->
@@ -344,7 +344,7 @@ Section wsm.
                 (apply_symbol' sym lhs_vars);
                 (aoo_operand (bov_variable REST_SEQ))
             ])%list))
-            where (isResult (ft_variable selected_var))
+            where (isValue (ft_variable selected_var))
     .
 
     Definition process_context_declaration
@@ -359,7 +359,7 @@ Section wsm.
                     (cd_sym c)
                     (cd_arity c)
                     (cd_position c)
-                    (cd_isResult c)
+                    (cd_isValue c)
                     (@cd_cseq_context Σ c)
             in
         let cr : RuleDeclaration
@@ -369,7 +369,7 @@ Section wsm.
                     (cd_sym c)
                     (cd_arity c)
                     (cd_position c)
-                    (cd_isResult c)
+                    (cd_isValue c)
                     (@cd_cseq_context Σ c)
             in
         

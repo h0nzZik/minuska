@@ -283,6 +283,8 @@ Module two_counters.
         state_to_pair fg'.2
     .
 
+    (* Time Compute (interp_loop_number 10000000 10000 10000). *)
+
 End two_counters.
 
 Module arith.
@@ -346,7 +348,7 @@ Module arith.
         default_context_template
             := (context-template cfg [ HOLE ] with HOLE) ;
 
-        default_isResult := fun x => (isNat x) ;
+        default_isValue := fun x => (isNat x) ;
     |}.
 
     Definition Decls : list Declaration := [
@@ -583,11 +585,11 @@ Module fib_native.
         (r.1.1,n,r.2)
     .
 
-    (*
+    
     Eval vm_compute in (interp_from 50 (ground (initial0
     (
         (aoo_operand (bv_Z 7))
-    )))).*)
+    )))).
 
     Lemma interp_test_fib_0:
         exists rem log,
@@ -623,7 +625,7 @@ Module fib_native.
             (fib_interp_from 20 11)
             = (rem, (ground (resultState [(aoo_operand (bv_Z 89))])), log)
     .
-    Proof. eexists. eexists. reflexivity. Qed.
+    Proof. eexists. eexists. Time reflexivity. Qed.
 
 
 
