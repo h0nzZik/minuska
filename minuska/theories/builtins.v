@@ -639,6 +639,300 @@ Module default_builtin.
             apply reflexivity.
         Defined.        
 
+        Inductive BVLeaf :=
+        | bvl_error
+        | bvl_bool (b : bool)
+        | bvl_nat (n : nat)
+        | bvl_Z (z : Z)
+        | bvl_sym (sym : symbol)
+        .
+
+        Derive NoConfusion for BVLeaf.
+
+        Print BuiltinValue. Print gen_tree.
+
+        (*
+        Fixpoint bv_to_tree (r : BuiltinValue) : gen_tree BVLeaf :=
+        match r with
+        | bv_error => GenLeaf bvl_error
+        | bv_bool b => GenLeaf (bvl_bool b)
+        | bv_nat n => GenLeaf (bvl_nat n)
+        | bv_Z z => GenLeaf (bvl_Z z)
+        | bv_list l => GenNode 0 (mylist_to_tree l)
+        | bv_pmap PEmpty => GenNode 1 nil
+        | bv_pmap (PNodes m) => GenNode 2 [(mypm_to_tree m)]
+        end
+        with mylist_to_tree (l : list (AppliedOperatorOr' symbol BuiltinValue)) : list (gen_tree BVLeaf) :=
+        match l with
+        | nil                       => nil
+        | (cons (aoo_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
+        | (cons (aoo_app ao) xs)    => cons (GenNode 0 [(myao_to_tree ao)]) (mylist_to_tree xs)
+        end
+        with mypm_to_tree (p : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) : gen_tree BVLeaf :=
+        match p with
+        | (PNode001 n)                   => GenNode 1 [(mypm_to_tree n)]
+        | (PNode010 (aoo_operand o))     => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]
+        | (PNode010 (aoo_app ao))        => GenNode 2 [(GenNode 0 [(myao_to_tree ao)])]
+        | (PNode011 (aoo_operand o) y)   => GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y)]
+        | (PNode011 (aoo_app ao) y)      => GenNode 3 [(GenNode 0 [(myao_to_tree ao)]);(mypm_to_tree y)]
+        | (PNode100 x)                   => GenNode 4 [(mypm_to_tree x)]
+        | (PNode101 x y)                 => GenNode 5 [(mypm_to_tree x); (mypm_to_tree y)]
+        | (PNode110 x (aoo_operand o))   => GenNode 6 [(mypm_to_tree x); (GenNode 1 [(bv_to_tree o)])]
+        | (PNode110 x (aoo_app ao))      => GenNode 6 [(mypm_to_tree x); (GenNode 0 [(myao_to_tree ao)])]
+        | (PNode111 x (aoo_operand o) z) => GenNode 7  [(mypm_to_tree x); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z)]
+        | (PNode111 x (aoo_app ao) z)    => GenNode 7  [(mypm_to_tree x); (GenNode 0 [(myao_to_tree ao)]); (mypm_to_tree z)]
+        end
+        with myaoo_to_tree (aoo : AppliedOperatorOr' symbol BuiltinValue) : gen_tree BVLeaf :=
+        match aoo with
+        | aoo_app ao => GenNode 0 [(myao_to_tree ao)]
+        | aoo_operand o => GenNode 1 [(bv_to_tree o)]
+        end
+        with myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf :=
+        match ao with
+        | ao_operator o => GenLeaf (bvl_sym o)
+        | ao_app_operand x y => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
+        | ao_app_ao x y => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+        end
+        .
+        *)
+        
+
+        
+        (* I would use the [Equations] command but it yields a weird error:
+            ```The reference 7 is free.```
+        *)
+        Equations? bv_to_tree
+            (r : BuiltinValue) : (gen_tree BVLeaf) (* by wf (BVsize r) lt *) :=
+            bv_to_tree (bv_pmap (PEmpty)) := (GenNode 1 nil) ;
+            
+            bv_to_tree (bv_error)         := (GenLeaf bvl_error) ;
+            bv_to_tree (bv_bool b)        := (GenLeaf (bvl_bool b)) ;
+            bv_to_tree (bv_nat n)         := (GenLeaf (bvl_nat n)) ;
+            bv_to_tree (bv_Z z)           := (GenLeaf (bvl_Z z)) ;
+            bv_to_tree (bv_list l)        := (GenNode 0 (mylist_to_tree l))
+        
+            where mylist_to_tree
+                    (l' : list (AppliedOperatorOr' symbol BuiltinValue)) : list (gen_tree BVLeaf) := {
+                    mylist_to_tree nil := nil ;
+                    mylist_to_tree (cons (aoo_operand o) xs) := cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs) ;
+                    mylist_to_tree (cons (aoo_app ao) xs) := cons (GenNode 0 [(myao_to_tree ao)]) (mylist_to_tree xs)
+                    where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                        myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                        myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                        myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    }
+            } ;
+                
+            bv_to_tree (bv_pmap (PNodes m)) := (GenNode 2 [(mypm_to_tree m)])
+            where mypm_to_tree (p : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) : gen_tree BVLeaf := {
+                mypm_to_tree (PNode001 n) := GenNode 1 [(mypm_to_tree n)] ;
+                mypm_to_tree (PNode010 (aoo_operand o)) := GenNode 2 [(GenNode 1 [(bv_to_tree o)])] ;
+                mypm_to_tree (PNode010 (aoo_app ao')) := GenNode 2 [(GenNode 0 [(myao_to_tree ao')])]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+                mypm_to_tree (PNode011 (aoo_operand o) y') := GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')] ;
+                mypm_to_tree (PNode011 (aoo_app ao') y') := GenNode 3 [(GenNode 0 [(myao_to_tree ao')]);(mypm_to_tree y')]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+                mypm_to_tree (PNode100 x') := GenNode 4 [(mypm_to_tree x')] ;
+                mypm_to_tree (PNode101 x' y') := GenNode 5 [(mypm_to_tree x'); (mypm_to_tree y')] ;
+                mypm_to_tree (PNode110 x' (aoo_operand o')) := GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])] ;
+                mypm_to_tree (PNode110 x' (aoo_app ao')) := GenNode 6 [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')])]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+                mypm_to_tree (PNode111 x' (aoo_operand o) z') := GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')] ;
+                mypm_to_tree (PNode111 x' (aoo_app ao') z') := GenNode 7%nat  [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')]); (mypm_to_tree z')]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+            };
+        .
+
+        Equations? tree_to_bv
+            (t : gen_tree BVLeaf) : (option BuiltinValue)  :=
+            tree_to_bv ((GenNode 1 nil)) := Some (bv_pmap (PEmpty));
+            
+            tree_to_bv (GenLeaf bvl_error)      := Some (bv_error)  ;
+            tree_to_bv (GenLeaf (bvl_bool b))   := Some (bv_bool b) ;
+            tree_to_bv (GenLeaf (bvl_nat n))    := Some (bv_nat n) ;
+            tree_to_bv (GenLeaf (bvl_Z z))      := Some (bv_Z z) ;
+            tree_to_bv (GenNode 0 l)            := (
+                l' ← tree_to_mylist l;
+                Some (bv_list (l'))
+            )
+            
+            where tree_to_mylist (l' : list (gen_tree BVLeaf)) :
+                    (option (list (AppliedOperatorOr' symbol BuiltinValue))) := {
+                    tree_to_mylist nil                             := Some nil ;
+                    tree_to_mylist (cons (GenNode 1 [(o)]) (xs))   := (
+                        o' ← (tree_to_bv o);
+                        xs' ← (tree_to_mylist xs);
+                        Some (cons (aoo_operand o') xs')
+                    );
+                    tree_to_mylist (cons (GenNode 0 [(ao)]) (xs))  := (
+                        ao' ← (tree_to_myao ao);
+                        xs' ← (tree_to_mylist xs);
+                        Some (cons (aoo_app ao') xs') 
+                    )
+                    where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
+                        
+                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
+                        tree_to_myao (GenNode 0 [(x);(y)]) :=
+                            (
+                                x' ← (tree_to_myao x);
+                                y' ← (tree_to_bv y);
+                                Some (ao_app_operand x' y')
+                            );
+                        tree_to_myao (GenNode 1 [(x);(y)]) := (
+                            x' ← (tree_to_myao x);
+                            y' ← (tree_to_myao y);
+                            Some (ao_app_ao x' y')
+                         ) ;
+                         
+                        tree_to_myao _ := None
+                    } ;
+                    tree_to_mylist _ := None
+            } ;
+                
+            tree_to_bv (GenNode 2 [(m)]) := (
+                m' ← (tree_to_mypm m);
+                Some (bv_pmap (PNodes m'))
+            )
+            where tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) := {
+                tree_to_mypm (GenNode 1 [(n)]) := (
+                    n' ← (tree_to_mypm n);
+                    Some (PNode001 n')
+                );
+                tree_to_mypm (GenNode 2 [(GenNode 1 [(o)])])   := (
+                    o' ← (tree_to_bv o);
+                    Some (PNode010 (aoo_operand o')) 
+                );
+                tree_to_mypm (GenNode 2 [(GenNode 0 [(ao')])]) := (
+                    ao'' ← (tree_to_myao ao');
+                    Some (PNode010 (aoo_app ao''))
+                )
+                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
+                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
+                        tree_to_myao (GenNode 0 [(x);(y)]) :=
+                            (
+                                x' ← (tree_to_myao x);
+                                y' ← (tree_to_bv y);
+                                Some (ao_app_operand x' y')
+                            );
+                        tree_to_myao (GenNode 1 [(x);(y)]) := (
+                            x' ← (tree_to_myao x);
+                            y' ← (tree_to_myao y);
+                            Some (ao_app_ao x' y')
+                         ) ;
+                         
+                        tree_to_myao _ := None
+                    } ;
+                
+                tree_to_mypm (GenNode 3 [(GenNode 1 [(o)]);(y')])   := (
+                    o' ← (tree_to_bv o);
+                    y'' ← (tree_to_mypm y');
+                    Some (PNode011 (aoo_operand o') y'')
+                );
+                tree_to_mypm (GenNode 3 [(GenNode 0 [(ao')]);(y')]) := (
+                    ao'' ← (tree_to_myao ao');
+                    y'' ← (tree_to_mypm y');
+                    Some (PNode011 (aoo_app ao'') y'')
+                )
+                
+                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
+                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
+                        tree_to_myao (GenNode 0 [(x);(y)]) :=
+                            (
+                                x' ← (tree_to_myao x);
+                                y' ← (tree_to_bv y);
+                                Some (ao_app_operand x' y')
+                            );
+                        tree_to_myao (GenNode 1 [(x);(y)]) := (
+                            x' ← (tree_to_myao x);
+                            y' ← (tree_to_myao y);
+                            Some (ao_app_ao x' y')
+                         ) ;
+                         
+                        tree_to_myao _ := None
+                    } ;
+                tree_to_mypm (GenNode 4 [(x')])                     := (
+                    x'' ← (tree_to_mypm x');
+                    Some (PNode100 x'') 
+                );
+                tree_to_mypm (GenNode 5 [(x'); (y')])               := (
+                    x'' ← (tree_to_mypm x');
+                    y'' ← (tree_to_mypm y');
+                    Some (PNode101 x'' y'') 
+                );
+                tree_to_mypm (GenNode 6 [(x'); (GenNode 1 [(o')])]) := (
+                    x'' ← (tree_to_mypm x');
+                    o'' ← (tree_to_bv o');
+                    Some (PNode110 x'' (aoo_operand o''))
+                 );
+                tree_to_mypm (GenNode 6 [(x'); (GenNode 0 [(ao')])]) := (
+                    x'' ← (tree_to_mypm x');
+                    ao'' ← (tree_to_myao ao');
+                    Some (PNode110 x'' (aoo_app ao''))
+                )
+                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
+                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
+                        tree_to_myao (GenNode 0 [(x);(y)]) :=
+                            (
+                                x' ← (tree_to_myao x);
+                                y' ← (tree_to_bv y);
+                                Some (ao_app_operand x' y')
+                            );
+                        tree_to_myao (GenNode 1 [(x);(y)]) := (
+                            x' ← (tree_to_myao x);
+                            y' ← (tree_to_myao y);
+                            Some (ao_app_ao x' y')
+                         ) ;
+                        tree_to_myao _ := None
+                    } ;
+                tree_to_mypm (GenNode 7%nat  [(x'); (GenNode 1 [(o)]); (z')]) := (
+                    x'' ← (tree_to_mypm x');
+                    o' ← (tree_to_bv o);
+                    z'' ← (tree_to_mypm z');
+                    Some (PNode111 x'' (aoo_operand o') z'')
+                );
+                tree_to_mypm (GenNode 7%nat  [(x'); (GenNode 0 [(ao')]); (z')]) := (
+                    ao'' ← (tree_to_myao ao');
+                    z'' ← (tree_to_mypm z');
+                    x'' ← (tree_to_mypm x');
+                    Some (PNode111 x'' (aoo_app ao'') z'')
+                )
+                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
+                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
+                        tree_to_myao (GenNode 0 [(x);(y)]) :=
+                            (
+                                x' ← (tree_to_myao x);
+                                y' ← (tree_to_bv y);
+                                Some (ao_app_operand x' y')
+                            );
+                        tree_to_myao (GenNode 1 [(x);(y)]) := (
+                            x' ← (tree_to_myao x);
+                            y' ← (tree_to_myao y);
+                            Some (ao_app_ao x' y')
+                         ) ;
+                        tree_to_myao _ := None
+                    } ;
+                tree_to_mypm _ := None
+            } ;
+            tree_to_bv _ := None
+        .
+        
+
 
         Definition err
         :=
