@@ -647,6 +647,12 @@ Module default_builtin.
         | bvl_sym (sym : symbol)
         .
 
+        #[local]
+        Instance BVLeaf_eqdec : EqDecision BVLeaf.
+        Proof.
+            ltac1:(solve_decision).
+        Defined.
+
         Derive NoConfusion for BVLeaf.
 
         Print BuiltinValue. Print gen_tree.
@@ -696,70 +702,8 @@ Module default_builtin.
         .
         *)
         
-
-        
-        (* I would use the [Equations] command but it yields a weird error:
-            ```The reference 7 is free.```
-        *)
-        Equations? bv_to_tree
-            (r : BuiltinValue) : (gen_tree BVLeaf) (* by wf (BVsize r) lt *) :=
-            bv_to_tree (bv_pmap (PEmpty)) := (GenNode 1 nil) ;
-            
-            bv_to_tree (bv_error)         := (GenLeaf bvl_error) ;
-            bv_to_tree (bv_bool b)        := (GenLeaf (bvl_bool b)) ;
-            bv_to_tree (bv_nat n)         := (GenLeaf (bvl_nat n)) ;
-            bv_to_tree (bv_Z z)           := (GenLeaf (bvl_Z z)) ;
-            bv_to_tree (bv_list l)        := (GenNode 0 (mylist_to_tree l))
-        
-            where mylist_to_tree
-                    (l' : list (AppliedOperatorOr' symbol BuiltinValue)) : list (gen_tree BVLeaf) := {
-                    mylist_to_tree nil := nil ;
-                    mylist_to_tree (cons (aoo_operand o) xs) := cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs) ;
-                    mylist_to_tree (cons (aoo_app ao) xs) := cons (GenNode 0 [(myao_to_tree ao)]) (mylist_to_tree xs)
-                    where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
-                        myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
-                        myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
-                        myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
-                    }
-            } ;
-                
-            bv_to_tree (bv_pmap (PNodes m)) := (GenNode 2 [(mypm_to_tree m)])
-            where mypm_to_tree (p : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) : gen_tree BVLeaf := {
-                mypm_to_tree (PNode001 n) := GenNode 1 [(mypm_to_tree n)] ;
-                mypm_to_tree (PNode010 (aoo_operand o)) := GenNode 2 [(GenNode 1 [(bv_to_tree o)])] ;
-                mypm_to_tree (PNode010 (aoo_app ao')) := GenNode 2 [(GenNode 0 [(myao_to_tree ao')])]
-                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
-                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
-                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
-                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
-                };
-                mypm_to_tree (PNode011 (aoo_operand o) y') := GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')] ;
-                mypm_to_tree (PNode011 (aoo_app ao') y') := GenNode 3 [(GenNode 0 [(myao_to_tree ao')]);(mypm_to_tree y')]
-                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
-                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
-                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
-                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
-                };
-                mypm_to_tree (PNode100 x') := GenNode 4 [(mypm_to_tree x')] ;
-                mypm_to_tree (PNode101 x' y') := GenNode 5 [(mypm_to_tree x'); (mypm_to_tree y')] ;
-                mypm_to_tree (PNode110 x' (aoo_operand o')) := GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])] ;
-                mypm_to_tree (PNode110 x' (aoo_app ao')) := GenNode 6 [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')])]
-                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
-                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
-                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
-                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
-                };
-                mypm_to_tree (PNode111 x' (aoo_operand o) z') := GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')] ;
-                mypm_to_tree (PNode111 x' (aoo_app ao') z') := GenNode 7%nat  [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')]); (mypm_to_tree z')]
-                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
-                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
-                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
-                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
-                };
-            };
-        .
-
-        Equations? tree_to_bv
+        Set Default Proof Mode "Classic".
+        Equations tree_to_bv
             (t : gen_tree BVLeaf) : (option BuiltinValue)  :=
             tree_to_bv ((GenNode 1 nil)) := Some (bv_pmap (PEmpty));
             
@@ -931,6 +875,71 @@ Module default_builtin.
             } ;
             tree_to_bv _ := None
         .
+        Proof.  Admitted.
+        Set Default Proof Mode "Ltac2".
+        
+        (* I would use the [Equations] command but it yields a weird error:
+            ```The reference 7 is free.```
+        *)
+        Equations? bv_to_tree
+            (r : BuiltinValue) : (gen_tree BVLeaf) (* by wf (BVsize r) lt *) :=
+            bv_to_tree (bv_pmap (PEmpty)) := (GenNode 1 nil) ;
+            
+            bv_to_tree (bv_error)         := (GenLeaf bvl_error) ;
+            bv_to_tree (bv_bool b)        := (GenLeaf (bvl_bool b)) ;
+            bv_to_tree (bv_nat n)         := (GenLeaf (bvl_nat n)) ;
+            bv_to_tree (bv_Z z)           := (GenLeaf (bvl_Z z)) ;
+            bv_to_tree (bv_list l)        := (GenNode 0 (mylist_to_tree l))
+        
+            where mylist_to_tree
+                    (l' : list (AppliedOperatorOr' symbol BuiltinValue)) : list (gen_tree BVLeaf) := {
+                    mylist_to_tree nil := nil ;
+                    mylist_to_tree (cons (aoo_operand o) xs) := cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs) ;
+                    mylist_to_tree (cons (aoo_app ao) xs) := cons (GenNode 0 [(myao_to_tree ao)]) (mylist_to_tree xs)
+                    where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                        myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                        myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                        myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    }
+            } ;
+                
+            bv_to_tree (bv_pmap (PNodes m)) := (GenNode 2 [(mypm_to_tree m)])
+            where mypm_to_tree (p : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) : gen_tree BVLeaf := {
+                mypm_to_tree (PNode001 n) := GenNode 1 [(mypm_to_tree n)] ;
+                mypm_to_tree (PNode010 (aoo_operand o)) := GenNode 2 [(GenNode 1 [(bv_to_tree o)])] ;
+                mypm_to_tree (PNode010 (aoo_app ao')) := GenNode 2 [(GenNode 0 [(myao_to_tree ao')])]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+                mypm_to_tree (PNode011 (aoo_operand o) y') := GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')] ;
+                mypm_to_tree (PNode011 (aoo_app ao') y') := GenNode 3 [(GenNode 0 [(myao_to_tree ao')]);(mypm_to_tree y')]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+                mypm_to_tree (PNode100 x') := GenNode 4 [(mypm_to_tree x')] ;
+                mypm_to_tree (PNode101 x' y') := GenNode 5 [(mypm_to_tree x'); (mypm_to_tree y')] ;
+                mypm_to_tree (PNode110 x' (aoo_operand o')) := GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])] ;
+                mypm_to_tree (PNode110 x' (aoo_app ao')) := GenNode 6 [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')])]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+                mypm_to_tree (PNode111 x' (aoo_operand o) z') := GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')] ;
+                mypm_to_tree (PNode111 x' (aoo_app ao') z') := GenNode 7%nat  [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')]); (mypm_to_tree z')]
+                where myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf := {
+                    myao_to_tree (ao_operator o) := GenLeaf (bvl_sym o) ;
+                    myao_to_tree (ao_app_operand x y) := GenNode 0 [(myao_to_tree x);(bv_to_tree y)] ;
+                    myao_to_tree (ao_app_ao x y) := GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                };
+            };
+        .
+        Proof. Defined.
+
         
 
 
