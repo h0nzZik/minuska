@@ -49,6 +49,45 @@ match fuel with
 end
 .
 
+Definition interp_in_from'
+        {Σ : StaticModel}
+        (Γ : (FlattenedRewritingTheory)*(list string))
+        (fuel : nat)
+        (from : GroundTerm)
+        :  nat * GroundTerm * list (option string)
+    :=
+        let res := interp_loop_ext (naive_interpreter_ext Γ.1)
+            fuel
+            from
+            nil
+        in
+        (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
+    .
+
+Definition concat_list_option_str
+    (l: list (option string))
+    : string
+:=
+    fold_left (fun a ob =>
+        let s := match ob with
+        | None => "?"
+        | Some b => b
+        end in
+        a +:+ ", " +:+ s
+    ) l ""
+.
+
+Definition interp_in_from
+        {Σ : StaticModel}
+        (Γ : (FlattenedRewritingTheory)*(list string))
+        (fuel : nat)
+        (from : GroundTerm)
+        :  nat * GroundTerm * string
+:=
+    let r := interp_in_from' Γ fuel from in
+    (r.1, concat_list_option_str r.2)
+.
+
 Module example_1.
 
     #[local]
@@ -393,13 +432,7 @@ Module arith.
     .
 
     Definition interp_from (fuel : nat) from
-    :=
-        let res := interp_loop_ext (naive_interpreter_ext Γ.1)
-            fuel
-            from
-            nil
-        in
-        (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
+        := interp_in_from Γ fuel from
     .
 
     Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
@@ -522,20 +555,20 @@ Module fib.
     Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls))).
 
+
     Definition interp_from (fuel : nat) from
-    :=
-        let res := interp_loop_ext (naive_interpreter_ext Γ.1)
-            fuel
-            from
-            nil
-        in
-        (res.1, (fun n => Γ.2 !! n) <$> (reverse res.2))
+        := interp_in_from Γ fuel from
     .
 
     Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
         (ground (
             initialState [ x ]
         ))
+    .
+
+    Definition fib_interp_from (fuel : nat) (from : nat)
+        := interp_in_from Γ fuel (ground (initial0
+                (aoo_operand (bv_nat from))))
     .
 
     Eval vm_compute in (interp_from 50 (ground (initial0
@@ -545,32 +578,28 @@ Module fib.
 
     Lemma interp_test_fib_0:
         exists rem log,
-            (interp_from 10 (ground (initial0
-                (aoo_operand (bv_nat 0)))))
+            (fib_interp_from 10 0)
             = (rem, (ground (resultState [(aoo_operand (bv_nat 0))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_1:
         exists rem log,
-            (interp_from 10 (ground (initial0
-                (aoo_operand (bv_nat 1)))))
+            (fib_interp_from 10 1)
             = (rem, (ground (resultState [(aoo_operand (bv_nat 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_2:
         exists rem log,
-            (interp_from 10 (ground (initial0
-                (aoo_operand (bv_nat 2)))))
+            (fib_interp_from 10 2)
             = (rem, (ground (resultState [(aoo_operand (bv_nat 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_3:
         exists rem log,
-            (interp_from 10 (ground (initial0
-                (aoo_operand (bv_nat 3)))))
+            (fib_interp_from 10 3)
             = (rem, (ground (resultState [(aoo_operand (bv_nat 2))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
@@ -578,8 +607,7 @@ Module fib.
 
     Lemma interp_test_fib_11:
         exists rem log,
-            (interp_from 20 (ground (initial0
-                (aoo_operand (bv_nat 11)))))
+            (fib_interp_from 20 11)
             = (rem, (ground (resultState [(aoo_operand (bv_nat 89))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
