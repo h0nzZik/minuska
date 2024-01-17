@@ -1,6 +1,9 @@
-number_example: src/example_lang_driver.ml all
+number_example.bin: src/example_lang_driver.ml all
 	ocamlc -w -20 -w -26 -o $@  ExampleLang.mli ExampleLang.ml $<
 
 
-two_counters: src/two_counters_driver.ml all
+two_counters.bin: src/two_counters_driver.ml all
 	ocamlc -w -20 -w -26 -o $@  TwoCounters.mli TwoCounters.ml $<
+
+fib_native.bin: src/fib_native_driver.ml all
+	ocamlfind ocamlc -package zarith -linkpkg -g -w -20 -w -26 -o $@ FibNative.mli FibNative.ml $<

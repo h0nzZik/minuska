@@ -492,7 +492,7 @@ End arith.
 
 
 
-Module fib.
+Module fib_native.
 
     Import default_builtin.
     Import default_builtin.Notations.
@@ -518,37 +518,37 @@ Module fib.
     Definition Decls : list Declaration := [
         decl_rule (
             rule ["just-0"]:
-               initialState [ (bov_builtin (bv_nat 0)) ]
-            ~> resultState [ (ft_element (aoo_operand (bv_nat 0))) ]
+               initialState [ (bov_builtin (bv_Z 0)) ]
+            ~> resultState [ (ft_element (aoo_operand (bv_Z 0))) ]
         );
         decl_rule (
             rule ["just-1"]:
-               initialState [ (bov_builtin (bv_nat 1)) ]
-            ~> resultState [ (ft_element (aoo_operand (bv_nat 1))) ]
+               initialState [ (bov_builtin (bv_Z 1)) ]
+            ~> resultState [ (ft_element (aoo_operand (bv_Z 1))) ]
         );
         decl_rule (
             rule ["two-or-more"]:
                initialState [ $Tgt ]
             ~> state [
                 $Tgt,
-                (ft_element (aoo_operand (bv_nat 2))),
-                (ft_element (aoo_operand (bv_nat 1))),
-                (ft_element (aoo_operand (bv_nat 1))) 
+                (ft_element (aoo_operand (bv_Z 2))),
+                (ft_element (aoo_operand (bv_Z 1))),
+                (ft_element (aoo_operand (bv_Z 1))) 
                ]
-            where ((~~ ($Tgt ==Nat (ft_element (aoo_operand (bv_nat 0)))))
-                && (~~ ($Tgt ==Nat (ft_element (aoo_operand (bv_nat 1))))))
+            where ((~~ ($Tgt ==Z (ft_element (aoo_operand (bv_Z 0)))))
+                && (~~ ($Tgt ==Z (ft_element (aoo_operand (bv_Z 1))))))
         );
         decl_rule (
             rule ["step"]:
                state [ $Tgt, $Curr, $X, $Y ]
-            ~> state [ $Tgt, ($Curr +Nat (ft_element (aoo_operand (bv_nat 1)))), ($X +Nat $Y), $X ]
-            where (~~ ($Curr ==Nat $Tgt))
+            ~> state [ $Tgt, ($Curr +Z (ft_element (aoo_operand (bv_Z 1)))), ($X +Z $Y), $X ]
+            where (~~ ($Curr ==Z $Tgt))
         );
         decl_rule (
             rule ["result"]:
                state [ $Tgt, $Curr, $X, $Y ]
             ~> resultState [ $X ]
-                where (($Curr ==Nat $Tgt))
+                where (($Curr ==Z $Tgt))
         )
     ].
 
@@ -566,41 +566,54 @@ Module fib.
         ))
     .
 
-    Definition fib_interp_from (fuel : nat) (from : nat)
+    Definition fib_interp_from (fuel : nat) (from : Z)
         := interp_in_from Γ fuel (ground (initial0
-                (aoo_operand (bv_nat from))))
+                (aoo_operand (bv_Z from))))
     .
 
+    Definition fib_interp_from_toint
+        (fuel : nat) (from : Z)
+    :=
+        let r := fib_interp_from fuel from in
+        let n : Z := (match r.1.2 with
+        | aoo_app (ao_app_operand (ao_operator "resultState") ((bv_Z val)))
+          => val
+        | _ => Z0
+        end) in
+        (r.1.1,n,r.2)
+    .
+
+    (*
     Eval vm_compute in (interp_from 50 (ground (initial0
     (
-        (aoo_operand (bv_nat 7))
-    )))).
+        (aoo_operand (bv_Z 7))
+    )))).*)
 
     Lemma interp_test_fib_0:
         exists rem log,
             (fib_interp_from 10 0)
-            = (rem, (ground (resultState [(aoo_operand (bv_nat 0))])), log)
+            = (rem, (ground (resultState [(aoo_operand (bv_Z 0))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_1:
         exists rem log,
             (fib_interp_from 10 1)
-            = (rem, (ground (resultState [(aoo_operand (bv_nat 1))])), log)
+            = (rem, (ground (resultState [(aoo_operand (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_2:
         exists rem log,
             (fib_interp_from 10 2)
-            = (rem, (ground (resultState [(aoo_operand (bv_nat 1))])), log)
+            = (rem, (ground (resultState [(aoo_operand (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_3:
         exists rem log,
             (fib_interp_from 10 3)
-            = (rem, (ground (resultState [(aoo_operand (bv_nat 2))])), log)
+            = (rem, (ground (resultState [(aoo_operand (bv_Z 2))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
@@ -608,8 +621,11 @@ Module fib.
     Lemma interp_test_fib_11:
         exists rem log,
             (fib_interp_from 20 11)
-            = (rem, (ground (resultState [(aoo_operand (bv_nat 89))])), log)
+            = (rem, (ground (resultState [(aoo_operand (bv_Z 89))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
-End fib.
+
+
+
+End fib_native.
 

@@ -28,6 +28,7 @@
             coqPackages.stdpp
             coqPackages.CoLoR
             coq.ocaml
+            coq.ocamlPackages.zarith
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];

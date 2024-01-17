@@ -4,6 +4,8 @@ From Minuska Require Import
     notations
 .
 
+From Coq Require Import ZArith.
+
 Module empty_builtin.
 
     Inductive Emptyset : Set := .
@@ -81,10 +83,10 @@ Module default_builtin.
 
     | b_neg (* bool -> bool *)
 
-    | b_isZero  (* 'a -> bool *)
-    | b_isSucc  (* 'a -> bool *)
-    | b_succOf  (* nat -> nat *)
-    | b_predOf  (* nat -> nat *)
+    | b_nat_isZero  (* 'a -> bool *)
+    | b_nat_isSucc  (* 'a -> bool *)
+    | b_nat_succOf  (* nat -> nat *)
+    | b_nat_predOf  (* nat -> nat *)
     .
 
     #[export]
@@ -101,12 +103,19 @@ Module default_builtin.
     | b_iff   (* bool -> bool -> bool *)
     | b_xor   (* bool -> bool -> bool *)
 
-    | b_isLe  (* nat -> nat -> bool *)
-    | b_isLt  (* nat -> nat -> bool *)
-    | b_plus  (* nat -> nat -> nat *)
-    | b_minus (* nat -> nat -> nat *)
-    | b_times (* nat -> nat -> nat *)
-    | b_div (* nat -> nat -> nat *)
+    | b_nat_isLe  (* nat -> nat -> bool *)
+    | b_nat_isLt  (* nat -> nat -> bool *)
+    | b_nat_plus  (* nat -> nat -> nat *)
+    | b_nat_minus (* nat -> nat -> nat *)
+    | b_nat_times (* nat -> nat -> nat *)
+    | b_nat_div (* nat -> nat -> nat *)
+
+    | b_Z_isLe  (* Z -> Z -> bool *)
+    | b_Z_isLt  (* Z -> Z -> bool *)
+    | b_Z_plus  (* Z -> Z -> Z *)
+    | b_Z_minus (* Z -> Z -> Z *)
+    | b_Z_times (* Z -> Z -> Z *)
+    | b_Z_div   (* Z -> Z -> Z *)
     .
 
     #[export]
@@ -126,6 +135,7 @@ Module default_builtin.
         | bv_error
         | bv_bool (b : bool)
         | bv_nat (n : nat)
+        | bv_Z (z : Z)
         | bv_list (m : list (AppliedOperatorOr' symbol BuiltinValue))
         | bv_pmap (m : Pmap (AppliedOperatorOr' symbol BuiltinValue))
         .
@@ -136,7 +146,10 @@ Module default_builtin.
             BVsize (bv_list m) := S (my_list_size m);
             BVsize (bv_pmap (PNodes m)) := S (my_pmapne_size m);
             BVsize (bv_pmap (PEmpty)) := 1;
-            BVsize _ := 1 ;
+            BVsize (bv_error) := 1 ;
+            BVsize (bv_bool _) := 1 ;
+            BVsize (bv_nat _) := 1 ;
+            BVsize (bv_Z _) := 1 ;
         where my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue)) : nat :=
             my_list_size nil := 1 ;
             my_list_size (cons (aoo_operand o) xs) := S ((BVsize o) + (my_list_size xs)) ;
@@ -208,6 +221,18 @@ Module default_builtin.
                     try (solve [left; reflexivity]);
                     try ltac1:(right; discriminate).
                     destruct (decide (n = n0)).
+                    {
+                        left. subst. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y;
+                    try (solve [left; reflexivity]);
+                    try ltac1:(right; discriminate).
+                    destruct (decide (z = z0)).
                     {
                         left. subst. reflexivity.
                     }
@@ -735,6 +760,36 @@ Module default_builtin.
             x y
         .
 
+        Definition bfmap_Z_Z__Z
+            (f : Z -> Z -> Z)
+            (x y : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap2
+            (fun x' y' =>
+            match x', y' with
+            | bv_Z x'', bv_Z y'' => bv_Z (f x'' y'')
+            | _, _ => bv_error
+            end
+            )
+            x y
+        .
+
+        Definition bfmap_Z_Z__bool
+            (f : Z -> Z -> bool)
+            (x y : GroundTerm' symbol BuiltinValue)
+            : GroundTerm' symbol BuiltinValue
+        :=
+        bfmap2
+            (fun x' y' =>
+            match x', y' with
+            | bv_Z x'', bv_Z y'' => bv_bool (f x'' y'')
+            | _, _ => bv_error
+            end
+            )
+            x y
+        .
+
         #[export]
         Instance β
             : Builtin
@@ -780,19 +835,19 @@ Module default_builtin.
                     | aoo_operand x => aoo_operand (bv_bool (isNat x))
                     | _ => aoo_operand (bv_bool false)
                     end
-                | b_isZero =>
+                | b_nat_isZero =>
                     match v with
                     | aoo_operand (bv_nat 0) => aoo_operand (bv_bool true)
                     | _ => aoo_operand (bv_bool false)
                     end
-                | b_isSucc =>
+                | b_nat_isSucc =>
                     match v with
                     | aoo_operand (bv_nat (S _)) => aoo_operand (bv_bool true)
                     | _ => aoo_operand (bv_bool false)
                     end
-                | b_succOf =>
+                | b_nat_succOf =>
                     bfmap_nat__nat S v
-                | b_predOf =>
+                | b_nat_predOf =>
                     match v with
                     | aoo_operand (bv_nat (S n)) => (aoo_operand (bv_nat n))
                     | _ => err
@@ -812,21 +867,36 @@ Module default_builtin.
                     bfmap_bool_bool__bool eqb v1 v2
                 | b_xor =>
                     bfmap_bool_bool__bool xorb v1 v2                    
-                | b_isLe =>
+                | b_nat_isLe =>
                     bfmap_nat_nat__bool Nat.leb v1 v2
-                | b_isLt =>
+                | b_nat_isLt =>
                     bfmap_nat_nat__bool Nat.ltb v1 v2
-                | b_plus =>
+                | b_nat_plus =>
                     bfmap_nat_nat__nat plus v1 v2
-                | b_minus =>
+                | b_nat_minus =>
                     bfmap_nat_nat__nat minus v1 v2
-                | b_times =>
+                | b_nat_times =>
                     bfmap_nat_nat__nat mult v1 v2
-                | b_div =>
+                | b_nat_div =>
                     match v2 with
                     | aoo_operand (bv_nat (0)) => err
                     | _ => bfmap_nat_nat__nat Nat.div v1 v2
                     end
+                | b_Z_isLe =>
+                    bfmap_Z_Z__bool Z.leb v1 v2
+                | b_Z_isLt =>
+                    bfmap_Z_Z__bool Z.ltb v1 v2
+                | b_Z_plus =>
+                    bfmap_Z_Z__Z Z.add v1 v2
+                | b_Z_minus =>
+                    bfmap_Z_Z__Z Z.sub v1 v2
+                | b_Z_times =>
+                    bfmap_Z_Z__Z Z.mul v1 v2
+                | b_Z_div =>
+                match v2 with
+                | aoo_operand (bv_Z (0)) => err
+                | _ => bfmap_Z_Z__Z Z.div v1 v2
+                end
                 end ;
         |}.
 
@@ -866,22 +936,43 @@ Module default_builtin.
         .
 
         Notation "'(' x '+Nat' y ')'" :=
-            (ft_binary b_plus (x) (y))
+            (ft_binary b_nat_plus (x) (y))
         .
 
         Notation "'(' x '-Nat' y ')'" :=
-            (ft_binary b_minus (x) (y))
+            (ft_binary b_nat_minus (x) (y))
         .
 
         Notation "'(' x '*Nat' y ')'" :=
-            (ft_binary b_times (x) (y))
+            (ft_binary b_nat_times (x) (y))
         .
 
         Notation "'(' x '/Nat' y ')'" :=
-            (ft_binary b_div (x) (y))
+            (ft_binary b_nat_div (x) (y))
         .
 
         Notation "'(' x '==Nat' y ')'" :=
+            (ft_binary b_eq (x) (y))
+        .
+
+
+        Notation "'(' x '+Z' y ')'" :=
+            (ft_binary b_Z_plus (x) (y))
+        .
+
+        Notation "'(' x '-Z' y ')'" :=
+            (ft_binary b_Z_minus (x) (y))
+        .
+
+        Notation "'(' x '*Z' y ')'" :=
+            (ft_binary b_Z_times (x) (y))
+        .
+
+        Notation "'(' x '/Z' y ')'" :=
+            (ft_binary b_Z_div (x) (y))
+        .
+
+        Notation "'(' x '==Z' y ')'" :=
             (ft_binary b_eq (x) (y))
         .
 
