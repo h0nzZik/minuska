@@ -954,7 +954,6 @@ Module default_builtin.
                 destruct m; simpl in Hr; try ltac1:(lia).
             }
             intros r Hr.
-            (* TODO we need an induction principle for `r`*)
             destruct r; try reflexivity.
             {
                 unfold bv_to_tree; fold bv_to_tree.
@@ -1139,11 +1138,132 @@ Module default_builtin.
                     split>[|reflexivity].
                     induction p; try reflexivity.
                     {
-                        
-
+                        rewrite bind_Some.
+                        exists p.
+                        split>[|reflexivity]. apply IHp. ltac1:(lia).
                     }
+                    {
+                        destruct a.
+                        {
+                          rewrite bind_Some.
+                          exists ao.
+                          split>[|reflexivity].
+                          induction ao; try reflexivity.
+                          {
+                            rewrite bind_Some. exists ao. split.
+                            {
+                              apply IHao. ltac1:(lia).
+                            } { rewrite bind_Some. exists b. split>[|reflexivity]. apply IHsz. ltac1:(lia). }
+                          }
+                          { rewrite bind_Some. exists ao1. split.
+                            {
+                              apply IHao1. ltac1:(lia).
+                            }
+                            {
+                              rewrite bind_Some. exists ao2. split>[|reflexivity].
+                              apply IHao2. ltac1:(lia).
+                            }
+                          }
+                        }
+                        {
+                          rewrite bind_Some. exists operand. split>[|reflexivity]. apply IHsz. ltac1:(lia).
+                        }
+                    }
+{
+                        destruct a.
+                        {
+                          rewrite bind_Some.
+                          exists ao.
+                          split.
+                          {
+                          induction ao; try reflexivity.
+                          {
+                            rewrite bind_Some. exists ao. split.
+                            {
+                              apply IHao. ltac1:(lia).
+                            } { rewrite bind_Some. exists b. split>[|reflexivity]. apply IHsz. ltac1:(lia). }
+                          }
+{
+                          rewrite bind_Some. 
+                          exists ao1. split. { apply IHao1. ltac1:(lia). } { rewrite bind_Some. exists ao2. split>[|reflexivity]. apply IHao2. ltac1:(lia).  }
+                        }
+}
+                          { rewrite bind_Some. exists p. split. { apply IHp. ltac1:(lia). }
+                            { reflexivity. }
+                          }
+                        }
+                        {
+                          rewrite bind_Some. 
+                          exists operand. split. { apply IHsz. ltac1:(lia). } { rewrite bind_Some. exists p. split>[|reflexivity]. apply IHp. ltac1:(lia).  }
+                        }
+                    }
+                    {
+                      rewrite bind_Some. exists p. split>[|reflexivity].
+                      apply IHp. ltac1:(lia).
+                    }
+                    {
+                      rewrite bind_Some. exists p1. split.
+                      { apply IHp1. ltac1:(lia).
+                      } { rewrite bind_Some. exists p2. split>[|reflexivity]. apply IHp2. ltac1:(lia). }  
+                    }
+                    { 
+destruct a.
+              {
+                rewrite bind_Some. exists p. split. { apply IHp. ltac1:(lia). } { rewrite bind_Some. exists ao. split>[|reflexivity]. 
+
+induction ao; try reflexivity.
+                          {
+                            rewrite bind_Some. exists ao. split.
+                            {
+                              apply IHao. ltac1:(lia).
+                            } { rewrite bind_Some. exists b. split>[|reflexivity]. apply IHsz. ltac1:(lia). }
+                          }
+                          { rewrite bind_Some. exists ao1. split.
+                            {
+                              apply IHao1. ltac1:(lia).
+                            }
+                            {
+                              rewrite bind_Some. exists ao2. split>[|reflexivity].
+                              apply IHao2. ltac1:(lia).
+                            }
+                          }
+}
+              }
+               {
+                 rewrite bind_Some. exists p. split.
+                 { apply IHp. ltac1:(lia). }
+                 {
+                   rewrite bind_Some. exists operand. split>[|reflexivity]. apply IHsz. ltac1:(lia).
+                 }
+
                 }
-            }
+              }
+            {
+              destruct a.
+              {
+                rewrite bind_Some.
+                exists ao.
+                split.
+                { 
+induction ao; try reflexivity.
+                          {
+                            rewrite bind_Some. exists ao. split.
+                            {
+                              apply IHao. ltac1:(lia).
+                            } { rewrite bind_Some. exists b. split>[|reflexivity]. apply IHsz. ltac1:(lia). }
+                          }
+{
+                          rewrite bind_Some. 
+                          exists ao1. split. { apply IHao1. ltac1:(lia). } { rewrite bind_Some. exists ao2. split>[|reflexivity]. apply IHao2. ltac1:(lia).  }
+                        }
+ }
+                { rewrite bind_Some. exists p2. split. {  apply IHp2. ltac1:(lia). } { rewrite bind_Some. exists p1. split>[|reflexivity]. apply IHp1. ltac1:(lia). }  }
+              }
+              { rewrite bind_Some. exists p1. split. { apply IHp1. ltac1:(lia). } { rewrite bind_Some. exists operand. split. { apply IHsz. ltac1:(lia). }  { rewrite bind_Some. exists p2. split>[|reflexivity]. apply IHp2. ltac1:(lia). }  }
+              }
+}
+}
+}
         Qed.
 
 
