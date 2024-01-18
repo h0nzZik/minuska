@@ -1266,6 +1266,96 @@ induction ao; try reflexivity.
 }
         Qed.
 
+    Print BVLeaf.
+
+    #[export]
+    Instance BuiltinValue_countable
+        : Countable (BuiltinValue)
+    .
+    Proof.
+        Check inj_countable.
+        ltac1:(unshelve(eapply inj_countable
+        with
+            (g := tree_to_bv)
+            (f := bv_to_tree)
+        )).
+        {
+            Check @inj_countable.
+            Print BVLeaf.
+            ltac1:(unshelve(eapply gen_tree_countable)).
+            remember (unit+bool+nat+Z+symbol)%type as MyT.
+            ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
+            {
+                subst MyT. apply _.
+            }
+            {
+                subst.
+                intros bvl. destruct bvl.
+                {
+                    left. left. left. left. exact ().
+                }
+                {
+                    left. left. left. right. exact b.
+                }
+                {
+                    left. left. right. exact n.
+                }
+                {
+                    left. right. exact z.
+                }
+                {
+                    right. exact sym.
+                }
+            }
+            {
+                subst.
+                intros t.
+                destruct t as [t1|t2].
+                {
+                    destruct t1 as [t1|t2].
+                    {
+                        destruct t1 as [t1|t2].
+                        {
+                            destruct t1 as [t1|t2].
+                            {
+                                apply Some.
+                                apply bvl_error.
+                            }
+                            {
+                                apply Some.
+                                apply bvl_bool.
+                                apply t2.
+                            }
+                        }
+                        {
+                            apply Some.
+                            apply bvl_nat.
+                            apply t2.
+                        }
+                    }
+                    {
+                        apply Some.
+                        apply bvl_Z.
+                        apply t2.
+                    }
+                }
+                {
+                    apply Some.
+                    apply bvl_sym.
+                    apply t2.
+                }
+            }
+            {
+                subst. apply _.
+            }
+            {
+                subst. intros x. destruct x; unfold eq_rec_r; simpl; try reflexivity.
+            }
+        }
+        {
+            intros x. apply from_to_tree.
+        }
+    Defined.
 
         Definition err
         :=

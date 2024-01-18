@@ -535,6 +535,6 @@ Section countable.
         .
         intros x.
         apply GroundTerm'_to_from_gen_tree.
-    Qed.
+    Defined.
 
 End countable.
