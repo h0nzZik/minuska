@@ -631,3 +631,59 @@ Module fib_native.
 
 End fib_native.
 
+
+Module imp.
+
+    Import default_builtin.
+    Import default_builtin.Notations.
+
+    #[local]
+    Instance Σ : StaticModel := default_model (default_builtin.β).
+
+    Definition X : variable := "X".
+    Definition Y : variable := "Y".
+    Definition REST_SEQ : variable := "$REST_SEQ".
+    
+    Definition cseq {_br : BasicResolver} := (apply_symbol "cseq").
+    Arguments cseq {_br} _%rs.
+
+    Definition emptyCseq {_br : BasicResolver} := (apply_symbol "emptyCseq").
+    Arguments emptyCseq {_br} _%rs.
+
+    Definition plus {_br : BasicResolver} := (apply_symbol "plus").
+    Arguments plus {_br} _%rs.
+
+    Definition minus {_br : BasicResolver} := (apply_symbol "minus").
+    Arguments minus {_br} _%rs.
+
+    Definition times {_br : BasicResolver} := (apply_symbol "times").
+    Arguments times {_br} _%rs.
+
+    Definition div {_br : BasicResolver} := (apply_symbol "div").
+    Arguments div {_br} _%rs.
+
+    Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
+    Arguments cfg {_br} _%rs.
+
+    Definition state {_br : BasicResolver} := (apply_symbol "state").
+    Arguments state {_br} _%rs.
+
+    Definition s {_br : BasicResolver} := (apply_symbol "s").
+    Arguments s {_br} _%rs.
+
+    Definition freezer {_br : BasicResolver} (sym : symbol) (position : nat)
+    :=
+        (apply_symbol ("freezer_" +:+ sym +:+ "_" +:+ (pretty position)))
+    .
+    Arguments freezer {_br} _%rs.
+
+
+    Declare Scope LangImpScope.
+    Delimit Scope LangImpScope with limp.
+
+    Notation "x '+' y" := (plus [ x, y ])%limp.
+    Notation "x '-' y" := (minus [ x, y ])%limp.
+    Notation "x '*' y" := (times [ x, y ])%limp.
+    Notation "x '/' y" := (div [ x, y ])%limp.
+
+End imp.

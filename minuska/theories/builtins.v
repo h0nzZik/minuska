@@ -158,6 +158,7 @@ Module default_builtin.
         | bv_bool (b : bool)
         | bv_nat (n : nat)
         | bv_Z (z : Z)
+        | bv_str (s : string)
         | bv_list (m : list (AppliedOperatorOr' symbol BuiltinValue))
         | bv_pmap (m : Pmap (AppliedOperatorOr' symbol BuiltinValue))
         .
@@ -171,6 +172,7 @@ Module default_builtin.
             BVsize (bv_error) := 1 ;
             BVsize (bv_bool _) := 1 ;
             BVsize (bv_nat _) := 1 ;
+            BVsize (bv_str _) := 1 ;
             BVsize (bv_Z _) := 1 ;
         where my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue)) : nat :=
             my_list_size nil := 1 ;
@@ -255,6 +257,18 @@ Module default_builtin.
                     try (solve [left; reflexivity]);
                     try ltac1:(right; discriminate).
                     destruct (decide (z = z0)).
+                    {
+                        left. subst. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y;
+                    try (solve [left; reflexivity]);
+                    try ltac1:(right; discriminate).
+                    destruct (decide (s = s0)).
                     {
                         left. subst. reflexivity.
                     }
@@ -666,6 +680,7 @@ Module default_builtin.
         | bvl_bool (b : bool)
         | bvl_nat (n : nat)
         | bvl_Z (z : Z)
+        | bvl_str (s : string)
         | bvl_sym (sym : symbol)
         .
 
@@ -687,6 +702,7 @@ Module default_builtin.
         | (GenLeaf (bvl_bool b))   => Some (bv_bool b) 
         | (GenLeaf (bvl_nat n))    => Some (bv_nat n) 
         | (GenLeaf (bvl_Z z))      => Some (bv_Z z) 
+        | (GenLeaf (bvl_str s))      => Some (bv_str s) 
         | (GenNode 0 l)            => (
                 let tree_to_mylist := fix tree_to_mylist (l' : list (gen_tree BVLeaf)) :
                     (option (list (AppliedOperatorOr' symbol BuiltinValue))) := (
@@ -871,6 +887,7 @@ Module default_builtin.
         | (bv_bool b)        => (GenLeaf (bvl_bool b))
         | (bv_nat n)         => (GenLeaf (bvl_nat n))
         | (bv_Z z)           => (GenLeaf (bvl_Z z))
+        | (bv_str s)           => (GenLeaf (bvl_str s))
         | (bv_list l)        =>
             let mylist_to_tree := (
                 fix mylist_to_tree
@@ -1300,7 +1317,7 @@ induction ao; try reflexivity.
         )).
         {
             ltac1:(unshelve(eapply gen_tree_countable)).
-            remember (unit+bool+nat+Z+symbol)%type as MyT.
+            remember (unit+bool+nat+Z+string+symbol)%type as MyT.
             ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
             {
                 subst MyT. apply _.
@@ -1309,16 +1326,19 @@ induction ao; try reflexivity.
                 subst.
                 intros bvl. destruct bvl.
                 {
-                    left. left. left. left. exact ().
+                    left. left. left. left. left. exact ().
                 }
                 {
-                    left. left. left. right. exact b.
+                    left. left. left. left. right. exact b.
                 }
                 {
-                    left. left. right. exact n.
+                    left. left. left. right. exact n.
                 }
                 {
-                    left. right. exact z.
+                    left. left. right. exact z.
+                }
+                {
+                    left. right. exact s.
                 }
                 {
                     right. exact sym.
@@ -1335,24 +1355,33 @@ induction ao; try reflexivity.
                         {
                             destruct t1 as [t1|t2].
                             {
-                                apply Some.
-                                apply bvl_error.
+                                destruct t1 as [t1|t2].
+                                {
+                                    apply Some.
+                                    apply bvl_error.
+                                }
+                                {
+                                    apply Some.
+                                    apply bvl_bool.
+                                    apply t2.
+                                }
                             }
                             {
                                 apply Some.
-                                apply bvl_bool.
-                                apply t2.
+                                apply bvl_nat.
+                                apply t2.                                
                             }
                         }
                         {
                             apply Some.
-                            apply bvl_nat.
+                            apply bvl_Z.
                             apply t2.
                         }
                     }
                     {
+
                         apply Some.
-                        apply bvl_Z.
+                        apply bvl_str.
                         apply t2.
                     }
                 }
