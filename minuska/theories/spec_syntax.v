@@ -73,6 +73,11 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
     builtin_binary_function_eqdec
         :: EqDecision builtin_binary_function ;
     
+    builtin_ternary_function
+        : Type ;
+    builtin_ternary_function_eqdec
+        :: EqDecision builtin_ternary_function ;
+
     builtin_nullary_function_interp
         : builtin_nullary_function
         -> (GroundTerm' symbol builtin_value) ;
@@ -84,6 +89,13 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
 
     builtin_binary_function_interp
         : builtin_binary_function
+        -> (GroundTerm' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value)
+        -> (GroundTerm' symbol builtin_value) ;
+
+    builtin_ternary_function_interp
+        : builtin_ternary_function
+        -> (GroundTerm' symbol builtin_value)
         -> (GroundTerm' symbol builtin_value)
         -> (GroundTerm' symbol builtin_value)
         -> (GroundTerm' symbol builtin_value) ;
@@ -121,6 +133,7 @@ Inductive Expression
 | ft_nullary (f : builtin_nullary_function)
 | ft_unary (f : builtin_unary_function) (t : Expression)
 | ft_binary (f : builtin_binary_function) (t1 : Expression) (t2 : Expression)
+| ft_ternary (f : builtin_ternary_function) (t1 : Expression) (t2 : Expression) (t3 : Expression)
 .
 
 Inductive AtomicProposition {Σ : StaticModel} :=

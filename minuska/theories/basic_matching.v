@@ -1493,6 +1493,26 @@ Proof.
         rewrite union_subseteq.
         split; assumption.
     }
+    {
+        rewrite bind_Some in H.
+        destruct H as [x0 [H1x0 H2x0]].
+        inversion H2x0; subst; clear H2x0.
+
+        rewrite bind_Some in H0.
+        destruct H0 as [x1 [H1x1 H2x1]].
+        inversion H2x1; subst; clear H2x1.
+
+
+        rewrite bind_Some in H0.
+        destruct H0 as [x2 [H1x2 H2x2]].
+        inversion H2x2; subst; clear H2x2.
+
+        specialize (IHe1 _ H1x0).
+        specialize (IHe2 _ H1x1).
+        specialize (IHe3 _ H1x2).
+        repeat (rewrite union_subseteq).
+        (repeat split); assumption.
+    }
 Qed.
 
 Lemma Expression_evaluate_val_restrict:
@@ -1577,6 +1597,31 @@ Proof.
         specialize (IHt2 _ _ H3).
         rewrite IHt1.
         rewrite IHt2.
+        reflexivity.
+    }
+    {
+        intros H1.
+        assert (H2 : valuation_restrict ρ1 (vars_of_Expression t1) = valuation_restrict ρ2 (vars_of_Expression t1)).
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H1].
+            ltac1:(set_solver).
+        }
+        assert (H3 : valuation_restrict ρ1 (vars_of_Expression t2) = valuation_restrict ρ2 (vars_of_Expression t2)).
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H1].
+            ltac1:(set_solver).
+        }
+        assert (H4 : valuation_restrict ρ1 (vars_of_Expression t3) = valuation_restrict ρ2 (vars_of_Expression t3)).
+        {
+            eapply valuation_restrict_eq_subseteq>[|apply H1].
+            ltac1:(set_solver).
+        }
+        specialize (IHt1 _ _ H2).
+        specialize (IHt2 _ _ H3).
+        specialize (IHt3 _ _ H4).
+        rewrite IHt1.
+        rewrite IHt2.
+        rewrite IHt3.
         reflexivity.
     }
 Qed.

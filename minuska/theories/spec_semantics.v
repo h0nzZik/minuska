@@ -54,6 +54,11 @@ match t with
     e1 ← Expression_evaluate ρ t1;
     e2 ← Expression_evaluate ρ t2;
     Some (builtin_binary_function_interp f e1 e2)
+| ft_ternary f t1 t2 t3 =>
+    e1 ← Expression_evaluate ρ t1;
+    e2 ← Expression_evaluate ρ t2;
+    e3 ← Expression_evaluate ρ t3;
+    Some (builtin_ternary_function_interp f e1 e2 e3)
 end.
 
 
@@ -102,6 +107,29 @@ Proof.
         rewrite bind_Some.
         exists x'.
         rewrite (IHt2 _ Hx'1).
+        split>[reflexivity|].
+        assumption.
+    }
+    {
+        do 2 (rewrite bind_Some).
+        intros [x [Hx1 Hx2]].
+        exists x.
+        rewrite (IHt1 _ Hx1).
+        split>[reflexivity|].
+
+        rewrite bind_Some in Hx2.
+        destruct Hx2 as [x' [Hx'1 Hx'2]].
+        rewrite bind_Some.
+
+        rewrite bind_Some in Hx'2.
+        destruct Hx'2 as [x'' [Hx''1 Hx''2]].
+        exists x'.
+        rewrite (IHt2 _ Hx'1).
+        split>[reflexivity|].
+
+        rewrite bind_Some.
+        exists x''.
+        rewrite (IHt3 _ Hx''1).
         split>[reflexivity|].
         assumption.
     }
@@ -169,6 +197,64 @@ Proof.
         {
             destruct Hx2 as [x2 [Hx21 Hx22]].
             inversion Hx22.
+        }
+    }
+    {
+        do 2 (rewrite bind_None).
+        intros [HNone|Hrest].
+        {
+            specialize (IHt1 HNone).
+            rewrite IHt1.
+            left. reflexivity.
+        }
+        destruct Hrest as [x [Hx1 Hx2]].
+        rewrite bind_None in Hx2.
+        destruct Hx2 as [HNone|Hx2].
+        {
+            specialize (IHt2 HNone).
+            destruct (Expression_evaluate ρ1 t1).
+            {
+                right.
+                exists g.
+                split>[reflexivity|].
+                rewrite bind_None.
+                left. exact IHt2.
+            }
+            {
+                left. reflexivity.
+            }
+        }
+        destruct Hx2 as [x' [Hx'1 Hx'2]].
+        rewrite bind_None in Hx'2.
+        destruct Hx'2 as [HNone|Hx'2].
+        {
+            specialize (IHt3 HNone).
+            destruct (Expression_evaluate ρ1 t1).
+            {
+                right.
+                exists g.
+                split>[reflexivity|].
+                rewrite bind_None.
+
+                destruct (Expression_evaluate ρ1 t2).
+                {
+                    right.
+                    exists g0.
+                    split>[reflexivity|].
+                    rewrite bind_None.
+                    left. exact IHt3.
+                }
+                {
+                    left. reflexivity.
+                }
+            }
+            {
+                left. reflexivity.
+            }
+        }
+        {
+            destruct Hx'2 as [x2 [Hx'21 Hx'22]].
+            inversion Hx'22.
         }
     }
 Qed.

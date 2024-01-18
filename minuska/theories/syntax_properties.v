@@ -13,6 +13,7 @@ match t with
 | ft_nullary _ => ∅
 | ft_unary _ t' => vars_of_Expression t'
 | ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
+| ft_ternary _ t1 t2 t3 => vars_of_Expression t1 ∪ vars_of_Expression t2 ∪ vars_of_Expression t3
 end.
 
 #[export]

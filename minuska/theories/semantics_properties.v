@@ -96,6 +96,28 @@ Proof.
             eexists. reflexivity.
         }
     }
+    {
+        rewrite union_subseteq.
+        rewrite union_subseteq.
+        ltac1:(rewrite <- IHt1).
+        ltac1:(rewrite <- IHt2).
+        ltac1:(rewrite <- IHt3).
+        split; intros H.
+        {
+            destruct H as [e H].
+            unfold mbind,option_bind in H.
+            (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
+                (repeat split); eexists; reflexivity.
+        }
+        {
+            destruct H as [[[e1 H1] [e2 H2]] [e3 H3]].
+            unfold mbind,option_bind.
+            rewrite H1.
+            rewrite H2.
+            rewrite H3.
+            eexists. reflexivity.
+        }
+    }
 Qed.
 
 (*
@@ -172,6 +194,25 @@ Proof.
         specialize (IHt1 ltac:(assumption)).
         specialize (IHt2 ltac:(assumption)).
         rewrite IHt1. rewrite IHt2.
+        reflexivity.
+    }
+    {
+        unfold vars_of in *; simpl in *.
+        rewrite union_subseteq in H3.
+        destruct H3 as [H31 H32].
+        rewrite union_subseteq in H4.
+        destruct H4 as [H41 H42].
+        rewrite union_subseteq in H31.
+        destruct H31 as [H311 H312].
+        rewrite union_subseteq in H41.
+        destruct H41 as [H411 H412].
+        specialize (IHt1 ltac:(assumption)).
+        specialize (IHt2 ltac:(assumption)).
+        specialize (IHt3 ltac:(assumption)).
+        specialize (IHt1 ltac:(assumption)).
+        specialize (IHt2 ltac:(assumption)).
+        specialize (IHt3 ltac:(assumption)).
+        rewrite IHt1. rewrite IHt2. rewrite IHt3.
         reflexivity.
     }
 Qed.

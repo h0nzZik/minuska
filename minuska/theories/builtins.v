@@ -6,16 +6,17 @@ From Minuska Require Import
 
 From Coq Require Import ZArith.
 
+Inductive Emptyset : Set := .
+
+#[export]
+Instance emptyset_eqdec : EqDecision Emptyset.
+Proof.
+    intros x y.
+    destruct x, y.
+Defined.
+
+
 Module empty_builtin.
-
-    Inductive Emptyset : Set := .
-
-    #[export]
-    Instance emptyset_eqdec : EqDecision Emptyset.
-    Proof.
-        intros x y.
-        destruct x, y.
-    Defined.
 
     Section sec.
 
@@ -35,12 +36,16 @@ Module empty_builtin.
                 := Emptyset ;
             builtin_binary_function
                 := Emptyset ;
+            builtin_ternary_function
+                := Emptyset ;
             builtin_nullary_function_interp
                 := fun p => match p with end ;
             builtin_unary_function_interp
                 := fun p v => match p with end ;
             builtin_binary_function_interp
                 := fun p v1 v2 => match p with end ;
+            builtin_ternary_function_interp
+                := fun p v1 v2 v3 => match p with end ;
         |}.
 
     End sec.
@@ -1524,6 +1529,9 @@ induction ao; try reflexivity.
             builtin_binary_function
                 := BinaryF ;
 
+            builtin_ternary_function
+                := Emptyset ;
+
             builtin_nullary_function_interp
                 := fun p =>
                 match p with
@@ -1636,6 +1644,8 @@ induction ao; try reflexivity.
                     | _ => err
                     end
                 end ;
+            builtin_ternary_function_interp
+                := fun p v1 v2 v3 => match p with end ;
         |}.
 
     End sec.
