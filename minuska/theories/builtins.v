@@ -656,225 +656,6 @@ Module default_builtin.
         Derive NoConfusion for BVLeaf.
 
         Print BuiltinValue. Print gen_tree.
-
-        (*
-        Fixpoint bv_to_tree (r : BuiltinValue) : gen_tree BVLeaf :=
-        match r with
-        | bv_error => GenLeaf bvl_error
-        | bv_bool b => GenLeaf (bvl_bool b)
-        | bv_nat n => GenLeaf (bvl_nat n)
-        | bv_Z z => GenLeaf (bvl_Z z)
-        | bv_list l => GenNode 0 (mylist_to_tree l)
-        | bv_pmap PEmpty => GenNode 1 nil
-        | bv_pmap (PNodes m) => GenNode 2 [(mypm_to_tree m)]
-        end
-        with mylist_to_tree (l : list (AppliedOperatorOr' symbol BuiltinValue)) : list (gen_tree BVLeaf) :=
-        match l with
-        | nil                       => nil
-        | (cons (aoo_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
-        | (cons (aoo_app ao) xs)    => cons (GenNode 0 [(myao_to_tree ao)]) (mylist_to_tree xs)
-        end
-        with mypm_to_tree (p : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) : gen_tree BVLeaf :=
-        match p with
-        | (PNode001 n)                   => GenNode 1 [(mypm_to_tree n)]
-        | (PNode010 (aoo_operand o))     => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]
-        | (PNode010 (aoo_app ao))        => GenNode 2 [(GenNode 0 [(myao_to_tree ao)])]
-        | (PNode011 (aoo_operand o) y)   => GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y)]
-        | (PNode011 (aoo_app ao) y)      => GenNode 3 [(GenNode 0 [(myao_to_tree ao)]);(mypm_to_tree y)]
-        | (PNode100 x)                   => GenNode 4 [(mypm_to_tree x)]
-        | (PNode101 x y)                 => GenNode 5 [(mypm_to_tree x); (mypm_to_tree y)]
-        | (PNode110 x (aoo_operand o))   => GenNode 6 [(mypm_to_tree x); (GenNode 1 [(bv_to_tree o)])]
-        | (PNode110 x (aoo_app ao))      => GenNode 6 [(mypm_to_tree x); (GenNode 0 [(myao_to_tree ao)])]
-        | (PNode111 x (aoo_operand o) z) => GenNode 7  [(mypm_to_tree x); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z)]
-        | (PNode111 x (aoo_app ao) z)    => GenNode 7  [(mypm_to_tree x); (GenNode 0 [(myao_to_tree ao)]); (mypm_to_tree z)]
-        end
-        with myaoo_to_tree (aoo : AppliedOperatorOr' symbol BuiltinValue) : gen_tree BVLeaf :=
-        match aoo with
-        | aoo_app ao => GenNode 0 [(myao_to_tree ao)]
-        | aoo_operand o => GenNode 1 [(bv_to_tree o)]
-        end
-        with myao_to_tree (ao : AppliedOperator' symbol BuiltinValue) : gen_tree BVLeaf :=
-        match ao with
-        | ao_operator o => GenLeaf (bvl_sym o)
-        | ao_app_operand x y => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
-        | ao_app_ao x y => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
-        end
-        .
-        *)
-        (*
-        Equations tree_to_bv
-            (t : gen_tree BVLeaf) : (option BuiltinValue)  :=
-            tree_to_bv ((GenNode 1 nil)) := Some (bv_pmap (PEmpty));
-            
-            tree_to_bv (GenLeaf bvl_error)      := Some (bv_error)  ;
-            tree_to_bv (GenLeaf (bvl_bool b))   := Some (bv_bool b) ;
-            tree_to_bv (GenLeaf (bvl_nat n))    := Some (bv_nat n) ;
-            tree_to_bv (GenLeaf (bvl_Z z))      := Some (bv_Z z) ;
-            tree_to_bv (GenNode 0 l)            := (
-                l' ← tree_to_mylist l;
-                Some (bv_list (l'))
-            )
-            
-            where tree_to_mylist (l' : list (gen_tree BVLeaf)) :
-                    (option (list (AppliedOperatorOr' symbol BuiltinValue))) := {
-                    tree_to_mylist nil                             := Some nil ;
-                    tree_to_mylist (cons (GenNode 1 [(o)]) (xs))   := (
-                        o' ← (tree_to_bv o);
-                        xs' ← (tree_to_mylist xs);
-                        Some (cons (aoo_operand o') xs')
-                    );
-                    tree_to_mylist (cons (GenNode 0 [(ao)]) (xs))  := (
-                        ao' ← (tree_to_myao ao);
-                        xs' ← (tree_to_mylist xs);
-                        Some (cons (aoo_app ao') xs') 
-                    )
-                    where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
-                        
-                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
-                        tree_to_myao (GenNode 0 [(x);(y)]) :=
-                            (
-                                x' ← (tree_to_myao x);
-                                y' ← (tree_to_bv y);
-                                Some (ao_app_operand x' y')
-                            );
-                        tree_to_myao (GenNode 1 [(x);(y)]) := (
-                            x' ← (tree_to_myao x);
-                            y' ← (tree_to_myao y);
-                            Some (ao_app_ao x' y')
-                         ) ;
-                         
-                        tree_to_myao _ := None
-                    } ;
-                    tree_to_mylist _ := None
-            } ;
-                
-            tree_to_bv (GenNode 2 [(m)]) := (
-                m' ← (tree_to_mypm m);
-                Some (bv_pmap (PNodes m'))
-            )
-            where tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (AppliedOperatorOr' symbol BuiltinValue)) := {
-                tree_to_mypm (GenNode 1 [(n)]) := (
-                    n' ← (tree_to_mypm n);
-                    Some (PNode001 n')
-                );
-                tree_to_mypm (GenNode 2 [(GenNode 1 [(o)])])   := (
-                    o' ← (tree_to_bv o);
-                    Some (PNode010 (aoo_operand o')) 
-                );
-                tree_to_mypm (GenNode 2 [(GenNode 0 [(ao')])]) := (
-                    ao'' ← (tree_to_myao ao');
-                    Some (PNode010 (aoo_app ao''))
-                )
-                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
-                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
-                        tree_to_myao (GenNode 0 [(x);(y)]) :=
-                            (
-                                x' ← (tree_to_myao x);
-                                y' ← (tree_to_bv y);
-                                Some (ao_app_operand x' y')
-                            );
-                        tree_to_myao (GenNode 1 [(x);(y)]) := (
-                            x' ← (tree_to_myao x);
-                            y' ← (tree_to_myao y);
-                            Some (ao_app_ao x' y')
-                         ) ;
-                         
-                        tree_to_myao _ := None
-                    } ;
-                
-                tree_to_mypm (GenNode 3 [(GenNode 1 [(o)]);(y')])   := (
-                    o' ← (tree_to_bv o);
-                    y'' ← (tree_to_mypm y');
-                    Some (PNode011 (aoo_operand o') y'')
-                );
-                tree_to_mypm (GenNode 3 [(GenNode 0 [(ao')]);(y')]) := (
-                    ao'' ← (tree_to_myao ao');
-                    y'' ← (tree_to_mypm y');
-                    Some (PNode011 (aoo_app ao'') y'')
-                )
-                
-                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
-                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
-                        tree_to_myao (GenNode 0 [(x);(y)]) :=
-                            (
-                                x' ← (tree_to_myao x);
-                                y' ← (tree_to_bv y);
-                                Some (ao_app_operand x' y')
-                            );
-                        tree_to_myao (GenNode 1 [(x);(y)]) := (
-                            x' ← (tree_to_myao x);
-                            y' ← (tree_to_myao y);
-                            Some (ao_app_ao x' y')
-                         ) ;
-                         
-                        tree_to_myao _ := None
-                    } ;
-                tree_to_mypm (GenNode 4 [(x')])                     := (
-                    x'' ← (tree_to_mypm x');
-                    Some (PNode100 x'') 
-                );
-                tree_to_mypm (GenNode 5 [(x'); (y')])               := (
-                    x'' ← (tree_to_mypm x');
-                    y'' ← (tree_to_mypm y');
-                    Some (PNode101 x'' y'') 
-                );
-                tree_to_mypm (GenNode 6 [(x'); (GenNode 1 [(o')])]) := (
-                    x'' ← (tree_to_mypm x');
-                    o'' ← (tree_to_bv o');
-                    Some (PNode110 x'' (aoo_operand o''))
-                 );
-                tree_to_mypm (GenNode 6 [(x'); (GenNode 0 [(ao')])]) := (
-                    x'' ← (tree_to_mypm x');
-                    ao'' ← (tree_to_myao ao');
-                    Some (PNode110 x'' (aoo_app ao''))
-                )
-                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
-                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
-                        tree_to_myao (GenNode 0 [(x);(y)]) :=
-                            (
-                                x' ← (tree_to_myao x);
-                                y' ← (tree_to_bv y);
-                                Some (ao_app_operand x' y')
-                            );
-                        tree_to_myao (GenNode 1 [(x);(y)]) := (
-                            x' ← (tree_to_myao x);
-                            y' ← (tree_to_myao y);
-                            Some (ao_app_ao x' y')
-                         ) ;
-                        tree_to_myao _ := None
-                    } ;
-                tree_to_mypm (GenNode 7%nat  [(x'); (GenNode 1 [(o)]); (z')]) := (
-                    x'' ← (tree_to_mypm x');
-                    o' ← (tree_to_bv o);
-                    z'' ← (tree_to_mypm z');
-                    Some (PNode111 x'' (aoo_operand o') z'')
-                );
-                tree_to_mypm (GenNode 7%nat  [(x'); (GenNode 0 [(ao')]); (z')]) := (
-                    ao'' ← (tree_to_myao ao');
-                    z'' ← (tree_to_mypm z');
-                    x'' ← (tree_to_mypm x');
-                    Some (PNode111 x'' (aoo_app ao'') z'')
-                )
-                where tree_to_myao (t : gen_tree BVLeaf) : option (AppliedOperator' symbol BuiltinValue) := {
-                        tree_to_myao (GenLeaf (bvl_sym o)) := Some (ao_operator o) ;
-                        tree_to_myao (GenNode 0 [(x);(y)]) :=
-                            (
-                                x' ← (tree_to_myao x);
-                                y' ← (tree_to_bv y);
-                                Some (ao_app_operand x' y')
-                            );
-                        tree_to_myao (GenNode 1 [(x);(y)]) := (
-                            x' ← (tree_to_myao x);
-                            y' ← (tree_to_myao y);
-                            Some (ao_app_ao x' y')
-                         ) ;
-                        tree_to_myao _ := None
-                    } ;
-                tree_to_mypm _ := None
-            } ;
-            tree_to_bv _ := None
-        .
-        *)
     
         Fixpoint tree_to_bv
             (t : gen_tree BVLeaf) : (option BuiltinValue)  :=
@@ -1158,6 +939,185 @@ Module default_builtin.
         end
         .
         
+        Lemma from_to_tree : forall r, tree_to_bv (bv_to_tree r) = Some r
+        .
+        Proof.
+            intros r.
+            remember (BVsize r) as sz.
+            assert(BVsize r <= sz) by (ltac1:(lia)).
+            clear Heqsz.
+            revert r H.
+            induction sz.
+            {
+                intros r Hr.
+                destruct r; simpl in Hr; try ltac1:(lia).
+                destruct m; simpl in Hr; try ltac1:(lia).
+            }
+            intros r Hr.
+            (* TODO we need an induction principle for `r`*)
+            destruct r; try reflexivity.
+            {
+                unfold bv_to_tree; fold bv_to_tree.
+                induction m; try reflexivity.
+                {
+                    destruct a; unfold bv_to_tree; fold bv_to_tree.
+                    {
+                        ltac1:(simp BVsize in Hr).
+                        ltac1:(simp BVsize in IHm).
+                        ltac1:(specialize (IHm ltac:(lia))).
+                        unfold my_list_size in Hr.
+                        simpl in IHm.
+                        rewrite bind_Some in IHm.
+                        destruct IHm as [x [IHm1 IHm2]].
+                        inversion IHm2; subst; clear IHm2.    
+                        induction ao.
+                        {
+                            simpl.
+                            rewrite bind_Some.
+                            exists (aoo_app (ao_operator s) :: m).
+                            split>[|reflexivity].
+                            rewrite bind_Some.
+                            exists m.
+                            split>[|reflexivity].
+                            apply IHm1.
+                        }
+                        {
+                            simpl in IHao.
+                            rewrite bind_Some in IHao.
+                            ltac1:(ospecialize (IHao _)).
+                            {
+                                clear IHao.
+                                simpl in Hr.
+                                ltac1:(lia).
+                            }
+                            destruct IHao as [x [IHao1 IHao2]].
+                            inversion IHao2; subst; clear IHao2.
+                            rewrite bind_Some in IHao1.
+                            destruct IHao1 as [x IHao1].
+                            destruct IHao1 as [IHao1 IHao2].
+                            rewrite bind_Some in IHao2.
+                            destruct IHao2 as [y [IHao21 IHao22]].
+                            inversion IHao22; subst; clear IHao22.
+
+                            simpl.
+                            rewrite bind_Some.
+                            exists (aoo_app (ao_app_operand ao b) :: m).
+                            split>[|reflexivity].
+                            
+
+                            rewrite bind_Some.
+                            exists (ao_app_operand ao b).
+                            split.
+                            {
+                                rewrite bind_Some.
+                                ltac1:(setoid_rewrite bind_Some).
+                                assert(IH := IHsz b).
+                                ltac1:(ospecialize (IH _)).
+                                {
+                                    simpl in Hr.
+                                    ltac1:(lia).
+                                }
+                                exists ao.
+                                simpl.
+                                split.
+                                {
+                                    rewrite IHao1.
+                                    reflexivity.
+                                }
+                                {
+                                    exists b.
+                                    split>[apply IH|].
+                                    reflexivity.
+                                }
+                            }
+                            {
+                                rewrite bind_Some.
+                                exists m.
+                                split>[|reflexivity].
+                                apply IHao21.
+                            }
+                        }
+                        {
+                            simpl.
+                            rewrite bind_Some.
+                            exists (aoo_app (ao_app_ao ao1 ao2) :: m).
+                            split>[|reflexivity].
+                            rewrite bind_Some.
+                            exists ((ao_app_ao ao1 ao2)).
+
+                            simpl in IHao1.
+                            ltac1:(ospecialize (IHao1 _)).
+                            {
+                                simpl in Hr. ltac1:(lia).
+                            }
+                            rewrite bind_Some in IHao1.
+                            destruct IHao1 as [x [IHao11 IHao12]].
+                            inversion IHao12; subst; clear IHao12.
+                            rewrite bind_Some in IHao11.
+                            destruct IHao11 as [x [IHao111 IHao112]].
+                            rewrite bind_Some in IHao112.
+                            destruct IHao112 as [x' [IHao1121 IHao1122]].
+                            inversion IHao1122; subst; clear IHao1122.
+
+                            ltac1:(ospecialize (IHao2 _)).
+                            {
+                                simpl in Hr. ltac1:(lia).
+                            }
+                            simpl in IHao2.
+                            rewrite bind_Some in IHao2.
+                            destruct IHao2 as [x [IHao21 IHao22]].
+                            inversion IHao22; subst; clear IHao22.
+                            rewrite bind_Some in IHao21.
+                            destruct IHao21 as [x [IHao211 IHao212]].
+                            rewrite bind_Some in IHao212.
+                            destruct IHao212 as [x' [IHao2121 IHao2122]].
+                            inversion IHao2122; subst; clear IHao2122.
+
+                            split.
+                            {
+                                rewrite bind_Some.
+                                exists ao1.
+                                rewrite bind_Some.
+                                split.
+                                {
+                                    apply IHao111.
+                                }
+                                {
+                                    exists ao2.
+                                    split>[|reflexivity].
+                                    apply IHao211.
+                                }
+                            }
+                            {
+                                rewrite bind_Some.
+                                exists m.
+                                split>[|reflexivity].
+                                apply IHao2121.
+                            }
+                        }
+                    }
+                    {
+                        simpl.
+                        rewrite bind_Some.
+                        exists ((aoo_operand operand :: m)).
+                        split>[|reflexivity].
+                        rewrite bind_Some.
+                        exists operand.
+                        rewrite bind_Some.
+                        split.
+                        {
+                            apply IHsz.
+                            simpl in Hr.
+                            ltac1:(lia).
+                        }
+                        {
+                            eexists.
+                            split>[|reflexivity].
+                        }
+                    }
+                }
+            }
+        Qed.
 
 
         Definition err
