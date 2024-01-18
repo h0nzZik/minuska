@@ -87,6 +87,9 @@ Module default_builtin.
     | b_nat_isSucc  (* 'a -> bool *)
     | b_nat_succOf  (* nat -> nat *)
     | b_nat_predOf  (* nat -> nat *)
+
+    | b_map_size    (* map -> nat *)
+    | b_Z_of_nat    (* nat -> Z *)
     .
 
     #[export]
@@ -1266,22 +1269,17 @@ induction ao; try reflexivity.
 }
         Qed.
 
-    Print BVLeaf.
-
-    #[export]
-    Instance BuiltinValue_countable
-        : Countable (BuiltinValue)
-    .
-    Proof.
-        Check inj_countable.
+        #[export]
+        Instance BuiltinValue_countable
+            : Countable (BuiltinValue)
+        .
+        Proof.
         ltac1:(unshelve(eapply inj_countable
         with
             (g := tree_to_bv)
             (f := bv_to_tree)
         )).
         {
-            Check @inj_countable.
-            Print BVLeaf.
             ltac1:(unshelve(eapply gen_tree_countable)).
             remember (unit+bool+nat+Z+symbol)%type as MyT.
             ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
@@ -1355,7 +1353,7 @@ induction ao; try reflexivity.
         {
             intros x. apply from_to_tree.
         }
-    Defined.
+        Defined.
 
         Definition err
         :=
@@ -1569,6 +1567,16 @@ induction ao; try reflexivity.
                     | aoo_operand (bv_nat (S n)) => (aoo_operand (bv_nat n))
                     | _ => err
                     end
+                | b_map_size =>
+                    match v with
+                    | aoo_operand (bv_pmap m) => (aoo_operand (bv_nat (size m)))
+                    | _ => err
+                    end
+                | b_Z_of_nat =>
+                  match v with
+                  | aoo_operand (bv_nat n) => (aoo_operand (bv_Z (Z.of_nat n)))
+                  | _ => err
+                  end
                 end;
 
             builtin_binary_function_interp
