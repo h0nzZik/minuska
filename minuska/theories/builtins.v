@@ -88,8 +88,9 @@ Module default_builtin.
     | b_nat_succOf  (* nat -> nat *)
     | b_nat_predOf  (* nat -> nat *)
 
-    | b_map_size    (* map -> nat *)
     | b_Z_of_nat    (* nat -> Z *)
+
+    | b_map_size    (* map -> nat *)
     .
 
     #[export]
@@ -119,6 +120,8 @@ Module default_builtin.
     | b_Z_minus (* Z -> Z -> Z *)
     | b_Z_times (* Z -> Z -> Z *)
     | b_Z_div   (* Z -> Z -> Z *)
+
+    | b_map_hasKey  (* map -> 'a -> bool *)
     .
 
     #[export]
@@ -1622,6 +1625,16 @@ induction ao; try reflexivity.
                 | aoo_operand (bv_Z (0)) => err
                 | _ => bfmap_Z_Z__Z Z.div v1 v2
                 end
+                | b_map_hasKey =>
+                    match v1 with
+                    | aoo_operand (bv_pmap m) =>
+                        let p := encode v2 in
+                        match m !! p with
+                        | Some _ => (aoo_operand (bv_bool true))
+                        | None => (aoo_operand (bv_bool false))
+                        end
+                    | _ => err
+                    end
                 end ;
         |}.
 
