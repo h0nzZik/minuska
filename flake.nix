@@ -46,7 +46,7 @@
             in
               pkgs.mkShell {
                 inputsFrom = [minuska];
-                packages = [minuska.coqPackages.coq-lsp];
+                packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide];
               };
         };
       }

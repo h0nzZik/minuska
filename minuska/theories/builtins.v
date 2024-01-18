@@ -1113,7 +1113,34 @@ Module default_builtin.
                         {
                             eexists.
                             split>[|reflexivity].
+                            ltac1:(ospecialize (IHm _)).
+                            {
+                                simpl in Hr.
+                                simpl.
+                                ltac1:(lia).
+                            }
+                            simpl in IHm.
+                            rewrite bind_Some in IHm.
+                            destruct IHm as [x [IH1m IH2m]].
+                            inversion IH2m; subst; clear IH2m.
+                            apply IH1m.
                         }
+                    }
+                }
+            }
+            {
+                destruct m; simpl in *.
+                {
+                    reflexivity.
+                }
+                {
+                    rewrite bind_Some.
+                    exists p.
+                    split>[|reflexivity].
+                    induction p; try reflexivity.
+                    {
+                        
+
                     }
                 }
             }
