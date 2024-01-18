@@ -1349,7 +1349,7 @@ induction ao; try reflexivity.
                 subst. apply _.
             }
             {
-                subst. intros x. destruct x; unfold eq_rec_r; simpl; try reflexivity.
+                subst. abstract(intros x; destruct x; unfold eq_rec_r; simpl; try reflexivity).
             }
         }
         {
