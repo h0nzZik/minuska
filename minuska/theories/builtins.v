@@ -127,10 +127,21 @@ Module default_builtin.
     | b_Z_div   (* Z -> Z -> Z *)
 
     | b_map_hasKey  (* map -> 'a -> bool *)
+    | b_map_lookup  (* map -> 'a -> 'b *)
     .
 
     #[export]
     Instance BinaryF_eqdec : EqDecision BinaryF.
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
+    Inductive TernaryF : Set :=
+    | b_map_insert (* map -> 'a -> 'b -> map  *)
+    .
+
+    #[export]
+    Instance TernaryF_eqdec : EqDecision TernaryF.
     Proof.
         ltac1:(solve_decision).
     Defined.
@@ -1530,7 +1541,7 @@ induction ao; try reflexivity.
                 := BinaryF ;
 
             builtin_ternary_function
-                := Emptyset ;
+                := TernaryF ;
 
             builtin_nullary_function_interp
                 := fun p =>
@@ -1643,9 +1654,28 @@ induction ao; try reflexivity.
                         end
                     | _ => err
                     end
+                | b_map_lookup =>
+                    match v1 with
+                    | aoo_operand (bv_pmap m) =>
+                        let p := encode v2 in
+                        match m !! p with
+                        | Some v => v
+                        | None => err
+                        end
+                    | _ => err
+                    end
                 end ;
-            builtin_ternary_function_interp
-                := fun p v1 v2 v3 => match p with end ;
+            builtin_ternary_function_interp := fun p v1 v2 v3 =>
+                match p with
+                | b_map_insert =>
+                    match v1 with
+                    | aoo_operand (bv_pmap m) =>
+                        let p := encode v2 in
+                        let m' := <[ p := v3 ]>m in
+                        aoo_operand (bv_pmap m')
+                    | _ => err
+                    end
+                end ;
         |}.
 
     End sec.
