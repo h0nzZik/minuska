@@ -733,6 +733,12 @@ Module imp.
             (at level 200, c at level 200, x at level 200, y at level 200)
             : LangImpScope.
 
+
+    Notation "'while' c 'do' x 'done'"
+    := (stmt_while [c, x])
+        : LangImpScope
+    .
+
     Definition isValue :=  fun x =>
          ((isNat x) || (isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs.
 
@@ -865,6 +871,11 @@ Module imp.
                 u_cfg [ u_state [ u_cseq [stmt_ifthenelse [$B, $X, $Y], $REST_SEQ], $VALUES] ]
             ~> u_cfg [u_state [ u_cseq [$Y, $REST_SEQ], $VALUES]]
             where ((($B) ==Bool false))
+        );
+        decl_rule (
+            rule ["while-unfold"]:
+            u_cfg [ u_state [ u_cseq [stmt_while [$B, $X], $REST_SEQ], $VALUES] ]
+            ~> u_cfg [u_state [ u_cseq [if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []), $REST_SEQ], $VALUES]]
         )
     ]%limp.
 
@@ -961,5 +972,32 @@ Module imp.
         eexists. eexists. eexists. Time reflexivity.
     Qed.
 
+
+    Definition program_count_to (n : Z) := (ground (
+        (var [builtin_string "n"]) <:= ((aoo_operand (bv_Z n))) ; then
+        (var [builtin_string "sum"]) <:= ((aoo_operand (bv_Z 0))) ; then
+        (while(((aoo_operand (bv_Z 1)) <= (var [builtin_string "n"]))) do (
+            (var [builtin_string "sum"]) <:= ((var [builtin_string "sum"]) + ((var [builtin_string "n"]))); then
+            (var [builtin_string "n"]) <:= ((var [builtin_string "n"]) + (aoo_operand (bv_Z (-1))))
+        ) done
+        );then (var [builtin_string "sum"])
+        )%limp).
+        
+    Time Compute (imp_interp_from 1000 (program_count_to 10)).
+
+    Lemma test_imp_interp_program_count_to_10:
+        exists (rem : nat) (log : string) (m : BuiltinValue),
+        (imp_interp_from 15 (program_count_to 10))
+        = (
+            rem,
+            (ground (
+                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 55)), u_emptyCseq [] ] , m ] ]
+            )%limp),
+            log
+        )
+    .
+    Proof.
+        eexists. eexists. eexists. reflexivity.
+    Qed.
 End imp.
 

@@ -73,6 +73,7 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_sym : symbol ;
     cd_arity : nat ;
     cd_position : nat ;
+    cd_positions_to_wait_for : list nat ;
     cd_isValue : Expression -> Expression ;
     cd_cseq_context : ContextTemplate;
 }.
@@ -125,7 +126,7 @@ Notation
         )
     )
 .
-
+Check imap.
 Definition strictness_to_contexts
     {Σ : StaticModel}
     (sym_to_str : symbol -> string)
@@ -134,11 +135,12 @@ Definition strictness_to_contexts
     (sd : StrictnessDeclaration)
     : list ContextDeclaration
 :=
-    map (fun position => {|
+    imap (fun idx position => {|
             cd_label := (str_to_label (sym_to_str (sd_sym sd) +:+ ("-" +:+ (pretty position)))) ;
             cd_sym := sd_sym sd ;
             cd_arity := sd_arity sd ;
             cd_position := position ;
+            cd_positions_to_wait_for := (firstn idx (sd_positions sd));
             cd_isValue := sd_isValue sd ;
             cd_cseq_context := @sd_cseq_context Σ sd ;
         |})
@@ -267,6 +269,7 @@ Section wsm.
         (freezerLbl : label)
         (sym : symbol)
         (arity : nat)
+        (positions_to_wait_for : list nat)
         (position : nat)
         (isValue : Expression -> Expression)
         (cseq_context : ContextTemplate)
@@ -286,7 +289,7 @@ Section wsm.
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
         let side_condition : Expression
-            := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> (firstn (position) (ft_variable <$> vars) )) in
+            := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> ((ft_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
         rule [lbl]:
             cseq_context _ _ (cseq ([
                 (apply_symbol' sym lhs_vars);
@@ -355,6 +358,7 @@ Section wsm.
                     (cd_label c)
                     (cd_sym c)
                     (cd_arity c)
+                    (cd_positions_to_wait_for c)
                     (cd_position c)
                     (cd_isValue c)
                     (@cd_cseq_context Σ c)
