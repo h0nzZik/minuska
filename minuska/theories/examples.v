@@ -643,6 +643,7 @@ Module imp.
     Instance Σ : StaticModel := default_model (default_builtin.β).
 
 
+    Definition B : variable := "$B".
     Definition X : variable := "$X".
     Definition Y : variable := "$Y".
     Definition VALUES : variable := "$VALUES".
@@ -723,11 +724,17 @@ Module imp.
 
     Definition builtin_string (s : string) := ((@aoo_operand symbol builtin_value (bv_str s))).
 
+    Notation "x '<=' y" := (bexpr_le [x, y]) (at level 70) : LangImpScope.
+
     Notation "x '<:=' y" := (stmt_assign [x, y]) (at level 90) : LangImpScope.
     Notation "c ';' 'then' d" := (stmt_seq [c, d]) (at level 90, right associativity) : LangImpScope.
+    Notation "'if' c 'then' x 'else' y "
+        := (stmt_ifthenelse [c, x, y])
+            (at level 200, c at level 200, x at level 200, y at level 200)
+            : LangImpScope.
 
     Definition isValue :=  fun x =>
-         ((isNat x) || (isZ x) || (isAppliedSymbol "unitValue" x))%rs.
+         ((isNat x) || (isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs.
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -845,6 +852,19 @@ Module imp.
                 u_cfg [ u_state [ u_cseq [bexpr_negb [$X], $REST_SEQ], $VALUES] ]
             ~> u_cfg [u_state [ u_cseq [(ft_unary b_bool_neg ($X)), $REST_SEQ], $VALUES]]
             where ((isBool ($X)))
+        );
+        decl_strict (symbol "stmt_ifthenelse" of arity 3 strict in [0]);
+        decl_rule (
+            rule ["stmt-ite-true"]:
+                u_cfg [ u_state [ u_cseq [stmt_ifthenelse [$B, $X, $Y], $REST_SEQ], $VALUES] ]
+            ~> u_cfg [u_state [ u_cseq [$X, $REST_SEQ], $VALUES]]
+            where ((($B) ==Bool true))
+        );
+        decl_rule (
+            rule ["stmt-ite-false"]:
+                u_cfg [ u_state [ u_cseq [stmt_ifthenelse [$B, $X, $Y], $REST_SEQ], $VALUES] ]
+            ~> u_cfg [u_state [ u_cseq [$Y, $REST_SEQ], $VALUES]]
+            where ((($B) ==Bool false))
         )
     ]%limp.
 
@@ -893,5 +913,53 @@ Module imp.
         eexists. eexists. eexists. reflexivity.
     Qed.
     
+    Definition program_2 := (ground (
+        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
+        (if(
+            ( (var [builtin_string "x"]) <= (aoo_operand (bv_Z 90))) )
+         then (aoo_operand (bv_Z 10)) else (aoo_operand (bv_Z 20))
+        )
+        )%limp).
+
+    (* Compute (imp_interp_from 15 program_2). *)
+    Lemma test_imp_interp_5:
+        exists (rem : nat) (log : string) (m : BuiltinValue),
+        (imp_interp_from 15 program_2)
+        = (
+            rem,
+            (ground (
+                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 10)), u_emptyCseq [] ] , m ] ]
+            )%limp),
+            log
+        )
+    .
+    Proof.
+        eexists. eexists. eexists. reflexivity.
+    Qed.
+
+    Definition program_3 := (ground (
+        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 91))) ; then
+        (if(
+            ( (var [builtin_string "x"]) <= (aoo_operand (bv_Z 90))) )
+         then (aoo_operand (bv_Z 10)) else (aoo_operand (bv_Z 20))
+        )
+        )%limp).
+
+    (* Compute (imp_interp_from 15 program_3). *)
+    Lemma test_imp_interp_program_3:
+        exists (rem : nat) (log : string) (m : BuiltinValue),
+        (imp_interp_from 15 program_3)
+        = (
+            rem,
+            (ground (
+                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 20)), u_emptyCseq [] ] , m ] ]
+            )%limp),
+            log
+        )
+    .
+    Proof.
+        eexists. eexists. eexists. Time reflexivity.
+    Qed.
 
 End imp.
+

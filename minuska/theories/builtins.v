@@ -650,6 +650,10 @@ Module default_builtin.
             (ft_binary b_eq (x) (y))
         .
 
+        Notation "'(' x '==Bool' y ')'" :=
+            (ft_binary b_eq (x) (y))
+        .
+
 
         Notation "<opaque map>" := (bv_pmap (PNodes _)) (only printing).
 
