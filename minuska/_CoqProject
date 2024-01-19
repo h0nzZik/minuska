@@ -11,6 +11,7 @@ theories/flattened.v
 
 theories/minuska.v
 theories/string_variables.v
+theories/BuiltinValue.v
 theories/builtins.v
 theories/color.v
 theories/basic_matching.v
