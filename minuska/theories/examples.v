@@ -882,6 +882,8 @@ Module imp.
     Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls))).
 
+    (* Compute (length (Γ.1)). *)
+
 
     Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
         (ground (
