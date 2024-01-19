@@ -670,8 +670,8 @@ Module imp.
     Definition seq {_br : BasicResolver} := (apply_symbol "seq").
     Arguments seq {_br} _%rs.
 
-    Definition emptyCommand {_br : BasicResolver} := (apply_symbol "emptyCommand").
-    Arguments emptyCommand {_br} _%rs.
+    Definition unitValue {_br : BasicResolver} := (apply_symbol "unitValue").
+    Arguments unitValue {_br} _%rs.
 
     Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
     Arguments cfg {_br} _%rs.
@@ -679,16 +679,11 @@ Module imp.
     Definition state {_br : BasicResolver} := (apply_symbol "state").
     Arguments state {_br} _%rs.
 
+    Definition var {_br : BasicResolver} := (apply_symbol "var").
+    Arguments var {_br} _%rs.
+
     Definition s {_br : BasicResolver} := (apply_symbol "s").
     Arguments s {_br} _%rs.
-
-    Definition freezer {_br : BasicResolver} (sym : symbol) (position : nat)
-    :=
-        (apply_symbol ("freezer_" +:+ sym +:+ "_" +:+ (pretty position)))
-    .
-    Arguments freezer {_br} _%rs.
-
-
 
 
     Declare Scope LangImpScope.
@@ -700,19 +695,20 @@ Module imp.
     Notation "x '*' y" := (times [ x, y ]) : LangImpScope.
     Notation "x '/' y" := (div [ x, y ]) : LangImpScope.
 
-    Definition var (s : string) := ((@aoo_operand symbol builtin_value (bv_str s))).
+    Definition builtin_string (s : string) := ((@aoo_operand symbol builtin_value (bv_str s))).
 
     Notation "x '<:=' y" := (assign [x, y]) (at level 90) : LangImpScope.
-    Locate "_ ;; _".
     Notation "c ';' 'then' d" := (seq [c, d]) (at level 90, right associativity) : LangImpScope.
+
+    Definition isValue :=  fun x =>
+         ((isNat x) || (isAppliedSymbol "unitValue" x))%rs.
 
     #[local]
     Instance ImpDefaults : Defaults := {|
         default_context_template
             := (context-template cfg ([ state [HOLE; (aoo_operand ($X)) ] ]) with HOLE) ;
 
-        default_isValue := fun x =>
-         ((isNat x) || (isAppliedSymbol "emptyCommand" x))%rs;
+        default_isValue := isValue ;
     |}.
 
 
@@ -771,13 +767,28 @@ Module imp.
         decl_strict (symbol "assign" of arity 2 strict in [1]);
         decl_rule (
             rule ["assign-nat"]:
-                cfg [ state [ cseq [ $X <:= $Y, $REST_SEQ], $VALUES ] ]
+                cfg [ state [ cseq [ (var [$X]) <:= $Y, $REST_SEQ], $VALUES ] ]
             ~> cfg [ state [
-                    cseq [emptyCommand[], $REST_SEQ],
+                    cseq [unitValue[], $REST_SEQ],
                     (ft_ternary b_map_update ($VALUES) ($X) ($Y))
                 ] ]
-                where (isNat ($Y))
-        )
+                where ((isString ($X)) && (isNat ($Y)))
+        );
+        decl_rule (
+            rule ["var-lookup"]:
+                cfg [ state [ cseq [ var [$X], $REST_SEQ], $VALUES]]
+            ~> cfg [ state [
+                cseq [(ft_binary b_map_lookup ($VALUES) ($X)), $REST_SEQ],
+                $VALUES
+            ]]
+        );
+        decl_rule (
+            rule ["seq-unit-value"]:
+                cfg [ state [ cseq [seq [unitValue [], $X ], $REST_SEQ], $VALUES]]
+            ~> cfg [state [ cseq [$X, $REST_SEQ], $VALUES]]
+            where ((isValue ($X)))
+        );
+        decl_strict (symbol "seq" of arity 2 strict in [0;1])
     ]%limp.
 
     Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
@@ -794,7 +805,39 @@ Module imp.
         := interp_in_from Γ fuel (ground (initial0 from))
     .
 
-    Compute (imp_interp_from 5 (ground ((var "x") <:= ((aoo_operand (bv_nat 89))))%limp)).
+    (* Debugging notations *)
+    Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
+    Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
+    Notation "( x )" := (ao_operator x) (only printing).
+    
+    (*
+    Compute (imp_interp_from 5 (ground ((var [builtin_string "x"]) <:= ((aoo_operand (bv_nat 89))))%limp)).
 
+
+    Compute (imp_interp_from 12 (ground (
+        (var [builtin_string "x"]) <:= ((aoo_operand (bv_nat 89))) ; then
+        ((aoo_operand (bv_nat 3)) + (var [builtin_string "x"]))
+        )%limp)).
+
+    *)
+
+    Lemma test_imp_interp_1:
+        exists rem (log : string) (m : BuiltinValue),
+        (imp_interp_from 12 (ground (
+        (var [builtin_string "x"]) <:= ((aoo_operand (bv_nat 89))) ; then
+        ((aoo_operand (bv_nat 3)) + (var [builtin_string "x"]))
+        )%limp))
+        = (
+            rem,
+            (ground (
+                cfg [ state [ cseq [(aoo_operand (bv_nat 92)), emptyCseq [] ] , m ] ]
+            )%limp),
+            log
+        )
+    .
+    Proof.
+        eexists. eexists. eexists. reflexivity.
+    Qed.
+    
 
 End imp.

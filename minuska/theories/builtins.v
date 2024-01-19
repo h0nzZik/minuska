@@ -57,7 +57,7 @@ End empty_builtin.
 
 Module default_builtin.
     Export BuiltinValue.
-    
+
     Inductive UnaryP : Set := .
 
     #[export]
@@ -90,9 +90,12 @@ Module default_builtin.
 
     Inductive UnaryF : Set :=
     | b_isBuiltin (* 'a -> bool *)
-    | b_isError (* 'a -> bool *)
-    | b_isBool  (* 'a -> bool *)
-    | b_isNat   (* 'a -> bool *)
+    | b_isError   (* 'a -> bool *)
+    | b_isBool    (* 'a -> bool *)
+    | b_isNat     (* 'a -> bool *)
+    | b_isString  (* 'a -> bool *)
+    | b_isList    (* 'a -> bool *)
+    | b_isMap     (* 'a -> bool *)
 
     | b_neg (* bool -> bool *)
 
@@ -188,6 +191,21 @@ Module default_builtin.
         Definition isNat (bv : BuiltinValue) : bool
         :=
             match bv with bv_nat _ => true | _ => false end
+        .
+
+        Definition isString (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_str _ => true | _ => false end
+        .
+
+        Definition isList (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_list _ => true | _ => false end
+        .
+
+        Definition isMap (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_pmap _ => true | _ => false end
         .
 
         Definition bfmap1
@@ -358,6 +376,22 @@ Module default_builtin.
                     | aoo_operand x => aoo_operand (bv_bool (isBool x))
                     | _ => aoo_operand (bv_bool false)
                     end
+                | b_isString =>
+                    match v with
+                    | aoo_operand x => aoo_operand (bv_bool (isString x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_isList =>
+                    match v with
+                    | aoo_operand x => aoo_operand (bv_bool (isList x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                | b_isMap =>
+                    match v with
+                    | aoo_operand x => aoo_operand (bv_bool (isMap x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+
                 | b_neg =>
                     bfmap_bool__bool negb v
                 | b_isNat =>
@@ -462,9 +496,9 @@ Module default_builtin.
                     | aoo_operand (bv_sym s) =>
                         match v2 with
                         | aoo_app ao => (aoo_operand (bv_bool (bool_decide (AO'_getOperator ao = s))))
-                        | _ => err
+                        | _ => (aoo_operand (bv_bool false))
                         end
-                    | _ => err
+                    | _ => (aoo_operand (bv_bool false))
                     end
                 end ;
             builtin_ternary_function_interp := fun p v1 v2 v3 =>
@@ -523,6 +557,30 @@ Module default_builtin.
             (at level 90)
         .
 
+        Notation "'isString' t" :=
+            (ft_unary
+                b_isString
+                t
+            )
+            (at level 90)
+        .
+
+        Notation "'isList' t" :=
+            (ft_unary
+                b_isList
+                t
+            )
+            (at level 90)
+        .
+
+        Notation "'isMap' t" :=
+            (ft_unary
+                b_isMap
+                t
+            )
+            (at level 90)
+        .
+
         Notation "'(' x '+Nat' y ')'" :=
             (ft_binary b_nat_plus (x) (y))
         .
@@ -563,6 +621,9 @@ Module default_builtin.
         Notation "'(' x '==Z' y ')'" :=
             (ft_binary b_eq (x) (y))
         .
+
+
+        Notation "<opaque map>" := (bv_pmap (PNodes _)) (only printing).
 
     End Notations.
 
