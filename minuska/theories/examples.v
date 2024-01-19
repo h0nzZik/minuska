@@ -893,11 +893,12 @@ Module imp.
         := interp_in_from Γ fuel (ground (initial0 from))
     .
 
+    (*
     (* Debugging notations *)
     Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
     Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
     Notation "( x )" := (ao_operator x) (only printing).
-
+    *)
     (*  
     Compute (imp_interp_from 12 (ground (
         (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
@@ -982,9 +983,26 @@ Module imp.
         ) done
         );then (var [builtin_string "sum"])
         )%limp).
-        
-    Time Compute (imp_interp_from 1000 (program_count_to 10)).
 
+    Lemma test_imp_interp_program_count_to_3:
+        exists (rem : nat) (log : string) (m : BuiltinValue),
+        (imp_interp_from 1000 (program_count_to 3))
+        = (
+            rem,
+            (ground (
+                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 6)), u_emptyCseq [] ] , m ] ]
+            )%limp),
+            log
+        )
+    .
+    Proof.
+        eexists. eexists. eexists. reflexivity.
+    Qed.
+
+    (* Time Compute (imp_interp_from 1000 (program_count_to 10)). *)
+
+    (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
+    (*
     Lemma test_imp_interp_program_count_to_10:
         exists (rem : nat) (log : string) (m : BuiltinValue),
         (imp_interp_from 1000 (program_count_to 10))
@@ -999,5 +1017,36 @@ Module imp.
     Proof.
         eexists. eexists. eexists. reflexivity.
     Qed.
+    *)
+
+    Time Compute (imp_interp_from 1000 (program_count_to 3)).
+
+
+    Definition interp_program_count_to (fuel : nat) (n : Z)
+    :=
+        let r := imp_interp_from fuel (program_count_to n) in
+        let n : Z := (match r.1.2 with
+        | aoo_app
+          (ao_app_ao (ao_operator "u_cfg")
+          (ao_app_operand (
+            ao_app_ao 
+                (ao_operator "u_state")
+                (ao_app_ao
+                    ( ao_app_operand
+                        (ao_operator "u_cseq")
+                        (bv_Z val)
+                    )
+                    (ao_operator "u_empty_cseq")
+                )
+        )
+           (_) ))
+          => val
+        | _ => Z0
+        end) in
+        (r.1.1,n,r.2)
+    .
+
+    Check interp_program_count_to.
+
 End imp.
 

@@ -30,3 +30,8 @@ Extraction
     "FibNative.ml"
     fib_native.fib_interp_from_toint
 .
+
+Extraction
+  "SumToN.ml"
+  imp.interp_program_count_to
+.

@@ -7,3 +7,6 @@ two_counters.bin: src/two_counters_driver.ml all
 
 fib_native.bin: src/fib_native_driver.ml all
 	ocamlfind ocamlc -package zarith -linkpkg -g -w -20 -w -26 -o $@ FibNative.mli FibNative.ml $<
+
+sum_to_n.bin: src/sum_to_n_driver.ml all
+	ocamlfind ocamlc -package zarith -linkpkg -g -w -20 -w -26 -o $@ SumToN.mli SumToN.ml $<
