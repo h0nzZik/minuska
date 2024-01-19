@@ -987,7 +987,7 @@ Module imp.
 
     Lemma test_imp_interp_program_count_to_10:
         exists (rem : nat) (log : string) (m : BuiltinValue),
-        (imp_interp_from 15 (program_count_to 10))
+        (imp_interp_from 1000 (program_count_to 10))
         = (
             rem,
             (ground (
