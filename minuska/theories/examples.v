@@ -647,7 +647,10 @@ Module imp.
     Definition Y : variable := "$Y".
     Definition VALUES : variable := "$VALUES".
     Definition REST_SEQ : variable := "$REST_SEQ".
-    
+
+    Definition var {_br : BasicResolver} := (apply_symbol "var").
+    Arguments var {_br} _%rs.
+
     (* Utilities *)
     Definition u_cseq_name : string := "u_cseq".
     Definition u_empty_cseq_name : string := "u_empty_cseq".
@@ -658,12 +661,16 @@ Module imp.
     Definition u_emptyCseq {_br : BasicResolver} := (apply_symbol u_empty_cseq_name).
     Arguments u_emptyCseq {_br} _%rs.
 
-
     Definition u_cfg {_br : BasicResolver} := (apply_symbol "u_cfg").
     Arguments u_cfg {_br} _%rs.
 
     Definition u_state {_br : BasicResolver} := (apply_symbol "u_state").
     Arguments u_state {_br} _%rs.
+
+    (* Data *)
+    Definition unitValue {_br : BasicResolver} := (apply_symbol "unitValue").
+    Arguments unitValue {_br} _%rs.
+
 
     (* Arithmetics *)
     Definition arith_plus {_br : BasicResolver} := (apply_symbol "arith_plus").
@@ -678,6 +685,20 @@ Module imp.
     Definition arith_div {_br : BasicResolver} := (apply_symbol "arith_div").
     Arguments arith_div {_br} _%rs.
 
+    (* Boolean expressions *)
+
+    Definition bexpr_lt {_br : BasicResolver} := (apply_symbol "bexpr_lt").
+    Arguments bexpr_lt {_br} _%rs.
+
+    Definition bexpr_le {_br : BasicResolver} := (apply_symbol "bexpr_le").
+    Arguments bexpr_le {_br} _%rs.
+
+    Definition bexpr_eq {_br : BasicResolver} := (apply_symbol "bexpr_eq").
+    Arguments bexpr_eq {_br} _%rs.
+
+    Definition bexpr_negb {_br : BasicResolver} := (apply_symbol "bexpr_negb").
+    Arguments bexpr_negb {_br} _%rs.
+
     (* Statements *)
     Definition stmt_assign {_br : BasicResolver} := (apply_symbol "stmt_assign").
     Arguments stmt_assign {_br} _%rs.
@@ -685,14 +706,11 @@ Module imp.
     Definition stmt_seq {_br : BasicResolver} := (apply_symbol "stmt_seq").
     Arguments stmt_seq {_br} _%rs.
 
-    Definition unitValue {_br : BasicResolver} := (apply_symbol "unitValue").
-    Arguments unitValue {_br} _%rs.
+    Definition stmt_ifthenelse {_br : BasicResolver} := (apply_symbol "stmt_ifthenelse").
+    Arguments stmt_ifthenelse {_br} _%rs.
 
-
-    Definition var {_br : BasicResolver} := (apply_symbol "var").
-    Arguments var {_br} _%rs.
-
-
+    Definition stmt_while {_br : BasicResolver} := (apply_symbol "stmt_while").
+    Arguments stmt_while {_br} _%rs.
 
     Declare Scope LangImpScope.
     Delimit Scope LangImpScope with limp.
@@ -709,7 +727,7 @@ Module imp.
     Notation "c ';' 'then' d" := (stmt_seq [c, d]) (at level 90, right associativity) : LangImpScope.
 
     Definition isValue :=  fun x =>
-         ((isNat x) || (isAppliedSymbol "unitValue" x))%rs.
+         ((isNat x) || (isZ x) || (isAppliedSymbol "unitValue" x))%rs.
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -723,66 +741,65 @@ Module imp.
 
 
     Definition Decls : list Declaration := [
-        (* < SAME AS ARITH, except in state >*)
         (* plus *)
         decl_rule (
-            rule ["plus-nat-nat"]:
+            rule ["plus-Z-Z"]:
                 u_cfg [ u_state [cseq [($X + $Y), $REST_SEQ], $VALUES ] ]
-            ~> u_cfg [ u_state [cseq [ ($X +Nat $Y) , $REST_SEQ ], $VALUES ] ]
+            ~> u_cfg [ u_state [cseq [ ($X +Z $Y) , $REST_SEQ ], $VALUES ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "arith_plus" of arity 2 strict in [0;1]);
         (* minus *)
         decl_rule (
-            rule ["minus-nat-nat"]:
+            rule ["minus-Z-Z"]:
                 u_cfg [ u_state [ u_cseq [ ($X - $Y), $REST_SEQ ], $VALUES ] ]
-            ~> u_cfg [ u_state [ u_cseq [ ($X -Nat $Y) , $REST_SEQ ], $VALUES ] ]
+            ~> u_cfg [ u_state [ u_cseq [ ($X -Z $Y) , $REST_SEQ ], $VALUES ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "arith_minus" of arity 2 strict in [0;1]);
         (* times *)
         decl_rule (
-            rule ["times-nat-nat"]:
+            rule ["times-Z-Z"]:
                 u_cfg [ u_state [ u_cseq [ (($X) * ($Y)), $REST_SEQ ], $VALUES ] ]
-            ~> u_cfg [ u_state [ u_cseq [ ($X *Nat $Y) , $REST_SEQ ], $VALUES ] ]
+            ~> u_cfg [ u_state [ u_cseq [ ($X *Z $Y) , $REST_SEQ ], $VALUES ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "arith_times" of arity 2 strict in [0;1]);
         (* div *)
         decl_rule (
-            rule ["div-nat-nat"]:
+            rule ["div-Z-Z"]:
                 u_cfg [ u_state [ u_cseq [ (($X) / ($Y)), $REST_SEQ ], $VALUES ] ]
-            ~> u_cfg [ u_state [ u_cseq [ ($X /Nat $Y) , $REST_SEQ ], $VALUES ] ]
+            ~> u_cfg [ u_state [ u_cseq [ ($X /Z $Y) , $REST_SEQ ], $VALUES ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
+                    (* TODO test that $Y is not 0*)
                 )
         );
         decl_strict (symbol "arith_div" of arity 2 strict in [0;1]);
-        (* </SAME AS ARITH >*)
         
         decl_strict (symbol "stmt_assign" of arity 2 strict in [1]);
         decl_rule (
-            rule ["assign-nat"]:
+            rule ["assign-value"]:
                 u_cfg [ u_state [ u_cseq [ (var [$X]) <:= $Y, $REST_SEQ], $VALUES ] ]
             ~> u_cfg [ u_state [
                     u_cseq [unitValue[], $REST_SEQ],
                     (ft_ternary b_map_update ($VALUES) ($X) ($Y))
                 ] ]
-                where ((isString ($X)) && (isNat ($Y)))
+                where ((isString ($X)) && (isValue ($Y)))
         );
         decl_rule (
             rule ["var-lookup"]:
@@ -798,7 +815,37 @@ Module imp.
             ~> u_cfg [u_state [ u_cseq [$X, $REST_SEQ], $VALUES]]
             where ((isValue ($X)))
         );
-        decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1])
+        decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
+
+        decl_strict (symbol "bexpr_eq" of arity 2 strict in [0;1]);
+        decl_strict (symbol "bexpr_negb" of arity 1 strict in [0]);
+        decl_strict (symbol "bexpr_le" of arity 2 strict in [0;1]);
+        decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]);
+
+        decl_rule (
+            rule ["bexpr-eq-Z-Z"]:
+                u_cfg [ u_state [ u_cseq [bexpr_eq [ $X, $Y ], $REST_SEQ], $VALUES]]
+            ~> u_cfg [u_state [ u_cseq [((ft_binary b_eq ($X) ($Y))), $REST_SEQ], $VALUES]]
+            where ((isValue ($X)) && (isValue ($Y)))
+        );
+        decl_rule (
+            rule ["bexpr-le-Z-Z"]:
+                u_cfg [ u_state [ u_cseq [bexpr_le [ $X, $Y ], $REST_SEQ], $VALUES]]
+            ~> u_cfg [u_state [ u_cseq [((ft_binary b_Z_isLe ($X) ($Y))), $REST_SEQ], $VALUES]]
+            where ((isZ ($X)) && (isZ ($Y)))
+        );
+        decl_rule (
+            rule ["bexpr-lt-Z-Z"]:
+                u_cfg [ u_state [ u_cseq [bexpr_lt [ $X, $Y ], $REST_SEQ], $VALUES]]
+            ~> u_cfg [u_state [ u_cseq [((ft_binary b_Z_isLt ($X) ($Y))), $REST_SEQ], $VALUES]]
+            where ((isZ ($X)) && (isZ ($Y)))
+        );
+        decl_rule (
+            rule ["bexpr-negb-bool"]:
+                u_cfg [ u_state [ u_cseq [bexpr_negb [$X], $REST_SEQ], $VALUES] ]
+            ~> u_cfg [u_state [ u_cseq [(ft_unary b_bool_neg ($X)), $REST_SEQ], $VALUES]]
+            where ((isBool ($X)))
+        )
     ]%limp.
 
     Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
@@ -819,14 +866,11 @@ Module imp.
     Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
     Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
     Notation "( x )" := (ao_operator x) (only printing).
-    
-    (*
-    Compute (imp_interp_from 5 (ground ((var [builtin_string "x"]) <:= ((aoo_operand (bv_nat 89))))%limp)).
-*)
-    (*
+
+    (*  
     Compute (imp_interp_from 12 (ground (
-        (var [builtin_string "x"]) <:= ((aoo_operand (bv_nat 89))) ; then
-        ((aoo_operand (bv_nat 3)) + (var [builtin_string "x"]))
+        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
+        ((aoo_operand (bv_Z 3)) + (var [builtin_string "x"]))
         )%limp)).
 
     *)
@@ -834,13 +878,13 @@ Module imp.
     Lemma test_imp_interp_1:
         exists (rem : nat) (log : string) (m : BuiltinValue),
         (imp_interp_from 12 (ground (
-        (var [builtin_string "x"]) <:= ((aoo_operand (bv_nat 89))) ; then
-        ((aoo_operand (bv_nat 3)) + (var [builtin_string "x"]))
+        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
+        ((aoo_operand (bv_Z 3)) + (var [builtin_string "x"]))
         )%limp))
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_nat 92)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 92)), u_emptyCseq [] ] , m ] ]
             )%limp),
             log
         )

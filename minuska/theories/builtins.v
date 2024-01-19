@@ -93,11 +93,12 @@ Module default_builtin.
     | b_isError   (* 'a -> bool *)
     | b_isBool    (* 'a -> bool *)
     | b_isNat     (* 'a -> bool *)
+    | b_isZ     (* 'a -> bool *)
     | b_isString  (* 'a -> bool *)
     | b_isList    (* 'a -> bool *)
     | b_isMap     (* 'a -> bool *)
 
-    | b_neg (* bool -> bool *)
+    | b_bool_neg (* bool -> bool *)
 
     | b_nat_isZero  (* 'a -> bool *)
     | b_nat_isSucc  (* 'a -> bool *)
@@ -173,37 +174,42 @@ Module default_builtin.
             @aoo_operand symbol BuiltinValue bv_error
         .
 
-        Definition isBuiltin (bv : BuiltinValue) : BuiltinValue
+        Definition impl_isBuiltin (bv : BuiltinValue) : BuiltinValue
         :=
             (bv_bool true)
         .
 
-        Definition isError (bv : BuiltinValue) : bool
+        Definition impl_isError (bv : BuiltinValue) : bool
         :=
             match bv with bv_error => true | _ => false end
         .
 
-        Definition isBool (bv : BuiltinValue) : bool
+        Definition impl_isBool (bv : BuiltinValue) : bool
         :=
             match bv with bv_bool _ => true | _ => false end
         .
 
-        Definition isNat (bv : BuiltinValue) : bool
+        Definition impl_isNat (bv : BuiltinValue) : bool
         :=
             match bv with bv_nat _ => true | _ => false end
         .
 
-        Definition isString (bv : BuiltinValue) : bool
+        Definition impl_isZ (bv : BuiltinValue) : bool
+        :=
+            match bv with bv_Z _ => true | _ => false end
+        .
+
+        Definition impl_isString (bv : BuiltinValue) : bool
         :=
             match bv with bv_str _ => true | _ => false end
         .
 
-        Definition isList (bv : BuiltinValue) : bool
+        Definition impl_isList (bv : BuiltinValue) : bool
         :=
             match bv with bv_list _ => true | _ => false end
         .
 
-        Definition isMap (bv : BuiltinValue) : bool
+        Definition impl_isMap (bv : BuiltinValue) : bool
         :=
             match bv with bv_pmap _ => true | _ => false end
         .
@@ -365,40 +371,47 @@ Module default_builtin.
             builtin_unary_function_interp
                 := fun p v =>
                 match p with
-                | b_isBuiltin => bfmap1 isBuiltin v
+                | b_isBuiltin => bfmap1 impl_isBuiltin v
                 | b_isError =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (isError x))
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isError x))
                     | _ => aoo_operand (bv_bool false)
                     end
                 | b_isBool =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (isBool x))
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isBool x))
                     | _ => aoo_operand (bv_bool false)
                     end
                 | b_isString =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (isString x))
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isString x))
                     | _ => aoo_operand (bv_bool false)
                     end
                 | b_isList =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (isList x))
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isList x))
                     | _ => aoo_operand (bv_bool false)
                     end
                 | b_isMap =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (isMap x))
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isMap x))
                     | _ => aoo_operand (bv_bool false)
                     end
 
-                | b_neg =>
+                | b_bool_neg =>
                     bfmap_bool__bool negb v
+                
                 | b_isNat =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (isNat x))
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isNat x))
                     | _ => aoo_operand (bv_bool false)
                     end
+                | b_isZ =>
+                    match v with
+                    | aoo_operand x => aoo_operand (bv_bool (impl_isZ x))
+                    | _ => aoo_operand (bv_bool false)
+                    end
+                
                 | b_nat_isZero =>
                     match v with
                     | aoo_operand (bv_nat 0) => aoo_operand (bv_bool true)
@@ -545,13 +558,28 @@ Module default_builtin.
         .
 
         Notation "~~ b" :=
-            (ft_unary default_builtin.b_neg (b))
+            (ft_unary default_builtin.b_bool_neg (b))
         .
-        
+
+        Notation "'isBool' t" :=
+            (ft_unary
+                b_isBool
+                t
+            )
+            (at level 90)
+        .        
 
         Notation "'isNat' t" :=
             (ft_unary
                 b_isNat
+                t
+            )
+            (at level 90)
+        .
+
+        Notation "'isZ' t" :=
+            (ft_unary
+                b_isZ
                 t
             )
             (at level 90)
