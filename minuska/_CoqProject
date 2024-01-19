@@ -22,6 +22,8 @@ theories/notations.v
 theories/frontend.v
 theories/examples.v
 theories/extraction.v
+theories/interp_loop.v
+theories/examples_unary_nat.v
 
 theories/benchmarking_in_coq.v
 
