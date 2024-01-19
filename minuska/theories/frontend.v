@@ -104,6 +104,8 @@ Notation
 .
 
 Class Defaults {Σ : StaticModel} := {
+    default_cseq_name : string ;
+    default_empty_cseq_name : string ;
     default_context_template : ContextTemplate ;
     default_isValue : Expression -> Expression ;
 }.
@@ -239,14 +241,14 @@ Section wsm.
     
     Definition REST_SEQ : variable := to_var "$REST_SEQ".
 
-    Definition cseq {T : Type}
+    Definition cseq {defaults : Defaults} {T : Type}
     :=
-        (@apply_symbol' Σ T (to_sym "cseq"))
+        (@apply_symbol' Σ T (to_sym default_cseq_name))
     .
 
-    Definition emptyCseq {T : Type}
+    Definition emptyCseq {defaults : Defaults} {T : Type}
     :=
-        (@apply_symbol' Σ T (to_sym "emptyCseq"))
+        (@apply_symbol' Σ T (to_sym default_empty_cseq_name))
     .
 
     Definition freezer
@@ -260,6 +262,7 @@ Section wsm.
     Check foldr.
 
     Definition heating_rule_seq
+        {defaults : Defaults}
         (lbl : label)
         (freezerLbl : label)
         (sym : symbol)
@@ -301,6 +304,7 @@ Section wsm.
 
 
     Definition cooling_rule
+        {defaults : Defaults}
         (lbl : label)
         (freezerLbl : label)
         (sym : symbol)
@@ -340,6 +344,7 @@ Section wsm.
     .
 
     Definition process_context_declaration
+        {defaults : Defaults}
         (s : State)
         (c : ContextDeclaration)
         : State
@@ -371,6 +376,7 @@ Section wsm.
     .
 
     Definition process_strictness_declaration
+        {defaults : Defaults}
         (s : State)
         (c : StrictnessDeclaration)
         : State
@@ -392,6 +398,7 @@ Section wsm.
 
 
     Definition process_declaration
+        {defaults : Defaults}
         (s : State)
         (d : Declaration)
         : State
@@ -403,6 +410,7 @@ Section wsm.
     end.
 
     Definition process_declarations
+        {defaults : Defaults}
         (ld : list Declaration)
         : State
     :=
