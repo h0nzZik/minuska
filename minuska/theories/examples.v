@@ -640,8 +640,10 @@ Module imp.
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).
 
+
     Definition X : variable := "X".
     Definition Y : variable := "Y".
+    Definition VALUES : variable := "VALUES".
     Definition REST_SEQ : variable := "$REST_SEQ".
     
     Definition cseq {_br : BasicResolver} := (apply_symbol "cseq").
@@ -662,6 +664,15 @@ Module imp.
     Definition div {_br : BasicResolver} := (apply_symbol "div").
     Arguments div {_br} _%rs.
 
+    Definition assign {_br : BasicResolver} := (apply_symbol "assign").
+    Arguments assign {_br} _%rs.
+
+    Definition seq {_br : BasicResolver} := (apply_symbol "seq").
+    Arguments seq {_br} _%rs.
+
+    Definition emptyCommand {_br : BasicResolver} := (apply_symbol "emptyCommand").
+    Arguments emptyCommand {_br} _%rs.
+
     Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
     Arguments cfg {_br} _%rs.
 
@@ -678,12 +689,112 @@ Module imp.
     Arguments freezer {_br} _%rs.
 
 
+
+
     Declare Scope LangImpScope.
     Delimit Scope LangImpScope with limp.
+    Close Scope LangImpScope.
 
-    Notation "x '+' y" := (plus [ x, y ])%limp.
-    Notation "x '-' y" := (minus [ x, y ])%limp.
-    Notation "x '*' y" := (times [ x, y ])%limp.
-    Notation "x '/' y" := (div [ x, y ])%limp.
+    Notation "x '+' y" := (plus [ x, y ]) : LangImpScope.
+    Notation "x '-' y" := (minus [ x, y ]) : LangImpScope.
+    Notation "x '*' y" := (times [ x, y ]) : LangImpScope.
+    Notation "x '/' y" := (div [ x, y ]) : LangImpScope.
+
+    Definition var (s : string) := ((@aoo_operand symbol builtin_value (bv_str s))).
+
+    Notation "x '<:=' y" := (assign [x, y]) (at level 90) : LangImpScope.
+    Locate "_ ;; _".
+    Notation "c ';' 'then' d" := (seq [c, d]) (at level 90, right associativity) : LangImpScope.
+
+    #[local]
+    Instance ImpDefaults : Defaults := {|
+        default_context_template
+            := (context-template cfg ([ state [HOLE; (aoo_operand ($X)) ] ]) with HOLE) ;
+
+        default_isValue := fun x =>
+         ((isNat x) || (isAppliedSymbol "emptyCommand" x))%rs;
+    |}.
+
+
+    Definition Decls : list Declaration := [
+        (* < SAME AS ARITH, except in state >*)
+        (* plus *)
+        decl_rule (
+            rule ["plus-nat-nat"]:
+                cfg [ state [cseq [($X + $Y), $REST_SEQ], $VALUES ] ]
+            ~> cfg [ state [cseq [ ($X +Nat $Y) , $REST_SEQ ], $VALUES ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "plus" of arity 2 strict in [0;1]);
+        (* minus *)
+        decl_rule (
+            rule ["minus-nat-nat"]:
+                cfg [ state [ cseq [ ($X - $Y), $REST_SEQ ], $VALUES ] ]
+            ~> cfg [ state [ cseq [ ($X -Nat $Y) , $REST_SEQ ], $VALUES ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "minus" of arity 2 strict in [0;1]);
+        (* times *)
+        decl_rule (
+            rule ["times-nat-nat"]:
+                cfg [ state [ cseq [ (($X) * ($Y)), $REST_SEQ ], $VALUES ] ]
+            ~> cfg [ state [ cseq [ ($X *Nat $Y) , $REST_SEQ ], $VALUES ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "times" of arity 2 strict in [0;1]);
+        (* div *)
+        decl_rule (
+            rule ["div-nat-nat"]:
+                cfg [ state [ cseq [ (($X) / ($Y)), $REST_SEQ ], $VALUES ] ]
+            ~> cfg [ state [ cseq [ ($X /Nat $Y) , $REST_SEQ ], $VALUES ] ]
+                where (
+                    (isNat ($X))
+                    &&
+                    (isNat ($Y))
+                )
+        );
+        decl_strict (symbol "div" of arity 2 strict in [0;1]);
+        (* </SAME AS ARITH >*)
+        (* TODO update $VALUES *)
+        decl_strict (symbol "assign" of arity 2 strict in [1]);
+        decl_rule (
+            rule ["assign-nat"]:
+                cfg [ state [ cseq [ $X <:= $Y, $REST_SEQ], $VALUES ] ]
+            ~> cfg [ state [
+                    cseq [emptyCommand[], $REST_SEQ],
+                    (ft_ternary b_map_update ($VALUES) ($X) ($Y))
+                ] ]
+                where (isNat ($Y))
+        )
+    ]%limp.
+
+    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    (to_theory (process_declarations (Decls))).
+
+
+    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
+        (ground (
+            cfg [ state [ cseq [x, emptyCseq [] ] , (builtin_nullary_function_interp b_map_empty) ] ]
+        ))
+    .
+
+    Definition imp_interp_from (fuel : nat) (from : GroundTerm)
+        := interp_in_from Γ fuel (ground (initial0 from))
+    .
+
+    Compute (imp_interp_from 5 (ground ((var "x") <:= ((aoo_operand (bv_nat 89))))%limp)).
+
 
 End imp.

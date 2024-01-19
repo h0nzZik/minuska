@@ -14,7 +14,7 @@ Export default_builtin.Notations.
 
 Arguments ft_unary {Σ} f (t).
 Arguments ft_binary {Σ} f (t1) (t2).
-
+Arguments ft_ternary {Σ} f (t1) (t2) (t3).
 
 
 Fixpoint OpenTerm_to_ExprTerm'
@@ -53,7 +53,7 @@ Definition label {Σ : StaticModel} :=
 Definition ContextTemplate
     {Σ : StaticModel}
 :=
-    forall br:BasicResolver,
+    forall (br:BasicResolver) (r:Resolver),
     AppliedOperatorOr' symbol operand_type ->
     AppliedOperatorOr' symbol operand_type
 .
@@ -62,7 +62,7 @@ Definition ContextTemplate
 Notation
     "( 'context-template' x 'with' h )"
     :=
-    (fun (_:BasicResolver) (h : AppliedOperatorOr' symbol operand_type) => x)
+    (fun (_:BasicResolver) (_:Resolver) (h : AppliedOperatorOr' symbol operand_type) => x)
 .
 
 
@@ -266,11 +266,7 @@ Section wsm.
         (arity : nat)
         (position : nat)
         (isValue : Expression -> Expression)
-        (cseq_context :
-            forall {_br : BasicResolver},
-                AppliedOperatorOr' symbol operand_type ->
-                AppliedOperatorOr' symbol operand_type
-        )
+        (cseq_context : ContextTemplate)
         : RuleDeclaration
     :=
         let vars : list variable
@@ -284,12 +280,12 @@ Section wsm.
         let lhs_selected_var : (AppliedOperatorOr' symbol BuiltinOrVar)
             := aoo_operand (bov_variable selected_var) in
         let force_cseq_context
-            := ((fun _:TagLHS => cseq_context) mkTagLHS) in
+            := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
         let side_condition : Expression
             := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> (firstn (position) (ft_variable <$> vars) )) in
         rule [lbl]:
-            cseq_context (cseq ([
+            cseq_context _ _ (cseq ([
                 (apply_symbol' sym lhs_vars);
                 (aoo_operand (bov_variable REST_SEQ))
             ])%list)
@@ -311,11 +307,7 @@ Section wsm.
         (arity : nat)
         (position : nat)
         (isValue : Expression -> Expression)
-        (cseq_context :
-            forall {_br : BasicResolver},
-                AppliedOperatorOr' symbol operand_type ->
-                AppliedOperatorOr' symbol operand_type
-        )
+        (cseq_context : ContextTemplate)
         : RuleDeclaration
     :=
         let vars : list variable
@@ -329,9 +321,9 @@ Section wsm.
         let lhs_selected_var : (AppliedOperatorOr' symbol BuiltinOrVar)
             := aoo_operand (bov_variable selected_var) in
         let force_cseq_context
-            := ((fun _:TagLHS => cseq_context) mkTagLHS) in
+            := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         rule [lbl]:
-            cseq_context (cseq (
+            cseq_context _ _ (cseq (
                 ([
                 lhs_selected_var;
                 cseq ([

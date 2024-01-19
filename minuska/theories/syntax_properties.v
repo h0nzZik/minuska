@@ -379,3 +379,14 @@ match ao1,ao2 with
         (AppliedOperator'_zipWith fa fbc f1 f2 app11 app21)
         (f1 app12 op22)
 end.
+
+Fixpoint AO'_getOperator {A B : Type}
+    (ao : AppliedOperator' A B)
+    : A :=
+match ao with
+| ao_operator o => o
+| ao_app_operand ao' _ => AO'_getOperator ao'
+| ao_app_ao ao' _ => AO'_getOperator ao'
+end.
+
+

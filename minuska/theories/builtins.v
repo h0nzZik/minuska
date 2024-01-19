@@ -1,7 +1,9 @@
 From Minuska Require Import
     prelude
     spec_syntax
+    syntax_properties
     notations
+    default_static_model
 .
 
 From Coq Require Import ZArith.
@@ -25,7 +27,7 @@ Module empty_builtin.
             {symbols : Symbols symbol}
         .
 
-        #[export]
+        #[local]
         Instance β
             : Builtin := {|
             builtin_value
@@ -74,6 +76,10 @@ Module default_builtin.
     | b_false
     | b_true
     | b_zero
+
+    | b_list_empty
+
+    | b_map_empty
     .
 
     #[export]
@@ -128,6 +134,8 @@ Module default_builtin.
 
     | b_map_hasKey  (* map -> 'a -> bool *)
     | b_map_lookup  (* map -> 'a -> 'b *)
+
+    | b_is_applied_symbol (* string -> 'a -> bool*)
     .
 
     #[export]
@@ -137,7 +145,7 @@ Module default_builtin.
     Defined.
 
     Inductive TernaryF : Set :=
-    | b_map_insert (* map -> 'a -> 'b -> map  *)
+    | b_map_update (* map -> 'a -> 'b -> map  *)
     .
 
     #[export]
@@ -158,6 +166,7 @@ Module default_builtin.
         | bv_bool (b : bool)
         | bv_nat (n : nat)
         | bv_Z (z : Z)
+        | bv_sym (s : symbol)
         | bv_str (s : string)
         | bv_list (m : list (AppliedOperatorOr' symbol BuiltinValue))
         | bv_pmap (m : Pmap (AppliedOperatorOr' symbol BuiltinValue))
@@ -172,6 +181,7 @@ Module default_builtin.
             BVsize (bv_error) := 1 ;
             BVsize (bv_bool _) := 1 ;
             BVsize (bv_nat _) := 1 ;
+            BVsize (bv_sym _) := 1 ;
             BVsize (bv_str _) := 1 ;
             BVsize (bv_Z _) := 1 ;
         where my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue)) : nat :=
@@ -257,6 +267,18 @@ Module default_builtin.
                     try (solve [left; reflexivity]);
                     try ltac1:(right; discriminate).
                     destruct (decide (z = z0)).
+                    {
+                        left. subst. reflexivity.
+                    }
+                    {
+                        right. ltac1:(congruence).
+                    }
+                }
+                {
+                    destruct y;
+                    try (solve [left; reflexivity]);
+                    try ltac1:(right; discriminate).
+                    destruct (decide (s = s0)).
                     {
                         left. subst. reflexivity.
                     }
@@ -703,6 +725,7 @@ Module default_builtin.
         | (GenLeaf (bvl_nat n))    => Some (bv_nat n) 
         | (GenLeaf (bvl_Z z))      => Some (bv_Z z) 
         | (GenLeaf (bvl_str s))      => Some (bv_str s) 
+        | (GenLeaf (bvl_sym s))      => Some (bv_sym s) 
         | (GenNode 0 l)            => (
                 let tree_to_mylist := fix tree_to_mylist (l' : list (gen_tree BVLeaf)) :
                     (option (list (AppliedOperatorOr' symbol BuiltinValue))) := (
@@ -887,6 +910,7 @@ Module default_builtin.
         | (bv_bool b)        => (GenLeaf (bvl_bool b))
         | (bv_nat n)         => (GenLeaf (bvl_nat n))
         | (bv_Z z)           => (GenLeaf (bvl_Z z))
+        | (bv_sym s)           => (GenLeaf (bvl_sym s))
         | (bv_str s)           => (GenLeaf (bvl_str s))
         | (bv_list l)        =>
             let mylist_to_tree := (
@@ -1553,7 +1577,7 @@ induction ao; try reflexivity.
             x y
         .
 
-        #[export]
+        #[local]
         Instance β
             : Builtin
         := {|
@@ -1578,6 +1602,8 @@ induction ao; try reflexivity.
                 | b_false => aoo_operand (bv_bool false)
                 | b_true => aoo_operand (bv_bool true)
                 | b_zero => aoo_operand (bv_nat 0)
+                | b_list_empty => (aoo_operand (bv_list nil))
+                | b_map_empty => (aoo_operand (bv_pmap ∅))
                 end ;
  
             builtin_unary_function_interp
@@ -1693,10 +1719,19 @@ induction ao; try reflexivity.
                         end
                     | _ => err
                     end
+                | b_is_applied_symbol =>
+                    match v1 with
+                    | aoo_operand (bv_sym s) =>
+                        match v2 with
+                        | aoo_app ao => (aoo_operand (bv_bool (bool_decide (AO'_getOperator ao = s))))
+                        | _ => err
+                        end
+                    | _ => err
+                    end
                 end ;
             builtin_ternary_function_interp := fun p v1 v2 v3 =>
                 match p with
-                | b_map_insert =>
+                | b_map_update =>
                     match v1 with
                     | aoo_operand (bv_pmap m) =>
                         let p := encode v2 in
@@ -1723,6 +1758,14 @@ induction ao; try reflexivity.
     
         Notation "b1 '&&' b2" :=
             (ft_binary default_builtin.b_and
+                (b1)
+                (b2)
+            )
+            : RuleScope
+        .
+
+        Notation "b1 '||' b2" :=
+            (ft_binary default_builtin.b_or
                 (b1)
                 (b2)
             )
@@ -1786,3 +1829,25 @@ induction ao; try reflexivity.
     End Notations.
 
 End default_builtin.
+
+
+    Section ws.
+
+        Definition isAppliedSymbol (s:string) (e : @Expression (default_model (default_builtin.β))) :=
+            (@ft_binary ( default_model (default_builtin.β))
+                default_builtin.b_is_applied_symbol
+                (@ft_element
+                    ( default_model (default_builtin.β))
+                    (@aoo_operand
+                        (@spec_syntax.symbol
+                            ( default_model (default_builtin.β))
+                        )
+                        (@builtin_value _ _ default_builtin.β )
+                        (default_builtin.bv_sym s)
+                    )
+                )
+                e
+            )
+        .
+
+    End ws.
