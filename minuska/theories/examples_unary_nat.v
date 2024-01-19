@@ -27,6 +27,8 @@ Module unary_nat.
     
     Definition X : variable := "$X".
     Definition Y : variable := "$Y".
+    Definition Tgt : variable := "$Tgt".
+    Definition Curr : variable := "$Curr".
     Definition REST_SEQ : variable := "$REST_SEQ".
 
     (* Utilities *)
@@ -144,7 +146,7 @@ Module unary_nat.
 
     (* depends on: Decls_nat_mul *)
     Definition Decls_nat_fact : list Declaration := [
-        decl_strict (symbol "nat_fact" of arity 1 strict in [0]);
+        (* decl_strict (symbol "nat_fact" of arity 1 strict in [0]); *)
         decl_strict (symbol "nat_fact'" of arity 2 strict in [0;1]);
         decl_rule (
             simple_rule ["nat-fact"]:
@@ -201,7 +203,7 @@ Module unary_nat.
         (ground (nat_fact [(nat_to_unary n)]))
     ).
 
-    Definition fact_final (g : GroundTerm) : option nat :=
+    Definition final (g : GroundTerm) : option nat :=
     match g with
     |  aoo_app 
         (ao_app_ao 
@@ -219,18 +221,91 @@ Module unary_nat.
     .
 
     Definition interp_fact(fuel : nat) (from : nat)
-    := let r := interp_in_from Γfact fuel (initial_fact from) in
-        (r.1.1, (fact_final r.1.2), r.2)
+    := let r := interp_loop (naive_interpreter Γfact.1) fuel (initial_fact from) in
+        (r.1, (final r.2))
     .
 
     Lemma interp_fact_5:
         exists (rem:nat),
-            ((interp_fact 500 4).1) = (rem, Some 24)
+            ((interp_fact 500 4)) = (rem, Some 24)
     .
     Proof.
         eexists. reflexivity.
     Qed.
 
-    Time Compute ((interp_fact 5000 6).1).
+    Time Compute (("fact 3"),((interp_fact 5000 3).1)).
+    (* This (fact 4) is what K uses in their benchmark. *)
+    Time Compute (("fact 4"),((interp_fact 5000 4).1)).
+    Time Compute (("fact 6"),((interp_fact 5000 6).1)).
+
+
+
+    Definition nat_fib {_br : BasicResolver} := (apply_symbol "nat_fib").
+    Arguments nat_fib {_br} _%rs.
+
+    Definition nat_fib' {_br : BasicResolver} := (apply_symbol "nat_fib'").
+    Arguments nat_fib' {_br} _%rs.
+
+    Definition Decls_nat_fib : list Declaration := [
+        decl_rule (
+            simple_rule ["just-0"]:
+               nat_fib [ nat_zero [] ]
+            ~> nat_zero []
+            always
+        );
+        decl_rule (
+            simple_rule ["just-1"]:
+               nat_fib [ nat_succ [nat_zero []] ]
+            ~> nat_succ [nat_zero []]
+            always
+        );
+        decl_strict (symbol "nat_fib'" of arity 4 strict in [2]); (* TODO *)
+        decl_rule (
+            simple_rule ["two-or-more"]:
+               nat_fib [ nat_succ [nat_succ [ $X ] ] ]
+            ~> nat_fib' [
+                nat_succ [nat_succ [ $X ] ],
+                nat_succ [nat_succ [ nat_zero [] ] ],
+                nat_succ [ nat_zero [] ],
+                nat_succ [ nat_zero [] ] 
+               ]
+            always
+        );
+        decl_rule (
+            simple_rule ["step"]:
+               nat_fib' [ $Tgt, $Curr, $X, $Y ]
+            ~> nat_fib' [ $Tgt, nat_succ [ $Curr ], nat_add [$X, $Y], $X ]
+            where (~~ ($Curr ==Gen $Tgt))
+        );
+        decl_rule (
+            simple_rule ["result"]:
+               nat_fib' [ $Tgt, $Tgt, $X, $Y ]
+            ~> $X
+            always
+        )
+    ].
+
+    Definition Γfib : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    (to_theory (process_declarations (Decls_nat_fib ++ Decls_nat_add))).
+
+    Definition initial_fib (n : nat) := initial_expr (
+        (ground (nat_fib [(nat_to_unary n)]))
+    ).
+
+    Definition interp_fib (fuel : nat) (from : nat)
+    := 
+        let r := interp_loop (naive_interpreter Γfib.1) fuel ((initial_fib from)) in
+        (r.1, (final r.2))
+    .
+    Time Compute (("fib 8"),((interp_fib 5000 8).1)).
+    Time Compute (("fib 11"),((interp_fib 5000 11).1)).
+
+    Lemma interp_test_fib_11:
+        exists (rem : nat),
+            (interp_fib 5000 11)
+            = (rem, Some 89)
+    .
+    Proof. eexists. reflexivity. Qed.
+
 
 End unary_nat.
