@@ -233,10 +233,10 @@ Module unary_nat.
         eexists. reflexivity.
     Qed.
 
-    Time Compute (("fact 3"),((interp_fact 5000 3).1)).
+    Time Compute (("bench: unary-fact(3)"),((interp_fact 5000 3).1)).
     (* This (fact 4) is what K uses in their benchmark. *)
-    Time Compute (("fact 4"),((interp_fact 5000 4).1)).
-    Time Compute (("fact 6"),((interp_fact 5000 6).1)).
+    Time Compute (("bench: unary-fact(4)"),((interp_fact 5000 4).1)).
+    Time Compute (("bench: unary-fact(6)"),((interp_fact 5000 6).1)).
 
 
 
@@ -297,8 +297,9 @@ Module unary_nat.
         let r := interp_loop (naive_interpreter Γfib.1) fuel ((initial_fib from)) in
         (r.1, (final r.2))
     .
-    Time Compute (("fib 8"),((interp_fib 5000 8).1)).
-    Time Compute (("fib 11"),((interp_fib 5000 11).1)).
+
+    Time Compute (("bench: unary-fib(8)"),((interp_fib 5000 8).1)).
+    Time Compute (("bench: unary-fib(11)"),((interp_fib 5000 11).1)).
 
     Lemma interp_test_fib_11:
         exists (rem : nat),
