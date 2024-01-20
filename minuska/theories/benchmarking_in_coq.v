@@ -96,5 +96,14 @@ Time Compute (("bench: unary-fact(5)"),((unary_nat.interp_fact 5000 5).1)).
 Time Compute (("bench: unary-fact(6)"),((unary_nat.interp_fact 5000 6).1)).
 
 
+Time Compute (("bench: unary-fib(1)"),((unary_nat.interp_fib 5000 1).1)).
+Time Compute (("bench: unary-fib(2)"),((unary_nat.interp_fib 5000 2).1)).
+Time Compute (("bench: unary-fib(3)"),((unary_nat.interp_fib 5000 3).1)).
+Time Compute (("bench: unary-fib(4)"),((unary_nat.interp_fib 5000 4).1)).
+Time Compute (("bench: unary-fib(5)"),((unary_nat.interp_fib 5000 5).1)).
+Time Compute (("bench: unary-fib(6)"),((unary_nat.interp_fib 5000 6).1)).
+Time Compute (("bench: unary-fib(7)"),((unary_nat.interp_fib 5000 7).1)).
 Time Compute (("bench: unary-fib(8)"),((unary_nat.interp_fib 5000 8).1)).
+Time Compute (("bench: unary-fib(9)"),((unary_nat.interp_fib 5000 9).1)).
+Time Compute (("bench: unary-fib(10)"),((unary_nat.interp_fib 5000 10).1)).
 Time Compute (("bench: unary-fib(11)"),((unary_nat.interp_fib 5000 11).1)).
