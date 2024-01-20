@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     examples
+    examples_unary_nat
 .
 
 Require Import ZArith.
@@ -76,3 +77,11 @@ Module bench_fib_native.
 
 
 End bench_fib_native.
+
+Time Compute ("bench: imp-count-to(1)", (imp.interp_program_count_to 1000 1)).
+Time Compute ("bench: imp-count-to(2)", (imp.interp_program_count_to 1000 2)).
+Time Compute ("bench: imp-count-to(3)", (imp.interp_program_count_to 1000 3)).
+Time Compute ("bench: imp-count-to(4)", (imp.interp_program_count_to 1000 4)).
+Time Compute ("bench: imp-count-to(5)", (imp.interp_program_count_to 1000 5)).
+Time Compute ("bench: imp-count-to(6)", (imp.interp_program_count_to 1000 6)).
+Time Compute ("bench: imp-count-to(7)", (imp.interp_program_count_to 1000 7)).

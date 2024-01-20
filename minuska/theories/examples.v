@@ -554,7 +554,7 @@ Module fib_native.
             (fib_interp_from 20 11)
             = (rem, (ground (resultState [(aoo_operand (bv_Z 89))])), log)
     .
-    Proof. eexists. eexists. Time reflexivity. Qed.
+    Proof. eexists. eexists. reflexivity. Qed.
 
 
 
@@ -819,7 +819,7 @@ Module imp.
     .
 
     Definition imp_interp_from (fuel : nat) (from : GroundTerm)
-        := interp_in_from Γ fuel (ground (initial0 from))
+        := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))
     .
 
     (*
@@ -837,7 +837,7 @@ Module imp.
     *)
 
     Lemma test_imp_interp_1:
-        exists (rem : nat) (log : string) (m : BuiltinValue),
+        exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 12 (ground (
         (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
         ((aoo_operand (bv_Z 3)) + (var [builtin_string "x"]))
@@ -846,12 +846,11 @@ Module imp.
             rem,
             (ground (
                 u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 92)), u_emptyCseq [] ] , m ] ]
-            )%limp),
-            log
+            )%limp)
         )
     .
     Proof.
-        eexists. eexists. eexists. reflexivity.
+        eexists. eexists. reflexivity.
     Qed.
     
     Definition program_2 := (ground (
@@ -864,18 +863,17 @@ Module imp.
 
     (* Compute (imp_interp_from 15 program_2). *)
     Lemma test_imp_interp_5:
-        exists (rem : nat) (log : string) (m : BuiltinValue),
+        exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 15 program_2)
         = (
             rem,
             (ground (
                 u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 10)), u_emptyCseq [] ] , m ] ]
-            )%limp),
-            log
+            )%limp)
         )
     .
     Proof.
-        eexists. eexists. eexists. reflexivity.
+        eexists. eexists. reflexivity.
     Qed.
 
     Definition program_3 := (ground (
@@ -888,18 +886,17 @@ Module imp.
 
     (* Compute (imp_interp_from 15 program_3). *)
     Lemma test_imp_interp_program_3:
-        exists (rem : nat) (log : string) (m : BuiltinValue),
+        exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 15 program_3)
         = (
             rem,
             (ground (
                 u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 20)), u_emptyCseq [] ] , m ] ]
-            )%limp),
-            log
+            )%limp)
         )
     .
     Proof.
-        eexists. eexists. eexists. Time reflexivity.
+        eexists. eexists. reflexivity.
     Qed.
 
 
@@ -914,18 +911,17 @@ Module imp.
         )%limp).
 
     Lemma test_imp_interp_program_count_to_3:
-        exists (rem : nat) (log : string) (m : BuiltinValue),
+        exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 1000 (program_count_to 3))
         = (
             rem,
             (ground (
                 u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 6)), u_emptyCseq [] ] , m ] ]
-            )%limp),
-            log
+            )%limp)
         )
     .
     Proof.
-        eexists. eexists. eexists. reflexivity.
+        eexists. eexists. reflexivity.
     Qed.
 
     (* Time Compute (imp_interp_from 1000 (program_count_to 10)). *)
@@ -948,13 +944,13 @@ Module imp.
     Qed.
     *)
 
-    Time Compute (imp_interp_from 1000 (program_count_to 3)).
+    
 
 
     Definition interp_program_count_to (fuel : nat) (n : Z)
     :=
         let r := imp_interp_from fuel (program_count_to n) in
-        let n : Z := (match r.1.2 with
+        let n : Z := (match r.2 with
         | aoo_app
           (ao_app_ao (ao_operator "u_cfg")
           (ao_app_operand (
@@ -972,10 +968,8 @@ Module imp.
           => val
         | _ => Z0
         end) in
-        (r.1.1,n,r.2)
+        (r.1,n)
     .
-
-    Check interp_program_count_to.
 
 End imp.
 
