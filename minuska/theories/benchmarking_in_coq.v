@@ -85,3 +85,16 @@ Time Compute ("bench: imp-count-to(4)", (imp.interp_program_count_to 1000 4)).
 Time Compute ("bench: imp-count-to(5)", (imp.interp_program_count_to 1000 5)).
 Time Compute ("bench: imp-count-to(6)", (imp.interp_program_count_to 1000 6)).
 Time Compute ("bench: imp-count-to(7)", (imp.interp_program_count_to 1000 7)).
+
+
+Time Compute (("bench: unary-fact(1)"),((unary_nat.interp_fact 5000 1).1)).
+Time Compute (("bench: unary-fact(2)"),((unary_nat.interp_fact 5000 2).1)).
+Time Compute (("bench: unary-fact(3)"),((unary_nat.interp_fact 5000 3).1)).
+    (* This (fact 4) is what K uses in their benchmark. *)
+Time Compute (("bench: unary-fact(4)"),((unary_nat.interp_fact 5000 4).1)).
+Time Compute (("bench: unary-fact(5)"),((unary_nat.interp_fact 5000 5).1)).
+Time Compute (("bench: unary-fact(6)"),((unary_nat.interp_fact 5000 6).1)).
+
+
+Time Compute (("bench: unary-fib(8)"),((unary_nat.interp_fib 5000 8).1)).
+Time Compute (("bench: unary-fib(11)"),((unary_nat.interp_fib 5000 11).1)).

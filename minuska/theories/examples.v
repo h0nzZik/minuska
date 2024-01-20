@@ -924,8 +924,6 @@ Module imp.
         eexists. eexists. reflexivity.
     Qed.
 
-    (* Time Compute (imp_interp_from 1000 (program_count_to 10)). *)
-
     (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
     (*
     Lemma test_imp_interp_program_count_to_10:
