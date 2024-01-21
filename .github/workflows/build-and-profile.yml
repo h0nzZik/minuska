@@ -11,6 +11,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
     steps:
     - uses: actions/checkout@v3
 
@@ -19,7 +23,7 @@ jobs:
       
     - name: Build
       run: nix develop '.#minuska' --command ./build-and-profile.sh
-
+      
     - name: CoqDoc
       run: nix develop '.#minuska' --command make -C minuska/ html
 
