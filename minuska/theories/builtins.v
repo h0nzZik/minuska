@@ -646,6 +646,14 @@ Module default_builtin.
             (ft_binary b_Z_div (x) (y))
         .
 
+        Notation "'(' x '<Z' y ')'" :=
+            (ft_binary b_Z_isLt (x) (y))
+        .
+
+        Notation "'(' x '>Z' y ')'" :=
+            (ft_binary b_Z_isLt (y) (x))
+        .
+
         Notation "'(' x '==Z' y ')'" :=
             (ft_binary b_eq (x) (y))
         .

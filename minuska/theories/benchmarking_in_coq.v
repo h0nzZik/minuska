@@ -107,3 +107,10 @@ Time Compute (("bench: unary-fib(8)"),((unary_nat.interp_fib 5000 8).1)).
 Time Compute (("bench: unary-fib(9)"),((unary_nat.interp_fib 5000 9).1)).
 Time Compute (("bench: unary-fib(10)"),((unary_nat.interp_fib 5000 10).1)).
 Time Compute (("bench: unary-fib(11)"),((unary_nat.interp_fib 5000 11).1)).
+
+
+Time Compute (("bench: two-counters(1)"),(two_counters_Z.interp_loop_number 1000 1 0)).
+Time Compute (("bench: two-counters(10)"),(two_counters_Z.interp_loop_number 1000 10 0)).
+Time Compute (("bench: two-counters(100)"),(two_counters_Z.interp_loop_number 10000 100 0)).
+Time Compute (("bench: two-counters(1000)"),(two_counters_Z.interp_loop_number 100000 1000 0)).
+Time Compute (("bench: two-counters(10000)"),(two_counters_Z.interp_loop_number 1000000 10000 0)).

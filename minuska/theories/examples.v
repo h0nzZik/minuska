@@ -214,6 +214,66 @@ Module two_counters.
 
 End two_counters.
 
+Module two_counters_Z.
+#[local]
+    Instance Σ : StaticModel := default_model (default_builtin.β).
+    Import default_builtin.
+
+    Definition M : variable := "M".
+    Definition N : variable := "N".
+    
+    Definition state {_br : BasicResolver} := (apply_symbol "state").
+    Arguments state {_br} _%rs.
+
+    Print Expression.
+    Definition Γ : FlattenedRewritingTheory*(list string) :=
+    Eval vm_compute in (to_theory (process_declarations ([
+        decl_rule (
+            rule ["my-rule"]:
+               state [ $M , $N ]
+            ~> state [
+                (($M) -Z (ft_element (aoo_operand (bv_Z 1)))),
+                (($N) +Z ($M))
+                ]
+            where (($M) >Z (ft_element (aoo_operand (bv_Z 0))))
+        )
+    ]))).
+    
+
+    Definition interp :=
+        naive_interpreter Γ.1
+    .
+
+    Definition pair_to_state (mn : (Z * Z)%type) : GroundTerm :=
+        (ground(
+        aoo_app (
+            ao_app_operand
+                (
+                ao_app_operand (ao_operator "state")
+                    ((bv_Z mn.1))
+                )
+                ((bv_Z mn.2))
+        )))
+    .
+
+    Definition state_to_pair (g : GroundTerm) : option (Z * Z) :=
+    match g with
+    | aoo_app (
+        (ao_app_operand (ao_app_operand (ao_operator "state") ((bv_Z m))) (bv_Z n)))
+        => 
+            Some (m, n)
+    | _ => None
+    end
+    .
+
+    Definition interp_loop_number fuel := 
+        fun (m n : Z) =>
+        let fg' := ((interp_loop interp fuel) ∘ pair_to_state) (m,n) in
+        state_to_pair fg'.2
+    .
+
+End two_counters_Z.
+
 Module arith.
 
     Import default_builtin.
