@@ -467,7 +467,7 @@ Section countable.
         apply AppliedOperator'_of_to_gen_tree.
     Qed.
 
-    Equations GroundTerm'_to_gen_tree
+    Definition GroundTerm'_to_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
@@ -476,16 +476,13 @@ Section countable.
         (e : GroundTerm' symbol builtin)
         : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
     :=
-        GroundTerm'_to_gen_tree _ _ (aoo_operand b)
-        := GenLeaf (inl _ b) ;
-        
-        GroundTerm'_to_gen_tree _ _ (aoo_app s)
-        := GenLeaf (inr _ s)
+    match e with
+    | (aoo_operand b) => GenLeaf (inl _ b)
+    | (aoo_app s) => GenLeaf (inr _ s)
+    end
     .
 
-    Opaque GroundTerm'_to_gen_tree.
-
-    Equations GroundTerm'_from_gen_tree
+    Definition GroundTerm'_from_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
@@ -494,16 +491,12 @@ Section countable.
         (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
         :  option (GroundTerm' symbol builtin)
     :=
-        GroundTerm'_from_gen_tree _ _ (GenLeaf (inl _ b))
-        := Some (aoo_operand b);
-        
-        GroundTerm'_from_gen_tree _ _ (GenLeaf (inr _ s))
-        := Some (aoo_app s);
-        
-        GroundTerm'_from_gen_tree _ _ _
-        := None
+    match t with
+    | (GenLeaf (inl _ b)) => Some (aoo_operand b)
+    | (GenLeaf (inr _ s)) => Some (aoo_app s)
+    | _ => None
+    end
     .
-    Opaque GroundTerm'_from_gen_tree.
 
     Lemma GroundTerm'_to_from_gen_tree
         (symbol : Type)
@@ -515,9 +508,7 @@ Section countable.
         : GroundTerm'_from_gen_tree symbol builtin (GroundTerm'_to_gen_tree symbol builtin e) = Some e
     .
     Proof.
-        ltac1:(funelim (GroundTerm'_to_gen_tree symbol builtin e)).
-        { reflexivity. }
-        { reflexivity. }
+        destruct e; reflexivity.
     Qed.
 
     #[export]
