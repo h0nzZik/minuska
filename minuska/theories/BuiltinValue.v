@@ -24,64 +24,90 @@ Section sec.
 
     Derive NoConfusion for BuiltinValue0.
 
-    Equations BVsize (r : BuiltinValue0) : nat :=
-        BVsize (bv_list m) := S (my_list_size m);
-        BVsize (bv_pmap (PNodes m)) := S (my_pmapne_size m);
-        BVsize (bv_pmap (PEmpty)) := 1;
-        BVsize (bv_error) := 1 ;
-        BVsize (bv_bool _) := 1 ;
-        BVsize (bv_nat _) := 1 ;
-        BVsize (bv_sym _) := 1 ;
-        BVsize (bv_str _) := 1 ;
-        BVsize (bv_Z _) := 1 ;
-    where my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue0)) : nat :=
-        my_list_size nil := 1 ;
-        my_list_size (cons (aoo_operand o) xs) := S ((BVsize o) + (my_list_size xs)) ;
-        my_list_size (cons (aoo_app ao) xs) := S ((myaosize ao) + (my_list_size xs)) ;
-    where my_pmapne_size (m : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue0)) : nat :=
-        my_pmapne_size (PNode001 n) := S (my_pmapne_size n) ;
-        my_pmapne_size (PNode010 (aoo_operand o)) := S (BVsize o);
-        my_pmapne_size (PNode010 (aoo_app a)) := S (myaosize a);
-        my_pmapne_size (PNode011 (aoo_operand o) n) := S ((BVsize o) + (my_pmapne_size n));
-        my_pmapne_size (PNode011 (aoo_app a) n) := S ((myaosize a) + (my_pmapne_size n));
-        my_pmapne_size (PNode100 n) := S (my_pmapne_size n) ;
-        my_pmapne_size (PNode101 n1 n2) := S ((my_pmapne_size n1) + (my_pmapne_size n2)) ;
-        my_pmapne_size (PNode110 n (aoo_operand o)) := S ((BVsize o) + (my_pmapne_size n));
-        my_pmapne_size (PNode110 n (aoo_app a)) := S ((myaosize a) + (my_pmapne_size n));
-        my_pmapne_size (PNode111 n1 (aoo_app a) n2) := S ((myaosize a) + (my_pmapne_size n1) + (my_pmapne_size n2));
-        my_pmapne_size (PNode111 n1 (aoo_operand o) n2) := S ((BVsize o) + (my_pmapne_size n1) + (my_pmapne_size n2));
-    where myaosize (ao : AppliedOperator' symbol BuiltinValue0) : nat :=
-        myaosize (ao_operator _) := 1 ;
-        myaosize (ao_app_operand ao' t) := S ((BVsize t) + (myaosize ao')) ;
-        myaosize (ao_app_ao ao1 ao2) := S ((myaosize ao1)+(myaosize ao2)) ;
+    Fixpoint BVsize (r : BuiltinValue0) : nat :=
+    match r with
+    | bv_list m =>
+        let my_list_size := (fix my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue0)) : nat :=
+        match l with
+        | nil => 1
+        | (cons (aoo_operand o) xs) => S ((BVsize o) + (my_list_size xs))
+        | (cons (aoo_app ao) xs) =>
+            let myaosize := (fix myaosize (ao : AppliedOperator' symbol BuiltinValue0) : nat :=
+            match ao with
+            | (ao_operator _) => 1
+            | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+            | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+            end) in
+            S ((myaosize ao) + (my_list_size xs))
+        end) in
+        S (my_list_size m)
+    | bv_pmap (PNodes m) =>
+        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue0)) : nat :=
+    match m with
+    | (PNode001 n) => S (my_pmapne_size n)
+    | (PNode010 (aoo_operand o)) => S (BVsize o)
+    | (PNode010 (aoo_app a)) =>
+        let myaosize := (fix myaosize (ao : AppliedOperator' symbol BuiltinValue0) : nat :=
+        match ao with
+        | (ao_operator _) => 1
+        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        end) in
+        S (myaosize a)
+    | (PNode011 (aoo_operand o) n) => S ((BVsize o) + (my_pmapne_size n))
+    | (PNode011 (aoo_app a) n) =>
+        let myaosize := (fix myaosize (ao : AppliedOperator' symbol BuiltinValue0) : nat :=
+        match ao with
+        | (ao_operator _) => 1
+        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        end) in
+        S ((myaosize a) + (my_pmapne_size n))
+    | (PNode100 n) => S (my_pmapne_size n)
+    | (PNode101 n1 n2) => S ((my_pmapne_size n1) + (my_pmapne_size n2))
+    | (PNode110 n (aoo_operand o)) => S ((BVsize o) + (my_pmapne_size n))
+    | (PNode110 n (aoo_app a)) =>
+        let myaosize := (fix myaosize (ao : AppliedOperator' symbol BuiltinValue0) : nat :=
+        match ao with
+        | (ao_operator _) => 1
+        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        end) in
+        S ((myaosize a) + (my_pmapne_size n))
+    | (PNode111 n1 (aoo_app a) n2) =>
+        let myaosize := (fix myaosize (ao : AppliedOperator' symbol BuiltinValue0) : nat :=
+        match ao with
+        | (ao_operator _) => 1
+        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        end) in
+        S ((myaosize a) + (my_pmapne_size n1) + (my_pmapne_size n2))
+    | (PNode111 n1 (aoo_operand o) n2) => S ((BVsize o) + (my_pmapne_size n1) + (my_pmapne_size n2))
+    end) in
+        S (my_pmapne_size m)
+    | bv_pmap (PEmpty) => 1
+    | bv_error => 1
+    | bv_bool _ => 1
+    | bv_nat _ => 1
+    | bv_sym _ => 1
+    | bv_str _ => 1
+    | bv_Z _ => 1
+    end
     .
 
-    Lemma BuiltinValue0_eqdec_helper_1 (sz : nat):
+    Lemma BuiltinValue0_eqdec_helper_0 (sz : nat):
         ∀ x y : BuiltinValue0, BVsize x <= sz ->
             {x = y} + {x ≠ y}
-    with BuiltinValue0_eqdec_helper_2 (sz : nat):
-        ∀ x y : list (AppliedOperatorOr' symbol BuiltinValue0), my_list_size x <= sz ->
-            {x = y} + {x ≠ y}
-    with BuiltinValue0_eqdec_helper_3 (sz : nat):
-        ∀ x y : (AppliedOperator' symbol BuiltinValue0),
-            myaosize x <= sz ->
-                {x = y} + {x ≠ y}
-    with BuiltinValue0_eqdec_helper_4 (sz : nat):
-        ∀ x y : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue0),
-            my_pmapne_size x <= sz ->
-                {x = y} + {x ≠ y}
     .
     Proof.
+        intros x y Hsz.
+        revert x Hsz y.
+        induction sz; intros x Hsz y.
         {
-            intros x y Hsz.
-            revert x Hsz y.
-            induction sz; intros x Hsz y.
-            {
-                destruct x; (ltac1:(simpl in Hsz));
-                try (ltac1:(lia)).
-                destruct m; (ltac1:(simpl in Hsz));
-                try (ltac1:(lia)).
-            }
+            destruct x; simpl in Hsz; try ltac1:(lia).
+            destruct m; simpl in Hsz; try ltac1:(lia).
+        }
+        {
             destruct x.
             {
                 destruct y;
@@ -91,450 +117,740 @@ Section sec.
             {
                 destruct y;
                 try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
+                try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (b = b0)).
                 {
-                    left. subst. reflexivity.
+                    subst; left. reflexivity.
                 }
                 {
-                    right. ltac1:(congruence).
+                    right; ltac1:(congruence).
                 }
             }
             {
                 destruct y;
                 try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
+                try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (n = n0)).
                 {
-                    left. subst. reflexivity.
+                    subst; left. reflexivity.
                 }
                 {
-                    right. ltac1:(congruence).
+                    right; ltac1:(congruence).
                 }
             }
             {
                 destruct y;
                 try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
+                try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (z = z0)).
                 {
-                    left. subst. reflexivity.
+                    subst; left. reflexivity.
                 }
                 {
-                    right. ltac1:(congruence).
-                }
-            }
-            {
-                destruct y;
-                try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
-                destruct (decide (s = s0)).
-                {
-                    left. subst. reflexivity.
-                }
-                {
-                    right. ltac1:(congruence).
+                    right; ltac1:(congruence).
                 }
             }
             {
                 destruct y;
                 try (solve [left; reflexivity]);
-                try ltac1:(right; discriminate).
+                try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (s = s0)).
                 {
-                    left. subst. reflexivity.
+                    subst; left. reflexivity.
                 }
                 {
-                    right. ltac1:(congruence).
+                    right; ltac1:(congruence).
                 }
             }
             {
-                ltac1:(simp BVsize in Hsz).
-                assert(Hsz' : my_list_size m <= sz) by (ltac1:(lia)).
                 destruct y;
-                try (solve[ltac1:(right; discriminate)]).
-
-                assert (IH := BuiltinValue0_eqdec_helper_2 sz m m0 Hsz').
-                destruct IH as [IH|IH].
+                try (solve [left; reflexivity]);
+                try (solve [right;ltac1:(discriminate)]).
+                destruct (decide (s = s0)).
                 {
-                    left. subst. reflexivity.
+                    subst; left. reflexivity.
                 }
                 {
-                    right. ltac1:(congruence).
+                    right; ltac1:(congruence).
                 }
             }
             {
+                destruct y;
+                try (solve [left; reflexivity]);
+                try (solve [right;ltac1:(discriminate)]).
+                revert m0.
+                induction m; intros m0.
                 {
-                    destruct y;
-                    try ltac1:(right; discriminate).
-                    destruct m,m0;
-                    try (solve[ltac1:(right; discriminate)]).
+                    destruct m0.
                     {
                         left. reflexivity.
                     }
-                    simpl in Hsz.
-                    fold my_pmapne_size in *.
-                    assert(IH := BuiltinValue0_eqdec_helper_4 sz p p0 ltac:(lia)).
-                    destruct IH as [IH|IH].
-                    {
-                        left. subst. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-            }
-        }
-        {
-            clear BuiltinValue0_eqdec_helper_2.
-            intros x y Hsz.
-            revert x Hsz y.
-            induction sz; intros x Hsz y.
-            {
-                destruct x; (ltac1:(simpl in Hsz)).
-                {
-                    ltac1:(lia).
-                }
-                {
-                    destruct a; simpl in Hsz; ltac1:(lia).
-                }
-            }
-            destruct x.
-            {
-                destruct y.
-                { left. reflexivity. }
-                { right. ltac1:(discriminate). }
-            }
-            {
-                destruct y.
-                { right. ltac1:(discriminate). }
-                destruct a,a0.
-                {
-                    assert(IH := BuiltinValue0_eqdec_helper_3 sz ao ao0).
-                    ltac1:(ospecialize (IH _)).
-                    {
-                        assert(Hsz' := Hsz).
-                        ltac1:(unfold my_list_size in Hsz'; fold myaosize in Hsz').
-                        ltac1:(lia).
-                    }
-                    destruct IH as [IH|IH].
-                    {
-                        specialize (IHsz x).
-                        ltac1:(ospecialize (IHsz _)).
-                        {
-                            ltac1:(rewrite my_list_size_equation_2 in Hsz).
-                            ltac1:(lia).
-                        }
-                        specialize (IHsz y).
-                        destruct IHsz as [IHsz|IHsz].
-                        {
-                            subst. left. reflexivity.
-                        }
-                        {
-                            right. ltac1:(congruence).
-                        }
-                    }
                     {
                         right. ltac1:(congruence).
                     }
                 }
                 {
-                    right. ltac1:(congruence).
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-                {
-                    assert(IH := BuiltinValue0_eqdec_helper_1 sz operand operand0).
-                    ltac1:(ospecialize (IH _)).
-                    {
-                        assert(Hsz' := Hsz).
-                        ltac1:(unfold my_list_size in Hsz'; fold myaosize in Hsz').
-                        ltac1:(lia).
-                    }
-                    destruct IH as [IH|IH].
-                    {
-                        specialize (IHsz x).
-                        ltac1:(ospecialize (IHsz _)).
-                        {
-                            ltac1:(rewrite my_list_size_equation_3 in Hsz).
-                            ltac1:(lia).
-                        }
-                        specialize (IHsz y).
-                        destruct IHsz as [IHsz|IHsz].
-                        {
-                            subst. left. reflexivity.
-                        }
-                        {
-                            right. ltac1:(congruence).
-                        }
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-            }
-        }
-        {
-            clear BuiltinValue0_eqdec_helper_3.
-            intros x y Hsz.
-            revert x Hsz y.
-            induction sz; intros x Hsz y.
-            {
-                destruct x; (ltac1:(simp BVsize in Hsz; lia)).
-            }
-            destruct x.
-            {
-                destruct y.
-                {
-                    destruct (decide (s = s0)).
-                    {
-                        subst. left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-                {
-                    right. ltac1:(discriminate).
-                }
-                {
-                    right. ltac1:(discriminate).
-                }
-            }
-            {
-                destruct y.
-                {
-                    right. ltac1:(discriminate).
-                }
-                {
-                    ltac1:(unshelve(simpl in Hsz)).
-                    specialize (IHsz x ltac:(lia) y).
-                    assert(IH2 := BuiltinValue0_eqdec_helper_1 sz b b0 ltac:(lia)).
-                    destruct IHsz as [IHsz|IHsz], IH2 as [IH2|IH2].
-                    {
-                        subst. left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-                {
-                    right. ltac1:(discriminate).
-                }
-            }
-            {
-                destruct y.
-                {
-                    right. ltac1:(discriminate).
-                }
-                {
-                    right. ltac1:(discriminate).
-                }
-                {
-                    ltac1:(unshelve(simpl in Hsz)).
-                    assert (IH1 := IHsz x1 ltac:(lia) y1).
-                    assert (IH2 := IHsz x2 ltac:(lia) y2).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
-                    {
-                        subst. left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-            }
-        }
-        {
-            induction sz; intros x y Hsz.
-            {
-                destruct x; simpl in Hsz; try (ltac1:(lia));
-                destruct a; simpl in Hsz; try (ltac1:(lia)).
-            }
-            destruct x.
-            {
-                destruct y; try (solve [right; ltac1:(congruence)]).
-                simpl in Hsz.
-                assert (IH1 := IHsz x y ltac:(lia)).
-                destruct IH1 as [IH1|IH1].
-                {
-                    subst; left. reflexivity.
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-            }
-            {
-                destruct y; try (solve [right; ltac1:(congruence)]);
-                destruct a; try (solve [right; ltac1:(congruence)]);
-                destruct a0; try (solve [right; ltac1:(congruence)]);
-                simpl in Hsz; fold myaosize in *.
-                {
-                    assert (IH1 := BuiltinValue0_eqdec_helper_3 sz ao ao0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1].
-                    {
-                        subst; left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-                {
-                    assert (IH1 := BuiltinValue0_eqdec_helper_1 sz operand operand0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1].
-                    {
-                        subst; left; reflexivity.
-                    }
-                    {
-                        right; ltac1:(congruence).
-                    }
-                }
-            }
-            {
-                destruct y; try (solve [right; ltac1:(congruence)]);
-                destruct a; try (solve [right; ltac1:(congruence)]);
-                destruct a0; try (solve [right; ltac1:(congruence)]);
-                simpl in Hsz; fold myaosize in *.
-                {
-                    assert (IH1 := IHsz x y ltac:(lia)).
-                    assert (IH2 := BuiltinValue0_eqdec_helper_3 sz ao ao0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
-                    {
-                        subst; left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-                {
-                    assert (IH1 := BuiltinValue0_eqdec_helper_1 sz operand operand0 ltac:(lia)).
-                    assert (IH2 := IHsz x y ltac:(lia)).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
-                    {
-                        subst; left; reflexivity.
-                    }
+                    destruct m0.
                     {
                         right; ltac1:(congruence).
                     }
                     {
-                        right; ltac1:(congruence).
-                    }
-                    {
-                        right; ltac1:(congruence).
+                        destruct a, a0.
+                        {
+                            assert (IH1 := IHm ltac:(simpl in *; lia) m0).
+                            destruct IH1 as [IH1|IH1].
+                            {
+                                inversion IH1; subst; clear IH1.
+                                revert ao0.
+                                induction ao; intros ao0.
+                                {
+                                    destruct ao0.
+                                    {
+                                        destruct (decide (s = s0)).
+                                        {
+                                            subst; left. reflexivity.
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                subst.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                inversion IH2; subst; clear IH2.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                }
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            specialize (IHsz operand ltac:(simpl in *; lia) operand0).
+                            specialize (IHm ltac:(simpl in *; lia) m0).
+
+                            destruct IHsz as [IHsz|IHsz], IHm as [IHm|IHm].
+                            {
+                                inversion IHm; subst; left. reflexivity.
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
                     }
                 }
             }
             {
-                destruct y; try (solve [right; ltac1:(congruence)]).
-                simpl in Hsz.
-                assert (IH1 := IHsz x y ltac:(lia)).
-                destruct IH1 as [IH1|IH1].
+                destruct y;
+                try (solve [left; reflexivity]);
+                try (solve [right;ltac1:(discriminate)]).
+                destruct m, m0.
                 {
-                    subst; left. reflexivity.
+                    left. reflexivity.
                 }
                 {
-                    right. ltac1:(congruence).
+                    right; ltac1:(congruence).
+                }
+                {
+                    right; ltac1:(congruence).
+                }
+                {
+                    revert p0.
+                    induction p; intros p0.
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(discriminate)]).
+                        assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                        destruct IH1 as [IH1|IH1].
+                        {
+                            inversion IH1; subst; left; reflexivity.
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                    }
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(discriminate)]).
+
+                        destruct a,a0.
+                        {
+                            revert ao0.
+                            induction ao; intros ao0.
+                            {
+                                destruct ao0.
+                                {
+                                    destruct (decide (s = s0)).
+                                    {
+                                        subst; left. reflexivity.
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                            }
+                            {
+                                destruct ao0.
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                                {
+                                    assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                    destruct IH1 as [IH1|IH1].
+                                    {
+                                        inversion IH1; subst; clear IH1.
+                                        assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                        destruct IH2 as [IH2|IH2].
+                                        {
+                                            subst.
+                                            left; reflexivity.
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                            }
+                            {
+                                destruct ao0.
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                                {
+                                    assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                    destruct IH1 as [IH1|IH1].
+                                    {
+                                        inversion IH1; subst; clear IH1.
+                                        assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                        destruct IH2 as [IH2|IH2].
+                                        {
+                                            inversion IH2; subst; clear IH2.
+                                            left; reflexivity.
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                            }
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            assert (IH1 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            destruct IH1 as [IH1|IH1].
+                            {
+                                subst; left; reflexivity.
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                    }
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(congruence)]).
+
+                        destruct a,a0.
+                        {
+
+                            assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                            destruct IH1 as [IH1|IH1].
+                            {
+                                inversion IH1; subst; clear IH1.
+                                revert ao0.
+                                induction ao; intros ao0.
+                                {
+                                    destruct ao0.
+                                    {
+                                        destruct (decide (s = s0)).
+                                        {
+                                            subst; left. reflexivity.
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                subst.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                inversion IH2; subst; clear IH2.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                }
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            assert (IH1 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            destruct IH1 as [IH1|IH1].
+                            {
+                                subst.
+
+                                assert (IH2 := IHp ltac:(simpl in *; lia) p0).
+                                destruct IH2 as [IH2|IH2].
+                                {
+                                    inversion IH2; subst; clear IH2; left; reflexivity.
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                    }
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(discriminate)]).
+
+                        assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                        destruct IH1 as [IH1|IH1].
+                        {
+                            inversion IH1; subst; clear IH1.
+                            left. reflexivity.
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                    }
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(discriminate)]).
+
+                        assert (IH1 := IHp1 ltac:(simpl in *; lia) p0_1).
+                        assert (IH2 := IHp2 ltac:(simpl in *; lia) p0_2).
+                        destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                        {
+                            inversion IH1; subst; clear IH1.
+                            inversion IH2; subst; clear IH2.
+                            left. reflexivity.
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                        {
+                            right; ltac1:(congruence).
+                        }
+                    }
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(discriminate)]).
+
+                        destruct a,a0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(congruence)]).
+
+                        {
+                            assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                            destruct IH1 as [IH1|IH1].
+                            {
+                                inversion IH1; subst; clear IH1.
+
+
+                                revert ao0.
+                                induction ao; intros ao0.
+                                {
+                                    destruct ao0.
+                                    {
+                                        destruct (decide (s = s0)).
+                                        {
+                                            subst; left. reflexivity.
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                subst.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                inversion IH2; subst; clear IH2.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                }
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                        {
+                            assert (IH1 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            destruct IH1 as [IH1|IH1].
+                            {
+                                subst.
+                                assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                                destruct IH1 as [IH1|IH1].
+                                {
+                                    inversion IH1; subst; clear IH1.
+                                    left. reflexivity.
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                    }
+                    {
+                        destruct p0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(discriminate)]).
+
+                        destruct a,a0;
+                        try (solve [left; reflexivity]);
+                        try (solve [right;ltac1:(congruence)]).
+
+                        {
+                            assert (IH1 := IHp1 ltac:(simpl in *; lia) p0_1).
+                            assert (IH2 := IHp2 ltac:(simpl in *; lia) p0_2).
+                            destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                            {
+                                inversion IH1; subst; clear IH1.
+                                inversion IH2; subst; clear IH2.
+                                
+                                revert ao0.
+                                induction ao; intros ao0.
+                                {
+                                    destruct ao0.
+                                    {
+                                        destruct (decide (s = s0)).
+                                        {
+                                            subst; left. reflexivity.
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                subst.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                }
+                                {
+                                    destruct ao0.
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        right; ltac1:(congruence).
+                                    }
+                                    {
+                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        destruct IH1 as [IH1|IH1].
+                                        {
+                                            inversion IH1; subst; clear IH1.
+                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            destruct IH2 as [IH2|IH2].
+                                            {
+                                                inversion IH2; subst; clear IH2.
+                                                left; reflexivity.
+                                            }
+                                            {
+                                                right; ltac1:(congruence).
+                                            }
+                                        }
+                                        {
+                                            right; ltac1:(congruence).
+                                        }
+                                    }
+                                }
+
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                        {
+                            assert (IH1 := IHp1 ltac:(simpl in *; lia) p0_1).
+                            assert (IH2 := IHp2 ltac:(simpl in *; lia) p0_2).
+                            assert (IH3 := IHsz operand ltac:(simpl in *; lia) operand0).
+
+                            destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
+                            {
+                                inversion IH1; subst; clear IH1.
+                                inversion IH2; subst; clear IH2.
+                                destruct IH3 as [IH3|IH3].
+                                {
+                                    subst. left. reflexivity.
+                                }
+                                {
+                                    right; ltac1:(congruence).
+                                }
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                            {
+                                right; ltac1:(congruence).
+                            }
+                        }
+                    }
                 }
             }
-            {
-                destruct y; try (solve [right; ltac1:(congruence)]).
-                simpl in Hsz.
-                assert (IH1 := IHsz x1 y1 ltac:(lia)).
-                assert (IH2 := IHsz x2 y2 ltac:(lia)).
-                destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
-                {
-                    subst; left. reflexivity.
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-                {
-                    right. ltac1:(congruence).
-                }
-            }
-            {
-                destruct y; try (solve [right; ltac1:(congruence)]);
-                destruct a; try (solve [right; ltac1:(congruence)]);
-                destruct a0; try (solve [right; ltac1:(congruence)]);
-                simpl in Hsz. fold myaosize in *.
-                {
-                    assert (IH1 := IHsz x y ltac:(lia)).
-                    assert (IH2 := BuiltinValue0_eqdec_helper_3 sz ao ao0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
-                    {
-                        subst; left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-                {
-                    assert (IH1 := IHsz x y ltac:(lia)).
-                    assert (IH2 := BuiltinValue0_eqdec_helper_1 sz operand operand0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
-                    {
-                        subst; left. reflexivity.
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                    {
-                        right. ltac1:(congruence).
-                    }
-                }
-            }
-            {
-                destruct y; try (solve [right; ltac1:(congruence)]);
-                destruct a; try (solve [right; ltac1:(congruence)]);
-                destruct a0; try (solve [right; ltac1:(congruence)]);
-                simpl in Hsz; fold myaosize in *.
-                {
-                    assert (IH1 := IHsz x1 y1 ltac:(lia)).
-                    assert (IH2 := IHsz x2 y2 ltac:(lia)).
-                    assert (IH3 := BuiltinValue0_eqdec_helper_3 sz ao ao0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2], IH3 as [IH3|IH3];
-                    try (solve [subst; left; reflexivity]);
-                    try (solve [right; ltac1:(congruence)]).
-                }
-                {
-                    assert (IH1 := IHsz x1 y1 ltac:(lia)).
-                    assert (IH2 := IHsz x2 y2 ltac:(lia)).
-                    assert (IH3 := BuiltinValue0_eqdec_helper_1 sz operand operand0 ltac:(lia)).
-                    destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2], IH3 as [IH3|IH3];
-                    try (solve [subst; left; reflexivity]);
-                    try (solve [right; ltac1:(congruence)]).
-                }
-            }
+
         }
     Defined.
 
@@ -543,9 +859,9 @@ Section sec.
     Proof.
         intros x y.
         unfold Decision.
-        eapply BuiltinValue0_eqdec_helper_1.
+        eapply BuiltinValue0_eqdec_helper_0.
         apply reflexivity.
-    Defined.        
+    Defined.
 
     Inductive BVLeaf :=
     | bvl_error
