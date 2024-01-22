@@ -31,9 +31,13 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v9     
+
+    - name: 'Build with Coq 8.18'
+      run: nix build -L '.#minuska-coq_8_18'
+
       
-    - name: Build
-      run: nix develop '.#minuska' --command ./build-and-profile.sh
+    #- name: Build
+    #  run: nix develop '.#minuska' --command ./build-and-profile.sh
  
     - name: CoqDoc
       run: nix develop '.#minuska' --command make -C minuska/ html
