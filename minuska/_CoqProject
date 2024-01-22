@@ -13,7 +13,6 @@ theories/minuska.v
 theories/string_variables.v
 theories/BuiltinValue.v
 theories/builtins.v
-theories/color.v
 theories/basic_matching.v
 theories/try_match.v
 theories/naive_interpreter.v

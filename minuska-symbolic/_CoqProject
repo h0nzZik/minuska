@@ -1,0 +1,4 @@
+-R theories MinuskaSymbolic
+
+theories/color.v
+

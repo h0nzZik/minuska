@@ -14,7 +14,6 @@
 
       in {
 
-        # The 'matching logic in Coq' library
         packages.minuska
         = coqPackages.callPackage 
         ( { coq, stdenv }:
@@ -26,7 +25,6 @@
             coq
             coqPackages.equations
             coqPackages.stdpp
-            coqPackages.CoLoR
             coq.ocaml
             coq.ocamlPackages.zarith
           ];
@@ -36,6 +34,22 @@
           passthru = { inherit coqPackages; };
         } ) { } ;
 
+        packages.minuska-symbolic
+        = coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "minuska-symbolic";
+          src = ./minuska-symbolic;
+
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.minuska
+            coqPackages.CoLoR
+          ];
+          enableParallelBuilding = true;
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+          passthru = { inherit coqPackages; };
+        } ) { } ;
 
         packages.default = self.outputs.packages.${system}.minuska;
         
@@ -48,6 +62,16 @@
                 inputsFrom = [minuska];
                 packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide];
               };
+
+          minuska-symbolic =
+            let
+              minuska-symbolic = self.outputs.packages.${system}.minuska-symbolic;
+            in
+              pkgs.mkShell {
+                inputsFrom = [minuska-symbolic];
+                packages = [minuska-symbolic.coqPackages.coq-lsp minuska-symbolic.coqPackages.coqide];
+              };
+
         };
       }
     )
