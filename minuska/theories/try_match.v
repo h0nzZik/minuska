@@ -1374,7 +1374,7 @@ Next Obligation.
                 inversion Hy.
             }
             {
-                symmetry. assumption.
+                ltac1:(congruence).
             }
         }
     }
@@ -1482,7 +1482,7 @@ Next Obligation.
             rewrite lookup_insert_ne in Hy.
             rewrite lookup_empty in Hy.
             { inversion Hy. }
-            { symmetry. assumption. }
+            { ltac1:(congruence). }
         }
     }
 Qed.

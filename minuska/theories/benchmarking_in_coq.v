@@ -86,7 +86,6 @@ Time Compute ("bench: imp-count-to(5)", (imp.interp_program_count_to 1000 5)).
 Time Compute ("bench: imp-count-to(6)", (imp.interp_program_count_to 1000 6)).
 Time Compute ("bench: imp-count-to(7)", (imp.interp_program_count_to 1000 7)).
 
-
 Time Compute (("bench: unary-fact(1)"),((unary_nat.interp_fact 5000 1).1)).
 Time Compute (("bench: unary-fact(2)"),((unary_nat.interp_fact 5000 2).1)).
 Time Compute (("bench: unary-fact(3)"),((unary_nat.interp_fact 5000 3).1)).
