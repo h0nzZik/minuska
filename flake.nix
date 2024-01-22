@@ -32,6 +32,7 @@
           } ) { } 
         );
 
+        #benchexec = import ./nix/benchexec.nix { };
         coqPackages = pkgs.coqPackages_8_18;
 
       in {
@@ -41,6 +42,23 @@
         packages.minuska-coq_8_17 = minuskaFun { coqPackages = pkgs.coqPackages_8_17; } ;
 
         packages.minuska = self.outputs.packages.${system}.minuska-coq_8_18;
+
+        packages.minuska-bench
+        = coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "minuska-bench";
+          src = ./minuska-bench;
+
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.minuska
+            #benchexec            
+          ];
+          enableParallelBuilding = true;
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+          passthru = { inherit coqPackages; };
+        } ) { } ;
 
         packages.minuska-symbolic
         = coqPackages.callPackage 
@@ -69,6 +87,18 @@
               pkgs.mkShell {
                 inputsFrom = [minuska];
                 packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide];
+              };
+
+          minuska-bench =
+            let
+              minuska-bench = self.outputs.packages.${system}.minuska-bench;
+            in
+              pkgs.mkShell {
+                inputsFrom = [minuska-bench];
+                packages = [
+                  minuska-bench.coqPackages.coq-lsp
+                  #benchexec
+                ];
               };
 
           minuska-symbolic =
