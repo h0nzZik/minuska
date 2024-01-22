@@ -360,7 +360,7 @@ End eqdec.
 
 Section countable.
 
-    Equations AppliedOperator'_to_gen_tree
+    Fixpoint AppliedOperator'_to_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
@@ -369,25 +369,22 @@ Section countable.
         (a : AppliedOperator' symbol builtin)
         : gen_tree symbol
     :=
-        AppliedOperator'_to_gen_tree _ _ (ao_operator s)
-        := GenLeaf s ;
-
-        AppliedOperator'_to_gen_tree _ _ (ao_app_operand aps b)
-        := (
+    match a with
+    | (ao_operator s) => GenLeaf s
+    | (ao_app_operand aps b) =>
+        (
             let x := (encode (0, encode b)) in
             GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree symbol builtin aps;AppliedOperator'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
-        ) ;
-
-        AppliedOperator'_to_gen_tree _ _ (ao_app_ao aps1 aps2)
-        := (
+        )
+    | (ao_app_ao aps1 aps2)
+        => (
             let xd := (1, encode 0) in
             let x := (encode xd) in
             GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree _ _ aps1; AppliedOperator'_to_gen_tree _ _ aps2])
         )
-    .
-    Opaque AppliedOperator'_to_gen_tree.
+    end.
 
-    Equations AppliedOperator'_of_gen_tree
+    Fixpoint AppliedOperator'_of_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
@@ -396,28 +393,35 @@ Section countable.
         (t : gen_tree symbol)
         : option (AppliedOperator' symbol builtin)
     :=
-        AppliedOperator'_of_gen_tree _ _ (GenLeaf s)
-        := Some (ao_operator s);
-        
-        AppliedOperator'_of_gen_tree _ _ (GenNode n [gt1;gt2])
-        with (@decode (nat*positive) _ _ (Pos.of_nat n)) => {
-            | Some (0, pb) with (@decode builtin _ _ pb) => {
-                | Some b with (AppliedOperator'_of_gen_tree symbol builtin gt1) => {
-                    | Some as1 := Some (ao_app_operand as1 b)
-                    | _ := None
-                }
-                | _ := None
-            }
-            | Some (1, _) with AppliedOperator'_of_gen_tree symbol builtin gt1, AppliedOperator'_of_gen_tree symbol builtin gt2 => {
-                | Some aps1, Some aps2 := Some (ao_app_ao aps1 aps2)
-                | _, _ := None
-            }
-            | _ := None
-        };
-        AppliedOperator'_of_gen_tree _ _ _
-        := None
+    match t with
+    | (GenLeaf s)
+        => Some (ao_operator s)
+    | (GenNode n [gt1;gt2]) =>
+        let d := (@decode (nat*positive) _ _ (Pos.of_nat n)) in
+        match d with
+            | Some (0, pb) =>
+                let d' := (@decode builtin _ _ pb) in
+                match d' with
+                | Some b =>
+                    let d'' := (AppliedOperator'_of_gen_tree symbol builtin gt1) in
+                    match d'' with 
+                    | Some as1 => Some (ao_app_operand as1 b)
+                    | _ => None
+                    end
+                | _ => None
+                end
+            | Some (1, _) =>
+                let d'1 := AppliedOperator'_of_gen_tree symbol builtin gt1 in
+                let d'2 := AppliedOperator'_of_gen_tree symbol builtin gt2 in
+                match d'1, d'2 with
+                | Some aps1, Some aps2 => Some (ao_app_ao aps1 aps2)
+                | _, _ => None
+                end
+            | _ => None
+            end
+    | _ => None
+    end
     .
-    Opaque AppliedOperator'_of_gen_tree.
 
     Lemma AppliedOperator'_of_to_gen_tree
         (symbol : Type)
@@ -429,32 +433,17 @@ Section countable.
         : AppliedOperator'_of_gen_tree symbol builtin (AppliedOperator'_to_gen_tree symbol builtin a) = Some a
     .
     Proof.
-        ltac1:(funelim (AppliedOperator'_to_gen_tree symbol builtin a)).
+        induction a; simpl.
+        { reflexivity. }
         {
-            ltac1:(simp AppliedOperator'_to_gen_tree).
-            ltac1:(simp AppliedOperator'_of_gen_tree).
-            reflexivity.
-        }
-        {
-            ltac1:(simp AppliedOperator'_to_gen_tree).
-            ltac1:(simp AppliedOperator'_of_gen_tree).
             ltac1:(rewrite ! Pos2Nat.id decode_encode).
-            unfold AppliedOperator'_of_gen_tree_clause_2.
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_1.
             rewrite decode_encode.
-            ltac1:(rewrite H).
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_1_clause_1.
+            rewrite IHa.
             reflexivity.
         }
         {
-            ltac1:(simp AppliedOperator'_to_gen_tree).
-            ltac1:(simp AppliedOperator'_of_gen_tree).
-            ltac1:(rewrite ! Pos2Nat.id decode_encode).
-            unfold AppliedOperator'_of_gen_tree_clause_2.
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_2.
-            unfold AppliedOperator'_of_gen_tree_clause_2_clause_2_clause_1.
-            ltac1:(rewrite H).
-            ltac1:(rewrite H0).
+            rewrite IHa1.
+            rewrite IHa2.
             reflexivity.
         }
     Qed.
