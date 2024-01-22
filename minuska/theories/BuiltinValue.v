@@ -1188,10 +1188,7 @@ Section sec.
             {
                 destruct a; unfold bv_to_tree; fold bv_to_tree.
                 {
-                    ltac1:(simp BVsize in Hr).
-                    ltac1:(simp BVsize in IHm).
-                    ltac1:(specialize (IHm ltac:(lia))).
-                    unfold my_list_size in Hr.
+                    ltac1:(specialize (IHm ltac:(simpl in *; lia))).
                     simpl in IHm.
                     rewrite bind_Some in IHm.
                     destruct IHm as [x [IHm1 IHm2]].
@@ -1287,7 +1284,7 @@ Section sec.
 
                         ltac1:(ospecialize (IHao2 _)).
                         {
-                            simpl in Hr. ltac1:(lia).
+                            simpl in Hr. ltac1:(simpl in *; lia).
                         }
                         simpl in IHao2.
                         rewrite bind_Some in IHao2.
