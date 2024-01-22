@@ -15,7 +15,8 @@ Require Import Logic.PropExtensionality.
 Require Import Setoid.
 Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
-  
+Require Import Coq.Logic.FunctionalExtensionality.
+
 Definition evaluate_match
     {Σ : StaticModel}
     (ρ : Valuation)

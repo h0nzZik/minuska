@@ -991,6 +991,7 @@ Program Instance TryMatch_AppliedOperator'
     try_match_complete := _;
 |}.
 Next Obligation.
+    intros.
     apply ApppliedOperator'_try_match_AppliedOperator'_correct with (ρ := ρ).
     { 
         unfold Valuation in *.
@@ -999,15 +1000,18 @@ Next Obligation.
     { apply H. }
 Qed.
 Next Obligation.
+    intros.
     apply ApppliedOperator'_try_match_AppliedOperator'_complete.
     assumption.
 Qed.
 Next Obligation.
-    revert a ρ H H0.
-    induction b; unfold vars_of; simpl in *; intros a' ρ' H' H'0.
+    intros. intros x Hx.
+    revert a ρ H x Hx.
+    induction b; unfold vars_of; simpl in *; intros a' ρ' H' x Hx.
     {
         destruct a'; simpl in *; ltac1:(repeat case_match; simplify_eq/=).
-        apply H'0.
+        ltac1:(rewrite dom_empty_L in Hx).
+        exact Hx.
     }
     {
         destruct a'; simpl in *; ltac1:(simplify_eq/=).
@@ -1019,11 +1023,11 @@ Next Obligation.
             assert (H2x1' := H2x1).
             apply merge_valuations_dom in H2x1'.
             unfold Valuation in *.
-            rewrite H2x1' in H'0.
-            rewrite elem_of_union in H'0.
-            destruct H'0 as [H|H].
+            rewrite H2x1' in Hx.
+            rewrite elem_of_union in Hx.
+            destruct Hx as [H|H].
             {
-                specialize (IHb a' x0 H1x0 H).
+                specialize (IHb a' x0 H1x0 x H).
                 rewrite elem_of_union.
                 right. apply IHb.
             }
@@ -1041,12 +1045,12 @@ Next Obligation.
             assert (H2x1' := H2x1).
             apply merge_valuations_dom in H2x1'.
             unfold Valuation in *.
-            rewrite H2x1' in H'0.
-            rewrite elem_of_union in H'0.
-            destruct H'0 as [H|H].
+            rewrite H2x1' in Hx.
+            rewrite elem_of_union in Hx.
+            destruct Hx as [H|H].
             {
                 assert (IH := IHb a'1).
-                specialize (IH x0 H1x0 H).
+                specialize (IH x0 H1x0 x H).
                 rewrite elem_of_union.
                 right. apply IH.
             }
@@ -1067,12 +1071,12 @@ Next Obligation.
             assert (H2x1' := H2x1).
             apply merge_valuations_dom in H2x1'.
             unfold Valuation in *.
-            rewrite H2x1' in H'0.
-            rewrite elem_of_union in H'0.
-            destruct H'0 as [H|H].
+            rewrite H2x1' in Hx.
+            rewrite elem_of_union in Hx.
+            destruct Hx as [H|H].
             {
                 assert (IH1 := IHb1 a').
-                specialize (IH1 x0 H1x0 H).
+                specialize (IH1 x0 H1x0 x H).
                 rewrite elem_of_union.
                 left. apply IH1.
             }
@@ -1090,18 +1094,18 @@ Next Obligation.
             assert (H2x1' := H2x1).
             apply merge_valuations_dom in H2x1'.
             unfold Valuation in *.
-            rewrite H2x1' in H'0.
-            rewrite elem_of_union in H'0.
-            destruct H'0 as [H|H].
+            rewrite H2x1' in Hx.
+            rewrite elem_of_union in Hx.
+            destruct Hx as [H|H].
             {
                 assert (IH1 := IHb1 a'1).
-                specialize (IH1 _ H1x0 H).
+                specialize (IH1 _ H1x0 x H).
                 rewrite elem_of_union.
                 left. apply IH1.
             }
             {
                 assert (IH2 := IHb2 a'2).
-                specialize (IH2 _ H1x1 H).
+                specialize (IH2 _ H1x1 x H).
                 rewrite elem_of_union.
                 right. apply IH2.
             }
@@ -1162,6 +1166,7 @@ Program Instance TryMatch_AppliedOperatorOr'
     try_match_complete := _;
 |}.
 Next Obligation.
+    intros.
     destruct a,b; simpl in *; unfold matchesb; simpl.
     {
         apply try_match_correct. apply H.
@@ -1177,6 +1182,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
+    intros.
     destruct a,b; simpl in *; unfold matchesb in *; simpl in *.
     {
         apply try_match_complete in H.
@@ -1195,6 +1201,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
+    intros.
     destruct a,b; simpl in *;
         unfold vars_of; simpl in *.
     {
@@ -1236,6 +1243,7 @@ Program Instance TryMatch__builtin__BoV
     try_match_complete := _;
 |}.
 Next Obligation.
+    intros.
     destruct b; unfold matchesb; simpl in *.
     {
         unfold bool_decide.
@@ -1258,6 +1266,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
+    intros.
     unfold Valuation in *.
     unfold matchesb in H; destruct b; simpl in H.
     {
@@ -1332,6 +1341,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
+    intros. intros x H0.
     destruct b; simpl in *.
     {
         destruct (decide (a = b)); subst;
@@ -1395,6 +1405,7 @@ Program Instance TryMatch__pure_GroundTerm__BoV
     try_match_complete := _;
 |}.
 Next Obligation.
+    intros.
     destruct b; unfold matchesb; simpl in *.
     { inversion H. }
     {
@@ -1406,6 +1417,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
+    intros.
     unfold Valuation in *.
     destruct b; unfold matchesb in H; simpl in *.
     {
@@ -1451,6 +1463,7 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
+    intros. intros x H0.
     destruct b; unfold vars_of in *; simpl in *.
     { inversion H. }
     {
@@ -1486,6 +1499,9 @@ Program Instance TryMatch__builtin__AO'sB
 := {|
     try_match := fun _ _ => None ;
 |}.
+Next Obligation. intros. simpl in H. inversion H. Qed.
+Next Obligation. intros. simpl in H. inversion H. Qed.
+Next Obligation. intros. simpl in H. inversion H. Qed.
 Fail Next Obligation.
 
 #[export]

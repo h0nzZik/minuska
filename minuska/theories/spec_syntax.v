@@ -200,12 +200,6 @@ Definition RewritingRule {Σ : StaticModel}
 
 Inductive LeftRight : Set := LR_Left | LR_Right.
 
-Equations Derive NoConfusion for AppliedOperator'.
-Equations Derive NoConfusion for AtomicProposition.
-Equations Derive NoConfusion for Expression.
-Equations Derive NoConfusion for WithASideCondition.
-Equations Derive NoConfusion for LocalRewrite.
-
 Section eqdec.
 
     #[export]

@@ -22,8 +22,6 @@ Section sec.
     | bv_pmap (m : Pmap (AppliedOperatorOr' symbol BuiltinValue0))
     .
 
-    Derive NoConfusion for BuiltinValue0.
-
     Fixpoint BVsize (r : BuiltinValue0) : nat :=
     match r with
     | bv_list m =>
@@ -877,8 +875,6 @@ Section sec.
     Proof.
         ltac1:(solve_decision).
     Defined.
-
-    Derive NoConfusion for BVLeaf.
 
     Fixpoint tree_to_bv
         (t : gen_tree BVLeaf) : (option BuiltinValue0)  :=

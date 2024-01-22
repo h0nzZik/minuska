@@ -20,7 +20,7 @@
 
             propagatedBuildInputs = [
               coq
-              coqPackages.equations
+              #coqPackages.equations
               coqPackages.stdpp
               coq.ocaml
               coq.ocamlPackages.zarith

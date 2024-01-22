@@ -21,13 +21,17 @@ From stdpp Require Export
 .
 
 (* This is unset by stdpp. We need to set it again.*)
+
 #[global]
 Set Transparent Obligations.
 
+(*
 From Equations Require Export Equations.
+
 
 #[global]
 Set Equations Transparent.
+*)
 
 Require Export Wellfounded.
 

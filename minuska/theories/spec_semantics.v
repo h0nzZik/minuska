@@ -329,6 +329,7 @@ Program Instance Satisfies_val_ap
 Next Obligation.
     destruct b; simpl in *.
     {
+        intros H0.
         destruct H0 as [H1 [x Hx]].
         rewrite (Expression_evaluate_extensive_Some v1 v2 _ x H Hx).
         split>[|eexists; reflexivity].
@@ -423,6 +424,7 @@ Program Instance Satisfies_aoxy_aoxz
     satisfies := aoxy_satisfies_aoxz ;
 |}.
 Next Obligation.
+    intros.
     revert v2 H.
     induction H0; intros v2 HH; constructor; try (ltac1:(naive_solver)).
     {
@@ -494,6 +496,7 @@ Program Instance Satisfies_aoxyo_aoxzo
     satisfies := aoxyo_satisfies_aoxzo V X Y Z var;
 |}.
 Next Obligation.
+    intros.
     destruct H0; constructor.
     {
         eapply satisfies_ext.
@@ -557,6 +560,7 @@ Program Instance Satisfies_builtin_BuiltinOrVar
     satisfies := builtin_satisfies_BuiltinOrVar' ;
 |}.
 Next Obligation.
+    intros.
     inversion H0; constructor.
     {
         subst.
@@ -587,6 +591,7 @@ Program Instance Satisfies__AppliedOperator'_symbol_builtin__BuiltinOrVar
     satisfies := AppliedOperator'_symbol_builtin_satisfies_BuiltinOrVar
 |}.
 Next Obligation.
+    intros.
     destruct b; simpl in *.
     { ltac1:(contradiction). }
     {
@@ -615,6 +620,7 @@ Program Instance Satisfies_AppliedOperator'_symbol_builtin_BuiltinOrVar
     satisfies := AppliedOperator'_symbol_builtin_satisfies'_BuiltinOrVar ;
 |}.
 Next Obligation.
+    intros.
     destruct b; simpl in *.
     { ltac1:(contradiction). }
     {
@@ -669,6 +675,10 @@ Program Instance Satisfies__builtin__ao'B
 := {| 
     satisfies := fun _ _ _ => false ;
 |}.
+Next Obligation.
+    intros. auto.
+Qed.
+Fail Next Obligation.
 
 #[export]
 Instance Satisfies_aos__builtin_BuiltinOrVar
@@ -681,7 +691,16 @@ Instance Satisfies_aos__builtin_BuiltinOrVar
         variable
 .
 Proof.
-    apply _.
+    apply @Satisfies_aoxy_aoxz.
+    {
+        apply _.
+    }
+    {
+        apply Satisfies__builtin__ao'B.
+    }
+    {
+        apply _.
+    }
 Defined.
 
 
@@ -776,6 +795,7 @@ Program Instance Satisfies_val_match
     satisfies := fun a b c => valuation_satisfies_match a c;
 |}.
 Next Obligation.
+    intros.
     destruct b. simpl in *.
     unfold Valuation in *.
     ltac1:(repeat case_match).
@@ -821,6 +841,7 @@ Program Instance Satisfies_val_sc
     satisfies := fun a b c => valuation_satisfies_sc a c ;
 |}.
 Next Obligation.
+    intros.
     destruct b; simpl in *; eapply satisfies_ext>[apply H|]; assumption.
 Qed.
 Fail Next Obligation.
@@ -866,6 +887,7 @@ Program Instance Satisfies_A_Bsc
         V A B var;
 |}.
 Next Obligation.
+    intros.
     induction H0; constructor; try (ltac1:(naive_solver));
         eapply satisfies_ext>[apply H|]; assumption.
 Qed.
@@ -895,6 +917,7 @@ Program Instance Satisfies_GroundTerm_BuiltinOrVar
     satisfies := GroundTerm_satisfies_BuiltinOrVar ;
 |}.
 Next Obligation.
+    intros.
     destruct a,b; simpl in *; try ltac1:(naive_solver);
         unfold Valuation in *; eapply lookup_weaken>[|apply H];
         assumption.
@@ -954,6 +977,7 @@ Program Instance Satisfies_builtin_value_OpenTerm
     satisfies :=  builtin_value_satisfies_OpenTerm ;
 |}.
 Next Obligation.
+    intros.
     destruct b; simpl in *.
     { assumption. }
     {
@@ -1017,6 +1041,7 @@ Program Instance Satisfies__AppliedOperator'_symbol_builtin_value__BOV
     satisfies := AppliedOperator'_symbol_builtin_value_satisfies_BOV;
 |}.
 Next Obligation.
+    intros.
     destruct b; simpl in *; try assumption.
     {
         unfold Valuation in *.
@@ -1069,6 +1094,7 @@ Program Instance Satisfies__lift_builtin_to_aosb
         AppliedOperator'_symbol_A_satisfies_OpenTermB' V A B var;
 |}.
 Next Obligation.
+    intros.
     unfold AppliedOperator'_symbol_A_satisfies_OpenTermB' in *.
     eapply satisfies_ext.
     { apply H. }
@@ -1135,6 +1161,7 @@ Program Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTerm
         AppliedOperator'_symbol_builtin_satisfies_OpenTerm ;
 |}.
 Next Obligation.
+    intros.
     eapply satisfies_ext.
     { apply H. }
     { assumption. }
