@@ -10,29 +10,37 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        minuskaFun = { coqPackages }: (
+          coqPackages.callPackage 
+          ( { coq, stdenv }:
+          stdenv.mkDerivation {
+            name = "minuska";
+            src = ./minuska;
+
+            propagatedBuildInputs = [
+              coq
+              coqPackages.equations
+              coqPackages.stdpp
+              coq.ocaml
+              coq.ocamlPackages.zarith
+            ];
+            enableParallelBuilding = true;
+            installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+            passthru = { inherit coqPackages; };
+          } ) { } 
+        );
+
         coqPackages = pkgs.coqPackages_8_18;
 
       in {
 
-        packages.minuska
-        = coqPackages.callPackage 
-        ( { coq, stdenv }:
-        stdenv.mkDerivation {
-          name = "minuska";
-          src = ./minuska;
+        packages.minuska-coq_8_19 = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
+        packages.minuska-coq_8_18 = minuskaFun { coqPackages = pkgs.coqPackages_8_18; } ;
+        packages.minuska-coq_8_17 = minuskaFun { coqPackages = pkgs.coqPackages_8_17; } ;
 
-          propagatedBuildInputs = [
-            coq
-            coqPackages.equations
-            coqPackages.stdpp
-            coq.ocaml
-            coq.ocamlPackages.zarith
-          ];
-          enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-
-          passthru = { inherit coqPackages; };
-        } ) { } ;
+        packages.minuska = self.outputs.packages.${system}.minuska-coq_8_18;
 
         packages.minuska-symbolic
         = coqPackages.callPackage 
