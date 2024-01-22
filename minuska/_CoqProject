@@ -26,6 +26,3 @@ theories/examples_unary_nat.v
 
 theories/benchmarking_in_coq.v
 
-# Those two are disabled because I am lazy
-# theories/flatten.v
-# theories/on_a_good_reordering.v
