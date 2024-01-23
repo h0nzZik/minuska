@@ -846,52 +846,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Inductive A_satisfies_B_WithASideCondition
-    {Σ : StaticModel}
-    (V A B var : Type)
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_SV : SubsetEq V}
-    {_VV : VarsOf V var}
-    {_S1 : Satisfies V unit SideCondition var}
-    {_S2 : Satisfies V (A) B var}
-    : V -> A -> WithASideCondition B -> Prop :=
-
-| asbwsc_base:
-    forall ρ a (b : B),
-        satisfies ρ a b ->
-        A_satisfies_B_WithASideCondition V A B var ρ a (wsc_base b)
-
-| asbwsc_sc :
-    forall ρ a (bsc : WithASideCondition B) sc,
-        A_satisfies_B_WithASideCondition V A B var ρ a bsc ->
-        satisfies ρ () sc ->
-        A_satisfies_B_WithASideCondition V A B var ρ a (wsc_sc bsc sc)
-.
-
-#[export]
-Program Instance Satisfies_A_Bsc
-    {Σ : StaticModel}
-    {V A B var : Type}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_SV : SubsetEq V}
-    {_VV : VarsOf V var}
-    {_S1 : Satisfies V unit SideCondition var}
-    {_S2 : Satisfies V A B var}
-    :
-    Satisfies V A (WithASideCondition B) var
-:= {|
-    satisfies :=
-        A_satisfies_B_WithASideCondition
-        V A B var;
-|}.
-Next Obligation.
-    intros.
-    induction H0; constructor; try (ltac1:(naive_solver));
-        eapply satisfies_ext>[apply H|]; assumption.
-Qed.
-Fail Next Obligation.
 
 Definition GroundTerm_satisfies_BuiltinOrVar
     {Σ : StaticModel}
@@ -939,17 +893,6 @@ Definition in_val_GroundTerm_satisfies_OpenTermWSC
 .
 *)
 
-#[export]
-Instance Satisfies_GroundTerm_OpenTermWSC
-    {Σ : StaticModel}
-    :
-    Satisfies
-        Valuation
-        GroundTerm
-        OpenTermWSC
-        variable
-.
-Proof. apply _. Defined.
 
 Definition builtin_value_satisfies_OpenTerm
     {Σ : StaticModel}
@@ -1001,18 +944,6 @@ Definition builtin_value_satisfies_OpenTermWSC
         OpenTerm
 .
 *)
-
-#[export]
-Instance Satisfies_builtin_value_OpenTermWSC
-    {Σ : StaticModel}
-    :
-    Satisfies
-        Valuation
-        builtin_value
-        OpenTermWSC
-        variable
-.
-Proof. apply _. Defined.
 
 Definition AppliedOperator'_symbol_builtin_value_satisfies_BOV
     {Σ : StaticModel}
@@ -1168,39 +1099,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-#[export]
-Instance Satisfies__AppliedOperator'_symbol_builtin__OpenTermWSC
-    {Σ : StaticModel}
-    :
-    Satisfies
-        Valuation
-        (AppliedOperator' symbol builtin_value)
-        OpenTermWSC
-        variable
-.
-Proof. apply _. Defined.
-
-
-#[export]
-Instance Satisfies__GroundTerm__LhsPattern
-    {Σ : StaticModel}
-    {V var : Type}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_SV : SubsetEq V}
-    {_VV : VarsOf V var}
-    {_S1 : Satisfies V (builtin_value) OpenTermWSC var}
-    {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) OpenTermWSC var}
-    {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol OpenTermWSC) var}
-    :
-    Satisfies
-        V
-        GroundTerm
-        LhsPattern
-        var
-.
-Proof. apply _. Defined.
-
 #[local]
 Obligation Tactic := idtac.
 
@@ -1304,30 +1202,6 @@ Qed.
 Fail Next Obligation.
 
 #[export]
-Instance Satisfies__GroundTerm__VarWithSc
-    {Σ : StaticModel}
-    :
-    Satisfies
-        Valuation
-        GroundTerm
-        (WithASideCondition variable)
-        variable
-.
-Proof. apply _. Defined.
-
-
-Definition GroundTerm_satisfies_LocalRewrite
-    {Σ : StaticModel}
-    (ρd : (Valuation*LeftRight))
-    (g : GroundTerm)
-    (r : LocalRewrite)
-    : Prop :=
-match ρd.2 with
-| LR_Left => satisfies ρd.1 g (lr_from r)
-| LR_Right => satisfies ρd.1 g (lr_to r)
-end.
-
-#[export]
 Instance Subseteq_ValuationLR
     {Σ : StaticModel}
     : SubsetEq (Valuation * LeftRight)
@@ -1344,189 +1218,6 @@ Instance VarsOf_ValuationLR
 := {
     vars_of a := vars_of a.1
 }.
-
-#[export]
-Program Instance Satisfies__GroundTerm__LocalRewrite
-    {Σ : StaticModel}
-    :
-    Satisfies
-        (Valuation*LeftRight)
-        GroundTerm
-        LocalRewrite
-        variable
-:= {|
-    satisfies := 
-        GroundTerm_satisfies_LocalRewrite
-        ;
-|}.
-Next Obligation.
-    intros.
-    unfold Valuation, GroundTerm_satisfies_LocalRewrite in *.
-    destruct v1,v2; simpl in *.
-    destruct l,l0; simpl in *; eapply satisfies_ext>[apply H|];
-        simpl; try assumption.
-    {
-        inversion H; subst; clear H. simpl in *. inversion H2.
-    }
-    {
-        inversion H; subst; clear H. simpl in *. inversion H2.
-    }
-Qed.
-Fail Next Obligation.
-
-Definition GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
-    {Σ : StaticModel}
-    (ρd : (Valuation*LeftRight))
-    (g : GroundTerm)
-    (rb : LocalRewriteOrOpenTermOrBOV)
-    : Prop :=
-let ρ := ρd.1 in
-match rb with
-| lp_rewrite r
-    => satisfies ρd g r
-| lp_basicpat φ
-    => satisfies ρ g φ
-| lp_bov bx
-    => satisfies ρ g bx
-end.
-
-#[export]
-Program Instance Satisfies__GroundTerm__LocalRewriteOrOpenTermOrBOV
-    {Σ : StaticModel}
-    :
-    Satisfies
-        (Valuation*LeftRight)
-        (GroundTerm)
-        (LocalRewriteOrOpenTermOrBOV)
-        variable
-:= {|
-    satisfies :=
-        GroundTerm_satisfies_LocalRewriteOrOpenTermOrBOV
-        ;
-|}.
-Next Obligation.
-    intros. destruct b; simpl in *;
-        eapply satisfies_ext>[apply H|]; simpl; assumption.
-Qed.
-Fail Next Obligation.
-
-Definition builtin_satisfies_LocalRewriteOrOpenTermOrBOV
-    {Σ : StaticModel}
-    (ρd : (Valuation*LeftRight))
-    (b : builtin_value)
-    (r : LocalRewriteOrOpenTermOrBOV)
-    : Prop :=
-let ρ := ρd.1 in
-match r with
-| lp_rewrite r'
-    => satisfies (ρd) (aoo_operand b) r'
-
-| lp_basicpat (aoo_app _)
-    => False
-
-| lp_basicpat (aoo_operand bov)
-    => satisfies ρ b bov
-
-| lp_bov bx
-    => satisfies ρ b bx
-end.
-
-#[export]
-Program Instance Satisfies__builtin_value__LocalRewriteOrOpenTermOrBOV
-    {Σ : StaticModel}
-    :
-    Satisfies
-        (Valuation*LeftRight)
-        (builtin_value)
-        (LocalRewriteOrOpenTermOrBOV)
-        variable
-:= {|
-    satisfies :=
-        builtin_satisfies_LocalRewriteOrOpenTermOrBOV
-        ;
-|}.
-Next Obligation.
-    intros. destruct v1,v2,b; simpl in *;
-        inversion H; subst; simpl in *;
-        subst.
-    {
-        eapply satisfies_ext.
-        { apply H. }
-        { assumption. }
-    }
-    {
-        destruct φ.
-        { ltac1:(contradiction). }
-        eapply satisfies_ext>[apply H1|].
-        { assumption. }
-    }
-    {
-        eapply satisfies_ext>[apply H1|].
-        { assumption. }
-    }
-Qed.
-Fail Next Obligation.
-
-(*
-#[export]
-Instance satLift1
-    {Σ : StaticModel}
-    {L R : Type}
-    `{Satisfies (Valuation * L) R}
-    :
-    Satisfies
-        ((Valuation * LeftRight) * L) R
-:= {|
-    satisfies := fun ρdg r => satisfies (ρdg.1.1,ρdg.2) r
-|}.*)
-(*
-#[export] Instance _tmp
-    {Σ : StaticModel}
-    :
-    Satisfies
-        (Valuation * LeftRight * AppliedOperator' symbol builtin_value)
-        LocalRewriteOrOpenTermOrBOV
-:= {|
-    satisfies := fun ρdg => satisfies (ρdg.1.1,ρdg.1.2, aoo_app _ _ ρdg.2)
-|}.
-*)
-
-#[export]
-Program Instance Satisfies_vlrglrootob
-    {Σ : StaticModel}:
-    Satisfies
-        (Valuation * LeftRight)
-        (AppliedOperator' symbol builtin_value)
-        LocalRewriteOrOpenTermOrBOV
-        variable
-:= {|
-    satisfies := fun ρd g =>
-        satisfies ρd (aoo_app g)
-        
-     ;
-|}.
-Next Obligation.
-    intros. simpl in *.
-    eapply satisfies_ext>[apply H|]. assumption.
-Qed.
-Fail Next Obligation.
-
-
-#[export]
-Program Instance Satisfies_vlrblrootob
-    {Σ : StaticModel}:
-    Satisfies
-        (Valuation * LeftRight)
-        (builtin_value)
-        (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
-        variable
-:= {|
-    satisfies := fun _ _ _ => False ;
-|}.
-Next Obligation.
-    intros. simpl in *. assumption.
-Qed.
-Fail Next Obligation.
 
 
 #[export]
@@ -1546,27 +1237,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-#[export]
-Instance Satisfies_aop_lrw {Σ : StaticModel}:
-    Satisfies
-        (Valuation * LeftRight)
-        (AppliedOperator' symbol builtin_value)
-        (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
-        variable
-.
-Proof. apply _. Defined.
-
-#[export]
-Instance Satisfies__GroundTerm__UncondRewritingRule
-    {Σ : StaticModel}
-    :
-    Satisfies
-        (Valuation*LeftRight)
-        (GroundTerm)
-        (UncondRewritingRule)
-        variable
-.
-Proof. apply _. Defined.
 
 #[export]
 Program Instance Satisfies_Valuation_LR_SideCondition
@@ -1590,18 +1260,6 @@ Next Obligation.
     { assumption. }
 Qed.
 Fail Next Obligation.
-
-#[export]
-Instance Satisfies__GroundTerm__RewritingRule
-    {Σ : StaticModel}
-    :
-    Satisfies
-        (Valuation*LeftRight)
-        (GroundTerm)
-        (RewritingRule)
-        variable
-.
-Proof. apply _. Defined.
 
 Definition GroundTerm_satisfies_OpenTerm
     {Σ : StaticModel}
@@ -1647,64 +1305,6 @@ Instance Satisfies_bv_ao'
     satisfies := fun _ _ => False ;
 |}.
 *)
-
-Definition rewrites_in_valuation_to
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (r : RewritingRule)
-    (from to : GroundTerm)
-    : Prop
-:= satisfies (ρ,LR_Left) (from) r
-/\ satisfies (ρ,LR_Right) (to) r
-.
-
-Definition rewrites_to
-    {Σ : StaticModel}
-    (r : RewritingRule)
-    (from to : GroundTerm)
-    : Prop
-:= exists ρ, rewrites_in_valuation_to ρ r from to
-.
-
-Definition RewritingTheory {Σ : StaticModel}
-    := list RewritingRule
-.
-
-Definition rewriting_relation
-    {Σ : StaticModel}
-    (Γ : RewritingTheory)
-    : relation GroundTerm
-    := fun from to =>
-        exists r, r ∈ Γ /\ rewrites_to r from to
-.
-
-Definition not_stuck
-    {Σ : StaticModel}
-    (Γ : RewritingTheory)
-    (e : GroundTerm) : Prop
-:= exists e', rewriting_relation Γ e e'.
-
-Definition stuck
-    {Σ : StaticModel}
-    (Γ : RewritingTheory)
-    (e : GroundTerm) : Prop
-:= not (not_stuck Γ e).
-
-Definition rule_weakly_well_defined
-    {Σ : StaticModel}
-    (r : RewritingRule)
-    : Prop
-    := ∀ ρ from,
-        satisfies (ρ,LR_Left) (from) r ->
-        ∃ to, satisfies (ρ,LR_Right) (to) r
-.
-
-Definition thy_weakly_well_defined
-    {Σ : StaticModel}
-    (Γ : RewritingTheory)
-    : Prop
-    := ∀ r, r ∈ Γ -> rule_weakly_well_defined r
-.
 
 
 #[export]

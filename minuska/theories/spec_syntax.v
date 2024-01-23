@@ -159,44 +159,10 @@ Inductive SideCondition {Σ : StaticModel} :=
 | sc_match (m : Match)
 .
 
-Inductive WithASideCondition {Σ : StaticModel} (Base : Type) :=
-|  wsc_base (φ : Base)
-|  wsc_sc (φc : WithASideCondition Base) (sc : SideCondition)
-.
-
-Arguments wsc_base {Σ} {Base}%type_scope φ.
-Arguments wsc_sc {Σ} {Base}%type_scope φc sc.
-
-Definition OpenTermWSC {Σ : StaticModel}
-    := WithASideCondition (@OpenTerm Σ)
-.
-
-Definition LhsPattern {Σ : StaticModel} :=
-    AppliedOperatorOr' symbol OpenTermWSC
-.
-
 Definition RhsPattern {Σ : StaticModel} :=
     AppliedOperatorOr' symbol Expression
 .
 
-Record LocalRewrite {Σ : StaticModel} := {
-    lr_from : LhsPattern ;
-    lr_to : RhsPattern ;
-}.
-
-Inductive LocalRewriteOrOpenTermOrBOV {Σ : StaticModel} :=
-| lp_rewrite (r : LocalRewrite)
-| lp_basicpat (φ : OpenTerm)
-| lp_bov (bx : BuiltinOrVar)
-. 
-
-Definition UncondRewritingRule {Σ : StaticModel}
-    := AppliedOperatorOr' symbol LocalRewriteOrOpenTermOrBOV
-.
-
-Definition RewritingRule {Σ : StaticModel}
-    := WithASideCondition UncondRewritingRule
-.
 
 Inductive LeftRight : Set := LR_Left | LR_Right.
 
@@ -308,43 +274,8 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  OpenTermWSC_eqdec {Σ : StaticModel}
-        : EqDecision OpenTermWSC
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance LhsPattern_eqdec {Σ : StaticModel}
-        : EqDecision LhsPattern
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
     Instance RhsPattern_eqdec {Σ : StaticModel}
         : EqDecision RhsPattern
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance WithASideCondition_eqdec
-        {Σ : StaticModel}
-        (A : Type)
-        (A_eqdec : EqDecision A)
-        : EqDecision (WithASideCondition A)
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance LocalRewrite_eqdec {Σ : StaticModel}
-        : EqDecision LocalRewrite
     .
     Proof.
         ltac1:(solve_decision).

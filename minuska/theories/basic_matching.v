@@ -1304,35 +1304,6 @@ Section with_signature.
     Fail Next Obligation.
 
     #[export]
-    Instance VarsOf_LocalRewriteOrOpenTermOrBOV
-        :
-        VarsOf
-            LocalRewriteOrOpenTermOrBOV
-            (LeftRight*variable)
-    := {|
-        vars_of := fun (x : LocalRewriteOrOpenTermOrBOV) =>
-            match x with
-            | lp_rewrite r =>
-                let v1 := (vars_of (lr_from r)) in
-                let v2 := (vars_of (lr_to r)) in
-                let v1' := (set_map (fun x : variable => (LR_Left, x)) v1) in
-                let v2' := (set_map (fun x : variable => (LR_Right, x)) v2) in
-                v1' ∪ v2'
-                (*v1' ∪ v2'*)
-            | lp_basicpat b =>
-                let vs := (vars_of b) in
-                let v1' := (set_map (fun x : variable => (LR_Left, x)) vs) in
-                let v2' := (set_map (fun x : variable => (LR_Right, x)) vs) in
-                v1' ∪ v2'
-            | lp_bov bov =>
-                let vs := (vars_of bov) in
-                let v1' := (set_map (fun x : variable => (LR_Left, x)) vs) in
-                let v2' := (set_map (fun x : variable => (LR_Right, x)) vs) in
-                v1' ∪ v2'
-            end
-    |}.
-
-    #[export]
     Instance VarsOf_LeftRight
         {_VO : VarsOf Valuation (LeftRight * variable)}
         :

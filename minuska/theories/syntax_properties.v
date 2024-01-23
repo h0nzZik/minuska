@@ -143,42 +143,6 @@ Program Instance VarsOf_list_SideCondition
     vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.
 
-Fixpoint vars_of_WithASideConditionB
-    {Σ : StaticModel}
-    {B : Type}
-    {_VB : VarsOf B variable}
-    (φc : WithASideCondition B)
-    : gset variable :=
-match φc with
-| wsc_base φ => vars_of φ
-| wsc_sc φ c
-    => vars_of_WithASideConditionB φ ∪ vars_of c
-end.
-
-#[export]
-Instance VarsOf_WithASideConditionB
-    {Σ : StaticModel}
-    {B : Type}
-    {_VB : VarsOf B variable}
-    : VarsOf (WithASideCondition B) variable
-:= {|
-    vars_of := vars_of_WithASideConditionB ; 
-|}.
-
-(*
-Fixpoint vars_of_AppliedOperator'_symbol_OpenTermWSC
-    {Σ : StaticModel}
-    (φ : AppliedOperator' symbol OpenTermWSC)
-    : gset variable :=
-match φ with
-| ao_operator o => ∅
-| ao_app_operand x y
-    => vars_of_AppliedOperator'_symbol_OpenTermWSC x ∪ vars_of_OpenTermWSC y
-| ao_app_ao x y
-    => vars_of_AppliedOperator'_symbol_OpenTermWSC x ∪ vars_of_AppliedOperator'_symbol_OpenTermWSC y
-end.
-*)
-
 Definition vars_of_AppliedOperatorOr'B
     {Σ : StaticModel}
     {B var : Type}
@@ -203,60 +167,6 @@ Instance VarsOf_AppliedOperatorOr'
 := {|
     vars_of := vars_of_AppliedOperatorOr'B ; 
 |}.
-
-(*
-Fixpoint vars_of_AppliedOperator_sym_fterm
-    {Σ : StaticModel}
-    (op : AppliedOperator' symbol Expression)
-    : gset variable :=
-match op with
-| ao_operator _ => ∅
-| ao_app_operand aps' o =>
-    vars_of_AppliedOperator_sym_fterm aps' ∪ vars_of_Expression o
-| ao_app_ao aps1 aps2 =>
-    vars_of_AppliedOperator_sym_fterm aps1 ∪ vars_of_AppliedOperator_sym_fterm aps2
-end.
-
-Fixpoint vars_of_AppliedOperator'_symbol_Expression
-    {Σ : StaticModel}
-    (φ : AppliedOperator' symbol Expression)
-    : gset variable :=
-match φ with
-| ao_operator _ => ∅
-| ao_app_operand  φ' t
-    => vars_of_AppliedOperator'_symbol_Expression φ' ∪ vars_of_Expression t
-| ao_app_ao φ1 φ2
-    => vars_of_AppliedOperator'_symbol_Expression φ1 ∪ vars_of_AppliedOperator'_symbol_Expression φ2
-end.
-
-Definition vars_of_RhsPattern
-    {Σ : StaticModel}
-    (φ : RhsPattern)
-    : gset variable :=
-match φ with
-| aoo_app _ _ aop => vars_of_AppliedOperator'_symbol_Expression aop
-| aoo_operand _ _ exp => vars_of_Expression exp
-end.
-
-Fixpoint var_of_WithASideCondition_variable
-    {Σ : StaticModel}
-    (x : WithASideCondition variable)
-    : variable :=
-match x with
-| wsc_base x' => x'
-| wsc_sc x' sc => var_of_WithASideCondition_variable x'
-end.
-*)
-
-Definition vars_of_LocalRewrite
-    {Σ : StaticModel}
-    (lr : LeftRight)
-    (r : LocalRewrite)
-    : gset variable :=
-match lr,r with
-| LR_Left, Build_LocalRewrite _ φ1 φ2 => vars_of φ1
-| LR_Right, Build_LocalRewrite _ φ1 φ2 => vars_of φ2
-end.
 
 
 Fixpoint AppliedOperator'_fmap

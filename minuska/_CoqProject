@@ -4,7 +4,6 @@ theories/tactics.v
 theories/prelude.v
 theories/spec_syntax.v
 theories/spec_semantics.v
-theories/spec_tools.v
 theories/syntax_properties.v
 theories/semantics_properties.v
 theories/flattened.v
