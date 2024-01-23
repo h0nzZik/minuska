@@ -740,48 +740,62 @@ Module imp.
     |}.
 
 
+    Notation "'simple_rule' '[' s ']:' l '~>' r 'where' c" := (
+        rule [ s ]:
+            u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
+         ~> u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+         where c
+    ) (at level 90).
+
+    Notation "'simple_rule' '[' s ']:' l '~>' r 'always'" := (
+        rule [ s ]:
+            u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
+         ~> u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+    ) (at level 90).
+
     Definition Decls : list Declaration := [
+        decl_strict (symbol "arith_plus" of arity 2 strict in [0;1]);
+        decl_strict (symbol "arith_minus" of arity 2 strict in [0;1]);
+        decl_strict (symbol "arith_times" of arity 2 strict in [0;1]);
+        decl_strict (symbol "arith_div" of arity 2 strict in [0;1]);
         (* plus *)
         decl_rule (
-            rule ["plus-Z-Z"]:
-                u_cfg [ u_state [cseq [($X + $Y), $REST_SEQ], $VALUES ] ]
-            ~> u_cfg [ u_state [cseq [ ($X +Z $Y) , $REST_SEQ ], $VALUES ] ]
+            simple_rule ["plus-Z-Z"]:
+               ($X + $Y)
+            ~> ($X +Z $Y)
                 where (
                     (isZ ($X))
                     &&
                     (isZ ($Y))
                 )
         );
-        decl_strict (symbol "arith_plus" of arity 2 strict in [0;1]);
         (* minus *)
         decl_rule (
-            rule ["minus-Z-Z"]:
-                u_cfg [ u_state [ u_cseq [ ($X - $Y), $REST_SEQ ], $VALUES ] ]
-            ~> u_cfg [ u_state [ u_cseq [ ($X -Z $Y) , $REST_SEQ ], $VALUES ] ]
+            simple_rule ["minus-Z-Z"]:
+               ($X - $Y)
+            ~> ($X -Z $Y)
                 where (
                     (isZ ($X))
                     &&
                     (isZ ($Y))
                 )
         );
-        decl_strict (symbol "arith_minus" of arity 2 strict in [0;1]);
         (* times *)
         decl_rule (
-            rule ["times-Z-Z"]:
-                u_cfg [ u_state [ u_cseq [ (($X) * ($Y)), $REST_SEQ ], $VALUES ] ]
-            ~> u_cfg [ u_state [ u_cseq [ ($X *Z $Y) , $REST_SEQ ], $VALUES ] ]
+            simple_rule ["times-Z-Z"]:
+               (($X) * ($Y))
+            ~> ($X *Z $Y)
                 where (
                     (isZ ($X))
                     &&
                     (isZ ($Y))
                 )
         );
-        decl_strict (symbol "arith_times" of arity 2 strict in [0;1]);
         (* div *)
         decl_rule (
-            rule ["div-Z-Z"]:
-                u_cfg [ u_state [ u_cseq [ (($X) / ($Y)), $REST_SEQ ], $VALUES ] ]
-            ~> u_cfg [ u_state [ u_cseq [ ($X /Z $Y) , $REST_SEQ ], $VALUES ] ]
+            simple_rule ["div-Z-Z"]:
+                (($X) / ($Y))
+            ~> ($X /Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -789,7 +803,6 @@ Module imp.
                     (* TODO test that $Y is not 0*)
                 )
         );
-        decl_strict (symbol "arith_div" of arity 2 strict in [0;1]);
         
         decl_strict (symbol "stmt_assign" of arity 2 strict in [1]);
         decl_rule (
@@ -809,10 +822,11 @@ Module imp.
                 $VALUES
             ]]
         );
+        (* TODO stmt_seq does not have to be strict in the second argument, and the following rule does not need to check the value-ness of the second argument*)
         decl_rule (
-            rule ["seq-unit-value"]:
-                u_cfg [ u_state [ u_cseq [stmt_seq [unitValue [], $X ], $REST_SEQ], $VALUES]]
-            ~> u_cfg [u_state [ u_cseq [$X, $REST_SEQ], $VALUES]]
+            simple_rule ["seq-unit-value"]:
+                stmt_seq [unitValue [], $X ]
+            ~> $X
             where ((isValue ($X)))
         );
         decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
@@ -823,46 +837,47 @@ Module imp.
         decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]);
 
         decl_rule (
-            rule ["bexpr-eq-Z-Z"]:
-                u_cfg [ u_state [ u_cseq [bexpr_eq [ $X, $Y ], $REST_SEQ], $VALUES]]
-            ~> u_cfg [u_state [ u_cseq [((ft_binary b_eq ($X) ($Y))), $REST_SEQ], $VALUES]]
+            simple_rule ["bexpr-eq-Z-Z"]:
+                bexpr_eq [ $X, $Y ]
+            ~> ((ft_binary b_eq ($X) ($Y)))
             where ((isValue ($X)) && (isValue ($Y)))
         );
         decl_rule (
-            rule ["bexpr-le-Z-Z"]:
-                u_cfg [ u_state [ u_cseq [bexpr_le [ $X, $Y ], $REST_SEQ], $VALUES]]
-            ~> u_cfg [u_state [ u_cseq [((ft_binary b_Z_isLe ($X) ($Y))), $REST_SEQ], $VALUES]]
+            simple_rule ["bexpr-le-Z-Z"]:
+                bexpr_le [ $X, $Y ]
+            ~> ((ft_binary b_Z_isLe ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         );
         decl_rule (
-            rule ["bexpr-lt-Z-Z"]:
-                u_cfg [ u_state [ u_cseq [bexpr_lt [ $X, $Y ], $REST_SEQ], $VALUES]]
-            ~> u_cfg [u_state [ u_cseq [((ft_binary b_Z_isLt ($X) ($Y))), $REST_SEQ], $VALUES]]
+            simple_rule ["bexpr-lt-Z-Z"]:
+               bexpr_lt [ $X, $Y ]
+            ~> ((ft_binary b_Z_isLt ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         );
         decl_rule (
-            rule ["bexpr-negb-bool"]:
-                u_cfg [ u_state [ u_cseq [bexpr_negb [$X], $REST_SEQ], $VALUES] ]
-            ~> u_cfg [u_state [ u_cseq [(ft_unary b_bool_neg ($X)), $REST_SEQ], $VALUES]]
+            simple_rule ["bexpr-negb-bool"]:
+               bexpr_negb [$X]
+            ~> (ft_unary b_bool_neg ($X))
             where ((isBool ($X)))
         );
         decl_strict (symbol "stmt_ifthenelse" of arity 3 strict in [0]);
         decl_rule (
-            rule ["stmt-ite-true"]:
-                u_cfg [ u_state [ u_cseq [stmt_ifthenelse [$B, $X, $Y], $REST_SEQ], $VALUES] ]
-            ~> u_cfg [u_state [ u_cseq [$X, $REST_SEQ], $VALUES]]
+            simple_rule ["stmt-ite-true"]:
+               stmt_ifthenelse [$B, $X, $Y]
+            ~> $X
             where ((($B) ==Bool true))
         );
         decl_rule (
-            rule ["stmt-ite-false"]:
-                u_cfg [ u_state [ u_cseq [stmt_ifthenelse [$B, $X, $Y], $REST_SEQ], $VALUES] ]
-            ~> u_cfg [u_state [ u_cseq [$Y, $REST_SEQ], $VALUES]]
+            simple_rule ["stmt-ite-false"]:
+               stmt_ifthenelse [$B, $X, $Y]
+            ~> $Y
             where ((($B) ==Bool false))
         );
         decl_rule (
-            rule ["while-unfold"]:
-            u_cfg [ u_state [ u_cseq [stmt_while [$B, $X], $REST_SEQ], $VALUES] ]
-            ~> u_cfg [u_state [ u_cseq [if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []), $REST_SEQ], $VALUES]]
+            simple_rule ["while-unfold"]:
+            stmt_while [$B, $X]
+            ~> (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
+            always
         )
     ]%limp.
 
