@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "benchexec-nixpkgs": {
+      "locked": {
+        "lastModified": 1701706784,
+        "narHash": "sha256-wxHvnsnKIipwtHvw7BF5FnSOKvnKvA15pYdgzPAVtCw=",
+        "owner": "lorenzleutgeb",
+        "repo": "nixpkgs",
+        "rev": "7718fde0871fd28a0fb2c11f5c0fb9876f67f9aa",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lorenzleutgeb",
+        "ref": "benchexec",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -35,6 +51,7 @@
     },
     "root": {
       "inputs": {
+        "benchexec-nixpkgs": "benchexec-nixpkgs",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }

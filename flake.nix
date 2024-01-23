@@ -4,12 +4,19 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
+    benchexec-nixpkgs.url = "github:lorenzleutgeb/nixpkgs/benchexec";
    };
 
-  outputs = { self, nixpkgs, flake-utils }: (
+  outputs = { self, nixpkgs, flake-utils, benchexec-nixpkgs }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
+
+        #overlay-benchexec = final: prev: {
+        #   benchexec = nixpkgs-unstable.legacyPackages.${prev.system};
+        #};
+
         pkgs = nixpkgs.legacyPackages.${system};
+	be-pkgs = benchexec-nixpkgs.legacyPackages.${system};
 
         minuskaFun = { coqPackages }: (
           coqPackages.callPackage 
@@ -52,7 +59,7 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
-            #benchexec            
+            be-pkgs.benchexec            
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
