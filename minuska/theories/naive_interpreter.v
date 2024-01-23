@@ -1,7 +1,6 @@
 
 From Minuska Require Import
     prelude
-    tactics
     spec_syntax
     spec_semantics
     syntax_properties
