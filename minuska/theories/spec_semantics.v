@@ -804,3 +804,23 @@ Instance
 := {|
     satisfies := fun _ _ _ => False ;
 |}.
+
+Definition flattened_rewrites_in_valuation_to
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (r : RewritingRule)
+    (from to : GroundTerm)
+    : Prop
+:= satisfies ρ from (fr_from r)
+/\ satisfies ρ to (fr_to r)
+/\ satisfies ρ () (fr_scs r)
+.
+
+
+Definition flattened_rewrites_to
+    {Σ : StaticModel}
+    (r : RewritingRule)
+    (from to : GroundTerm)
+    : Prop
+:= exists ρ, flattened_rewrites_in_valuation_to ρ r from to
+.

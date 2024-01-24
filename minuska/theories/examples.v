@@ -7,7 +7,6 @@ From Minuska Require Import
     spec_semantics
     string_variables
     builtins
-    flattened
     naive_interpreter
     default_static_model
     notations
@@ -38,7 +37,7 @@ Module example_1.
         )
     ].
 
-    Definition Γ : FlattenedRewritingTheory*(list string)
+    Definition Γ : RewritingTheory*(list string)
         := Eval vm_compute in (to_theory (process_declarations (Decls))).
 
     Definition interp :=
@@ -148,7 +147,7 @@ Module two_counters.
     Definition s {_br : BasicResolver} := (apply_symbol "s").
     Arguments s {_br} _%rs.
 
-    Definition Γ : FlattenedRewritingTheory*(list string) :=
+    Definition Γ : RewritingTheory*(list string) :=
     Eval vm_compute in (to_theory (process_declarations ([
         decl_rule (
             rule ["my-rule"]:
@@ -226,7 +225,7 @@ Module two_counters_Z.
     Arguments state {_br} _%rs.
 
     Print Expression.
-    Definition Γ : FlattenedRewritingTheory*(list string) :=
+    Definition Γ : RewritingTheory*(list string) :=
     Eval vm_compute in (to_theory (process_declarations ([
         decl_rule (
             rule ["my-rule"]:
@@ -391,7 +390,7 @@ Module arith.
         decl_strict (symbol "div" of arity 2 strict in [0;1])
     ].
 
-    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    Definition Γ : RewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls))).
 
 
@@ -543,7 +542,7 @@ Module fib_native.
         )
     ].
 
-    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    Definition Γ : RewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls))).
 
 
@@ -881,7 +880,7 @@ Module imp.
         )
     ]%limp.
 
-    Definition Γ : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    Definition Γ : RewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls))).
 
     (* Compute (length (Γ.1)). *)

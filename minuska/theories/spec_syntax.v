@@ -159,3 +159,15 @@ Definition RhsPattern {Σ : StaticModel} :=
 
 
 Inductive LeftRight : Set := LR_Left | LR_Right.
+
+Record RewritingRule {Σ : StaticModel}
+:= mkRewritingRule
+{
+    fr_from : OpenTerm ;
+    fr_to : RhsPattern ;
+    fr_scs : list SideCondition ;
+}.
+
+Definition RewritingTheory {Σ : StaticModel}
+    := list RewritingRule
+.

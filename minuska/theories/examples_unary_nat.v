@@ -5,7 +5,6 @@ From Minuska Require Import
     spec_semantics
     string_variables
     builtins
-    flattened
     naive_interpreter
     default_static_model
     notations
@@ -168,7 +167,7 @@ Module unary_nat.
         )
     ].
 
-    Definition Γfact : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    Definition Γfact : RewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
 
     Definition initial_expr (x : AppliedOperatorOr' symbol builtin_value) :=
@@ -278,7 +277,7 @@ Module unary_nat.
         )
     ].
 
-    Definition Γfib : FlattenedRewritingTheory*(list string) := Eval vm_compute in 
+    Definition Γfib : RewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls_nat_fib ++ Decls_nat_add))).
 
     Definition initial_fib (n : nat) := initial_expr (

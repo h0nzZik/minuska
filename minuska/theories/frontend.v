@@ -1,7 +1,6 @@
 From Minuska Require Import
     prelude
     spec_syntax
-    flattened
     notations
     default_static_model
     builtins
@@ -150,7 +149,7 @@ Definition strictness_to_contexts
 Record RuleDeclaration {Σ : StaticModel}
 := mkRuleDeclaration {
     rd_label : label ;
-    rd_rule : FlattenedRewritingRule ;
+    rd_rule : RewritingRule ;
 }.
 
 Arguments mkRuleDeclaration {Σ} rd_label rd_rule.
@@ -193,17 +192,17 @@ Definition argument_sequence
     to_var <$> (argument_name <$> (seq 0 arity))
 .
 
-Definition NamedFlattenedRewritingRule
+Definition NamedRewritingRule
     {Σ : StaticModel}
     : Type
 :=
-    prod label FlattenedRewritingRule
+    prod label RewritingRule
 .
 
 
 Record State {Σ : StaticModel}
 := mkState {
-    st_rules : gmap label FlattenedRewritingRule ;
+    st_rules : gmap label RewritingRule ;
     st_log : string ;
 }.
 
@@ -424,7 +423,7 @@ Section wsm.
     Definition to_theory
         {Σ : StaticModel}
         (s : State)
-        : FlattenedRewritingTheory*(list string)
+        : RewritingTheory*(list string)
     :=
         let l := (map_to_list (st_rules s)) in
         (l.*2,l.*1)

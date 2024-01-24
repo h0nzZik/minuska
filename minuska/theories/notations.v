@@ -4,7 +4,6 @@ From Minuska Require Import
     spec_syntax
     spec_semantics
     string_variables
-    flattened
 .
 
 Declare Scope RuleScope.
@@ -204,7 +203,7 @@ Notation "'[' x , y , .. , z ']'"
 .
 
 Notation "'llrule' l ~> r 'requires' s"
-    := (@mkFlattenedRewritingRule
+    := (@mkRewritingRule
         _
         ((fun (_:TagLHS) => l) mkTagLHS)%rs
         ((fun (_:TagRHS) => r) mkTagRHS)%rs

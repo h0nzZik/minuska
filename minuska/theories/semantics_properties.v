@@ -2,6 +2,7 @@ From Minuska Require Import
     prelude
     spec_syntax
     spec_semantics
+    varsof
     syntax_properties
 .
 

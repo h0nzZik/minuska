@@ -3,7 +3,6 @@ From Minuska Require Import
     spec_syntax
     spec_semantics
     string_variables
-    flattened
 .
 
 #[export]

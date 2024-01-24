@@ -5,7 +5,7 @@ From Minuska Require Import
     spec_semantics
     syntax_properties
     semantics_properties
-    flattened
+    spec_interpreter
     basic_matching
     try_match
 .
@@ -24,6 +24,47 @@ Definition evaluate_sc
 match sc with
 | sc_constraint c =>
     matchesb ρ () c
+end.
+
+
+Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
+    {Σ : StaticModel}
+    {A B : Type}
+    (A_to_OpenTermB : A ->
+        ((AppliedOperatorOr' symbol B))
+    )
+    (x : AppliedOperator' symbol A)
+    : ((AppliedOperator' symbol B))
+:=
+match x with
+| ao_operator a => (ao_operator a)
+| ao_app_operand x' a =>
+    let t1 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
+    match A_to_OpenTermB a with
+    | (aoo_app t2) => (ao_app_ao t1 t2)
+    | (aoo_operand t2) => (ao_app_operand t1 t2)
+    end
+| ao_app_ao x1 x2 =>
+    let t1 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
+    let t2 : (AppliedOperator' symbol B)
+        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
+    ao_app_ao t1 t2
+end.
+
+Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
+    {Σ : StaticModel}
+    {A B : Type}
+    (A_to_OpenTermB : A ->
+        ((AppliedOperatorOr' symbol B))
+    )
+    (x : AppliedOperatorOr' symbol A)
+    : ((AppliedOperatorOr' symbol B))
+:=
+match x with
+| aoo_app app => aoo_app (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
+| aoo_operand operand => A_to_OpenTermB operand
 end.
 
 
@@ -46,7 +87,7 @@ Definition evaluate_rhs_pattern
 Definition rewrite_with
     {Σ : StaticModel}
     
-    (r : FlattenedRewritingRule)
+    (r : RewritingRule)
     (g : GroundTerm)
     : option GroundTerm
 :=
@@ -418,7 +459,7 @@ Definition try_match_lhs_with_sc
     {Σ : StaticModel}
     
     (g : GroundTerm)
-    (r : FlattenedRewritingRule)
+    (r : RewritingRule)
     : option Valuation
 :=
     ρ ← try_match g (fr_from r);
@@ -441,7 +482,7 @@ Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
     
     (g : GroundTerm)
-    (r : FlattenedRewritingRule)
+    (r : RewritingRule)
     (ρ : gmap variable GroundTerm)
     :
     vars_of (fr_scs r) ⊆ vars_of (fr_from r) ->
@@ -616,8 +657,8 @@ Definition thy_lhs_match_one
     {Σ : StaticModel}
     
     (e : GroundTerm)
-    (Γ : list FlattenedRewritingRule)
-    : option (FlattenedRewritingRule * Valuation * nat)%type
+    (Γ : list RewritingRule)
+    : option (RewritingRule * Valuation * nat)%type
 :=
     let froms : list OpenTerm
         := fr_from <$> Γ
@@ -640,11 +681,11 @@ Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
     
     (e : GroundTerm)
-    (Γ : FlattenedRewritingTheory)
-    (wfΓ : FlattenedRewritingTheory_wf Γ)
+    (Γ : RewritingTheory)
+    (wfΓ : RewritingTheory_wf Γ)
     :
     thy_lhs_match_one e Γ = None ->
-    ~ exists (r : FlattenedRewritingRule) (ρ : Valuation),
+    ~ exists (r : RewritingRule) (ρ : Valuation),
         r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
 .
 Proof.
@@ -708,11 +749,11 @@ Proof.
         specialize (Hc ρ').
         ltac1:(ospecialize (Hc _)).
         {
-            unfold FlattenedRewritingTheory_wf in wfΓ.
+            unfold RewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
             rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
-            unfold FlattenedRewritingRule_wf in wfΓ.
+            unfold RewritingRule_wf in wfΓ.
             specialize (wfΓ Hin).
             apply wfΓ.
         }
@@ -723,11 +764,11 @@ Proof.
         {
             erewrite matchesb_insensitive.
             apply Hsat2.
-            unfold FlattenedRewritingTheory_wf in wfΓ.
+            unfold RewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
             rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
-            unfold FlattenedRewritingRule_wf in wfΓ.
+            unfold RewritingRule_wf in wfΓ.
             specialize (wfΓ Hin).
             eapply valuation_restrict_eq_subseteq.
             { apply wfΓ. }
@@ -767,8 +808,8 @@ Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
     
     (e : GroundTerm)
-    (Γ : list FlattenedRewritingRule)
-    (r : FlattenedRewritingRule)
+    (Γ : list RewritingRule)
+    (r : RewritingRule)
     (ρ : Valuation)
     (rule_idx : nat)
     :
@@ -829,11 +870,11 @@ Qed.
 Definition naive_interpreter_ext
     {Σ : StaticModel}
     
-    (Γ : list FlattenedRewritingRule)
+    (Γ : list RewritingRule)
     (e : GroundTerm)
     : option (GroundTerm*nat)
 :=
-    let oρ : option (FlattenedRewritingRule*Valuation*nat)
+    let oρ : option (RewritingRule*Valuation*nat)
         := thy_lhs_match_one e Γ in
     match oρ with
     | None => None
@@ -846,7 +887,7 @@ Definition naive_interpreter_ext
 Definition naive_interpreter
     {Σ : StaticModel}
     
-    (Γ : list FlattenedRewritingRule)
+    (Γ : list RewritingRule)
     (e : GroundTerm)
     : option (GroundTerm)
 :=
@@ -858,8 +899,8 @@ Definition naive_interpreter
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
     
-    (Γ : FlattenedRewritingTheory)
-    (wfΓ : FlattenedRewritingTheory_wf Γ)
+    (Γ : RewritingTheory)
+    (wfΓ : RewritingTheory_wf Γ)
     : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).
 Proof.
     unfold naive_interpreter.
@@ -931,13 +972,13 @@ Proof.
             }
             {
                 ltac1:(exfalso).
-                unfold FlattenedRewritingTheory_wf in wfΓ.
-                unfold FlattenedRewritingRule_wf in wfΓ.
+                unfold RewritingTheory_wf in wfΓ.
+                unfold RewritingRule_wf in wfΓ.
                 rewrite Forall_forall in wfΓ.
                 specialize (wfΓ r).
                 specialize (wfΓ ltac:(assumption)).
                 destruct wfΓ as [wf1 wf2].
-                unfold FlattenedRewritingRule_wf2 in wf2.
+                unfold RewritingRule_wf2 in wf2.
                 specialize (wf2 e ρ).
                 destruct Hsat as [Hsat1 Hsat2].
                 specialize (wf2 Hsat1 Hsat2).

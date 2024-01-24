@@ -2,7 +2,6 @@
 From Minuska Require Import
     prelude
     spec_syntax
-    flattened
     naive_interpreter
 .
 
@@ -43,7 +42,7 @@ end
 
 Definition interp_in_from'
         {Σ : StaticModel}
-        (Γ : (FlattenedRewritingTheory)*(list string))
+        (Γ : (RewritingTheory)*(list string))
         (fuel : nat)
         (from : GroundTerm)
         :  nat * GroundTerm * list (option string)
@@ -71,7 +70,7 @@ Definition concat_list_option_str
 
 Definition interp_in_from
         {Σ : StaticModel}
-        (Γ : (FlattenedRewritingTheory)*(list string))
+        (Γ : (RewritingTheory)*(list string))
         (fuel : nat)
         (from : GroundTerm)
         :  nat * GroundTerm * string
