@@ -6,7 +6,7 @@ Require Import
 .
 From Coq Require Import Bool Arith ZArith List.
 
-From Minuska Require Import examples.
+From MinuskaExamples Require Import examples.
 
 
 Extract Inductive nat => "int"

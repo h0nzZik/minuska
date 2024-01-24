@@ -50,6 +50,24 @@
 
         packages.minuska = self.outputs.packages.${system}.minuska-coq_8_18;
 
+        packages.minuska-examples
+        = coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "minuska-examples";
+          src = ./minuska-examples;
+
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.minuska
+          ];
+          enableParallelBuilding = true;
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+          passthru = { inherit coqPackages; };
+        } ) { } ;
+
+
+
         packages.minuska-bench
         = coqPackages.callPackage 
         ( { coq, stdenv }:
@@ -58,7 +76,7 @@
           src = ./minuska-bench;
 
           propagatedBuildInputs = [
-            self.outputs.packages.${system}.minuska
+            self.outputs.packages.${system}.minuska-examples
             be-pkgs.benchexec            
           ];
           enableParallelBuilding = true;

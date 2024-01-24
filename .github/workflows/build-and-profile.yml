@@ -35,6 +35,9 @@ jobs:
     - name: 'Build with Coq 8.18'
       run: nix build -L '.#minuska-coq_8_18'
 
+    - name: 'Build examples (with Coq 8.18)'
+      run: nix build -L '.#minuska-examples'
+
       
     #- name: Build
     #  run: nix develop '.#minuska' --command ./build-and-profile.sh
