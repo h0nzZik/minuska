@@ -1,3 +1,5 @@
+COQDOCEXTRAFLAGS := --gallina
+
 number_example.bin: src/example_lang_driver.ml all
 	ocamlc -w -20 -w -26 -o $@  ExampleLang.mli ExampleLang.ml $<
 
@@ -10,3 +12,4 @@ fib_native.bin: src/fib_native_driver.ml all
 
 sum_to_n.bin: src/sum_to_n_driver.ml all
 	ocamlfind ocamlc -package zarith -linkpkg -g -w -20 -w -26 -o $@ SumToN.mli SumToN.ml $<
+
