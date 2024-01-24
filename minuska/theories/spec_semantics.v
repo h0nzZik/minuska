@@ -429,34 +429,6 @@ Instance Satisfies_valGroundTerm_OpenTerm
 Proof. 
     apply _.
 Defined.
-Print Satisfies_valGroundTerm_OpenTerm.
-
-Definition valuation_satisfies_match
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (m : Match) : Prop :=
-match m with
-| mkMatch _ x φ =>
-    match ρ !! x with
-    | Some g
-        => satisfies ρ g φ
-    | _ => False
-    end
-end.
-
-#[export]
-Program Instance Satisfies_val_match
-    {Σ : StaticModel}
-    :
-    Satisfies
-        Valuation
-        unit
-        Match
-        variable
-:= {|
-    satisfies := fun a b c => valuation_satisfies_match a c;
-|}.
-
 
 Definition valuation_satisfies_sc
     {Σ : StaticModel}
@@ -464,7 +436,6 @@ Definition valuation_satisfies_sc
     (sc : SideCondition) : Prop :=
 match sc with
 | sc_constraint c => satisfies ρ () c
-| sc_match m => satisfies ρ () m
 end.
 
 #[export]

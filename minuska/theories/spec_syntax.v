@@ -149,14 +149,8 @@ Definition OpenTerm {Σ : StaticModel}
     := AppliedOperatorOr' symbol BuiltinOrVar
 .
 
-Record Match {Σ : StaticModel} := mkMatch {
-  m_variable : variable ;
-  m_term : OpenTerm ;
-}.
-
 Inductive SideCondition {Σ : StaticModel} :=
 | sc_constraint (c : AtomicProposition)
-| sc_match (m : Match)
 .
 
 Definition RhsPattern {Σ : StaticModel} :=

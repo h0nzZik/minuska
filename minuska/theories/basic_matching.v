@@ -199,19 +199,7 @@ Section with_signature.
     Context
         {Σ : StaticModel}
     .
-(*
-    #[global]
-    Instance Vars_of_id
-        {var T : Type}
-        {_TED : EqDecision T}
-        {_varED : EqDecision var}
-        {_varCnt : Countable var}
-        : VarsOf (gmap var T) var
-    := {|
-        vars_of := fun x => dom x
-    |}.
-*)
-  
+
     Fixpoint ApppliedOperator'_matches_AppliedOperator'
         {Operand1 Operand2 var : Type}
         {_varED : EqDecision var}
@@ -1683,102 +1671,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Definition valuation_satisfies_match_bool
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (m : Match) : bool :=
-match m with
-| mkMatch _ x φ =>
-    match ρ !! x with
-    | Some g
-        => matchesb ρ g φ
-    | _ => false
-    end
-end.
-
-#[export]
-Program Instance Matches_val_match
-    {Σ : StaticModel}
-    :
-    Matches unit Match variable
-:= {|
-    matchesb := fun a b c => valuation_satisfies_match_bool a c;
-|}.
-Next Obligation.
-    destruct b; unfold satisfies; simpl.
-    ltac1:(case_match).
-    {
-        apply matchesb_satisfies.
-    }
-    {
-        apply ReflectF.
-        ltac1:(tauto).
-    }
-Qed.
-Next Obligation.
-    destruct b; unfold vars_of; simpl in *.
-    unfold Valuation in *.
-    ltac1:(case_match).
-    {
-        apply matchesb_vars_of in H.
-        apply elem_of_dom_2 in H0.
-        ltac1:(set_solver).
-    }
-    { inversion H. }
-Qed.
-Next Obligation.
-    destruct b; unfold vars_of in *; simpl in *.
-    ltac1:(repeat case_match); simpl in *.
-    {
-        unfold Valuation in *.
-        ltac1:(erewrite (valuation_restrict_eq_impl_lookup v1 v2 {[m_variable]}) in H0).
-        rewrite H0 in H1.
-        inversion H1; subst; clear H1.
-        {
-            apply matchesb_insensitive.
-            eapply valuation_restrict_eq_subseteq>[|apply H].
-            ltac1:(set_solver).
-        }
-        {
-            ltac1:(set_solver).
-        }
-        {
-            eapply valuation_restrict_eq_subseteq>[|apply H].
-            ltac1:(set_solver).
-        }
-    }
-    {
-        unfold Valuation in *.
-        ltac1:(erewrite (valuation_restrict_eq_impl_lookup v1 v2 {[m_variable]}) in H0).
-        rewrite H0 in H1.
-        inversion H1; subst; clear H1.
-        {
-            ltac1:(set_solver).
-        }
-        {
-            eapply valuation_restrict_eq_subseteq>[|apply H].
-            ltac1:(set_solver).
-        }
-    }
-    {
-        unfold Valuation in *.
-        ltac1:(erewrite (valuation_restrict_eq_impl_lookup v1 v2 {[m_variable]}) in H0).
-        rewrite H0 in H1.
-        inversion H1; subst; clear H1.
-        {
-            ltac1:(set_solver).
-        }
-        {
-            eapply valuation_restrict_eq_subseteq>[|apply H].
-            ltac1:(set_solver).
-        }
-    }
-    {
-        reflexivity.
-    }
-Qed.
-Fail Next Obligation.
-
 
 Definition valuation_satisfies_sc_bool
     {Σ : StaticModel}
@@ -1787,7 +1679,6 @@ Definition valuation_satisfies_sc_bool
     (sc : SideCondition) : bool :=
 match sc with
 | sc_constraint c => matchesb ρ () c
-| sc_match m => matchesb ρ () m
 end.
 
 #[export]
@@ -1805,10 +1696,6 @@ Next Obligation.
         unfold satisfies; simpl.
         apply matchesb_satisfies.
     }
-    {
-        unfold satisfies; simpl.
-        apply matchesb_satisfies.
-    }
 Qed.
 Next Obligation.
     destruct b; unfold vars_of; simpl in *.
@@ -1816,17 +1703,9 @@ Next Obligation.
         apply matchesb_vars_of in H.
         exact H.
     }
-    {
-        apply matchesb_vars_of in H.
-        exact H.
-    }
 Qed.
 Next Obligation.
     destruct b; unfold vars_of in H; simpl in *.
-    {
-        apply matchesb_insensitive.
-        exact H.
-    }
     {
         apply matchesb_insensitive.
         exact H.

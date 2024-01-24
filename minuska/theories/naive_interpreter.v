@@ -16,19 +16,6 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 Require Import Coq.Logic.FunctionalExtensionality.
 
-Definition evaluate_match
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (m : Match)
-    : bool :=
-match m with
-| mkMatch _ x φ =>
-    match ρ !! x with
-    | None => false
-    | Some g => matchesb ρ g φ
-    end
-end.
-
 Definition evaluate_sc
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -37,8 +24,6 @@ Definition evaluate_sc
 match sc with
 | sc_constraint c =>
     matchesb ρ () c
-| sc_match m =>
-    evaluate_match ρ m
 end.
 
 

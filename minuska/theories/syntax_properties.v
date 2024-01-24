@@ -96,14 +96,6 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  Match_eqdec {Σ : StaticModel}
-        : EqDecision Match
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
     Instance  SideCondition_eqdec {Σ : StaticModel}
         : EqDecision SideCondition
     .
@@ -395,29 +387,12 @@ Instance VarsOf_OpenTerm
     vars_of := vars_of_OpenTerm ; 
 |}.
 
-Definition vars_of_Match
-    {Σ : StaticModel}
-    (m : Match)
-    : gset variable :=
-match m with
-| mkMatch _ x φ => {[x]} ∪ vars_of φ
-end.
-
-#[export]
-Instance VarsOf_Match
-    {Σ : StaticModel}
-    : VarsOf Match variable
-:= {|
-    vars_of := vars_of_Match ; 
-|}.
-
 Definition vars_of_SideCondition
     {Σ : StaticModel}
     (c : SideCondition)
     : gset variable :=
 match c with
 | sc_constraint c' => vars_of c'
-| sc_match m => vars_of m
 end.
 
 #[export]

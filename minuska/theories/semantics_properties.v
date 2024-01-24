@@ -419,6 +419,7 @@ Proof.
     }
 Qed.
 
+#[export]
 Instance SatisfiesProperties_AppliedOperator'_symbol_builtin_BuiltinOrVar
     {Σ : StaticModel}
     :
@@ -570,40 +571,6 @@ Instance SatisfiesProperties_valGroundTerm_OpenTerm
 Proof.
     apply _.
 Defined.
-
-#[export]
-Instance SatisfiesProperties_val_match
-    {Σ : StaticModel}
-    :
-    SatisfiesProperties
-        Valuation
-        unit
-        Match
-        variable
-.
-Proof.
-    constructor. intros. unfold satisfies in *; simpl.
-    destruct b. simpl in *.
-    unfold Valuation in *.
-    ltac1:(repeat case_match).
-    {
-        eapply lookup_weaken in H1>[|apply H].
-        ltac1:(simplify_eq/=).
-        eapply satisfies_ext.
-        { apply H. }
-        { assumption. }
-    }
-    {
-        eapply lookup_weaken in H1>[|apply H].
-        ltac1:(simplify_eq/=).
-    }
-    {
-        ltac1:(contradiction).
-    }
-    {
-        ltac1:(contradiction).
-    }
-Qed.
 
 
 #[export]
