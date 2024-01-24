@@ -3,6 +3,8 @@ From Minuska Require Import
     spec_syntax
 .
 
+
+
 Definition Valuation {Σ : StaticModel}
         := gmap variable GroundTerm
     .
