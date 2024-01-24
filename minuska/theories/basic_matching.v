@@ -4,6 +4,7 @@ From Minuska Require Import
     spec_syntax
     spec_semantics
     syntax_properties
+    semantics_properties
 .
 
 Require Import Logic.PropExtensionality.
@@ -176,6 +177,7 @@ Lemma matchesb_ext
     {_varCnt : Countable var}
     {_VA : VarsOf B var}
     {_SAB : Satisfies (gmap var GroundTerm) A B var}
+    {_SPAB : SatisfiesProperties (gmap var GroundTerm) A B var}
     {_MAB : Matches A B var}
     :
     forall (v1 v2 : (gmap var GroundTerm)),

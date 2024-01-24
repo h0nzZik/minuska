@@ -3,6 +3,7 @@ From Minuska Require Import
     spec_syntax
     spec_semantics
     syntax_properties
+    semantics_properties
     basic_matching
 .
 
@@ -396,12 +397,15 @@ Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_S0P : SatisfiesProperties Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_SP1 : SatisfiesProperties Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_S2P : SatisfiesProperties Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (ρ ρ' : Valuation)
@@ -452,11 +456,13 @@ Proof.
 
         assert (IH := IHa _ _ _ Hsub1 H21).
         unfold matchesb; simpl.
-        apply matchesb_ext with (v2 := ρ') in IH>[|assumption].
+        unfold Valuation in *.
+        apply matchesb_ext with (v2 := ρ') in IH
+            >[|apply _| assumption].
         unfold matchesb in IH; simpl in IH.
         rewrite IH; simpl.
-        eapply matchesb_ext in H221>[|apply Hsub2].
-        eapply matchesb_ext in H221>[|apply HH].
+        eapply matchesb_ext in H221>[|apply _| apply Hsub2].
+        eapply matchesb_ext in H221>[|apply _| apply HH].
         assumption.
     }
     {
@@ -467,11 +473,11 @@ Proof.
         destruct H22 as [x0 [Hx01 Hx02]].
         apply merge_valuations_correct in Hx02.
         apply try_match_correct in Hx01.
-        eapply matchesb_ext in Hx01>[|apply Hx02].
-        eapply matchesb_ext in Hx01>[|apply HH].
+        eapply matchesb_ext in Hx01>[|apply _| apply Hx02].
+        eapply matchesb_ext in Hx01>[|apply _| apply HH].
         rewrite Hx01.
         eapply IHa in H21>[|apply Hx02].
-        eapply matchesb_ext in H21>[|apply HH].
+        eapply matchesb_ext in H21>[|apply _| apply HH].
         unfold matchesb in H21; simpl in H21.
         rewrite H21.
         reflexivity.
@@ -489,13 +495,13 @@ Proof.
         unfold matchesb; simpl.
 
         assert (IH1 := IHa1 _ _ _ Hxρ H21).
-        apply matchesb_ext with (v2 := ρ') in IH1>[|assumption].
+        apply matchesb_ext with (v2 := ρ') in IH1>[|apply _| assumption].
         unfold matchesb in IH1; simpl in IH1.
         rewrite IH1; simpl.
 
         apply try_match_correct in H221.
-        eapply matchesb_ext in H221>[|apply Hx0ρ].
-        eapply matchesb_ext in H221>[|apply HH].
+        eapply matchesb_ext in H221>[|apply _| apply Hx0ρ].
+        eapply matchesb_ext in H221>[|apply _| apply HH].
         exact H221.
     }
     {
@@ -511,8 +517,8 @@ Proof.
         unfold matchesb; simpl.
         eapply IHa1 in H21>[|apply Hsub1].
         eapply IHa2 in H221>[|apply Hsub2].
-        eapply matchesb_ext in H21>[|apply HH].
-        eapply matchesb_ext in H221>[|apply HH].
+        eapply matchesb_ext in H21>[|apply _| apply HH].
+        eapply matchesb_ext in H221>[|apply _| apply HH].
         unfold matchesb in H21,H221. simpl in H21,H221.
         rewrite H21. rewrite H221.
         reflexivity.
@@ -974,12 +980,15 @@ Program Instance TryMatch_AppliedOperator'
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_SP0 : SatisfiesProperties Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_SP1 : SatisfiesProperties Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_SP2 : SatisfiesProperties Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
@@ -1119,12 +1128,15 @@ Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
     {_V1 : VarsOf Operand1 variable}
     {_V2 : VarsOf Operand2 variable}
     {_S1 : Satisfies Valuation Operand1 Operand2 variable}
+    {_SP1 : SatisfiesProperties Valuation Operand1 Operand2 variable}
     {_M1 : Matches Operand1 Operand2 variable}
     {_TM1 : TryMatch Operand1 Operand2}
     {_S2 : Satisfies Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
+    {_SP2 : SatisfiesProperties Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
     {_M2 : Matches Operand1 (AppliedOperator' symbol Operand2) variable}
     {_TM2 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S3 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
+    {_SP3 : SatisfiesProperties Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
     {_M3 : Matches (AppliedOperator' symbol Operand1) Operand2 variable}
     {_TM3 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
     (x : AppliedOperatorOr' symbol Operand1)
@@ -1149,12 +1161,15 @@ Program Instance TryMatch_AppliedOperatorOr'
     {_VOperand1 : VarsOf Operand1 variable}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
+    {_SP0 : SatisfiesProperties Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
     {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
+    {_SP1 : SatisfiesProperties Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
     {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
     {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
+    {_SP2 : SatisfiesProperties Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
