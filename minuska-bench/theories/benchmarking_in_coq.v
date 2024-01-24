@@ -1,12 +1,11 @@
-From Minuska Require Import
-    prelude
+From Minuska Require Import prelude.
+From MinuskaExamples Require Import
     examples
     examples_unary_nat
 .
 
 Require Import ZArith.
 
-Module bench_fib_native.
 
     Time (* Redirect "blackhole.out" *)
     Compute (("bench: native-fib(1)"), ((fib_native.fib_interp_from_toint 1000 1%Z).1.2)).
@@ -75,8 +74,6 @@ Module bench_fib_native.
     Time (* Redirect "blackhole.out" *)
     Compute (("bench: native-fib(106)"), ((fib_native.fib_interp_from_toint 1000 106%Z).1.2)).
 
-
-End bench_fib_native.
 
 Time Compute ("bench: imp-count-to(1)", (imp.interp_program_count_to 1000 1)).
 Time Compute ("bench: imp-count-to(2)", (imp.interp_program_count_to 1000 2)).

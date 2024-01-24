@@ -24,7 +24,7 @@ for i,g in enumerate(groups):
     m1 = p1.match(g[0])
     #print(m1)
     if not m1:
-        #print("Not found, skipping")
+        print("Not found, skipping")
         continue
     content = m1.group(1)
     #print(content)

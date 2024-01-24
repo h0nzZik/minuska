@@ -76,7 +76,10 @@
           src = ./minuska-bench;
 
           propagatedBuildInputs = [
+            pkgs.time
+            pkgs.python312
             self.outputs.packages.${system}.minuska-examples
+            #self.outputs.packages.${system}.minuska-examples.coqPackages.coq
             be-pkgs.benchexec            
           ];
           enableParallelBuilding = true;
