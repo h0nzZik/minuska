@@ -497,7 +497,7 @@ Proof.
 Qed.
 
 
-
+#[export]
 Instance SatisfiesProperties_aoxy_aoxz
     {Σ : StaticModel}
     {V X Y Z var : Type}
@@ -588,6 +588,7 @@ Proof.
     destruct b; simpl in *; eapply satisfies_ext>[apply H|]; assumption.
 Qed.
 
+#[export]
 Instance SatisfiesProperties_GroundTerm_BuiltinOrVar
     {Σ : StaticModel}
     :
@@ -699,6 +700,7 @@ Proof.
     { assumption. }
 Qed.
 
+#[export]
 Instance SatisfiesProperties_builtin_expr
     {Σ : StaticModel}:
     SatisfiesProperties
