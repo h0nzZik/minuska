@@ -973,15 +973,18 @@ Module imp.
         eexists. eexists. reflexivity.
     Qed.
 
+    Notation "'v' '(' s ')'" := (var [builtin_string s]).
+
+    (* Definition n {_br : BasicResolver} := (ground(v("n"))). *)
 
     Definition program_count_to (n : Z) := (ground (
-        (var [builtin_string "n"]) <:= ((aoo_operand (bv_Z n))) ; then
-        (var [builtin_string "sum"]) <:= ((aoo_operand (bv_Z 0))) ; then
-        (while(((aoo_operand (bv_Z 1)) <= (var [builtin_string "n"]))) do (
-            (var [builtin_string "sum"]) <:= ((var [builtin_string "sum"]) + ((var [builtin_string "n"]))); then
-            (var [builtin_string "n"]) <:= ((var [builtin_string "n"]) + (aoo_operand (bv_Z (-1))))
+        (v("n")) <:= ((aoo_operand (bv_Z n))) ; then
+        (v("sum")) <:= ((aoo_operand (bv_Z 0))) ; then
+        (while(((aoo_operand (bv_Z 1)) <= (v("n")))) do (
+            (v("sum")) <:= ((v("sum")) + ((v("n")))); then
+            (v("n")) <:= ((v("n")) + (aoo_operand (bv_Z (-1))))
         ) done
-        );then (var [builtin_string "sum"])
+        );then (v("sum"))
         )%limp).
 
     Lemma test_imp_interp_program_count_to_3:

@@ -46,6 +46,8 @@
 (("bench: unary-fib(11)"),((unary_nat.interp_fib 5000 11).1))
 (("bench: two-counters(1)"),(two_counters_Z.interp_loop_number 1000 1 0))
 (("bench: two-counters(10)"),(two_counters_Z.interp_loop_number 1000 10 0))
+(("bench: two-counters(20)"),(two_counters_Z.interp_loop_number 1000 20 0))
+(("bench: two-counters(50)"),(two_counters_Z.interp_loop_number 1000 50 0))
 (("bench: two-counters(100)"),(two_counters_Z.interp_loop_number 10000 100 0))
 (("bench: two-counters(1000)"),(two_counters_Z.interp_loop_number 100000 1000 0))
 (("bench: two-counters(10000)"),(two_counters_Z.interp_loop_number 1000000 10000 0))

@@ -117,6 +117,17 @@
                 packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide];
               };
 
+          minuska-examples =
+            let
+              minuska-examples = self.outputs.packages.${system}.minuska-examples;
+            in
+              pkgs.mkShell {
+                inputsFrom = [minuska-examples];
+                packages = [
+                  minuska-examples.coqPackages.coq-lsp
+                ];
+              };
+
           minuska-bench =
             let
               minuska-bench = self.outputs.packages.${system}.minuska-bench;

@@ -3,14 +3,19 @@
 import sys
 import itertools
 import re
-#import platform
 
-#if not (platform.python_version_tuple() >= (3,12,0)):
-#    print("Python version too low: {}".format(platform.python_version_tuple()))
+# https://docs.python.org/3/library/itertools.html#itertools.batched
+def batched(iterable, n):
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(itertools.islice(it, n)):
+        yield batch
 
 lines = list(sys.stdin)
 
-groups = list(itertools.batched(lines, 3))
+groups = list(batched(lines, 3))
 
 #print(f'groups: {groups}')
 p1 = re.compile('[^"]*"([^"]*)"[^"]*')
