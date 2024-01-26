@@ -17,6 +17,15 @@ Definition RewritingRule_wf1
     (vs1 ⊆ vs2)
 .
 
+Definition RewritingRule_wf2'
+    {Σ : StaticModel}
+    (r : RewritingRule)
+    : Prop
+:= 
+    (vars_of (fr_to r) ⊆ vars_of (fr_from r))
+.
+
+
 (*
     This is known as 'weakly well-defined rule'
     in the literature.

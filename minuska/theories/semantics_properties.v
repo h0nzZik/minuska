@@ -233,7 +233,7 @@ Lemma Expression_evalute_total_iff
     :
     (∃ e:GroundTerm, Expression_evaluate ρ t = Some e)
     <->
-    ( vars_of_Expression t ⊆ dom ρ )
+    ( vars_of t ⊆ vars_of ρ )
 .
 Proof.
     induction t; cbn.
@@ -252,6 +252,7 @@ Proof.
         {
             rewrite elem_of_subseteq.
             intros x0 Hx0.
+            unfold vars_of in Hx0; simpl in Hx0.
             rewrite elem_of_singleton in Hx0.
             subst x0.
             destruct H as [e H].
@@ -261,6 +262,7 @@ Proof.
         {
             rewrite elem_of_subseteq in H.
             specialize (H x).
+            unfold vars_of in H; simpl in H.
             rewrite elem_of_singleton in H.
             specialize (H erefl).
             ltac1:(rewrite elem_of_dom in H).
@@ -299,6 +301,7 @@ Proof.
         }
     }
     {
+        unfold vars_of; simpl.
         rewrite union_subseteq.
         ltac1:(rewrite <- IHt1).
         ltac1:(rewrite <- IHt2).
@@ -318,6 +321,7 @@ Proof.
         }
     }
     {
+        unfold vars_of; simpl.
         rewrite union_subseteq.
         rewrite union_subseteq.
         ltac1:(rewrite <- IHt1).

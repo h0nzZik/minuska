@@ -1013,3 +1013,86 @@ Proof.
     }
 Qed.
 
+Lemma wf2'_impl_wf2
+    {Σ : StaticModel}
+    (r : RewritingRule)
+    :
+    RewritingRule_wf2' r -> 
+    RewritingRule_wf2 r
+.
+Proof.
+    intros H.
+    unfold RewritingRule_wf2' in H.
+    unfold RewritingRule_wf2.
+    intros g ρ Hfrom Hscs.
+    clear Hscs.
+    
+    ltac1:(unshelve(eapply satisfies_implies_matchesb in Hfrom)).
+    {
+        apply _.
+    }
+    {
+        apply _.
+    }
+    apply matchesb_vars_of in Hfrom.
+    assert (Hvtρ : vars_of (fr_to r) ⊆ vars_of ρ).
+    {
+        eapply transitivity>[apply H|]. apply Hfrom.
+    }
+    clear H Hfrom.
+    remember (fr_to r) as to.
+    destruct to as [ao|e].
+    {
+        ltac1:(cut (exists (g'' : AppliedOperator' symbol builtin_value), satisfies ρ g'' ao)).
+        {
+            intros [g'' Hg''].
+            eexists. econstructor. apply Hg''.
+        }
+        clear Heqto.
+        unfold vars_of in Hvtρ at 1; simpl in Hvtρ.
+        induction ao; unfold vars_of in Hvtρ at 1; simpl in Hvtρ.
+        {
+            eexists. econstructor.
+        }
+        {
+            specialize (IHao ltac:(set_solver)).
+            destruct IHao as [g'' Hg''].
+            assert (HH: vars_of b ⊆ vars_of ρ) by ltac1:(set_solver).
+            apply Expression_evalute_total_iff in HH.
+            destruct HH as [g''' Hg'''].
+            destruct g'''.
+            {
+                exists (ao_app_ao g'' ao0).
+                constructor; assumption.
+            }
+            {
+                eexists. econstructor. apply Hg''.
+                unfold satisfies; simpl.
+                rewrite Hg'''. reflexivity.
+            }
+        }
+        {
+            specialize (IHao1 ltac:(set_solver)).
+            specialize (IHao2 ltac:(set_solver)).
+            destruct IHao1 as [g1 Hg1].
+            destruct IHao2 as [g2 Hg2].
+            eexists. econstructor; ltac1:(eassumption).
+        }
+    }
+    {
+        unfold vars_of in Hvtρ at 1. simpl in Hvtρ.
+        apply Expression_evalute_total_iff in Hvtρ.
+        destruct Hvtρ as [g' Hg'].
+        exists g'.
+        ltac1:(unshelve(eapply matchesb_implies_satisfies)).
+        unfold matchesb; simpl.
+        unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+        destruct g'; unfold matchesb; simpl.
+        {
+            rewrite Hg'. apply bool_decide_eq_true. reflexivity.
+        }
+        {
+            rewrite Hg'. apply bool_decide_eq_true. reflexivity.
+        }
+    }
+Qed.
