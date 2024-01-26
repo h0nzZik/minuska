@@ -86,10 +86,9 @@ Definition FlatInterpreter
     := GroundTerm -> option GroundTerm
 .
 
-Definition FlatInterpreter_sound
+Definition FlatInterpreter_sound'
     {Σ : StaticModel}
     (Γ : list RewritingRule)
-    (wfΓ : RewritingTheory_wf Γ)
     (interpreter : FlatInterpreter Γ)
     : Prop
     := (forall e,
@@ -97,4 +96,15 @@ Definition FlatInterpreter_sound
     /\ (forall e,
         not_stuck_flat Γ e ->
         exists e', interpreter e = Some e')
+.
+
+
+Definition FlatInterpreter_sound
+    {Σ : StaticModel}
+    (Γ : list RewritingRule)
+    (interpreter : FlatInterpreter Γ)
+    : Prop
+:= 
+    RewritingTheory_wf Γ ->
+    FlatInterpreter_sound' Γ interpreter
 .

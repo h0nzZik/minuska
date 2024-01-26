@@ -898,11 +898,11 @@ Definition naive_interpreter
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
-    
     (Γ : RewritingTheory)
-    (wfΓ : RewritingTheory_wf Γ)
-    : FlatInterpreter_sound Γ wfΓ (naive_interpreter Γ).
+    : FlatInterpreter_sound Γ (naive_interpreter Γ).
 Proof.
+    unfold FlatInterpreter_sound.
+    intros wfΓ.
     unfold naive_interpreter.
     unfold FlatInterpreter_sound.
     unfold flat_stuck,not_stuck_flat.
