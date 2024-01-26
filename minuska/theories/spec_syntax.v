@@ -4,7 +4,7 @@ From Minuska Require Import
     prelude
 .
 
-Polymorphic Cumulative
+#[universes(polymorphic=yes, cumulative=yes)]
 Inductive AppliedOperator' (operator : Type) (operand : Type)
 : Type
 :=
@@ -18,7 +18,7 @@ Inductive AppliedOperator' (operator : Type) (operand : Type)
 .
 
 
-Polymorphic Cumulative
+#[universes(polymorphic=yes, cumulative=yes)]
 Inductive AppliedOperatorOr'
     (Operator : Type)
     (Operand : Type)
