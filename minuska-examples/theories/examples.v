@@ -7,6 +7,7 @@ From Minuska Require Import
     spec_semantics
     string_variables
     builtins
+    spec_interpreter
     naive_interpreter
     default_static_model
     notations
@@ -891,6 +892,26 @@ Module imp.
             u_cfg [ u_state [ u_cseq [x, u_emptyCseq [] ] , (builtin_nullary_function_interp b_map_empty) ] ]
         ))
     .
+
+    Lemma interp_sound:
+        FlatInterpreter_sound'
+        (Γ.1)
+        (naive_interpreter Γ.1) 
+    .
+    Proof.
+        apply naive_interpreter_sound.
+        unfold RewritingTheory_wf.
+        Search forallb.
+        rewrite Forall_forall.
+        intros r Hr.
+        unfold RewritingRule_wf.
+        unfold RewritingRule_wf1.
+        unfold RewritingRule_wf2.
+        split.
+        {
+
+        }
+    Qed.
 
     Definition imp_interp_from (fuel : nat) (from : GroundTerm)
         := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))

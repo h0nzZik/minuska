@@ -15,6 +15,7 @@ theories/builtins.v
 theories/basic_matching.v
 theories/try_match.v
 theories/naive_interpreter.v
+theories/interpreter_results.v
 theories/default_static_model.v
 theories/notations.v
 theories/frontend.v
