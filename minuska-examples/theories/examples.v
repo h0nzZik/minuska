@@ -9,6 +9,7 @@ From Minuska Require Import
     builtins
     spec_interpreter
     naive_interpreter
+    interpreter_results
     default_static_model
     notations
     frontend
@@ -900,17 +901,13 @@ Module imp.
     .
     Proof.
         apply naive_interpreter_sound.
-        unfold RewritingTheory_wf.
-        Search forallb.
-        rewrite Forall_forall.
-        intros r Hr.
-        unfold RewritingRule_wf.
-        unfold RewritingRule_wf1.
-        unfold RewritingRule_wf2.
-        split.
+        ltac1:(cut(is_Some(RewritingTheory_wf_heuristics (Γ.1)))).
         {
-
+            intros H.
+            destruct H as [x H].
+            exact x.
         }
+        ltac1:(compute_done).
     Qed.
 
     Definition imp_interp_from (fuel : nat) (from : GroundTerm)
