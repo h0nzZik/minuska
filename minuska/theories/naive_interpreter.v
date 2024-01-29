@@ -887,14 +887,13 @@ Definition naive_interpreter_ext
 Definition naive_interpreter
     {Σ : StaticModel}
     
-    (Γ : list RewritingRule)
+    (Γ : RewritingTheory)
     (e : GroundTerm)
     : option (GroundTerm)
 :=
     ei ← naive_interpreter_ext Γ e;
     Some ei.1
 .
-
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
@@ -907,6 +906,40 @@ Proof.
     unfold FlatInterpreter_sound.
     unfold flat_stuck,not_stuck_flat.
     unfold naive_interpreter_ext.
+    split.
+    {
+        intros e1 e2.
+        rewrite bind_Some.
+        intros [x [H1x H2x]].
+        destruct (thy_lhs_match_one e1 Γ) eqn:Hmatch.
+        {
+            destruct p as [[r ρ] idx].
+            apply thy_lhs_match_one_Some in Hmatch.
+            inversion H2x; subst; clear H2x.
+            rewrite bind_Some in H1x.
+            destruct H1x as [y [H1y H2y]].
+            inversion H2y; subst; clear H2y.
+            simpl.
+            unfold rewriting_relation_flat.
+            exists r.
+            destruct Hmatch as [Hin [Hm1 Hm2]].
+            split>[apply Hin|].
+            unfold flattened_rewrites_to.
+            exists ρ.
+            unfold flattened_rewrites_in_valuation_to.
+            split.
+            {
+                exact Hm1.
+            }
+            split>[|exact Hm2].
+            apply evaluate_rhs_pattern_correct in H1y.
+            apply matchesb_implies_satisfies in H1y.
+            exact H1y.
+        }
+        {
+            inversion H1x.
+        }
+    }
     split.
     {
         intros e Hstuck.

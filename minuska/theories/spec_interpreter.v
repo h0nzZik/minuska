@@ -91,7 +91,13 @@ Definition FlatInterpreter_sound'
     (Γ : list RewritingRule)
     (interpreter : FlatInterpreter Γ)
     : Prop
-    := (forall e,
+    :=  (
+        forall e1 e2,
+            interpreter e1 = Some e2 ->
+            rewriting_relation_flat Γ e1 e2
+    )
+    /\
+    (forall e,
         flat_stuck Γ e -> interpreter e = None)
     /\ (forall e,
         not_stuck_flat Γ e ->
