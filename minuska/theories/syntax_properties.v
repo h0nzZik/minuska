@@ -89,8 +89,8 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance  OpenTerm_eqdec {Σ : StaticModel}
-        : EqDecision OpenTerm
+    Instance  SymbolicTerm_eqdec {Σ : StaticModel}
+        : EqDecision SymbolicTerm
     .
     Proof.
         ltac1:(solve_decision).

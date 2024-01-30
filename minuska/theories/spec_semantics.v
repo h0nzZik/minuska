@@ -417,13 +417,13 @@ Satisfies_aoosb_aoosbf
 Proof. apply _. Defined.
 
 #[export]
-Instance Satisfies_valGroundTerm_OpenTerm
+Instance Satisfies_valGroundTerm_SymbolicTerm
     {Σ : StaticModel}
     :
     Satisfies
         Valuation
         GroundTerm
-        OpenTerm
+        SymbolicTerm
         variable
 .
 Proof. 
@@ -477,12 +477,12 @@ Instance Satisfies_GroundTerm_BuiltinOrVar
 |}.
 
 
-Definition builtin_value_satisfies_OpenTerm
+Definition builtin_value_satisfies_SymbolicTerm
     {Σ : StaticModel}
     :
     Valuation ->
     builtin_value ->
-    OpenTerm ->
+    SymbolicTerm ->
     Prop := fun ρ b t =>
 match t with
 | term_preterm _ => False
@@ -491,16 +491,16 @@ match t with
 end.
 
 #[export]
-Instance Satisfies_builtin_value_OpenTerm
+Instance Satisfies_builtin_value_SymbolicTerm
     {Σ : StaticModel}
     :
     Satisfies
         Valuation
         builtin_value
-        OpenTerm
+        SymbolicTerm
         variable
 := {|
-    satisfies :=  builtin_value_satisfies_OpenTerm ;
+    satisfies :=  builtin_value_satisfies_SymbolicTerm ;
 |}.
 
 Definition PreTerm'_symbol_builtin_value_satisfies_BOV
@@ -530,7 +530,7 @@ Instance Satisfies__PreTerm'_symbol_builtin_value__BOV
     satisfies := PreTerm'_symbol_builtin_value_satisfies_BOV;
 |}.
 
-Definition PreTerm'_symbol_A_satisfies_OpenTermB'
+Definition PreTerm'_symbol_A_satisfies_SymbolicTermB'
     {Σ : StaticModel}
     (V A B var : Type)
     {_varED : EqDecision var}
@@ -569,7 +569,7 @@ Instance Satisfies__lift_builtin_to_aosb
         var
 := {|
     satisfies :=
-        PreTerm'_symbol_A_satisfies_OpenTermB' V A B var;
+        PreTerm'_symbol_A_satisfies_SymbolicTermB' V A B var;
 |}.
 
 #[export]
@@ -591,7 +591,7 @@ Instance Satisfies__lift_builtin_to_aosbo
 .
 Proof. apply _. Defined.
 
-Definition PreTerm'_symbol_builtin_satisfies_OpenTerm
+Definition PreTerm'_symbol_builtin_satisfies_SymbolicTerm
     {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
@@ -604,14 +604,14 @@ Definition PreTerm'_symbol_builtin_satisfies_OpenTerm
     :
     V ->
     ((PreTerm' symbol builtin_value)) ->
-    OpenTerm ->
+    SymbolicTerm ->
     Prop
 :=  fun ρ a =>
     satisfies ρ (term_preterm a)
 .
 
 #[export]
-Instance Satisfies__PreTerm'_symbol_builtin__OpenTerm
+Instance Satisfies__PreTerm'_symbol_builtin__SymbolicTerm
     {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
@@ -624,11 +624,11 @@ Instance Satisfies__PreTerm'_symbol_builtin__OpenTerm
     :
     Satisfies V
         ((PreTerm' symbol builtin_value))
-        OpenTerm
+        SymbolicTerm
         var
 := {|
     satisfies :=
-        PreTerm'_symbol_builtin_satisfies_OpenTerm ;
+        PreTerm'_symbol_builtin_satisfies_SymbolicTerm ;
 |}.
 
 
@@ -745,9 +745,9 @@ Instance Satisfies_Valuation_LR_SideCondition
         ;
 |}.
 
-Definition GroundTerm_satisfies_OpenTerm
+Definition GroundTerm_satisfies_SymbolicTerm
     {Σ : StaticModel}
-    : GroundTerm -> OpenTerm -> Prop :=
+    : GroundTerm -> SymbolicTerm -> Prop :=
     fun g φ => ∃ (ρ : Valuation), satisfies ρ g φ
 .
 
@@ -762,16 +762,16 @@ Instance Subseteq_unit {Σ : StaticModel}: SubsetEq unit :=
 .
 
 #[export]
-Instance Satisfies__GroundTerm__OpenTerm_inall
+Instance Satisfies__GroundTerm__SymbolicTerm_inall
     {Σ : StaticModel}
     :
     Satisfies
         unit
         GroundTerm
-        OpenTerm
+        SymbolicTerm
         variable
 := {|
-    satisfies := fun _ => GroundTerm_satisfies_OpenTerm ;
+    satisfies := fun _ => GroundTerm_satisfies_SymbolicTerm ;
 |}.
 
 #[export]

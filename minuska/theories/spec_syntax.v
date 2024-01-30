@@ -139,7 +139,7 @@ Inductive BuiltinOrVar {Σ : StaticModel} :=
 | bov_variable (x : variable)
 .
 
-Definition OpenTerm {Σ : StaticModel}
+Definition SymbolicTerm {Σ : StaticModel}
     := Term' symbol BuiltinOrVar
 .
 
@@ -157,7 +157,7 @@ Inductive LeftRight : Set := LR_Left | LR_Right.
 Record RewritingRule {Σ : StaticModel}
 := mkRewritingRule
 {
-    fr_from : OpenTerm ;
+    fr_from : SymbolicTerm ;
     fr_to : RhsPattern ;
     fr_scs : list SideCondition ;
 }.

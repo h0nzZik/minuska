@@ -564,13 +564,13 @@ Proof.
 Defined.
 
 #[export]
-Instance SatisfiesProperties_valGroundTerm_OpenTerm
+Instance SatisfiesProperties_valGroundTerm_SymbolicTerm
     {Σ : StaticModel}
     :
     SatisfiesProperties
         Valuation
         GroundTerm
-        OpenTerm
+        SymbolicTerm
         variable
 .
 Proof.
@@ -607,13 +607,13 @@ Proof.
 Qed.
 
 #[export]
-Instance SatisfiesProperties_builtin_value_OpenTerm
+Instance SatisfiesProperties_builtin_value_SymbolicTerm
     {Σ : StaticModel}
     :
     SatisfiesProperties
         Valuation
         builtin_value
-        OpenTerm
+        SymbolicTerm
         variable
 .
 Proof.
@@ -672,14 +672,14 @@ Instance SatisfiesProperties__lift_builtin_to_aosb
 .
 Proof.
     constructor. unfold satisfies; simpl. intros.
-    unfold PreTerm'_symbol_A_satisfies_OpenTermB' in *.
+    unfold PreTerm'_symbol_A_satisfies_SymbolicTermB' in *.
     eapply satisfies_ext.
     { apply H. }
     { assumption. }
 Qed.    
 
 #[export]
-Instance SatisfiesProperties__PreTerm'_symbol_builtin__OpenTerm
+Instance SatisfiesProperties__PreTerm'_symbol_builtin__SymbolicTerm
     {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
@@ -695,7 +695,7 @@ Instance SatisfiesProperties__PreTerm'_symbol_builtin__OpenTerm
     :
     SatisfiesProperties V
         ((PreTerm' symbol builtin_value))
-        OpenTerm
+        SymbolicTerm
         var
 .
 Proof.
@@ -792,13 +792,13 @@ Qed.
 
 
 #[export]
-Instance SatisfiesProperties__GroundTerm__OpenTerm_inall
+Instance SatisfiesProperties__GroundTerm__SymbolicTerm_inall
     {Σ : StaticModel}
     :
     SatisfiesProperties
         unit
         GroundTerm
-        OpenTerm
+        SymbolicTerm
         variable
 .
 Proof.

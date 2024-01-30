@@ -27,10 +27,10 @@ match sc with
 end.
 
 
-Fixpoint PreTerm'_symbol_A_to_OpenTermB
+Fixpoint PreTerm'_symbol_A_to_SymbolicTermB
     {Σ : StaticModel}
     {A B : Type}
-    (A_to_OpenTermB : A ->
+    (A_to_SymbolicTermB : A ->
         ((Term' symbol B))
     )
     (x : PreTerm' symbol A)
@@ -40,31 +40,31 @@ match x with
 | pt_operator a => (pt_operator a)
 | pt_app_operand x' a =>
     let t1 : (PreTerm' symbol B)
-        := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
-    match A_to_OpenTermB a with
+        := PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB x' in
+    match A_to_SymbolicTermB a with
     | (term_preterm t2) => (pt_app_ao t1 t2)
     | (term_operand t2) => (pt_app_operand t1 t2)
     end
 | pt_app_ao x1 x2 =>
     let t1 : (PreTerm' symbol B)
-        := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
+        := PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB x1 in
     let t2 : (PreTerm' symbol B)
-        := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
+        := PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB x2 in
     pt_app_ao t1 t2
 end.
 
-Definition Term'_symbol_A_to_OpenTermB
+Definition Term'_symbol_A_to_SymbolicTermB
     {Σ : StaticModel}
     {A B : Type}
-    (A_to_OpenTermB : A ->
+    (A_to_SymbolicTermB : A ->
         ((Term' symbol B))
     )
     (x : Term' symbol A)
     : ((Term' symbol B))
 :=
 match x with
-| term_preterm app => term_preterm (PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB app)
-| term_operand operand => A_to_OpenTermB operand
+| term_preterm app => term_preterm (PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB app)
+| term_operand operand => A_to_SymbolicTermB operand
 end.
 
 
@@ -80,7 +80,7 @@ Definition evaluate_rhs_pattern
     let cfφ : option (Term' symbol GroundTerm)
         := Term'_collapse_option fφ in
     cfφ' ← cfφ;
-    let flat := Term'_symbol_A_to_OpenTermB id cfφ' in
+    let flat := Term'_symbol_A_to_SymbolicTermB id cfφ' in
     Some flat
 .
 
@@ -660,7 +660,7 @@ Definition thy_lhs_match_one
     (Γ : list RewritingRule)
     : option (RewritingRule * Valuation * nat)%type
 :=
-    let froms : list OpenTerm
+    let froms : list SymbolicTerm
         := fr_from <$> Γ
     in
     let vs : list (option Valuation)
@@ -728,7 +728,7 @@ Proof.
         destruct HContra as [Hsat1 Hsat2].
         ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat1)).
         {
-            unfold GroundTerm, OpenTerm.
+            unfold GroundTerm, SymbolicTerm.
             apply _.
         }
         {
@@ -736,7 +736,7 @@ Proof.
         }
         ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat2)).
         {
-            unfold GroundTerm, OpenTerm.
+            unfold GroundTerm, SymbolicTerm.
             apply _.
         }
         {

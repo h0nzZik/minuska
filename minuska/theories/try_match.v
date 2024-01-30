@@ -1519,10 +1519,10 @@ Next Obligation. intros. simpl in H. inversion H. Qed.
 Fail Next Obligation.
 
 #[export]
-Instance TryMatch__GroundTerm__OpenTerm
+Instance TryMatch__GroundTerm__SymbolicTerm
     {Σ : StaticModel}
     :
-    TryMatch GroundTerm OpenTerm
+    TryMatch GroundTerm SymbolicTerm
 .
 Proof.
     apply _.

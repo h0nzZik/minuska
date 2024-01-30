@@ -1015,8 +1015,8 @@ Section with_signature.
     Fail Next Obligation.
 
     (* Can this be simplified? *)
-    Definition builtin_value_matches_OpenTerm
-        : Valuation -> builtin_value -> OpenTerm -> bool :=
+    Definition builtin_value_matches_SymbolicTerm
+        : Valuation -> builtin_value -> SymbolicTerm -> bool :=
     fun ρ b t =>
     match t with
     | term_preterm _ => false
@@ -1032,14 +1032,14 @@ Section with_signature.
 
     #[export]
     Program Instance
-        reflect__matches__builtin_value__OpenTerm
+        reflect__matches__builtin_value__SymbolicTerm
         :
         Matches
             (builtin_value)
-            OpenTerm
+            SymbolicTerm
             variable
         := {|
-            matchesb := builtin_value_matches_OpenTerm;
+            matchesb := builtin_value_matches_SymbolicTerm;
             matchesb_satisfies := _;
         |}.
     Next Obligation.
@@ -1190,7 +1190,7 @@ Section with_signature.
 
     #[export]
     Program Instance
-        matches__builtin_value__OpenTerm
+        matches__builtin_value__SymbolicTerm
         :
         Matches
             (PreTerm' symbol builtin_value)
@@ -1313,7 +1313,7 @@ Section with_signature.
         Matches
             (Valuation * LeftRight)
             (builtin_value)
-            (PreTerm' symbol LocalRewriteOrOpenTermOrBOV)
+            (PreTerm' symbol LocalRewriteOrSymbolicTermOrBOV)
             (variable)
     := {|
         matchesb := fun _ _ _ => false ;
@@ -1347,16 +1347,16 @@ Section with_signature.
     
     #[export]
     Instance
-        matches__GroundTerm__OpenTerm
+        matches__GroundTerm__SymbolicTerm
         :
         Matches
             GroundTerm
-            OpenTerm
+            SymbolicTerm
             variable
     .
     Proof.
         unfold GroundTerm.
-        unfold OpenTerm.
+        unfold SymbolicTerm.
         ltac1:(unshelve(eapply reflect__satisfies__ApppliedOperatorOr'_matches_Term')).
     Defined.
 

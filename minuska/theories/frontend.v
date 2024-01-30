@@ -16,7 +16,7 @@ Arguments ft_binary {Σ} f (t1) (t2).
 Arguments ft_ternary {Σ} f (t1) (t2) (t3).
 
 
-Fixpoint OpenTerm_to_ExprTerm'
+Fixpoint SymbolicTerm_to_ExprTerm'
     {Σ : StaticModel}
     (t : PreTerm' symbol BuiltinOrVar)
     : PreTerm' symbol Expression
@@ -24,15 +24,15 @@ Fixpoint OpenTerm_to_ExprTerm'
 match t with
 | pt_operator s => pt_operator s
 | pt_app_operand ao (bov_variable x)
-    => pt_app_operand (OpenTerm_to_ExprTerm' ao) (ft_variable x)
+    => pt_app_operand (SymbolicTerm_to_ExprTerm' ao) (ft_variable x)
 | pt_app_operand ao (bov_builtin b)
-    => pt_app_operand (OpenTerm_to_ExprTerm' ao) (ft_element (term_operand b))
+    => pt_app_operand (SymbolicTerm_to_ExprTerm' ao) (ft_element (term_operand b))
 | pt_app_ao ao1 ao2
-    => pt_app_ao (OpenTerm_to_ExprTerm' ao1) (OpenTerm_to_ExprTerm' ao2)
+    => pt_app_ao (SymbolicTerm_to_ExprTerm' ao1) (SymbolicTerm_to_ExprTerm' ao2)
 end
 .
 
-Definition OpenTerm_to_ExprTerm
+Definition SymbolicTerm_to_ExprTerm
     {Σ : StaticModel}
     (t : Term' symbol BuiltinOrVar)
     : Term' symbol Expression
@@ -40,7 +40,7 @@ Definition OpenTerm_to_ExprTerm
 match t with
 | term_operand (bov_variable x) => term_operand (ft_variable x)
 | term_operand (bov_builtin b) => term_operand (ft_element (term_operand b))
-| term_preterm t' => term_preterm (OpenTerm_to_ExprTerm' t')
+| term_preterm t' => term_preterm (SymbolicTerm_to_ExprTerm' t')
 end
 .
 
@@ -294,7 +294,7 @@ Section wsm.
                 (apply_symbol' sym lhs_vars);
                 (term_operand (bov_variable REST_SEQ))
             ])%list)
-         ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq ([
+         ~> SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq ([
                 lhs_selected_var;
                 cseq ([
                     (freezer freezerLbl position (delete position lhs_vars));
@@ -338,7 +338,7 @@ Section wsm.
                 ])%list
             ])%list
            ))
-         ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq [
+         ~> SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq [
                 (apply_symbol' sym lhs_vars);
                 (term_operand (bov_variable REST_SEQ))
             ])%list))

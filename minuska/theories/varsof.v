@@ -85,9 +85,9 @@ Instance VarsOf_BoV
     vars_of := vars_of_BoV ; 
 |}.
 
-Definition vars_of_OpenTerm
+Definition vars_of_SymbolicTerm
     {Σ : StaticModel}
-    (φ : OpenTerm)
+    (φ : SymbolicTerm)
     : gset variable :=
 match φ with
 | term_preterm o => vars_of o
@@ -95,11 +95,11 @@ match φ with
 end.
 
 #[export]
-Instance VarsOf_OpenTerm 
+Instance VarsOf_SymbolicTerm 
     {Σ : StaticModel}
-    : VarsOf OpenTerm variable
+    : VarsOf SymbolicTerm variable
 := {|
-    vars_of := vars_of_OpenTerm ; 
+    vars_of := vars_of_SymbolicTerm ; 
 |}.
 
 Definition vars_of_SideCondition
