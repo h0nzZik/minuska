@@ -401,7 +401,7 @@ Module arith.
         (ground (cfg [ u_cseq [ ((@aoo_operand symbol _ (bv_nat x)) + (@aoo_operand symbol _ (bv_nat y))), u_emptyCseq [] ] ]))
     .*)
 
-    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
+    Definition initial0 (x : Term' symbol builtin_value) :=
         (ground (
             cfg [
                 u_cseq [ 
@@ -415,7 +415,7 @@ Module arith.
 
     Definition initial (x: nat) (ly : list nat) :=
         (ground (initial0 ((foldr 
-            (fun a (b : AppliedOperatorOr' symbol builtin_value) =>
+            (fun a (b : Term' symbol builtin_value) =>
                 plus [((bv_nat a)) , b]
             )
             (@aoo_operand symbol builtin_value (bv_nat x))
@@ -552,7 +552,7 @@ Module fib_native.
         := interp_in_from Γ fuel from
     .
 
-    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
+    Definition initial0 (x : Term' symbol builtin_value) :=
         (ground (
             initialState [ x ]
         ))
@@ -888,7 +888,7 @@ Module imp.
     (* Compute (length (Γ.1)). *)
 
 
-    Definition initial0 (x : AppliedOperatorOr' symbol builtin_value) :=
+    Definition initial0 (x : Term' symbol builtin_value) :=
         (ground (
             u_cfg [ u_state [ u_cseq [x, u_emptyCseq [] ] , (builtin_nullary_function_interp b_map_empty) ] ]
         ))

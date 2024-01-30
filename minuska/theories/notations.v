@@ -12,11 +12,11 @@ Declare Scope ConcreteScope.
 Delimit Scope RuleScope with rs.
 Delimit Scope ConcreteScope with concrete.
 
-Definition to_AppliedOperatorOr'
+Definition to_Term'
     {Σ : StaticModel}
     {T : Type}
     (x : ((T)+(AppliedOperator' symbol T)))
-    : AppliedOperatorOr' symbol T
+    : Term' symbol T
 :=
 match x with
 | inl x' => aoo_operand x'
@@ -82,13 +82,13 @@ Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
 Class ToAOO {Σ : StaticModel} {_basic_resolver : BasicResolver}
     (to_aoo_F : Type)
 := {
-    to_aoo_opt : to_aoo_F -> (AppliedOperatorOr' symbol operand_type) ;
+    to_aoo_opt : to_aoo_F -> (Term' symbol operand_type) ;
 }.
 
 #[export]
 Instance ToAOO_id {Σ : StaticModel} {_basic_resolver : BasicResolver}
     {T : Type}
-    {_eq: TCEq T (AppliedOperatorOr' symbol operand_type)}
+    {_eq: TCEq T (Term' symbol operand_type)}
     : ToAOO T
 .
 Proof. inversion _eq. subst. constructor. intros x. exact x. Defined.
@@ -122,7 +122,7 @@ Definition to_AppliedOperator'
     {Σ : StaticModel}
     {T : Type}
     (s : symbol)
-    (l : list ((AppliedOperatorOr' symbol T)))
+    (l : list ((Term' symbol T)))
     : AppliedOperator' symbol T
 :=
     fold_left
@@ -141,11 +141,11 @@ Definition apply_symbol'
     {T : Type}
     (s : symbol)
 : 
-    list ((AppliedOperatorOr' symbol T)) ->
-    AppliedOperatorOr' symbol T
+    list ((Term' symbol T)) ->
+    Term' symbol T
 :=
     fun l =>
-    (to_AppliedOperatorOr' (inr (to_AppliedOperator' ((s):symbol) l)))
+    (to_Term' (inr (to_AppliedOperator' ((s):symbol) l)))
 .
 
 
@@ -154,11 +154,11 @@ Definition apply_symbol
     {_br : BasicResolver}
     (s : symbol)
 : 
-    list ((AppliedOperatorOr' symbol operand_type)) ->
-    AppliedOperatorOr' symbol operand_type
+    list ((Term' symbol operand_type)) ->
+    Term' symbol operand_type
 :=
     fun l =>
-    (to_AppliedOperatorOr' (inr (to_AppliedOperator' ((s):symbol) l)))
+    (to_Term' (inr (to_AppliedOperator' ((s):symbol) l)))
 .
 
 Notation "[]" := ([]%list) : RuleScope.
@@ -172,31 +172,31 @@ Definition myap2 (A B : Type) (f : A -> B) (x : A)  : B := f x.
 Notation "'[' x ']'"
 :=
     (@cons
-        ((AppliedOperatorOr' symbol operand_type))
-        (myap _ (AppliedOperatorOr' symbol operand_type) x to_aoo_opt)
-        (*myap2 _ (AppliedOperatorOr' symbol operand_type) to_aoo_opt x*)
+        ((Term' symbol operand_type))
+        (myap _ (Term' symbol operand_type) x to_aoo_opt)
+        (*myap2 _ (Term' symbol operand_type) to_aoo_opt x*)
         (*(@to_aoo_opt _ _ _ _ (x))*)
-        (@nil ((AppliedOperatorOr' symbol operand_type)))
+        (@nil ((Term' symbol operand_type)))
     )
     : RuleScope
 .
 
 Notation "'[' x , y , .. , z ']'"
 :=
-    (@cons ((AppliedOperatorOr' symbol operand_type))
-        (myap _ (AppliedOperatorOr' symbol operand_type) x to_aoo_opt)
+    (@cons ((Term' symbol operand_type))
+        (myap _ (Term' symbol operand_type) x to_aoo_opt)
     (@cons 
-        ((AppliedOperatorOr' symbol operand_type))
+        ((Term' symbol operand_type))
         (*(to_aoo_opt y)*)
-        (myap _ (AppliedOperatorOr' symbol operand_type) y to_aoo_opt)
-        (*myap2 _ (AppliedOperatorOr' symbol operand_type) to_aoo_opt y*)
+        (myap _ (Term' symbol operand_type) y to_aoo_opt)
+        (*myap2 _ (Term' symbol operand_type) to_aoo_opt y*)
         .. 
         (
-            @cons ((AppliedOperatorOr' symbol operand_type))
+            @cons ((Term' symbol operand_type))
             (* (to_aoo_opt z) *)
-            (myap _ (AppliedOperatorOr' symbol operand_type) z to_aoo_opt)
-            (*myap2 _ (AppliedOperatorOr' symbol operand_type) to_aoo_opt z*)
-            (@nil ((AppliedOperatorOr' symbol operand_type)))
+            (myap _ (Term' symbol operand_type) z to_aoo_opt)
+            (*myap2 _ (Term' symbol operand_type) to_aoo_opt z*)
+            (@nil ((Term' symbol operand_type)))
         )
         ..))
     : RuleScope

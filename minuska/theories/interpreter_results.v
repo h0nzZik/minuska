@@ -82,7 +82,7 @@ Proof.
         exists g'.
         ltac1:(unshelve(eapply matchesb_implies_satisfies)).
         unfold matchesb; simpl.
-        unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+        unfold ApppliedOperatorOr'_matches_Term'.
         destruct g'; unfold matchesb; simpl.
         {
             rewrite Hg'. apply bool_decide_eq_true. reflexivity.

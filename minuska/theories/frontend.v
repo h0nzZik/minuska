@@ -34,8 +34,8 @@ end
 
 Definition OpenTerm_to_ExprTerm
     {Σ : StaticModel}
-    (t : AppliedOperatorOr' symbol BuiltinOrVar)
-    : AppliedOperatorOr' symbol Expression
+    (t : Term' symbol BuiltinOrVar)
+    : Term' symbol Expression
 :=
 match t with
 | aoo_operand (bov_variable x) => aoo_operand (ft_variable x)
@@ -53,15 +53,15 @@ Definition ContextTemplate
     {Σ : StaticModel}
 :=
     forall (br:BasicResolver) (r:Resolver),
-    AppliedOperatorOr' symbol operand_type ->
-    AppliedOperatorOr' symbol operand_type
+    Term' symbol operand_type ->
+    Term' symbol operand_type
 .
 
 
 Notation
     "( 'context-template' x 'with' h )"
     :=
-    (fun (_:BasicResolver) (_:Resolver) (h : AppliedOperatorOr' symbol operand_type) => x)
+    (fun (_:BasicResolver) (_:Resolver) (h : Term' symbol operand_type) => x)
 .
 
 
@@ -276,13 +276,13 @@ Section wsm.
     :=
         let vars : list variable
             := argument_sequence to_var arity in
-        let lhs_vars : list (AppliedOperatorOr' symbol BuiltinOrVar)
+        let lhs_vars : list (Term' symbol BuiltinOrVar)
             := (aoo_operand <$> (bov_variable <$> vars)) in
-        let rhs_vars : list (AppliedOperatorOr' symbol Expression)
+        let rhs_vars : list (Term' symbol Expression)
             := (aoo_operand <$> (ft_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
-        let lhs_selected_var : (AppliedOperatorOr' symbol BuiltinOrVar)
+        let lhs_selected_var : (Term' symbol BuiltinOrVar)
             := aoo_operand (bov_variable selected_var) in
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
@@ -318,13 +318,13 @@ Section wsm.
     :=
         let vars : list variable
             := argument_sequence to_var arity in
-        let lhs_vars : list (AppliedOperatorOr' symbol BuiltinOrVar)
+        let lhs_vars : list (Term' symbol BuiltinOrVar)
             := (aoo_operand <$> (bov_variable <$> vars)) in
-        let rhs_vars : list (AppliedOperatorOr' symbol Expression)
+        let rhs_vars : list (Term' symbol Expression)
             := (aoo_operand <$> (ft_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
-        let lhs_selected_var : (AppliedOperatorOr' symbol BuiltinOrVar)
+        let lhs_selected_var : (Term' symbol BuiltinOrVar)
             := aoo_operand (bov_variable selected_var) in
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in

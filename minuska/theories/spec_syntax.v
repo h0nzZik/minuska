@@ -19,7 +19,7 @@ Inductive AppliedOperator' (operator : Type) (operand : Type)
 
 
 #[universes(polymorphic=yes, cumulative=yes)]
-Inductive AppliedOperatorOr'
+Inductive Term'
     (Operator : Type)
     (Operand : Type)
     : Type :=
@@ -34,7 +34,7 @@ Arguments aoo_app {Operator Operand}%type_scope ao.
 
 Polymorphic
 Definition GroundTerm' (symbol : Type) (builtin : Type)
-    := (AppliedOperatorOr' symbol builtin)
+    := (Term' symbol builtin)
 .
 
 Arguments ao_operator {operator operand}%type_scope s.
@@ -146,7 +146,7 @@ Inductive BuiltinOrVar {Σ : StaticModel} :=
 .
 
 Definition OpenTerm {Σ : StaticModel}
-    := AppliedOperatorOr' symbol BuiltinOrVar
+    := Term' symbol BuiltinOrVar
 .
 
 Inductive SideCondition {Σ : StaticModel} :=
@@ -154,7 +154,7 @@ Inductive SideCondition {Σ : StaticModel} :=
 .
 
 Definition RhsPattern {Σ : StaticModel} :=
-    AppliedOperatorOr' symbol Expression
+    Term' symbol Expression
 .
 
 

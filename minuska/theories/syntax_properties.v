@@ -309,11 +309,11 @@ Instance AppliedOperator'_A_B_fmap (A : Type)
 .
 
 
-Definition AppliedOperatorOr'_fmap
+Definition Term'_fmap
     {A B C : Type}
     (f : B -> C)
-    (aoo : AppliedOperatorOr' A B)
-    : AppliedOperatorOr' A C
+    (aoo : Term' A B)
+    : Term' A C
 :=
 match aoo with
 | aoo_app ao => aoo_app (f <$> ao)
@@ -322,18 +322,18 @@ end.
 
 
 #[global]
-Instance AppliedOperatorOr'_A_B_fmap (A : Type)
-    : FMap (AppliedOperatorOr' A)
-    := @AppliedOperatorOr'_fmap A
+Instance Term'_A_B_fmap (A : Type)
+    : FMap (Term' A)
+    := @Term'_fmap A
 .
 
 #[global]
-Instance AppliedOperatorOr_symbol_fmap
+Instance Term_symbol_fmap
     {Σ : StaticModel}
-    : FMap (AppliedOperatorOr' symbol)
+    : FMap (Term' symbol)
 .
 Proof.
-    apply AppliedOperatorOr'_A_B_fmap.
+    apply Term'_A_B_fmap.
 Defined.
 
 
@@ -358,10 +358,10 @@ match ao with
 end.
 
 
-Definition AppliedOperatorOr'_collapse_option
+Definition Term'_collapse_option
     {A B : Type}
-    (aoo : AppliedOperatorOr' A (option B))
-    : option (AppliedOperatorOr' A B)
+    (aoo : Term' A (option B))
+    : option (Term' A B)
 :=
 match aoo with
 | aoo_app ao =>

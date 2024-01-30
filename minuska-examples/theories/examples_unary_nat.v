@@ -170,7 +170,7 @@ Module unary_nat.
     Definition Γfact : RewritingTheory*(list string) := Eval vm_compute in 
     (to_theory (process_declarations (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
 
-    Definition initial_expr (x : AppliedOperatorOr' symbol builtin_value) :=
+    Definition initial_expr (x : Term' symbol builtin_value) :=
         (ground (
             u_cfg [ u_cseq [x, u_emptyCseq [] ] ]
         ))

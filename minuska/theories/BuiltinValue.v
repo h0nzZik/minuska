@@ -18,14 +18,14 @@ Section sec.
     | bv_Z (z : Z)
     | bv_sym (s : symbol)
     | bv_str (s : string)
-    | bv_list (m : list (AppliedOperatorOr' symbol BuiltinValue0))
-    | bv_pmap (m : Pmap (AppliedOperatorOr' symbol BuiltinValue0))
+    | bv_list (m : list (Term' symbol BuiltinValue0))
+    | bv_pmap (m : Pmap (Term' symbol BuiltinValue0))
     .
 
     Fixpoint BVsize (r : BuiltinValue0) : nat :=
     match r with
     | bv_list m =>
-        let my_list_size := (fix my_list_size (l : list (AppliedOperatorOr' symbol BuiltinValue0)) : nat :=
+        let my_list_size := (fix my_list_size (l : list (Term' symbol BuiltinValue0)) : nat :=
         match l with
         | nil => 1
         | (cons (aoo_operand o) xs) => S ((BVsize o) + (my_list_size xs))
@@ -40,7 +40,7 @@ Section sec.
         end) in
         S (my_list_size m)
     | bv_pmap (PNodes m) =>
-        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue0)) : nat :=
+        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (Term' symbol BuiltinValue0)) : nat :=
     match m with
     | (PNode001 n) => S (my_pmapne_size n)
     | (PNode010 (aoo_operand o)) => S (BVsize o)
@@ -188,7 +188,7 @@ Section sec.
                     }
                 }
                 {
-                    destruct m0.
+                    destruct m0 as [|a0].
                     {
                         right; ltac1:(congruence).
                     }
@@ -342,7 +342,7 @@ Section sec.
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(discriminate)]).
 
-                        destruct a,a0.
+                        destruct a,t.
                         {
                             revert ao0.
                             induction ao; intros ao0.
@@ -443,7 +443,7 @@ Section sec.
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(congruence)]).
 
-                        destruct a,a0.
+                        destruct a,t.
                         {
 
                             assert (IH1 := IHp ltac:(simpl in *; lia) p0).
@@ -601,7 +601,7 @@ Section sec.
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(discriminate)]).
 
-                        destruct a,a0;
+                        destruct a,t;
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(congruence)]).
 
@@ -718,7 +718,7 @@ Section sec.
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(discriminate)]).
 
-                        destruct a,a0;
+                        destruct a,t;
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(congruence)]).
 
@@ -888,7 +888,7 @@ Section sec.
     | (GenLeaf (bvl_sym s))      => Some (bv_sym s) 
     | (GenNode 0 l)            => (
             let tree_to_mylist := fix tree_to_mylist (l' : list (gen_tree BVLeaf)) :
-                (option (list (AppliedOperatorOr' symbol BuiltinValue0))) := (
+                (option (list (Term' symbol BuiltinValue0))) := (
                 match l' with
                 | nil                             => Some nil
                 | (cons (GenNode 1 [(o)]) (xs))   => (
@@ -926,7 +926,7 @@ Section sec.
             Some (bv_list (l'))
         )
     | (GenNode 2 [(m)]) => (
-            let tree_to_mypm := fix tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (AppliedOperatorOr' symbol BuiltinValue0)) := (
+            let tree_to_mypm := fix tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (Term' symbol BuiltinValue0)) := (
             match p with
             | (GenNode 1 [(n)]) => (
                 n' ← (tree_to_mypm n);
@@ -1075,7 +1075,7 @@ Section sec.
     | (bv_list l)        =>
         let mylist_to_tree := (
             fix mylist_to_tree
-                (l' : list (AppliedOperatorOr' symbol BuiltinValue0)) : list (gen_tree BVLeaf) := (
+                (l' : list (Term' symbol BuiltinValue0)) : list (gen_tree BVLeaf) := (
             match l' with
             | nil => nil
             | (cons (aoo_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
@@ -1097,7 +1097,7 @@ Section sec.
         (GenNode 0 (mylist_to_tree l))       
     | (bv_pmap (PNodes m)) => (
         let mypm_to_tree := (
-            fix mypm_to_tree (p : Pmap_ne (AppliedOperatorOr' symbol BuiltinValue0)) : gen_tree BVLeaf := (
+            fix mypm_to_tree (p : Pmap_ne (Term' symbol BuiltinValue0)) : gen_tree BVLeaf := (
             match p with
             | (PNode001 n)                     => GenNode 1 [(mypm_to_tree n)]
             | (PNode010 (aoo_operand o))       => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]

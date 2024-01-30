@@ -126,13 +126,13 @@ Program Instance VarsOf_list_SideCondition
     vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.
 
-Definition vars_of_AppliedOperatorOr'B
+Definition vars_of_Term'B
     {Σ : StaticModel}
     {B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
     {_VB : VarsOf B var}
-    (φ : AppliedOperatorOr' symbol B)
+    (φ : Term' symbol B)
     : gset var :=
 match φ with
 | aoo_app aop => vars_of aop
@@ -140,13 +140,13 @@ match φ with
 end.
 
 #[export]
-Instance VarsOf_AppliedOperatorOr'
+Instance VarsOf_Term'
     {Σ : StaticModel}
     {B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
     {_VB : VarsOf B var}
-    : VarsOf (AppliedOperatorOr' symbol B) var
+    : VarsOf (Term' symbol B) var
 := {|
-    vars_of := vars_of_AppliedOperatorOr'B ; 
+    vars_of := vars_of_Term'B ; 
 |}.

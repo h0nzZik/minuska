@@ -479,7 +479,7 @@ Instance SatisfiesProperties_aoxyo_aoxzo
     {_S2P : SatisfiesProperties V ((AppliedOperator' X Y)) Z var}
     {_S3P : SatisfiesProperties V ((AppliedOperator' X Y)) (AppliedOperator' X Z) var}
     :
-    SatisfiesProperties V ((AppliedOperatorOr' X Y)) (AppliedOperatorOr' X Z) var
+    SatisfiesProperties V ((Term' X Y)) (Term' X Z) var
 .
 Proof.
     constructor. intros.
@@ -546,8 +546,8 @@ Instance SatisfiesProperties_aoosb_aoosbf
     :
     SatisfiesProperties
         Valuation
-        ((AppliedOperatorOr' symbol builtin_value))
-        (AppliedOperatorOr' symbol BuiltinOrVar)
+        ((Term' symbol builtin_value))
+        (Term' symbol BuiltinOrVar)
         variable
 .
 Proof.
@@ -667,7 +667,7 @@ Instance SatisfiesProperties__lift_builtin_to_aosb
     SatisfiesProperties
         V
         ((AppliedOperator' symbol A))
-        (AppliedOperatorOr' symbol B)
+        (Term' symbol B)
         var
 .
 Proof.

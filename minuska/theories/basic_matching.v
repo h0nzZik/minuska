@@ -639,7 +639,7 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-    Definition ApppliedOperatorOr'_matches_AppliedOperatorOr'
+    Definition ApppliedOperatorOr'_matches_Term'
         {Operand1 Operand2 var : Type}
         {_EDv : EqDecision var}
         {_Cv : Countable var}
@@ -654,8 +654,8 @@ Section with_signature.
         {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
         {_M4 : Matches ((AppliedOperator' symbol Operand1)) Operand2 var}
         (ρ : (gmap var GroundTerm))
-        (x : (AppliedOperatorOr' symbol Operand1))
-        (y : AppliedOperatorOr' symbol Operand2)
+        (x : (Term' symbol Operand1))
+        (y : Term' symbol Operand2)
         : bool :=
     match x, y with
     | aoo_app app1, aoo_app app2 =>
@@ -670,7 +670,7 @@ Section with_signature.
 
     #[export]
     Program Instance
-        reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr'
+        reflect__satisfies__ApppliedOperatorOr'_matches_Term'
         {Operand1 Operand2 var : Type}
         {_EDv : EqDecision var}
         {_Cv : Countable var}
@@ -686,12 +686,12 @@ Section with_signature.
         {_M4 : Matches ((AppliedOperator' symbol Operand1)) Operand2 var}
         :
         Matches
-            (AppliedOperatorOr' symbol Operand1)
-            (AppliedOperatorOr' symbol Operand2)
+            (Term' symbol Operand1)
+            (Term' symbol Operand2)
             var
         := {|
             matchesb := 
-                ApppliedOperatorOr'_matches_AppliedOperatorOr';
+                ApppliedOperatorOr'_matches_Term';
             matchesb_satisfies := _;
         |}.
     Next Obligation.
@@ -706,7 +706,7 @@ Section with_signature.
         {
             destruct y; simpl.
             {
-                unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+                unfold ApppliedOperatorOr'_matches_Term'.
                 simpl.
                 unfold satisfies; simpl.
 
@@ -726,7 +726,7 @@ Section with_signature.
                 }
             }
             {
-                unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+                unfold ApppliedOperatorOr'_matches_Term'.
                 simpl.
                 apply iff_reflect.
                 split; intros HH.
@@ -745,7 +745,7 @@ Section with_signature.
             }
         }
         {
-            unfold ApppliedOperatorOr'_matches_AppliedOperatorOr'.
+            unfold ApppliedOperatorOr'_matches_Term'.
             simpl.
             destruct y; simpl.
             {
@@ -859,7 +859,7 @@ Section with_signature.
         }
         {
             unfold Valuation in *.
-            destruct (v !! x) eqn:Hvx; simpl.
+            destruct (v !! x) as [a0|] eqn:Hvx; simpl.
             {
                 destruct a0; simpl.
                 {
@@ -901,7 +901,7 @@ Section with_signature.
         {
             simpl in H.
             unfold Valuation in *.
-            destruct (v !! x) eqn:Hvx.
+            destruct (v !! x) as [a0|] eqn:Hvx.
             {
                 rewrite elem_of_subseteq.
                 intros x0 Hx0.
@@ -1390,7 +1390,7 @@ Section with_signature.
         unfold GroundTerm.
         unfold GroundTerm'.
         unfold OpenTerm.
-        ltac1:(unshelve(eapply reflect__satisfies__ApppliedOperatorOr'_matches_AppliedOperatorOr')).
+        ltac1:(unshelve(eapply reflect__satisfies__ApppliedOperatorOr'_matches_Term')).
     Defined.
 
 End with_signature.

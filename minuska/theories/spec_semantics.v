@@ -201,8 +201,8 @@ Inductive aoxyo_satisfies_aoxzo
     {_S2 : Satisfies V ((AppliedOperator' X Y)) Z var}
     {_S3 : Satisfies V ((AppliedOperator' X Y)) (AppliedOperator' X Z) var}
     : V ->
-        ((AppliedOperatorOr' X Y)) ->
-        (AppliedOperatorOr' X Z) ->
+        ((Term' X Y)) ->
+        (Term' X Z) ->
         Prop
 :=
 | axysaxz_app:
@@ -235,7 +235,7 @@ Program Instance Satisfies_aoxyo_aoxzo
     {_S2 : Satisfies V ((AppliedOperator' X Y)) Z var}
     {_S3 : Satisfies V ((AppliedOperator' X Y)) (AppliedOperator' X Z) var}
     :
-    Satisfies V ((AppliedOperatorOr' X Y)) (AppliedOperatorOr' X Z) var
+    Satisfies V ((Term' X Y)) (Term' X Z) var
 := {|
     satisfies := aoxyo_satisfies_aoxzo V X Y Z var;
 |}.
@@ -410,8 +410,8 @@ Satisfies_aoosb_aoosbf
     :
     Satisfies
         Valuation
-        ((AppliedOperatorOr' symbol builtin_value))
-        (AppliedOperatorOr' symbol BuiltinOrVar)
+        ((Term' symbol builtin_value))
+        (Term' symbol BuiltinOrVar)
         variable
 .
 Proof. apply _. Defined.
@@ -543,7 +543,7 @@ Definition AppliedOperator'_symbol_A_satisfies_OpenTermB'
     :
     V ->
     (AppliedOperator' symbol A) ->
-    AppliedOperatorOr' symbol B ->
+    Term' symbol B ->
     Prop
 :=  fun ρ a =>
     satisfies
@@ -565,7 +565,7 @@ Instance Satisfies__lift_builtin_to_aosb
     Satisfies
         V
         ((AppliedOperator' symbol A))
-        (AppliedOperatorOr' symbol B)
+        (Term' symbol B)
         var
 := {|
     satisfies :=
@@ -585,8 +585,8 @@ Instance Satisfies__lift_builtin_to_aosbo
     {sat3 : Satisfies V ((AppliedOperator' symbol A)) (AppliedOperator' symbol B) var}
     :
     Satisfies V
-        ((AppliedOperatorOr' symbol A))
-        (AppliedOperatorOr' symbol B)
+        ((Term' symbol A))
+        (Term' symbol B)
         var
 .
 Proof. apply _. Defined.

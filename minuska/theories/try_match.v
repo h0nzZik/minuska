@@ -1122,7 +1122,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
+Definition ApppliedOperatorOr'_try_match_Term'
     {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_V1 : VarsOf Operand1 variable}
@@ -1139,8 +1139,8 @@ Definition ApppliedOperatorOr'_try_match_AppliedOperatorOr'
     {_SP3 : SatisfiesProperties Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
     {_M3 : Matches (AppliedOperator' symbol Operand1) Operand2 variable}
     {_TM3 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
-    (x : AppliedOperatorOr' symbol Operand1)
-    (y : AppliedOperatorOr' symbol Operand2)
+    (x : Term' symbol Operand1)
+    (y : Term' symbol Operand2)
     : option Valuation :=
 match x, y with
 | aoo_app app1, aoo_app app2 =>
@@ -1155,7 +1155,7 @@ end.
 
 
 #[export]
-Program Instance TryMatch_AppliedOperatorOr'
+Program Instance TryMatch_Term'
     {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
@@ -1173,9 +1173,9 @@ Program Instance TryMatch_AppliedOperatorOr'
     {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
     {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
 :
-    TryMatch (AppliedOperatorOr' symbol Operand1) (AppliedOperatorOr' symbol Operand2)
+    TryMatch (Term' symbol Operand1) (Term' symbol Operand2)
 := {|
-    try_match := ApppliedOperatorOr'_try_match_AppliedOperatorOr' ;
+    try_match := ApppliedOperatorOr'_try_match_Term' ;
     try_match_correct := _;
     try_match_complete := _;
 |}.

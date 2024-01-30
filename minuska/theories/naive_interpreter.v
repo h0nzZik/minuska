@@ -31,7 +31,7 @@ Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
     {Σ : StaticModel}
     {A B : Type}
     (A_to_OpenTermB : A ->
-        ((AppliedOperatorOr' symbol B))
+        ((Term' symbol B))
     )
     (x : AppliedOperator' symbol A)
     : ((AppliedOperator' symbol B))
@@ -53,14 +53,14 @@ match x with
     ao_app_ao t1 t2
 end.
 
-Definition AppliedOperatorOr'_symbol_A_to_OpenTermB
+Definition Term'_symbol_A_to_OpenTermB
     {Σ : StaticModel}
     {A B : Type}
     (A_to_OpenTermB : A ->
-        ((AppliedOperatorOr' symbol B))
+        ((Term' symbol B))
     )
-    (x : AppliedOperatorOr' symbol A)
-    : ((AppliedOperatorOr' symbol B))
+    (x : Term' symbol A)
+    : ((Term' symbol B))
 :=
 match x with
 | aoo_app app => aoo_app (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
@@ -71,16 +71,16 @@ end.
 Definition evaluate_rhs_pattern
     {Σ : StaticModel}
     (ρ : Valuation)
-    (φ : AppliedOperatorOr' symbol Expression)
+    (φ : Term' symbol Expression)
     : option GroundTerm :=
     let f : Expression -> option GroundTerm
         := (Expression_evaluate ρ) in
-    let fφ  : AppliedOperatorOr' symbol (option GroundTerm)
+    let fφ  : Term' symbol (option GroundTerm)
         := f <$> φ in 
-    let cfφ : option (AppliedOperatorOr' symbol GroundTerm)
-        := AppliedOperatorOr'_collapse_option fφ in
+    let cfφ : option (Term' symbol GroundTerm)
+        := Term'_collapse_option fφ in
     cfφ' ← cfφ;
-    let flat := AppliedOperatorOr'_symbol_A_to_OpenTermB id cfφ' in
+    let flat := Term'_symbol_A_to_OpenTermB id cfφ' in
     Some flat
 .
 
