@@ -19,7 +19,7 @@ Inductive PreTerm' (operator : Type) (operand : Type)
 
 
 #[universes(polymorphic=yes, cumulative=yes)]
-Inductive Term'
+Variant Term'
     (Operator : Type)
     (Operand : Type)
     : Type :=
