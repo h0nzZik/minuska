@@ -81,6 +81,7 @@ Definition ValueVector {Σ : Signature} : Type :=
 Inductive pvmatch {Σ : Signature} : Pattern -> Value -> Prop :=
 | pvm_wildcard: forall v, pvmatch p_wildcard v
 | pvm_ctor: forall c ps vs,
+    length ps = length vs ->
     (
         forall i p v, ps !! i = Some p -> vs !! i = Some v ->
         pvmatch p v
@@ -414,11 +415,11 @@ Proof.
                                     }
                                     {
                                         subst. inversion H1; subst; clear H1.
-                                        ltac1:(exfalso; clear -H4).
-                                        unfold decide,decide_rel in H4.
+                                        ltac1:(exfalso; clear -H5).
+                                        unfold decide,decide_rel in H5.
                                         destruct (Constructor_eqdec c0 c0).
                                         {
-                                            inversion H4.
+                                            inversion H5.
                                         }
                                         {
                                             apply n. reflexivity.
@@ -469,13 +470,13 @@ Proof.
                             inversion H1; subst; clear H1.
                             unfold row_matches_ctor in *.
                             simpl in *.
-                            unfold is_left in H4.
+                            unfold is_left in H5.
                             ltac1:(repeat case_match).
                             {
                                 subst. ltac1:(contradiction).
                             }
                             {
-                                inversion H4.
+                                inversion H5.
                             }
                         }
                         {
@@ -486,11 +487,46 @@ Proof.
                         }
                     }
                 }
-                
+            }
+            {
+                split.
+                {
+                    unfold pvvecmatch. intros i p v HH1 HH2.
+                    ltac1:(rewrite lookup_app in HH1).
+                    ltac1:(rewrite lookup_app in HH2).
+                    ltac1:(repeat case_match; simplify_eq /=).
+                    {
+                        eapply H4 with (i := i); simpl; assumption.
+                    }
+                    {
+                        apply lookup_ge_None_1 in H1.
+                        apply lookup_lt_Some in H.
+                        ltac1:(lia).
+                    }
+                    {
+                        apply lookup_ge_None_1 in H.
+                        apply lookup_lt_Some in H1.
+                        ltac1:(lia).
+                    }
+                    {
+                        eapply H2'pv with (i := S (i - length ps)); simpl.
+                        {
+                            apply HH1.
+                        }
+                        {
+                            rewrite H3. assumption.
+                        }
+                    }
+                }
+                {
+                    rewrite app_length.
+                    rewrite app_length.
+                    ltac1:(congruence).
+                }
             }
         }
-        unfold Simplify_step.
-
-
+    }
+    {
+        
     }
 Qed.
