@@ -1177,7 +1177,7 @@ Section with_signature.
     Qed.
     Fail Next Obligation.
 
-    Definition GroundTerm'_matches_BuiltinOrVar
+    Definition Term'_matches_BuiltinOrVar
         : Valuation -> (PreTerm' symbol builtin_value) ->
             BuiltinOrVar ->
             bool
@@ -1197,7 +1197,7 @@ Section with_signature.
             BuiltinOrVar
             variable
         := {|
-            matchesb := GroundTerm'_matches_BuiltinOrVar;
+            matchesb := Term'_matches_BuiltinOrVar;
             matchesb_satisfies := _;
         |}.
     Next Obligation.
@@ -1344,39 +1344,7 @@ Section with_signature.
         ltac1:(tauto).
     Qed.
     Fail Next Obligation.
-    (*
-    #[export]
-    Program Instance Matches_sym_bov
-        :
-        Matches (Valuation * symbol) BuiltinOrVar
-    := {|
-        matchesb := fun _ _ => false ;
-    |}.
-    Next Obligation.
-        unfold satisfies; simpl.
-        apply ReflectF. ltac1:(tauto).
-    Qed.
-    Fail Next Obligation.
-    *)
-
-    (*
-    #[export]
-    Program Instance Matches__builtin__aosbov
-        :
-        Matches
-            (Valuation * builtin_value)
-            (PreTerm' symbol BuiltinOrVar)
-    := {|
-        matchesb := fun _ _ => false ;
-    |}.
-    Next Obligation.
-        apply ReflectF.
-        unfold satisfies; simpl.
-        intros HContra. inversion HContra.
-    Qed.
-    Fail Next Obligation.
-    *)
-
+    
     #[export]
     Instance
         matches__GroundTerm__OpenTerm
@@ -1388,7 +1356,6 @@ Section with_signature.
     .
     Proof.
         unfold GroundTerm.
-        unfold GroundTerm'.
         unfold OpenTerm.
         ltac1:(unshelve(eapply reflect__satisfies__ApppliedOperatorOr'_matches_Term')).
     Defined.

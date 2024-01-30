@@ -216,8 +216,8 @@ Module default_builtin.
 
         Definition bfmap1
             (f : BuiltinValue -> BuiltinValue)
-            (x : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         match x with
         | term_operand x' => term_operand (f x')
@@ -226,8 +226,8 @@ Module default_builtin.
 
         Definition bfmap2
             (f : BuiltinValue -> BuiltinValue -> BuiltinValue)
-            (x y : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x y : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         match x, y with
         | term_operand x', term_operand y' => term_operand (f x' y')
@@ -236,8 +236,8 @@ Module default_builtin.
 
         Definition bfmap_bool__bool
             (f : bool -> bool)
-            (x : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap1
             (fun x' =>
@@ -251,8 +251,8 @@ Module default_builtin.
 
         Definition bfmap_bool_bool__bool
             (f : bool -> bool -> bool)
-            (x y : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x y : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap2
             (fun x' y' =>
@@ -266,8 +266,8 @@ Module default_builtin.
 
         Definition bfmap_nat__nat
             (f : nat -> nat)
-            (x : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap1
             (fun x' =>
@@ -281,8 +281,8 @@ Module default_builtin.
 
         Definition bfmap_nat_nat__nat
             (f : nat -> nat -> nat)
-            (x y : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x y : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap2
             (fun x' y' =>
@@ -296,8 +296,8 @@ Module default_builtin.
 
         Definition bfmap_nat_nat__bool
             (f : nat -> nat -> bool)
-            (x y : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x y : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap2
             (fun x' y' =>
@@ -311,8 +311,8 @@ Module default_builtin.
 
         Definition bfmap_Z_Z__Z
             (f : Z -> Z -> Z)
-            (x y : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x y : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap2
             (fun x' y' =>
@@ -326,8 +326,8 @@ Module default_builtin.
 
         Definition bfmap_Z_Z__bool
             (f : Z -> Z -> bool)
-            (x y : GroundTerm' symbol BuiltinValue)
-            : GroundTerm' symbol BuiltinValue
+            (x y : Term' symbol BuiltinValue)
+            : Term' symbol BuiltinValue
         :=
         bfmap2
             (fun x' y' =>

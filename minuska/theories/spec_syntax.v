@@ -31,12 +31,6 @@ Variant Term'
 Arguments term_operand {Operator Operand}%type_scope operand.
 Arguments term_preterm {Operator Operand}%type_scope ao.
 
-
-Polymorphic
-Definition GroundTerm' (symbol : Type) (builtin : Type)
-    := (Term' symbol builtin)
-.
-
 Arguments pt_operator {operator operand}%type_scope s.
 Arguments pt_app_operand {operator operand}%type_scope aps b.
 Arguments pt_app_ao {operator operand}%type_scope aps x.
@@ -80,25 +74,25 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
 
     builtin_nullary_function_interp
         : builtin_nullary_function
-        -> (GroundTerm' symbol builtin_value) ;
+        -> (Term' symbol builtin_value) ;
 
     builtin_unary_function_interp
         : builtin_unary_function
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value) ;
+        -> (Term' symbol builtin_value)
+        -> (Term' symbol builtin_value) ;
 
     builtin_binary_function_interp
         : builtin_binary_function
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value) ;
+        -> (Term' symbol builtin_value)
+        -> (Term' symbol builtin_value)
+        -> (Term' symbol builtin_value) ;
 
     builtin_ternary_function_interp
         : builtin_ternary_function
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value)
-        -> (GroundTerm' symbol builtin_value) ;
+        -> (Term' symbol builtin_value)
+        -> (Term' symbol builtin_value)
+        -> (Term' symbol builtin_value)
+        -> (Term' symbol builtin_value) ;
 }.
 
 Class StaticModel := {
@@ -122,7 +116,7 @@ Class VarsOf
 Arguments vars_of : simpl never.
 
 Definition GroundTerm {Σ : StaticModel}
-    := GroundTerm' symbol builtin_value
+    := Term' symbol builtin_value
 .
 
 Inductive Expression

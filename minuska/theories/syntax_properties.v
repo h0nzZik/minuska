@@ -20,12 +20,12 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance GroundTerm'_eqdec
+    Instance Term'_eqdec
         {A : Type}
         {symbols : Symbols A}
         (T : Type)
         {T_dec : EqDecision T}
-        : EqDecision (GroundTerm' A T)
+        : EqDecision (Term' A T)
     .
     Proof.
         ltac1:(solve_decision).
@@ -84,7 +84,7 @@ Section eqdec.
     .
     Proof.
         intros e1 e2.
-        apply GroundTerm'_eqdec.
+        apply Term'_eqdec.
         apply builtin_value_eqdec.
     Defined.
 
@@ -224,13 +224,13 @@ Section countable.
         apply PreTerm'_of_to_gen_tree.
     Qed.
 
-    Definition GroundTerm'_to_gen_tree
+    Definition Term'_to_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (e : GroundTerm' symbol builtin)
+        (e : Term' symbol builtin)
         : gen_tree (builtin + (PreTerm' symbol builtin))%type
     :=
     match e with
@@ -239,14 +239,14 @@ Section countable.
     end
     .
 
-    Definition GroundTerm'_from_gen_tree
+    Definition Term'_from_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
         (t : gen_tree (builtin+(PreTerm' symbol builtin))%type)
-        :  option (GroundTerm' symbol builtin)
+        :  option (Term' symbol builtin)
     :=
     match t with
     | (GenLeaf (inl _ b)) => Some (term_operand b)
@@ -255,36 +255,36 @@ Section countable.
     end
     .
 
-    Lemma GroundTerm'_to_from_gen_tree
+    Lemma Term'_to_from_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
-        (e : GroundTerm' symbol builtin)
-        : GroundTerm'_from_gen_tree symbol builtin (GroundTerm'_to_gen_tree symbol builtin e) = Some e
+        (e : Term' symbol builtin)
+        : Term'_from_gen_tree symbol builtin (Term'_to_gen_tree symbol builtin e) = Some e
     .
     Proof.
         destruct e; reflexivity.
     Qed.
 
     #[export]
-    Instance GroundTerm'_countable
+    Instance Term'_countable
         (symbol_set : Type)
         {symbols : Symbols symbol_set}
         (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
-        : Countable (GroundTerm' symbol_set builtin_set)
+        : Countable (Term' symbol_set builtin_set)
     .
     Proof.
         apply inj_countable
         with
-            (f := GroundTerm'_to_gen_tree symbol_set builtin_set)
-            (g := GroundTerm'_from_gen_tree symbol_set builtin_set)
+            (f := Term'_to_gen_tree symbol_set builtin_set)
+            (g := Term'_from_gen_tree symbol_set builtin_set)
         .
         intros x.
-        apply GroundTerm'_to_from_gen_tree.
+        apply Term'_to_from_gen_tree.
     Defined.
 
 End countable.
