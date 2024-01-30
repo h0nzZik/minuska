@@ -47,7 +47,7 @@ Fixpoint vars_of_aosB
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VB: VarsOf B var}
-    (o : AppliedOperator' symbol B)
+    (o : PreTerm' symbol B)
     : gset var :=
 match o with
 | ao_operator _ => ∅
@@ -62,7 +62,7 @@ Instance VarsOf_aosB
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VB: VarsOf B var}
-    : VarsOf (AppliedOperator' symbol B) var
+    : VarsOf (PreTerm' symbol B) var
 := {|
     vars_of := vars_of_aosB ; 
 |}.

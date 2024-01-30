@@ -5,16 +5,16 @@ From Minuska Require Import
 .
 
 #[universes(polymorphic=yes, cumulative=yes)]
-Inductive AppliedOperator' (operator : Type) (operand : Type)
+Inductive PreTerm' (operator : Type) (operand : Type)
 : Type
 :=
 | ao_operator (s : operator)
 | ao_app_operand
-    (aps : AppliedOperator' operator operand)
+    (aps : PreTerm' operator operand)
     (b : operand) 
 | ao_app_ao
-    (aps : AppliedOperator' operator operand)
-    (x : AppliedOperator' operator operand)
+    (aps : PreTerm' operator operand)
+    (x : PreTerm' operator operand)
 .
 
 
@@ -23,7 +23,7 @@ Inductive Term'
     (Operator : Type)
     (Operand : Type)
     : Type :=
-| aoo_app (ao : AppliedOperator' Operator Operand)
+| aoo_app (ao : PreTerm' Operator Operand)
 | aoo_operand (operand : Operand)
 .
 

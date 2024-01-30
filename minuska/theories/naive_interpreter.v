@@ -27,29 +27,29 @@ match sc with
 end.
 
 
-Fixpoint AppliedOperator'_symbol_A_to_OpenTermB
+Fixpoint PreTerm'_symbol_A_to_OpenTermB
     {Σ : StaticModel}
     {A B : Type}
     (A_to_OpenTermB : A ->
         ((Term' symbol B))
     )
-    (x : AppliedOperator' symbol A)
-    : ((AppliedOperator' symbol B))
+    (x : PreTerm' symbol A)
+    : ((PreTerm' symbol B))
 :=
 match x with
 | ao_operator a => (ao_operator a)
 | ao_app_operand x' a =>
-    let t1 : (AppliedOperator' symbol B)
-        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
+    let t1 : (PreTerm' symbol B)
+        := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
     match A_to_OpenTermB a with
     | (aoo_app t2) => (ao_app_ao t1 t2)
     | (aoo_operand t2) => (ao_app_operand t1 t2)
     end
 | ao_app_ao x1 x2 =>
-    let t1 : (AppliedOperator' symbol B)
-        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
-    let t2 : (AppliedOperator' symbol B)
-        := AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
+    let t1 : (PreTerm' symbol B)
+        := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
+    let t2 : (PreTerm' symbol B)
+        := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
     ao_app_ao t1 t2
 end.
 
@@ -63,7 +63,7 @@ Definition Term'_symbol_A_to_OpenTermB
     : ((Term' symbol B))
 :=
 match x with
-| aoo_app app => aoo_app (AppliedOperator'_symbol_A_to_OpenTermB A_to_OpenTermB app)
+| aoo_app app => aoo_app (PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB app)
 | aoo_operand operand => A_to_OpenTermB operand
 end.
 
@@ -226,13 +226,13 @@ Proof.
                     end
                 ) as zipper.
                 remember (fun (s1 s2 : symbol) => s1) as symleft.
-                remember (fun (g : AppliedOperator' symbol builtin_value) (e' : Expression) =>
+                remember (fun (g : PreTerm' symbol builtin_value) (e' : Expression) =>
                     (aoo_app g)
                 ) as f1.
-                remember (fun (b : builtin_value) (et : AppliedOperator' symbol Expression) =>
+                remember (fun (b : builtin_value) (et : PreTerm' symbol Expression) =>
                     (@aoo_operand symbol _ b)
                 ) as f2.
-                remember (AppliedOperator'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
+                remember (PreTerm'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
                 exists (aoo_app zipped).
                 cbn.
                 split.

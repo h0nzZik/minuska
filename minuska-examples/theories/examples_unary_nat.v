@@ -183,7 +183,7 @@ Module unary_nat.
     end.
 
     Fixpoint unary_to_nat'
-        (g : AppliedOperator' symbol builtin_value) : option nat :=
+        (g : PreTerm' symbol builtin_value) : option nat :=
     match g with
     | ao_operator "nat_zero" => Some 0
     | ao_app_ao (ao_operator "nat_succ") g' => n ← (unary_to_nat' g'); Some (S n)

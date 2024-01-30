@@ -39,7 +39,7 @@ Proof.
     remember (fr_to r) as to.
     destruct to as [ao|e].
     {
-        ltac1:(cut (exists (g'' : AppliedOperator' symbol builtin_value), satisfies ρ g'' ao)).
+        ltac1:(cut (exists (g'' : PreTerm' symbol builtin_value), satisfies ρ g'' ao)).
         {
             intros [g'' Hg''].
             eexists. econstructor. apply Hg''.

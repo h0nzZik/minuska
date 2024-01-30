@@ -15,7 +15,7 @@ Delimit Scope ConcreteScope with concrete.
 Definition to_Term'
     {Σ : StaticModel}
     {T : Type}
-    (x : ((T)+(AppliedOperator' symbol T)))
+    (x : ((T)+(PreTerm' symbol T)))
     : Term' symbol T
 :=
 match x with
@@ -118,12 +118,12 @@ Notation "'$' x" :=
     (at level 40)
 .
 
-Definition to_AppliedOperator'
+Definition to_PreTerm'
     {Σ : StaticModel}
     {T : Type}
     (s : symbol)
     (l : list ((Term' symbol T)))
-    : AppliedOperator' symbol T
+    : PreTerm' symbol T
 :=
     fold_left
         (fun a b =>
@@ -145,7 +145,7 @@ Definition apply_symbol'
     Term' symbol T
 :=
     fun l =>
-    (to_Term' (inr (to_AppliedOperator' ((s):symbol) l)))
+    (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
 .
 
 
@@ -158,7 +158,7 @@ Definition apply_symbol
     Term' symbol operand_type
 :=
     fun l =>
-    (to_Term' (inr (to_AppliedOperator' ((s):symbol) l)))
+    (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
 .
 
 Notation "[]" := ([]%list) : RuleScope.

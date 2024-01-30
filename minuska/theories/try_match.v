@@ -327,21 +327,21 @@ Class TryMatch
 
 Arguments try_match : simpl never.
 
-Fixpoint ApppliedOperator'_try_match_AppliedOperator'
+Fixpoint ApppliedOperator'_try_match_PreTerm'
     {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand2 : VarsOf Operand2 variable}
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
-    (x : AppliedOperator' symbol Operand1)
-    (y : AppliedOperator' symbol Operand2)
+    {_S1 : Satisfies Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (PreTerm' symbol Operand2) variable}
+    {_TM1 : TryMatch Operand1 (PreTerm' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_TM2 : TryMatch (PreTerm' symbol Operand1) Operand2}
+    (x : PreTerm' symbol Operand1)
+    (y : PreTerm' symbol Operand2)
     :
     option Valuation
 :=
@@ -352,14 +352,14 @@ match x, y with
 | ao_operator _, ao_app_ao _ _ => None
 | ao_app_operand _ _ , ao_operator _ => None
 | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
-    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+    ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2;
     ρ2 ← try_match o1 o2;
     merge_valuations ρ1 ρ2
 
 | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
-    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+    ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2 ;
     ρ2 ← try_match o1 o2;
@@ -369,17 +369,17 @@ match x, y with
 | ao_app_ao app1 o1, ao_operator _ => None
 
 | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
-    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+    ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2 ;
     ρ2 ← try_match o1 o2;
     merge_valuations ρ1 ρ2
 
 | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
-    ρ1 ← ApppliedOperator'_try_match_AppliedOperator' 
+    ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2 ;
-    ρ2 ← ApppliedOperator'_try_match_AppliedOperator' 
+    ρ2 ← ApppliedOperator'_try_match_PreTerm' 
         o1
         o2 ;
     merge_valuations ρ1 ρ2
@@ -391,7 +391,7 @@ end.
     The interface, as represented by the `TryMatch` class,
     hides this detail.
 *)
-Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
+Lemma ApppliedOperator'_try_match_PreTerm'_correct
     {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
@@ -400,20 +400,20 @@ Lemma ApppliedOperator'_try_match_AppliedOperator'_correct
     {_S0P : SatisfiesProperties Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_SP1 : SatisfiesProperties Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_S2P : SatisfiesProperties Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    {_S1 : Satisfies Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_SP1 : SatisfiesProperties Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (PreTerm' symbol Operand2) variable}
+    {_TM1 : TryMatch Operand1 (PreTerm' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_S2P : SatisfiesProperties Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_TM2 : TryMatch (PreTerm' symbol Operand1) Operand2}
     (ρ ρ' : Valuation)
-    (a : AppliedOperator' symbol Operand1)
-    (b : AppliedOperator' symbol Operand2)
+    (a : PreTerm' symbol Operand1)
+    (b : PreTerm' symbol Operand2)
     :
     ρ ⊆ ρ' ->
-    ApppliedOperator'_try_match_AppliedOperator' a b = Some ρ ->
+    ApppliedOperator'_try_match_PreTerm' a b = Some ρ ->
     matchesb ρ' a b = true
 .
 Proof.
@@ -648,7 +648,7 @@ Proof.
     }
 Qed.
 
-Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
+Lemma ApppliedOperator'_try_match_PreTerm'_complete
     {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
@@ -656,21 +656,21 @@ Lemma ApppliedOperator'_try_match_AppliedOperator'_complete
     {_S0 : Satisfies Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    {_S1 : Satisfies Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (PreTerm' symbol Operand2) variable}
+    {_TM1 : TryMatch Operand1 (PreTerm' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_TM2 : TryMatch (PreTerm' symbol Operand1) Operand2}
     (ρ : Valuation)
-    (a : AppliedOperator' symbol Operand1)
-    (b : AppliedOperator' symbol Operand2)
+    (a : PreTerm' symbol Operand1)
+    (b : PreTerm' symbol Operand2)
     :
     matchesb ρ a b = true ->
     ∃ ρ',
         vars_of ρ' = vars_of b /\
         ρ' ⊆ ρ /\
-        ApppliedOperator'_try_match_AppliedOperator' a b = Some ρ'
+        ApppliedOperator'_try_match_PreTerm' a b = Some ρ'
 .
 Proof.
     unfold Valuation in *.
@@ -974,7 +974,7 @@ Proof.
 Qed.
 
 #[export]
-Program Instance TryMatch_AppliedOperator'
+Program Instance TryMatch_PreTerm'
     {Σ : StaticModel}
     {Operand1 Operand2 : Type}
     {_VOperand1 : VarsOf Operand1 variable}
@@ -983,24 +983,24 @@ Program Instance TryMatch_AppliedOperator'
     {_SP0 : SatisfiesProperties Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_SP1 : SatisfiesProperties Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_SP2 : SatisfiesProperties Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    {_S1 : Satisfies Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_SP1 : SatisfiesProperties Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (PreTerm' symbol Operand2) variable}
+    {_TM1 : TryMatch Operand1 (PreTerm' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_SP2 : SatisfiesProperties Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_TM2 : TryMatch (PreTerm' symbol Operand1) Operand2}
 :
-    TryMatch (AppliedOperator' symbol Operand1) (AppliedOperator' symbol Operand2)
+    TryMatch (PreTerm' symbol Operand1) (PreTerm' symbol Operand2)
 := {|
-    try_match := ApppliedOperator'_try_match_AppliedOperator' ;
+    try_match := ApppliedOperator'_try_match_PreTerm' ;
     try_match_correct := _;
     try_match_complete := _;
 |}.
 Next Obligation.
     intros.
-    apply ApppliedOperator'_try_match_AppliedOperator'_correct with (ρ := ρ).
+    apply ApppliedOperator'_try_match_PreTerm'_correct with (ρ := ρ).
     { 
         unfold Valuation in *.
         apply reflexivity.
@@ -1009,7 +1009,7 @@ Next Obligation.
 Qed.
 Next Obligation.
     intros.
-    apply ApppliedOperator'_try_match_AppliedOperator'_complete.
+    apply ApppliedOperator'_try_match_PreTerm'_complete.
     assumption.
 Qed.
 Next Obligation.
@@ -1131,14 +1131,14 @@ Definition ApppliedOperatorOr'_try_match_Term'
     {_SP1 : SatisfiesProperties Valuation Operand1 Operand2 variable}
     {_M1 : Matches Operand1 Operand2 variable}
     {_TM1 : TryMatch Operand1 Operand2}
-    {_S2 : Satisfies Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
-    {_SP2 : SatisfiesProperties Valuation Operand1 (AppliedOperator' symbol Operand2) variable}
-    {_M2 : Matches Operand1 (AppliedOperator' symbol Operand2) variable}
-    {_TM2 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S3 : Satisfies Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
-    {_SP3 : SatisfiesProperties Valuation (AppliedOperator' symbol Operand1) Operand2 variable}
-    {_M3 : Matches (AppliedOperator' symbol Operand1) Operand2 variable}
-    {_TM3 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    {_S2 : Satisfies Valuation Operand1 (PreTerm' symbol Operand2) variable}
+    {_SP2 : SatisfiesProperties Valuation Operand1 (PreTerm' symbol Operand2) variable}
+    {_M2 : Matches Operand1 (PreTerm' symbol Operand2) variable}
+    {_TM2 : TryMatch Operand1 (PreTerm' symbol Operand2)}
+    {_S3 : Satisfies Valuation (PreTerm' symbol Operand1) Operand2 variable}
+    {_SP3 : SatisfiesProperties Valuation (PreTerm' symbol Operand1) Operand2 variable}
+    {_M3 : Matches (PreTerm' symbol Operand1) Operand2 variable}
+    {_TM3 : TryMatch (PreTerm' symbol Operand1) Operand2}
     (x : Term' symbol Operand1)
     (y : Term' symbol Operand2)
     : option Valuation :=
@@ -1164,14 +1164,14 @@ Program Instance TryMatch_Term'
     {_SP0 : SatisfiesProperties Valuation (Operand1) Operand2 variable}
     {_M0 : Matches (Operand1) Operand2 variable}
     {_TM0 : TryMatch Operand1 Operand2}
-    {_S1 : Satisfies Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_SP1 : SatisfiesProperties Valuation (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_M1 : Matches (Operand1) (AppliedOperator' symbol Operand2) variable}
-    {_TM1 : TryMatch Operand1 (AppliedOperator' symbol Operand2)}
-    {_S2 : Satisfies Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_SP2 : SatisfiesProperties Valuation ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_M2 : Matches ((AppliedOperator' symbol Operand1)) Operand2 variable}
-    {_TM2 : TryMatch (AppliedOperator' symbol Operand1) Operand2}
+    {_S1 : Satisfies Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_SP1 : SatisfiesProperties Valuation (Operand1) (PreTerm' symbol Operand2) variable}
+    {_M1 : Matches (Operand1) (PreTerm' symbol Operand2) variable}
+    {_TM1 : TryMatch Operand1 (PreTerm' symbol Operand2)}
+    {_S2 : Satisfies Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_SP2 : SatisfiesProperties Valuation ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_M2 : Matches ((PreTerm' symbol Operand1)) Operand2 variable}
+    {_TM2 : TryMatch (PreTerm' symbol Operand1) Operand2}
 :
     TryMatch (Term' symbol Operand1) (Term' symbol Operand2)
 := {|
@@ -1398,7 +1398,7 @@ Fail Next Obligation.
 Definition pure_GroundTerm_try_match_BuiltinOrVar
     {Σ : StaticModel}
     :
-    AppliedOperator' symbol builtin_value ->
+    PreTerm' symbol builtin_value ->
     BuiltinOrVar ->
     option Valuation
 := fun t bov =>
@@ -1412,7 +1412,7 @@ end.
 Program Instance TryMatch__pure_GroundTerm__BoV
     {Σ : StaticModel}
 :
-    TryMatch (AppliedOperator' symbol builtin_value) BuiltinOrVar
+    TryMatch (PreTerm' symbol builtin_value) BuiltinOrVar
 := {|
     try_match := pure_GroundTerm_try_match_BuiltinOrVar ;
     try_match_correct := _;
@@ -1507,9 +1507,9 @@ Program Instance TryMatch__builtin__AO'sB
     {Σ : StaticModel}
     {B : Type}
     {_VB : (VarsOf B variable) }
-    {_V1 : VarsOf (AppliedOperator' symbol B) variable}
+    {_V1 : VarsOf (PreTerm' symbol B) variable}
     :
-    TryMatch builtin_value (AppliedOperator' symbol B)
+    TryMatch builtin_value (PreTerm' symbol B)
 := {|
     try_match := fun _ _ => None ;
 |}.

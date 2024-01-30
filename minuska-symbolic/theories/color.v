@@ -180,16 +180,16 @@ Proof.
     }
 Qed.
 
-Program Fixpoint m2c_AppliedOperator'_symbol_builtin_rev
+Program Fixpoint m2c_PreTerm'_symbol_builtin_rev
     {Σ : spec_syntax.StaticModel}
-    (g : AppliedOperator' spec_syntax.symbol builtin_value)
+    (g : PreTerm' spec_syntax.symbol builtin_value)
     : { t : VTerm.term Σ | vterm_is_closed t }
 :=
 match g with
 | ao_operator s => @exist _ _ (@VTerm.Fun Σ (c_sym_symbol Σ s) []) _
 | ao_app_operand aps b =>
     let tpf : { t : VTerm.term Σ | vterm_is_closed t }
-        := m2c_AppliedOperator'_symbol_builtin_rev aps in
+        := m2c_PreTerm'_symbol_builtin_rev aps in
     let sym : symbol Σ
         := closed_vterm_proj_sym tpf in
     let args : list (VTerm.term Σ)
@@ -208,9 +208,9 @@ match g with
         )
 | ao_app_ao aps1 aps2 =>
     let tpf1 : { t : VTerm.term Σ | vterm_is_closed t }
-        := m2c_AppliedOperator'_symbol_builtin_rev aps1 in
+        := m2c_PreTerm'_symbol_builtin_rev aps1 in
     let tpf2 : { t : VTerm.term Σ | vterm_is_closed t }
-        := m2c_AppliedOperator'_symbol_builtin_rev aps2 in
+        := m2c_PreTerm'_symbol_builtin_rev aps2 in
     let sym : symbol Σ
         := closed_vterm_proj_sym tpf1 in
     let args : list (VTerm.term Σ)
@@ -231,7 +231,7 @@ Program Definition m2c_GroundTerm
     : { t : VTerm.term Σ | vterm_is_closed t }
 :=
 match g with
-| aoo_app app => m2c_AppliedOperator'_symbol_builtin_rev app
+| aoo_app app => m2c_PreTerm'_symbol_builtin_rev app
 | aoo_operand o =>
     @exist _ _ (@VTerm.Fun Σ (c_sym_builtin_value Σ o) []) _
 end
@@ -280,8 +280,8 @@ Qed.
 
 Lemma vterm_wellformed_m2c_GroundTerm
     {Σ : spec_syntax.StaticModel}
-    (g : AppliedOperator' spec_syntax.symbol builtin_value):
-    vterm_wellformed (proj1_sig (m2c_AppliedOperator'_symbol_builtin_rev g))
+    (g : PreTerm' spec_syntax.symbol builtin_value):
+    vterm_wellformed (proj1_sig (m2c_PreTerm'_symbol_builtin_rev g))
 .
 Proof.
     induction g.
@@ -292,7 +292,7 @@ Proof.
     }
     {
         simpl.
-        remember (m2c_AppliedOperator'_symbol_builtin_rev g) as tr.
+        remember (m2c_PreTerm'_symbol_builtin_rev g) as tr.
         destruct tr as [t pf].
         repeat split.
         { right. reflexivity. }
@@ -331,7 +331,7 @@ Proof.
         repeat split.
         { exact IHg2. }
         {
-            remember (m2c_AppliedOperator'_symbol_builtin_rev g1) as tr.
+            remember (m2c_PreTerm'_symbol_builtin_rev g1) as tr.
             assert (Htmp := closed_vterm_proj_args0_closed tr).
             remember (closed_vterm_proj_args0 tr) as l.
             destruct tr as [t pf].
@@ -363,7 +363,7 @@ Proof.
                 simpl in *.
                 destruct H2 as [H2|H2].
                 {
-                    remember (closed_vterm_proj_sym (m2c_AppliedOperator'_symbol_builtin_rev g1)) as tr.
+                    remember (closed_vterm_proj_sym (m2c_PreTerm'_symbol_builtin_rev g1)) as tr.
                     destruct tr; simpl in *.
                     {
                         exact I.
@@ -382,7 +382,7 @@ Proof.
                 destruct H3 as [H3|H3].
                 {
                     simpl in *.
-                    remember (closed_vterm_proj_sym (m2c_AppliedOperator'_symbol_builtin_rev g1_1)) as tr.
+                    remember (closed_vterm_proj_sym (m2c_PreTerm'_symbol_builtin_rev g1_1)) as tr.
                     destruct tr; simpl in *.
                     {
                         exact I.
@@ -438,7 +438,7 @@ Definition c2m_closed_vterm
         match sym with
         | c_sym_symbol _ sym' =>
             aoo_app (fold_left
-                (fun (y : AppliedOperator' spec_syntax.symbol builtin_value) (x : GroundTerm) =>
+                (fun (y : PreTerm' spec_syntax.symbol builtin_value) (x : GroundTerm) =>
                     match x with
                     | aoo_app app => @ao_app_ao spec_syntax.symbol builtin_value y app
                     | aoo_operand b => @ao_app_operand spec_syntax.symbol builtin_value y b
@@ -534,7 +534,7 @@ Proof.
             inversion pf.
         }
 
-        remember (m2c_AppliedOperator'_symbol_builtin_rev ao) as tr.
+        remember (m2c_PreTerm'_symbol_builtin_rev ao) as tr.
         destruct tr as [t pf].
         apply (f_equal proj1_sig) in Heqtr.
         simpl in Heqtr.
@@ -748,7 +748,7 @@ Proof.
                         (*ltac1:(f_equal).*)
                         remember (Forall_inv_tail _) as some_proof.
                         clear Heqsome_proof.
-                        remember (closed_vterm_proj_args0 (m2c_AppliedOperator'_symbol_builtin_rev ao)) as this_is_closed.
+                        remember (closed_vterm_proj_args0 (m2c_PreTerm'_symbol_builtin_rev ao)) as this_is_closed.
                         destruct pf'_backup as [somepf1 somepf2].
                         specialize (IHl ltac:(assumption) ltac:(assumption)).
                         ltac1:(ospecialize (IHl _)).
@@ -876,7 +876,7 @@ Proof.
             reflexivity.
         }
         {
-            remember (m2c_AppliedOperator'_symbol_builtin_rev ao) as tr1.
+            remember (m2c_PreTerm'_symbol_builtin_rev ao) as tr1.
             destruct tr1 as [t1 pf1].
             unfold c2m_closed_vterm.
             simpl in *.

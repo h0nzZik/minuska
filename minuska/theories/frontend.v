@@ -18,8 +18,8 @@ Arguments ft_ternary {Σ} f (t1) (t2) (t3).
 
 Fixpoint OpenTerm_to_ExprTerm'
     {Σ : StaticModel}
-    (t : AppliedOperator' symbol BuiltinOrVar)
-    : AppliedOperator' symbol Expression
+    (t : PreTerm' symbol BuiltinOrVar)
+    : PreTerm' symbol Expression
 :=
 match t with
 | ao_operator s => ao_operator s

@@ -8,12 +8,12 @@ Require Export Minuska.varsof.
 Section eqdec.
 
     #[export]
-    Instance AppliedOperator'_eqdec
+    Instance PreTerm'_eqdec
         {symbol : Type}
         {symbols : Symbols symbol}
         (builtin : Type)
         {builtin_dec : EqDecision builtin}
-        : EqDecision (AppliedOperator' symbol builtin)
+        : EqDecision (PreTerm' symbol builtin)
     .
     Proof.
         ltac1:(solve_decision).
@@ -117,13 +117,13 @@ End eqdec.
 
 Section countable.
 
-    Fixpoint AppliedOperator'_to_gen_tree
+    Fixpoint PreTerm'_to_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (a : AppliedOperator' symbol builtin)
+        (a : PreTerm' symbol builtin)
         : gen_tree symbol
     :=
     match a with
@@ -131,24 +131,24 @@ Section countable.
     | (ao_app_operand aps b) =>
         (
             let x := (encode (0, encode b)) in
-            GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree symbol builtin aps;AppliedOperator'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
+            GenNode (Pos.to_nat x) ([PreTerm'_to_gen_tree symbol builtin aps;PreTerm'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
         )
     | (ao_app_ao aps1 aps2)
         => (
             let xd := (1, encode 0) in
             let x := (encode xd) in
-            GenNode (Pos.to_nat x) ([AppliedOperator'_to_gen_tree _ _ aps1; AppliedOperator'_to_gen_tree _ _ aps2])
+            GenNode (Pos.to_nat x) ([PreTerm'_to_gen_tree _ _ aps1; PreTerm'_to_gen_tree _ _ aps2])
         )
     end.
 
-    Fixpoint AppliedOperator'_of_gen_tree
+    Fixpoint PreTerm'_of_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (t : gen_tree symbol)
-        : option (AppliedOperator' symbol builtin)
+        : option (PreTerm' symbol builtin)
     :=
     match t with
     | (GenLeaf s)
@@ -160,7 +160,7 @@ Section countable.
                 let d' := (@decode builtin _ _ pb) in
                 match d' with
                 | Some b =>
-                    let d'' := (AppliedOperator'_of_gen_tree symbol builtin gt1) in
+                    let d'' := (PreTerm'_of_gen_tree symbol builtin gt1) in
                     match d'' with 
                     | Some as1 => Some (ao_app_operand as1 b)
                     | _ => None
@@ -168,8 +168,8 @@ Section countable.
                 | _ => None
                 end
             | Some (1, _) =>
-                let d'1 := AppliedOperator'_of_gen_tree symbol builtin gt1 in
-                let d'2 := AppliedOperator'_of_gen_tree symbol builtin gt2 in
+                let d'1 := PreTerm'_of_gen_tree symbol builtin gt1 in
+                let d'2 := PreTerm'_of_gen_tree symbol builtin gt2 in
                 match d'1, d'2 with
                 | Some aps1, Some aps2 => Some (ao_app_ao aps1 aps2)
                 | _, _ => None
@@ -180,14 +180,14 @@ Section countable.
     end
     .
 
-    Lemma AppliedOperator'_of_to_gen_tree
+    Lemma PreTerm'_of_to_gen_tree
         (symbol : Type)
         {symbols : Symbols symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (a : AppliedOperator' symbol builtin)
-        : AppliedOperator'_of_gen_tree symbol builtin (AppliedOperator'_to_gen_tree symbol builtin a) = Some a
+        (a : PreTerm' symbol builtin)
+        : PreTerm'_of_gen_tree symbol builtin (PreTerm'_to_gen_tree symbol builtin a) = Some a
     .
     Proof.
         induction a; simpl.
@@ -212,16 +212,16 @@ Section countable.
         (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
-        : Countable (AppliedOperator' symbol_set builtin_set)
+        : Countable (PreTerm' symbol_set builtin_set)
     .
     Proof.
         apply inj_countable
         with
-            (f := AppliedOperator'_to_gen_tree symbol_set builtin_set)
-            (g := AppliedOperator'_of_gen_tree symbol_set builtin_set)
+            (f := PreTerm'_to_gen_tree symbol_set builtin_set)
+            (g := PreTerm'_of_gen_tree symbol_set builtin_set)
         .
         intros x.
-        apply AppliedOperator'_of_to_gen_tree.
+        apply PreTerm'_of_to_gen_tree.
     Qed.
 
     Definition GroundTerm'_to_gen_tree
@@ -231,7 +231,7 @@ Section countable.
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (e : GroundTerm' symbol builtin)
-        : gen_tree (builtin + (AppliedOperator' symbol builtin))%type
+        : gen_tree (builtin + (PreTerm' symbol builtin))%type
     :=
     match e with
     | (aoo_operand b) => GenLeaf (inl _ b)
@@ -245,7 +245,7 @@ Section countable.
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
-        (t : gen_tree (builtin+(AppliedOperator' symbol builtin))%type)
+        (t : gen_tree (builtin+(PreTerm' symbol builtin))%type)
         :  option (GroundTerm' symbol builtin)
     :=
     match t with
@@ -290,22 +290,22 @@ Section countable.
 End countable.
 
 
-Fixpoint AppliedOperator'_fmap
+Fixpoint PreTerm'_fmap
     {A B C : Type}
     (f : B -> C)
-    (ao : AppliedOperator' A B)
-    : AppliedOperator' A C
+    (ao : PreTerm' A B)
+    : PreTerm' A C
 :=
 match ao with
 | ao_operator o => ao_operator o
-| ao_app_operand ao' x => ao_app_operand (AppliedOperator'_fmap f ao') (f x)
-| ao_app_ao ao1 ao2 => ao_app_ao (AppliedOperator'_fmap f ao1) (AppliedOperator'_fmap f ao2)
+| ao_app_operand ao' x => ao_app_operand (PreTerm'_fmap f ao') (f x)
+| ao_app_ao ao1 ao2 => ao_app_ao (PreTerm'_fmap f ao1) (PreTerm'_fmap f ao2)
 end.
 
 #[export]
-Instance AppliedOperator'_A_B_fmap (A : Type)
-    : FMap (AppliedOperator' A)
-    := @AppliedOperator'_fmap A
+Instance PreTerm'_A_B_fmap (A : Type)
+    : FMap (PreTerm' A)
+    := @PreTerm'_fmap A
 .
 
 
@@ -337,23 +337,23 @@ Proof.
 Defined.
 
 
-Fixpoint AppliedOperator'_collapse_option
+Fixpoint PreTerm'_collapse_option
     {A B : Type}
-    (ao : AppliedOperator' A (option B))
-    : option (AppliedOperator' A B)
+    (ao : PreTerm' A (option B))
+    : option (PreTerm' A B)
 :=
 match ao with
 | ao_operator o =>
     Some (ao_operator o)
 
 | ao_app_operand ao' x =>
-    ao'' ← AppliedOperator'_collapse_option ao';
+    ao'' ← PreTerm'_collapse_option ao';
     x'' ← x;
     Some (ao_app_operand ao'' x'')
 
 | ao_app_ao ao1 ao2 =>
-    ao1'' ← AppliedOperator'_collapse_option ao1;
-    ao2'' ← AppliedOperator'_collapse_option ao2;
+    ao1'' ← PreTerm'_collapse_option ao1;
+    ao2'' ← PreTerm'_collapse_option ao2;
     Some (ao_app_ao ao1'' ao2'')
 end.
 
@@ -365,7 +365,7 @@ Definition Term'_collapse_option
 :=
 match aoo with
 | aoo_app ao =>
-    tmp ← AppliedOperator'_collapse_option ao;
+    tmp ← PreTerm'_collapse_option ao;
     Some (aoo_app tmp)
 | aoo_operand op =>
     tmp ← op;
@@ -373,15 +373,15 @@ match aoo with
 end.
 
 
-Fixpoint AppliedOperator'_zipWith
+Fixpoint PreTerm'_zipWith
     {A B C D : Type}
     (fa : A -> A -> A)
     (fbc : B -> C -> D)
-    (f1 : AppliedOperator' A B -> C -> D)
-    (f2 : B -> AppliedOperator' A C -> D)
-    (ao1 : AppliedOperator' A B)
-    (ao2 : AppliedOperator' A C)
-    : AppliedOperator' A D
+    (f1 : PreTerm' A B -> C -> D)
+    (f2 : B -> PreTerm' A C -> D)
+    (ao1 : PreTerm' A B)
+    (ao2 : PreTerm' A C)
+    : PreTerm' A D
 :=
 match ao1,ao2 with
 | ao_operator o1, ao_operator o2 => ao_operator (fa o1 o2)
@@ -391,28 +391,28 @@ match ao1,ao2 with
     ao_operator o1
 | ao_app_operand app1 op1, ao_app_operand app2 op2 =>
     ao_app_operand
-        (AppliedOperator'_zipWith fa fbc f1 f2 app1 app2)
+        (PreTerm'_zipWith fa fbc f1 f2 app1 app2)
         (fbc op1 op2)
 | ao_app_operand app1 op1, ao_operator o2 =>
     ao_operator o2
 | ao_app_operand app1 op1, ao_app_ao app21 app22 =>
     ao_app_operand
-        ((AppliedOperator'_zipWith fa fbc f1 f2 app1 app21))
+        ((PreTerm'_zipWith fa fbc f1 f2 app1 app21))
         (f2 op1 app22)
 | ao_app_ao app11 app12, ao_app_ao app21 app22 =>
     ao_app_ao
-        (AppliedOperator'_zipWith fa fbc f1 f2 app11 app21)
-        (AppliedOperator'_zipWith fa fbc f1 f2 app12 app22)
+        (PreTerm'_zipWith fa fbc f1 f2 app11 app21)
+        (PreTerm'_zipWith fa fbc f1 f2 app12 app22)
 | ao_app_ao app11 app12, ao_operator op2 =>
     ao_operator op2
 | ao_app_ao app11 app12, ao_app_operand app21 op22 =>
     ao_app_operand 
-        (AppliedOperator'_zipWith fa fbc f1 f2 app11 app21)
+        (PreTerm'_zipWith fa fbc f1 f2 app11 app21)
         (f1 app12 op22)
 end.
 
 Fixpoint AO'_getOperator {A B : Type}
-    (ao : AppliedOperator' A B)
+    (ao : PreTerm' A B)
     : A :=
 match ao with
 | ao_operator o => o

@@ -407,9 +407,9 @@ Qed.
 
 
 #[export]
-Instance SatisfiesProperties__AppliedOperator'_symbol_builtin__BuiltinOrVar
+Instance SatisfiesProperties__PreTerm'_symbol_builtin__BuiltinOrVar
     {Σ : StaticModel}
-    : SatisfiesProperties Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar variable
+    : SatisfiesProperties Valuation ((PreTerm' symbol builtin_value)) BuiltinOrVar variable
 .
 Proof.
     constructor. intros.
@@ -425,10 +425,10 @@ Proof.
 Qed.
 
 #[export]
-Instance SatisfiesProperties_AppliedOperator'_symbol_builtin_BuiltinOrVar
+Instance SatisfiesProperties_PreTerm'_symbol_builtin_BuiltinOrVar
     {Σ : StaticModel}
     :
-    SatisfiesProperties Valuation ((AppliedOperator' symbol builtin_value)) BuiltinOrVar variable
+    SatisfiesProperties Valuation ((PreTerm' symbol builtin_value)) BuiltinOrVar variable
 .
 Proof.
     constructor. intros.
@@ -456,7 +456,7 @@ Instance SatisfiesProperties__builtin__ao'B
     SatisfiesProperties
         V
         (builtin_value)
-        (AppliedOperator' symbol B)
+        (PreTerm' symbol B)
         var
 .
 Proof.
@@ -473,11 +473,11 @@ Instance SatisfiesProperties_aoxyo_aoxzo
     {_VV : VarsOf V var}
     {_SV : SubsetEq V}
     {_S1 : Satisfies V Y Z var}
-    {_S2 : Satisfies V ((AppliedOperator' X Y)) Z var}
-    {_S3 : Satisfies V ((AppliedOperator' X Y)) (AppliedOperator' X Z) var}
+    {_S2 : Satisfies V ((PreTerm' X Y)) Z var}
+    {_S3 : Satisfies V ((PreTerm' X Y)) (PreTerm' X Z) var}
     {_S1P : SatisfiesProperties V Y Z var}
-    {_S2P : SatisfiesProperties V ((AppliedOperator' X Y)) Z var}
-    {_S3P : SatisfiesProperties V ((AppliedOperator' X Y)) (AppliedOperator' X Z) var}
+    {_S2P : SatisfiesProperties V ((PreTerm' X Y)) Z var}
+    {_S3P : SatisfiesProperties V ((PreTerm' X Y)) (PreTerm' X Z) var}
     :
     SatisfiesProperties V ((Term' X Y)) (Term' X Z) var
 .
@@ -511,13 +511,13 @@ Instance SatisfiesProperties_aoxy_aoxz
     {_VV : VarsOf V var}
     {_SV : SubsetEq V}
     {_S1 : Satisfies V (Y) Z var}
-    {_S2 : Satisfies V (Y) (AppliedOperator' X Z) var}
-    {_S3 : Satisfies V ((AppliedOperator' X Y)) Z var}
+    {_S2 : Satisfies V (Y) (PreTerm' X Z) var}
+    {_S3 : Satisfies V ((PreTerm' X Y)) Z var}
     {_S1P : SatisfiesProperties V (Y) Z var}
-    {_S2P : SatisfiesProperties V (Y) (AppliedOperator' X Z) var}
-    {_S3P : SatisfiesProperties V ((AppliedOperator' X Y)) Z var}
+    {_S2P : SatisfiesProperties V (Y) (PreTerm' X Z) var}
+    {_S3P : SatisfiesProperties V ((PreTerm' X Y)) Z var}
     :
-    SatisfiesProperties V ((AppliedOperator' X Y)) (AppliedOperator' X Z) var
+    SatisfiesProperties V ((PreTerm' X Y)) (PreTerm' X Z) var
 .
 Proof.
     constructor. intros.
@@ -628,13 +628,13 @@ Qed.
 
 
 #[export]
-Instance SatisfiesProperties__AppliedOperator'_symbol_builtin_value__BOV
+Instance SatisfiesProperties__PreTerm'_symbol_builtin_value__BOV
     {Σ : StaticModel}
     {V : Type}
     :
     SatisfiesProperties
         Valuation
-        ((AppliedOperator' symbol builtin_value))
+        ((PreTerm' symbol builtin_value))
         BuiltinOrVar
         variable
 .
@@ -658,28 +658,28 @@ Instance SatisfiesProperties__lift_builtin_to_aosb
     {_SV : SubsetEq V}
     {_VV : VarsOf V var}
     {_S1 : Satisfies V (A) B var}
-    {_S2 : Satisfies V ((AppliedOperator' symbol A)) B var}
-    {_S3 : Satisfies V (AppliedOperator' symbol A) (AppliedOperator' symbol B) var}
+    {_S2 : Satisfies V ((PreTerm' symbol A)) B var}
+    {_S3 : Satisfies V (PreTerm' symbol A) (PreTerm' symbol B) var}
     {_S1P : SatisfiesProperties V (A) B var}
-    {_S2P : SatisfiesProperties V ((AppliedOperator' symbol A)) B var}
-    {_S3P : SatisfiesProperties V (AppliedOperator' symbol A) (AppliedOperator' symbol B) var}
+    {_S2P : SatisfiesProperties V ((PreTerm' symbol A)) B var}
+    {_S3P : SatisfiesProperties V (PreTerm' symbol A) (PreTerm' symbol B) var}
     :
     SatisfiesProperties
         V
-        ((AppliedOperator' symbol A))
+        ((PreTerm' symbol A))
         (Term' symbol B)
         var
 .
 Proof.
     constructor. unfold satisfies; simpl. intros.
-    unfold AppliedOperator'_symbol_A_satisfies_OpenTermB' in *.
+    unfold PreTerm'_symbol_A_satisfies_OpenTermB' in *.
     eapply satisfies_ext.
     { apply H. }
     { assumption. }
 Qed.    
 
 #[export]
-Instance SatisfiesProperties__AppliedOperator'_symbol_builtin__OpenTerm
+Instance SatisfiesProperties__PreTerm'_symbol_builtin__OpenTerm
     {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
@@ -687,14 +687,14 @@ Instance SatisfiesProperties__AppliedOperator'_symbol_builtin__OpenTerm
     {_SV : SubsetEq V}
     {_VV : VarsOf V var}
     {_S1 : Satisfies V (builtin_value) BuiltinOrVar var}
-    {_S2 : Satisfies V (AppliedOperator' symbol builtin_value) BuiltinOrVar var}
-    {_S3 : Satisfies V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar) var}
+    {_S2 : Satisfies V (PreTerm' symbol builtin_value) BuiltinOrVar var}
+    {_S3 : Satisfies V (PreTerm' symbol builtin_value) (PreTerm' symbol BuiltinOrVar) var}
     {_S1P : SatisfiesProperties V (builtin_value) BuiltinOrVar var}
-    {_S2P : SatisfiesProperties V (AppliedOperator' symbol builtin_value) BuiltinOrVar var}
-    {_S3P : SatisfiesProperties V (AppliedOperator' symbol builtin_value) (AppliedOperator' symbol BuiltinOrVar) var}
+    {_S2P : SatisfiesProperties V (PreTerm' symbol builtin_value) BuiltinOrVar var}
+    {_S3P : SatisfiesProperties V (PreTerm' symbol builtin_value) (PreTerm' symbol BuiltinOrVar) var}
     :
     SatisfiesProperties V
-        ((AppliedOperator' symbol builtin_value))
+        ((PreTerm' symbol builtin_value))
         OpenTerm
         var
 .
@@ -727,7 +727,7 @@ Instance SatisfiesProperties_asb_expr
     {Σ : StaticModel}:
     SatisfiesProperties
         Valuation
-        ((AppliedOperator' symbol builtin_value))
+        ((PreTerm' symbol builtin_value))
         Expression
         variable
 .

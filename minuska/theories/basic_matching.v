@@ -200,23 +200,23 @@ Section with_signature.
         {Σ : StaticModel}
     .
 
-    Fixpoint ApppliedOperator'_matches_AppliedOperator'
+    Fixpoint ApppliedOperator'_matches_PreTerm'
         {Operand1 Operand2 var : Type}
         {_varED : EqDecision var}
         {_varCnt : Countable var}
         {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
         {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
-        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies (gmap var GroundTerm) (AppliedOperator' symbol Operand1) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (PreTerm' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) (PreTerm' symbol Operand1) Operand2 var}
         {_V1 : VarsOf Operand1 var}
         {_V2 : VarsOf Operand2 var}
         {_M1 : Matches (symbol) Operand2 var}
         {_M2 : Matches (Operand1) Operand2 var}
-        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches (AppliedOperator' symbol Operand1) Operand2 var}
+        {_M3 : Matches (Operand1) (PreTerm' symbol Operand2) var}
+        {_M4 : Matches (PreTerm' symbol Operand1) Operand2 var}
         (ρ : (gmap var GroundTerm))
-        (x : (AppliedOperator' symbol Operand1))
-        (y : AppliedOperator' symbol Operand2)
+        (x : (PreTerm' symbol Operand1))
+        (y : PreTerm' symbol Operand2)
         : bool :=
     match x, y with
     | ao_operator a1, ao_operator a2 =>
@@ -225,25 +225,25 @@ Section with_signature.
     | ao_operator _, ao_app_ao _ _ => false
     | ao_app_operand _ _ , ao_operator _ => false
     | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
-        ApppliedOperator'_matches_AppliedOperator' 
+        ApppliedOperator'_matches_PreTerm' 
             ρ (app1)
             app2
         && matchesb ρ (o1) o2
     | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
-        ApppliedOperator'_matches_AppliedOperator' ρ app1 app2
+        ApppliedOperator'_matches_PreTerm' ρ app1 app2
         && matchesb ρ o1 o2
     | ao_app_ao app1 o1, ao_operator _ => false
     | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
-        ApppliedOperator'_matches_AppliedOperator' 
+        ApppliedOperator'_matches_PreTerm' 
             ρ app1
             app2
         && matchesb ρ o1 o2
     | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
-        ApppliedOperator'_matches_AppliedOperator' 
+        ApppliedOperator'_matches_PreTerm' 
             ρ app1
             app2
         &&
-        ApppliedOperator'_matches_AppliedOperator' 
+        ApppliedOperator'_matches_PreTerm' 
             ρ o1
             o2
     end.
@@ -308,7 +308,7 @@ Section with_signature.
 
 
     #[export]
-    Program Instance reflect__satisfies__ApppliedOperator'_matches_AppliedOperator'
+    Program Instance reflect__satisfies__ApppliedOperator'_matches_PreTerm'
         {Operand1 Operand2 var : Type}
         {_varED : EqDecision var}
         {_varCnt : Countable var}
@@ -316,20 +316,20 @@ Section with_signature.
         {_V2v : VarsOf Operand2 var}
         {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
         {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
-        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies (gmap var GroundTerm) (AppliedOperator' symbol Operand1) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (PreTerm' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) (PreTerm' symbol Operand1) Operand2 var}
         {_M1 : Matches (symbol) Operand2 var}
         {_M2 : Matches (Operand1) Operand2 var}
-        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches (AppliedOperator' symbol Operand1) Operand2 var}
+        {_M3 : Matches (Operand1) (PreTerm' symbol Operand2) var}
+        {_M4 : Matches (PreTerm' symbol Operand1) Operand2 var}
         :
         Matches
-            ((AppliedOperator' symbol Operand1))
-            (AppliedOperator' symbol Operand2)
+            ((PreTerm' symbol Operand1))
+            (PreTerm' symbol Operand2)
             var
         := {|
             matchesb :=
-                ApppliedOperator'_matches_AppliedOperator' ;
+                ApppliedOperator'_matches_PreTerm' ;
             matchesb_satisfies := _;
         |}.
     Next Obligation.
@@ -375,7 +375,7 @@ Section with_signature.
             simpl.
             specialize (IHx y).
             simpl in IHx.
-            destruct ((ApppliedOperator'_matches_AppliedOperator' ρ x y)) eqn:Heqm1.
+            destruct ((ApppliedOperator'_matches_PreTerm' ρ x y)) eqn:Heqm1.
             {
                 simpl.
                 apply reflect_iff in IHx.
@@ -419,7 +419,7 @@ Section with_signature.
             specialize (IHx y1).
             simpl in IHx.
             unfold satisfies; simpl.
-            destruct ((ApppliedOperator'_matches_AppliedOperator' ρ x y1)) eqn:Heqm1.
+            destruct ((ApppliedOperator'_matches_PreTerm' ρ x y1)) eqn:Heqm1.
             {
                 simpl.
                 apply reflect_iff in IHx.
@@ -647,12 +647,12 @@ Section with_signature.
         {_V2 : VarsOf Operand2 var}
         {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
         {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
-        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies (gmap var GroundTerm) ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (PreTerm' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) ((PreTerm' symbol Operand1)) Operand2 var}
         {_M1 : Matches (symbol) Operand2 var}
         {_M2 : Matches (Operand1) Operand2 var}
-        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_M3 : Matches (Operand1) (PreTerm' symbol Operand2) var}
+        {_M4 : Matches ((PreTerm' symbol Operand1)) Operand2 var}
         (ρ : (gmap var GroundTerm))
         (x : (Term' symbol Operand1))
         (y : Term' symbol Operand2)
@@ -678,12 +678,12 @@ Section with_signature.
         {_V2 : VarsOf Operand2 var}
         {_S1 : Satisfies (gmap var GroundTerm) (symbol) Operand2 var}
         {_S2 : Satisfies (gmap var GroundTerm) (Operand1) Operand2 var}
-        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_S4 : Satisfies (gmap var GroundTerm) ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_S3 : Satisfies (gmap var GroundTerm) (Operand1) (PreTerm' symbol Operand2) var}
+        {_S4 : Satisfies (gmap var GroundTerm) ((PreTerm' symbol Operand1)) Operand2 var}
         {_M1 : Matches (symbol) Operand2 var}
         {_M2 : Matches (Operand1) Operand2 var}
-        {_M3 : Matches (Operand1) (AppliedOperator' symbol Operand2) var}
-        {_M4 : Matches ((AppliedOperator' symbol Operand1)) Operand2 var}
+        {_M3 : Matches (Operand1) (PreTerm' symbol Operand2) var}
+        {_M4 : Matches ((PreTerm' symbol Operand1)) Operand2 var}
         :
         Matches
             (Term' symbol Operand1)
@@ -1178,7 +1178,7 @@ Section with_signature.
     Fail Next Obligation.
 
     Definition GroundTerm'_matches_BuiltinOrVar
-        : Valuation -> (AppliedOperator' symbol builtin_value) ->
+        : Valuation -> (PreTerm' symbol builtin_value) ->
             BuiltinOrVar ->
             bool
     := fun ρ t bov =>
@@ -1193,7 +1193,7 @@ Section with_signature.
         matches__builtin_value__OpenTerm
         :
         Matches
-            (AppliedOperator' symbol builtin_value)
+            (PreTerm' symbol builtin_value)
             BuiltinOrVar
             variable
         := {|
@@ -1279,7 +1279,7 @@ Section with_signature.
         :
         Matches
             builtin_value
-            (AppliedOperator' symbol B)
+            (PreTerm' symbol B)
             var
     := {|
         matchesb := fun _ _ _ => false ;
@@ -1313,7 +1313,7 @@ Section with_signature.
         Matches
             (Valuation * LeftRight)
             (builtin_value)
-            (AppliedOperator' symbol LocalRewriteOrOpenTermOrBOV)
+            (PreTerm' symbol LocalRewriteOrOpenTermOrBOV)
             (variable)
     := {|
         matchesb := fun _ _ _ => false ;
@@ -1365,7 +1365,7 @@ Section with_signature.
         :
         Matches
             (Valuation * builtin_value)
-            (AppliedOperator' symbol BuiltinOrVar)
+            (PreTerm' symbol BuiltinOrVar)
     := {|
         matchesb := fun _ _ => false ;
     |}.
@@ -1822,7 +1822,7 @@ Fail Next Obligation.
 Program Instance Matches_asb_expr
     {Σ : StaticModel}:
     Matches
-        ((AppliedOperator' symbol builtin_value))
+        ((PreTerm' symbol builtin_value))
         Expression
         variable
 := {|

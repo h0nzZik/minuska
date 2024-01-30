@@ -62,7 +62,7 @@ Module example_1.
     end
     .
 
-    Fixpoint my_number' (n : nat) : AppliedOperator' symbol builtin_value  :=
+    Fixpoint my_number' (n : nat) : PreTerm' symbol builtin_value  :=
     match n with
     | 0 => ao_operator "0"
     | S n' => ao_app_ao (ao_operator "s") (my_number' n')
@@ -70,7 +70,7 @@ Module example_1.
     .
 
     Fixpoint my_number'_inv
-        (g : AppliedOperator' symbol builtin_value)
+        (g : PreTerm' symbol builtin_value)
         : option nat
     :=
     match g with
