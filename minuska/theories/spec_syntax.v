@@ -147,7 +147,7 @@ Inductive SideCondition {Σ : StaticModel} :=
 | sc_constraint (c : AtomicProposition)
 .
 
-Definition RhsPattern {Σ : StaticModel} :=
+Definition ExpressionTerm {Σ : StaticModel} :=
     Term' symbol Expression
 .
 
@@ -158,7 +158,7 @@ Record RewritingRule {Σ : StaticModel}
 := mkRewritingRule
 {
     fr_from : SymbolicTerm ;
-    fr_to : RhsPattern ;
+    fr_to : ExpressionTerm ;
     fr_scs : list SideCondition ;
 }.
 

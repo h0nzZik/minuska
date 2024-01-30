@@ -666,7 +666,7 @@ Instance Satisfies_asb_expr
 
 
 #[export]
-Instance Satisfies__GroundTerm__RhsPattern
+Instance Satisfies__GroundTerm__ExpressionTerm
     {Σ : StaticModel}
     {V var : Type}
     {_varED : EqDecision var}
@@ -680,7 +680,7 @@ Instance Satisfies__GroundTerm__RhsPattern
     Satisfies
         V
         GroundTerm
-        RhsPattern
+        ExpressionTerm
         var
 .
 Proof. apply _. Defined.

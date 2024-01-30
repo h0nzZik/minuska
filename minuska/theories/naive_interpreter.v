@@ -100,7 +100,7 @@ Definition rewrite_with
 Lemma evaluate_rhs_pattern_correct
     {Σ : StaticModel}
     
-    (φ : RhsPattern)
+    (φ : ExpressionTerm)
     (ρ : Valuation)
     (g : GroundTerm)
     :

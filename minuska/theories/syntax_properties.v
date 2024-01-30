@@ -105,8 +105,8 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance RhsPattern_eqdec {Σ : StaticModel}
-        : EqDecision RhsPattern
+    Instance ExpressionTerm_eqdec {Σ : StaticModel}
+        : EqDecision ExpressionTerm
     .
     Proof.
         ltac1:(solve_decision).
