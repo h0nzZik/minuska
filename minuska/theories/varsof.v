@@ -50,9 +50,9 @@ Fixpoint vars_of_aosB
     (o : PreTerm' symbol B)
     : gset var :=
 match o with
-| ao_operator _ => ∅
-| ao_app_operand o' b => vars_of b ∪ vars_of_aosB o'
-| ao_app_ao o1 o2 => vars_of_aosB o1 ∪ vars_of_aosB o2
+| pt_operator _ => ∅
+| pt_app_operand o' b => vars_of b ∪ vars_of_aosB o'
+| pt_app_ao o1 o2 => vars_of_aosB o1 ∪ vars_of_aosB o2
 end.
 
 #[export]
@@ -90,8 +90,8 @@ Definition vars_of_OpenTerm
     (φ : OpenTerm)
     : gset variable :=
 match φ with
-| aoo_app o => vars_of o
-| aoo_operand bov => vars_of bov
+| term_preterm o => vars_of o
+| term_operand bov => vars_of bov
 end.
 
 #[export]
@@ -135,8 +135,8 @@ Definition vars_of_Term'B
     (φ : Term' symbol B)
     : gset var :=
 match φ with
-| aoo_app aop => vars_of aop
-| aoo_operand otwsc => vars_of otwsc
+| term_preterm aop => vars_of aop
+| term_operand otwsc => vars_of otwsc
 end.
 
 #[export]

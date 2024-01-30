@@ -64,8 +64,8 @@ Module example_1.
 
     Fixpoint my_number' (n : nat) : PreTerm' symbol builtin_value  :=
     match n with
-    | 0 => ao_operator "0"
-    | S n' => ao_app_ao (ao_operator "s") (my_number' n')
+    | 0 => pt_operator "0"
+    | S n' => pt_app_ao (pt_operator "s") (my_number' n')
     end
     .
 
@@ -74,27 +74,27 @@ Module example_1.
         : option nat
     :=
     match g with
-    | ao_operator s => if bool_decide (s = "0") then Some 0 else None
-    | ao_app_ao s arg =>
+    | pt_operator s => if bool_decide (s = "0") then Some 0 else None
+    | pt_app_ao s arg =>
         match s with
-        | ao_operator s => if bool_decide (s = "s") then
+        | pt_operator s => if bool_decide (s = "s") then
             n ← my_number'_inv arg;
             Some (S n)
         else None
         | _ => None
         end
-    | ao_app_operand _ _ => None
+    | pt_app_operand _ _ => None
     end
     .
 
     Definition my_number (n : nat) : GroundTerm :=
-        aoo_app (ao_app_ao (ao_operator "cfg") (my_number' n))
+        term_preterm (pt_app_ao (pt_operator "cfg") (my_number' n))
     .
 
     Definition my_number_inv (g : GroundTerm) : option nat
     :=
     match g with
-    | aoo_app (ao_app_ao (ao_operator "cfg") g') => my_number'_inv g'
+    | term_preterm (pt_app_ao (pt_operator "cfg") g') => my_number'_inv g'
     | _ => None
     end
     .
@@ -164,11 +164,11 @@ Module two_counters.
     .
 
     Definition pair_to_state (mn : nat*nat) : GroundTerm :=
-        aoo_app (ao_app_ao (ao_operator "cfg")
+        term_preterm (pt_app_ao (pt_operator "cfg")
         (
-            ao_app_ao
+            pt_app_ao
                 (
-                ao_app_ao (ao_operator "state")
+                pt_app_ao (pt_operator "state")
                     (example_1.my_number' mn.1)
                 )
                 (example_1.my_number' mn.2)
@@ -178,8 +178,8 @@ Module two_counters.
 
     Definition state_to_pair (g : GroundTerm) : option (nat*nat) :=
     match g with
-    | aoo_app (ao_app_ao (ao_operator "cfg")
-        (ao_app_ao (ao_app_ao (ao_operator "state") (m')) n'))
+    | term_preterm (pt_app_ao (pt_operator "cfg")
+        (pt_app_ao (pt_app_ao (pt_operator "state") (m')) n'))
         => 
             m ← example_1.my_number'_inv m';
             n ← example_1.my_number'_inv n';
@@ -233,10 +233,10 @@ Module two_counters_Z.
             rule ["my-rule"]:
                state [ $M , $N ]
             ~> state [
-                (($M) -Z (ft_element (aoo_operand (bv_Z 1)))),
+                (($M) -Z (ft_element (term_operand (bv_Z 1)))),
                 (($N) +Z ($M))
                 ]
-            where (($M) >Z (ft_element (aoo_operand (bv_Z 0))))
+            where (($M) >Z (ft_element (term_operand (bv_Z 0))))
         )
     ]))).
     
@@ -247,10 +247,10 @@ Module two_counters_Z.
 
     Definition pair_to_state (mn : (Z * Z)%type) : GroundTerm :=
         (ground(
-        aoo_app (
-            ao_app_operand
+        term_preterm (
+            pt_app_operand
                 (
-                ao_app_operand (ao_operator "state")
+                pt_app_operand (pt_operator "state")
                     ((bv_Z mn.1))
                 )
                 ((bv_Z mn.2))
@@ -259,8 +259,8 @@ Module two_counters_Z.
 
     Definition state_to_pair (g : GroundTerm) : option (Z * Z) :=
     match g with
-    | aoo_app (
-        (ao_app_operand (ao_app_operand (ao_operator "state") ((bv_Z m))) (bv_Z n)))
+    | term_preterm (
+        (pt_app_operand (pt_app_operand (pt_operator "state") ((bv_Z m))) (bv_Z n)))
         => 
             Some (m, n)
     | _ => None
@@ -398,7 +398,7 @@ Module arith.
 
     (*
     Definition initial1 (x y : nat) :=
-        (ground (cfg [ u_cseq [ ((@aoo_operand symbol _ (bv_nat x)) + (@aoo_operand symbol _ (bv_nat y))), u_emptyCseq [] ] ]))
+        (ground (cfg [ u_cseq [ ((@term_operand symbol _ (bv_nat x)) + (@term_operand symbol _ (bv_nat y))), u_emptyCseq [] ] ]))
     .*)
 
     Definition initial0 (x : Term' symbol builtin_value) :=
@@ -418,7 +418,7 @@ Module arith.
             (fun a (b : Term' symbol builtin_value) =>
                 plus [((bv_nat a)) , b]
             )
-            (@aoo_operand symbol builtin_value (bv_nat x))
+            (@term_operand symbol builtin_value (bv_nat x))
             ly
         ))))
     .
@@ -434,9 +434,9 @@ Module arith.
      
     (*
     (* Debugging notations *)
-    Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
-    Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
-    Notation "( x )" := (ao_operator x) (only printing).
+    Notation "( x ( y ) )" := (pt_app_ao x y) (only printing).
+    Notation "( x ( y ) )" := (pt_app_operand x y) (only printing).
+    Notation "( x )" := (pt_operator x) (only printing).
     Eval vm_compute in (interp_list 7 1 [20;30;40]).
     *)
     Lemma interp_list_test_1:
@@ -459,7 +459,7 @@ Module arith.
                     +
                     ((bv_nat 5) + (bv_nat 6))
                 ))))
-            = (rem, (ground (initial0 (aoo_operand (bv_nat 18)))), log)
+            = (rem, (ground (initial0 (term_operand (bv_nat 18)))), log)
     .
     Proof.
         eexists. eexists. reflexivity.
@@ -475,7 +475,7 @@ Module arith.
                     ((bv_nat 3) + (bv_nat 4))
                     
                 ))))
-            = (rem, (ground (initial0 (aoo_operand (bv_nat 4)))), log)
+            = (rem, (ground (initial0 (term_operand (bv_nat 4)))), log)
     .
     Proof.
         eexists. eexists. reflexivity.
@@ -511,29 +511,29 @@ Module fib_native.
         decl_rule (
             rule ["just-0"]:
                initialState [ (bov_builtin (bv_Z 0)) ]
-            ~> resultState [ (ft_element (aoo_operand (bv_Z 0))) ]
+            ~> resultState [ (ft_element (term_operand (bv_Z 0))) ]
         );
         decl_rule (
             rule ["just-1"]:
                initialState [ (bov_builtin (bv_Z 1)) ]
-            ~> resultState [ (ft_element (aoo_operand (bv_Z 1))) ]
+            ~> resultState [ (ft_element (term_operand (bv_Z 1))) ]
         );
         decl_rule (
             rule ["two-or-more"]:
                initialState [ $Tgt ]
             ~> state [
                 $Tgt,
-                (ft_element (aoo_operand (bv_Z 2))),
-                (ft_element (aoo_operand (bv_Z 1))),
-                (ft_element (aoo_operand (bv_Z 1))) 
+                (ft_element (term_operand (bv_Z 2))),
+                (ft_element (term_operand (bv_Z 1))),
+                (ft_element (term_operand (bv_Z 1))) 
                ]
-            where ((~~ ($Tgt ==Z (ft_element (aoo_operand (bv_Z 0)))))
-                && (~~ ($Tgt ==Z (ft_element (aoo_operand (bv_Z 1))))))
+            where ((~~ ($Tgt ==Z (ft_element (term_operand (bv_Z 0)))))
+                && (~~ ($Tgt ==Z (ft_element (term_operand (bv_Z 1))))))
         );
         decl_rule (
             rule ["step"]:
                state [ $Tgt, $Curr, $X, $Y ]
-            ~> state [ $Tgt, ($Curr +Z (ft_element (aoo_operand (bv_Z 1)))), ($X +Z $Y), $X ]
+            ~> state [ $Tgt, ($Curr +Z (ft_element (term_operand (bv_Z 1)))), ($X +Z $Y), $X ]
             where (~~ ($Curr ==Z $Tgt))
         );
         decl_rule (
@@ -560,7 +560,7 @@ Module fib_native.
 
     Definition fib_interp_from (fuel : nat) (from : Z)
         := interp_in_from Γ fuel (ground (initial0
-                (aoo_operand (bv_Z from))))
+                (term_operand (bv_Z from))))
     .
 
     Definition fib_interp_from_toint
@@ -568,7 +568,7 @@ Module fib_native.
     :=
         let r := fib_interp_from fuel from in
         let n : Z := (match r.1.2 with
-        | aoo_app (ao_app_operand (ao_operator "resultState") ((bv_Z val)))
+        | term_preterm (pt_app_operand (pt_operator "resultState") ((bv_Z val)))
           => val
         | _ => Z0
         end) in
@@ -578,34 +578,34 @@ Module fib_native.
     
     Eval vm_compute in (interp_from 50 (ground (initial0
     (
-        (aoo_operand (bv_Z 7))
+        (term_operand (bv_Z 7))
     )))).
 
     Lemma interp_test_fib_0:
         exists rem log,
             (fib_interp_from 10 0)
-            = (rem, (ground (resultState [(aoo_operand (bv_Z 0))])), log)
+            = (rem, (ground (resultState [(term_operand (bv_Z 0))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_1:
         exists rem log,
             (fib_interp_from 10 1)
-            = (rem, (ground (resultState [(aoo_operand (bv_Z 1))])), log)
+            = (rem, (ground (resultState [(term_operand (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_2:
         exists rem log,
             (fib_interp_from 10 2)
-            = (rem, (ground (resultState [(aoo_operand (bv_Z 1))])), log)
+            = (rem, (ground (resultState [(term_operand (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_3:
         exists rem log,
             (fib_interp_from 10 3)
-            = (rem, (ground (resultState [(aoo_operand (bv_Z 2))])), log)
+            = (rem, (ground (resultState [(term_operand (bv_Z 2))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
@@ -613,7 +613,7 @@ Module fib_native.
     Lemma interp_test_fib_11:
         exists rem log,
             (fib_interp_from 20 11)
-            = (rem, (ground (resultState [(aoo_operand (bv_Z 89))])), log)
+            = (rem, (ground (resultState [(term_operand (bv_Z 89))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
@@ -710,7 +710,7 @@ Module imp.
     Notation "x '*' y" := (arith_times [ x, y ]) : LangImpScope.
     Notation "x '/' y" := (arith_div [ x, y ]) : LangImpScope.
 
-    Definition builtin_string (s : string) := ((@aoo_operand symbol builtin_value (bv_str s))).
+    Definition builtin_string (s : string) := ((@term_operand symbol builtin_value (bv_str s))).
 
     Notation "x '<=' y" := (bexpr_le [x, y]) (at level 70) : LangImpScope.
 
@@ -735,7 +735,7 @@ Module imp.
         default_cseq_name := u_cseq_name ;
         default_empty_cseq_name := u_empty_cseq_name ;
         default_context_template
-            := (context-template u_cfg ([ u_state [HOLE; (aoo_operand ($X)) ] ]) with HOLE) ;
+            := (context-template u_cfg ([ u_state [HOLE; (term_operand ($X)) ] ]) with HOLE) ;
 
         default_isValue := isValue ;
     |}.
@@ -916,14 +916,14 @@ Module imp.
 
     (*
     (* Debugging notations *)
-    Notation "( x ( y ) )" := (ao_app_ao x y) (only printing).
-    Notation "( x ( y ) )" := (ao_app_operand x y) (only printing).
-    Notation "( x )" := (ao_operator x) (only printing).
+    Notation "( x ( y ) )" := (pt_app_ao x y) (only printing).
+    Notation "( x ( y ) )" := (pt_app_operand x y) (only printing).
+    Notation "( x )" := (pt_operator x) (only printing).
     *)
     (*  
     Compute (imp_interp_from 12 (ground (
-        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
-        ((aoo_operand (bv_Z 3)) + (var [builtin_string "x"]))
+        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 89))) ; then
+        ((term_operand (bv_Z 3)) + (var [builtin_string "x"]))
         )%limp)).
 
     *)
@@ -931,13 +931,13 @@ Module imp.
     Lemma test_imp_interp_1:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 12 (ground (
-        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
-        ((aoo_operand (bv_Z 3)) + (var [builtin_string "x"]))
+        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 89))) ; then
+        ((term_operand (bv_Z 3)) + (var [builtin_string "x"]))
         )%limp))
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 92)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 92)), u_emptyCseq [] ] , m ] ]
             )%limp)
         )
     .
@@ -946,10 +946,10 @@ Module imp.
     Qed.
     
     Definition program_2 := (ground (
-        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 89))) ; then
+        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 89))) ; then
         (if(
-            ( (var [builtin_string "x"]) <= (aoo_operand (bv_Z 90))) )
-         then (aoo_operand (bv_Z 10)) else (aoo_operand (bv_Z 20))
+            ( (var [builtin_string "x"]) <= (term_operand (bv_Z 90))) )
+         then (term_operand (bv_Z 10)) else (term_operand (bv_Z 20))
         )
         )%limp).
 
@@ -960,7 +960,7 @@ Module imp.
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 10)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 10)), u_emptyCseq [] ] , m ] ]
             )%limp)
         )
     .
@@ -969,10 +969,10 @@ Module imp.
     Qed.
 
     Definition program_3 := (ground (
-        (var [builtin_string "x"]) <:= ((aoo_operand (bv_Z 91))) ; then
+        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 91))) ; then
         (if(
-            ( (var [builtin_string "x"]) <= (aoo_operand (bv_Z 90))) )
-         then (aoo_operand (bv_Z 10)) else (aoo_operand (bv_Z 20))
+            ( (var [builtin_string "x"]) <= (term_operand (bv_Z 90))) )
+         then (term_operand (bv_Z 10)) else (term_operand (bv_Z 20))
         )
         )%limp).
 
@@ -983,7 +983,7 @@ Module imp.
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 20)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 20)), u_emptyCseq [] ] , m ] ]
             )%limp)
         )
     .
@@ -996,11 +996,11 @@ Module imp.
     (* Definition n {_br : BasicResolver} := (ground(v("n"))). *)
 
     Definition program_count_to (n : Z) := (ground (
-        (v("n")) <:= ((aoo_operand (bv_Z n))) ; then
-        (v("sum")) <:= ((aoo_operand (bv_Z 0))) ; then
-        (while(((aoo_operand (bv_Z 1)) <= (v("n")))) do (
+        (v("n")) <:= ((term_operand (bv_Z n))) ; then
+        (v("sum")) <:= ((term_operand (bv_Z 0))) ; then
+        (while(((term_operand (bv_Z 1)) <= (v("n")))) do (
             (v("sum")) <:= ((v("sum")) + ((v("n")))); then
-            (v("n")) <:= ((v("n")) + (aoo_operand (bv_Z (-1))))
+            (v("n")) <:= ((v("n")) + (term_operand (bv_Z (-1))))
         ) done
         );then (v("sum"))
         )%limp).
@@ -1011,7 +1011,7 @@ Module imp.
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 6)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 6)), u_emptyCseq [] ] , m ] ]
             )%limp)
         )
     .
@@ -1027,7 +1027,7 @@ Module imp.
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(aoo_operand (bv_Z 55)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 55)), u_emptyCseq [] ] , m ] ]
             )%limp),
             log
         )
@@ -1044,17 +1044,17 @@ Module imp.
     :=
         let r := imp_interp_from fuel (program_count_to n) in
         let n : Z := (match r.2 with
-        | aoo_app
-          (ao_app_ao (ao_operator "u_cfg")
-          (ao_app_operand (
-            ao_app_ao 
-                (ao_operator "u_state")
-                (ao_app_ao
-                    ( ao_app_operand
-                        (ao_operator "u_cseq")
+        | term_preterm
+          (pt_app_ao (pt_operator "u_cfg")
+          (pt_app_operand (
+            pt_app_ao 
+                (pt_operator "u_state")
+                (pt_app_ao
+                    ( pt_app_operand
+                        (pt_operator "u_cseq")
                         (bv_Z val)
                     )
-                    (ao_operator "u_empty_cseq")
+                    (pt_operator "u_empty_cseq")
                 )
         )
            (_) ))

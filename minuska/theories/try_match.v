@@ -346,19 +346,19 @@ Fixpoint ApppliedOperator'_try_match_PreTerm'
     option Valuation
 :=
 match x, y with
-| ao_operator a1, ao_operator a2 =>
+| pt_operator a1, pt_operator a2 =>
     if decide (a1 = a2) then Some ∅ else None
-| ao_operator _, ao_app_operand _ _ => None
-| ao_operator _, ao_app_ao _ _ => None
-| ao_app_operand _ _ , ao_operator _ => None
-| ao_app_operand app1 o1, ao_app_operand app2 o2 =>
+| pt_operator _, pt_app_operand _ _ => None
+| pt_operator _, pt_app_ao _ _ => None
+| pt_app_operand _ _ , pt_operator _ => None
+| pt_app_operand app1 o1, pt_app_operand app2 o2 =>
     ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2;
     ρ2 ← try_match o1 o2;
     merge_valuations ρ1 ρ2
 
-| ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+| pt_app_operand app1 o1, pt_app_ao app2 o2 =>
     ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2 ;
@@ -366,16 +366,16 @@ match x, y with
     merge_valuations ρ1 ρ2
 
 (* TODO? *)
-| ao_app_ao app1 o1, ao_operator _ => None
+| pt_app_ao app1 o1, pt_operator _ => None
 
-| ao_app_ao app1 o1, ao_app_operand app2 o2 =>
+| pt_app_ao app1 o1, pt_app_operand app2 o2 =>
     ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2 ;
     ρ2 ← try_match o1 o2;
     merge_valuations ρ1 ρ2
 
-| ao_app_ao app1 o1, ao_app_ao app2 o2 =>
+| pt_app_ao app1 o1, pt_app_ao app2 o2 =>
     ρ1 ← ApppliedOperator'_try_match_PreTerm' 
         app1
         app2 ;
@@ -1143,13 +1143,13 @@ Definition ApppliedOperatorOr'_try_match_Term'
     (y : Term' symbol Operand2)
     : option Valuation :=
 match x, y with
-| aoo_app app1, aoo_app app2 =>
+| term_preterm app1, term_preterm app2 =>
     try_match app1 app2
-| aoo_app app1, aoo_operand o2 =>
+| term_preterm app1, term_operand o2 =>
     try_match app1 o2
-| aoo_operand o1, aoo_app app2 =>
+| term_operand o1, term_preterm app2 =>
     None (* try_match o1 app2 *)
-| aoo_operand o1, aoo_operand o2 =>
+| term_operand o1, term_operand o2 =>
     try_match o1 o2
 end.
 
@@ -1242,7 +1242,7 @@ Definition builtin_value_try_match_BuiltinOrVar
 fun b bv =>
 match bv with
 | bov_builtin b' => if (decide (b = b')) then Some ∅ else None
-| bov_variable x => Some (<[x := (aoo_operand b)]>∅)
+| bov_variable x => Some (<[x := (term_operand b)]>∅)
 end.
 
 
@@ -1315,7 +1315,7 @@ Next Obligation.
         {
             apply bool_decide_eq_true in H.
             subst.
-            exists (<[x:=aoo_operand operand]> ∅).
+            exists (<[x:=term_operand operand]> ∅).
             split.
             {
                 unfold vars_of; simpl.
@@ -1405,7 +1405,7 @@ Definition pure_GroundTerm_try_match_BuiltinOrVar
 match bov with
 | bov_builtin b => None
 | bov_variable x =>
-    Some (<[x := (aoo_app t)]>∅)
+    Some (<[x := (term_preterm t)]>∅)
 end.
 
 #[export]
@@ -1439,7 +1439,7 @@ Next Obligation.
     }
     {
         apply bool_decide_eq_true in H.
-        exists (<[x:=aoo_app a]> ∅).
+        exists (<[x:=term_preterm a]> ∅).
         split.
         {
             unfold vars_of; simpl.

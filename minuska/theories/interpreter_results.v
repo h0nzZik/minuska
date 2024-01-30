@@ -58,7 +58,7 @@ Proof.
             destruct HH as [g''' Hg'''].
             destruct g'''.
             {
-                exists (ao_app_ao g'' ao0).
+                exists (pt_app_ao g'' ao0).
                 constructor; assumption.
             }
             {

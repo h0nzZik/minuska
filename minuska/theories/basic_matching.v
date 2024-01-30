@@ -219,26 +219,26 @@ Section with_signature.
         (y : PreTerm' symbol Operand2)
         : bool :=
     match x, y with
-    | ao_operator a1, ao_operator a2 =>
+    | pt_operator a1, pt_operator a2 =>
         bool_decide (a1 = a2)
-    | ao_operator _, ao_app_operand _ _ => false
-    | ao_operator _, ao_app_ao _ _ => false
-    | ao_app_operand _ _ , ao_operator _ => false
-    | ao_app_operand app1 o1, ao_app_operand app2 o2 =>
+    | pt_operator _, pt_app_operand _ _ => false
+    | pt_operator _, pt_app_ao _ _ => false
+    | pt_app_operand _ _ , pt_operator _ => false
+    | pt_app_operand app1 o1, pt_app_operand app2 o2 =>
         ApppliedOperator'_matches_PreTerm' 
             ρ (app1)
             app2
         && matchesb ρ (o1) o2
-    | ao_app_operand app1 o1, ao_app_ao app2 o2 =>
+    | pt_app_operand app1 o1, pt_app_ao app2 o2 =>
         ApppliedOperator'_matches_PreTerm' ρ app1 app2
         && matchesb ρ o1 o2
-    | ao_app_ao app1 o1, ao_operator _ => false
-    | ao_app_ao app1 o1, ao_app_operand app2 o2 =>
+    | pt_app_ao app1 o1, pt_operator _ => false
+    | pt_app_ao app1 o1, pt_app_operand app2 o2 =>
         ApppliedOperator'_matches_PreTerm' 
             ρ app1
             app2
         && matchesb ρ o1 o2
-    | ao_app_ao app1 o1, ao_app_ao app2 o2 =>
+    | pt_app_ao app1 o1, pt_app_ao app2 o2 =>
         ApppliedOperator'_matches_PreTerm' 
             ρ app1
             app2
@@ -658,13 +658,13 @@ Section with_signature.
         (y : Term' symbol Operand2)
         : bool :=
     match x, y with
-    | aoo_app app1, aoo_app app2 =>
+    | term_preterm app1, term_preterm app2 =>
         matchesb ρ app1 app2
-    | aoo_app app1, aoo_operand o2 =>
+    | term_preterm app1, term_operand o2 =>
         matchesb ρ app1 o2
-    | aoo_operand o1, aoo_app app2 =>
+    | term_operand o1, term_preterm app2 =>
         false (*matchesb (ρ, o1) app2*)
-    | aoo_operand o1, aoo_operand o2 =>
+    | term_operand o1, term_operand o2 =>
         matchesb ρ o1 o2
     end.
 
@@ -823,8 +823,8 @@ Section with_signature.
     | bov_variable x =>
         match ρ !! x with
         | None => false
-        | Some (aoo_app _) => false
-        | Some (aoo_operand b') => bool_decide (b = b')
+        | Some (term_preterm _) => false
+        | Some (term_operand b') => bool_decide (b = b')
         end
     end.
 
@@ -1019,14 +1019,14 @@ Section with_signature.
         : Valuation -> builtin_value -> OpenTerm -> bool :=
     fun ρ b t =>
     match t with
-    | aoo_app _ => false
-    | aoo_operand (bov_variable x) =>
+    | term_preterm _ => false
+    | term_operand (bov_variable x) =>
         match ρ !! x with
         | None => false
-        | Some (aoo_app _) => false
-        | Some (aoo_operand b') => bool_decide (b = b')
+        | Some (term_preterm _) => false
+        | Some (term_operand b') => bool_decide (b = b')
         end
-    | aoo_operand (bov_builtin b') =>
+    | term_operand (bov_builtin b') =>
         bool_decide (b = b')
     end.
 
@@ -1185,7 +1185,7 @@ Section with_signature.
     match bov with
     | bov_builtin b => false
     | bov_variable x =>
-        bool_decide (ρ !! x = Some (aoo_app t))
+        bool_decide (ρ !! x = Some (term_preterm t))
     end.
 
     #[export]
@@ -1799,7 +1799,7 @@ Program Instance Matches__builtin__Expr
     Matches builtin_value (Expression) variable
 := {|
     matchesb := (fun ρ b e =>
-        bool_decide (Expression_evaluate ρ e = Some (aoo_operand b))
+        bool_decide (Expression_evaluate ρ e = Some (term_operand b))
     ) ;
 |}.
 Next Obligation.
@@ -1827,7 +1827,7 @@ Program Instance Matches_asb_expr
         variable
 := {|
     matchesb := (fun ρ x e =>
-        bool_decide (Expression_evaluate ρ e = Some (aoo_app x))   ) ;
+        bool_decide (Expression_evaluate ρ e = Some (term_preterm x))   ) ;
 |}.
 Next Obligation.
     unfold satisfies. simpl.

@@ -19,8 +19,8 @@ Definition to_Term'
     : Term' symbol T
 :=
 match x with
-| inl x' => aoo_operand x'
-| inr x' => aoo_app x'
+| inl x' => term_operand x'
+| inr x' => term_preterm x'
 end
 .
 
@@ -104,10 +104,10 @@ Instance ToAOO_inj {Σ : StaticModel} {_basic_resolver : BasicResolver}
     {_eq: TCEq T operand_type}
     : ToAOO  (T)
 .
-Proof. inversion _eq. subst. constructor. apply aoo_operand. Defined.
+Proof. inversion _eq. subst. constructor. apply term_operand. Defined.
 (*
 := {|
-    to_aoo_opt := aoo_operand;
+    to_aoo_opt := term_operand;
 |}.
 *)
 
@@ -128,12 +128,12 @@ Definition to_PreTerm'
     fold_left
         (fun a b =>
             match b with
-            | aoo_operand b' => ao_app_operand a b'
-            | aoo_app b' => ao_app_ao a b'
+            | term_operand b' => pt_app_operand a b'
+            | term_preterm b' => pt_app_ao a b'
             end
         )
         l
-        (ao_operator s)
+        (pt_operator s)
 .
 
 Definition apply_symbol'

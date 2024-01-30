@@ -8,11 +8,11 @@ From Minuska Require Import
 Inductive PreTerm' (operator : Type) (operand : Type)
 : Type
 :=
-| ao_operator (s : operator)
-| ao_app_operand
+| pt_operator (s : operator)
+| pt_app_operand
     (aps : PreTerm' operator operand)
     (b : operand) 
-| ao_app_ao
+| pt_app_ao
     (aps : PreTerm' operator operand)
     (x : PreTerm' operator operand)
 .
@@ -23,13 +23,13 @@ Inductive Term'
     (Operator : Type)
     (Operand : Type)
     : Type :=
-| aoo_app (ao : PreTerm' Operator Operand)
-| aoo_operand (operand : Operand)
+| term_preterm (ao : PreTerm' Operator Operand)
+| term_operand (operand : Operand)
 .
 
 
-Arguments aoo_operand {Operator Operand}%type_scope operand.
-Arguments aoo_app {Operator Operand}%type_scope ao.
+Arguments term_operand {Operator Operand}%type_scope operand.
+Arguments term_preterm {Operator Operand}%type_scope ao.
 
 
 Polymorphic
@@ -37,9 +37,9 @@ Definition GroundTerm' (symbol : Type) (builtin : Type)
     := (Term' symbol builtin)
 .
 
-Arguments ao_operator {operator operand}%type_scope s.
-Arguments ao_app_operand {operator operand}%type_scope aps b.
-Arguments ao_app_ao {operator operand}%type_scope aps x.
+Arguments pt_operator {operator operand}%type_scope s.
+Arguments pt_app_operand {operator operand}%type_scope aps b.
+Arguments pt_app_ao {operator operand}%type_scope aps x.
 
 Class MVariables (variable : Type) := {
     variable_eqdec :: EqDecision variable ;

@@ -37,20 +37,20 @@ Fixpoint PreTerm'_symbol_A_to_OpenTermB
     : ((PreTerm' symbol B))
 :=
 match x with
-| ao_operator a => (ao_operator a)
-| ao_app_operand x' a =>
+| pt_operator a => (pt_operator a)
+| pt_app_operand x' a =>
     let t1 : (PreTerm' symbol B)
         := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x' in
     match A_to_OpenTermB a with
-    | (aoo_app t2) => (ao_app_ao t1 t2)
-    | (aoo_operand t2) => (ao_app_operand t1 t2)
+    | (term_preterm t2) => (pt_app_ao t1 t2)
+    | (term_operand t2) => (pt_app_operand t1 t2)
     end
-| ao_app_ao x1 x2 =>
+| pt_app_ao x1 x2 =>
     let t1 : (PreTerm' symbol B)
         := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x1 in
     let t2 : (PreTerm' symbol B)
         := PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB x2 in
-    ao_app_ao t1 t2
+    pt_app_ao t1 t2
 end.
 
 Definition Term'_symbol_A_to_OpenTermB
@@ -63,8 +63,8 @@ Definition Term'_symbol_A_to_OpenTermB
     : ((Term' symbol B))
 :=
 match x with
-| aoo_app app => aoo_app (PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB app)
-| aoo_operand operand => A_to_OpenTermB operand
+| term_preterm app => term_preterm (PreTerm'_symbol_A_to_OpenTermB A_to_OpenTermB app)
+| term_operand operand => A_to_OpenTermB operand
 end.
 
 
@@ -222,18 +222,18 @@ Proof.
                 remember (fun (v:builtin_value) (e':Expression) =>
                     match Expression_evaluate ρ e' with
                     | Some v' => v'
-                    | None => aoo_operand v
+                    | None => term_operand v
                     end
                 ) as zipper.
                 remember (fun (s1 s2 : symbol) => s1) as symleft.
                 remember (fun (g : PreTerm' symbol builtin_value) (e' : Expression) =>
-                    (aoo_app g)
+                    (term_preterm g)
                 ) as f1.
                 remember (fun (b : builtin_value) (et : PreTerm' symbol Expression) =>
-                    (@aoo_operand symbol _ b)
+                    (@term_operand symbol _ b)
                 ) as f2.
                 remember (PreTerm'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
-                exists (aoo_app zipped).
+                exists (term_preterm zipped).
                 cbn.
                 split.
                 {

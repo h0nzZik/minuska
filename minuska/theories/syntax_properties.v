@@ -127,13 +127,13 @@ Section countable.
         : gen_tree symbol
     :=
     match a with
-    | (ao_operator s) => GenLeaf s
-    | (ao_app_operand aps b) =>
+    | (pt_operator s) => GenLeaf s
+    | (pt_app_operand aps b) =>
         (
             let x := (encode (0, encode b)) in
             GenNode (Pos.to_nat x) ([PreTerm'_to_gen_tree symbol builtin aps;PreTerm'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
         )
-    | (ao_app_ao aps1 aps2)
+    | (pt_app_ao aps1 aps2)
         => (
             let xd := (1, encode 0) in
             let x := (encode xd) in
@@ -152,7 +152,7 @@ Section countable.
     :=
     match t with
     | (GenLeaf s)
-        => Some (ao_operator s)
+        => Some (pt_operator s)
     | (GenNode n [gt1;gt2]) =>
         let d := (@decode (nat*positive) _ _ (Pos.of_nat n)) in
         match d with
@@ -162,7 +162,7 @@ Section countable.
                 | Some b =>
                     let d'' := (PreTerm'_of_gen_tree symbol builtin gt1) in
                     match d'' with 
-                    | Some as1 => Some (ao_app_operand as1 b)
+                    | Some as1 => Some (pt_app_operand as1 b)
                     | _ => None
                     end
                 | _ => None
@@ -171,7 +171,7 @@ Section countable.
                 let d'1 := PreTerm'_of_gen_tree symbol builtin gt1 in
                 let d'2 := PreTerm'_of_gen_tree symbol builtin gt2 in
                 match d'1, d'2 with
-                | Some aps1, Some aps2 => Some (ao_app_ao aps1 aps2)
+                | Some aps1, Some aps2 => Some (pt_app_ao aps1 aps2)
                 | _, _ => None
                 end
             | _ => None
@@ -234,8 +234,8 @@ Section countable.
         : gen_tree (builtin + (PreTerm' symbol builtin))%type
     :=
     match e with
-    | (aoo_operand b) => GenLeaf (inl _ b)
-    | (aoo_app s) => GenLeaf (inr _ s)
+    | (term_operand b) => GenLeaf (inl _ b)
+    | (term_preterm s) => GenLeaf (inr _ s)
     end
     .
 
@@ -249,8 +249,8 @@ Section countable.
         :  option (GroundTerm' symbol builtin)
     :=
     match t with
-    | (GenLeaf (inl _ b)) => Some (aoo_operand b)
-    | (GenLeaf (inr _ s)) => Some (aoo_app s)
+    | (GenLeaf (inl _ b)) => Some (term_operand b)
+    | (GenLeaf (inr _ s)) => Some (term_preterm s)
     | _ => None
     end
     .
@@ -297,9 +297,9 @@ Fixpoint PreTerm'_fmap
     : PreTerm' A C
 :=
 match ao with
-| ao_operator o => ao_operator o
-| ao_app_operand ao' x => ao_app_operand (PreTerm'_fmap f ao') (f x)
-| ao_app_ao ao1 ao2 => ao_app_ao (PreTerm'_fmap f ao1) (PreTerm'_fmap f ao2)
+| pt_operator o => pt_operator o
+| pt_app_operand ao' x => pt_app_operand (PreTerm'_fmap f ao') (f x)
+| pt_app_ao ao1 ao2 => pt_app_ao (PreTerm'_fmap f ao1) (PreTerm'_fmap f ao2)
 end.
 
 #[export]
@@ -316,8 +316,8 @@ Definition Term'_fmap
     : Term' A C
 :=
 match aoo with
-| aoo_app ao => aoo_app (f <$> ao)
-| aoo_operand o => aoo_operand (f o)
+| term_preterm ao => term_preterm (f <$> ao)
+| term_operand o => term_operand (f o)
 end.
 
 
@@ -343,18 +343,18 @@ Fixpoint PreTerm'_collapse_option
     : option (PreTerm' A B)
 :=
 match ao with
-| ao_operator o =>
-    Some (ao_operator o)
+| pt_operator o =>
+    Some (pt_operator o)
 
-| ao_app_operand ao' x =>
+| pt_app_operand ao' x =>
     ao'' ← PreTerm'_collapse_option ao';
     x'' ← x;
-    Some (ao_app_operand ao'' x'')
+    Some (pt_app_operand ao'' x'')
 
-| ao_app_ao ao1 ao2 =>
+| pt_app_ao ao1 ao2 =>
     ao1'' ← PreTerm'_collapse_option ao1;
     ao2'' ← PreTerm'_collapse_option ao2;
-    Some (ao_app_ao ao1'' ao2'')
+    Some (pt_app_ao ao1'' ao2'')
 end.
 
 
@@ -364,12 +364,12 @@ Definition Term'_collapse_option
     : option (Term' A B)
 :=
 match aoo with
-| aoo_app ao =>
+| term_preterm ao =>
     tmp ← PreTerm'_collapse_option ao;
-    Some (aoo_app tmp)
-| aoo_operand op =>
+    Some (term_preterm tmp)
+| term_operand op =>
     tmp ← op;
-    Some (aoo_operand tmp)
+    Some (term_operand tmp)
 end.
 
 
@@ -384,29 +384,29 @@ Fixpoint PreTerm'_zipWith
     : PreTerm' A D
 :=
 match ao1,ao2 with
-| ao_operator o1, ao_operator o2 => ao_operator (fa o1 o2)
-| ao_operator o1, ao_app_operand app2 op2 =>
-    ao_operator o1
-| ao_operator o1, ao_app_ao app21 app22 =>
-    ao_operator o1
-| ao_app_operand app1 op1, ao_app_operand app2 op2 =>
-    ao_app_operand
+| pt_operator o1, pt_operator o2 => pt_operator (fa o1 o2)
+| pt_operator o1, pt_app_operand app2 op2 =>
+    pt_operator o1
+| pt_operator o1, pt_app_ao app21 app22 =>
+    pt_operator o1
+| pt_app_operand app1 op1, pt_app_operand app2 op2 =>
+    pt_app_operand
         (PreTerm'_zipWith fa fbc f1 f2 app1 app2)
         (fbc op1 op2)
-| ao_app_operand app1 op1, ao_operator o2 =>
-    ao_operator o2
-| ao_app_operand app1 op1, ao_app_ao app21 app22 =>
-    ao_app_operand
+| pt_app_operand app1 op1, pt_operator o2 =>
+    pt_operator o2
+| pt_app_operand app1 op1, pt_app_ao app21 app22 =>
+    pt_app_operand
         ((PreTerm'_zipWith fa fbc f1 f2 app1 app21))
         (f2 op1 app22)
-| ao_app_ao app11 app12, ao_app_ao app21 app22 =>
-    ao_app_ao
+| pt_app_ao app11 app12, pt_app_ao app21 app22 =>
+    pt_app_ao
         (PreTerm'_zipWith fa fbc f1 f2 app11 app21)
         (PreTerm'_zipWith fa fbc f1 f2 app12 app22)
-| ao_app_ao app11 app12, ao_operator op2 =>
-    ao_operator op2
-| ao_app_ao app11 app12, ao_app_operand app21 op22 =>
-    ao_app_operand 
+| pt_app_ao app11 app12, pt_operator op2 =>
+    pt_operator op2
+| pt_app_ao app11 app12, pt_app_operand app21 op22 =>
+    pt_app_operand 
         (PreTerm'_zipWith fa fbc f1 f2 app11 app21)
         (f1 app12 op22)
 end.
@@ -415,9 +415,9 @@ Fixpoint AO'_getOperator {A B : Type}
     (ao : PreTerm' A B)
     : A :=
 match ao with
-| ao_operator o => o
-| ao_app_operand ao' _ => AO'_getOperator ao'
-| ao_app_ao ao' _ => AO'_getOperator ao'
+| pt_operator o => o
+| pt_app_operand ao' _ => AO'_getOperator ao'
+| pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
 

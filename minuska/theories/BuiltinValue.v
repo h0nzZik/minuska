@@ -28,13 +28,13 @@ Section sec.
         let my_list_size := (fix my_list_size (l : list (Term' symbol BuiltinValue0)) : nat :=
         match l with
         | nil => 1
-        | (cons (aoo_operand o) xs) => S ((BVsize o) + (my_list_size xs))
-        | (cons (aoo_app ao) xs) =>
+        | (cons (term_operand o) xs) => S ((BVsize o) + (my_list_size xs))
+        | (cons (term_preterm ao) xs) =>
             let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
             match ao with
-            | (ao_operator _) => 1
-            | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
-            | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+            | (pt_operator _) => 1
+            | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+            | (pt_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
             end) in
             S ((myaosize ao) + (my_list_size xs))
         end) in
@@ -43,44 +43,44 @@ Section sec.
         let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (Term' symbol BuiltinValue0)) : nat :=
     match m with
     | (PNode001 n) => S (my_pmapne_size n)
-    | (PNode010 (aoo_operand o)) => S (BVsize o)
-    | (PNode010 (aoo_app a)) =>
+    | (PNode010 (term_operand o)) => S (BVsize o)
+    | (PNode010 (term_preterm a)) =>
         let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
         match ao with
-        | (ao_operator _) => 1
-        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
-        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        | (pt_operator _) => 1
+        | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (pt_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
         end) in
         S (myaosize a)
-    | (PNode011 (aoo_operand o) n) => S ((BVsize o) + (my_pmapne_size n))
-    | (PNode011 (aoo_app a) n) =>
+    | (PNode011 (term_operand o) n) => S ((BVsize o) + (my_pmapne_size n))
+    | (PNode011 (term_preterm a) n) =>
         let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
         match ao with
-        | (ao_operator _) => 1
-        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
-        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        | (pt_operator _) => 1
+        | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (pt_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
         end) in
         S ((myaosize a) + (my_pmapne_size n))
     | (PNode100 n) => S (my_pmapne_size n)
     | (PNode101 n1 n2) => S ((my_pmapne_size n1) + (my_pmapne_size n2))
-    | (PNode110 n (aoo_operand o)) => S ((BVsize o) + (my_pmapne_size n))
-    | (PNode110 n (aoo_app a)) =>
+    | (PNode110 n (term_operand o)) => S ((BVsize o) + (my_pmapne_size n))
+    | (PNode110 n (term_preterm a)) =>
         let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
         match ao with
-        | (ao_operator _) => 1
-        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
-        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        | (pt_operator _) => 1
+        | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (pt_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
         end) in
         S ((myaosize a) + (my_pmapne_size n))
-    | (PNode111 n1 (aoo_app a) n2) =>
+    | (PNode111 n1 (term_preterm a) n2) =>
         let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
         match ao with
-        | (ao_operator _) => 1
-        | (ao_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
-        | (ao_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
+        | (pt_operator _) => 1
+        | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
+        | (pt_app_ao ao1 ao2) => S ((myaosize ao1)+(myaosize ao2))
         end) in
         S ((myaosize a) + (my_pmapne_size n1) + (my_pmapne_size n2))
-    | (PNode111 n1 (aoo_operand o) n2) => S ((BVsize o) + (my_pmapne_size n1) + (my_pmapne_size n2))
+    | (PNode111 n1 (term_operand o) n2) => S ((BVsize o) + (my_pmapne_size n1) + (my_pmapne_size n2))
     end) in
         S (my_pmapne_size m)
     | bv_pmap (PEmpty) => 1
@@ -894,22 +894,22 @@ Section sec.
                 | (cons (GenNode 1 [(o)]) (xs))   => (
                     o' ← (tree_to_bv o);
                     xs' ← (tree_to_mylist xs);
-                    Some (cons (aoo_operand o') xs')
+                    Some (cons (term_operand o') xs')
                 )
                 | (cons (GenNode 0 [(ao)]) (xs)) => (
                     let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
                     match t with
-                    | (GenLeaf (bvl_sym o)) => Some (ao_operator o)
+                    | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
                         (
                             x' ← (tree_to_myao x);
                             y' ← (tree_to_bv y);
-                            Some (ao_app_operand x' y')
+                            Some (pt_app_operand x' y')
                         )
                     |  (GenNode 1 [(x);(y)]) => (
                         x' ← (tree_to_myao x);
                         y' ← (tree_to_myao y);
-                        Some (ao_app_ao x' y')
+                        Some (pt_app_ao x' y')
                         )
                         
                     |  _ => None
@@ -917,7 +917,7 @@ Section sec.
                     ) in
                     ao' ← (tree_to_myao ao);
                     xs' ← (tree_to_mylist xs);
-                    Some (cons (aoo_app ao') xs') 
+                    Some (cons (term_preterm ao') xs') 
                 )
                 | _ => None
                 end
@@ -934,50 +934,50 @@ Section sec.
             )
             | (GenNode 2 [(GenNode 1 [(o)])]) => (
                 o' ← (tree_to_bv o);
-                Some (PNode010 (aoo_operand o')) 
+                Some (PNode010 (term_operand o')) 
             )
             | (GenNode 2 [(GenNode 0 [(ao')])]) => (
                 let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
                     match t with
-                    | (GenLeaf (bvl_sym o)) => Some (ao_operator o)
+                    | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
                         (
                             x' ← (tree_to_myao x);
                             y' ← (tree_to_bv y);
-                            Some (ao_app_operand x' y')
+                            Some (pt_app_operand x' y')
                         )
                     |  (GenNode 1 [(x);(y)]) => (
                         x' ← (tree_to_myao x);
                         y' ← (tree_to_myao y);
-                        Some (ao_app_ao x' y')
+                        Some (pt_app_ao x' y')
                         )
                         
                     |  _ => None
                     end
                     ) in
                 ao'' ← (tree_to_myao ao');
-                Some (PNode010 (aoo_app ao''))
+                Some (PNode010 (term_preterm ao''))
             )
             
             | (GenNode 3 [(GenNode 1 [(o)]);(y')])  => (
                 o' ← (tree_to_bv o);
                 y'' ← (tree_to_mypm y');
-                Some (PNode011 (aoo_operand o') y'')
+                Some (PNode011 (term_operand o') y'')
             )
             | (GenNode 3 [(GenNode 0 [(ao')]);(y')]) => (
                 let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
                     match t with
-                    | (GenLeaf (bvl_sym o)) => Some (ao_operator o)
+                    | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
                         (
                             x' ← (tree_to_myao x);
                             y' ← (tree_to_bv y);
-                            Some (ao_app_operand x' y')
+                            Some (pt_app_operand x' y')
                         )
                     |  (GenNode 1 [(x);(y)]) => (
                         x' ← (tree_to_myao x);
                         y' ← (tree_to_myao y);
-                        Some (ao_app_ao x' y')
+                        Some (pt_app_ao x' y')
                         )
                         
                     |  _ => None
@@ -985,7 +985,7 @@ Section sec.
                     ) in
                 ao'' ← (tree_to_myao ao');
                 y'' ← (tree_to_mypm y');
-                Some (PNode011 (aoo_app ao'') y'')
+                Some (PNode011 (term_preterm ao'') y'')
             )
             | (GenNode 4 [(x')]) => (
                 x'' ← (tree_to_mypm x');
@@ -999,22 +999,22 @@ Section sec.
             | (GenNode 6 [(x'); (GenNode 1 [(o')])]) => (
                 x'' ← (tree_to_mypm x');
                 o'' ← (tree_to_bv o');
-                Some (PNode110 x'' (aoo_operand o''))
+                Some (PNode110 x'' (term_operand o''))
                 )
             | (GenNode 6 [(x'); (GenNode 0 [(ao')])]) => (
                 let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
                     match t with
-                    | (GenLeaf (bvl_sym o)) => Some (ao_operator o)
+                    | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
                         (
                             x' ← (tree_to_myao x);
                             y' ← (tree_to_bv y);
-                            Some (ao_app_operand x' y')
+                            Some (pt_app_operand x' y')
                         )
                     |  (GenNode 1 [(x);(y)]) => (
                         x' ← (tree_to_myao x);
                         y' ← (tree_to_myao y);
-                        Some (ao_app_ao x' y')
+                        Some (pt_app_ao x' y')
                         )
                         
                     |  _ => None
@@ -1022,28 +1022,28 @@ Section sec.
                     ) in
                 x'' ← (tree_to_mypm x');
                 ao'' ← (tree_to_myao ao');
-                Some (PNode110 x'' (aoo_app ao''))
+                Some (PNode110 x'' (term_preterm ao''))
             )
             | (GenNode 7%nat  [(x'); (GenNode 1 [(o)]); (z')]) => (
                 x'' ← (tree_to_mypm x');
                 o' ← (tree_to_bv o);
                 z'' ← (tree_to_mypm z');
-                Some (PNode111 x'' (aoo_operand o') z'')
+                Some (PNode111 x'' (term_operand o') z'')
             )
             | (GenNode 7%nat  [(x'); (GenNode 0 [(ao')]); (z')]) => (
                 let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
                     match t with
-                    | (GenLeaf (bvl_sym o)) => Some (ao_operator o)
+                    | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
                         (
                             x' ← (tree_to_myao x);
                             y' ← (tree_to_bv y);
-                            Some (ao_app_operand x' y')
+                            Some (pt_app_operand x' y')
                         )
                     |  (GenNode 1 [(x);(y)]) => (
                         x' ← (tree_to_myao x);
                         y' ← (tree_to_myao y);
-                        Some (ao_app_ao x' y')
+                        Some (pt_app_ao x' y')
                         )
                         
                     |  _ => None
@@ -1052,7 +1052,7 @@ Section sec.
                 ao'' ← (tree_to_myao ao');
                 z'' ← (tree_to_mypm z');
                 x'' ← (tree_to_mypm x');
-                Some (PNode111 x'' (aoo_app ao'') z'')
+                Some (PNode111 x'' (term_preterm ao'') z'')
             )
             | _ => None
             end) in
@@ -1078,14 +1078,14 @@ Section sec.
                 (l' : list (Term' symbol BuiltinValue0)) : list (gen_tree BVLeaf) := (
             match l' with
             | nil => nil
-            | (cons (aoo_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
-            | (cons (aoo_app ao) xs) => (
+            | (cons (term_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
+            | (cons (term_preterm ao) xs) => (
                 let myao_to_tree := (
                     fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
-                    | (ao_operator o) => GenLeaf (bvl_sym o)
-                    | (ao_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
-                    | (ao_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    | (pt_operator o) => GenLeaf (bvl_sym o)
+                    | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
+                    | (pt_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
                     end
                     )
                 ) in
@@ -1100,27 +1100,27 @@ Section sec.
             fix mypm_to_tree (p : Pmap_ne (Term' symbol BuiltinValue0)) : gen_tree BVLeaf := (
             match p with
             | (PNode001 n)                     => GenNode 1 [(mypm_to_tree n)]
-            | (PNode010 (aoo_operand o))       => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]
-            | (PNode010 (aoo_app ao'))         => (
+            | (PNode010 (term_operand o))       => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]
+            | (PNode010 (term_preterm ao'))         => (
                 let myao_to_tree := (
                     fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
-                    | (ao_operator o) => GenLeaf (bvl_sym o)
-                    | (ao_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
-                    | (ao_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    | (pt_operator o) => GenLeaf (bvl_sym o)
+                    | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
+                    | (pt_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
                     end
                     )
                 ) in
                 GenNode 2 [(GenNode 0 [(myao_to_tree ao')])]
             )
-            | (PNode011 (aoo_operand o) y')    => GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')]
-            | (PNode011 (aoo_app ao') y')      => (
+            | (PNode011 (term_operand o) y')    => GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')]
+            | (PNode011 (term_preterm ao') y')      => (
                 let myao_to_tree := (
                     fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
-                    | (ao_operator o) => GenLeaf (bvl_sym o)
-                    | (ao_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
-                    | (ao_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    | (pt_operator o) => GenLeaf (bvl_sym o)
+                    | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
+                    | (pt_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
                     end
                     )
                 ) in
@@ -1128,27 +1128,27 @@ Section sec.
             )
             | (PNode100 x')                    => GenNode 4 [(mypm_to_tree x')]
             | (PNode101 x' y')                 => GenNode 5 [(mypm_to_tree x'); (mypm_to_tree y')]
-            | (PNode110 x' (aoo_operand o'))   => GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])]
-            | (PNode110 x' (aoo_app ao'))      => (
+            | (PNode110 x' (term_operand o'))   => GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])]
+            | (PNode110 x' (term_preterm ao'))      => (
                 let myao_to_tree := (
                     fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
-                    | (ao_operator o) => GenLeaf (bvl_sym o)
-                    | (ao_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
-                    | (ao_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    | (pt_operator o) => GenLeaf (bvl_sym o)
+                    | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
+                    | (pt_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
                     end
                     )
                 ) in
                 GenNode 6 [(mypm_to_tree x'); (GenNode 0 [(myao_to_tree ao')])]
             )
-            | (PNode111 x' (aoo_operand o) z') => GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')]
-            | (PNode111 x' (aoo_app ao') z')   => (
+            | (PNode111 x' (term_operand o) z') => GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')]
+            | (PNode111 x' (term_preterm ao') z')   => (
                 let myao_to_tree := (
                     fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
-                    | (ao_operator o) => GenLeaf (bvl_sym o)
-                    | (ao_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
-                    | (ao_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
+                    | (pt_operator o) => GenLeaf (bvl_sym o)
+                    | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
+                    | (pt_app_ao x y) => GenNode 1 [(myao_to_tree x);(myao_to_tree y)]
                     end
                     )
                 ) in
@@ -1193,7 +1193,7 @@ Section sec.
                     {
                         simpl.
                         rewrite bind_Some.
-                        exists (aoo_app (ao_operator s) :: m).
+                        exists (term_preterm (pt_operator s) :: m).
                         split>[|reflexivity].
                         rewrite bind_Some.
                         exists m.
@@ -1220,12 +1220,12 @@ Section sec.
 
                         simpl.
                         rewrite bind_Some.
-                        exists (aoo_app (ao_app_operand ao b) :: m).
+                        exists (term_preterm (pt_app_operand ao b) :: m).
                         split>[|reflexivity].
                         
 
                         rewrite bind_Some.
-                        exists (ao_app_operand ao b).
+                        exists (pt_app_operand ao b).
                         split.
                         {
                             rewrite bind_Some.
@@ -1259,10 +1259,10 @@ Section sec.
                     {
                         simpl.
                         rewrite bind_Some.
-                        exists (aoo_app (ao_app_ao ao1 ao2) :: m).
+                        exists (term_preterm (pt_app_ao ao1 ao2) :: m).
                         split>[|reflexivity].
                         rewrite bind_Some.
-                        exists ((ao_app_ao ao1 ao2)).
+                        exists ((pt_app_ao ao1 ao2)).
 
                         simpl in IHao1.
                         ltac1:(ospecialize (IHao1 _)).
@@ -1318,7 +1318,7 @@ Section sec.
                 {
                     simpl.
                     rewrite bind_Some.
-                    exists ((aoo_operand operand :: m)).
+                    exists ((term_operand operand :: m)).
                     split>[|reflexivity].
                     rewrite bind_Some.
                     exists operand.

@@ -22,13 +22,13 @@ Fixpoint OpenTerm_to_ExprTerm'
     : PreTerm' symbol Expression
 :=
 match t with
-| ao_operator s => ao_operator s
-| ao_app_operand ao (bov_variable x)
-    => ao_app_operand (OpenTerm_to_ExprTerm' ao) (ft_variable x)
-| ao_app_operand ao (bov_builtin b)
-    => ao_app_operand (OpenTerm_to_ExprTerm' ao) (ft_element (aoo_operand b))
-| ao_app_ao ao1 ao2
-    => ao_app_ao (OpenTerm_to_ExprTerm' ao1) (OpenTerm_to_ExprTerm' ao2)
+| pt_operator s => pt_operator s
+| pt_app_operand ao (bov_variable x)
+    => pt_app_operand (OpenTerm_to_ExprTerm' ao) (ft_variable x)
+| pt_app_operand ao (bov_builtin b)
+    => pt_app_operand (OpenTerm_to_ExprTerm' ao) (ft_element (term_operand b))
+| pt_app_ao ao1 ao2
+    => pt_app_ao (OpenTerm_to_ExprTerm' ao1) (OpenTerm_to_ExprTerm' ao2)
 end
 .
 
@@ -38,9 +38,9 @@ Definition OpenTerm_to_ExprTerm
     : Term' symbol Expression
 :=
 match t with
-| aoo_operand (bov_variable x) => aoo_operand (ft_variable x)
-| aoo_operand (bov_builtin b) => aoo_operand (ft_element (aoo_operand b))
-| aoo_app t' => aoo_app (OpenTerm_to_ExprTerm' t')
+| term_operand (bov_variable x) => term_operand (ft_variable x)
+| term_operand (bov_builtin b) => term_operand (ft_element (term_operand b))
+| term_preterm t' => term_preterm (OpenTerm_to_ExprTerm' t')
 end
 .
 
@@ -277,13 +277,13 @@ Section wsm.
         let vars : list variable
             := argument_sequence to_var arity in
         let lhs_vars : list (Term' symbol BuiltinOrVar)
-            := (aoo_operand <$> (bov_variable <$> vars)) in
+            := (term_operand <$> (bov_variable <$> vars)) in
         let rhs_vars : list (Term' symbol Expression)
-            := (aoo_operand <$> (ft_variable <$> vars)) in
+            := (term_operand <$> (ft_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
         let lhs_selected_var : (Term' symbol BuiltinOrVar)
-            := aoo_operand (bov_variable selected_var) in
+            := term_operand (bov_variable selected_var) in
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
@@ -292,13 +292,13 @@ Section wsm.
         rule [lbl]:
             cseq_context _ _ (cseq ([
                 (apply_symbol' sym lhs_vars);
-                (aoo_operand (bov_variable REST_SEQ))
+                (term_operand (bov_variable REST_SEQ))
             ])%list)
          ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq ([
                 lhs_selected_var;
                 cseq ([
                     (freezer freezerLbl position (delete position lhs_vars));
-                    (aoo_operand (bov_variable REST_SEQ))
+                    (term_operand (bov_variable REST_SEQ))
                 ])%list
             ])%list)))
             where (( ~~ (isValue (ft_variable selected_var)) ) && side_condition )
@@ -319,13 +319,13 @@ Section wsm.
         let vars : list variable
             := argument_sequence to_var arity in
         let lhs_vars : list (Term' symbol BuiltinOrVar)
-            := (aoo_operand <$> (bov_variable <$> vars)) in
+            := (term_operand <$> (bov_variable <$> vars)) in
         let rhs_vars : list (Term' symbol Expression)
-            := (aoo_operand <$> (ft_variable <$> vars)) in
+            := (term_operand <$> (ft_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
         let lhs_selected_var : (Term' symbol BuiltinOrVar)
-            := aoo_operand (bov_variable selected_var) in
+            := term_operand (bov_variable selected_var) in
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         rule [lbl]:
@@ -334,13 +334,13 @@ Section wsm.
                 lhs_selected_var;
                 cseq ([
                     (freezer freezerLbl position (delete position lhs_vars));
-                    (aoo_operand (bov_variable REST_SEQ))
+                    (term_operand (bov_variable REST_SEQ))
                 ])%list
             ])%list
            ))
          ~> OpenTerm_to_ExprTerm ((force_cseq_context (cseq [
                 (apply_symbol' sym lhs_vars);
-                (aoo_operand (bov_variable REST_SEQ))
+                (term_operand (bov_variable REST_SEQ))
             ])%list))
             where (isValue (ft_variable selected_var))
     .

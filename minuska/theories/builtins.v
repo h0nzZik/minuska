@@ -171,7 +171,7 @@ Module default_builtin.
 
         Definition err
         :=
-            @aoo_operand symbol BuiltinValue bv_error
+            @term_operand symbol BuiltinValue bv_error
         .
 
         Definition impl_isBuiltin (bv : BuiltinValue) : BuiltinValue
@@ -220,7 +220,7 @@ Module default_builtin.
             : GroundTerm' symbol BuiltinValue
         :=
         match x with
-        | aoo_operand x' => aoo_operand (f x')
+        | term_operand x' => term_operand (f x')
         | _ => err
         end.
 
@@ -230,7 +230,7 @@ Module default_builtin.
             : GroundTerm' symbol BuiltinValue
         :=
         match x, y with
-        | aoo_operand x', aoo_operand y' => aoo_operand (f x' y')
+        | term_operand x', term_operand y' => term_operand (f x' y')
         | _,_ => err
         end.
 
@@ -361,11 +361,11 @@ Module default_builtin.
             builtin_nullary_function_interp
                 := fun p =>
                 match p with
-                | b_false => aoo_operand (bv_bool false)
-                | b_true => aoo_operand (bv_bool true)
-                | b_zero => aoo_operand (bv_nat 0)
-                | b_list_empty => (aoo_operand (bv_list nil))
-                | b_map_empty => (aoo_operand (bv_pmap ∅))
+                | b_false => term_operand (bv_bool false)
+                | b_true => term_operand (bv_bool true)
+                | b_zero => term_operand (bv_nat 0)
+                | b_list_empty => (term_operand (bv_list nil))
+                | b_map_empty => (term_operand (bv_pmap ∅))
                 end ;
  
             builtin_unary_function_interp
@@ -374,28 +374,28 @@ Module default_builtin.
                 | b_isBuiltin => bfmap1 impl_isBuiltin v
                 | b_isError =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isError x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isError x))
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_isBool =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isBool x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isBool x))
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_isString =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isString x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isString x))
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_isList =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isList x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isList x))
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_isMap =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isMap x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isMap x))
+                    | _ => term_operand (bv_bool false)
                     end
 
                 | b_bool_neg =>
@@ -403,40 +403,40 @@ Module default_builtin.
                 
                 | b_isNat =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isNat x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isNat x))
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_isZ =>
                     match v with
-                    | aoo_operand x => aoo_operand (bv_bool (impl_isZ x))
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand x => term_operand (bv_bool (impl_isZ x))
+                    | _ => term_operand (bv_bool false)
                     end
                 
                 | b_nat_isZero =>
                     match v with
-                    | aoo_operand (bv_nat 0) => aoo_operand (bv_bool true)
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand (bv_nat 0) => term_operand (bv_bool true)
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_nat_isSucc =>
                     match v with
-                    | aoo_operand (bv_nat (S _)) => aoo_operand (bv_bool true)
-                    | _ => aoo_operand (bv_bool false)
+                    | term_operand (bv_nat (S _)) => term_operand (bv_bool true)
+                    | _ => term_operand (bv_bool false)
                     end
                 | b_nat_succOf =>
                     bfmap_nat__nat S v
                 | b_nat_predOf =>
                     match v with
-                    | aoo_operand (bv_nat (S n)) => (aoo_operand (bv_nat n))
+                    | term_operand (bv_nat (S n)) => (term_operand (bv_nat n))
                     | _ => err
                     end
                 | b_map_size =>
                     match v with
-                    | aoo_operand (bv_pmap m) => (aoo_operand (bv_nat (size m)))
+                    | term_operand (bv_pmap m) => (term_operand (bv_nat (size m)))
                     | _ => err
                     end
                 | b_Z_of_nat =>
                   match v with
-                  | aoo_operand (bv_nat n) => (aoo_operand (bv_Z (Z.of_nat n)))
+                  | term_operand (bv_nat n) => (term_operand (bv_Z (Z.of_nat n)))
                   | _ => err
                   end
                 end;
@@ -445,7 +445,7 @@ Module default_builtin.
                 := fun p v1 v2 =>
                 match p with
                 | b_eq =>
-                    aoo_operand (bv_bool (bool_decide (v1 = v2)))
+                    term_operand (bv_bool (bool_decide (v1 = v2)))
                 | b_and =>
                     bfmap_bool_bool__bool andb v1 v2
                 | b_or =>
@@ -466,7 +466,7 @@ Module default_builtin.
                     bfmap_nat_nat__nat mult v1 v2
                 | b_nat_div =>
                     match v2 with
-                    | aoo_operand (bv_nat (0)) => err
+                    | term_operand (bv_nat (0)) => err
                     | _ => bfmap_nat_nat__nat Nat.div v1 v2
                     end
                 | b_Z_isLe =>
@@ -481,22 +481,22 @@ Module default_builtin.
                     bfmap_Z_Z__Z Z.mul v1 v2
                 | b_Z_div =>
                 match v2 with
-                | aoo_operand (bv_Z (0)) => err
+                | term_operand (bv_Z (0)) => err
                 | _ => bfmap_Z_Z__Z Z.div v1 v2
                 end
                 | b_map_hasKey =>
                     match v1 with
-                    | aoo_operand (bv_pmap m) =>
+                    | term_operand (bv_pmap m) =>
                         let p := encode v2 in
                         match m !! p with
-                        | Some _ => (aoo_operand (bv_bool true))
-                        | None => (aoo_operand (bv_bool false))
+                        | Some _ => (term_operand (bv_bool true))
+                        | None => (term_operand (bv_bool false))
                         end
                     | _ => err
                     end
                 | b_map_lookup =>
                     match v1 with
-                    | aoo_operand (bv_pmap m) =>
+                    | term_operand (bv_pmap m) =>
                         let p := encode v2 in
                         match m !! p with
                         | Some v => v
@@ -506,22 +506,22 @@ Module default_builtin.
                     end
                 | b_is_applied_symbol =>
                     match v1 with
-                    | aoo_operand (bv_sym s) =>
+                    | term_operand (bv_sym s) =>
                         match v2 with
-                        | aoo_app ao => (aoo_operand (bv_bool (bool_decide (AO'_getOperator ao = s))))
-                        | _ => (aoo_operand (bv_bool false))
+                        | term_preterm ao => (term_operand (bv_bool (bool_decide (AO'_getOperator ao = s))))
+                        | _ => (term_operand (bv_bool false))
                         end
-                    | _ => (aoo_operand (bv_bool false))
+                    | _ => (term_operand (bv_bool false))
                     end
                 end ;
             builtin_ternary_function_interp := fun p v1 v2 v3 =>
                 match p with
                 | b_map_update =>
                     match v1 with
-                    | aoo_operand (bv_pmap m) =>
+                    | term_operand (bv_pmap m) =>
                         let p := encode v2 in
                         let m' := <[ p := v3 ]>m in
-                        aoo_operand (bv_pmap m')
+                        term_operand (bv_pmap m')
                     | _ => err
                     end
                 end ;
@@ -681,7 +681,7 @@ End default_builtin.
                 default_builtin.b_is_applied_symbol
                 (@ft_element
                     ( default_model (default_builtin.β))
-                    (@aoo_operand
+                    (@term_operand
                         (@spec_syntax.symbol
                             ( default_model (default_builtin.β))
                         )

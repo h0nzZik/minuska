@@ -126,8 +126,8 @@ Inductive aoxy_satisfies_aoxz
     forall ρ x,
         aoxy_satisfies_aoxz
             ρ
-            (@ao_operator X Y x)
-            (@ao_operator X Z x)
+            (@pt_operator X Y x)
+            (@pt_operator X Z x)
 
 | asa_operand:
     forall ρ aoxy aoxz y z,
@@ -135,8 +135,8 @@ Inductive aoxy_satisfies_aoxz
         satisfies ρ y z ->
         aoxy_satisfies_aoxz
             ρ
-            (ao_app_operand aoxy y)
-            (ao_app_operand aoxz z)
+            (pt_app_operand aoxy y)
+            (pt_app_operand aoxz z)
 
 | asa_operand_asa:
     forall ρ aoxy aoxz aoxy2 z,
@@ -145,8 +145,8 @@ Inductive aoxy_satisfies_aoxz
         aoxy_satisfies_aoxz
         (* The right-side, the symbolic one, has more compact representation - so *)
             ρ
-            (ao_app_ao aoxy aoxy2)
-            (ao_app_operand aoxz z)
+            (pt_app_ao aoxy aoxy2)
+            (pt_app_operand aoxz z)
 
 | asa_asa_operand:
     forall
@@ -158,8 +158,8 @@ Inductive aoxy_satisfies_aoxz
         satisfies ρ y aoxz2 ->
         aoxy_satisfies_aoxz
             ρ
-            (ao_app_operand aoxy y)
-            ((ao_app_ao aoxz aoxz2))
+            (pt_app_operand aoxy y)
+            ((pt_app_ao aoxz aoxz2))
 
 | asa_asa:
     forall ρ aoxy1 aoxy2 aoxz1 aoxz2,
@@ -167,8 +167,8 @@ Inductive aoxy_satisfies_aoxz
         aoxy_satisfies_aoxz ρ aoxy2 aoxz2 ->
         aoxy_satisfies_aoxz
             ρ
-            (ao_app_ao aoxy1 aoxy2)
-            (ao_app_ao aoxz1 aoxz2)
+            (pt_app_ao aoxy1 aoxy2)
+            (pt_app_ao aoxz1 aoxz2)
 .
 
 
@@ -211,16 +211,16 @@ Inductive aoxyo_satisfies_aoxzo
         (xy : PreTerm' X Y)
         (xz : PreTerm' X Z)
         (pf : satisfies ρ xy xz),
-        aoxyo_satisfies_aoxzo V X Y Z var ρ (@aoo_app _ _  xy) (aoo_app xz)
+        aoxyo_satisfies_aoxzo V X Y Z var ρ (@term_preterm _ _  xy) (term_preterm xz)
 
 | axysaxz_operand:
     forall (ρ : V) (y : Y) (z : Z) (pf : satisfies ρ y z),
-        aoxyo_satisfies_aoxzo V X Y Z var ρ (@aoo_operand X Y y) (@aoo_operand X Z z)
+        aoxyo_satisfies_aoxzo V X Y Z var ρ (@term_operand X Y y) (@term_operand X Z z)
 
 | axysaxz_combined:
     forall (ρ : V) axy axz,
         satisfies ρ axy axz ->
-        aoxyo_satisfies_aoxzo V X Y Z var ρ (@aoo_app _ _  axy) (@aoo_operand X Z axz)
+        aoxyo_satisfies_aoxzo V X Y Z var ρ (@term_preterm _ _  axy) (@term_operand X Z axz)
 .
 
 #[export]
@@ -254,7 +254,7 @@ Inductive builtin_satisfies_BuiltinOrVar
 
 | bsbv_var:
     forall (b : builtin_value) (x : variable),
-        ρ !! x = Some (@aoo_operand symbol builtin_value b) ->
+        ρ !! x = Some (@term_operand symbol builtin_value b) ->
         builtin_satisfies_BuiltinOrVar ρ b (bov_variable x)
 .
 
@@ -292,7 +292,7 @@ Definition PreTerm'_symbol_builtin_satisfies_BuiltinOrVar
     : Prop :=
 match bov with
 | bov_builtin _ => False
-| bov_variable x => ρ !! x = Some (aoo_app aop)
+| bov_variable x => ρ !! x = Some (term_preterm aop)
 end.
 
 #[export]
@@ -461,8 +461,8 @@ Definition GroundTerm_satisfies_BuiltinOrVar
 match bov with
 | bov_builtin b =>
     match g with
-    | aoo_app _ => False
-    | aoo_operand b' => b = b'
+    | term_preterm _ => False
+    | term_operand b' => b = b'
     end
 | bov_variable x => ρ !! x = Some g
 end.
@@ -485,8 +485,8 @@ Definition builtin_value_satisfies_OpenTerm
     OpenTerm ->
     Prop := fun ρ b t =>
 match t with
-| aoo_app _ => False
-| aoo_operand bov =>
+| term_preterm _ => False
+| term_operand bov =>
     satisfies ρ b bov
 end.
 
@@ -512,7 +512,7 @@ Definition PreTerm'_symbol_builtin_value_satisfies_BOV
 :=
 match bov with
 | bov_builtin _ => False
-| bov_variable x => ρ !! x = Some (aoo_app ao) 
+| bov_variable x => ρ !! x = Some (term_preterm ao) 
 end
 .
 
@@ -547,7 +547,7 @@ Definition PreTerm'_symbol_A_satisfies_OpenTermB'
     Prop
 :=  fun ρ a =>
     satisfies
-    ρ (aoo_app a)
+    ρ (term_preterm a)
 .
 
 #[export]
@@ -607,7 +607,7 @@ Definition PreTerm'_symbol_builtin_satisfies_OpenTerm
     OpenTerm ->
     Prop
 :=  fun ρ a =>
-    satisfies ρ (aoo_app a)
+    satisfies ρ (term_preterm a)
 .
 
 #[export]
@@ -645,7 +645,7 @@ Instance Satisfies_builtin_expr
         variable
 := {|
     satisfies := (fun ρ b e =>
-        Expression_evaluate ρ e = Some (aoo_operand b)
+        Expression_evaluate ρ e = Some (term_operand b)
     ) ;
 |}.
 
@@ -660,7 +660,7 @@ Instance Satisfies_asb_expr
         variable
 := {|
     satisfies := (fun ρ x e =>
-        Expression_evaluate ρ e = Some (aoo_app x)
+        Expression_evaluate ρ e = Some (term_preterm x)
     ) ;
 |}.
 
