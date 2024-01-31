@@ -19,6 +19,7 @@ theories/interpreter_results.v
 theories/default_static_model.v
 theories/notations.v
 theories/frontend.v
+theories/dt.v
 theories/interp_loop.v
 
 

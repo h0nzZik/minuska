@@ -91,7 +91,7 @@ Inductive pvmatch {Σ : Signature} : Pattern -> Value -> Prop :=
 
 Definition pvvecmatch {Σ : Signature}
 : PatternVector -> ValueVector -> Prop :=
-    fun ps vs => length ps = length vs /\ (
+    fun ps vs => (*length ps = length vs /\ *) (
         forall i p v, ps !! i = Some p -> vs !! i = Some v ->
         pvmatch p v
     )
@@ -305,7 +305,7 @@ Proof.
         destruct pv; simpl in H3pv; inversion H3pv; clear H3pv.
         assert(H2'pv := H2pv).
         simpl in H2pv.
-        destruct H2pv as [? H2pv].
+        (*destruct H2pv as [? H2pv].*)
         specialize (H2pv 0 p (v_cval c ws)).
         simpl in H2pv.
         specialize (H2pv eq_refl eq_refl).
@@ -327,6 +327,7 @@ Proof.
                 {
                     subst.
                     unfold pvvecmatch.
+                    (*
                     split.
                     {
                         rewrite app_length.
@@ -334,6 +335,7 @@ Proof.
                         rewrite replicate_length.
                         ltac1:(lia).
                     }
+                    *)
                     intros i p v Hrep Hlookup.
                     destruct (decide (i < length ws)) as [Hlt|Hgeq].
                     {
@@ -423,15 +425,15 @@ Proof.
                                 {
                                     destruct p; simpl in *.
                                     {
-                                        inversion H2.
+                                        inversion H1.
                                     }
                                     {
-                                        subst. inversion H2; subst; clear H2.
-                                        ltac1:(exfalso; clear -H6).
-                                        unfold decide,decide_rel in H6.
+                                        subst. inversion H1; subst; clear H1.
+                                        ltac1:(exfalso; clear -H5).
+                                        unfold decide,decide_rel in H5.
                                         destruct (Constructor_eqdec c0 c0).
                                         {
-                                            inversion H6.
+                                            inversion H5.
                                         }
                                         {
                                             apply n. reflexivity.
@@ -452,7 +454,7 @@ Proof.
                                     ltac1:(contradiction).
                                 }
                                 {
-                                    inversion H2.
+                                    inversion H1.
                                 }
                             }
                         }
@@ -463,10 +465,10 @@ Proof.
                             {
                                 destruct p; simpl in *.
                                 {
-                                    inversion H2.
+                                    inversion H1.
                                 }
                                 {
-                                    inversion H2; subst. clear H2.
+                                    inversion H1; subst. clear H1.
                                     simpl in *.
                                     unfold row_matches_ctor in *.
                                     simpl in *.
@@ -478,17 +480,17 @@ Proof.
                             subst. simpl in *.
                             destruct a0; simpl in *.
                             destruct p.
-                            { inversion H2. }
-                            inversion H2; subst; clear H2.
+                            { inversion H1. }
+                            inversion H1; subst; clear H1.
                             unfold row_matches_ctor in *.
                             simpl in *.
-                            unfold is_left in H6.
+                            unfold is_left in H5.
                             ltac1:(repeat case_match).
                             {
                                 subst. ltac1:(contradiction).
                             }
                             {
-                                inversion H6.
+                                inversion H5.
                             }
                         }
                         {
@@ -506,6 +508,7 @@ Proof.
                 split.
                 {
                     unfold pvvecmatch.
+                    (*
                     split.
                     {
                         rewrite app_length.
@@ -514,21 +517,22 @@ Proof.
                         rewrite H0.
                         reflexivity.
                     }
+                    *)
                     intros i p v HH1 HH2.
                     ltac1:(rewrite lookup_app in HH1).
                     ltac1:(rewrite lookup_app in HH2).
                     ltac1:(repeat case_match; simplify_eq /=).
                     {
-                        eapply H5 with (i := i); simpl; assumption.
-                    }
-                    {
-                        apply lookup_ge_None_1 in H2.
-                        apply lookup_lt_Some in H1.
-                        ltac1:(lia).
+                        eapply H4 with (i := i); simpl; assumption.
                     }
                     {
                         apply lookup_ge_None_1 in H1.
-                        apply lookup_lt_Some in H2.
+                        apply lookup_lt_Some in H.
+                        ltac1:(lia).
+                    }
+                    {
+                        apply lookup_ge_None_1 in H.
+                        apply lookup_lt_Some in H1.
                         ltac1:(lia).
                     }
                     {
@@ -537,7 +541,7 @@ Proof.
                             apply HH1.
                         }
                         {
-                            rewrite H4. assumption.
+                            rewrite H3. assumption.
                         }
                     }
                 }
@@ -574,6 +578,7 @@ Proof.
                 split>[apply Hi|].
                 split.
                 {
+                    (*
                     split.
                     {
                         simpl.
@@ -587,6 +592,7 @@ Proof.
                         rewrite replicate_length in H3.
                         ltac1:(lia).
                     }
+                    *)
                     intros i0 p v HH1 HH2.
                     destruct i0.
                     {
@@ -607,7 +613,7 @@ Proof.
                             simpl in HH1. inversion HH1.
                         }
                         simpl in HH1. simpl in *.
-                        destruct H2 as [H'2 H2].
+                        (*destruct H2 as [H'2 H2].*)
                         specialize (H2 (i0 + (arity c)) p v).
                         ltac1:(rewrite lookup_app_r in H2).
                         {
@@ -688,11 +694,13 @@ Proof.
                             }
                             ltac1:(lia).
                         }
+                        (*
                         split.
                         {
                             simpl.
                             ltac1:(lia).
                         }
+                        *)
                         intros i0 p0 v HH1 HH2.
                         destruct i0; simpl in *.
                         {
@@ -701,7 +709,7 @@ Proof.
                             constructor.
                             ltac1:(lia).
                             intros i0 p0 v HH1 HH2.
-                            destruct H2 as [_ H2].
+                            (*destruct H2 as [_ H2].*)
                             apply H2 with (i := i0).
                             {
                                 ltac1:(rewrite lookup_app_l).
@@ -725,7 +733,7 @@ Proof.
                             }
                         }
                         {
-                            destruct H2 as [_ H2].
+                            (*destruct H2 as [_ H2].*)
                             apply H2 with (i := i0 + length l).
                             {
                                 ltac1:(rewrite lookup_app_r).
@@ -778,3 +786,229 @@ Proof.
         }
     }
 Qed.
+
+Definition row_startswith_wildcard
+    {Σ : Signature}
+    {A : Type}
+    : (PatternVector*A) -> Prop
+:= fun row => match row.1 with
+| p_wildcard::_ => True
+| _ => False
+end.
+
+#[local]
+Instance row_startswith_wildcard_dec
+    {Σ : Signature}
+    {A : Type}
+    (row : PatternVector*A)
+    : Decision (row_startswith_wildcard row)
+.
+Proof.
+    destruct row. destruct p; unfold row_startswith_wildcard; simpl.
+    {
+        apply _.
+    }
+    {
+        destruct p; apply _.
+    }
+Defined.
+
+Definition Default {Σ : Signature} {A : Type}
+    : Constructor -> ClauseMatrix A -> ClauseMatrix A
+:=
+    fun c cm => 
+    let tmp := filter row_startswith_wildcard cm in
+    fmap (fun x => (tail x.1, x.2)) tmp
+.
+
+Definition row_startswith_ctor
+    {Σ : Signature}
+    {A : Type}
+    (c : Constructor)
+    : (PatternVector*A) -> Prop
+:= fun row => match row.1 with
+| (p_cpat c' _)::_ => c' = c
+| _ => False
+end.
+
+#[local]
+Instance row_startswith_ctor_dec
+    {Σ : Signature}
+    {A : Type}
+    (c : Constructor)
+    (row : PatternVector*A)
+    : Decision (row_startswith_ctor c row)
+.
+Proof.
+    unfold row_startswith_ctor.
+    destruct row.
+    destruct p; simpl.
+    { apply _. }
+    {
+        destruct p; apply _.
+    }
+Defined.
+
+
+Definition isHeadInFirstColumn
+    {Σ : Signature} {A : Type}
+    : Constructor -> ClauseMatrix A -> Prop
+:=
+    fun c cm => Exists (row_startswith_ctor c) cm
+.
+
+Lemma Default_correct
+    {Σ : Signature} {A : Type}
+    (c : Constructor)
+    (vs ws : ValueVector)
+    (cm : ClauseMatrix A)
+    (a : A)
+    :
+    (not (isHeadInFirstColumn c cm)) -> 
+    (arity c = length ws) ->
+    cmmatch ([(v_cval c ws)] ++ vs) cm a
+    <->
+    cmmatch (vs) (Default c cm) a
+.
+Proof.
+    intros Hnothead Harity.
+    unfold Default.
+    unfold isHeadInFirstColumn in Hnothead.
+    simpl.
+    unfold cmmatch.
+    split; intros H.
+    {
+        destruct H as [j [pv [H1 [H2 H3]]]].
+        (*inversion H2; subst; clear H2.*)
+        simpl in *.
+        destruct pv.
+        {
+            simpl in H3. inversion H3.
+        }
+        assert (H2' := H2).
+        unfold pvvecmatch in H2'.
+        specialize (H2' 0 p (v_cval c ws)).
+        simpl in H2'.
+        specialize (H2' eq_refl eq_refl).
+        rewrite <- Forall_Exists_neg in Hnothead.
+        inversion H2'; subst; clear H2'.
+        {
+            assert (HH:(p_wildcard::pv, a) ∈ filter row_startswith_wildcard cm).
+            {
+                rewrite elem_of_list_filter.
+                split.
+                {
+                    unfold row_startswith_wildcard. simpl. exact I.
+                }
+                {
+                    rewrite elem_of_list_lookup.
+                    exists j. exact H1.
+                }
+            }
+            rewrite elem_of_list_lookup in HH.
+            destruct HH as [i HHi].
+            simpl in H3.
+            exists i. exists (pv).
+            split.
+            {
+                ltac1:(rewrite list_lookup_fmap).
+                rewrite HHi. simpl. reflexivity.
+            }
+            split.
+            {
+                apply elem_of_list_lookup_2 in HHi.
+                apply elem_of_list_filter in HHi.
+                destruct HHi as [HH1 HH2].
+                unfold pvvecmatch.
+                simpl.
+                intros i0 p v.
+                intros HHH1 HHH2. simpl in *.
+                apply H2 with (i := S i0).
+                { apply HHH1. }
+                { apply HHH2. }
+            }
+            { ltac1:(lia). }
+        }
+        {
+            rewrite Forall_forall in Hnothead.
+            specialize (Hnothead (p_cpat c ps::pv, a)).
+            rewrite elem_of_list_lookup in Hnothead.
+            ltac1:(ospecialize (Hnothead _)).
+            {
+                exists j. apply H1.
+            }
+            ltac1:(exfalso).
+            apply Hnothead. clear Hnothead.
+            unfold row_startswith_ctor. simpl. reflexivity.
+        }
+    }
+    {
+        destruct H as [j [pv [H1 [H2 H3]]]].
+        ltac1:(rewrite list_lookup_fmap in H1).
+        unfold fmap,option_fmap,option_map in H1.
+        ltac1:(case_match).
+        {
+            inversion H1; subst; clear H1.
+            apply elem_of_list_lookup_2 in H.
+            apply elem_of_list_filter in H.
+            destruct H as [HH1 HH2].
+            rewrite elem_of_list_lookup in HH2.
+            destruct HH2 as [i Hi].
+            destruct p as [ps a]. simpl.
+            simpl in *.
+            exists i. exists ps.
+            split>[apply Hi|].
+            split.
+            {
+                simpl in *.
+                unfold pvvecmatch.
+                intros i0 p0 v0 Hp0 Hv0.
+                destruct i0.
+                {
+                    simpl in *. inversion Hv0. subst. clear Hv0.
+                    unfold row_startswith_wildcard in HH1. simpl in HH1.
+                    destruct ps.
+                    {
+                        simpl in *. inversion Hp0.
+                    }
+                    {
+                        simpl in *. inversion Hp0. subst. clear Hp0.
+                        destruct p0.
+                        {
+                            constructor.
+                        }
+                        {
+                            inversion HH1.
+                        }
+                    }
+                }
+                simpl in *.
+                apply H2 with (i := i0).
+                {
+                    destruct ps.
+                    {
+                        simpl in Hp0. inversion Hp0.
+                    }
+                    simpl in Hp0. simpl. exact Hp0.
+                }
+                {
+                    exact Hv0.
+                }
+            }
+            {
+                destruct ps; simpl in *.
+                {
+                    unfold row_startswith_wildcard in HH1. simpl in HH1.
+                    inversion HH1.
+                }
+                ltac1:(lia).
+            }
+        }
+        {
+            inversion H1.
+        }
+    }
+Qed.
+
+
+
