@@ -1010,5 +1010,234 @@ Proof.
     }
 Qed.
 
+Definition Occurrence := list nat.
+
+Fixpoint getSubterm
+    {Σ : Signature}
+    (v : Value)
+    (o : Occurrence)
+    : option Value :=
+match o with
+| [] => Some v
+| k::o' =>
+    match v with
+    | v_cval _ vs => vk ← vs !! k; getSubterm vk o'
+    end
+end
+.
+
+Inductive DecisionTree {Σ : Signature} (A : Type) :=
+| dt_fail
+(* We replace Leaf with Yield which in addition contains a continuation.
+   This is because in our case, multiple rows of a matrix can match simultaneously.
+ *)
+(*| dt_leaf (a : A)*)
+| dt_yield (la : list A) (dt : DecisionTree A)
+| dt_switch (o : Occurrence) (scl: SwitchCaseList A)
+| dt_swap (i : nat) (dt : DecisionTree A)
+with SwitchCaseList {Σ : Signature} (A : Type) :=
+| mkSwitchCaseList
+    (main : list (Constructor*(DecisionTree A)))
+    (default_case : DecisionTree A)
+.
+
+Inductive dt_sem {Σ : Signature} {A : Type}:
+    list Value -> DecisionTree A -> A -> Prop
+:=
+(* we have [yield_now] and [yield_continue] instead of [match] *)
+(*| dtsem_match: forall vs a, dt_sem vs (dt_leaf A a) a *)
+| dtsem_yield_now: forall vs la a t,
+    a ∈ la ->
+    dt_sem vs (dt_yield A la t) a
+
+| dtsem_yield_continue: forall vs a a' t,
+    dt_sem vs t a ->
+    dt_sem vs (dt_yield A a' t) a
+
+| dtsem_swap: forall vs a i t,
+    dt_sem ((reverse (firstn i vs)) ++ (skipn i vs)) (dt_swap A i t) a ->
+    dt_sem vs (dt_swap A i t) a
+
+| dtsem_switch_constr:
+    forall c ws vs o scl a t,
+    dt_sem_aux c scl (Some c) t ->
+    dt_sem (ws++vs) t a ->
+    dt_sem ((v_cval c ws)::vs) (dt_switch A o scl) a
+
+| dtsem_switch_default:
+    forall c ws vs o scl a t,
+    dt_sem_aux c scl None t ->
+    dt_sem vs t a ->
+    dt_sem ((v_cval c ws)::vs) (dt_switch A o scl) a
+
+
+with dt_sem_aux {Σ : Signature} {A : Type}:
+    Constructor -> SwitchCaseList A -> (* inputs *)
+    option Constructor -> DecisionTree A -> (* outputs *)
+    Prop :=
+
+| dt_sem_aux_found :
+    forall c t rest default,
+    dt_sem_aux c (mkSwitchCaseList A (cons (c,t) rest) default) (Some c) t
+
+| dt_sem_aux_default:
+    forall c t,
+    dt_sem_aux c (mkSwitchCaseList A nil t) None t
+
+| dt_sem_aux_cont:
+    forall c c' oc t t' rest default,
+    (* Note: we want to find all applicable cases in the case list.
+       Therefore, we do not stop when we find an applicable case.
+       Therefore, this rule is not guarded by the [c<>c'] *)
+    (*c <> c' ->*)
+    dt_sem_aux c (mkSwitchCaseList A rest default) oc t ->
+    dt_sem_aux c (mkSwitchCaseList A (cons (c',t') (rest)) default) oc t
+.
+
+Definition is_ConstructorPattern
+    {Σ : Signature}
+    (p : Pattern)
+    : Prop
+:=
+match p with
+| p_cpat _ _ => True
+| _ => False
+end.
+
+
+#[local]
+Instance is_ConstructorPattern_dec
+    {Σ : Signature} (p : Pattern)
+    : Decision (is_ConstructorPattern p)
+.
+Proof.
+    destruct p; simpl; apply _.
+Defined.
+
+Definition is_WildcardPattern
+    {Σ : Signature}
+    (p : Pattern)
+    : Prop
+:=
+match p with
+| p_wildcard => True
+| _ => False
+end.
+
+#[local]
+Instance is_WildcardPattern_dec
+    {Σ : Signature} (p : Pattern)
+    : Decision (is_WildcardPattern p)
+.
+Proof.
+    destruct p; simpl; apply _.
+Defined.
+
+
+Definition vector_of_wildcards
+    {Σ : Signature}
+    (pv : PatternVector)
+    : Prop
+:=
+    Forall is_WildcardPattern pv
+.
+
+#[local]
+Instance vector_of_wildcards_dec
+    {Σ : Signature}
+    (pv : PatternVector)
+    : Decision (vector_of_wildcards pv)
+.
+Proof.
+    apply _.
+Defined.
+
+Definition row_of_wildcards
+    {Σ : Signature} {A : Type}
+    (row : PatternVector*A)
+:= vector_of_wildcards (row.1).
+
+#[local]
+Instance row_of_wildcards_dec
+    {Σ : Signature} {A : Type}
+    (row : PatternVector*A)
+    : Decision (row_of_wildcards row)
+.
+Proof.
+    destruct row. unfold row_of_wildcards. simpl. apply _.
+Defined.
+
+Definition ClauseMatrix_size
+    {Σ : Signature} {A : Type}
+    (cm : ClauseMatrix A)
+    : nat
+:=
+    sum_list_with (fun x => length (x.1)) cm
+.
+
+Definition compile {Σ : Signature} {A : Type}
+    (ol : list Occurrence)
+    (cm : ClauseMatrix A) : DecisionTree A
+:=
+let sz := ClauseMatrix_size cm in
+let compile' :=
+    (fix compile' (sz : nat) (ol : list Occurrence) (cm : ClauseMatrix A) : DecisionTree A :=
+    match sz with
+    | 0 => dt_fail A
+    | S sz' =>
+        match cm with
+        | nil => dt_fail A
+        | _::rs =>
+            let wildcard_rows := filter row_of_wildcards cm in
+            let other_rows := filter (not ∘ row_of_wildcards) cm in
+            let values_to_yield := map snd wildcard_rows in
+            match other_rows with
+            | nil => dt_yield A (values_to_yield) (dt_fail A)
+            | row::_ =>
+                (* Here we choose the first one, but the algorithm should be correct for any column containing some constructor *)
+                let found := list_find is_ConstructorPattern row.1 in
+                match found with
+                | None => dt_fail A (* this should not happen *)
+                | Some (idx, _) =>
+                    match idx with
+                    | 0 => 
+                        let ocol : list (option Pattern) := map (fun r => r.1 !! idx) other_rows in
+                        let sigma_1 := remove_dups ((fix go (ocol : list (option Pattern)) : list Constructor :=
+                            match ocol with
+                            | (Some (p_cpat c _))::xs => c::(go xs)
+                            | _ => []
+                            end
+                            ) ocol) in
+                        let ctrees := (
+                            fix go (sigma_1 : list Constructor) : list (Constructor * (DecisionTree A)) :=
+                            match sigma_1 with
+                            | [] => []
+                            | c::cs =>
+                                match ol with
+                                | [] => [] (* Can this happen for nullary constructors? Not sure what to do in that case. *)
+                                | o1::orest =>
+                                    let zero_to_ar : (list nat)
+                                        := (seq 0 (arity c)) in
+                                    let fringe_prefix : list Occurrence
+                                        := fmap (fun (i : nat) => o1::[i]) zero_to_ar in
+                                    let new_fringe := fringe_prefix ++ orest in
+                                    ((c,(compile' sz' new_fringe (Simplify c other_rows)))::(go cs))
+                                end 
+                            end
+                        ) sigma_1 in
+                        let default_tree := 0 in
+                        0
+                    | S _ => 0
+                    end
+                end
+            end
+        end
+    end
+    )
+in
+compile' (ClauseMatrix_size cm) ol cm
+.
+
+
 
 
