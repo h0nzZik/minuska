@@ -1176,12 +1176,12 @@ Definition ClauseMatrix_size
 .
 
 Definition compile {Σ : Signature} {A : Type}
-    (ol : list Occurrence)
+    (fringe : list Occurrence)
     (cm : ClauseMatrix A) : DecisionTree A
 :=
 let sz := ClauseMatrix_size cm in
 let compile' :=
-    (fix compile' (sz : nat) (ol : list Occurrence) (cm : ClauseMatrix A) : DecisionTree A :=
+    (fix compile' (sz : nat) (fringe' : list Occurrence) (cm : ClauseMatrix A) : DecisionTree A :=
     match sz with
     | 0 => dt_fail A
     | S sz' =>
@@ -1208,26 +1208,31 @@ let compile' :=
                             | _ => []
                             end
                             ) ocol) in
-                        let ctrees := (
-                            fix go (sigma_1 : list Constructor) : list (Constructor * (DecisionTree A)) :=
-                            match sigma_1 with
-                            | [] => []
-                            | c::cs =>
-                                match ol with
-                                | [] => [] (* Can this happen for nullary constructors? Not sure what to do in that case. *)
-                                | o1::orest =>
-                                    let zero_to_ar : (list nat)
-                                        := (seq 0 (arity c)) in
-                                    let fringe_prefix : list Occurrence
-                                        := fmap (fun (i : nat) => o1::[i]) zero_to_ar in
-                                    let new_fringe := fringe_prefix ++ orest in
-                                    ((c,(compile' sz' new_fringe (Simplify c other_rows)))::(go cs))
-                                end 
+                        match sigma_1 with
+                        | [] => dt_fail A (* this should not happen *)
+                        | some_ctor::_ =>
+                            match fringe' with
+                            | [] => dt_fail A
+                            | o1::rest_of_fringe' =>
+                                let ctrees := (
+                                    fix go (sigma_1 : list Constructor) : list (Constructor * (DecisionTree A)) :=
+                                    match sigma_1 with
+                                    | [] => []
+                                    | c::cs =>
+                                        let zero_to_ar : (list nat)
+                                            := (seq 0 (arity c)) in
+                                        let new_fringe_prefix : list Occurrence
+                                            := map (fun (i : nat) => o1 ++ [i]) zero_to_ar in
+                                        let new_fringe : list Occurrence := (new_fringe_prefix ++ rest_of_fringe') in
+                                        ((c,(compile' sz' new_fringe (Simplify c other_rows)))::(go cs))
+                                    end
+                                ) sigma_1 in
+                                let default_tree := compile' sz' (tail fringe') (Default some_ctor cm (* I am not sure if this is the right clause matrix to put there*)) in
+                                let scl : SwitchCaseList A := mkSwitchCaseList A ctrees default_tree in
+                                dt_switch A o1 scl
                             end
-                        ) sigma_1 in
-                        let default_tree := 0 in
-                        0
-                    | S _ => 0
+                        end
+                    | S _ => 16
                     end
                 end
             end
@@ -1235,7 +1240,7 @@ let compile' :=
     end
     )
 in
-compile' (ClauseMatrix_size cm) ol cm
+compile' (ClauseMatrix_size cm) fringe cm
 .
 
 
