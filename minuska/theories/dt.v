@@ -1175,6 +1175,118 @@ Definition ClauseMatrix_size
     sum_list_with (fun x => length (x.1)) cm
 .
 
+Definition list_swap_head
+    {A : Type} (pos : nat) (l : list A) : option (list A)
+:=
+    a ← head l;
+    b ← head (skipn pos l);
+    Some (b::(tail (insert pos a l (* (delete pos l) *))))
+.
+
+Lemma list_swap_head_involutive
+    {A : Type} (l l' : list A) (pos : nat)
+    :
+    pos < length l ->
+    list_swap_head pos l = Some l' ->
+    list_swap_head pos l' = Some l
+.
+Proof.
+    intros Hposlength.
+    unfold list_swap_head.
+    intros H.
+    rewrite bind_Some in H.
+    destruct H as [x [H1 H2]].
+    rewrite bind_Some in H2.
+    destruct H2 as [x' [H'1 H'2]].
+    inversion H'2; subst; clear H'2.
+    rewrite bind_Some. simpl.
+    exists x'.
+    split>[reflexivity|].
+    rewrite bind_Some.
+    remember (x' :: tail (<[pos:=x]> l)) as l'.
+    exists x.
+
+    split.
+    {
+        subst l'.
+        destruct pos.
+        {
+            simpl. rewrite drop_0 in H'1. rewrite H'1 in H1. apply H1.
+        }
+        {
+            simpl. destruct l; simpl in *.
+            {
+                inversion H'1.
+            }
+            {
+                inversion H1; subst; clear H1.
+                rewrite drop_insert_le>[|ltac1:(lia)].
+                rewrite Nat.sub_diag.
+                destruct (decide (pos < length l)).
+                {
+                    rewrite insert_take_drop.
+                    simpl. reflexivity.
+                    {
+                        rewrite drop_length.
+                        ltac1:(lia).
+                    }
+                }
+                {
+                    rewrite skipn_all2 in H'1.
+                    {
+                        simpl in H'1. inversion H'1.
+                    }
+                    {
+                        ltac1:(lia).
+                    }
+                }
+            }
+        }
+    }
+    {
+        subst l'.
+        destruct (decide (pos < length l)).
+        {
+            destruct l; simpl in *.
+            {
+                inversion H1.
+            }
+            apply f_equal.
+            inversion H1. subst; clear H1.
+            f_equal.
+            destruct pos.
+            {
+                simpl in *. reflexivity.
+            }
+            simpl in *.
+            ltac1:(rewrite list_insert_insert).
+            rewrite list_insert_id.
+            { reflexivity. }
+
+            clear x.
+            revert x' l H'1 l0 Hposlength.
+            induction pos; intros x' l H'1 l0 Hposlength.
+            {
+                rewrite drop_0 in H'1. rewrite head_lookup in H'1.
+                apply H'1.
+            }
+            {
+                destruct l; simpl in *.
+                { inversion H'1. }
+                specialize (IHpos x' l H'1 ltac:(lia)).
+                apply IHpos.
+                ltac1:(lia).
+            }
+        }
+        {
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+
+Definition CM_swap_column
+
 Definition compile {Σ : Signature} {A : Type}
     (fringe : list Occurrence)
     (cm : ClauseMatrix A) : DecisionTree A
