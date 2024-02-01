@@ -1172,7 +1172,7 @@ Definition ClauseMatrix_size
     (cm : ClauseMatrix A)
     : nat
 :=
-    sum_list_with (fun x => length (x.1)) cm
+    S (sum_list_with (fun x => length (x.1)) cm)
 .
 
 Definition list_swap_head
@@ -1284,8 +1284,23 @@ Proof.
     }
 Qed.
 
+Definition swap_column_in_list {Σ : Signature} {A : Type}
+    (pos : nat)
+    (cm : list (list A))
+    : list (list A)
+:=
+    let tmp := map (fun x => x' ← list_swap_head pos x; Some (x')) cm in
+    concat (map option_list tmp)
+.
 
-Definition CM_swap_column
+Definition swap_column_in_clause_matrix {Σ : Signature} {A : Type}
+    (pos : nat)
+    (cm : ClauseMatrix A)
+    : ClauseMatrix A
+:=
+    let tmp := map (fun x => x' ← list_swap_head pos x.1; Some (x', x.2)) cm in
+    concat (map option_list tmp)
+.
 
 Definition compile {Σ : Signature} {A : Type}
     (fringe : list Occurrence)
@@ -1311,8 +1326,7 @@ let compile' :=
                 match found with
                 | None => dt_fail A (* this should not happen *)
                 | Some (idx, _) =>
-                    match idx with
-                    | 0 => 
+                    let helper := (fun fringe' other_rows => (
                         let ocol : list (option Pattern) := map (fun r => r.1 !! idx) other_rows in
                         let sigma_1 := remove_dups ((fix go (ocol : list (option Pattern)) : list Constructor :=
                             match ocol with
@@ -1344,8 +1358,15 @@ let compile' :=
                                 dt_switch A o1 scl
                             end
                         end
-                    | S _ => 16
-                    end
+                    )) in (
+                        match idx with
+                        | 0 => helper fringe' other_rows
+                        | S _ => 
+                            let fringe'' := swap_column_in_list idx fringe' in
+                            let other_rows'' := swap_column_in_clause_matrix idx other_rows in
+                            helper fringe'' other_rows''
+                        end
+                        )
                 end
             end
         end
@@ -1354,6 +1375,88 @@ let compile' :=
 in
 compile' (ClauseMatrix_size cm) fringe cm
 .
+
+Lemma compile_correct_1 {Σ : Signature} {A : Type} {_Aeqdec : EqDecision A}
+    (cm : ClauseMatrix A)
+    (vs : ValueVector)
+    (a : A)
+    :
+    cmmatch vs cm a ->
+    dt_sem vs (compile [] cm) a
+.
+Proof.
+    intros H.
+    unfold compile.
+    remember (ClauseMatrix_size cm) as sz.
+    assert ( Hsz: ClauseMatrix_size cm <= sz) by ltac1:(lia).
+    clear Heqsz.
+    revert cm Hsz H.
+    induction sz; intros cm Hsz H.
+    {
+        destruct cm; simpl in Hsz; inversion Hsz.
+    }
+    {
+        destruct cm eqn:Heqcm.
+        {
+            unfold cmmatch in H.
+            destruct H as [j [pv [H1 H2]]].
+            Search lookup nil.
+            inversion H1.
+        }
+        {
+          rewrite <- Heqcm.
+          remember (filter (not ∘ row_of_wildcards) cm) as filtered.
+          destruct filtered eqn:Heqfiltered'.
+          {
+            apply dtsem_yield_now.
+            rewrite <- Heqcm in H.
+            clear -H Heqfiltered _Aeqdec.
+            revert H Heqfiltered.
+            induction cm; intros H Heqfiltered; simpl in *.
+            {
+              unfold cmmatch in H.
+              destruct H as [j [pv [H1 [H2 H3]]]].
+              ltac1:(rewrite lookup_nil in H1).
+              inversion H1.
+            }
+            {
+              ltac1:(rewrite filter_cons).
+              ltac1:(rewrite filter_cons in Heqfiltered).
+              destruct (decide ((compose not row_of_wildcards) a0)) as [?|Hnn].
+              { inversion Heqfiltered. }
+              simpl in Hnn.
+              apply dec_stable in Hnn.
+              destruct (decide (row_of_wildcards a0))>[|ltac1:(contradiction)].
+              simpl.
+              destruct a0; simpl in *.
+              destruct (decide (a = a0)) as [?|Hneq].
+              {
+                subst. rewrite elem_of_cons. left. reflexivity.
+              }
+              {
+                ltac1:(ospecialize (IHcm _)).
+                {
+                  unfold cmmatch. unfold cmmatch in H. clear -H Hneq.
+                  destruct H as [j [pv [H1 H2]]].
+                  simpl in H1.
+                  destruct j.
+                  {
+                    simpl in H1. inversion H1. subst. ltac1:(contradiction Hneq). reflexivity.
+                  }
+                  {
+                      exists (j). exists pv.  simpl in H1. split>[exact H1|].
+                      exact H2.
+                  }
+                }
+                rewrite elem_of_cons. right. exact (IHcm Heqfiltered).
+              }
+            }
+          }
+          {
+            
+          }
+    }
+Qed.
 
 
 
