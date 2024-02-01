@@ -1453,7 +1453,39 @@ Proof.
             }
           }
           {
-            
+            destruct (list_find is_ConstructorPattern p0.1) eqn:HfoundCP.
+            {
+              admit.
+            }
+            {
+              ltac1:(exfalso).
+              subst filtered.
+              Check elem_of_list_filter.
+              assert (Heo := elem_of_list_filter (compose not row_of_wildcards) cm p0).
+              unfold ClauseMatrix in *.
+              rewrite <- Heqfiltered in Heo.
+              destruct Heo as [Heo _].
+              ltac1:(ospecialize (Heo _)).
+              {
+                rewrite elem_of_cons. left. reflexivity.
+              }
+              simpl in Heo.
+              destruct Heo as [Hnrow Hp0cm].
+              rewrite list_find_None in HfoundCP.
+              clear -HfoundCP Hnrow.
+              unfold row_of_wildcards in Hnrow.
+              destruct p0. simpl in *.
+              unfold vector_of_wildcards in Hnrow.
+              unfold is_ConstructorPattern in *.
+              unfold is_WildcardPattern in *.
+              rewrite Forall_forall in HfoundCP.
+              apply Hnrow. clear Hnrow.
+              rewrite Forall_forall.
+              intros x Hx. specialize (HfoundCP x Hx).
+              destruct x.
+              { exact I. }
+              { apply HfoundCP.  exact I. }
+            }
           }
     }
 Qed.
