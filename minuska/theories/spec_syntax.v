@@ -165,3 +165,317 @@ Record RewritingRule {Σ : StaticModel}
 Definition RewritingTheory {Σ : StaticModel}
     := list RewritingRule
 .
+
+Definition to_Term'
+    {Σ : StaticModel}
+    {T : Type}
+    (x : ((T)+(PreTerm' symbol T)))
+    : Term' symbol T
+:=
+match x with
+| inl x' => term_operand x'
+| inr x' => term_preterm x'
+end
+.
+
+Definition helper {Σ : StaticModel} {T : Type} a b : PreTerm' symbol T
+    :=match b with
+            | term_operand b' => pt_app_operand a b'
+            | term_preterm b' => pt_app_ao a b'
+            end.
+
+Definition to_PreTerm'
+    {Σ : StaticModel}
+    {T : Type}
+    (s : symbol)
+    (l : list ((Term' symbol T)))
+    : PreTerm' symbol T
+:=
+    fold_left
+        helper
+        l
+        (pt_operator s)
+.
+
+Lemma to_PreTerm'_app
+    {Σ : StaticModel}
+    {T : Type}
+    (s : symbol)
+    (l1 l2 : list ((Term' symbol T)))
+    : to_PreTerm' s (l1 ++ l2) = fold_left helper l2 (to_PreTerm' s l1)
+.
+Proof.
+    unfold to_PreTerm'.
+    rewrite fold_left_app.
+    reflexivity.
+Qed.
+
+Definition apply_symbol'
+    {Σ : StaticModel}
+    {T : Type}
+    (s : symbol)
+: 
+    list ((Term' symbol T)) ->
+    Term' symbol T
+:=
+    fun l =>
+    (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
+.
+
+
+(*
+    Here we define an alternative, more user-friendly term structure.
+*)
+
+Unset Elimination Schemes.
+Inductive TermOver {Σ : StaticModel} (A : Type) : Type :=
+| t_over (a : A)
+| t_term (s : symbol) (l : list (TermOver A))
+.
+Set Elimination Schemes.
+
+Arguments t_over {Σ} {A}%type_scope a.
+Arguments t_term {Σ} {A}%type_scope s l%list_scope.
+
+Section custom_induction_principle.
+
+    Context
+        {Σ : StaticModel}
+        {A : Type}
+        (P : TermOver A -> Prop)
+        (true_for_over : forall a, P (t_over a) )
+        (preserved_by_term :
+            forall
+                (s : symbol)
+                (l : list (TermOver A)),
+                Forall P l ->
+                P (t_term s l)
+        )
+    .
+
+    Fixpoint TermOver_ind (p : TermOver A) : P p :=
+    match p with
+    | t_over a => true_for_over a
+    | t_term s l => preserved_by_term s l (Forall_true P l TermOver_ind)
+    end.
+
+End custom_induction_principle.
+
+Fixpoint uglify'
+    {Σ : StaticModel}
+    {A : Type}
+    (t : TermOver A)
+    {struct t}
+    : Term' symbol A
+:=
+    match t with
+    | t_over a => term_operand a
+    | t_term s l => apply_symbol' s (map uglify' l)
+    end
+.
+
+(*
+Definition uglify
+    {Σ : StaticModel}
+    {A : Type}
+    (t : (A+(TermOver A)))
+:=
+    match t with
+    | inl a => term_operand a
+    | inr t => uglify' t
+    end
+.
+*)
+
+Fixpoint PreTerm'_get_symbol
+    {Σ : StaticModel}
+    {A : Type}
+    (pt : PreTerm' symbol A)
+    : symbol
+:=
+    match pt with
+    | pt_operator s => s
+    | pt_app_operand x y => PreTerm'_get_symbol x
+    | pt_app_ao x y => PreTerm'_get_symbol x
+    end
+.
+
+Fixpoint prettify'
+    {Σ : StaticModel}
+    {A : Type}
+    (pt : PreTerm' symbol A)
+    : TermOver A
+:=
+    t_term
+        (PreTerm'_get_symbol pt) (
+        ((fix go (pt : PreTerm' symbol A) : list (TermOver A) :=
+            match pt with
+            | pt_operator _ => []
+            | pt_app_operand x y => (go x)++[(t_over y)]
+            | pt_app_ao x y => (go x)++[(prettify' y)]
+            end
+        ) pt))
+.
+
+Definition prettify
+    {Σ : StaticModel}
+    {A : Type}
+    (t : Term' symbol A)
+    : ((TermOver A))
+:=
+    match t with
+    | term_preterm pt => (prettify' pt)
+    | term_operand a => t_over a
+    end
+.
+
+Section sec.
+    Context {Σ : StaticModel} {A : Type}
+        (a b c : A) (s : symbol)
+    .
+
+    Compute (uglify' (t_over a)).
+    Compute (prettify (uglify' (t_over a))).
+    Compute (prettify (uglify' (t_term s [(t_over a); (t_over b)]))).
+    
+    Compute (uglify' (t_term s [(t_term s ([t_over a]))])).
+
+    Compute (prettify (uglify' (t_term s [(t_term s ([t_over a]))]))).
+
+End sec.
+
+
+#[global]
+Instance cancel_prettify_uglify
+    {Σ : StaticModel}
+    {A : Type}
+    : Cancel eq (@prettify Σ A) (@uglify' Σ A)
+.
+Proof.
+    intros x.
+    induction x.
+    {
+        simpl. reflexivity.
+    }
+    {
+        simpl.
+
+        revert s H.
+        induction l using rev_ind; intros s H; simpl.
+        {
+            reflexivity.
+        }
+        {
+            assert (Hs: (PreTerm'_get_symbol (to_PreTerm' s (map uglify' l))) = s).
+            {
+                clear.
+                induction l using rev_ind; simpl.
+                { reflexivity. }
+                {
+                    unfold to_PreTerm'. simpl.
+                    rewrite map_app. simpl.
+                    rewrite fold_left_app. simpl.
+                    destruct (uglify' x); apply IHl.
+                }
+            }
+
+            apply Forall_app in H. destruct H as [H2 H1]. (*
+            apply Forall_inv in H as H1.
+            apply Forall_inv_tail in H as H2.*)
+            specialize (IHl s H2).
+            simpl.
+            unfold helper.
+            rewrite map_app.
+            rewrite to_PreTerm'_app.
+            simpl.
+            unfold helper.
+            destruct (uglify' x) eqn:Hux.
+            {
+                simpl.
+                remember ((to_PreTerm' s (map uglify' l)) ) as tpt.
+                destruct tpt; simpl in *.
+                {
+                    inversion IHl; subst; clear IHl.
+                    simpl in *.
+                    apply Forall_inv in H1.
+                    clear H0.
+                    rewrite Hux in H1. simpl in H1.
+                    subst x.
+                    reflexivity.
+                }
+                {
+                    simpl in *.
+                    f_equal.
+                    {
+                        apply Hs.
+                    }
+                    {
+                        inversion IHl; subst; clear IHl.
+                        clear H0.
+                        inversion H1; subst; clear H1. clear H4.
+                        rewrite Hux in H3. simpl in H3. subst x.
+                        reflexivity.
+                    }
+                }
+                {
+                    simpl in *.
+                    f_equal.
+                    {
+                        apply Hs.
+                    }
+                    {
+                        inversion IHl; subst; clear IHl.
+                        clear H0.
+                        inversion H1; subst; clear H1. clear H4.
+                        rewrite Hux in H3. simpl in H3. subst x.
+                        reflexivity.
+                    }
+                }
+            }
+            {
+                simpl.
+                remember ((to_PreTerm' s (map uglify' l)) ) as tpt.
+                destruct tpt; simpl in *.
+                {
+                    inversion IHl; subst; clear IHl.
+                    simpl in *.
+                    apply Forall_inv in H1.
+                    clear H0.
+                    rewrite Hux in H1. simpl in H1.
+                    subst x.
+                    reflexivity.
+                }
+                {
+                    simpl in *.
+                    f_equal.
+                    {
+                        apply Hs.
+                    }
+                    {
+                        inversion IHl; subst; clear IHl.
+                        clear H0.
+                        inversion H1; subst; clear H1. clear H4.
+                        rewrite Hux in H3. simpl in H3. subst x.
+                        reflexivity.
+                    }
+                }
+                {
+                    simpl in *.
+                    f_equal.
+                    {
+                        apply Hs.
+                    }
+                    {
+                        inversion IHl; subst; clear IHl.
+                        clear H0.
+                        inversion H1; subst; clear H1. clear H4.
+                        rewrite Hux in H3. simpl in H3. subst x.
+                        reflexivity.
+                    }
+                }
+            }
+        }
+    }
+Qed.
+
+

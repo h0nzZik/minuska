@@ -11,6 +11,7 @@ Section sec.
         {symbols : Symbols symbol}
     .
 
+    (* TODO make parametric in a user type *)
     Inductive BuiltinValue0 :=
     | bv_error
     | bv_bool (b : bool)

@@ -12,18 +12,6 @@ Declare Scope ConcreteScope.
 Delimit Scope RuleScope with rs.
 Delimit Scope ConcreteScope with concrete.
 
-Definition to_Term'
-    {Σ : StaticModel}
-    {T : Type}
-    (x : ((T)+(PreTerm' symbol T)))
-    : Term' symbol T
-:=
-match x with
-| inl x' => term_operand x'
-| inr x' => term_preterm x'
-end
-.
-
 
 Record ExprAndBoV {Σ : StaticModel} : Type := mkExprAndBoV {
     eab_expr : Expression ;
@@ -118,35 +106,7 @@ Notation "'$' x" :=
     (at level 40)
 .
 
-Definition to_PreTerm'
-    {Σ : StaticModel}
-    {T : Type}
-    (s : symbol)
-    (l : list ((Term' symbol T)))
-    : PreTerm' symbol T
-:=
-    fold_left
-        (fun a b =>
-            match b with
-            | term_operand b' => pt_app_operand a b'
-            | term_preterm b' => pt_app_ao a b'
-            end
-        )
-        l
-        (pt_operator s)
-.
 
-Definition apply_symbol'
-    {Σ : StaticModel}
-    {T : Type}
-    (s : symbol)
-: 
-    list ((Term' symbol T)) ->
-    Term' symbol T
-:=
-    fun l =>
-    (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
-.
 
 
 Definition apply_symbol
