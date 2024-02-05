@@ -1335,8 +1335,8 @@ let compile' :=
                             end
                             ) ocol) in
                         match sigma_1 with
-                        | [] => dt_fail A (* this should not happen *)
-                        | some_ctor::_ =>
+                        | nil => dt_fail A (* this should not happen *)
+                        | cons some_ctor some_rest =>
                             match fringe' with
                             | [] => dt_fail A
                             | o1::rest_of_fringe' =>
@@ -1375,14 +1375,15 @@ let compile' :=
 in
 compile' (ClauseMatrix_size cm) fringe cm
 .
-
+(*
 Lemma compile_correct_1 {Σ : Signature} {A : Type} {_Aeqdec : EqDecision A}
     (cm : ClauseMatrix A)
     (vs : ValueVector)
+    (os : list Occurrence)
     (a : A)
     :
     cmmatch vs cm a ->
-    dt_sem vs (compile [] cm) a
+    dt_sem vs (compile os cm) a
 .
 Proof.
     intros H.
@@ -1412,8 +1413,9 @@ Proof.
             rewrite <- Heqcm in H.
             clear -H Heqfiltered _Aeqdec.
             revert H Heqfiltered.
-            induction cm; intros H Heqfiltered; simpl in *.
+            induction cm; intros H Heqfiltered.
             {
+              simpl in *.
               unfold cmmatch in H.
               destruct H as [j [pv [H1 [H2 H3]]]].
               ltac1:(rewrite lookup_nil in H1).
@@ -1453,9 +1455,20 @@ Proof.
             }
           }
           {
+            Print compile.
             destruct (list_find is_ConstructorPattern p0.1) eqn:HfoundCP.
             {
-              admit.
+              destruct p1.
+              destruct n.
+              {
+                subst filtered.
+                ltac1:(exfalso).
+                destruct p0; simpl in *.
+                subst cm.
+              }
+              {
+              
+              }
             }
             {
               ltac1:(exfalso).
@@ -1492,4 +1505,4 @@ Qed.
 
 
 
-
+*)
