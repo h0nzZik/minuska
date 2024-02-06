@@ -139,7 +139,7 @@ Definition compile {Σ : StaticModel}
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol) 
     : CompileT :=
-    fun D => concat (map (compile' invisible_act topSymbol cseqSymbol holeSymbol (mlld_isValue unit D)) (mlld_decls unit D))
+    fun D => concat (map (compile' invisible_act topSymbol cseqSymbol holeSymbol (mlld_isValue Act D)) (mlld_decls Act D))
 .
 
 Lemma satisfies_top_bov
@@ -223,22 +223,27 @@ Qed.
 
 Lemma compile_correct
     {Σ : StaticModel}
+    {Act : Set}
+    {_AD : EqDecision Act}
+    (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol) 
-    (D : MinusL_LangDef unit)
+    (D : MinusL_LangDef Act)
     :
-    let Γ := compile topSymbol cseqSymbol holeSymbol D in
+    ~ (invisible_act ∈ actions_of_ldef Act D) ->
+    let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol D in
     forall
         (lc ld rc rd : TermOver builtin_value)
-        (w : list ())
+        (w : list Act)
         (ρ : Valuation),
-        MinusL_rewritesInVal unit D lc ld w  ρ rc rd
+        MinusL_rewritesInVal Act D lc ld w  ρ rc rd
         <->
         flattened_rewrites_to_over Γ
             (down topSymbol lc ld)
-            w
+            (filter (fun x => x <> invisible_act) w)
             (down topSymbol rc rd)
 .
 Proof.
+    intros Hinvisible.
     intros.
     destruct D as [iV ds]; simpl in *.
     split; intros HH.
@@ -267,37 +272,144 @@ Proof.
             simpl in Hi. inversion Hi; subst; clear Hi.
             rewrite map_app.
             rewrite concat_app.
-            simpl.
-            eapply frto_step>[|()|apply frto_base].
+            simpl. rewrite filter_cons. rewrite filter_nil.
+            destruct (decide (a <> invisible_act)).
             {
-                rewrite elem_of_app.
-                right.
-                rewrite elem_of_cons.
-                left.
-                reflexivity.
+                eapply frto_step>[|()|apply frto_base].
+                {
+                    rewrite elem_of_app.
+                    right.
+                    rewrite elem_of_cons.
+                    left.
+                    reflexivity.
+                }
+                {
+                    simpl.
+                    unfold flattened_rewrites_to.
+                    exists ρ.
+                    unfold flattened_rewrites_in_valuation_under_to.
+                    simpl.
+                    split.
+                    {
+                        apply satisfies_top_bov.
+                        split; assumption.
+                    }
+                    split.
+                    {
+                        apply satisfies_top_expr.
+                        split; assumption.
+                    }
+                    split>[assumption|].
+                    reflexivity.
+                }
             }
             {
+                unfold actions_of_ldef in Hinvisible.
+                simpl in Hinvisible.
+                rewrite elem_of_list_In in Hinvisible.
+                rewrite in_concat in Hinvisible.
+                ltac1:(exfalso).
+                apply n.
+                clear n. intros Hsub. subst a. apply Hinvisible. clear Hinvisible.
+                exists [invisible_act].
+                split>[|constructor].
+                rewrite in_map_iff.
+                rewrite <- (firstn_skipn i ds).
+                exists (mld_rewrite Act lc ld invisible_act rc rd scs).
                 simpl.
-                unfold flattened_rewrites_to.
-                exists ρ.
-                unfold flattened_rewrites_in_valuation_to.
-                simpl.
-                split.
-                {
-                    apply satisfies_top_bov.
-                    split; assumption.
-                }
-                split.
-                {
-                    apply satisfies_top_expr.
-                    split; assumption.
-                }
-                {
-                    assumption.
-                }
+                split>[reflexivity|].
+                apply in_or_app.
+                right.
+                rewrite <- Heqds'.
+                constructor. reflexivity. reflexivity.
             }
         }
         {
+            simpl in *.
+            assert (Htmp := @frto_step Σ Act Γ).
+            specialize (Htmp (down topSymbol ctrl1 state1)).
+            apply elem_of_list_lookup_1 in H.
+            destruct H as [i Hi].
+            assert (i < length ds).
+            {
+                apply lookup_lt_Some in Hi.
+                exact Hi.
+            }
+            ltac1:(unfold Γ in Htmp).
+            rewrite <- (firstn_skipn i ds) in Htmp.
+            unfold compile in Htmp.
+            simpl in Htmp.
+            rewrite map_app in Htmp.
+            rewrite concat_app in Htmp.
+            remember (drop i ds) as dids.
+            destruct dids.
+            {
+                rewrite <- (firstn_skipn i ds) in Hi.
+                rewrite <- Heqdids in Hi.
+                rewrite app_nil_r in Hi.
+                apply lookup_take_Some in Hi.
+                destruct Hi as [Hi Hcontra].
+                clear -Hcontra.
+                ltac1:(lia).
+            }
+            simpl in Htmp.
+            ltac1:(setoid_rewrite elem_of_app in Htmp).
+            ltac1:(setoid_rewrite elem_of_app in Htmp).
+            unfold compile' at 2 in Htmp'.
+            destruct m; simpl in *.
+            {
+                clear Htmp.
+                rewrite <- (firstn_skipn i ds) in Hi.
+                rewrite <- Heqdids in Hi.
+                rewrite lookup_app_r in Hi>[|rewrite take_length;ltac1:(lia)].
+                rewrite take_length in Hi.
+                ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
+                simpl in Hi.
+                inversion Hi.
+            }
+            {
+                ltac1:(epose proof(Htmp' := Htmp ?[t2] ?[t3] ?[w0] ?[a] ?[r])).
+                clear Htmp.
+                
+                ltac1:(ospecialize (Htmp' _)).
+                {
+                    right. left. rewrite elem_of_list_In. constructor.
+                    reflexivity.
+                }
+                ltac1:(ospecialize (Htmp' _)).
+                {
+                    unfold flattened_rewrites_to.
+                    exists ρ.
+                    unfold flattened_rewrites_in_valuation_under_to.
+                    simpl.
+                    split.
+                    {
+                        clear Htmp'.
+                        ltac1:(
+                            replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c0) :: vars_of_to_l2r c0)))))
+                            with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c0) :: vars_of_to_l2r c0))))))
+                            by reflexivity
+                        ).
+                        ltac1:(
+                            replace (apply_symbol' cseqSymbol [uglify' c0; term_operand (bov_variable (fresh (vars_of_to_l2r c0)))])
+                            with (uglify' (t_term cseqSymbol [c0; t_over (bov_variable (fresh (vars_of_to_l2r c0)))]))
+                            by reflexivity
+                        ).
+                        apply satisfies_top_bov.
+                        
+                    }
+            
+            }
+
+
+            rewrite concat_app in Htmp.
+            ltac1:(setoid_rewrite elem_of_list_In in Htmp).
+            ltac1:(setoid_rewrite in_concat in Htmp).
+            Search concat.
+            rewrite elem_of_concat in Htmp.
+            
+            About frto_step.
+            eapply frto_step in IHHH.
 
         }
 

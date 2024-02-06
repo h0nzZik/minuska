@@ -485,6 +485,18 @@ Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
     (scs : list SideCondition)
 . 
 
+Definition actions_of_decl
+    {Σ : StaticModel}
+    (Act : Set)
+    (d : MinusL_Decl Act)
+    : list Act
+:=
+match d with
+| mld_rewrite _ _ _ a _ _ _ => [a]
+| mld_context _ _ _ _ => []
+end.
+
+
 Record MinusL_LangDef
     {Σ : StaticModel}
     (Act : Set)
@@ -493,6 +505,16 @@ Record MinusL_LangDef
     mlld_isValue : Expression -> (list SideCondition) ;
     mlld_decls : list (MinusL_Decl Act) ;
 }.
+
+
+Definition actions_of_ldef
+    {Σ : StaticModel}
+    (Act : Set)
+    (D : MinusL_LangDef Act)
+    : list Act
+:=
+    concat (map (actions_of_decl Act) (mlld_decls Act D))
+.
 
 Fixpoint TermOverBoV_subst
     {Σ : StaticModel}
