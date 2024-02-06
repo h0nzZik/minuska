@@ -329,21 +329,6 @@ Definition prettify
     end
 .
 
-Section sec.
-    Context {Σ : StaticModel} {A : Type}
-        (a b c : A) (s : symbol)
-    .
-
-    Compute (uglify' (t_over a)).
-    Compute (prettify (uglify' (t_over a))).
-    Compute (prettify (uglify' (t_term s [(t_over a); (t_over b)]))).
-    
-    Compute (uglify' (t_term s [(t_term s ([t_over a]))])).
-
-    Compute (prettify (uglify' (t_term s [(t_term s ([t_over a]))]))).
-
-End sec.
-
 
 #[global]
 Instance cancel_prettify_uglify
@@ -477,5 +462,53 @@ Proof.
         }
     }
 Qed.
+
+Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
+| mld_rewrite
+    (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
+    (a : Act)
+    (rc : TermOver BuiltinOrVar) (rd : TermOver BuiltinOrVar)
+    (scs : list SideCondition)
+| mld_context
+    (c : TermOver BuiltinOrVar)
+    (h : variable)
+    (scs : list SideCondition)
+. 
+
+Record MinusL_LangDef
+    {Σ : StaticModel}
+    (Act : Set)
+    : Type
+ := mkMinusL_LangDef {
+    mlld_isValue : Expression -> (list SideCondition) ;
+    mlld_decls : list (MinusL_Decl Act) ;
+}.
+
+Fixpoint TermOverBoV_subst
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    (x : variable)
+    (t' : TermOver BuiltinOrVar)
+:=
+match t with
+| t_over (bov_builtin b) => t_over (bov_builtin b)
+| t_over (bov_variable y) =>
+    match (decide (x = y)) with
+    | left _ => t'
+    | right _ => t_over (bov_variable y)
+    end
+| t_term s l => t_term s (map (fun t'' => TermOverBoV_subst t'' x t') l)
+end.
+
+Fixpoint TermOverBuiltin_to_TermOverBoV
+    {Σ : StaticModel}
+    (t : TermOver builtin_value)
+    : TermOver BuiltinOrVar
+:=
+    match t with
+    | t_over b => t_over (bov_builtin b)
+    | t_term s l => t_term s (map TermOverBuiltin_to_TermOverBoV l)
+    end
+.
 
 

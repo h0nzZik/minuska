@@ -824,3 +824,74 @@ Definition flattened_rewrites_to
     : Prop
 := exists ρ, flattened_rewrites_in_valuation_to ρ r from to
 .
+
+
+Print Satisfies.
+#[export]
+Instance Satisfies_TermOverBuiltin_TermOverBoV
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation
+        (TermOver builtin_value)
+        (TermOver BuiltinOrVar)
+        variable
+:= {|
+    satisfies := fun ρ tg ts => satisfies ρ (uglify' tg) (uglify' ts) ;
+|}.
+
+Section MinusL_sem.
+    Context
+        {Σ : StaticModel}
+        (Act : Set)
+    .
+
+    Inductive MinusL_rewritesInVal
+        (D : MinusL_LangDef Act)
+        :
+        ((TermOver builtin_value)*(TermOver builtin_value)) ->
+        (list Act)  ->
+        Valuation ->
+        ((TermOver builtin_value)*(TermOver builtin_value)) ->
+        Prop :=
+
+    | mlr_rule : 
+        forall
+            (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
+            (a : Act)
+            (rc : TermOver BuiltinOrVar) (rd : TermOver BuiltinOrVar)
+            (scs : list SideCondition),
+            (mld_rewrite Act lc ld a rc rd scs) ∈ (mlld_decls Act D) ->
+        forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value) ρ,
+            satisfies ρ ctrl1 lc ->
+            satisfies ρ state1 ld ->
+            satisfies ρ ctrl2 rc ->
+            satisfies ρ state2 rd ->
+            satisfies ρ () scs ->
+        MinusL_rewritesInVal D (ctrl1,state1) [a] ρ (ctrl2,state2)
+
+    | mlr_trans :
+        forall
+            (ctrl1 state1 ctrl2 state2 ctrl3 state3 : TermOver builtin_value)
+            (w1 w2 : list Act)
+            (ρ : Valuation),
+        MinusL_rewritesInVal D (ctrl1,state1) w1 ρ (ctrl2,state2) ->
+        MinusL_rewritesInVal D (ctrl2,state2) w2 ρ (ctrl3,state3) ->
+        MinusL_rewritesInVal D (ctrl1,state1) (w1 ++ w2) ρ (ctrl3,state3)
+
+    | mlr_context :
+        forall
+            (c : TermOver BuiltinOrVar)
+            (h : variable)
+            (scs : list SideCondition),
+            (mld_context Act c h scs) ∈ (mlld_decls Act D) ->
+        forall (ctrl1 state1 ctrl2 state2 r v : TermOver builtin_value)
+            (w : list Act) (ρ : Valuation),
+            satisfies ρ () scs ->
+            satisfies ρ () (mlld_isValue Act D (ft_element (uglify' v))) ->
+            satisfies ρ ctrl1 (TermOverBoV_subst c h (TermOverBuiltin_to_TermOverBoV r)) ->
+            satisfies ρ ctrl2 (TermOverBoV_subst c h (TermOverBuiltin_to_TermOverBoV v)) ->
+            MinusL_rewritesInVal D (r,state1) w ρ (v,state2) ->
+            MinusL_rewritesInVal D (ctrl1,state1) w ρ (ctrl2,state2)
+    .
+
+End MinusL_sem.
