@@ -500,15 +500,54 @@ match t with
 | t_term s l => t_term s (map (fun t'' => TermOverBoV_subst t'' x t') l)
 end.
 
-Fixpoint TermOverBuiltin_to_TermOverBoV
+Fixpoint TermOver_map
+    {Σ : StaticModel}
+    {A B : Type}
+    (f : A -> B)
+    (t : TermOver A)
+    : TermOver B
+:=
+    match t with
+    | t_over b => t_over (f b)
+    | t_term s l => t_term s (map (TermOver_map f) l)
+    end
+.
+
+Definition TermOverBuiltin_to_TermOverBoV
     {Σ : StaticModel}
     (t : TermOver builtin_value)
     : TermOver BuiltinOrVar
 :=
-    match t with
-    | t_over b => t_over (bov_builtin b)
-    | t_term s l => t_term s (map TermOverBuiltin_to_TermOverBoV l)
+    TermOver_map bov_builtin t
+.
+
+Definition BoV_to_Expr
+    {Σ : StaticModel}
+    (bov : BuiltinOrVar)
+    : Expression
+:=
+    match bov with
+    | bov_builtin b => (ft_element (uglify' (t_over b)))
+    | bov_variable x => ft_variable x
     end
 .
 
+Definition TermOverBoV_to_TermOverExpr
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    : TermOver Expression
+:=
+    TermOver_map BoV_to_Expr t
+.
 
+Fixpoint vars_of_to_l2r
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    : list variable
+:= 
+    match t with
+    | t_over (bov_builtin _) => []
+    | t_over (bov_variable x) => [x]
+    | t_term s l => concat (map vars_of_to_l2r l)
+    end
+.
