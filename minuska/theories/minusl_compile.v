@@ -129,4 +129,127 @@ Definition compile {Σ : StaticModel}
     fun D => concat (map (compile' topSymbol cseqSymbol holeSymbol (mlld_isValue unit D)) (mlld_decls unit D))
 .
 
+Lemma satisfies_top
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    topSymbol
+    (ctrl1 state1 : TermOver builtin_value) (lc ld : TermOver BuiltinOrVar)
+    :
+    (satisfies ρ ctrl1 lc /\ satisfies ρ state1 ld) <->
+    satisfies ρ (apply_symbol' topSymbol [uglify' ctrl1; uglify' state1])
+        (apply_symbol' topSymbol [uglify' lc; uglify' ld])
+.
+Proof.
+    split.
+    {
+        intros [H1 H2].
+        unfold apply_symbol'. simpl.
+        destruct ctrl1,lc,state1,ld; simpl in *; (repeat constructor);
+            inversion H1; inversion H2; subst; assumption.
+    }
+    {
+        intros H.
+        inversion H; subst; clear H.
+        inversion pf; subst; clear pf;
+        destruct ctrl1,lc,state1,ld;
+            unfold to_PreTerm' in *;
+            simpl in *;
+            try (solve [inversion H1]);
+            ltac1:(simplify_eq/=);
+            try (inversion H; subst; clear H);
+            try (inversion H2; subst; clear H2);
+            try (inversion H0; subst; clear H0);
+            split; unfold satisfies; simpl;
+            (repeat constructor); try assumption;
+            unfold apply_symbol'; simpl;
+            try constructor; try assumption;
+            try (solve [inversion H7]);
+            try (solve [inversion H3]).
+    }
+Qed.
 
+Lemma compile_correct
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol holeSymbol : symbol) 
+    (D : MinusL_LangDef unit)
+    :
+    let Γ := compile topSymbol cseqSymbol holeSymbol D in
+    forall
+        (lc ld rc rd : TermOver builtin_value)
+        (w : list ())
+        (ρ : Valuation),
+        MinusL_rewritesInVal unit D lc ld w  ρ rc rd
+        <->
+        flattened_rewrites_to_over Γ
+            (down topSymbol lc ld)
+            w
+            (down topSymbol rc rd)
+.
+Proof.
+    intros.
+    destruct D as [iV ds]; simpl in *.
+    split; intros HH.
+    {
+        induction HH.
+        {
+            unfold compile in Γ. simpl in H. simpl in Γ.
+            apply elem_of_list_lookup_1 in H.
+            destruct H as [i Hi].
+            ltac1:(unfold Γ).
+            assert (i < length ds).
+            {
+                apply lookup_lt_Some in Hi.
+                exact Hi.
+            }
+            rewrite <- (firstn_skipn i ds).
+            rewrite <- (firstn_skipn i ds) in Hi.
+            rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
+            rewrite take_length in Hi.
+            ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
+            remember (drop i ds) as ds'.
+            destruct ds'.
+            {
+                simpl in Hi. inversion Hi.
+            }
+            simpl in Hi. inversion Hi; subst; clear Hi.
+            rewrite map_app.
+            rewrite concat_app.
+            simpl.
+            eapply frto_step>[|()|apply frto_base].
+            {
+                rewrite elem_of_app.
+                right.
+                rewrite elem_of_cons.
+                left.
+                reflexivity.
+            }
+            {
+                simpl.
+                unfold flattened_rewrites_to.
+                exists ρ.
+                unfold flattened_rewrites_in_valuation_to.
+                simpl.
+                split.
+                {
+                    constructor.
+                    unfold to_PreTerm'. simpl. unfold helper. simpl.
+                    ltac1:(repeat case_match); simpl in *; subst;
+                        (repeat constructor).
+                    {
+
+                    }
+                    admit.
+                }
+                admit.
+            }
+        }
+        {
+
+        }
+
+    }
+    {
+
+    }
+
+Qed.

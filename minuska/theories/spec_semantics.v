@@ -860,10 +860,12 @@ Section MinusL_sem.
     Inductive MinusL_rewritesInVal
         (D : MinusL_LangDef Act)
         :
-        ((TermOver builtin_value)*(TermOver builtin_value)) ->
+        (TermOver builtin_value) ->
+        (TermOver builtin_value) ->
         (list Act)  ->
         Valuation ->
-        ((TermOver builtin_value)*(TermOver builtin_value)) ->
+        (TermOver builtin_value) ->
+        (TermOver builtin_value) ->
         Prop :=
 
     | mlr_rule : 
@@ -879,7 +881,7 @@ Section MinusL_sem.
             satisfies ρ ctrl2 rc ->
             satisfies ρ state2 rd ->
             satisfies ρ () scs ->
-        MinusL_rewritesInVal D (ctrl1,state1) [a] ρ (ctrl2,state2)
+        MinusL_rewritesInVal D ctrl1 state1 [a] ρ ctrl2 state2
 (*
     | mlr_trans :
         forall
@@ -902,10 +904,26 @@ Section MinusL_sem.
             satisfies ρ () (mlld_isValue Act D (ft_element (uglify' v))) ->
             satisfies ρ ctrl1 (TermOverBoV_subst c h (TermOverBuiltin_to_TermOverBoV r)) ->
             satisfies ρ ctrl2 (TermOverBoV_subst c h (TermOverBuiltin_to_TermOverBoV v)) ->
-            MinusL_rewritesInVal D (r,state1) w ρ (v,state2) ->
-            MinusL_rewritesInVal D (ctrl1,state1) w ρ (ctrl2,state2)
+            MinusL_rewritesInVal D r state1 w ρ v state2 ->
+            MinusL_rewritesInVal D ctrl1 state1 w ρ ctrl2 state2
     .
 
 End MinusL_sem.
 
-
+Inductive flattened_rewrites_to_over
+    {Σ : StaticModel}
+    (Γ : RewritingTheory)
+    :
+    TermOver builtin_value ->
+    list unit ->
+    TermOver builtin_value ->
+    Prop
+:=
+| frto_base: forall t,
+        flattened_rewrites_to_over Γ t nil t
+| frto_step: forall (t1 t2 t3 : TermOver builtin_value) w a r,
+    r ∈ Γ ->
+    flattened_rewrites_to r (uglify' t1) (uglify' t2) ->
+    flattened_rewrites_to_over Γ t2 w t3 ->
+    flattened_rewrites_to_over Γ t1 (a::w) t3
+.
