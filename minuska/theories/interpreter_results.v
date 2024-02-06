@@ -11,7 +11,8 @@ From Minuska Require Import
 
 Lemma wf2'_impl_wf2
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     :
     RewritingRule_wf2' r -> 
     RewritingRule_wf2 r
@@ -96,7 +97,8 @@ Qed.
 #[export]
 Instance RewritingRule_wf1_dec
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     :
     Decision (RewritingRule_wf1 r)
 .
@@ -108,7 +110,8 @@ Defined.
 #[export]
 Instance RewritingRule_wf2'_dec
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     :
     Decision (RewritingRule_wf2' r)
 .
@@ -119,7 +122,8 @@ Defined.
 
 Definition RewritingRule_wf2_heuristics
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     :
     option (RewritingRule_wf2 r)
 .
@@ -136,7 +140,8 @@ Defined.
 
 Definition RewritingRule_wf_heuristics
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     : option (RewritingRule_wf r)
 .
 Proof.
@@ -156,7 +161,8 @@ Defined.
 
 Definition RewritingTheory_wf_heuristics
     {Σ : StaticModel}
-    (Γ : RewritingTheory)
+    {Act : Set}
+    (Γ : RewritingTheory Act)
     : option (RewritingTheory_wf Γ)
 .
 Proof.

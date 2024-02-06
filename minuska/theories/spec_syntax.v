@@ -154,16 +154,26 @@ Definition ExpressionTerm {Σ : StaticModel} :=
 
 Inductive LeftRight : Set := LR_Left | LR_Right.
 
-Record RewritingRule {Σ : StaticModel}
+Record RewritingRule
+    {Σ : StaticModel}
+    (Act : Set)
 := mkRewritingRule
 {
     fr_from : SymbolicTerm ;
     fr_to : ExpressionTerm ;
     fr_scs : list SideCondition ;
+    fr_act : Act ;
 }.
 
-Definition RewritingTheory {Σ : StaticModel}
-    := list RewritingRule
+Arguments fr_from {Σ} {Act}%type_scope r.
+Arguments fr_to {Σ} {Act}%type_scope r.
+Arguments fr_scs {Σ} {Act}%type_scope r.
+Arguments fr_act {Σ} {Act}%type_scope r.
+
+Definition RewritingTheory
+    {Σ : StaticModel}
+    (Act : Set)
+    := list (RewritingRule Act)
 .
 
 Definition to_Term'

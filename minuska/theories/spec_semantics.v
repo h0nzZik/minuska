@@ -805,24 +805,32 @@ Instance
     satisfies := fun _ _ _ => False ;
 |}.
 
-Definition flattened_rewrites_in_valuation_to
+Definition flattened_rewrites_in_valuation_under_to
     {Σ : StaticModel}
+    {Act : Set}
     (ρ : Valuation)
-    (r : RewritingRule)
-    (from to : GroundTerm)
+    (r : RewritingRule Act)
+    (from : GroundTerm)
+    (under : Act)
+    (to : GroundTerm)
     : Prop
 := satisfies ρ from (fr_from r)
 /\ satisfies ρ to (fr_to r)
 /\ satisfies ρ () (fr_scs r)
+/\ under = fr_act r
 .
 
 
 Definition flattened_rewrites_to
     {Σ : StaticModel}
-    (r : RewritingRule)
-    (from to : GroundTerm)
+    {Act : Set}
+    (r : RewritingRule Act)
+    (from : GroundTerm)
+    (under : Act)
+    (to : GroundTerm)
     : Prop
-:= exists ρ, flattened_rewrites_in_valuation_to ρ r from to
+:= exists ρ,
+    flattened_rewrites_in_valuation_under_to ρ r from under to
 .
 
 #[export]
@@ -912,10 +920,11 @@ End MinusL_sem.
 
 Inductive flattened_rewrites_to_over
     {Σ : StaticModel}
-    (Γ : RewritingTheory)
+    {Act : Set}
+    (Γ : RewritingTheory Act)
     :
     TermOver builtin_value ->
-    list unit ->
+    list Act ->
     TermOver builtin_value ->
     Prop
 :=
@@ -923,7 +932,7 @@ Inductive flattened_rewrites_to_over
         flattened_rewrites_to_over Γ t nil t
 | frto_step: forall (t1 t2 t3 : TermOver builtin_value) w a r,
     r ∈ Γ ->
-    flattened_rewrites_to r (uglify' t1) (uglify' t2) ->
+    flattened_rewrites_to r (uglify' t1) a (uglify' t2) ->
     flattened_rewrites_to_over Γ t2 w t3 ->
     flattened_rewrites_to_over Γ t1 (a::w) t3
 .

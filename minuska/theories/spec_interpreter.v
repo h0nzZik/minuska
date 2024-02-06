@@ -9,7 +9,8 @@ From Minuska Require Import
 
 Definition RewritingRule_wf1
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     : Prop
 := 
     let vs1 : gset variable := vars_of (fr_scs r) in
@@ -19,7 +20,8 @@ Definition RewritingRule_wf1
 
 Definition RewritingRule_wf2'
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     : Prop
 := 
     (vars_of (fr_to r) ⊆ vars_of (fr_from r))
@@ -32,7 +34,8 @@ Definition RewritingRule_wf2'
 *)
 Definition RewritingRule_wf2
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     : Prop
 := 
     forall (g : GroundTerm) (ρ : Valuation),
@@ -44,7 +47,8 @@ Definition RewritingRule_wf2
 
 Definition RewritingRule_wf
     {Σ : StaticModel}
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     : Prop
 :=
     RewritingRule_wf1 r /\ RewritingRule_wf2 r
@@ -52,7 +56,8 @@ Definition RewritingRule_wf
 
 Definition RewritingTheory_wf
     {Σ : StaticModel}
-    (Γ : RewritingTheory)
+    {Act : Set}
+    (Γ : RewritingTheory Act)
     : Prop
 :=
     Forall RewritingRule_wf Γ
@@ -60,35 +65,40 @@ Definition RewritingTheory_wf
 
 Definition rewriting_relation_flat
     {Σ : StaticModel}
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     : relation GroundTerm
     := fun from to =>
-        exists r, r ∈ Γ /\ flattened_rewrites_to r from to
+        exists r a, r ∈ Γ /\ flattened_rewrites_to r from a to
 .
 
 Definition not_stuck_flat
     {Σ : StaticModel}
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     (e : GroundTerm) : Prop
 := exists e', rewriting_relation_flat Γ e e'.
 
 Definition flat_stuck
     {Σ : StaticModel}
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     (e : GroundTerm) : Prop
 := not (not_stuck_flat Γ e).
 
 
 Definition FlatInterpreter
     {Σ : StaticModel}
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     : Type
     := GroundTerm -> option GroundTerm
 .
 
 Definition FlatInterpreter_sound'
     {Σ : StaticModel}
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     (interpreter : FlatInterpreter Γ)
     : Prop
     :=  (
@@ -107,7 +117,8 @@ Definition FlatInterpreter_sound'
 
 Definition FlatInterpreter_sound
     {Σ : StaticModel}
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     (interpreter : FlatInterpreter Γ)
     : Prop
 := 

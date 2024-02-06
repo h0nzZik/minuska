@@ -146,32 +146,34 @@ Definition strictness_to_contexts
         (sd_positions sd)
 .
 
-Record RuleDeclaration {Σ : StaticModel}
+Record RuleDeclaration {Σ : StaticModel} (Act : Set)
 := mkRuleDeclaration {
     rd_label : label ;
-    rd_rule : RewritingRule ;
+    rd_rule : RewritingRule Act ;
 }.
 
-Arguments mkRuleDeclaration {Σ} rd_label rd_rule.
+Arguments mkRuleDeclaration {Σ} {Act} rd_label rd_rule.
+Arguments rd_label {Σ} {Act}%type_scope r.
+Arguments rd_rule {Σ} {Act}%type_scope r.
 
-Inductive Declaration {Σ : StaticModel} :=
-| decl_rule (r : RuleDeclaration)
+Inductive Declaration {Σ : StaticModel} {Act : Set} :=
+| decl_rule (r : @RuleDeclaration Σ Act)
 | decl_ctx (c : ContextDeclaration)
 | decl_strict (s : StrictnessDeclaration)
 .
 
 (*Coercion decl_rule : RuleDeclaration >-> Declaration.*)
 
-Notation "'rule' '[' n ']:' l ~> r"
+Notation "'rule' '[' n ']:' l '~>{' a '}' r"
     := ((mkRuleDeclaration
-        n (rule (l) ~> (r) requires nil)
+        n (rule (l) ~>{ (a) } (r) requires nil)
     ))
     (at level 200)
 .
 
-Notation "'rule' '[' n ']:' l ~> r 'where' s"
+Notation "'rule' '[' n ']:' l '~>{' a '}' r 'where' s"
     := ((mkRuleDeclaration
-        n (rule (l) ~> (r) requires (cons (sc_constraint (apeq ((ft_nullary b_true)) (s))) nil))
+        n (rule (l) ~>{a} (r) requires (cons (sc_constraint (apeq ((ft_nullary b_true)) (s))) nil))
     ))
     (at level 200)
 .
@@ -194,24 +196,26 @@ Definition argument_sequence
 
 Definition NamedRewritingRule
     {Σ : StaticModel}
+    {Act : Set}
     : Type
 :=
-    prod label RewritingRule
+    prod label (RewritingRule Act)
 .
 
 
-Record State {Σ : StaticModel}
+Record State {Σ : StaticModel} {Act : Set}
 := mkState {
-    st_rules : gmap label RewritingRule ;
+    st_rules : gmap label (RewritingRule Act) ;
     st_log : string ;
 }.
 
-Arguments mkState {Σ} st_rules st_log%string_scope.
+Arguments mkState {Σ} {Act} st_rules st_log%string_scope.
 
 Definition process_rule_declaration
     {Σ : StaticModel}
+    {Act : Set}
     (s : State)
-    (r : RuleDeclaration)
+    (r : RuleDeclaration Act)
     : State
 :=
 match (st_rules s) !! (rd_label r) with
@@ -227,6 +231,10 @@ end
 .
 
 Section wsm.
+    Context
+        (Act : Set)
+        (default_act : Act)
+    .
 (*
     Context
         {Σ : StaticModel}
@@ -260,8 +268,6 @@ Section wsm.
         (@apply_symbol' Σ T (to_sym ("freezer_" +:+ sym +:+ "_" +:+ (pretty position))))
     .
 
-    Check foldr.
-
     Definition heating_rule_seq
         {defaults : Defaults}
         (lbl : label)
@@ -272,7 +278,7 @@ Section wsm.
         (position : nat)
         (isValue : Expression -> Expression)
         (cseq_context : ContextTemplate)
-        : RuleDeclaration
+        : RuleDeclaration Act
     :=
         let vars : list variable
             := argument_sequence to_var arity in
@@ -294,7 +300,7 @@ Section wsm.
                 (apply_symbol' sym lhs_vars);
                 (term_operand (bov_variable REST_SEQ))
             ])%list)
-         ~> SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq ([
+         ~>{default_act} SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq ([
                 lhs_selected_var;
                 cseq ([
                     (freezer freezerLbl position (delete position lhs_vars));
@@ -314,7 +320,7 @@ Section wsm.
         (position : nat)
         (isValue : Expression -> Expression)
         (cseq_context : ContextTemplate)
-        : RuleDeclaration
+        : RuleDeclaration Act
     :=
         let vars : list variable
             := argument_sequence to_var arity in
@@ -338,7 +344,7 @@ Section wsm.
                 ])%list
             ])%list
            ))
-         ~> SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq [
+         ~>{default_act} SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq [
                 (apply_symbol' sym lhs_vars);
                 (term_operand (bov_variable REST_SEQ))
             ])%list))
@@ -351,7 +357,7 @@ Section wsm.
         (c : ContextDeclaration)
         : State
     := 
-        let hr : RuleDeclaration
+        let hr : RuleDeclaration Act
             := heating_rule_seq
                     ((cd_label c) +:+ "-heat")
                     (cd_label c)
@@ -362,7 +368,7 @@ Section wsm.
                     (cd_isValue c)
                     (@cd_cseq_context Σ c)
             in
-        let cr : RuleDeclaration
+        let cr : RuleDeclaration Act
             := cooling_rule
                     ((cd_label c) +:+ "-cool")
                     (cd_label c)
@@ -392,7 +398,7 @@ Section wsm.
 
     Definition initialState
         {Σ : StaticModel}
-        : State
+        : @State Σ Act
     := {|
         st_rules := ∅ ;
         st_log := "";
@@ -423,7 +429,7 @@ Section wsm.
     Definition to_theory
         {Σ : StaticModel}
         (s : State)
-        : RewritingTheory*(list string)
+        : (RewritingTheory Act)*(list string)
     :=
         let l := (map_to_list (st_rules s)) in
         (l.*2,l.*1)

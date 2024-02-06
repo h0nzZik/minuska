@@ -9,6 +9,8 @@ From Minuska Require Import
 *)
 Definition ctx_heat
     {Σ : StaticModel}
+    {Act : Set}
+    (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
     (isValue : Expression -> (list SideCondition))
@@ -16,7 +18,7 @@ Definition ctx_heat
     (h : variable)
     (scs : list SideCondition)
     :
-    RewritingRule
+    RewritingRule Act
 := {|
     fr_from := (uglify' (t_term topSymbol [
         (t_term cseqSymbol [
@@ -38,17 +40,20 @@ Definition ctx_heat
         t_over (ft_variable dataVariable)])
     );
     fr_scs := scs;
+    fr_act := invisible_act ;
 |}.
 
 Definition ctx_cool
     {Σ : StaticModel}
+    {Act : Set}
+    (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
     (isValue : Expression -> (list SideCondition))
     (c : TermOver BuiltinOrVar)
     (h : variable)
     :
-    RewritingRule
+    RewritingRule Act
 := {|
     fr_from := (uglify' (t_term topSymbol [
         (t_term cseqSymbol [
@@ -70,11 +75,13 @@ Definition ctx_cool
     );
 
     fr_scs := isValue (ft_variable h);
+
+    fr_act := invisible_act ;
 |}.
 
 
-Definition CompileT {Σ : StaticModel} : Type :=
-    MinusL_LangDef unit -> RewritingTheory
+Definition CompileT {Σ : StaticModel} {Act : Set} : Type :=
+    MinusL_LangDef Act -> RewritingTheory Act
 .
 
 Definition down
@@ -89,10 +96,11 @@ Definition down
 
 
 Definition compile' {Σ : StaticModel} {Act : Set}
+    (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (isValue : Expression -> (list SideCondition))
     (d : MinusL_Decl Act)
-    : (list RewritingRule)
+    : (list (RewritingRule Act))
 :=
     match d with
     | mld_rewrite _ lc ld a rc rd scs => [
@@ -100,6 +108,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
             fr_from := uglify' (down topSymbol lc ld) ;
             fr_to := uglify' (down topSymbol rc rd) ;
             fr_scs := scs ;
+            fr_act := a;
         |})
         ]
     | mld_context _ c h scs =>
@@ -108,12 +117,14 @@ Definition compile' {Σ : StaticModel} {Act : Set}
         let dataVariable := fresh (contVariable::vars) in
          [
             (ctx_heat
+                invisible_act
                 topSymbol cseqSymbol holeSymbol
                 contVariable dataVariable
                 isValue
                 c h scs
             );
             (ctx_cool
+                invisible_act
                 topSymbol cseqSymbol holeSymbol
                 contVariable dataVariable
                 isValue
@@ -124,12 +135,14 @@ Definition compile' {Σ : StaticModel} {Act : Set}
 .
 
 Definition compile {Σ : StaticModel}
+    {Act : Set}
+    (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol) 
     : CompileT :=
-    fun D => concat (map (compile' topSymbol cseqSymbol holeSymbol (mlld_isValue unit D)) (mlld_decls unit D))
+    fun D => concat (map (compile' invisible_act topSymbol cseqSymbol holeSymbol (mlld_isValue unit D)) (mlld_decls unit D))
 .
 
-Lemma satisfies_top
+Lemma satisfies_top_bov
     {Σ : StaticModel}
     (ρ : Valuation)
     topSymbol
@@ -167,6 +180,46 @@ Proof.
             try (solve [inversion H3]).
     }
 Qed.
+
+Lemma satisfies_top_expr
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    topSymbol
+    (ctrl1 state1 : TermOver builtin_value) (lc ld : TermOver Expression)
+    :
+    (satisfies ρ ctrl1 lc /\ satisfies ρ state1 ld) <->
+    satisfies ρ (apply_symbol' topSymbol [uglify' ctrl1; uglify' state1])
+        (apply_symbol' topSymbol [uglify' lc; uglify' ld])
+.
+Proof.
+    split.
+    {
+        intros [H1 H2].
+        unfold apply_symbol'. simpl.
+        destruct ctrl1,lc,state1,ld; simpl in *; (repeat constructor);
+            inversion H1; inversion H2; subst; assumption.
+    }
+    {
+        intros H.
+        inversion H; subst; clear H.
+        inversion pf; subst; clear pf;
+        destruct ctrl1,lc,state1,ld;
+            unfold to_PreTerm' in *;
+            simpl in *;
+            try (solve [inversion H1]);
+            ltac1:(simplify_eq/=);
+            try (inversion H; subst; clear H);
+            try (inversion H2; subst; clear H2);
+            try (inversion H0; subst; clear H0);
+            split; unfold satisfies; simpl;
+            (repeat constructor); try assumption;
+            unfold apply_symbol'; simpl;
+            try constructor; try assumption;
+            try (solve [inversion H7]);
+            try (solve [inversion H3]).
+    }
+Qed.
+
 
 Lemma compile_correct
     {Σ : StaticModel}
@@ -231,16 +284,17 @@ Proof.
                 simpl.
                 split.
                 {
-                    constructor.
-                    unfold to_PreTerm'. simpl. unfold helper. simpl.
-                    ltac1:(repeat case_match); simpl in *; subst;
-                        (repeat constructor).
-                    {
-
-                    }
-                    admit.
+                    apply satisfies_top_bov.
+                    split; assumption.
                 }
-                admit.
+                split.
+                {
+                    apply satisfies_top_expr.
+                    split; assumption.
+                }
+                {
+                    assumption.
+                }
             }
         }
         {

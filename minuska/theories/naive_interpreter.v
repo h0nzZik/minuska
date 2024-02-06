@@ -86,8 +86,8 @@ Definition evaluate_rhs_pattern
 
 Definition rewrite_with
     {Σ : StaticModel}
-    
-    (r : RewritingRule)
+    {Act : Set}
+    (r : RewritingRule Act)
     (g : GroundTerm)
     : option GroundTerm
 :=
@@ -457,9 +457,9 @@ Qed.
 
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
-    
+    {Act : Set}
     (g : GroundTerm)
-    (r : RewritingRule)
+    (r : RewritingRule Act)
     : option Valuation
 :=
     ρ ← try_match g (fr_from r);
@@ -480,9 +480,9 @@ Instance VarsOf_list_SideCondition
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
-    
+    {Act : Set}
     (g : GroundTerm)
-    (r : RewritingRule)
+    (r : RewritingRule Act)
     (ρ : gmap variable GroundTerm)
     :
     vars_of (fr_scs r) ⊆ vars_of (fr_from r) ->
@@ -655,10 +655,10 @@ Qed.
 
 Definition thy_lhs_match_one
     {Σ : StaticModel}
-    
+    {Act : Set}
     (e : GroundTerm)
-    (Γ : list RewritingRule)
-    : option (RewritingRule * Valuation * nat)%type
+    (Γ : list (RewritingRule Act))
+    : option (RewritingRule Act * Valuation * nat)%type
 :=
     let froms : list SymbolicTerm
         := fr_from <$> Γ
@@ -679,13 +679,13 @@ Definition thy_lhs_match_one
 
 Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
-    
+    {Act : Set}
     (e : GroundTerm)
-    (Γ : RewritingTheory)
+    (Γ : RewritingTheory Act)
     (wfΓ : RewritingTheory_wf Γ)
     :
     thy_lhs_match_one e Γ = None ->
-    ~ exists (r : RewritingRule) (ρ : Valuation),
+    ~ exists (r : RewritingRule Act) (ρ : Valuation),
         r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
 .
 Proof.
@@ -806,10 +806,10 @@ Qed.
 
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
-    
+    {Act : Set}
     (e : GroundTerm)
-    (Γ : list RewritingRule)
-    (r : RewritingRule)
+    (Γ : list (RewritingRule Act))
+    (r : RewritingRule Act)
     (ρ : Valuation)
     (rule_idx : nat)
     :
@@ -869,12 +869,12 @@ Qed.
 
 Definition naive_interpreter_ext
     {Σ : StaticModel}
-    
-    (Γ : list RewritingRule)
+    {Act : Set}
+    (Γ : list (RewritingRule Act))
     (e : GroundTerm)
     : option (GroundTerm*nat)
 :=
-    let oρ : option (RewritingRule*Valuation*nat)
+    let oρ : option ((RewritingRule Act)*Valuation*nat)
         := thy_lhs_match_one e Γ in
     match oρ with
     | None => None
@@ -886,8 +886,8 @@ Definition naive_interpreter_ext
 
 Definition naive_interpreter
     {Σ : StaticModel}
-    
-    (Γ : RewritingTheory)
+    {Act : Set}
+    (Γ : RewritingTheory Act)
     (e : GroundTerm)
     : option (GroundTerm)
 :=
@@ -897,7 +897,8 @@ Definition naive_interpreter
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
-    (Γ : RewritingTheory)
+    {Act : Set}
+    (Γ : RewritingTheory Act)
     : FlatInterpreter_sound Γ (naive_interpreter Γ).
 Proof.
     unfold FlatInterpreter_sound.
@@ -923,15 +924,16 @@ Proof.
             unfold rewriting_relation_flat.
             exists r.
             destruct Hmatch as [Hin [Hm1 Hm2]].
+            exists (fr_act r).
             split>[apply Hin|].
             unfold flattened_rewrites_to.
             exists ρ.
-            unfold flattened_rewrites_in_valuation_to.
+            unfold flattened_rewrites_in_valuation_under_to.
             split.
             {
                 exact Hm1.
             }
-            split>[|exact Hm2].
+            (repeat split)>[|exact Hm2].
             apply evaluate_rhs_pattern_correct in H1y.
             apply matchesb_implies_satisfies in H1y.
             exact H1y.
@@ -949,10 +951,10 @@ Proof.
             {
                 apply thy_lhs_match_one_Some in Hmatch.
                 destruct Hmatch as [Hin Hsat].
-                assert (Hts := thy_lhs_match_one_Some).
+                assert (Hts := @thy_lhs_match_one_Some Σ).
                 unfold rewriting_relation_flat in Hstuck.
                 unfold flattened_rewrites_to in Hstuck.
-                unfold flattened_rewrites_in_valuation_to in Hstuck.
+                unfold flattened_rewrites_in_valuation_under_to in Hstuck.
                 assert (Hev := evaluate_rhs_pattern_correct (fr_to r) ρ).
                 ltac1:(cut (~ ∃ g', evaluate_rhs_pattern ρ (fr_to r) = Some g')).
                 {
@@ -972,11 +974,14 @@ Proof.
                 apply matchesb_implies_satisfies in Hg'.
                 apply Hstuck. clear Hstuck.
                 exists pg'. exists r.
+                exists (fr_act r).
                 split>[assumption|].
                 exists ρ.
                 split>[apply Hsat|].
                 split>[assumption|].
+                split.
                 apply Hsat.
+                reflexivity.
             }
         }
     }
@@ -986,10 +991,10 @@ Proof.
 
         destruct Hnotstuck as [e' He'].
         unfold rewriting_relation_flat in He'.
-        destruct He' as [r' [H1r' H2r']].
+        destruct He' as [r' [a [H1r' H2r']]].
         unfold flattened_rewrites_to in H2r'.
         destruct H2r' as [ρ' Hρ'].
-        unfold flattened_rewrites_in_valuation_to in Hρ'.
+        unfold flattened_rewrites_in_valuation_under_to in Hρ'.
 
         
         destruct (thy_lhs_match_one e Γ) eqn:Hmatch.

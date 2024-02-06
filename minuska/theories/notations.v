@@ -162,21 +162,23 @@ Notation "'[' x , y , .. , z ']'"
     : RuleScope
 .
 
-Notation "'llrule' l ~> r 'requires' s"
+Notation "'llrule' l '~>{' a '}' r 'requires' s"
     := (@mkRewritingRule
+        _
         _
         ((fun (_:TagLHS) => l) mkTagLHS)%rs
         ((fun (_:TagRHS) => r) mkTagRHS)%rs
         ((fun (_:TagRHS) => s) mkTagRHS)%rs
+        a
         
     )
     (at level 200)
 .
 
-Notation "'rule' l ~> r 'requires' s"
+Notation "'rule' l '~>{' a '}' r 'requires' s"
     := (llrule
         (l)
-        ~>
+        ~>{a}
         (r) 
         requires
         s
