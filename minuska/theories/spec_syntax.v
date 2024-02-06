@@ -467,7 +467,7 @@ Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_rewrite
     (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
     (a : Act)
-    (rc : TermOver BuiltinOrVar) (rd : TermOver BuiltinOrVar)
+    (rc : TermOver Expression) (rd : TermOver Expression)
     (scs : list SideCondition)
 | mld_context
     (c : TermOver BuiltinOrVar)

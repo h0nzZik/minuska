@@ -825,8 +825,6 @@ Definition flattened_rewrites_to
 := exists ρ, flattened_rewrites_in_valuation_to ρ r from to
 .
 
-
-Print Satisfies.
 #[export]
 Instance Satisfies_TermOverBuiltin_TermOverBoV
     {Σ : StaticModel}
@@ -838,6 +836,20 @@ Instance Satisfies_TermOverBuiltin_TermOverBoV
 := {|
     satisfies := fun ρ tg ts => satisfies ρ (uglify' tg) (uglify' ts) ;
 |}.
+
+#[export]
+Instance Satisfies_TermOverBuiltin_TermOverExpression
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation
+        (TermOver builtin_value)
+        (TermOver Expression)
+        variable
+:= {|
+    satisfies := fun ρ tg ts => satisfies ρ (uglify' tg) (uglify' ts) ;
+|}.
+
+
 
 Section MinusL_sem.
     Context
@@ -858,7 +870,7 @@ Section MinusL_sem.
         forall
             (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
             (a : Act)
-            (rc : TermOver BuiltinOrVar) (rd : TermOver BuiltinOrVar)
+            (rc : TermOver Expression) (rd : TermOver Expression)
             (scs : list SideCondition),
             (mld_rewrite Act lc ld a rc rd scs) ∈ (mlld_decls Act D) ->
         forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value) ρ,
@@ -868,7 +880,7 @@ Section MinusL_sem.
             satisfies ρ state2 rd ->
             satisfies ρ () scs ->
         MinusL_rewritesInVal D (ctrl1,state1) [a] ρ (ctrl2,state2)
-
+(*
     | mlr_trans :
         forall
             (ctrl1 state1 ctrl2 state2 ctrl3 state3 : TermOver builtin_value)
@@ -877,7 +889,7 @@ Section MinusL_sem.
         MinusL_rewritesInVal D (ctrl1,state1) w1 ρ (ctrl2,state2) ->
         MinusL_rewritesInVal D (ctrl2,state2) w2 ρ (ctrl3,state3) ->
         MinusL_rewritesInVal D (ctrl1,state1) (w1 ++ w2) ρ (ctrl3,state3)
-
+*)
     | mlr_context :
         forall
             (c : TermOver BuiltinOrVar)

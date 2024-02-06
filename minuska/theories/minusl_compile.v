@@ -9,7 +9,7 @@ From Minuska Require Import
 *)
 Definition ctx_heat
     {Σ : StaticModel}
-    (topSymbol cseqSymbol  holeSymbol : symbol)
+    (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
     (isValue : Expression -> (list SideCondition))
     (c : TermOver BuiltinOrVar)
@@ -42,7 +42,7 @@ Definition ctx_heat
 
 Definition ctx_cool
     {Σ : StaticModel}
-    (topSymbol cseqSymbol  holeSymbol : symbol)
+    (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
     (isValue : Expression -> (list SideCondition))
     (c : TermOver BuiltinOrVar)
@@ -71,4 +71,62 @@ Definition ctx_cool
 
     fr_scs := isValue (ft_variable h);
 |}.
+
+
+Definition CompileT {Σ : StaticModel} : Type :=
+    MinusL_LangDef unit -> RewritingTheory
+.
+
+Definition down
+    {Σ : StaticModel}
+    {A : Type}
+    (topSymbol : symbol)
+    (ctrl data : TermOver A)
+    : TermOver A
+:=
+    t_term topSymbol [ctrl;data]
+.
+
+
+Definition compile' {Σ : StaticModel} {Act : Set}
+    (topSymbol cseqSymbol holeSymbol : symbol)
+    (isValue : Expression -> (list SideCondition))
+    (d : MinusL_Decl Act)
+    : (list RewritingRule)
+:=
+    match d with
+    | mld_rewrite _ lc ld a rc rd scs => [
+        ({|
+            fr_from := uglify' (down topSymbol lc ld) ;
+            fr_to := uglify' (down topSymbol rc rd) ;
+            fr_scs := scs ;
+        |})
+        ]
+    | mld_context _ c h scs =>
+        let vars := vars_of_to_l2r c in
+        let contVariable := fresh vars in
+        let dataVariable := fresh (contVariable::vars) in
+         [
+            (ctx_heat
+                topSymbol cseqSymbol holeSymbol
+                contVariable dataVariable
+                isValue
+                c h scs
+            );
+            (ctx_cool
+                topSymbol cseqSymbol holeSymbol
+                contVariable dataVariable
+                isValue
+                c h
+            )
+        ]
+    end
+.
+
+Definition compile {Σ : StaticModel}
+    (topSymbol cseqSymbol holeSymbol : symbol) 
+    : CompileT :=
+    fun D => concat (map (compile' topSymbol cseqSymbol holeSymbol (mlld_isValue unit D)) (mlld_decls unit D))
+.
+
 
