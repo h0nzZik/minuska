@@ -220,6 +220,255 @@ Proof.
     }
 Qed.
 
+Lemma satisfies_var
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    x γ:
+    ρ !! x = Some (uglify' γ) ->
+    satisfies ρ γ (t_over (bov_variable x))
+.
+Proof.
+    intros H.
+    destruct γ; (repeat constructor); assumption.
+Qed.
+
+Lemma subst_notin
+    {Σ : StaticModel}
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    h ∉ vars_of_to_l2r φ ->
+    TermOverBoV_subst φ h ψ = φ
+.
+Proof.
+    induction φ; simpl.
+    {
+        destruct a; simpl.
+        {
+            intros _. reflexivity.
+        }
+        {
+            destruct (decide (h = x)); simpl.
+            {
+                subst. intros HContra. ltac1:(exfalso). apply HContra.
+                constructor.
+            }
+            {
+                intros _. reflexivity.
+            }
+        }
+    }
+    {
+        intros H2.
+        f_equal.
+        induction l; simpl.
+        {
+            reflexivity.
+        }
+        {
+            apply Forall_cons in H.
+            destruct H as [HH1 HH2].
+            simpl in *.
+            specialize (IHl HH2).
+            rewrite elem_of_app in H2.
+            apply Decidable.not_or in H2.
+            destruct H2 as [H21 H22].
+            specialize (IHl H22). clear H22.
+            specialize (HH1 H21).
+            rewrite HH1.
+            rewrite IHl.
+            reflexivity.
+        }
+    }
+Qed.
+
+Check zip_with.
+Lemma satisfies_term_inv
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ : TermOver builtin_value)
+    (s : symbol)
+    (l : list (TermOver BuiltinOrVar))
+    :
+    satisfies ρ γ (t_term s l) ->
+    exists (lγ : list (TermOver builtin_value)),
+        γ = (t_term s lγ) /\
+        length l = length lγ /\
+        Forall (fun p => p) (zip_with (satisfies ρ) lγ l)
+.
+Proof.
+    revert γ.
+    induction l using rev_ind; intros γ.
+    {
+        intros H. exists []. inversion H; subst; clear H.
+        unfold to_PreTerm' in pf. simpl in pf.
+        inversion pf. subst; clear pf.
+        rewrite <- (cancel prettify uglify' γ).
+        rewrite <- H2.
+        simpl.
+        repeat constructor.
+    }
+    {
+        intros H.
+        inversion H; subst; clear H.
+        unfold to_PreTerm' in pf. simpl in pf.
+        rewrite map_app in pf. rewrite fold_left_app in pf.
+        simpl in pf.
+        unfold helper in pf. simpl in pf.
+        destruct (uglify' x) eqn:Hux.
+        {
+            simpl in *.
+            apply (f_equal prettify) in H2.
+            rewrite (cancel prettify uglify') in H2.
+            apply (f_equal prettify) in Hux.
+            rewrite (cancel prettify uglify') in Hux.
+            simpl in H2. simpl in Hux.
+            subst x. simpl in *.
+            subst γ. simpl in *.
+
+            destruct xy.
+            {
+                inversion pf.
+            }
+            inversion pf; subst; clear pf.
+            
+            specialize (IHl (prettify' xy)).
+            ltac1:(ospecialize (IHl _)).
+            {
+                unfold satisfies; simpl.
+                
+            }
+            specialize (IHl H3).
+
+
+
+            inversion pf; subst; clear pf.
+            {
+                simpl in *.
+                destruct γ.
+                {
+                    inversion H2.
+                }
+                inversion H2; subst; clear H2.
+                destruct aoxy; simpl in *.
+                {
+
+                }
+
+
+                assert (s = (PreTerm'_get_symbol aoxy)).
+                {
+                    inversion H4; subst; clear H4; simpl in *.
+                    Search s.
+                }
+                subst γ.
+                eexists.
+                split.
+            }
+            {
+
+            }
+            specialize (IHl (prettify (term_preterm xy))).
+            (*rewrite H2 in IHl.*)
+            (*rewrite (cancel prettify uglify') in IHl.*)
+            ltac1:(ospecialize (IHl _)).
+            {
+                clear IHl.
+
+                
+                unfold satisfies in pf; simpl in pf.
+                inversion pf; subst; clear pf.
+                {
+                    simpl.
+                    unfold satisfies; simpl.
+                    rewrite map_app. simpl.
+                    constructor.
+                    simpl in H2.
+                    unfold to_PreTerm'.
+                    rewrite fold_left_app.
+                    simpl.
+                    apply H4.
+                }
+                {
+
+                }
+                apply pf.
+            }
+        }
+        specialize (IHl)
+    }
+
+Qed.
+
+Lemma satisfies_subst
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (h : variable)
+    (γ : TermOver builtin_value)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    h ∈ vars_of_to_l2r φ ->
+    ~ (h ∈ vars_of_to_l2r ψ) ->
+    satisfies
+        ρ
+        γ
+        (TermOverBoV_subst φ h ψ)
+        ->
+    ∃ (γ0 γ1 : TermOver builtin_value),
+        satisfies ρ γ1 ψ /\
+        satisfies (<[h:=(uglify' γ1)]>ρ) γ0 φ
+    .
+Proof.
+    revert γ ψ ρ.
+    induction φ; intros γ ψ ρ Hin Hnotin.
+    {
+        simpl.
+        destruct a; simpl.
+        {
+            intros Hγ.
+            simpl in Hin. inversion Hin.
+        }
+        {
+            simpl in Hin.
+            inversion Hin; subst; clear Hin.
+            {
+                destruct (decide (x=x))>[|ltac1:(congruence)].
+                clear e.
+                intros Hψ.
+                exists γ.
+                exists γ.
+                split>[assumption|].
+                apply satisfies_var.
+                ltac1:(rewrite lookup_insert).
+                reflexivity.
+            }
+            {
+                rewrite elem_of_nil in H1. inversion H1.
+            }
+        }
+    }
+    {
+        simpl in *.
+        induction l; simpl; intros HH.
+        {
+            simpl in *. inversion Hin.
+        }
+        {
+            simpl in *.
+            rewrite elem_of_app in Hin.
+            destruct (decide ( h ∈ concat (map vars_of_to_l2r l))) as [Hholds|Hnothold].
+            {
+                clear Hin.
+            }
+            {
+                assert (Hin': h ∈ vars_of_to_l2r a) by (ltac1:(tauto)).
+                clear Hin.
+            }
+        }
+
+    }
+Qed.
+
 
 Lemma compile_correct
     {Σ : StaticModel}
@@ -327,6 +576,9 @@ Proof.
         {
             simpl in *.
             assert (Htmp := @frto_step Σ Act Γ).
+            (* I shouldn't specialize it with ctrl1.
+            It should be: cSeq[ctrl1 with holeSymbol instead of ??;] 
+            *)
             specialize (Htmp (down topSymbol ctrl1 state1)).
             apply elem_of_list_lookup_1 in H.
             destruct H as [i Hi].
@@ -379,6 +631,16 @@ Proof.
                 ltac1:(ospecialize (Htmp' _)).
                 {
                     unfold flattened_rewrites_to.
+                    ltac1:(rewrite <- (firstn_skipn i ds) in Hi).
+                    rewrite <- Heqdids in Hi.
+                    rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
+                    ltac1:(
+                        replace (i - length (take i ds)) with (0)
+                        in Hi
+                        by (rewrite take_length; lia)
+                    ).
+                    simpl in Hi. inversion Hi; subst; clear Hi.
+
                     exists ρ.
                     unfold flattened_rewrites_in_valuation_under_to.
                     simpl.
@@ -386,13 +648,13 @@ Proof.
                     {
                         clear Htmp'.
                         ltac1:(
-                            replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c0) :: vars_of_to_l2r c0)))))
-                            with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c0) :: vars_of_to_l2r c0))))))
+                            replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)))))
+                            with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c))))))
                             by reflexivity
                         ).
                         ltac1:(
-                            replace (apply_symbol' cseqSymbol [uglify' c0; term_operand (bov_variable (fresh (vars_of_to_l2r c0)))])
-                            with (uglify' (t_term cseqSymbol [c0; t_over (bov_variable (fresh (vars_of_to_l2r c0)))]))
+                            replace (apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable (fresh (vars_of_to_l2r c)))])
+                            with (uglify' (t_term cseqSymbol [c; t_over (bov_variable (fresh (vars_of_to_l2r c)))]))
                             by reflexivity
                         ).
                         apply satisfies_top_bov.

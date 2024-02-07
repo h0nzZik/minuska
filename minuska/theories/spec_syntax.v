@@ -473,6 +473,107 @@ Proof.
     }
 Qed.
 
+#[global]
+Instance cancel_uglify_prettify
+    {Σ : StaticModel}
+    {A : Type}
+    : Cancel eq (@uglify' Σ A) (@prettify Σ A)
+.
+Proof.
+    intros x.
+    destruct x; simpl.
+    {
+        induction ao; simpl.
+        {
+            reflexivity.
+        }
+        {
+            unfold apply_symbol'. simpl. f_equal.
+            unfold to_PreTerm'.
+            rewrite map_app.
+            rewrite fold_left_app.
+            simpl.
+            f_equal.
+            revert IHao.
+            induction ao; intros IHao'.
+            {
+                simpl. reflexivity.
+            }
+            {
+                simpl in *.
+                unfold apply_symbol' in *. simpl in *.
+                inversion IHao'; subst; clear IHao'.
+                unfold to_PreTerm' in *.
+                rewrite map_app in H0.
+                rewrite fold_left_app in H0.
+                simpl in H0.
+                inversion H0; subst; clear H0.
+                simpl.
+                rewrite H1.
+                reflexivity.
+            }
+            {
+                simpl in *.
+                unfold apply_symbol' in *. simpl in *.
+                inversion IHao'; subst; clear IHao'.
+                unfold to_PreTerm' in *.
+                rewrite map_app in H0.
+                rewrite fold_left_app in H0.
+                simpl in H0.
+                inversion H0; subst; clear H0.
+                simpl.
+                reflexivity.
+            }
+        }
+        {
+            unfold apply_symbol'. simpl. f_equal.
+            unfold to_PreTerm'.
+            rewrite map_app.
+            rewrite fold_left_app.
+            simpl.
+            rewrite IHao2.
+            simpl.
+            f_equal.
+
+
+            revert IHao1 IHao2.
+            induction ao1; intros IHao1' IHao2'.
+            {
+                simpl. reflexivity.
+            }
+            {
+                simpl in *.
+                unfold apply_symbol' in *. simpl in *.
+                inversion IHao1'; subst; clear IHao1'.
+                unfold to_PreTerm' in *.
+                rewrite map_app in H0.
+                rewrite fold_left_app in H0.
+                simpl in H0.
+                inversion H0; subst; clear H0.
+                simpl.
+                rewrite H1.
+                reflexivity.
+            }
+            {
+                simpl in *.
+                unfold apply_symbol' in *. simpl in *.
+                inversion IHao1'; subst; clear IHao1'.
+                unfold to_PreTerm' in *.
+                rewrite map_app in H0.
+                rewrite fold_left_app in H0.
+                simpl in H0.
+                inversion H0; subst; clear H0.
+                simpl.
+                reflexivity.
+            }
+        }
+    }
+    {
+        reflexivity.
+    }
+Qed.
+
+
 Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_rewrite
     (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
