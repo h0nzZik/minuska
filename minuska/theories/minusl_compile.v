@@ -488,10 +488,109 @@ Proof.
                     }
                 }
                 simpl.
-                exists [uglify' (fold_left helper (map uglify' l) (pt_operator s))].
-                Check weird_lemma.
-                ltac1:(setoid_rewrite <- (weird_lemma lγ)).
-                
+                fold (@helper Σ (@BuiltinOrVar Σ)) in H3.
+                split.
+                {
+                    rewrite app_length.
+                    rewrite app_length.
+                    simpl.
+                    f_equal.
+                    clear -H3.
+                    revert xy1 H3.
+                    induction l using rev_ind; intros xy1 H3.
+                    {
+                        simpl in *. inversion H3. reflexivity.
+                    }
+                    {
+                        simpl.
+                        rewrite app_length.
+                        rewrite map_app in H3.
+                        rewrite fold_left_app in H3.
+                        simpl in H3.
+                        unfold helper at 1 in H3. simpl in H3.
+                        destruct (uglify' x) eqn:Hux.
+                        {
+                            destruct xy1; simpl in *.
+                            {
+                                inversion H3.
+                            }
+                            {
+                                inversion H3; subst; clear H3.
+                                unfold satisfies in H6; simpl in H6.
+                                inversion H6.
+                            }
+                            {
+                                inversion H3; subst; clear H3.
+                                rewrite app_length. simpl.
+                                erewrite IHl.
+                                { reflexivity. }
+                                { apply H4. }
+                            }
+                        }
+                        {
+                            simpl.
+                            destruct xy1; simpl in *.
+                            {
+                                inversion H3.
+                            }
+                            {
+                                rewrite app_length. simpl.
+                                erewrite IHl.
+                                { reflexivity. }
+                                { 
+                                    inversion H3;
+                                    assumption.
+                                }
+                            }
+                            {
+                                inversion H3; subst; clear H3.
+                                rewrite app_length. simpl.
+                                erewrite IHl.
+                                { reflexivity. }
+                                {
+                                    assumption.
+                                }
+                            }
+                        }
+                    }
+                }
+                {
+                    rewrite zip_with_app.
+                    rewrite Forall_app.
+                    split.
+                    {
+
+                    }
+                    {
+                        constructor.
+                        {
+                            unfold satisfies.
+                            simpl.
+                            
+                            ltac1:(
+                                replace (prettify' xy2)
+                                with (prettify (term_preterm xy2))
+                                by reflexivity
+                            ).
+                            rewrite (cancel uglify' prettify).
+
+                            ltac1:(
+                                replace (prettify' ao)
+                                with (prettify (term_preterm ao))
+                                by reflexivity
+                            ).
+                            rewrite (cancel uglify' prettify).
+                            constructor.
+                            apply H5.
+                        }
+                        {
+                            apply Forall_nil. exact I.
+                        }
+                    }
+                    {
+                        
+                    }
+                }
                 
             }
 
