@@ -282,7 +282,67 @@ Proof.
     }
 Qed.
 
-Check zip_with.
+
+Lemma weird_lemma
+    {Σ : StaticModel}
+    l s:
+(fix go (pt : PreTerm' symbol builtin_value) :
+    list (TermOver builtin_value) :=
+  match pt with
+| pt_operator _ => []
+| pt_app_operand x y => go x ++ [t_over y]
+| pt_app_ao x y => go x ++ [prettify' y]
+end)
+  (fold_left helper (map uglify' l) (pt_operator s)) =
+l
+.
+Proof.
+    induction l using rev_ind.
+    {
+        reflexivity.
+    }
+    {
+        rewrite map_app.
+        rewrite fold_left_app.
+        simpl.
+        unfold helper.
+        destruct (uglify' x) eqn:Hux.
+        {
+            apply (f_equal prettify) in Hux.
+            rewrite (cancel prettify uglify') in Hux.
+            subst x.
+            simpl.
+            f_equal.
+            {
+                apply IHl.
+            }
+        }
+        {
+            apply (f_equal prettify) in Hux.
+            rewrite (cancel prettify uglify') in Hux.
+            subst x.
+            simpl.
+            f_equal.
+            {
+                apply IHl.
+            }
+        }
+    }
+Qed.
+
+Lemma get_symbol_satisfies
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (x : PreTerm' symbol builtin_value)
+    (y : PreTerm' symbol BuiltinOrVar) :
+    aoxy_satisfies_aoxz ρ x y ->
+    PreTerm'_get_symbol x = PreTerm'_get_symbol y
+.
+Proof.
+    intros H.
+    induction H; simpl; (ltac1:(congruence)).
+Qed.
+
 Lemma satisfies_term_inv
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -326,76 +386,115 @@ Proof.
             subst x. simpl in *.
             subst γ. simpl in *.
 
-            destruct xy.
+            induction xy; inversion pf; subst; clear pf.
             {
-                inversion pf.
-            }
-            inversion pf; subst; clear pf.
             
-            specialize (IHl (prettify' xy)).
-            ltac1:(ospecialize (IHl _)).
-            {
-                unfold satisfies; simpl.
-                
+                specialize (IHl (prettify' xy)).
+                ltac1:(ospecialize (IHl _)).
+                {
+                    unfold satisfies; simpl.
+                    ltac1:(
+                        replace ((prettify' xy))
+                        with (prettify (term_preterm xy))
+                        by reflexivity
+                    ).
+                    rewrite (cancel uglify' prettify).
+                    unfold apply_symbol'. simpl.
+                    constructor.
+                    apply H3.
+                }
+
+                destruct IHl as [lγ [IH1 [IH2 IH3]]].
+                rewrite app_length.
+                exists (lγ ++ [t_over b]).
+                apply (f_equal uglify') in IH1.
+                ltac1:(
+                    replace ((prettify' xy))
+                    with (prettify (term_preterm xy))
+                    in IH1
+                    by reflexivity
+                ).
+                rewrite (cancel uglify' prettify) in IH1.
+                simpl in IH1. unfold apply_symbol' in IH1.
+                simpl in IH1. injection IH1 as IH1.
+                subst xy. rewrite app_length.
+                split.
+                {
+                    unfold to_PreTerm'.
+                    simpl.
+                    f_equal.
+                    {
+                        clear. induction lγ using rev_ind.
+                        {
+                            reflexivity.
+                        }
+                        {
+                            rewrite map_app.
+                            rewrite fold_left_app.
+                            simpl.
+                            unfold helper.
+                            destruct (uglify' x); apply IHlγ.
+                        }
+                    }
+                    {
+                        f_equal.
+                        apply weird_lemma.
+                    }
+                }
+                simpl.
+                split.
+                {
+                    rewrite IH2. reflexivity.
+                }
+                rewrite zip_with_app.
+                rewrite Forall_app.
+                split.
+                {
+                    apply IH3.
+                }
+                constructor.
+                {
+                    inversion H5.
+                }
+                {
+                    apply Forall_nil. exact I.
+                }
+                {
+                    symmetry. exact IH2.
+                }
             }
-            specialize (IHl H3).
-
-
-
-            inversion pf; subst; clear pf.
             {
-                simpl in *.
-                destruct γ.
-                {
-                    inversion H2.
-                }
-                inversion H2; subst; clear H2.
-                destruct aoxy; simpl in *.
-                {
-
-                }
-
-
-                assert (s = (PreTerm'_get_symbol aoxy)).
-                {
-                    inversion H4; subst; clear H4; simpl in *.
-                    Search s.
-                }
-                subst γ.
                 eexists.
                 split.
-            }
-            {
+                {
+                    simpl.
+                    f_equal.
+                    clear -H3.
+                    fold (@helper Σ (@BuiltinOrVar Σ)) in H3.
 
-            }
-            specialize (IHl (prettify (term_preterm xy))).
-            (*rewrite H2 in IHl.*)
-            (*rewrite (cancel prettify uglify') in IHl.*)
-            ltac1:(ospecialize (IHl _)).
-            {
-                clear IHl.
+                    revert xy1 H3.
+                    induction l using rev_ind; simpl in *; intros xy1 H3.
+                    {
+                        inversion H3. reflexivity.
+                    }
+                    {
 
+                        rewrite map_app in H3.
+                        rewrite fold_left_app in H3.
+                        simpl in H3.
+                        destruct x, xy1; simpl in *;
+                            inversion H3; subst; clear H3;
+                            auto.
+                    }
+                }
+                simpl.
+                exists [uglify' (fold_left helper (map uglify' l) (pt_operator s))].
+                Check weird_lemma.
+                ltac1:(setoid_rewrite <- (weird_lemma lγ)).
                 
-                unfold satisfies in pf; simpl in pf.
-                inversion pf; subst; clear pf.
-                {
-                    simpl.
-                    unfold satisfies; simpl.
-                    rewrite map_app. simpl.
-                    constructor.
-                    simpl in H2.
-                    unfold to_PreTerm'.
-                    rewrite fold_left_app.
-                    simpl.
-                    apply H4.
-                }
-                {
-
-                }
-                apply pf.
+                
             }
-        }
-        specialize (IHl)
+
     }
 
 Qed.
