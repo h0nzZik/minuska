@@ -206,29 +206,27 @@ Qed.
 Lemma satisfies_top_bov_cons
     {Σ : StaticModel}
     (ρ : Valuation)
-    topSymbol
+    (topSymbol topSymbol' : symbol)
     (states : list (TermOver builtin_value))
     (lds : list (TermOver BuiltinOrVar))
     :
     length states = length lds ->
-    (Forall id (zip_with (satisfies ρ) states lds)) <->
-    satisfies ρ (apply_symbol' topSymbol ((map uglify' states)))
-        (apply_symbol' topSymbol ((map uglify' lds)))
+    (Forall id (zip_with (satisfies ρ) states lds) /\ topSymbol = topSymbol') <->
+    (satisfies ρ (fold_left helper (map uglify' states) (pt_operator topSymbol))
+    (fold_left helper (map uglify' lds) (pt_operator topSymbol'))
+    )
 .
 Proof.
     intros Hlens.
     split.
     {
         intros H.
-        unfold apply_symbol'; simpl.
-        unfold satisfies; simpl.
-        unfold to_PreTerm'; simpl.
-        constructor.
         revert lds Hlens H.
         induction states using rev_ind; intros lds Hlens H; simpl in *.
         {
             destruct lds; simpl in *.
             {
+                destruct H as [_ H]. subst.
                 constructor.
             }
             {
@@ -256,6 +254,7 @@ Proof.
                 simpl in Hlens.
                 assert (Hlens': length states = length l') by (ltac1:(lia)).
                 rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens') in H.
+                destruct H as [H ?]. subst topSymbol'.
                 apply Forall_app in H.
                 destruct H as [H1 H2].
                 simpl in H2. rewrite Forall_cons in H2. destruct H2 as [H2 _].
@@ -269,6 +268,7 @@ Proof.
                         apply Hlens'.
                     }
                     {
+                        split>[|reflexivity].
                         apply H1.
                     }
                     {
@@ -302,7 +302,7 @@ Proof.
                     rewrite Hux in H2. rewrite Hux0 in H2.
                     inversion H2; subst; clear H2.
                     constructor.
-                    { apply IHstates; try assumption. }
+                    { apply IHstates; (repeat split); try assumption; try reflexivity. }
                     { apply H4. }
                 }
                 {
@@ -315,7 +315,7 @@ Proof.
                     rewrite Hux in H2. rewrite Hux0 in H2.
                     inversion H2; subst; clear H2.
                     constructor.
-                    { apply IHstates; try assumption. }
+                    { apply IHstates; (repeat split); try assumption; try reflexivity. }
                     { assumption. }
                 }
             }
@@ -323,15 +323,18 @@ Proof.
     }
     {
         intros H.
-        unfold apply_symbol' in H. simpl in H.
-        inversion H; subst; clear H.
-        unfold to_PreTerm' in pf.
-        revert lds Hlens pf.
+        revert lds Hlens H.
         induction states using rev_ind; intros lds Hlens pf.
         {
             destruct lds; simpl in *.
             {
-                apply Forall_nil. exact I.
+                split.
+                {
+                    apply Forall_nil. exact I.
+                }
+                {
+                    inversion pf. subst. reflexivity.
+                }
             }
             {
                 inversion Hlens.
@@ -360,12 +363,11 @@ Proof.
                 assert (Hlens': length states = length l') by (ltac1:(lia)).
                 rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens').
                 rewrite Forall_app.
-                split.
+                specialize (IHstates l' Hlens').
+                ltac1:(ospecialize (IHstates _)).
                 {
-                    apply IHstates.
-                    apply Hlens'.
                     destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
-                        simpl in *.
+                            simpl in *.
                     {
                         inversion pf; subst; clear pf.
                         assumption.
@@ -383,15 +385,28 @@ Proof.
                         assumption.
                     }
                 }
+                destruct IHstates as [IHstates ?].
+                subst topSymbol'.
+                split.
                 {
-                    simpl.
-                    rewrite Forall_cons.
-                    split>[|apply Forall_nil; exact I].
-                     destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
-                        simpl in *; inversion pf; subst; clear pf;
-                        unfold satisfies; simpl; rewrite Hux; rewrite Hux0;
-                        try constructor; try assumption.
-                    inversion H5.
+                    split.
+                    {
+                        apply IHstates.
+                        
+                    }
+                    {
+                        simpl.
+                        rewrite Forall_cons.
+                        split>[|apply Forall_nil; exact I].
+                        destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                            simpl in *; inversion pf; subst; clear pf;
+                            unfold satisfies; simpl; rewrite Hux; rewrite Hux0;
+                            try constructor; try assumption.
+                        inversion H5.
+                    }
+                }
+                {
+                    reflexivity.
                 }
             }
         }
@@ -1230,7 +1245,8 @@ Proof.
     }
     {
         simpl in *.
-        induction l; simpl; intros HH.
+        revert γ.
+        induction l; intros γ; simpl; intros HH.
         {
             simpl in *. inversion Hin.
         }
@@ -1260,11 +1276,51 @@ Proof.
                 rewrite subst_notin in HH3>[|assumption].
                 assert (( h ∈ concat (map vars_of_to_l2r l))) by (ltac1:(tauto)).
                 specialize (IHl ltac:(assumption)).
+                specialize (IHl (t_term s lγ)).
                 ltac1:(ospecialize (IHl _)).
                 {
-                    unfold satisfies; simpl.
-                    Search satisfies apply_symbol'.
+                    unfold satisfies. simpl.
+                    ltac1:(
+                        replace ((uglify' t :: map uglify' lγ))
+                        with (map uglify' (t::lγ))
+                        by reflexivity
+                    ).
+                    unfold apply_symbol'; simpl.
                     constructor.
+                    apply satisfies_top_bov_cons.
+                    {
+                        simpl. ltac1:(lia).
+                    }
+                    {
+                        split>[|reflexivity].
+                        apply HH4.
+                    }
+                }
+                destruct IHl as [γ0 [γ1 [H'1 H'2]]].
+                destruct γ0.
+                {
+                    inversion H'2.
+                }
+
+                exists (t_term s0 (t::l0)).
+                exists γ1.
+                split>[assumption|].
+                inversion H'2; subst; clear H'2.
+                About satisfies_top_bov_cons.
+                constructor.
+                fold (@uglify' Σ).
+                unfold to_PreTerm' in *; simpl in *|-.
+                rewrite <- satisfies_top_bov_cons in pf.
+                destruct pf as [pf ?].
+                subst s0.
+                rewrite <- satisfies_top_bov_cons.
+                {
+                    split>[|reflexivity].
+                    simpl. rewrite Forall_cons.
+                    split>[|apply pf].
+                    (* TODO lemma that satisfaction depends only on values present in the valuation.
+                    In particular, insertion preserves satisfaction if the key does not occur in the symbolic term.
+                    *)
                 }
             }
             destruct (decide ( h ∈ concat (map vars_of_to_l2r l))) as [Hholds|Hnothold].
