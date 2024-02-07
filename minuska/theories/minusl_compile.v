@@ -181,6 +181,223 @@ Proof.
     }
 Qed.
 
+Definition analyze_list_from_end {A : Type} (l : list A)
+    : {l = nil} + { (exists (l' : list A) (x : A), l = l'++[x])}
+.
+Proof.
+    induction l.
+    {
+        left. reflexivity.
+    }
+    {
+        right.
+        destruct IHl as [IHl|IHl].
+        {
+            subst. exists []. exists a. reflexivity.
+        }
+        {
+            destruct IHl as [l' [x Hl']].
+            subst.
+            exists (a::l'). exists x. simpl. reflexivity.
+        }
+    }
+Qed.
+
+Lemma satisfies_top_bov_cons
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    topSymbol
+    (states : list (TermOver builtin_value))
+    (lds : list (TermOver BuiltinOrVar))
+    :
+    length states = length lds ->
+    (Forall id (zip_with (satisfies ρ) states lds)) <->
+    satisfies ρ (apply_symbol' topSymbol ((map uglify' states)))
+        (apply_symbol' topSymbol ((map uglify' lds)))
+.
+Proof.
+    intros Hlens.
+    split.
+    {
+        intros H.
+        unfold apply_symbol'; simpl.
+        unfold satisfies; simpl.
+        unfold to_PreTerm'; simpl.
+        constructor.
+        revert lds Hlens H.
+        induction states using rev_ind; intros lds Hlens H; simpl in *.
+        {
+            destruct lds; simpl in *.
+            {
+                constructor.
+            }
+            {
+                inversion Hlens.
+            }
+        }
+        {
+            destruct (analyze_list_from_end lds) as [?|He].
+            {
+                subst. simpl in *.
+                rewrite app_length in Hlens.
+                simpl in Hlens.
+                ltac1:(lia).
+            }
+            {
+                destruct He as [l' [x0 Hl']].
+                subst lds.
+                rewrite map_app.
+                rewrite map_app.
+                rewrite fold_left_app.
+                rewrite fold_left_app.
+                simpl.
+                rewrite app_length in Hlens.
+                rewrite app_length in Hlens.
+                simpl in Hlens.
+                assert (Hlens': length states = length l') by (ltac1:(lia)).
+                rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens') in H.
+                apply Forall_app in H.
+                destruct H as [H1 H2].
+                simpl in H2. rewrite Forall_cons in H2. destruct H2 as [H2 _].
+                unfold helper. simpl.
+                destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                    simpl in *.
+                {
+                    constructor.
+                    apply IHstates.
+                    {
+                        apply Hlens'.
+                    }
+                    {
+                        apply H1.
+                    }
+                    {
+                        apply (f_equal prettify) in Hux.
+                        apply (f_equal prettify) in Hux0.
+                        rewrite (cancel prettify uglify') in Hux.
+                        rewrite (cancel prettify uglify') in Hux0.
+                        subst.
+                        unfold satisfies in H2; simpl in H2.
+                        Print prettify.
+                        ltac1:(
+                            replace (prettify' ao)
+                            with (prettify (term_preterm ao))
+                            in H2
+                            by reflexivity
+                        ).
+                        ltac1:(
+                            replace (prettify' ao0)
+                            with (prettify (term_preterm ao0))
+                            in H2
+                            by reflexivity
+                        ).
+                        rewrite (cancel uglify' prettify) in H2.
+                        rewrite (cancel uglify' prettify) in H2.
+                        unfold satisfies in H2; simpl in H2.
+                        inversion H2; subst; clear H2; assumption.
+                    }
+                }
+                {
+                    unfold satisfies in H2. simpl in H2.
+                    rewrite Hux in H2. rewrite Hux0 in H2.
+                    inversion H2; subst; clear H2.
+                    constructor.
+                    { apply IHstates; try assumption. }
+                    { apply H4. }
+                }
+                {
+                    unfold satisfies in H2. simpl in H2.
+                    rewrite Hux in H2. rewrite Hux0 in H2.
+                    inversion H2.
+                }
+                {
+                    unfold satisfies in H2. simpl in H2.
+                    rewrite Hux in H2. rewrite Hux0 in H2.
+                    inversion H2; subst; clear H2.
+                    constructor.
+                    { apply IHstates; try assumption. }
+                    { assumption. }
+                }
+            }
+        }
+    }
+    {
+        intros H.
+        unfold apply_symbol' in H. simpl in H.
+        inversion H; subst; clear H.
+        unfold to_PreTerm' in pf.
+        revert lds Hlens pf.
+        induction states using rev_ind; intros lds Hlens pf.
+        {
+            destruct lds; simpl in *.
+            {
+                apply Forall_nil. exact I.
+            }
+            {
+                inversion Hlens.
+            }
+        }
+        {
+            destruct (analyze_list_from_end lds); simpl in *.
+            {
+                rewrite app_length in Hlens. simpl in Hlens.
+                subst. simpl in Hlens.
+                ltac1:(lia).
+            }
+            {
+                destruct e as [l' [x0 Hlds]].
+                subst lds; simpl in *.
+                rewrite map_app in pf.
+                rewrite map_app in pf.
+                simpl in pf.
+                rewrite fold_left_app in pf.
+                rewrite fold_left_app in pf.
+                simpl in pf.
+                unfold helper in pf.
+                rewrite app_length in Hlens.
+                rewrite app_length in Hlens.
+                simpl in Hlens.
+                assert (Hlens': length states = length l') by (ltac1:(lia)).
+                rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens').
+                rewrite Forall_app.
+                split.
+                {
+                    apply IHstates.
+                    apply Hlens'.
+                    destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                        simpl in *.
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                }
+                {
+                    simpl.
+                    rewrite Forall_cons.
+                    split>[|apply Forall_nil; exact I].
+                     destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                        simpl in *; inversion pf; subst; clear pf;
+                        unfold satisfies; simpl; rewrite Hux; rewrite Hux0;
+                        try constructor; try assumption.
+                    inversion H5.
+                }
+            }
+        }
+    }
+Qed.
+
 Lemma satisfies_top_expr
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -1020,6 +1237,36 @@ Proof.
         {
             simpl in *.
             rewrite elem_of_app in Hin.
+            apply satisfies_term_inv in HH.
+            destruct HH as [lγ [HH1 [HH2 HH3]]].
+            subst γ. simpl in *.
+            destruct lγ; simpl in HH2.
+            {
+                inversion HH2.
+            }
+            simpl in HH3.
+            rewrite Forall_cons in HH3.
+            destruct HH3 as [HH3 HH4].
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2).
+            destruct (decide (h ∈ vars_of_to_l2r a)) as [HHin|HHnotin].
+            {
+                
+                
+
+            }
+            {
+                rewrite subst_notin in HH3>[|assumption].
+                assert (( h ∈ concat (map vars_of_to_l2r l))) by (ltac1:(tauto)).
+                specialize (IHl ltac:(assumption)).
+                ltac1:(ospecialize (IHl _)).
+                {
+                    unfold satisfies; simpl.
+                    Search satisfies apply_symbol'.
+                    constructor.
+                }
+            }
             destruct (decide ( h ∈ concat (map vars_of_to_l2r l))) as [Hholds|Hnothold].
             {
                 clear Hin.
@@ -1240,8 +1487,6 @@ Proof.
         }
 
     }
-    {
-
     }
 
 Qed.
