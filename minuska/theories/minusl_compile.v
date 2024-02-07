@@ -489,12 +489,17 @@ Proof.
                 }
                 simpl.
                 fold (@helper Σ (@BuiltinOrVar Σ)) in H3.
-                split.
+                assert (Hl : length l =
+                    length
+                    ((fix go (pt : PreTerm' symbol builtin_value) :
+                        list (TermOver builtin_value) :=
+                    match pt with
+                    | pt_operator _ => []
+                    | pt_app_operand x y => go x ++ [t_over y]
+                    | pt_app_ao x y => go x ++ [prettify' y]
+                    end)
+                  xy1)).
                 {
-                    rewrite app_length.
-                    rewrite app_length.
-                    simpl.
-                    f_equal.
                     clear -H3.
                     revert xy1 H3.
                     induction l using rev_ind; intros xy1 H3.
@@ -554,12 +559,86 @@ Proof.
                         }
                     }
                 }
+                split.
+                {
+                    rewrite app_length.
+                    rewrite app_length.
+                    simpl.
+                    f_equal.
+                    apply Hl.
+                }
                 {
                     rewrite zip_with_app.
                     rewrite Forall_app.
                     split.
                     {
-
+                        Print Term'.
+                        specialize (IHl ((prettify (term_preterm xy1)))).
+                        ltac1:(ospecialize (IHl _)).
+                        {
+                            unfold satisfies.
+                            fold (@uglify' Σ).
+                            simpl.
+                            ltac1:(
+                                replace (prettify' xy1)
+                                with (prettify (term_preterm xy1))
+                                by reflexivity
+                            ).
+                            rewrite (cancel uglify' prettify).
+                            unfold to_PreTerm'. simpl.
+                            unfold satisfies. simpl.
+                            unfold apply_symbol'. simpl.
+                            constructor.
+                            apply H3.
+                        }
+                        destruct IHl as [lγ [Hlγ1 [Hlγ2 Hlγ3]]].
+                        apply (f_equal uglify') in Hlγ1.
+                        rewrite (cancel uglify' prettify) in Hlγ1.
+                        simpl in Hlγ1.
+                        unfold apply_symbol' in Hlγ1.
+                        simpl in Hlγ1.
+                        injection Hlγ1 as Hlγ1.
+                        subst xy1.
+                        clear -Hlγ3.
+                        rewrite Forall_forall.
+                        rewrite Forall_forall in Hlγ3.
+                        intros x Hin.
+                        Search zip_with elem_of.
+                        rewrite elem_of_lookup_zip_with in Hin.
+                        destruct Hin as [i [a [b [Hab1 [Hab2 Hab3]]]]].
+                        specialize (Hlγ3 x).
+                        subst x.
+                        apply Hlγ3. clear Hlγ3.
+                        rewrite elem_of_lookup_zip_with.
+                        exists i. exists a. exists b.
+                        split>[reflexivity|].
+                        split>[|exact Hab3].
+                        rewrite <- Hab2. clear Hab2.
+                        clear.
+                        assert (Htmp := @cancel_prettify_uglify Σ builtin_value).
+                        unfold Cancel in Htmp. simpl in Htmp.
+                        specialize (Htmp (t_term s lγ)).
+                        simpl in Htmp.
+                        unfold prettify' in Htmp.
+                        remember ((to_PreTerm' s (map uglify' lγ))) as tpt.
+                        destruct tpt; simpl in *.
+                        {
+                            inversion Htmp. reflexivity.
+                        }
+                        {
+                            simpl in Htmp.
+                            inversion Htmp; subst; clear Htmp.
+                            unfold to_PreTerm' in *.
+                            fold (@prettify' Σ).
+                            reflexivity.
+                        }
+                        {
+                            simpl in Htmp.
+                            inversion Htmp; subst; clear Htmp.
+                            unfold to_PreTerm' in *.
+                            fold (@prettify' Σ).
+                            reflexivity.
+                        }
                     }
                     {
                         constructor.
@@ -588,14 +667,301 @@ Proof.
                         }
                     }
                     {
-                        
+                        symmetry. apply Hl.
+                    }
+                }   
+            }
+        }
+        {
+            simpl in *.
+            apply (f_equal prettify) in H2.
+            rewrite (cancel prettify uglify') in H2.
+            apply (f_equal prettify) in Hux.
+            rewrite (cancel prettify uglify') in Hux.
+            simpl in H2. simpl in Hux.
+            subst x. simpl in *.
+            subst γ. simpl in *.
+
+            induction xy; inversion pf; subst; clear pf.
+            {
+            
+                specialize (IHl (prettify' xy)).
+                ltac1:(ospecialize (IHl _)).
+                {
+                    unfold satisfies; simpl.
+                    ltac1:(
+                        replace ((prettify' xy))
+                        with (prettify (term_preterm xy))
+                        by reflexivity
+                    ).
+                    rewrite (cancel uglify' prettify).
+                    unfold apply_symbol'. simpl.
+                    constructor.
+                    apply H3.
+                }
+
+                destruct IHl as [lγ [IH1 [IH2 IH3]]].
+                rewrite app_length.
+                exists (lγ ++ [t_over b]).
+                apply (f_equal uglify') in IH1.
+                ltac1:(
+                    replace ((prettify' xy))
+                    with (prettify (term_preterm xy))
+                    in IH1
+                    by reflexivity
+                ).
+                rewrite (cancel uglify' prettify) in IH1.
+                simpl in IH1. unfold apply_symbol' in IH1.
+                simpl in IH1. injection IH1 as IH1.
+                subst xy. rewrite app_length.
+                split.
+                {
+                    unfold to_PreTerm'.
+                    simpl.
+                    f_equal.
+                    {
+                        clear. induction lγ using rev_ind.
+                        {
+                            reflexivity.
+                        }
+                        {
+                            rewrite map_app.
+                            rewrite fold_left_app.
+                            simpl.
+                            unfold helper.
+                            destruct (uglify' x); apply IHlγ.
+                        }
+                    }
+                    {
+                        f_equal.
+                        apply weird_lemma.
                     }
                 }
-                
+                simpl.
+                split.
+                {
+                    rewrite IH2. reflexivity.
+                }
+                rewrite zip_with_app.
+                rewrite Forall_app.
+                split.
+                {
+                    apply IH3.
+                }
+                constructor.
+                {
+                    constructor.
+                    apply H5.
+                }
+                {
+                    apply Forall_nil. exact I.
+                }
+                {
+                    symmetry. exact IH2.
+                }
             }
+            {
+                eexists.
+                split.
+                {
+                    simpl.
+                    f_equal.
+                    clear -H3.
+                    fold (@helper Σ (@BuiltinOrVar Σ)) in H3.
 
+                    revert xy1 H3.
+                    induction l using rev_ind; simpl in *; intros xy1 H3.
+                    {
+                        inversion H3. reflexivity.
+                    }
+                    {
+
+                        rewrite map_app in H3.
+                        rewrite fold_left_app in H3.
+                        simpl in H3.
+                        destruct x, xy1; simpl in *;
+                            inversion H3; subst; clear H3;
+                            auto.
+                    }
+                }
+                simpl.
+                fold (@helper Σ (@BuiltinOrVar Σ)) in H3.
+                assert (Hl : length l =
+                    length
+                    ((fix go (pt : PreTerm' symbol builtin_value) :
+                        list (TermOver builtin_value) :=
+                    match pt with
+                    | pt_operator _ => []
+                    | pt_app_operand x y => go x ++ [t_over y]
+                    | pt_app_ao x y => go x ++ [prettify' y]
+                    end)
+                  xy1)).
+                {
+                    clear -H3.
+                    revert xy1 H3.
+                    induction l using rev_ind; intros xy1 H3.
+                    {
+                        simpl in *. inversion H3. reflexivity.
+                    }
+                    {
+                        simpl.
+                        rewrite app_length.
+                        rewrite map_app in H3.
+                        rewrite fold_left_app in H3.
+                        simpl in H3.
+                        unfold helper at 1 in H3. simpl in H3.
+                        destruct (uglify' x) eqn:Hux.
+                        {
+                            destruct xy1; simpl in *.
+                            {
+                                inversion H3.
+                            }
+                            {
+                                inversion H3; subst; clear H3.
+                                unfold satisfies in H6; simpl in H6.
+                                inversion H6.
+                            }
+                            {
+                                inversion H3; subst; clear H3.
+                                rewrite app_length. simpl.
+                                erewrite IHl.
+                                { reflexivity. }
+                                { apply H4. }
+                            }
+                        }
+                        {
+                            simpl.
+                            destruct xy1; simpl in *.
+                            {
+                                inversion H3.
+                            }
+                            {
+                                rewrite app_length. simpl.
+                                erewrite IHl.
+                                { reflexivity. }
+                                { 
+                                    inversion H3;
+                                    assumption.
+                                }
+                            }
+                            {
+                                inversion H3; subst; clear H3.
+                                rewrite app_length. simpl.
+                                erewrite IHl.
+                                { reflexivity. }
+                                {
+                                    assumption.
+                                }
+                            }
+                        }
+                    }
+                }
+                split.
+                {
+                    rewrite app_length.
+                    rewrite app_length.
+                    simpl.
+                    f_equal.
+                    apply Hl.
+                }
+                {
+                    rewrite zip_with_app.
+                    rewrite Forall_app.
+                    split.
+                    {
+                        Print Term'.
+                        specialize (IHl ((prettify (term_preterm xy1)))).
+                        ltac1:(ospecialize (IHl _)).
+                        {
+                            unfold satisfies.
+                            fold (@uglify' Σ).
+                            simpl.
+                            ltac1:(
+                                replace (prettify' xy1)
+                                with (prettify (term_preterm xy1))
+                                by reflexivity
+                            ).
+                            rewrite (cancel uglify' prettify).
+                            unfold to_PreTerm'. simpl.
+                            unfold satisfies. simpl.
+                            unfold apply_symbol'. simpl.
+                            constructor.
+                            apply H3.
+                        }
+                        destruct IHl as [lγ [Hlγ1 [Hlγ2 Hlγ3]]].
+                        apply (f_equal uglify') in Hlγ1.
+                        rewrite (cancel uglify' prettify) in Hlγ1.
+                        simpl in Hlγ1.
+                        unfold apply_symbol' in Hlγ1.
+                        simpl in Hlγ1.
+                        injection Hlγ1 as Hlγ1.
+                        subst xy1.
+                        clear -Hlγ3.
+                        rewrite Forall_forall.
+                        rewrite Forall_forall in Hlγ3.
+                        intros x Hin.
+                        rewrite elem_of_lookup_zip_with in Hin.
+                        destruct Hin as [i [a [b [Hab1 [Hab2 Hab3]]]]].
+                        specialize (Hlγ3 x).
+                        subst x.
+                        apply Hlγ3. clear Hlγ3.
+                        rewrite elem_of_lookup_zip_with.
+                        exists i. exists a. exists b.
+                        split>[reflexivity|].
+                        split>[|exact Hab3].
+                        rewrite <- Hab2. clear Hab2.
+                        clear.
+                        assert (Htmp := @cancel_prettify_uglify Σ builtin_value).
+                        unfold Cancel in Htmp. simpl in Htmp.
+                        specialize (Htmp (t_term s lγ)).
+                        simpl in Htmp.
+                        unfold prettify' in Htmp.
+                        remember ((to_PreTerm' s (map uglify' lγ))) as tpt.
+                        destruct tpt; simpl in *.
+                        {
+                            inversion Htmp. reflexivity.
+                        }
+                        {
+                            simpl in Htmp.
+                            inversion Htmp; subst; clear Htmp.
+                            unfold to_PreTerm' in *.
+                            fold (@prettify' Σ).
+                            reflexivity.
+                        }
+                        {
+                            simpl in Htmp.
+                            inversion Htmp; subst; clear Htmp.
+                            unfold to_PreTerm' in *.
+                            fold (@prettify' Σ).
+                            reflexivity.
+                        }
+                    }
+                    {
+                        constructor.
+                        {
+                            unfold satisfies.
+                            simpl.
+                            
+                            ltac1:(
+                                replace (prettify' xy2)
+                                with (prettify (term_preterm xy2))
+                                by reflexivity
+                            ).
+                            rewrite (cancel uglify' prettify).
+                            constructor.
+                            apply H5.
+                        }
+                        {
+                            apply Forall_nil. exact I.
+                        }
+                    }
+                    {
+                        symmetry. apply Hl.
+                    }
+                }   
+            }
+        }
     }
-
 Qed.
 
 Lemma satisfies_subst
