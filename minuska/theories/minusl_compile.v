@@ -1437,6 +1437,25 @@ Proof.
     }
 Qed.
 
+Program Fixpoint pfmap
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A), x ∈ l -> B)
+    : list B
+:=
+match l with
+| nil => nil
+| x::xs => (f x _)::(pfmap xs (fun (x' : A) (pf' : x' ∈ xs) => f x' _))
+end
+.
+Next Obligation.
+    intros. subst l. rewrite elem_of_cons. left. reflexivity.
+Defined.
+Next Obligation.
+    intros. subst. rewrite elem_of_cons. right. exact pf'.
+Defined.
+Fail Next Obligation.
+
 Lemma satisfies_subst
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -1487,8 +1506,69 @@ Proof.
     }
     {
         simpl in *.
-        revert γ.
-        induction l; intros γ; simpl; intros HH.
+        intros HH.
+
+        rewrite Forall_forall in H.
+
+        destruct γ as [?|s0 l0].
+        { inversion HH. }
+        inversion HH; subst; clear HH.
+        unfold to_PreTerm' in pf.
+        rewrite <- satisfies_top_bov_cons in pf.
+        destruct pf as [H1 [H2 H3]].
+        subst s0.
+        rewrite map_length in H1.
+        rewrite Forall_forall in H2.
+        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H2).
+        ltac1:(replace map with (@fmap _ list_fmap) in H2 by reflexivity).
+        ltac1:(setoid_rewrite list_lookup_fmap in H2).
+        unfold fmap in H2.
+        unfold option_fmap in H2.
+        unfold option_map in H2.
+        assert(H2': forall i0 x0 y0,
+            l0 !! i0 = Some x0 ->
+            l !! i0 = Some y0 ->
+            satisfies ρ x0 (TermOverBoV_subst y0 h ψ) 
+        ).
+        {
+            intros.
+            apply H2.
+            exists i0. exists x0. exists (TermOverBoV_subst y0 h ψ).
+            split>[reflexivity|].
+            split>[apply H0|].
+            rewrite H3.
+            reflexivity.
+        }
+        clear H2.
+
+        ltac1:(unshelve(eremember (fun x' (pfx'l0 : x' ∈ l0) =>
+            let pfx'l0' := proj1 (elem_of_list_lookup l0 x') pfx'l0 in 
+            match pfx'l0' with
+            | ex_intro _ i pfi =>
+                (* let y' := (TermOverBoV_subst x' h ψ) in *)
+                match (decide (h ∈ vars_of_to_l2r x')) with
+                | left pf1 =>
+                    H x' pfx'l (t_term s l0) ψ ρ Hhρ pf1 Hnotin
+                    (H2
+                        (satisfies ρ x' y')
+                        (@ex_intro _ _ i 
+                            (@ex_intro _ _ x' (
+                                @ex_intro _ _ y'
+                                (conj (eq_refl) (conj (pfi) (_)))
+                            ))
+                        )
+                    )
+                | right _ => True
+                end
+            end
+            ) as F
+        )).
+        remember (pfmap l0 F) as l0'.
+        eexists (t_term s ?[l]).
+
+
+        revert h γ ψ Hnotin H Hhρ Hin.
+        induction l; intros h γ ψ Hnotin H Hhρ Hin; simpl; intros HH.
         {
             simpl in *. inversion Hin.
         }
@@ -1507,18 +1587,242 @@ Proof.
             destruct HH3 as [HH3 HH4].
             rewrite Forall_cons in H.
             destruct H as [H1 H2].
-            specialize (IHl H2).
             destruct (decide (h ∈ vars_of_to_l2r a)) as [HHin|HHnotin].
             {
+                assert (H1' := H1).
+                specialize (H1 t ψ ρ Hhρ HHin Hnotin HH3).
+                destruct H1 as [γ1 [γ2 [Hg1 Hg2]]].
+                specialize (IHl h t ψ Hnotin H2 Hhρ).
+
+                destruct a; simpl in *.
+                {
+                    destruct a.
+                    {
+                        inversion HHin.
+                    }
+                    {
+                        destruct (decide (h = x)).
+                        {
+                            subst. simpl in *.
+                            clear Hin. clear HHin.
+                            destruct γ1.
+                            {
+                                inversion Hg2; subst; clear Hg2.
+                                eexists (t_term s (locked ((t)::?[sl]))).
+                                exists t.
+                                split>[assumption|].
+                                unfold satisfies; simpl.
+                                unfold apply_symbol'. unfold to_Term'.
+                                constructor.
+                                unfold to_PreTerm'.
+                                ltac1:(
+                                    replace (term_operand (bov_variable x) :: map uglify' l)
+                                    with (map uglify' ((t_over (bov_variable x))::l))
+                                    by reflexivity
+                                ).
+                                rewrite <- satisfies_top_bov_cons.
+                                split.
+                                {
+
+                                }
+                                split>[|reflexivity].
+                                rewrite <- lock.
+                                simpl.
+                                rewrite Forall_cons.
+                                split.
+                                {
+                                    unfold satisfies; simpl.
+                                    unfold satisfies; simpl.
+                                    destruct t; simpl; constructor.
+                                    {
+                                        constructor.
+                                        ltac1:(rewrite lookup_insert).
+                                        reflexivity.
+                                    }
+                                    {
+                                        unfold satisfies; simpl.
+                                        ltac1:(rewrite lookup_insert).
+                                        reflexivity.
+                                    }
+                                }
+                                {
+
+                                }
+                            }
+
+                            ltac1:(ospecialize (IHl _)).
+                                {
+                                    ltac1:(tauto).
+                                }
+                                ltac1:(ospecialize (IHl _)).
+                                {
+                                    clear IHl.
+
+                                }
+                                exists (t_term s (γ1::lγ)).
+                                exists γ2.
+                        }
+                        {
+
+                        }
+                    }
+                }
+                {
+                    destruct t.
+                    {
+                        inversion HH3.
+                    }
+                    {
+                        inversion HH3; subst; clear HH3.
+                    }
+                }
+
+                destruct (decide (h ∈ vars_of_to_l2r a)) as [Hha|Hha].
+                {
+
+                }
+                {
+                    ltac1:(ospecialize (IHl _)).
+                    {
+                        ltac1:(tauto).
+                    }
+                    ltac1:(ospecialize (IHl _)).
+                    {
+                        clear IHl.
+
+                    }
+                    exists (t_term s (γ1::lγ)).
+                    exists γ2.
+                    split.
+                    { assumption. }
+                    unfold satisfies; simpl.
+                    unfold apply_symbol'.
+                    unfold to_Term'.
+                    constructor.
+                    unfold to_PreTerm'.
+                    ltac1:(
+                        replace (uglify' γ1 :: map uglify' lγ)
+                        with (map uglify' (γ1::lγ))
+                        by reflexivity
+                    ).
+                    ltac1:(
+                        replace (uglify' a :: map uglify' l)
+                        with (map uglify' (a::l))
+                        by reflexivity
+                    ).
+                    rewrite <- satisfies_top_bov_cons.
+                    rewrite map_length in HH2.
+                    split.
+                    {
+                        simpl.
+                        ltac1:(lia).
+                    }
+                    split>[|reflexivity].
+                    simpl.
+                    rewrite Forall_cons.
+                    split>[assumption|].
+                    
+                    rewrite vars_of_uglify in Hha.
+                    unfold satisfies; simpl.
+                    ltac1:(replace map with (@fmap _ list_fmap) in HH4 by reflexivity).
+                    rewrite zip_with_fmap_r in HH4.
+                    About satisfies_Term'_vars_of.
+                    Search satisfies vars_of.
+                    exact HH4.
+                    Search zip_with fmap.
+                }
+
                 
+                exists (t_term s (γ1::lγ)).
+                exists γ2.
+                split.
+                { assumption. }
+                unfold satisfies; simpl.
+                unfold apply_symbol'.
+                unfold to_Term'.
+                constructor.
+                unfold to_PreTerm'.
+                ltac1:(
+                    replace (uglify' γ1 :: map uglify' lγ)
+                    with (map uglify' (γ1::lγ))
+                    by reflexivity
+                ).
+                ltac1:(
+                    replace (uglify' a :: map uglify' l)
+                    with (map uglify' (a::l))
+                    by reflexivity
+                ).
+                rewrite <- satisfies_top_bov_cons.
+                rewrite map_length in HH2.
+                split.
+                {
+                    simpl.
+                    ltac1:(lia).
+                }
+                split>[|reflexivity].
+                simpl.
+                rewrite Forall_cons.
+                split>[assumption|].
                 
 
+                (*
+                clear H'1.
+                specialize (H1' t ψ ρ Hhρ HHin Hnotin HH3).
+                destruct H1' as [γ0 [γ3 [H'1 H'2]]].
+                *)
+                rewrite Forall_forall in H2.
+                rewrite Forall_forall.
+                intros P HP.
+                ltac1:(apply elem_of_lookup_zip_with in HP).
+                destruct HP as [i [x [y [HP1 [HP2 HP3]]]]].
+                rewrite Forall_forall in HH4.
+                ltac1:(setoid_rewrite elem_of_lookup_zip_with in HH4).
+                subst P.
+                specialize (IHl h).
+
+                destruct (decide (h ∈ vars_of_to_l2r y)) as [Hhy|Hhy].
+                {
+
+                }
+                {
+                    rewrite vars_of_uglify in Hhy.
+                    unfold satisfies; simpl.
+                    rewrite satisfies_Term'_vars_of with (ρ2 := ρ).
+                    {
+                        apply HH4.
+                        exists i,x,y.
+                        split>[reflexivity|].
+                        split>[apply HP2|].
+                        rewrite <- HP3.
+                        ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                        rewrite list_lookup_fmap.
+                        rewrite HP3.
+                        simpl.
+                        f_equal.
+                        rewrite subst_notin.
+                        { reflexivity. }
+                        rewrite <- vars_of_uglify in Hhy.
+                        apply Hhy.
+                    }
+                    {
+                        intros.
+                        destruct (decide (x0 = h)).
+                        {
+                            subst.
+                            ltac1:(contradiction Hhy).
+                        }
+                        {
+                            ltac1:(rewrite lookup_insert_ne).
+                            { symmetry. assumption. }
+                            reflexivity.
+                        }
+                    }
+                }
             }
             {
                 rewrite subst_notin in HH3>[|assumption].
                 assert (( h ∈ concat (map vars_of_to_l2r l))) by (ltac1:(tauto)).
-                specialize (IHl ltac:(assumption)).
-                specialize (IHl (t_term s lγ)).
+                specialize (IHl h (t_term s lγ) ψ Hnotin H2 Hhρ H).
                 ltac1:(ospecialize (IHl _)).
                 {
                     unfold satisfies. simpl.
@@ -1531,9 +1835,10 @@ Proof.
                     constructor.
                     apply satisfies_top_bov_cons.
                     {
-                        simpl. ltac1:(lia).
-                    }
-                    {
+                        simpl.
+                        rewrite map_length.
+                        rewrite map_length in HH2.
+                        split>[ltac1:(lia)|].
                         split>[|reflexivity].
                         apply HH4.
                     }
@@ -1552,10 +1857,12 @@ Proof.
                 fold (@uglify' Σ).
                 unfold to_PreTerm' in *; simpl in *|-.
                 rewrite <- satisfies_top_bov_cons in pf.
-                destruct pf as [pf ?].
+                destruct pf as [Hlen [pf ?]].
                 subst s0.
                 rewrite <- satisfies_top_bov_cons.
                 {
+                    simpl.
+                    split>[ltac1:(lia)|].
                     split>[|reflexivity].
                     simpl. rewrite Forall_cons.
                     split>[|apply pf].
@@ -1580,22 +1887,8 @@ Proof.
                         }
                     }
                 }
-                {
-                    simpl. rewrite map_length in HH2.
-                    
-                    ltac1:(lia).
-                }
-            }
-            destruct (decide ( h ∈ concat (map vars_of_to_l2r l))) as [Hholds|Hnothold].
-            {
-                clear Hin.
-            }
-            {
-                assert (Hin': h ∈ vars_of_to_l2r a) by (ltac1:(tauto)).
-                clear Hin.
             }
         }
-
     }
 Qed.
 
