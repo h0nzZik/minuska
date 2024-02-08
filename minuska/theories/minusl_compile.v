@@ -1540,6 +1540,62 @@ Proof.
             reflexivity.
         }
         clear H2.
+        unfold Valuation in *.
+        assert(H': ∀ (i0 : nat)
+            (x0 : TermOver builtin_value)
+            (y0 : TermOver BuiltinOrVar),
+            l0!!i0 = Some x0 ->
+            l!!i0 = Some y0 ->
+            ∃ (γ0 γ1 : TermOver builtin_value),
+            (h ∈ vars_of_to_l2r y0 -> satisfies ρ γ1 ψ) /\
+            satisfies (<[h := uglify' γ1]>ρ) γ0 y0
+        ).
+        {
+            intros i0 x0 y0 Hx0 Hy0.
+            rewrite elem_of_list_In in Hin.
+            rewrite in_concat in Hin.
+            destruct Hin as [x [H1in H2in]].
+            rewrite in_map_iff in H1in.
+            destruct H1in as [x1 [H1x1 H2x1]].
+            subst x.
+
+            rewrite <- elem_of_list_In in H2x1.
+            rewrite elem_of_list_lookup in H2x1.
+            destruct H2x1 as [i Hli].
+
+            destruct (decide (h ∈ vars_of_to_l2r y0)) as [Hyes|Hno].
+            {
+
+            }
+            {
+                (* what if h ∉ y0 ? We cannot use H.*)
+                specialize (H2' _ _ _ Hx0 Hy0).
+                rewrite subst_notin in H2'>[|exact Hno].
+                exists x0.
+                (* We can choose whatever here. *)
+                exists x0.
+                split.
+                {
+                    intros HContra. ltac1:(contradiction HContra).
+                }
+                unfold satisfies; simpl.
+                erewrite satisfies_Term'_vars_of.
+                { apply H2'. }
+                {
+                    intros x Hx.
+                    apply vars_of_uglify in Hx.
+                    destruct (decide (x = h)).
+                    {
+                        subst.
+                        ltac1:(contradiction Hx).
+                    }
+                    ltac1:(rewrite lookup_insert_ne).
+                    { symmetry. assumption. }
+                    reflexivity.
+                }
+            }
+        }
+
 
         ltac1:(unshelve(eremember (fun x' (pfx'l0 : x' ∈ l0) =>
             let pfx'l0' := proj1 (elem_of_list_lookup l0 x') pfx'l0 in 
