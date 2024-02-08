@@ -213,17 +213,21 @@ Lemma satisfies_top_bov_cons
     (states : list (TermOver builtin_value))
     (lds : list (TermOver BuiltinOrVar))
     :
-    length states = length lds ->
-    (Forall id (zip_with (satisfies ρ) states lds) /\ topSymbol = topSymbol') <->
-    (satisfies ρ (fold_left helper (map uglify' states) (pt_operator topSymbol))
-    (fold_left helper (map uglify' lds) (pt_operator topSymbol'))
+    (
+        length states = length lds /\
+        Forall id (zip_with (satisfies ρ) states lds)
+        /\ topSymbol = topSymbol'
+    ) <->
+    (
+        satisfies ρ (fold_left helper (map uglify' states) (pt_operator topSymbol))
+        (fold_left helper (map uglify' lds) (pt_operator topSymbol'))
     )
 .
 Proof.
-    intros Hlens.
     split.
     {
         intros H.
+        destruct H as [Hlens H].
         revert lds Hlens H.
         induction states using rev_ind; intros lds Hlens H; simpl in *.
         {
@@ -326,11 +330,12 @@ Proof.
     }
     {
         intros H.
-        revert lds Hlens H.
-        induction states using rev_ind; intros lds Hlens pf.
+        revert lds H.
+        induction states using rev_ind; intros lds pf.
         {
             destruct lds; simpl in *.
             {
+                split>[reflexivity|].
                 split.
                 {
                     apply Forall_nil. exact I.
@@ -340,15 +345,45 @@ Proof.
                 }
             }
             {
-                inversion Hlens.
+                inversion pf; subst; clear pf.
+                ltac1:(exfalso).
+                induction lds using rev_ind.
+                {
+                    simpl in H2. unfold helper in H2.
+                    destruct (uglify' t); simpl in H2; inversion H2.
+                }
+                {
+                    rewrite map_app in H2.
+                    rewrite fold_left_app in H2.
+                    simpl in H2.
+                    unfold helper in H2.
+                    destruct (uglify' x) eqn:Hux.
+                    {
+                        inversion H2.
+                    }
+                    {
+                        inversion H2.
+                    }
+                }
             }
         }
         {
             destruct (analyze_list_from_end lds); simpl in *.
             {
-                rewrite app_length in Hlens. simpl in Hlens.
-                subst. simpl in Hlens.
-                ltac1:(lia).
+                ltac1:(exfalso).
+                subst.
+
+                rewrite map_app in pf.
+                rewrite fold_left_app in pf.
+                simpl in pf.
+                unfold helper in pf.
+                destruct (uglify' x) eqn:Hux.
+                {
+                    inversion pf.
+                }
+                {
+                    inversion pf.
+                }
             }
             {
                 destruct e as [l' [x0 Hlds]].
@@ -359,14 +394,17 @@ Proof.
                 rewrite fold_left_app in pf.
                 rewrite fold_left_app in pf.
                 simpl in pf.
+                (*
                 unfold helper in pf.
                 rewrite app_length in Hlens.
                 rewrite app_length in Hlens.
                 simpl in Hlens.
                 assert (Hlens': length states = length l') by (ltac1:(lia)).
+                
                 rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens').
-                rewrite Forall_app.
-                specialize (IHstates l' Hlens').
+                *)
+
+                specialize (IHstates l').
                 ltac1:(ospecialize (IHstates _)).
                 {
                     destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
@@ -388,10 +426,15 @@ Proof.
                         assumption.
                     }
                 }
-                destruct IHstates as [IHstates ?].
+                destruct IHstates as [IHlen [IHstates ?]].
                 subst topSymbol'.
+                do 2 (rewrite app_length).
+                simpl.
+                split>[ltac1:(lia)|].
                 split.
-                {
+                {                
+                    rewrite (zip_with_app (satisfies ρ) _ _ _ _ IHlen).
+                    rewrite Forall_app.
                     split.
                     {
                         apply IHstates.
