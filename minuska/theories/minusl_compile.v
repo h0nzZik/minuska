@@ -2,6 +2,9 @@ From Minuska Require Import
     prelude
     spec_syntax
     spec_semantics
+    semantics_properties
+    basic_matching
+    varsof
 .
 
 (*
@@ -1196,6 +1199,201 @@ Proof.
     }
 Qed.
 
+Lemma satisfies_PreTerm'_vars_of
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation)
+    (g : PreTerm' symbol builtin_value)
+    (φ : PreTerm' symbol BuiltinOrVar)
+:
+    (forall (x : variable), x ∈ vars_of φ -> ρ1!!x = ρ2!!x) ->
+    (
+    satisfies ρ1 g φ
+    <->
+    satisfies ρ2 g φ
+    )
+.
+Proof.
+    rewrite (reflect_iff _ _ (matchesb_satisfies ρ1 g φ)).
+    rewrite (reflect_iff _ _ (matchesb_satisfies ρ2 g φ)).
+    revert φ.
+    induction g; intros φ Hvars; destruct φ;
+        unfold matchesb in *; unfold vars_of in *;
+        simpl in *;
+        try ltac1:(tauto).
+    {
+        do 2 (rewrite andb_true_iff).
+        ltac1:(rewrite IHg).
+        {
+            ltac1:(set_solver).
+        }
+        unfold matchesb; simpl.
+        destruct b0; simpl.
+        {
+            ltac1:(tauto).
+        }
+        rewrite Hvars.
+        { reflexivity. }
+        {
+            simpl. unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+    }
+    {
+        do 2 (rewrite andb_true_iff).
+        ltac1:(rewrite IHg).
+        {
+            ltac1:(set_solver).
+        }
+        unfold matchesb; simpl.
+        ltac1:(tauto).
+    }
+    {
+        do 2 (rewrite andb_true_iff).
+        ltac1:(rewrite IHg1).
+        {
+            ltac1:(set_solver).
+        }
+        unfold matchesb; simpl.
+        destruct b; simpl.
+        {
+            ltac1:(tauto).
+        }
+        rewrite Hvars.
+        { reflexivity. }
+        {
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+    }
+    {
+        do 2 (rewrite andb_true_iff).
+        ltac1:(rewrite IHg1).
+        { ltac1:(set_solver). }
+        ltac1:(rewrite IHg2).
+        { ltac1:(set_solver). }
+        reflexivity.
+    }
+Qed.
+
+Lemma satisfies_Term'_vars_of
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation)
+    (g : Term' symbol builtin_value)
+    (φ : Term' symbol BuiltinOrVar)
+:
+    (forall (x : variable), x ∈ vars_of φ -> ρ1!!x = ρ2!!x) ->
+    (
+    satisfies ρ1 g φ
+    <->
+    satisfies ρ2 g φ
+    )
+.
+Proof.
+    intros Hvars.
+    rewrite (reflect_iff _ _ (matchesb_satisfies ρ1 g φ)).
+    rewrite (reflect_iff _ _ (matchesb_satisfies ρ2 g φ)).
+    destruct g, φ; unfold matchesb; simpl.
+    {
+        rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ1 ao ao0)).
+        rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ2 ao ao0)).
+        apply satisfies_PreTerm'_vars_of.
+        apply Hvars.
+    }
+    {
+        unfold matchesb; simpl.
+        destruct operand; simpl.
+        { ltac1:(tauto). }
+        {
+            rewrite Hvars.
+            { reflexivity. }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
+        }
+    }
+    {
+        ltac1:(tauto).
+    }
+    {
+        unfold matchesb; simpl.
+        destruct operand0; simpl.
+        { ltac1:(tauto). }
+        {
+            rewrite Hvars.
+            { reflexivity. }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                rewrite elem_of_singleton.
+                reflexivity.
+            }
+        }
+    }
+Qed.
+
+Lemma vars_of_uglify
+    {Σ : StaticModel}
+    (h : variable) a:
+    h ∈ vars_of_to_l2r a
+    <->
+    h ∈ (vars_of (uglify' a))
+.
+Proof.
+    induction a; unfold vars_of; simpl.
+    {
+        destruct a; unfold vars_of; simpl.
+        { ltac1:(set_solver). }
+        { ltac1:(set_solver). }
+    }
+    {
+        unfold to_PreTerm'; simpl.
+        revert s h H.
+        induction l using rev_ind; intros s h H.
+        {
+            simpl. unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite map_app.
+            rewrite map_app.
+            rewrite concat_app.
+            rewrite fold_left_app.
+            rewrite elem_of_app.
+            simpl.
+
+            rewrite Forall_app in H.
+            destruct H as [H1 H2].
+            specialize (IHl s h H1). clear H1.
+            rewrite IHl. clear IHl.
+            rewrite Forall_cons in H2.
+            destruct H2 as [H2 _].
+            unfold helper; simpl.
+            destruct (uglify' x) eqn:Hux;
+                unfold vars_of; simpl;
+                rewrite elem_of_union;
+                rewrite app_nil_r;
+                rewrite H2; clear H2;
+                unfold vars_of; simpl.
+            {
+                reflexivity.
+            }
+            {
+                destruct operand; unfold vars_of; simpl.
+                {
+                    ltac1:(tauto).
+                }
+                {
+                    rewrite elem_of_singleton.
+                    ltac1:(tauto).
+                }
+            }
+        }
+    }
+Qed.
+
 Lemma satisfies_subst
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -1203,6 +1401,7 @@ Lemma satisfies_subst
     (γ : TermOver builtin_value)
     (φ ψ : TermOver BuiltinOrVar)
     :
+    h ∉ vars_of ρ ->
     h ∈ vars_of_to_l2r φ ->
     ~ (h ∈ vars_of_to_l2r ψ) ->
     satisfies
@@ -1216,7 +1415,7 @@ Lemma satisfies_subst
     .
 Proof.
     revert γ ψ ρ.
-    induction φ; intros γ ψ ρ Hin Hnotin.
+    induction φ; intros γ ψ ρ Hhρ Hin Hnotin.
     {
         simpl.
         destruct a; simpl.
@@ -1306,7 +1505,6 @@ Proof.
                 exists γ1.
                 split>[assumption|].
                 inversion H'2; subst; clear H'2.
-                About satisfies_top_bov_cons.
                 constructor.
                 fold (@uglify' Σ).
                 unfold to_PreTerm' in *; simpl in *|-.
@@ -1318,9 +1516,31 @@ Proof.
                     split>[|reflexivity].
                     simpl. rewrite Forall_cons.
                     split>[|apply pf].
-                    (* TODO lemma that satisfaction depends only on values present in the valuation.
-                    In particular, insertion preserves satisfaction if the key does not occur in the symbolic term.
-                    *)
+                    unfold satisfies; simpl.
+                    unfold satisfies in HH3; simpl in HH3.
+
+                    rewrite satisfies_Term'_vars_of.
+                    { apply HH3. }
+                    {
+                        intros x Hx.
+                        destruct (decide (x = h)) as [?|Hxh].
+                        {
+                            subst.
+                            rewrite <- vars_of_uglify in Hx.
+                            clear - Hx HHnotin.
+                            ltac1:(exfalso; contradiction HHnotin).
+                        }
+                        {
+                            ltac1:(rewrite lookup_insert_ne).
+                            { symmetry. exact Hxh. }
+                            reflexivity.
+                        }
+                    }
+                }
+                {
+                    simpl. rewrite map_length in HH2.
+                    
+                    ltac1:(lia).
                 }
             }
             destruct (decide ( h ∈ concat (map vars_of_to_l2r l))) as [Hholds|Hnothold].
