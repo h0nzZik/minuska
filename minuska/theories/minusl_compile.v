@@ -1464,7 +1464,8 @@ Lemma satisfies_subst
     (φ ψ : TermOver BuiltinOrVar)
     :
     h ∉ vars_of ρ ->
-    h ∈ vars_of_to_l2r φ ->
+    length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
+    (* h ∈ vars_of_to_l2r φ -> *)
     ~ (h ∈ vars_of_to_l2r ψ) ->
     satisfies
         ρ
@@ -1489,18 +1490,23 @@ Proof.
             simpl in Hin.
             inversion Hin; subst; clear Hin.
             {
+                rewrite filter_cons in H0.
                 destruct (decide (x=x))>[|ltac1:(congruence)].
                 clear e.
                 intros Hψ.
-                exists γ.
-                exists γ.
-                split>[assumption|].
-                apply satisfies_var.
-                ltac1:(rewrite lookup_insert).
-                reflexivity.
-            }
-            {
-                rewrite elem_of_nil in H1. inversion H1.
+                destruct (decide (h=x)).
+                {
+                    subst.
+                    exists γ.
+                    exists γ.
+                    split>[assumption|].
+                    apply satisfies_var.
+                    ltac1:(rewrite lookup_insert).
+                    reflexivity.
+                }
+                {
+                    inversion H0.
+                }
             }
         }
     }
@@ -1541,60 +1547,203 @@ Proof.
         }
         clear H2.
         unfold Valuation in *.
+        assert (Hm: exists m, m ∈ l /\ length (filter (eq h) (vars_of_to_l2r m)) = 1 ).
+        {
+            clear -Hin.
+            induction l; simpl in *.
+            { inversion Hin. }
+            {
+                rewrite filter_app in Hin.            
+                rewrite app_length in Hin.
+                destruct (decide (h ∈ vars_of_to_l2r a)) as [Histhere|Hisntthere].
+                {
+                    exists a.
+                    split.
+                    {
+                        rewrite elem_of_cons. left. reflexivity.
+                    }
+                    {
+                        rewrite elem_of_list_lookup in Histhere.
+                        destruct Histhere as [i Hi].
+                        apply take_drop_middle in Hi.
+                        rewrite <- Hi. rewrite <- Hi in Hin. clear Hi.
+                        rewrite filter_app. rewrite filter_cons.
+                        rewrite app_length. simpl.
+                        rewrite filter_app in Hin.
+                        rewrite filter_cons in Hin.
+                        destruct (decide (h=h))>[|ltac1:(contradiction)].
+                        rewrite app_length in Hin.
+                        simpl in Hin. simpl.
+                        ltac1:(lia).
+                    }
+                }
+                {
+                    assert(length (filter (eq h) (vars_of_to_l2r a)) = 0).
+                    {
+                        assert (h ∉ filter (eq h) (vars_of_to_l2r a)).
+                        {
+                            intros HContra. apply Hisntthere. clear Hisntthere.
+                            rewrite elem_of_list_filter in HContra.
+                            destruct HContra as [_ HContra].
+                            apply HContra.
+                        }
+                        remember (vars_of_to_l2r a) as vs.
+                        clear -H.
+                        induction vs; simpl in *.
+                        { reflexivity. }
+                        {
+                            rewrite filter_cons in H.
+                            rewrite filter_cons.
+                            destruct (decide (h = a)).
+                            {
+                                subst. rewrite elem_of_cons in H.
+                                apply Decidable.not_or in H.
+                                destruct H as [H _].
+                                ltac1:(contradiction H).
+                                reflexivity.
+                            }
+                            apply IHvs. apply H.
+                        }
+                    }
+                    ltac1:(ospecialize (IHl _)).
+                    {
+                        ltac1:(lia).
+                    }
+                    destruct IHl as [m [H1m H2m]].
+                    exists m.
+                    split.
+                    {
+                        rewrite elem_of_cons. right. exact H1m.
+                    }
+                    {
+                        exact H2m.
+                    }
+                }
+            }
+        }
+        destruct Hm as [m [H1m H2m]].
+        assert(Hγ1: exists γ1, satisfies ρ γ1 ψ).
+        {
+            specialize (H m H1m).
+            rewrite elem_of_list_lookup in H1m.
+            destruct H1m as [i Hi].
+            specialize (H2' i).
+            destruct (l0!!i) eqn:Hl0i.
+            {
+                specialize (H2' t m eq_refl Hi).
+                specialize (H t ψ ρ Hhρ H2m Hnotin H2').
+                destruct H as [γ0 [γ1 [HH1 HH2]]].
+                exists γ1.
+                exact HH1.
+            }
+            {
+                apply lookup_ge_None_1 in Hl0i.
+                apply lookup_lt_Some in Hi.
+                ltac1:(lia).
+            }
+        }
+        destruct Hγ1 as [γ1 H1γ1].
         assert(H': ∀ (i0 : nat)
             (x0 : TermOver builtin_value)
             (y0 : TermOver BuiltinOrVar),
             l0!!i0 = Some x0 ->
             l!!i0 = Some y0 ->
-            ∃ (γ0 γ1 : TermOver builtin_value),
-            (h ∈ vars_of_to_l2r y0 -> satisfies ρ γ1 ψ) /\
+            ∃ (γ1 γ0 : TermOver builtin_value),
             satisfies (<[h := uglify' γ1]>ρ) γ0 y0
         ).
         {
             intros i0 x0 y0 Hx0 Hy0.
-            rewrite elem_of_list_In in Hin.
-            rewrite in_concat in Hin.
-            destruct Hin as [x [H1in H2in]].
-            rewrite in_map_iff in H1in.
-            destruct H1in as [x1 [H1x1 H2x1]].
-            subst x.
-
-            rewrite <- elem_of_list_In in H2x1.
-            rewrite elem_of_list_lookup in H2x1.
-            destruct H2x1 as [i Hli].
-
-            destruct (decide (h ∈ vars_of_to_l2r y0)) as [Hyes|Hno].
+            clear m H1m H2m.
+            destruct (decide (length (filter (eq h) (vars_of_to_l2r y0) ) = 1)) as [?|Hno1].
             {
-
+                specialize (H2' i0 x0 y0 Hx0 Hy0).
+                specialize (H y0).
+                ltac1:(ospecialize (H _)).
+                {
+                    rewrite elem_of_list_lookup.
+                    exists i0. assumption.
+                }
+                specialize (H x0 ψ ρ Hhρ ltac:(assumption)).
+                specialize (H Hnotin H2').
+                destruct H as [γ0 [γ2 [HH1 HH2]]].
+                exists γ2.
+                exists γ0.
+                exact HH2.
             }
             {
-                (* what if h ∉ y0 ? We cannot use H.*)
-                specialize (H2' _ _ _ Hx0 Hy0).
-                rewrite subst_notin in H2'>[|exact Hno].
-                exists x0.
-                (* We can choose whatever here. *)
-                exists x0.
-                split.
+                assert (Hzero: length (filter (eq h) (vars_of_to_l2r y0)) = 0).
                 {
-                    intros HContra. ltac1:(contradiction HContra).
+                    apply take_drop_middle in Hy0.
+                    rewrite <- Hy0 in Hin.
+                    rewrite map_app in Hin.
+                    rewrite concat_app in Hin.
+                    rewrite filter_app in Hin.
+                    rewrite app_length in Hin.
+                    simpl in Hin.
+                    rewrite filter_app in Hin.
+                    rewrite app_length in Hin.
+                    ltac1:(lia).
                 }
-                unfold satisfies; simpl.
-                erewrite satisfies_Term'_vars_of.
-                { apply H2'. }
+                clear Hno1.
+                specialize (H2' i0 x0 y0 Hx0 Hy0).
+                rewrite subst_notin in H2'.
                 {
-                    intros x Hx.
-                    apply vars_of_uglify in Hx.
-                    destruct (decide (x = h)).
-                    {
-                        subst.
-                        ltac1:(contradiction Hx).
+                    exists x0.
+                    exists x0.
+                    unfold satisfies; simpl.
+                    erewrite satisfies_Term'_vars_of.
+                    { 
+                        unfold satisfies in H2'. simpl in H2'.
+                        apply H2'.
                     }
-                    ltac1:(rewrite lookup_insert_ne).
-                    { symmetry. assumption. }
-                    reflexivity.
+                    {
+                        intros x Hx.
+                        destruct (decide (h = x)).
+                        {
+                            subst.
+                            ltac1:(exfalso).
+                            clear - Hzero Hx.
+                            rewrite <- vars_of_uglify in Hx.
+                            ltac1:(rewrite elem_of_list_lookup in Hx).
+                            destruct Hx as [i Hi].
+                            apply take_drop_middle in Hi.
+                            rewrite <- Hi in Hzero.
+                            rewrite filter_app in Hzero.
+                            simpl in Hzero.
+                            rewrite filter_cons in Hzero.
+                            destruct (decide (x=x))>[|ltac1:(contradiction)].
+                            rewrite app_length in Hzero.
+                            simpl in Hzero.
+                            ltac1:(lia).
+                        }
+                        {
+                            ltac1:(rewrite lookup_insert_ne).
+                            { assumption. }
+                            reflexivity.
+                        }
+                    }
+                }
+                {
+                    clear -Hzero.
+                    intros HContra.
+                    rewrite elem_of_list_lookup in HContra.
+                    destruct HContra as [i Hi].
+                    apply take_drop_middle in Hi.
+                    rewrite <- Hi in Hzero. clear Hi.
+                    rewrite filter_app in Hzero.
+                    rewrite filter_cons in Hzero.
+                    (destruct (decide (h=h)) as [_|?])>[|ltac1:(contradiction)].
+                    rewrite app_length in Hzero.
+                    simpl in Hzero.
+                    ltac1:(lia).
                 }
             }
         }
+        clear H H2'.
+        (* I think I have to assume that [h] occurs exactly once
+        in ϕ. Then it should work.*)
+
+        remember (fun (i:nat) => i) as G.
 
 
         ltac1:(unshelve(eremember (fun x' (pfx'l0 : x' ∈ l0) =>
