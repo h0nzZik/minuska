@@ -280,7 +280,7 @@ Fixpoint TermOver_size
 :=
 match t with
 | t_over _ => 1
-| t_term _ l => S (sum_list_with TermOver_size l)
+| t_term _ l => S (sum_list_with (S ∘ TermOver_size) l)
 end.
 
 Fixpoint uglify'

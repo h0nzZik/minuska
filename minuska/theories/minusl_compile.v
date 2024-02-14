@@ -1784,7 +1784,7 @@ Lemma forall_satisfies_inv
     (γ1 γ2 : list (TermOver builtin_value))
     (l : list (TermOver BuiltinOrVar))
     :
-    sum_list_with TermOver_size l < sz ->
+    sum_list_with (S ∘ TermOver_size) l < sz ->
     length γ1 = length l ->
     length γ2 = length l ->
     Forall id (zip_with (satisfies ρ) γ1 l) ->
@@ -1792,18 +1792,23 @@ Lemma forall_satisfies_inv
     γ1 = γ2
 with satisfies_inv
     {Σ : StaticModel}
-    
+    (sz : nat)
     (ρ : Valuation)
     (x y : TermOver builtin_value)
     (z : TermOver BuiltinOrVar)
     :
+    TermOver_size z < sz ->
     satisfies ρ x z ->
     satisfies ρ y z ->
     x = y
 .
 Proof.
     {
-        intros H1 H2 H3.
+        intros Hsz H1 H2 H3.
+        destruct sz.
+        {
+            ltac1:(lia).
+        }
         rewrite Forall_forall.
         rewrite Forall_forall in H3.
         intros H4.
@@ -1831,9 +1836,16 @@ Proof.
                     split>[reflexivity|].
                     split;assumption.
                 }
-                clear -H3 H4 satisfies_inv.
+                clear -H3 H4 satisfies_inv sz Hsz Hli.
                 f_equal.
-                exact (satisfies_inv Σ ρ t t0 t1 H3 H4).
+                specialize (satisfies_inv Σ sz ρ t t0 t1).
+                apply satisfies_inv; try assumption.
+                apply take_drop_middle in Hli.
+                rewrite <- Hli in Hsz.
+
+                rewrite sum_list_with_app in Hsz.
+                simpl in Hsz.
+                ltac1:(lia).
             }
             {
                 apply lookup_lt_Some in Hγ1i.
@@ -1856,11 +1868,17 @@ Proof.
         }
     }
     {
-        intros H1 H2.
+        intros Hsz H1 H2.
+
+        destruct sz.
+        {
+            ltac1:(lia).
+        }
+
         destruct
-            x as [ax|sx lx],
-            y as [ay|sy ly],
-            z as [az|sz lz]
+            x as [ax|cx lx],
+            y as [ay|cy ly],
+            z as [az|cz lz]
             .
         {
             inversion H1; subst; clear H1.
@@ -1926,7 +1944,7 @@ Proof.
                 ltac1:(simplify_eq /=).
                 apply to_preterm_eq_inv in H.
                 destruct H as [H1 H2].
-                subst sy.
+                subst cy.
                 apply map_uglify'_inj in H2.
                 subst ly.
                 reflexivity.
@@ -1941,10 +1959,13 @@ Proof.
             rewrite <- satisfies_top_bov_cons in pf0.
             destruct pf as [H1 H2].
             destruct pf0 as [H3 H4].
-            assert (IH1 := forall_satisfies_inv Σ ρ lx ly lz H1 H3).
+            assert (IH1 := forall_satisfies_inv Σ sz ρ lx ly lz).
             destruct H2 as [H21 H22].
             destruct H4 as [H41 H42].
-            specialize (IH1 H21 H41).
+            simpl in Hsz.
+            specialize (IH1 ltac:(lia)).
+            subst.
+            specialize (IH1 H1 H3 H21 H41).
             subst.
             reflexivity.
         }
