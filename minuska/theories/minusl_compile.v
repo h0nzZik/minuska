@@ -2138,255 +2138,60 @@ Proof.
     }
 Qed.
 
-
-Lemma forall_satisfies_inv_2'
+Lemma double_satisfies_contradiction
     {Σ : StaticModel}
-    (sz : nat)
     (ρ : Valuation)
-    (γ : list (TermOver builtin_value))
-    (l1 l2 : list (TermOver BuiltinOrVar))
+    ay cz lz cx lx
     :
-    sum_list_with (S ∘ TermOver_size) γ < sz ->
-    length γ = length l1 ->
-    length γ = length l2 ->
-    Forall id (zip_with (satisfies ρ) γ l1) ->
-    Forall id (zip_with (satisfies ρ) γ l2) ->
-    l1 = l2
-with satisfies_inv_2'
-    {Σ : StaticModel}
-    (sz : nat)
-    (ρ : Valuation)
-    (x : TermOver builtin_value)
-    (y z : TermOver BuiltinOrVar)
-    :
-    TermOver_size x < sz ->
-    (*vars_of_to_l2r y = vars_of_to_l2r z -> *)
-    vars_of (uglify' y) = vars_of (uglify' z) ->
-    satisfies ρ x y ->
-    satisfies ρ x z ->
-    y = z
+    vars_of (uglify' (t_over ay)) = vars_of (uglify' (t_term cz lz)) ->
+    satisfies ρ (t_term cx lx) (t_over ay) ->
+    satisfies ρ (t_term cx lx) (t_term cz lz) ->
+    False
 .
 Proof.
-    {
-        intros Hsz H1 H2 H3.
-        destruct sz.
+    intros Hvars H1 H2.
+        inversion H1; subst; clear H1.
+        inversion H2; subst; clear H2.
+        unfold to_PreTerm' in pf.
+        rewrite <- satisfies_top_bov_cons in pf.
+        destruct pf as [pf1 [pf2 pf3]].
+        subst cz.
+        destruct ay.
         {
-            ltac1:(lia).
+            inversion H4; subst; clear H4.
         }
-        rewrite Forall_forall.
-        rewrite Forall_forall in H3.
-        intros H4.
-        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
-        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H4).
-        apply list_eq.
-        intros i.
-        destruct
-            (l1 !! i) eqn:Hl1i,
-            (l2 !! i) eqn:Hl2i.
         {
-            destruct (γ !! i) eqn:Hγi.
+            
+            ltac1:(exfalso).
+            simpl in Hvars.
+            assert (Htmp1 := satisfies_in_size ρ x).
+            unfold vars_of in Hvars; simpl in Hvars.
+            unfold vars_of in Hvars; simpl in Hvars.
+
+            inversion H4; subst; clear H4.
+            assert (∃ z, z ∈ map uglify' lz /\ x ∈ (vars_of z)).
             {
-                specialize (H3 (satisfies ρ t1 t)).
-                ltac1:(ospecialize (H3 _)).
+                clear -Hvars.
+                revert Hvars.
+                induction lz using rev_ind; intros Hvars.
                 {
-                    exists i,t1,t.
-                    split>[reflexivity|].
-                    split;assumption.
+                    simpl in Hvars. ltac1:(set_solver).
                 }
-                specialize (H4 (satisfies ρ t1 t0)).
-                ltac1:(ospecialize (H4 _)).
                 {
-                    exists i,t1,t0.
-                    split>[reflexivity|].
-                    split;assumption.
-                }
-                clear -H3 H4 satisfies_inv_2' sz Hsz Hγi.
-                f_equal.
-                specialize (satisfies_inv_2' Σ sz ρ t1 t t0).
-                apply satisfies_inv_2'; try assumption.
-                apply take_drop_middle in Hγi.
-                rewrite <- Hγi in Hsz.
-
-                rewrite sum_list_with_app in Hsz.
-                simpl in Hsz.
-                ltac1:(lia).
-            }
-            {
-                apply lookup_lt_Some in Hl1i.
-                apply lookup_ge_None in Hγi.
-                ltac1:(lia).
-            }
-        }
-        {
-            apply lookup_lt_Some in Hl1i.
-            apply lookup_ge_None in Hl2i.
-            ltac1:(lia).
-        }
-        {
-            apply lookup_lt_Some in Hl2i.
-            apply lookup_ge_None in Hl1i.
-            ltac1:(lia).
-        }
-        {
-            reflexivity.
-        }
-    }
-    {
-        intros Hsz Hvars H1 H2.
-
-        destruct sz.
-        {
-            ltac1:(lia).
-        }
-
-        destruct
-            x as [ax|cx lx],
-            y as [ay|cy ly],
-            z as [az|cz lz]
-            .
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-
-            destruct ay,az.
-            {
-                inversion pf; inversion pf0; subst; clear pf pf0.
-                reflexivity.
-            }
-            {
-                inversion pf; inversion pf0; subst; clear pf pf0.
-                simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                clear -Hvars. ltac1:(set_solver).
-            }
-            {
-                inversion pf; inversion pf0; subst; clear pf pf0.
-                simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                clear -Hvars. ltac1:(set_solver).
-            }
-            {
-                inversion pf; inversion pf0; subst; clear pf pf0.
-                simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                clear -Hvars. ltac1:(set_solver).
-            }
-        }
-        {
-            inversion H2; subst; clear H2.
-        }
-        {
-            inversion H1; subst; clear H1.
-        }
-        {
-            inversion H1.
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct ay,az.
-            {
-                apply satisfies_builtin_inv in H4.
-                inversion H4.
-            }
-            {
-                apply satisfies_builtin_inv in H4.
-                inversion H4.
-            }
-            {
-                inversion H3.
-            }
-            {
-                inversion H3; subst; clear H3.
-                inversion H4; subst; clear H4.
-                unfold vars_of in Hvars; simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-                assert (x = x0) by (ltac1:(set_solver)).
-                ltac1:(simplify_eq/=).
-                reflexivity.
-            }
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            unfold to_PreTerm' in pf.
-            rewrite <- satisfies_top_bov_cons in pf.
-            destruct pf as [pf1 [pf2 pf3]].
-            subst cz.
-            destruct ay.
-            {
-                inversion H4; subst; clear H4.
-            }
-            {
-                
-                ltac1:(exfalso).
-                simpl in Hvars.
-                assert (Htmp1 := satisfies_in_size ρ x).
-                unfold vars_of in Hvars; simpl in Hvars.
-                unfold vars_of in Hvars; simpl in Hvars.
-
-                inversion H4; subst; clear H4.
-                assert (∃ z, z ∈ map uglify' lz /\ x ∈ (vars_of z)).
-                {
-                    clear -Hvars.
-                    revert Hvars.
-                    induction lz using rev_ind; intros Hvars.
-                    {
-                        simpl in Hvars. ltac1:(set_solver).
-                    }
-                    {
-                        rewrite map_app in Hvars.
-                        unfold to_PreTerm' in Hvars.
-                        rewrite fold_left_app in Hvars.
-                        simpl in Hvars.
-                        unfold helper in Hvars.
-                        destruct (uglify' x0) eqn:Hux0.
-                        {
-                            simpl in Hvars.
-                            destruct (decide (x ∈ vars_of ao)).
-                            {
-                                apply (f_equal prettify) in Hux0.
-                                rewrite (cancel prettify uglify') in Hux0.
-                                subst x0.
-                                exists (term_preterm ao).
-                                rewrite map_app.
-                                split.
-                                {
-                                    rewrite elem_of_app.
-                                    right. ltac1:(rewrite /map).
-                                    rewrite (cancel uglify' prettify).
-                                    clear. constructor.
-                                }
-                                {
-                                    unfold vars_of; simpl. assumption.
-                                }
-                            }
-                            {
-                                specialize (IHlz ltac:(set_solver)).
-                                destruct IHlz as [z [H1z H2z]].
-                                exists z.
-                                split.
-                                {
-                                    rewrite map_app.
-                                    rewrite elem_of_app.
-                                    left. assumption.
-                                }
-                                {
-                                    assumption.
-                                }
-                        }
-                    }
+                    rewrite map_app in Hvars.
+                    unfold to_PreTerm' in Hvars.
+                    rewrite fold_left_app in Hvars.
+                    simpl in Hvars.
+                    unfold helper in Hvars.
+                    destruct (uglify' x0) eqn:Hux0.
                     {
                         simpl in Hvars.
-                        destruct (decide (x ∈ vars_of operand)).
+                        destruct (decide (x ∈ vars_of ao)).
                         {
                             apply (f_equal prettify) in Hux0.
                             rewrite (cancel prettify uglify') in Hux0.
                             subst x0.
-                            exists (term_operand operand).
+                            exists (term_preterm ao).
                             rewrite map_app.
                             split.
                             {
@@ -2412,10 +2217,46 @@ Proof.
                             {
                                 assumption.
                             }
+                    }
+                }
+                {
+                    simpl in Hvars.
+                    destruct (decide (x ∈ vars_of operand)).
+                    {
+                        apply (f_equal prettify) in Hux0.
+                        rewrite (cancel prettify uglify') in Hux0.
+                        subst x0.
+                        exists (term_operand operand).
+                        rewrite map_app.
+                        split.
+                        {
+                            rewrite elem_of_app.
+                            right. ltac1:(rewrite /map).
+                            rewrite (cancel uglify' prettify).
+                            clear. constructor.
+                        }
+                        {
+                            unfold vars_of; simpl. assumption.
+                        }
+                    }
+                    {
+                        specialize (IHlz ltac:(set_solver)).
+                        destruct IHlz as [z [H1z H2z]].
+                        exists z.
+                        split.
+                        {
+                            rewrite map_app.
+                            rewrite elem_of_app.
+                            left. assumption.
+                        }
+                        {
+                            assumption.
                         }
                     }
                 }
             }
+        }
+        {
             destruct H as [z [H1z H2z]].
             ltac1:(replace map with (@fmap _ list_fmap) in H1z by reflexivity).
             rewrite elem_of_list_lookup in H1z.
@@ -2458,82 +2299,329 @@ Proof.
                 inversion Hi.
             }
         }
+    }
+Qed.
+
+Lemma double_satisfies_contradiction_weaker
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    ay cz lz cx lx
+    :
+    vars_of_to_l2r ((t_over ay)) = vars_of_to_l2r ((t_term cz lz)) ->
+    satisfies ρ (t_term cx lx) (t_over ay) ->
+    satisfies ρ (t_term cx lx) (t_term cz lz) ->
+    False
+.
+Proof.
+    intros.
+    eapply double_satisfies_contradiction>[|apply H0|apply H1].
+    apply set_eq.
+    intros x.
+    rewrite <- vars_of_uglify.
+    rewrite <- vars_of_uglify.
+    rewrite H.
+    ltac1:(tauto).
+Qed.
+
+Lemma vars_of_apply_symbol
+    {Σ : StaticModel}
+    (s : symbol)
+    (l : list (Term' symbol BuiltinOrVar))
+    :
+    vars_of (apply_symbol' s l) = union_list (fmap vars_of l)
+.
+Proof.
+    induction l using rev_ind.
+    {
+        simpl. reflexivity.
+    }
+    {
+        rewrite fmap_app.
+        rewrite union_list_app_L.
+        unfold apply_symbol' in *; simpl in *.
+        unfold vars_of in *; simpl in *.
+        unfold to_PreTerm' in *.
+        rewrite fold_left_app.
+        simpl.
+        rewrite <- IHl. clear IHl.
+        unfold helper.
+        ltac1:(repeat case_match); subst; simpl in *.
         {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct az.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+    }
+Qed.
+
+Lemma forall_satisfies_inv_2'
+    {Σ : StaticModel}
+    (sz : nat)
+    (ρ : Valuation)
+    (γ : list (TermOver builtin_value))
+    (l1 l2 : list (TermOver BuiltinOrVar))
+    :
+    sum_list_with (S ∘ TermOver_size) γ < sz ->
+    (fmap (vars_of ∘ uglify') l1) = (fmap (vars_of ∘ uglify') l2) ->
+    (*concat (fmap vars_of_to_l2r l1) = concat (fmap vars_of_to_l2r l2) -> *)
+    (*union_list (fmap (vars_of ∘ uglify') l1) = union_list (fmap (vars_of ∘ uglify') l2) -> *)
+    length γ = length l1 ->
+    length γ = length l2 ->
+    Forall id (zip_with (satisfies ρ) γ l1) ->
+    Forall id (zip_with (satisfies ρ) γ l2) ->
+    l1 = l2
+with satisfies_inv_2'
+    {Σ : StaticModel}
+    (sz : nat)
+    (ρ : Valuation)
+    (x : TermOver builtin_value)
+    (y z : TermOver BuiltinOrVar)
+    :
+    TermOver_size x < sz ->
+    (* vars_of_to_l2r y = vars_of_to_l2r z -> *)
+    vars_of (uglify' y) = vars_of (uglify' z) ->
+    satisfies ρ x y ->
+    satisfies ρ x z ->
+    y = z
+.
+Proof.
+    {
+        intros Hsz Hvars H1 H2 H3.
+        destruct sz.
+        {
+            ltac1:(lia).
+        }
+        rewrite Forall_forall.
+        rewrite Forall_forall in H3.
+        intros H4.
+        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
+        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H4).
+        apply list_eq.
+        intros i.
+        destruct
+            (l1 !! i) eqn:Hl1i,
+            (l2 !! i) eqn:Hl2i.
+        {
+            destruct (γ !! i) eqn:Hγi.
             {
-                inversion pf; subst; clear pf.
-                unfold to_PreTerm' in H3.
-                apply satisfies_builtin_inv in H3.
-                inversion H3.
+                specialize (H3 (satisfies ρ t1 t)).
+                ltac1:(ospecialize (H3 _)).
+                {
+                    exists i,t1,t.
+                    split>[reflexivity|].
+                    split;assumption.
+                }
+                specialize (H4 (satisfies ρ t1 t0)).
+                ltac1:(ospecialize (H4 _)).
+                {
+                    exists i,t1,t0.
+                    split>[reflexivity|].
+                    split;assumption.
+                }
+                f_equal.
+                specialize (satisfies_inv_2' Σ sz ρ t1 t t0).
+                apply satisfies_inv_2'; try assumption.
+                apply take_drop_middle in Hγi.
+                rewrite <- Hγi in Hsz.
+
+                rewrite sum_list_with_app in Hsz.
+                simpl in Hsz.
+                ltac1:(lia).
+
+                {
+                    apply take_drop_middle in Hl1i.
+                    apply take_drop_middle in Hl2i.
+                    rewrite <- Hl1i in Hvars.
+                    rewrite <- Hl2i in Hvars.
+                    simpl in Hvars.
+                    rewrite fmap_app in Hvars.
+                    rewrite fmap_app in Hvars.
+                    simpl in Hvars.
+
+                    remember ((vars_of ∘ uglify' <$> take i l1)) as pref1.
+                    remember ((vars_of ∘ uglify' <$> take i l2)) as pref2.
+                    assert (length pref1 = length pref2).
+                    {
+                        subst.
+                        rewrite fmap_length.
+                        rewrite fmap_length.
+                        rewrite take_length.
+                        rewrite take_length.
+                        ltac1:(lia).
+                    }
+
+                    clear -Hvars H.
+                    revert pref2 Hvars H.
+                    induction pref1; intros pref2 Hvars H'.
+                    {
+                        destruct pref2.
+                        {
+                            simpl in *.
+                            inversion Hvars.
+                            reflexivity.
+                        }
+                        {
+                            simpl in H'. ltac1:(lia).
+                        }
+                    }
+                    {
+                        destruct pref2.
+                        {
+                            simpl in *. ltac1:(lia).
+                        }
+                        {
+                            simpl in *.
+                            inversion Hvars; subst; clear Hvars.
+                            specialize (IHpref1 _ H1).
+                            specialize (IHpref1 ltac:(lia)).
+                            apply IHpref1.
+                        }
+                    }
+                }
             }
             {
-                inversion pf; subst; clear pf.
-                inversion H3; subst; clear H3.
-                ltac1:(simplify_eq /=).
+                apply lookup_lt_Some in Hl1i.
+                apply lookup_ge_None in Hγi.
+                ltac1:(lia).
             }
         }
         {
-            inversion H1.
+            apply lookup_lt_Some in Hl1i.
+            apply lookup_ge_None in Hl2i.
+            ltac1:(lia).
         }
         {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct az.
-            {
-                inversion pf; subst; clear pf.
-                unfold to_PreTerm' in H4.
-                apply satisfies_builtin_inv in H4.
-                inversion H4.
-            }
-            {
-                inversion pf; subst; clear pf.
-                inversion H4; subst; clear H4.
-                ltac1:(simplify_eq /=).
-            }
+            apply lookup_lt_Some in Hl2i.
+            apply lookup_ge_None in Hl1i.
+            ltac1:(lia).
         }
         {
-            inversion H2.
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct az.
-            {
-                apply satisfies_builtin_inv in H3.
-                inversion H3.
-            }
-            {
-                inversion H4; subst; clear H4.
-                inversion H3; subst; clear H3.
-                ltac1:(simplify_eq /=).
-                apply to_preterm_eq_inv in H.
-                destruct H as [H1 H2].
-                subst cy.
-                apply map_uglify'_inj in H2.
-                subst ly.
-                reflexivity.
-            }
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            unfold to_PreTerm' in pf.
-            unfold to_PreTerm' in pf0.
-            rewrite <- satisfies_top_bov_cons in pf.
-            rewrite <- satisfies_top_bov_cons in pf0.
-            destruct pf as [H1 H2].
-            destruct pf0 as [H3 H4].
-            assert (IH1 := forall_satisfies_inv' Σ sz ρ lx ly lz).
-            destruct H2 as [H21 H22].
-            destruct H4 as [H41 H42].
-            simpl in Hsz.
-            specialize (IH1 ltac:(lia)).
-            subst.
-            specialize (IH1 H1 H3 H21 H41).
-            subst.
             reflexivity.
+        }
+    }
+    {
+        intros Hsz Hvars H1 H2.
+
+        destruct sz.
+        {
+            ltac1:(lia).
+        }
+        {
+
+            destruct
+                x as [ax|cx lx],
+                y as [ay|cy ly],
+                z as [az|cz lz]
+                .
+            {
+                inversion H1; subst; clear H1.
+                inversion H2; subst; clear H2.
+
+                destruct ay,az.
+                {
+                    inversion pf; inversion pf0; subst; clear pf pf0.
+                    reflexivity.
+                }
+                {
+                    inversion pf; inversion pf0; subst; clear pf pf0.
+                    simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    clear -Hvars. ltac1:(set_solver).
+                }
+                {
+                    inversion pf; inversion pf0; subst; clear pf pf0.
+                    simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    clear -Hvars. ltac1:(set_solver).
+                }
+                {
+                    inversion pf; inversion pf0; subst; clear pf pf0.
+                    simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    clear -Hvars. ltac1:(set_solver).
+                }
+            }
+            {
+                inversion H2; subst; clear H2.
+            }
+            {
+                inversion H1; subst; clear H1.
+            }
+            {
+                inversion H1.
+            }
+            {
+                inversion H1; subst; clear H1.
+                inversion H2; subst; clear H2.
+                destruct ay,az.
+                {
+                    apply satisfies_builtin_inv in H4.
+                    inversion H4.
+                }
+                {
+                    apply satisfies_builtin_inv in H4.
+                    inversion H4.
+                }
+                {
+                    inversion H3.
+                }
+                {
+                    inversion H3; subst; clear H3.
+                    inversion H4; subst; clear H4.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    unfold vars_of in Hvars; simpl in Hvars.
+                    assert (x = x0) by (ltac1:(set_solver)).
+                    ltac1:(simplify_eq/=).
+                    reflexivity.
+                }
+            }
+            {
+                ltac1:(exfalso).
+                eapply double_satisfies_contradiction.
+                {
+                    apply Hvars.
+                }
+                { apply H1. }
+                { apply H2. }    
+            }
+            {
+                ltac1:(exfalso).
+                symmetry in Hvars.
+                eapply double_satisfies_contradiction.
+                { apply Hvars. }
+                { apply H2. }
+                { apply H1. }
+            }
+            {
+                apply satisfies_term_inv in H1.
+                apply satisfies_term_inv in H2.
+                destruct H1 as [lγ1 [H11 [H12 H13]]].
+                destruct H2 as [lγ2 [H21 [H22 H23]]].
+                inversion H11; subst; clear H11.
+                inversion H21; subst; clear H21.
+                simpl in Hsz.
+                specialize (forall_satisfies_inv_2' Σ sz ρ lγ2).
+                f_equal.
+                apply forall_satisfies_inv_2'.
+                { ltac1:(lia). }
+                {
+                    simpl in Hvars.
+                    rewrite vars_of_apply_symbol in Hvars.
+                    rewrite vars_of_apply_symbol in Hvars.
+                    Search concat.
+                    unfold fmap,list_fmap; simpl.
+                }
+                { ltac1:(lia). }
+                { ltac1:(lia). }
+                { assumption. }
+                { assumption. }
+            }
         }
     }
 Qed.
