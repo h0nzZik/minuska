@@ -2009,6 +2009,134 @@ Proof.
 Qed.
 
 
+Lemma satisfies_in_size
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (x : variable)
+    (t t' : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    x ∈ vars_of (uglify' φ) ->
+    ρ !! x = Some (uglify' t') ->
+    satisfies ρ t φ ->
+    TermOver_size t' <= TermOver_size t
+.
+Proof.
+    revert t.
+    induction φ; intros t Hin Hsome Hsat.
+    {
+        destruct a.
+        {
+            inversion Hsat; subst; clear Hsat.
+            {
+                apply (f_equal prettify) in H1.
+                rewrite (cancel prettify uglify') in H1.
+                subst t.
+                simpl in *.
+                unfold vars_of in Hin; simpl in Hin.
+                unfold vars_of in Hin; simpl in Hin.
+                clear -Hin.
+                ltac1:(exfalso).
+                ltac1:(set_solver).
+            }
+            {
+                unfold vars_of in Hin; simpl in Hin.
+                unfold vars_of in Hin; simpl in Hin.
+                clear -Hin.
+                ltac1:(exfalso).
+                ltac1:(set_solver).
+            }
+        }
+        {
+            unfold vars_of in Hin; simpl in Hin.
+            unfold vars_of in Hin; simpl in Hin.
+            rewrite elem_of_singleton in Hin. subst x0.
+            inversion Hsat; subst; clear Hsat.
+            {
+                apply (f_equal prettify) in H1.
+                rewrite (cancel prettify uglify') in H1.
+                subst t.
+                simpl in *.
+                inversion pf; subst; clear pf.
+                rewrite H1 in Hsome. inversion Hsome; subst; clear Hsome.
+                apply (f_equal prettify) in H0.
+                rewrite (cancel prettify uglify') in H0.
+                subst t'.
+                simpl.
+                ltac1:(lia).
+            }
+            {
+                apply (f_equal prettify) in H.
+                rewrite (cancel prettify uglify') in H.
+                subst t.
+                simpl in *.
+                inversion H2; subst; clear H2.
+                rewrite H0 in Hsome. inversion Hsome; subst; clear Hsome.
+                apply (f_equal prettify) in H1.
+                rewrite (cancel prettify uglify') in H1.
+                subst t'.
+                simpl.
+                ltac1:(lia).
+            }
+        }
+    }
+    {
+        apply satisfies_term_inv in Hsat.
+        destruct Hsat as [lγ [H1 [H2 H3]]].
+        subst.
+        simpl.
+        rewrite <- vars_of_uglify in Hin.
+        simpl in Hin.
+        rewrite elem_of_list_In in Hin.
+        rewrite in_concat in Hin.
+        destruct Hin as [x0 [H1x0 H2x0]].
+        rewrite <- elem_of_list_In in H1x0.
+        rewrite <- elem_of_list_In in H2x0.
+        ltac1:(replace map with (@fmap _ list_fmap) in H1x0 by reflexivity).
+        ltac1:(rewrite elem_of_list_lookup in H1x0).
+        destruct H1x0 as [i Hi].
+        rewrite list_lookup_fmap in Hi.
+        destruct (l !! i) eqn:Hli.
+        {
+            simpl in Hi. inversion Hi; subst; clear Hi.
+            rewrite Forall_forall in H.
+            specialize (H t).
+            ltac1:(ospecialize (H _)).
+            {
+                rewrite elem_of_list_lookup.
+                exists i. exact Hli.
+            }
+            rewrite Forall_forall in H3.
+            ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
+            destruct (lγ !! i) eqn:Hlγi.
+            {
+                specialize (H3 (satisfies ρ t0 t)).            
+                ltac1:(ospecialize (H3 _)).
+                {
+                    exists i, t0, t.
+                    split>[reflexivity|].
+                    split;assumption.
+                }
+                specialize (H t0).
+                rewrite <- vars_of_uglify in H.
+                specialize (H H2x0 Hsome H3).
+                apply take_drop_middle in Hlγi.
+                rewrite <- Hlγi.
+                rewrite sum_list_with_app.
+                simpl.
+                ltac1:(lia).
+            }
+            {
+                apply lookup_ge_None_1 in Hlγi.
+                apply lookup_lt_Some in Hli.
+                ltac1:(lia).
+            }
+        }
+        {
+            simpl in Hi. inversion Hi.
+        }
+    }
+Qed.
 
 
 Lemma forall_satisfies_inv_2'
@@ -2227,6 +2355,7 @@ Proof.
                             exists t0.
                             exists t.
                             split>[reflexivity|].
+                            split;assumption.
                         }
                     }
                     {
