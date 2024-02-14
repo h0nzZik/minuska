@@ -11,6 +11,7 @@ From stdpp Require Export
     fin_maps
     fin_sets
     gmap
+    hlist
     sets
     strings
     tactics

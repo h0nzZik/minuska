@@ -238,6 +238,7 @@ Definition apply_symbol'
 *)
 
 Unset Elimination Schemes.
+#[universes(polymorphic=yes, cumulative=yes)]
 Inductive TermOver {Σ : StaticModel} (A : Type) : Type :=
 | t_over (a : A)
 | t_term (s : symbol) (l : list (TermOver A))
@@ -270,6 +271,17 @@ Section custom_induction_principle.
     end.
 
 End custom_induction_principle.
+
+Fixpoint TermOver_size
+    {Σ : StaticModel}
+    {A : Type}
+    (t : TermOver A)
+    : nat
+:=
+match t with
+| t_over _ => 1
+| t_term _ l => S (sum_list_with TermOver_size l)
+end.
 
 Fixpoint uglify'
     {Σ : StaticModel}
