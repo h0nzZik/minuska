@@ -2416,8 +2416,47 @@ Proof.
                     }
                 }
             }
-            simpl in Hvars.
-            unfold vars_of in Hvars; simpl in Hvars.
+            destruct H as [z [H1z H2z]].
+            ltac1:(replace map with (@fmap _ list_fmap) in H1z by reflexivity).
+            rewrite elem_of_list_lookup in H1z.
+            destruct H1z as [i Hi].
+            rewrite list_lookup_fmap in Hi.
+            destruct (lz !! i) eqn:Hlzi.
+            {
+                inversion Hi; subst; clear Hi.
+                rewrite Forall_forall in pf2.
+                ltac1:(setoid_rewrite elem_of_lookup_zip_with in pf2).
+
+                destruct (lx !! i) eqn:Hlxi.
+                {
+                    specialize (pf2 (satisfies ρ t0 t)).
+                    ltac1:(ospecialize (pf2 _)).
+                    {
+                        exists i.
+                        exists t0.
+                        exists t.
+                        split>[reflexivity|].
+                        split; assumption.
+                    }
+                    specialize (Htmp1 t0 (t_term cx lx)).
+                    specialize (Htmp1 t H2z H0 pf2).
+                    simpl in Htmp1.
+                    clear - Htmp1 Hlxi.
+                    apply take_drop_middle in Hlxi.
+                    rewrite <- Hlxi in Htmp1.
+                    rewrite sum_list_with_app in Htmp1.
+                    simpl in Htmp1.
+                    ltac1:(lia).
+                }
+                {
+                    apply lookup_ge_None_1 in Hlxi.
+                    apply lookup_lt_Some in Hlzi.
+                    ltac1:(lia).
+                }
+            }
+            {
+                inversion Hi.
+            }
         }
         {
             inversion H1; subst; clear H1.
