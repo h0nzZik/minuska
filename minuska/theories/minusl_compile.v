@@ -2160,8 +2160,8 @@ with satisfies_inv_2'
     (y z : TermOver BuiltinOrVar)
     :
     TermOver_size x < sz ->
-    vars_of_to_l2r y = vars_of_to_l2r z ->
-    (*vars_of (uglify' y) = vars_of (uglify' z) -> *)
+    (*vars_of_to_l2r y = vars_of_to_l2r z -> *)
+    vars_of (uglify' y) = vars_of (uglify' z) ->
     satisfies ρ x y ->
     satisfies ρ x z ->
     y = z
@@ -2321,51 +2321,99 @@ Proof.
                 inversion H4; subst; clear H4.
             }
             {
-                inversion H4; subst; clear H4.
+                
                 ltac1:(exfalso).
                 simpl in Hvars.
-                assert (Hxin: x ∈ concat (map vars_of_to_l2r lz)).
+                assert (Htmp1 := satisfies_in_size ρ x).
+                unfold vars_of in Hvars; simpl in Hvars.
+                unfold vars_of in Hvars; simpl in Hvars.
+
+                inversion H4; subst; clear H4.
+                assert (∃ z, z ∈ map uglify' lz /\ x ∈ (vars_of z)).
                 {
                     clear -Hvars.
-                    rewrite <- Hvars.
-                    clear Hvars.
-                    ltac1:(set_solver).
-                }
-                rewrite elem_of_list_In in Hxin.
-                rewrite in_concat in Hxin.
-                destruct Hxin as [i [H1i H2i]].
-                rewrite <- elem_of_list_In in H1i.
-                rewrite <- elem_of_list_In in H2i.
-                rewrite elem_of_list_lookup in H1i.
-                destruct H1i as [i0 Hi0].
-                ltac1:(replace map with (@fmap _ list_fmap) in Hi0 by reflexivity).
-                rewrite list_lookup_fmap in Hi0.
-                unfold fmap, option_fmap, option_map in Hi0.
-                destruct (lz !! i0) eqn:Hlzi0.
-                {
-                    inversion Hi0; subst; clear Hi0.
-                    destruct (lx !! i0) eqn:Hlxi0.
+                    revert Hvars.
+                    induction lz using rev_ind; intros Hvars.
                     {
-                        rewrite Forall_forall in pf2.
-                        ltac1:(setoid_rewrite elem_of_lookup_zip_with in pf2).
-                        specialize (pf2 (satisfies ρ t0 t)).
-                        ltac1:(ospecialize (pf2 _)).
+                        simpl in Hvars. ltac1:(set_solver).
+                    }
+                    {
+                        rewrite map_app in Hvars.
+                        unfold to_PreTerm' in Hvars.
+                        rewrite fold_left_app in Hvars.
+                        simpl in Hvars.
+                        unfold helper in Hvars.
+                        destruct (uglify' x0) eqn:Hux0.
                         {
-                            exists i0.
-                            exists t0.
-                            exists t.
-                            split>[reflexivity|].
-                            split;assumption.
+                            simpl in Hvars.
+                            destruct (decide (x ∈ vars_of ao)).
+                            {
+                                apply (f_equal prettify) in Hux0.
+                                rewrite (cancel prettify uglify') in Hux0.
+                                subst x0.
+                                exists (term_preterm ao).
+                                rewrite map_app.
+                                split.
+                                {
+                                    rewrite elem_of_app.
+                                    right. ltac1:(rewrite /map).
+                                    rewrite (cancel uglify' prettify).
+                                    clear. constructor.
+                                }
+                                {
+                                    unfold vars_of; simpl. assumption.
+                                }
+                            }
+                            {
+                                specialize (IHlz ltac:(set_solver)).
+                                destruct IHlz as [z [H1z H2z]].
+                                exists z.
+                                split.
+                                {
+                                    rewrite map_app.
+                                    rewrite elem_of_app.
+                                    left. assumption.
+                                }
+                                {
+                                    assumption.
+                                }
                         }
                     }
                     {
-                        apply lookup_ge_None_1 in Hlxi0.
-                        apply lookup_lt_Some in Hlzi0.
-                        ltac1:(lia).
+                        simpl in Hvars.
+                        destruct (decide (x ∈ vars_of operand)).
+                        {
+                            apply (f_equal prettify) in Hux0.
+                            rewrite (cancel prettify uglify') in Hux0.
+                            subst x0.
+                            exists (term_operand operand).
+                            rewrite map_app.
+                            split.
+                            {
+                                rewrite elem_of_app.
+                                right. ltac1:(rewrite /map).
+                                rewrite (cancel uglify' prettify).
+                                clear. constructor.
+                            }
+                            {
+                                unfold vars_of; simpl. assumption.
+                            }
+                        }
+                        {
+                            specialize (IHlz ltac:(set_solver)).
+                            destruct IHlz as [z [H1z H2z]].
+                            exists z.
+                            split.
+                            {
+                                rewrite map_app.
+                                rewrite elem_of_app.
+                                left. assumption.
+                            }
+                            {
+                                assumption.
+                            }
+                        }
                     }
-                }
-                {
-                    inversion Hi0.
                 }
             }
             simpl in Hvars.
