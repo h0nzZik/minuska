@@ -1779,10 +1779,12 @@ Qed.
 
 Lemma forall_satisfies_inv
     {Σ : StaticModel}
+    (sz : nat)
     (ρ : Valuation)
     (γ1 γ2 : list (TermOver builtin_value))
     (l : list (TermOver BuiltinOrVar))
     :
+    sum_list_with TermOver_size l < sz ->
     length γ1 = length l ->
     length γ2 = length l ->
     Forall id (zip_with (satisfies ρ) γ1 l) ->
@@ -1790,6 +1792,7 @@ Lemma forall_satisfies_inv
     γ1 = γ2
 with satisfies_inv
     {Σ : StaticModel}
+    
     (ρ : Valuation)
     (x y : TermOver builtin_value)
     (z : TermOver BuiltinOrVar)
@@ -1855,8 +1858,96 @@ Proof.
     {
         intros H1 H2.
         destruct
-            x as [a1|s1 l1],
+            x as [ax|sx lx],
+            y as [ay|sy ly],
+            z as [az|sz lz]
             .
+        {
+            inversion H1; subst; clear H1.
+            inversion H2; subst; clear H2.
+            inversion pf; subst; clear pf;
+            inversion pf0; subst; clear pf0;
+            try reflexivity.
+            ltac1:(simplify_eq /=).
+            reflexivity.
+        }
+        {
+            inversion H1.
+        }
+        {
+            inversion H1; subst; clear H1.
+            inversion H2; subst; clear H2.
+            destruct az.
+            {
+                inversion pf; subst; clear pf.
+                unfold to_PreTerm' in H3.
+                apply satisfies_builtin_inv in H3.
+                inversion H3.
+            }
+            {
+                inversion pf; subst; clear pf.
+                inversion H3; subst; clear H3.
+                ltac1:(simplify_eq /=).
+            }
+        }
+        {
+            inversion H1.
+        }
+        {
+            inversion H1; subst; clear H1.
+            inversion H2; subst; clear H2.
+            destruct az.
+            {
+                inversion pf; subst; clear pf.
+                unfold to_PreTerm' in H4.
+                apply satisfies_builtin_inv in H4.
+                inversion H4.
+            }
+            {
+                inversion pf; subst; clear pf.
+                inversion H4; subst; clear H4.
+                ltac1:(simplify_eq /=).
+            }
+        }
+        {
+            inversion H2.
+        }
+        {
+            inversion H1; subst; clear H1.
+            inversion H2; subst; clear H2.
+            destruct az.
+            {
+                apply satisfies_builtin_inv in H3.
+                inversion H3.
+            }
+            {
+                inversion H4; subst; clear H4.
+                inversion H3; subst; clear H3.
+                ltac1:(simplify_eq /=).
+                apply to_preterm_eq_inv in H.
+                destruct H as [H1 H2].
+                subst sy.
+                apply map_uglify'_inj in H2.
+                subst ly.
+                reflexivity.
+            }
+        }
+        {
+            inversion H1; subst; clear H1.
+            inversion H2; subst; clear H2.
+            unfold to_PreTerm' in pf.
+            unfold to_PreTerm' in pf0.
+            rewrite <- satisfies_top_bov_cons in pf.
+            rewrite <- satisfies_top_bov_cons in pf0.
+            destruct pf as [H1 H2].
+            destruct pf0 as [H3 H4].
+            assert (IH1 := forall_satisfies_inv Σ ρ lx ly lz H1 H3).
+            destruct H2 as [H21 H22].
+            destruct H4 as [H41 H42].
+            specialize (IH1 H21 H41).
+            subst.
+            reflexivity.
+        }
     }
 Qed.
 
