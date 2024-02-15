@@ -2715,6 +2715,7 @@ Lemma subst_preserves_or_increases_delta
     (φ ψ : TermOver BuiltinOrVar)
     (d : nat)
     :
+    h ∉ vars_of (uglify' ψ) ->
     h ∉ vars_of ρ ->
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
     satisfies ρ γ1 φ ->
@@ -2723,11 +2724,11 @@ Lemma subst_preserves_or_increases_delta
     TermOver_size γ2 >= TermOver_size (TermOverBoV_subst φ h ψ) + d
 .
 Proof.
-    intros Hnotinrho Hfilter Hsat1 Hsat2 Hsz.
+    intros Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2 Hsz.
 
 
-    revert d Hsz Hnotinrho Hfilter Hsat1 Hsat2.
-    induction φ; intros d Hsz Hnotinrho Hfilter Hsat1 Hsat2.
+    revert d Hsz Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2.
+    induction φ; intros d Hsz Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2.
     {
         simpl in *.
         destruct a; simpl in *.
@@ -3040,7 +3041,7 @@ Proof.
                             }
                         }
                     }
-                    (* HERE *)
+
                     apply concrete_is_larger_than_symbolic in H32.
 
                     assert ((sum_list_with (S ∘ TermOver_size) (drop (S i) lγ)) >= (sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l)))).
@@ -3074,11 +3075,27 @@ Proof.
                                     {
                                         simpl in Hdrop2.
                                         inversion Hdrop2; subst; clear Hdrop2.
-                                        Search TermOverBoV_subst.
-                                        (* HERE *)
+                                        rewrite subst_notin at 2.
+                                        {
+                                            reflexivity.
+                                        }
+                                        {
+                                            intros HContra.
+                                            rewrite vars_of_uglify in HContra.
+                                            eapply subst_notin_2.
+                                            { eapply Hnotinpsi. }
+                                            { 
+                                                rewrite <- vars_of_uglify.
+                                                eapply e.
+                                            }
+                                        }
                                     }
                                     {
-
+                                        apply lookup_ge_None_1 in Heq.
+                                        rewrite drop_length in Heq.
+                                        apply lookup_lt_Some in Hdrop1.
+                                        rewrite drop_length in Hdrop1.
+                                        ltac1:(lia).
                                     }
                                 }
                                 {
@@ -3092,6 +3109,9 @@ Proof.
                                 }
 
                             }
+                            apply concrete_is_larger_than_symbolic in H33.
+                            unfold compose.
+                            ltac1:(lia).
                         }
                     }
 
