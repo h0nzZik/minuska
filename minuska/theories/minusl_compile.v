@@ -2481,6 +2481,71 @@ Proof.
             rewrite sum_list_with_app.
             simpl.
             rewrite H3.
+            clear H3.
+            clear Hγ.
+            assert (sum_list_with (S ∘ TermOver_size) (take (length l1) lγ) >= sum_list_with (S ∘ TermOver_size) l1).
+            {
+                assert (Hineq: length lγ >= length l1) by ltac1:(lia).
+                clear -H6 Hineq.
+                revert lγ H6 Hineq.
+                induction l1; intros lγ H6 Hineq.
+                {
+                    simpl. ltac1:(lia).
+                }
+                {
+                    destruct lγ.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        simpl in H6.
+                        rewrite Forall_cons in H6.
+                        destruct H6 as [Hsat H6].
+                        apply concrete_is_larger_than_symbolic in Hsat.
+                        specialize (IHl1 _ H6).
+                        simpl in *.
+                        specialize (IHl1 ltac:(lia)).
+                        ltac1:(lia).
+                    }
+                }
+            }
+            assert (((sum_list_with (S ∘ TermOver_size) (drop (S (length l1)) lγ))) >= (sum_list_with (S ∘ TermOver_size) l2)).
+            {
+                remember ((drop (S (length l1)) lγ)) as lγ'.
+                assert (Hlen: length lγ' = length l2).
+                {
+                    subst.
+                    rewrite drop_length.
+                    ltac1:(lia).
+                }
+                clear -Hlen H8.
+                revert l2 Hlen H8.
+                induction lγ'; intros l2 Hlen H8.
+                {
+                    destruct l2.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                }
+                {
+                    destruct l2.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        simpl in *.
+                        rewrite Forall_cons in H8.
+                        destruct H8 as [H1 H2].
+                        apply concrete_is_larger_than_symbolic in H1.
+                        specialize (IHlγ' l2 ltac:(lia) H2).
+                        ltac1:(lia).
+                    }
+                }
+            }
+            
             ltac1:(lia).
         }
         {
@@ -2493,9 +2558,6 @@ Proof.
         apply lookup_ge_None_1 in Hγ.
         ltac1:(lia).
     }
-
-
-    About satisfies_inv.
 Qed.
 
 Lemma forall_satisfies_inv_2'
