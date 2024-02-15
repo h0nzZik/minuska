@@ -3057,18 +3057,36 @@ Proof.
                             intros i0 x1 x2 Hdrop1 Hdrop2.
                             rewrite Forall_forall in H33.
                             ltac1:(setoid_rewrite elem_of_lookup_zip_with in H33).
-                            specialize (H33 (satisfies ρ x1 ( TermOverBoV_subst x2 h ψ))).
-                            ltac1:(ospecialize (H33 _)).
+                            destruct (decide (h ∈ vars_of_to_l2r x2)).
                             {
-                                exists i0.
-                                exists x1.
-                                exists (TermOverBoV_subst x2 h ψ).
-                                split>[reflexivity|].
-                                split>[assumption|].
-                                rewrite Hdrop2.
-                                f_equal.
-                                destruct (decide (h ∈ vars_of_to_l2r x2)).
+
+                            
+                                specialize (H33 (satisfies ρ x1 x2)).
+                                ltac1:(ospecialize (H33 _)).
                                 {
+                                    exists i0.
+                                    exists x1.
+                                    exists x2.
+                                    split>[reflexivity|].
+                                    split>[assumption|].
+                                    rewrite Hdrop2.
+                                    reflexivity.
+                                }
+                                apply concrete_is_larger_than_symbolic in H33.
+                                unfold compose.
+                                ltac1:(lia).
+                            }
+                            {
+                                specialize (H33 (satisfies ρ x1 ( TermOverBoV_subst x2 h ψ))).
+                                ltac1:(ospecialize (H33 _)).
+                                {
+                                    exists i0.
+                                    exists x1.
+                                    exists (TermOverBoV_subst x2 h ψ).
+                                    split>[reflexivity|].
+                                    split>[assumption|].
+                                    rewrite Hdrop2.
+                                    f_equal.
                                     ltac1:(replace map with (@fmap _ list_fmap) in Hdrop2 by reflexivity).
                                     rewrite list_lookup_fmap in Hdrop2.
                                     destruct (drop (S i) l !! i0) eqn:Heq.
@@ -3098,22 +3116,34 @@ Proof.
                                         ltac1:(lia).
                                     }
                                 }
+                                unfold compose.
+                                apply concrete_is_larger_than_symbolic in H33.
+                                rewrite subst_notin in H33.
+                                { ltac1:(lia). }
                                 {
-                                    rewrite subst_notin.
-                                    {
-                                        reflexivity.
-                                    }
-                                    {
-                                        assumption.
-                                    }
+                                    assumption.
                                 }
-
                             }
-                            apply concrete_is_larger_than_symbolic in H33.
-                            unfold compose.
-                            ltac1:(lia).
+
                         }
                     }
+                    unfold compose in *. simpl in *.
+                    rewrite <- Hi in Hsz.
+                    rewrite <- Hl'γi in Hsz.
+                    simpl in Hsz.
+                    rewrite sum_list_with_app in Hsz.
+                    rewrite sum_list_with_app in Hsz.
+                    simpl in Hsz.
+                    remember (TermOver_size t0) as N0'.
+                    remember (TermOver_size t) as N0.
+                    remember (sum_list_with (λ x : TermOver builtin_value, S (TermOver_size x)) (take i lγ)) as N1.
+                    remember (sum_list_with (λ x : TermOver builtin_value, S (TermOver_size x)) (drop (S i) lγ)) as N2.
+                    remember ((sum_list_with (λ x : TermOver BuiltinOrVar, S (TermOver_size x)) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (take i l)))) as N3.
+                    remember (sum_list_with (λ x : TermOver BuiltinOrVar, S (TermOver_size x)) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l))) as N4.
+                    remember (TermOver_size (TermOverBoV_subst x0 h ψ)) as N5.
+
+
+                    ltac1:(lia).
 
                 }
                 {
