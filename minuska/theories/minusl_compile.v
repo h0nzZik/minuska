@@ -2941,6 +2941,23 @@ Proof.
                             }
                         }
                     }
+                    (* HERE *)
+                    apply concrete_is_larger_than_symbolic in H32.
+
+                    assert ((sum_list_with (S ∘ TermOver_size) (drop (S i) lγ)) >= (sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l)))).
+                    {
+                        apply sum_list_with_pairwise.
+                        {
+                            rewrite map_length.
+                            rewrite drop_length.
+                            rewrite drop_length.
+                            ltac1:(lia).
+                        }
+                        {
+
+                        }
+                    }
+
                 }
                 {
                     rewrite map_length.
