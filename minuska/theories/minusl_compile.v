@@ -2608,6 +2608,105 @@ Qed.
 *)
 
 
+Lemma subst_notin_2
+    {Σ : StaticModel}
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    h ∉ vars_of (uglify' ψ) ->
+    h ∉ vars_of (uglify' (TermOverBoV_subst φ h ψ))
+.
+Proof.
+    induction φ; intros HH; simpl in *.
+    {
+        destruct a.
+        {
+            simpl. unfold vars_of; simpl. unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            destruct (decide (h = x)).
+            {
+                subst. apply HH.
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        intros HContra. apply HH. clear HH.
+        unfold apply_symbol' in HContra; simpl in HContra.
+        unfold to_PreTerm' in HContra; simpl in HContra.
+        unfold vars_of in HContra; simpl in HContra.
+        revert s ψ  H HContra.
+        induction l using rev_ind; intros s ψ HH HContra.
+        {
+            simpl in *. inversion HContra.
+        }
+        {
+            rewrite Forall_app in HH.
+            rewrite map_app in HContra.
+            rewrite map_app in HContra.
+            rewrite fold_left_app in HContra.
+            simpl in HContra.
+            destruct HH as [HH1 HH2].
+            rewrite Forall_cons in HH2.
+            destruct HH2 as [HH2 _].
+            specialize (IHl s ψ HH1).
+            simpl in *.
+            unfold helper in HContra.
+            destruct (uglify' (TermOverBoV_subst x h ψ)) eqn:Hugl.
+            {
+                unfold vars_of in HContra; simpl in HContra.
+                rewrite elem_of_union in HContra.
+                destruct HContra as [HContra|HContra].
+                {
+                    specialize (IHl HContra).
+                    apply IHl.
+                }
+                {
+                    destruct (decide (h ∈ vars_of (uglify' ψ))) as [Hyes|Hno].
+                    {
+                        assumption.
+                    }
+                    {
+                        specialize (HH2 Hno). clear Hno. ltac1:(exfalso).
+                        unfold vars_of in HH2; simpl in HH2.
+                        unfold vars_of in HH2; simpl in HH2.
+                        apply HH2. exact HContra.
+                    }
+                }
+            }
+            {
+                unfold vars_of in HContra; simpl in HContra.
+                rewrite elem_of_union in HContra.
+                destruct HContra as [HContra|HContra].
+                {
+                    simpl in *.
+                    destruct (decide (h ∈ vars_of (uglify' ψ))) as [Hyes|Hno].
+                    {
+                        assumption.
+                    }
+                    {
+                        specialize (HH2 Hno). clear Hno. ltac1:(exfalso).
+                        unfold vars_of in HH2; simpl in HH2.
+                        unfold vars_of in HH2; simpl in HH2.
+                        apply HH2. exact HContra.
+                    }
+                }
+                {
+
+                    specialize (IHl HContra).
+                    apply IHl.
+                }
+            }
+        }
+    }
+Qed.
+
 Lemma subst_preserves_or_increases_delta
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -2954,7 +3053,45 @@ Proof.
                             ltac1:(lia).
                         }
                         {
+                            intros i0 x1 x2 Hdrop1 Hdrop2.
+                            rewrite Forall_forall in H33.
+                            ltac1:(setoid_rewrite elem_of_lookup_zip_with in H33).
+                            specialize (H33 (satisfies ρ x1 ( TermOverBoV_subst x2 h ψ))).
+                            ltac1:(ospecialize (H33 _)).
+                            {
+                                exists i0.
+                                exists x1.
+                                exists (TermOverBoV_subst x2 h ψ).
+                                split>[reflexivity|].
+                                split>[assumption|].
+                                rewrite Hdrop2.
+                                f_equal.
+                                destruct (decide (h ∈ vars_of_to_l2r x2)).
+                                {
+                                    ltac1:(replace map with (@fmap _ list_fmap) in Hdrop2 by reflexivity).
+                                    rewrite list_lookup_fmap in Hdrop2.
+                                    destruct (drop (S i) l !! i0) eqn:Heq.
+                                    {
+                                        simpl in Hdrop2.
+                                        inversion Hdrop2; subst; clear Hdrop2.
+                                        Search TermOverBoV_subst.
+                                        (* HERE *)
+                                    }
+                                    {
 
+                                    }
+                                }
+                                {
+                                    rewrite subst_notin.
+                                    {
+                                        reflexivity.
+                                    }
+                                    {
+                                        assumption.
+                                    }
+                                }
+
+                            }
                         }
                     }
 
