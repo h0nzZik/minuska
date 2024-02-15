@@ -2560,275 +2560,194 @@ Proof.
     }
 Qed.
 
-Lemma forall_satisfies_inv_2'
-    {Σ : StaticModel}
-    (sz : nat)
-    (ρ : Valuation)
-    (γ : list (TermOver builtin_value))
-    (l1 l2 : list (TermOver BuiltinOrVar))
+Lemma sum_list_with_pairwise
+    {T : Type}
+    (f : T -> nat)
+    (l1 l2 : list T)
     :
-    sum_list_with (S ∘ TermOver_size) γ < sz ->
-    (fmap (vars_of ∘ uglify') l1) = (fmap (vars_of ∘ uglify') l2) ->
-    (*concat (fmap vars_of_to_l2r l1) = concat (fmap vars_of_to_l2r l2) -> *)
-    (*union_list (fmap (vars_of ∘ uglify') l1) = union_list (fmap (vars_of ∘ uglify') l2) -> *)
-    length γ = length l1 ->
-    length γ = length l2 ->
-    Forall id (zip_with (satisfies ρ) γ l1) ->
-    Forall id (zip_with (satisfies ρ) γ l2) ->
-    l1 = l2
-with satisfies_inv_2'
-    {Σ : StaticModel}
-    (sz : nat)
-    (ρ : Valuation)
-    (x : TermOver builtin_value)
-    (y z : TermOver BuiltinOrVar)
-    :
-    TermOver_size x < sz ->
-    (* vars_of_to_l2r y = vars_of_to_l2r z -> *)
-    vars_of (uglify' y) = vars_of (uglify' z) ->
-    satisfies ρ x y ->
-    satisfies ρ x z ->
-    y = z
+    length l1 = length l2 ->
+    (forall i x1 x2, l1!!i = Some x1 -> l2!!i = Some x2 -> f x1 >= f x2) ->
+    sum_list_with f l1 >= sum_list_with f l2
 .
 Proof.
+    revert l2.
+    induction l1; intros l2 Hlen H; destruct l2; simpl in *; try ltac1:(lia).
     {
-        intros Hsz Hvars H1 H2 H3.
-        destruct sz.
+        specialize (IHl1 l2 ltac:(lia)).
+        assert (H' := H 0 a t eq_refl eq_refl).
+        ltac1:(cut (sum_list_with f l1 ≥ sum_list_with f l2)).
         {
-            ltac1:(lia).
+            intros HH. ltac1:(lia).
         }
-        rewrite Forall_forall.
-        rewrite Forall_forall in H3.
-        intros H4.
-        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
-        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H4).
-        apply list_eq.
-        intros i.
-        destruct
-            (l1 !! i) eqn:Hl1i,
-            (l2 !! i) eqn:Hl2i.
-        {
-            destruct (γ !! i) eqn:Hγi.
-            {
-                specialize (H3 (satisfies ρ t1 t)).
-                ltac1:(ospecialize (H3 _)).
-                {
-                    exists i,t1,t.
-                    split>[reflexivity|].
-                    split;assumption.
-                }
-                specialize (H4 (satisfies ρ t1 t0)).
-                ltac1:(ospecialize (H4 _)).
-                {
-                    exists i,t1,t0.
-                    split>[reflexivity|].
-                    split;assumption.
-                }
-                f_equal.
-                specialize (satisfies_inv_2' Σ sz ρ t1 t t0).
-                apply satisfies_inv_2'; try assumption.
-                apply take_drop_middle in Hγi.
-                rewrite <- Hγi in Hsz.
+        apply IHl1. intros.
+        specialize (H (S i) x1 x2 H0 H1).
+        apply H.
+    }
+Qed.
 
-                rewrite sum_list_with_app in Hsz.
-                simpl in Hsz.
-                ltac1:(lia).
+Lemma subst_preserves_or_increases_delta
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ1 γ2 : TermOver builtin_value)
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    (d : nat)
+    :
+    (∀ a, φ <> t_over a) ->
+    satisfies ρ γ1 φ ->
+    satisfies ρ γ2 (TermOverBoV_subst φ h ψ) ->
+    TermOver_size γ1 = TermOver_size φ + d ->
+    TermOver_size γ2 >= TermOver_size (TermOverBoV_subst φ h ψ) + d
+.
+Proof.
+    intros Hnotover Hsat1 Hsat2 Hsz.
 
-                {
-                    apply take_drop_middle in Hl1i.
-                    apply take_drop_middle in Hl2i.
-                    rewrite <- Hl1i in Hvars.
-                    rewrite <- Hl2i in Hvars.
-                    simpl in Hvars.
-                    rewrite fmap_app in Hvars.
-                    rewrite fmap_app in Hvars.
-                    simpl in Hvars.
 
-                    remember ((vars_of ∘ uglify' <$> take i l1)) as pref1.
-                    remember ((vars_of ∘ uglify' <$> take i l2)) as pref2.
-                    assert (length pref1 = length pref2).
-                    {
-                        subst.
-                        rewrite fmap_length.
-                        rewrite fmap_length.
-                        rewrite take_length.
-                        rewrite take_length.
-                        ltac1:(lia).
-                    }
-
-                    clear -Hvars H.
-                    revert pref2 Hvars H.
-                    induction pref1; intros pref2 Hvars H'.
-                    {
-                        destruct pref2.
-                        {
-                            simpl in *.
-                            inversion Hvars.
-                            reflexivity.
-                        }
-                        {
-                            simpl in H'. ltac1:(lia).
-                        }
-                    }
-                    {
-                        destruct pref2.
-                        {
-                            simpl in *. ltac1:(lia).
-                        }
-                        {
-                            simpl in *.
-                            inversion Hvars; subst; clear Hvars.
-                            specialize (IHpref1 _ H1).
-                            specialize (IHpref1 ltac:(lia)).
-                            apply IHpref1.
-                        }
-                    }
-                }
-            }
-            {
-                apply lookup_lt_Some in Hl1i.
-                apply lookup_ge_None in Hγi.
-                ltac1:(lia).
-            }
-        }
-        {
-            apply lookup_lt_Some in Hl1i.
-            apply lookup_ge_None in Hl2i.
-            ltac1:(lia).
-        }
-        {
-            apply lookup_lt_Some in Hl2i.
-            apply lookup_ge_None in Hl1i.
-            ltac1:(lia).
-        }
-        {
-            reflexivity.
-        }
+    revert Hnotover Hsat1 Hsat2.
+    induction φ; intros Hnotover Hsat1 Hsat2.
+    {
+        ltac1:(exfalso).
+        eapply Hnotover.
+        reflexivity.
     }
     {
-        intros Hsz Hvars H1 H2.
+        simpl in *.
+        apply satisfies_term_inv in Hsat2.
+        destruct Hsat2 as [lγ [H1 [H2 H3]]].
+        subst. simpl in *.
+        rewrite map_length in H2.
 
-        destruct sz.
+        apply satisfies_term_inv in Hsat1.
+        destruct Hsat1 as [l'γ [H4 [H5 H6]]].
+        subst. simpl in *.
+        clear Hnotover.
+
+        ltac1:(cut((sum_list_with (S ∘ TermOver_size) lγ) >= (sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) l) + d))).
         {
-            ltac1:(lia).
+            intros HH. ltac1:(lia).
+        }
+        Search sum_list_with.
+
+        revert l H Hsz H5 H6.
+
+        destruct (decide (h ∈ vars_of (uglify' (t_term s l)))) as [Hin|Hnotin].
+        {
+            rewrite <- vars_of_uglify in Hin.
+            rewrite elem_of_list_lookup in Hin.
+            destruct Hin as [i Hi].
+            simpl in Hi.
+            apply elem_of_list_lookup_2 in Hi.
+            rewrite elem_of_list_In in Hi.
+            rewrite in_concat in Hi.
+            destruct Hi as [x [H1x H2x]].
+            rewrite <- elem_of_list_In in H1x.
+            rewrite <- elem_of_list_In in H2x.
+            ltac1:(replace map with (@fmap _ list_fmap) in H2x by reflexivity).
+            apply elem_of_list_fmap_2 in H1x.
+            destruct H1x as [y [H1y H2y]].
+            subst x.
+            rewrite elem_of_list_lookup in H2y.
+            destruct H2y as [j Hj].
+            apply take_drop_middle in Hj.
+            simpl in *.
         }
         {
+            rewrite subst_notin.
+            {
+                rewrite subst_notin in Hsat2.
+                {
+                    assert (Hsativ := satisfies_inv ρ _ _ _ Hsat1 Hsat2).
+                    subst γ2.
+                    ltac1:(lia).
+                }
+                {
+                    rewrite vars_of_uglify. apply Hnotin.
+                }
+            }
+            {
+                rewrite vars_of_uglify. apply Hnotin.
+            }
+        }
+    }
 
-            destruct
-                x as [ax|cx lx],
-                y as [ay|cy ly],
-                z as [az|cz lz]
-                .
-            {
-                inversion H1; subst; clear H1.
-                inversion H2; subst; clear H2.
 
-                destruct ay,az.
+
+
+    induction φ.
+    {
+        simpl. destruct a.
+        {
+            simpl in *.
+            rewrite <- Hsz. clear Hsz.
+            destruct γ1.
+            {
+                inversion Hsat1; subst; clear Hsat1;
+                inversion Hsat2; subst; clear Hsat2.
                 {
-                    inversion pf; inversion pf0; subst; clear pf pf0.
-                    reflexivity.
+                    inversion pf; subst; clear pf.
+                    apply (f_equal prettify) in H1.
+                    rewrite (cancel prettify uglify') in H1.
+                    subst.
+                    simpl.
+                    ltac1:(lia).
                 }
                 {
-                    inversion pf; inversion pf0; subst; clear pf pf0.
-                    simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    clear -Hvars. ltac1:(set_solver).
-                }
-                {
-                    inversion pf; inversion pf0; subst; clear pf pf0.
-                    simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    clear -Hvars. ltac1:(set_solver).
-                }
-                {
-                    inversion pf; inversion pf0; subst; clear pf pf0.
-                    simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    clear -Hvars. ltac1:(set_solver).
+                    inversion pf; subst; clear pf.
+                    inversion H2; subst; clear H2.
                 }
             }
             {
-                inversion H2; subst; clear H2.
-            }
-            {
-                inversion H1; subst; clear H1.
-            }
-            {
-                inversion H1.
-            }
-            {
-                inversion H1; subst; clear H1.
-                inversion H2; subst; clear H2.
-                destruct ay,az.
+                simpl in *.
+                inversion Hsat2; subst; clear Hsat2.
                 {
-                    apply satisfies_builtin_inv in H4.
-                    inversion H4.
+                    apply (f_equal prettify) in H1.
+                    rewrite (cancel prettify uglify') in H1.
+                    subst.
+                    inversion pf; subst; clear pf.
+                    simpl.
+                    inversion Hsat1; subst; clear Hsat1.
+                    inversion H2; subst; clear H2.
                 }
                 {
-                    apply satisfies_builtin_inv in H4.
-                    inversion H4.
+                    apply (f_equal prettify) in H.
+                    rewrite (cancel prettify uglify') in H.
+                    subst.
+                    inversion Hsat1; subst; clear Hsat1.
+                    inversion H2; subst; clear H2.
+                }
+            }
+        }
+        {
+            simpl in *.
+            destruct (decide (h = x)).
+            {
+                subst. simpl in *.
+                inversion Hsat1; subst; clear Hsat1.
+                {
+                    apply (f_equal prettify) in H1.
+                    rewrite (cancel prettify uglify') in H1.
+                    subst.
+                    simpl in *.
+                    inversion Hsz; subst; clear Hsz.
+                    inversion pf; subst; clear pf.
+                    apply concrete_is_larger_than_symbolic in Hsat2.
+                    ltac1:(lia).
                 }
                 {
-                    inversion H3.
-                }
-                {
-                    inversion H3; subst; clear H3.
-                    inversion H4; subst; clear H4.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    unfold vars_of in Hvars; simpl in Hvars.
-                    assert (x = x0) by (ltac1:(set_solver)).
-                    ltac1:(simplify_eq/=).
-                    reflexivity.
+                    apply (f_equal prettify) in H.
+                    rewrite (cancel prettify uglify') in H.
+                    subst. simpl in *.
+                    inversion H2; subst; clear H2.
+                    apply concrete_is_larger_than_symbolic in Hsat2.
+                    ltac1:(lia).
                 }
             }
             {
-                ltac1:(exfalso).
-                eapply double_satisfies_contradiction.
-                {
-                    apply Hvars.
-                }
-                { apply H1. }
-                { apply H2. }    
-            }
-            {
-                ltac1:(exfalso).
-                symmetry in Hvars.
-                eapply double_satisfies_contradiction.
-                { apply Hvars. }
-                { apply H2. }
-                { apply H1. }
-            }
-            {
-                apply satisfies_term_inv in H1.
-                apply satisfies_term_inv in H2.
-                destruct H1 as [lγ1 [H11 [H12 H13]]].
-                destruct H2 as [lγ2 [H21 [H22 H23]]].
-                inversion H11; subst; clear H11.
-                inversion H21; subst; clear H21.
-                simpl in Hsz.
-                specialize (forall_satisfies_inv_2' Σ sz ρ lγ2).
-                f_equal.
-                apply forall_satisfies_inv_2'.
-                { ltac1:(lia). }
-                {
-                    simpl in Hvars.
-                    rewrite vars_of_apply_symbol in Hvars.
-                    rewrite vars_of_apply_symbol in Hvars.
-                    Search concat.
-                    unfold fmap,list_fmap; simpl.
-                }
-                { ltac1:(lia). }
-                { ltac1:(lia). }
-                { assumption. }
-                { assumption. }
+
             }
         }
     }
 Qed.
-
 
 Lemma satisfies_subst_instance
     {Σ : StaticModel}
