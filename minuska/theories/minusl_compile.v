@@ -2811,11 +2811,9 @@ Proof.
                                         rewrite take_length in HH1.
                                         ltac1:(lia).                                        
                                     }
-                                    rewrite subst_notin.
+                                    assert (h ∉ vars_of_to_l2r t1).
                                     {
-
-                                    }
-                                    {
+                                        {
                                         intros HContra.
                                         rewrite map_app in Hfilter.
                                         rewrite concat_app in Hfilter.
@@ -2889,6 +2887,46 @@ Proof.
                                         rewrite app_length in Hfilter.
                                         simpl in Hfilter.
                                         ltac1:(lia).
+                                    }
+                                    }
+                                    rewrite subst_notin.
+                                    {
+                                        (*
+                                        rewrite Forall_forall in H31.
+                                        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H31).*)
+                                        specialize (H31 (satisfies ρ x1 (TermOverBoV_subst t1 h ψ))).
+                                        ltac1:(ospecialize (H31 _)).
+                                        {
+                                            exists i0.
+                                            exists x1.
+                                            exists (TermOverBoV_subst t1 h ψ).
+                                            split>[reflexivity|].
+                                            split>[assumption|].
+                                            ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                                            rewrite list_lookup_fmap.
+                                            rewrite lookup_take.
+                                            {
+                                                rewrite H'li0.
+                                                simpl.
+                                                reflexivity.
+                                            }
+                                            {
+                                                apply lookup_lt_Some in HH'1.
+                                                rewrite take_length in HH'1.
+                                                ltac1:(lia).
+                                            }
+                                        }
+                                        rewrite subst_notin in H31.
+                                        {
+                                            apply concrete_is_larger_than_symbolic in H31.
+                                            ltac1:(lia).
+                                        }
+                                        {
+                                            assumption.
+                                        }
+                                    }
+                                    {
+                                        assumption.
                                     }
                                     
                                 }
