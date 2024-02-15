@@ -2357,6 +2357,147 @@ Proof.
     }
 Qed.
 
+Lemma concrete_is_larger_than_symbolic
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    satisfies ρ γ φ ->
+    TermOver_size γ >= TermOver_size φ
+.
+Proof.
+    revert φ.
+    induction γ; intros φ H1.
+    {
+        inversion H1; subst; clear H1.
+        apply (f_equal prettify) in H3.
+        rewrite (cancel prettify uglify') in H3.
+        subst φ.
+        simpl.
+        ltac1:(lia).
+    }
+    {
+        simpl.
+        destruct φ.
+        {
+            destruct a.
+            {
+                inversion H1; subst; clear H1.
+                inversion H4.
+            }
+            {
+                inversion H1; subst; clear H1.
+                inversion H4; subst; clear H4.
+                simpl.
+                ltac1:(lia).
+            }
+        }
+        {
+            apply satisfies_term_inv in H1.
+            destruct H1 as [lγ [H2 [H3 H4]]].
+            inversion H2; subst; clear H2.
+            simpl.
+            revert l0 H3 H4.
+            induction lγ; intros l0 H3 H4.
+            {
+                destruct l0.
+                {
+                    simpl. ltac1:(lia).
+                }
+                {
+                    simpl in H3. ltac1:(lia).
+                }
+            }
+            {
+                destruct l0.
+                {
+                    simpl in *. ltac1:(lia).
+                }
+                {
+                    simpl in *.
+                    rewrite Forall_cons in H.
+                    destruct H as [H H'].
+                    specialize (IHlγ H').
+                    specialize (IHlγ l0 ltac:(lia)).
+                    rewrite Forall_cons in H4.
+                    destruct H4 as [H4 H4'].
+                    specialize (IHlγ H4').
+                    simpl in *.
+                    specialize (H _ H4).
+                    ltac1:(lia).
+                }
+            }
+        }
+    }
+Qed.
+
+Lemma enveloping_preserves_or_increases_delta
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ1 γ2 : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    (s : symbol)
+    (l1 l2 : list (TermOver BuiltinOrVar))
+    (d : nat)
+    :
+    satisfies ρ γ1 φ ->
+    satisfies ρ γ2 (t_term s (l1 ++ φ::l2)) ->
+    TermOver_size γ1 = TermOver_size φ + d ->
+    TermOver_size γ2 >= TermOver_size (t_term s (l1 ++ φ::l2)) + d
+.
+Proof.
+    intros H1 H2 H3.
+    simpl.
+    apply satisfies_term_inv in H2.
+    destruct H2 as [lγ [h4 [H5 H6]]].
+    subst γ2. simpl in *.
+    rewrite sum_list_with_app. simpl.
+    rewrite app_length in H5. simpl in H5.
+
+    destruct (lγ !! (length l1)) eqn:Hγ.
+    {
+        apply take_drop_middle in Hγ.
+        rewrite <- Hγ in H6.
+        rewrite zip_with_app in H6.
+        {
+            rewrite Forall_app in H6.
+            simpl in H6.
+            rewrite Forall_cons in H6.
+            destruct H6 as [H6 [H7 H8]].
+            assert (t = γ1).
+            {
+                eapply satisfies_inv.
+                {
+                    apply H7.
+                }
+                {
+                    apply H1.
+                }
+            }
+            subst t.
+            simpl in *.
+            rewrite <- Hγ.
+            rewrite sum_list_with_app.
+            simpl.
+            rewrite H3.
+            ltac1:(lia).
+        }
+        {
+            rewrite take_length.
+            ltac1:(lia).
+        }
+        
+    }
+    {
+        apply lookup_ge_None_1 in Hγ.
+        ltac1:(lia).
+    }
+
+
+    About satisfies_inv.
+Qed.
+
 Lemma forall_satisfies_inv_2'
     {Σ : StaticModel}
     (sz : nat)
