@@ -2713,22 +2713,22 @@ Lemma subst_preserves_or_increases_delta
     (γ1 γ2 : TermOver builtin_value)
     (h : variable)
     (φ ψ : TermOver BuiltinOrVar)
-    (d : nat)
+    (d : Z)
     :
     h ∉ vars_of (uglify' ψ) ->
     h ∉ vars_of ρ ->
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
     satisfies ρ γ1 φ ->
     satisfies ρ γ2 (TermOverBoV_subst φ h ψ) ->
-    TermOver_size γ1 = TermOver_size φ + d ->
-    TermOver_size γ2 >= TermOver_size (TermOverBoV_subst φ h ψ) + d
+    (Z.of_nat (TermOver_size γ1)) = ((Z.of_nat (TermOver_size φ)) + d)%Z ->
+    ((Z.of_nat (TermOver_size γ2)) >= ((Z.of_nat (TermOver_size (TermOverBoV_subst φ h ψ))) + d)%Z)%Z
 .
 Proof.
     intros Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2 Hsz.
 
 
-    revert d Hsz Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2.
-    induction φ; intros d Hsz Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2.
+    revert γ1 γ2 d Hsz Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2.
+    induction φ; intros γ1 γ2 d Hsz Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2.
     {
         simpl in *.
         destruct a; simpl in *.
@@ -3042,8 +3042,6 @@ Proof.
                         }
                     }
 
-                    apply concrete_is_larger_than_symbolic in H32.
-
                     assert ((sum_list_with (S ∘ TermOver_size) (drop (S i) lγ)) >= (sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l)))).
                     {
                         apply sum_list_with_pairwise.
@@ -3077,6 +3075,7 @@ Proof.
                                 ltac1:(lia).
                             }
                             {
+                                (* TODO I guess this should be a contradiction *)
                                 specialize (H33 (satisfies ρ x1 ( TermOverBoV_subst x2 h ψ))).
                                 ltac1:(ospecialize (H33 _)).
                                 {
@@ -3127,6 +3126,143 @@ Proof.
 
                         }
                     }
+
+                    (* new attempt:*)
+                    (*injection Hsz as Hsz.*)
+                    rewrite <- Hi in H6.
+                    rewrite <- Hl'γi in H6.
+                    rewrite zip_with_app in H6.
+                    {
+                        simpl in H6.
+                        rewrite Forall_app in H6.
+                        rewrite Forall_cons in H6.
+                        destruct H6 as [H61 [H62 H63]].
+                        specialize (IH2 t0 t).
+                        specialize (IH2 ((d +
+                            (Z.of_nat ((sum_list_with (S ∘ TermOver_size) (take i l)))) -
+                            (Z.of_nat ( sum_list_with (S ∘ TermOver_size) (take i l'γ) ))
+                            ) +
+                            ( (Z.of_nat (sum_list_with (S ∘ TermOver_size) (drop (S i) l))) -
+                              (Z.of_nat (sum_list_with (S ∘ TermOver_size) (drop (S i) l'γ))) ) )%Z  ).
+                        ltac1:(ospecialize (IH2 _)).
+                        {
+                            rewrite <- Hi in Hsz.
+                            rewrite sum_list_with_app in Hsz.
+                            simpl in Hsz.
+                            rewrite <- Hl'γi in Hsz.
+                            rewrite sum_list_with_app in Hsz.
+                            simpl in Hsz.
+                            (* clear -Hsz. *)
+                            ltac1:(lia).
+                        }
+                        specialize (IH2 ltac:(assumption) ltac:(assumption)).
+                        ltac1:(ospecialize (IH2 _)).
+                        {
+                            rewrite map_app in Hfilter.
+                            rewrite concat_app in Hfilter.
+                            rewrite filter_app in Hfilter.
+                            rewrite app_length in Hfilter.
+                            simpl in Hfilter.
+                            clear - H2x Hfilter.
+                            rewrite filter_app in Hfilter.
+                            rewrite app_length in Hfilter.
+                            ltac1:(cut (length (filter (eq h) (vars_of_to_l2r x0)) >= 1)).
+                            {
+                                intros HH. ltac1:(lia).
+                            }
+                            clear Hfilter.
+                            rewrite <- elem_of_list_In in H2x.
+                            rewrite elem_of_list_lookup in H2x.
+                            destruct H2x as [j Hj].
+                            apply take_drop_middle in Hj.
+                            rewrite <- Hj. clear Hj.
+                            rewrite filter_app. 
+                            simpl. 
+                            rewrite app_length.
+                            rewrite filter_cons.
+                            destruct (decide (h = h))>[|ltac1:(contradiction)].
+                            simpl.
+                            ltac1:(lia).
+                        }
+                        specialize (IH2 ltac:(assumption) ltac:(assumption)).
+
+
+                        rewrite <- Hi in Hsz.
+                        rewrite sum_list_with_app in Hsz.
+                        simpl in Hsz.
+                        rewrite <- Hl'γi in Hsz.
+                        rewrite sum_list_with_app in Hsz.
+                        simpl in Hsz.
+                        remember ((sum_list_with (S ∘ TermOver_size) (take i lγ))) as Y1.
+                        remember ((sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (take i l)))) as Y1'.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) lγ) ) as Y2.
+                        remember ( sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l)) ) as Y2'.
+                        remember (sum_list_with (S ∘ TermOver_size) (take i l)) as Y3.
+                        remember (sum_list_with (S ∘ TermOver_size) (take i l'γ)) as Y3'.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) l) ) as Y4.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) l'γ) ) as Y4'.
+
+                        apply concrete_is_larger_than_symbolic in H32.
+                        apply concrete_is_larger_than_symbolic in H62.
+
+                        ltac1:( cut(((Z.of_nat (TermOver_size t)) >= (Z.of_nat (TermOver_size (TermOverBoV_subst x0 h ψ))) + d)%Z) ).
+                        {
+                            intros HH.
+                            ltac1:(lia).
+                        }
+                        ltac1:(lia).
+                    }
+                    {
+                        rewrite take_length.
+                        rewrite take_length.
+                        ltac1:(lia).
+                    }
+                    (*
+                    specialize (IH2 (2 + d + (sum_list_with (S ∘ TermOver_size) (take i l)) + (sum_list_with (S ∘ TermOver_size) (drop (S i) l)))).
+                    ltac1:(ospecialize (IH2 _)).
+                    {
+                        rewrite <- Hi in Hsz.
+                        rewrite sum_list_with_app in Hsz.
+                        simpl in Hsz.
+                        rewrite Hsz.
+                        clear.
+                        ltac1:(lia).
+                    }
+                    specialize (IH2 Hnotinpsi Hnotinrho).
+                    ltac1:(ospecialize (IH2 _)).
+                    {
+                        rewrite map_app in Hfilter.
+                        rewrite concat_app in Hfilter.
+                        rewrite filter_app in Hfilter.
+                        rewrite app_length in Hfilter.
+                        simpl in Hfilter.
+                        clear - H2x Hfilter.
+                        rewrite filter_app in Hfilter.
+                        rewrite app_length in Hfilter.
+                        ltac1:(cut (length (filter (eq h) (vars_of_to_l2r x0)) >= 1)).
+                        {
+                            intros HH. ltac1:(lia).
+                        }
+                        clear Hfilter.
+                        rewrite <- elem_of_list_In in H2x.
+                        rewrite elem_of_list_lookup in H2x.
+                        destruct H2x as [j Hj].
+                        apply take_drop_middle in Hj.
+                        rewrite <- Hj. clear Hj.
+                        rewrite filter_app. 
+                        simpl. 
+                        rewrite app_length.
+                        rewrite filter_cons.
+                        destruct (decide (h = h))>[|ltac1:(contradiction)].
+                        simpl.
+                        ltac1:(lia).
+                    }
+                    *)
+                    (*
+                    (* TODO we do not want this, we want to use the IH. *)
+                    apply concrete_is_larger_than_symbolic in H32.
+                    *)
+
                     unfold compose in *. simpl in *.
                     rewrite <- Hi in Hsz.
                     rewrite <- Hl'γi in Hsz.
@@ -3141,6 +3277,14 @@ Proof.
                     remember ((sum_list_with (λ x : TermOver BuiltinOrVar, S (TermOver_size x)) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (take i l)))) as N3.
                     remember (sum_list_with (λ x : TermOver BuiltinOrVar, S (TermOver_size x)) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l))) as N4.
                     remember (TermOver_size (TermOverBoV_subst x0 h ψ)) as N5.
+                    remember ((sum_list_with (λ x : TermOver builtin_value, S (TermOver_size x)) (take i l'γ))) as N6.
+                    remember (sum_list_with (λ x : TermOver builtin_value, S (TermOver_size x)) (drop (S i) l'γ)) as N7.
+                    remember ((sum_list_with (λ x : TermOver BuiltinOrVar, S (TermOver_size x)) (take i l))) as N8.
+                    remember (sum_list_with (λ x : TermOver BuiltinOrVar, S (TermOver_size x)) (drop (S i) l)) as N9.
+
+
+                    revert N1 HeqN1 N6 HeqN6 Hsz H.
+                    intros N1 HeqN1 N6 HeqN6 Hsz H.
 
 
                     ltac1:(lia).
