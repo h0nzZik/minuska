@@ -3122,6 +3122,131 @@ Proof.
                         }
                     }
 
+                    assert (
+                        (sum_list_with
+                            (S ∘ TermOver_size)
+                            (drop (S i) lγ)) =
+                        (sum_list_with
+                            (S ∘ TermOver_size ∘ (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ))
+                            (drop (S i) l)
+                        ) +
+                        sum_list_with (delta_in_val ρ) (drop (S i) l)).
+                    {
+                        apply sum_list_with_eq_plus_pairwise.
+                        {
+                            rewrite drop_length.
+                            rewrite drop_length.
+                            ltac1:(lia).
+                        }
+                        {
+                            intros i0 x1 x2 HH1 HH2.
+                            unfold compose. simpl.
+                            simpl in HH2.
+                            assert (HH'1 := HH1).
+                            rewrite lookup_drop in HH2.
+                            {
+                                destruct (l !! i0) eqn:H'li0.
+                                {
+                                    simpl in HH2. inversion HH2.
+                                    subst; clear HH2.
+                                    
+                                    assert (Hhx2: h ∉ vars_of_to_l2r x2).
+                                    {
+                                        {
+                                            intros HContra.
+                                            rewrite map_app in Hfilter.
+                                            rewrite concat_app in Hfilter.
+                                            simpl in Hfilter.
+                                            rewrite filter_app in Hfilter.
+                                            rewrite filter_app in Hfilter.
+                                            simpl in Hfilter.
+                                            rewrite app_length in Hfilter.
+                                            rewrite app_length in Hfilter.
+                                            ltac1:(
+                                                replace ( S (i + i0))
+                                                with ((S i) + i0)
+                                                in H1
+                                                by lia
+                                            ).
+                                            ltac1:(rewrite <- lookup_drop in H1).
+                                            apply take_drop_middle in H1.
+                                            rewrite <- H1 in Hfilter.
+                                            rewrite map_app in Hfilter.
+                                            rewrite concat_app in Hfilter.
+                                            simpl in Hfilter.
+                                            rewrite filter_app in Hfilter.
+                                            rewrite app_length in Hfilter.
+                                            rewrite filter_app in Hfilter.
+                                            rewrite app_length in Hfilter.
+                                            rewrite elem_of_list_lookup in HContra.
+                                            destruct HContra as [j HContra].
+                                            apply take_drop_middle in HContra.
+                                            rewrite <- HContra in Hfilter.
+                                            rewrite filter_app in Hfilter.
+                                            rewrite filter_cons in Hfilter.
+                                            destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                            rewrite app_length in Hfilter.
+                                            simpl in Hfilter.
+                                            rewrite <- elem_of_list_In in H2x.
+                                            rewrite elem_of_list_lookup in H2x.
+                                            destruct H2x as [j' H2x].
+                                            apply take_drop_middle in H2x.
+                                            rewrite <- H2x in Hfilter.
+                                            clear -Hfilter.
+                                            rewrite filter_app in Hfilter.
+                                            rewrite filter_cons in Hfilter.
+                                            destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                            simpl in Hfilter.
+                                            rewrite app_length in Hfilter.
+                                            simpl in Hfilter.
+                                            ltac1:(lia).
+                                        }
+                                    }
+                                    rewrite subst_notin.
+                                    {
+                                        apply f_equal.
+                                        apply concrete_is_larger_than_symbolic.
+                                        apply H31.
+                                        exists i0.
+                                        exists x1,x2.
+                                        split>[reflexivity|].
+                                        split>[assumption|].
+                                        ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                                        rewrite list_lookup_fmap.
+                                        rewrite lookup_take.
+                                        {
+                                            rewrite H'li0.
+                                            simpl.
+                                            rewrite subst_notin.
+                                            {
+                                                reflexivity.
+                                            }
+                                            {
+                                                apply Hhx2.
+                                            }
+                                        }
+                                        {
+                                            apply lookup_lt_Some in HH1.
+                                            rewrite take_length in HH1.
+                                            ltac1:(lia).
+                                        }
+                                    }
+                                    {
+                                        apply Hhx2.
+                                    }                                    
+                                }
+                                {
+                                    simpl in HH2. inversion HH2.
+                                }
+                            }
+                            {
+                                apply lookup_lt_Some in HH1.
+                                rewrite take_length in HH1.
+                                ltac1:(lia).
+                            }
+                        }
+                    }
+
                     
 
                     (* new attempt:*)
