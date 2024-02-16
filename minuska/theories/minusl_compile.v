@@ -7,6 +7,8 @@ From Minuska Require Import
     varsof
 .
 
+Require Import Coq.Logic.FunctionalExtensionality.
+
 (*
     @pre: topSymbol, cseqSymbol, holeSymbol, contVariable, and dataVariable have to be fresh enough
 *)
@@ -2800,7 +2802,36 @@ Proof.
     }
 Qed.
 
-About concrete_is_larger_than_symbolic.
+Lemma sum_list_with_compose {A B : Type} (g : A -> B) (f : B -> nat)
+    :
+    sum_list_with (f ∘ g) = (sum_list_with f) ∘ (fmap g)
+.
+Proof.
+    apply functional_extensionality.
+    intros l.
+    induction l; simpl.
+    {
+        reflexivity.
+    }
+    {
+        rewrite IHl. unfold compose. reflexivity.
+    }
+Qed.
+
+Lemma sum_list_with_S (l : list nat):
+    sum_list_with S l = sum_list l + length l
+.
+Proof.
+    induction l; simpl.
+    {
+        reflexivity.
+    }
+    {
+        rewrite IHl.
+        ltac1:(lia).
+    }
+Qed.
+
 Lemma subst_preserves_or_increases_delta
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -2976,7 +3007,7 @@ Proof.
                             (S ∘ TermOver_size)
                             (take i lγ)) =
                         (sum_list_with
-                            (S ∘ TermOver_size ∘ (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ))
+                            (S ∘ TermOver_size)
                             (take i l)
                         ) +
                         sum_list_with (delta_in_val ρ) (take i l)).
@@ -3077,38 +3108,33 @@ Proof.
                                             ltac1:(lia).
                                         }
                                     }
-                                    rewrite subst_notin.
+                                    apply f_equal.
+                                    apply concrete_is_larger_than_symbolic.
+                                    apply H31.
+                                    exists i0.
+                                    exists x1,x2.
+                                    split>[reflexivity|].
+                                    split>[assumption|].
+                                    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                                    rewrite list_lookup_fmap.
+                                    rewrite lookup_take.
                                     {
-                                        apply f_equal.
-                                        apply concrete_is_larger_than_symbolic.
-                                        apply H31.
-                                        exists i0.
-                                        exists x1,x2.
-                                        split>[reflexivity|].
-                                        split>[assumption|].
-                                        ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
-                                        rewrite list_lookup_fmap.
-                                        rewrite lookup_take.
+                                        rewrite H'li0.
+                                        simpl.
+                                        rewrite subst_notin.
                                         {
-                                            rewrite H'li0.
-                                            simpl.
-                                            rewrite subst_notin.
-                                            {
-                                                reflexivity.
-                                            }
-                                            {
-                                                apply Hhx2.
-                                            }
+                                            reflexivity.
                                         }
                                         {
-                                            apply lookup_lt_Some in HH1.
-                                            rewrite take_length in HH1.
-                                            ltac1:(lia).
+                                            apply Hhx2.
                                         }
                                     }
                                     {
-                                        apply Hhx2.
-                                    }                                    
+                                        apply lookup_lt_Some in HH1.
+                                        rewrite take_length in HH1.
+                                        ltac1:(lia).
+                                    }
+                                    
                                 }
                                 {
                                     simpl in HH2. inversion HH2.
@@ -3127,7 +3153,7 @@ Proof.
                             (S ∘ TermOver_size)
                             (drop (S i) lγ)) =
                         (sum_list_with
-                            (S ∘ TermOver_size ∘ (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ))
+                            (S ∘ TermOver_size)
                             (drop (S i) l)
                         ) +
                         sum_list_with (delta_in_val ρ) (drop (S i) l)).
@@ -3202,34 +3228,29 @@ Proof.
                                             ltac1:(lia).
                                         }
                                     }
+                                    
+                                    apply f_equal.
+                                    apply concrete_is_larger_than_symbolic.
+                                    rewrite Forall_forall in H33.
+                                    apply H33.
+                                    rewrite elem_of_lookup_zip_with.
+                                    exists i0.
+                                    exists x1,x2.
+                                    split>[reflexivity|].
+                                    split>[assumption|].
+                                    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                                    rewrite list_lookup_fmap.
+                                    rewrite lookup_drop.
+                                    simpl.
+                                    rewrite H1.
+                                    simpl.
                                     rewrite subst_notin.
                                     {
-                                        apply f_equal.
-                                        apply concrete_is_larger_than_symbolic.
-                                        rewrite Forall_forall in H33.
-                                        apply H33.
-                                        rewrite elem_of_lookup_zip_with.
-                                        exists i0.
-                                        exists x1,x2.
-                                        split>[reflexivity|].
-                                        split>[assumption|].
-                                        ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
-                                        rewrite list_lookup_fmap.
-                                        rewrite lookup_drop.
-                                        simpl.
-                                        rewrite H1.
-                                        simpl.
-                                        rewrite subst_notin.
-                                        {
-                                            reflexivity.
-                                        }
-                                        {
-                                            apply Hhx2.
-                                        }
+                                        reflexivity.
                                     }
                                     {
                                         apply Hhx2.
-                                    }                                    
+                                    }
                                 }
                                 {
                                     apply lookup_ge_None_1 in H'li0.
@@ -3240,7 +3261,7 @@ Proof.
                             }
                         }
                     }
-                    
+
 
                     
 
@@ -3271,23 +3292,6 @@ Proof.
                         apply concrete_is_larger_than_symbolic in H32'.
                         apply concrete_is_larger_than_symbolic in H62'.
 
-                        (*
-                        specialize (IH2 (((d) +
-                            (((Y3))) -
-                            ((Y3'))
-                            ) +
-                            ( ((Y4)) -
-                              ((Y4')) ) )  ).
-                        
-                        ltac1:(ospecialize (IH2 _)).
-                        {
-                            rewrite H62'.
-                            f_equal.
-                            injection Hsz as Hsz.
-                            (* clear -Hsz. *)
-                            ltac1:(lia).
-                        }
-                        *)
                         specialize (IH2 ltac:(assumption) ltac:(assumption)).
                         ltac1:(ospecialize (IH2 _)).
                         {
@@ -3329,7 +3333,120 @@ Proof.
                         apply f_equal.
                         rewrite sum_list_with_app.
                         rewrite sum_list_with_app.
+                        subst.
+                        remember (sum_list_with (S ∘ TermOver_size) (take i lγ)) as B1.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) lγ) ) as B2.
+                        remember ( sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (take i l)) ) as B3.
+                        remember ( sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l))) as B4.
+                        remember ( sum_list_with (size_of_var_in_val ρ) (concat (map vars_of_to_l2r (take i l)) )) as B5.
+                        remember ( sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r x0) ) as B6.
+                        remember ( sum_list_with (size_of_var_in_val ρ) (concat (map vars_of_to_l2r (drop (S i) l)))) as B7.
+                        remember ( delta_in_val ρ x0 ) as DX0.
+                        unfold delta_in_val in *. simpl in *.
+                        remember (sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ)) as Dψ.
+                        remember ((TermOver_size (TermOverBoV_subst x0 h ψ))) as Bsubst.
+                        rewrite H32'.
+                        remember (sum_list_with (size_of_var_in_val ρ)) as F.
+                        remember ((vars_of_to_l2r (TermOverBoV_subst x0 h ψ))) as VS.
 
+
+                        ltac1:(cut(B1 + (F VS + B2) = B3 + (B4) + (B5 + (B6 + B7)) + Dψ)).
+                        {
+                            intros HH. ltac1:(lia).
+                        }
+
+                        assert (Htmp1: DX0 + Dψ = F VS).
+                        {
+                            ltac1:(lia).
+                        }
+                        rewrite <- Htmp1.
+
+                        ltac1:( cut (B1 + (DX0 + B2) = B3 + B4 + (B5 + (B6 + B7))) ).
+                        {
+                            intros HH. ltac1:(lia).
+                        }
+
+                        clear H32'.
+
+                        rewrite <- Htmp1 in H32. clear Htmp1.
+                        rewrite sum_list_with_compose in HeqB2.
+                        ltac1:(rewrite sum_list_with_compose in HeqB2).
+                        rewrite sum_list_with_compose in HeqB1.
+                        ltac1:(rewrite sum_list_with_compose in HeqB1).
+                        ltac1:(rewrite sum_list_with_compose in HeqB4).
+                        unfold compose in HeqB4.
+                        ltac1:(rewrite sum_list_with_S in HeqB4).
+                        rewrite fmap_length in HeqB4.
+                        rewrite map_length in HeqB4.
+                        rewrite drop_length in HeqB4.
+                        ltac1:(rewrite sum_list_with_compose in H0).
+                        unfold compose in H0.
+                        ltac1:(rewrite sum_list_with_S in H0).
+                        rewrite fmap_length in H0.
+                        rewrite drop_length in H0.
+                        subst F.
+                        unfold compose in HeqB1.
+                        ltac1:(rewrite sum_list_with_S in HeqB1).
+                        ltac1:(replace (@fmap _ list_fmap) with map in HeqB1 by reflexivity).
+                        rewrite map_id in HeqB1.
+                        rewrite map_length in HeqB1.
+                        rewrite take_length in HeqB1.
+                        unfold compose in HeqB2.
+                        ltac1:(replace (@fmap _ list_fmap) with map in HeqB2 by reflexivity).
+                        rewrite map_id in HeqB2.
+                        rewrite sum_list_with_S in HeqB2.
+                        rewrite map_length in HeqB2.
+                        rewrite drop_length in HeqB2.
+                        rewrite sum_list_with_compose in HeqB3.
+                        unfold compose in HeqB3.
+                        rewrite sum_list_with_S in HeqB3.
+                        rewrite fmap_length in HeqB3.
+                        rewrite map_length in HeqB3.
+                        rewrite take_length in HeqB3.
+                        rewrite sum_list_with_compose in H.
+                        unfold compose in H.
+                        rewrite sum_list_with_S in H.
+                        rewrite fmap_length in H.
+                        rewrite take_length in H.
+                        
+
+                        ltac1:(replace map with (@fmap _ list_fmap) in HeqB3 by reflexivity).
+                        subst.
+                        (* the only use of [TermOver_size t] *)
+                        clear H32 IH2.
+
+                        assert (H0': sum_list (map TermOver_size (drop (S i) lγ))
+                        = sum_list (TermOver_size <$> drop (S i) l)
+                        + sum_list_with (λ ψ0 : TermOver BuiltinOrVar,  sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ0)) (drop (S i) l) ).
+                        {
+                            ltac1:(lia).
+                        }
+                        clear H0.
+                        rewrite H0'.
+                        (* Search drop lγ. *)
+                        clear Hlγi H0' H33.
+
+                        assert(HeqB1': sum_list (TermOver_size <$> take i l) + sum_list_with (λ ψ0 : TermOver BuiltinOrVar, sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ0)) (take i l) = sum_list (map TermOver_size (take i lγ))).
+                        {
+                            ltac1:(lia).
+                        }
+                        clear HeqB1. clear H31.
+                        (* Search TermOver_size t0. *)
+                        clear H61 H62'.
+                        ltac1:(
+                            replace
+                            (sum_list_with
+                                (λ ψ0 : TermOver BuiltinOrVar,
+                                sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ0))
+                                (take i l))
+                            with
+                            (sum_list_with ((sum_list_with (size_of_var_in_val ρ)) ∘ vars_of_to_l2r) (take i l) )
+                            in HeqB1'
+                            by reflexivity
+                        ).
+                        rewrite sum_list_with_compose in HeqB1'.
+                        rewrite sum_list_with_compose in HeqB1'.
+                        
                         ltac1:(lia).
                     }
                     {
