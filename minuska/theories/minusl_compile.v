@@ -3206,29 +3206,25 @@ Proof.
                                     {
                                         apply f_equal.
                                         apply concrete_is_larger_than_symbolic.
-                                        apply H31.
+                                        rewrite Forall_forall in H33.
+                                        apply H33.
+                                        rewrite elem_of_lookup_zip_with.
                                         exists i0.
                                         exists x1,x2.
                                         split>[reflexivity|].
                                         split>[assumption|].
                                         ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
                                         rewrite list_lookup_fmap.
-                                        rewrite lookup_take.
+                                        rewrite lookup_drop.
+                                        simpl.
+                                        rewrite H1.
+                                        simpl.
+                                        rewrite subst_notin.
                                         {
-                                            rewrite H'li0.
-                                            simpl.
-                                            rewrite subst_notin.
-                                            {
-                                                reflexivity.
-                                            }
-                                            {
-                                                apply Hhx2.
-                                            }
+                                            reflexivity.
                                         }
                                         {
-                                            apply lookup_lt_Some in HH1.
-                                            rewrite take_length in HH1.
-                                            ltac1:(lia).
+                                            apply Hhx2.
                                         }
                                     }
                                     {
@@ -3236,16 +3232,15 @@ Proof.
                                     }                                    
                                 }
                                 {
-                                    simpl in HH2. inversion HH2.
+                                    apply lookup_ge_None_1 in H'li0.
+                                    apply lookup_lt_Some in HH'1.
+                                    rewrite drop_length in HH'1.
+                                    ltac1:(lia).
                                 }
-                            }
-                            {
-                                apply lookup_lt_Some in HH1.
-                                rewrite take_length in HH1.
-                                ltac1:(lia).
                             }
                         }
                     }
+                    
 
                     
 
