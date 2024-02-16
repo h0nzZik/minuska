@@ -2357,6 +2357,30 @@ Proof.
     }
 Qed.
 
+
+Definition size_of_var_in_val
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (x : variable)
+    : nat
+:=
+    match ρ!!x with
+    | None => 0
+    | Some g => pred (TermOver_size (prettify g))
+    end
+.
+
+Definition delta_in_val
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (ψ : TermOver BuiltinOrVar)
+    : nat
+:=
+    sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ)
+.
+
+
+
 Lemma concrete_is_larger_than_symbolic
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -2364,7 +2388,7 @@ Lemma concrete_is_larger_than_symbolic
     (φ : TermOver BuiltinOrVar)
     :
     satisfies ρ γ φ ->
-    TermOver_size γ >= TermOver_size φ
+    TermOver_size γ = TermOver_size φ + delta_in_val ρ φ
 .
 Proof.
     revert φ.
@@ -2375,7 +2399,19 @@ Proof.
         rewrite (cancel prettify uglify') in H3.
         subst φ.
         simpl.
-        ltac1:(lia).
+        unfold delta_in_val.
+        unfold vars_of_to_l2r.
+        destruct z.
+        {
+            simpl. reflexivity.
+        }
+        {
+            simpl.
+            unfold size_of_var_in_val.
+            inversion pf; subst; clear pf.
+            rewrite H1. simpl.
+            reflexivity.
+        }
     }
     {
         simpl.
@@ -2390,7 +2426,20 @@ Proof.
                 inversion H1; subst; clear H1.
                 inversion H4; subst; clear H4.
                 simpl.
-                ltac1:(lia).
+                unfold delta_in_val. simpl.
+                unfold size_of_var_in_val.
+                rewrite H1. simpl.
+                apply f_equal.
+                ltac1:(replace ((prettify' (to_PreTerm' s (map uglify' l))))
+                with ((t_term s l))).
+                {
+                    simpl. ltac1:(lia).
+                }
+                {
+                    rewrite <- (cancel prettify uglify').
+                    simpl.
+                    reflexivity.
+                }
             }
         }
         {
@@ -2403,7 +2452,7 @@ Proof.
             {
                 destruct l0.
                 {
-                    simpl. ltac1:(lia).
+                    simpl. unfold delta_in_val. simpl. ltac1:(lia).
                 }
                 {
                     simpl in H3. ltac1:(lia).
@@ -2425,6 +2474,15 @@ Proof.
                     specialize (IHlγ H4').
                     simpl in *.
                     specialize (H _ H4).
+                    unfold delta_in_val. simpl.
+                    rewrite sum_list_with_app.
+                    rewrite H.
+                    unfold delta_in_val in IHlγ.
+                    simpl in IHlγ.
+                    injection H3 as H3.
+                    injection IHlγ as IHlγ.
+                    rewrite IHlγ.
+                    unfold delta_in_val.
                     ltac1:(lia).
                 }
             }
@@ -2713,15 +2771,15 @@ Lemma subst_preserves_or_increases_delta
     (γ1 γ2 : TermOver builtin_value)
     (h : variable)
     (φ ψ : TermOver BuiltinOrVar)
-    (d : Z)
+    (d : nat)
     :
     h ∉ vars_of (uglify' ψ) ->
     h ∉ vars_of ρ ->
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
     satisfies ρ γ1 φ ->
     satisfies ρ γ2 (TermOverBoV_subst φ h ψ) ->
-    (Z.of_nat (TermOver_size γ1)) = ((Z.of_nat (TermOver_size φ)) + d)%Z ->
-    ((Z.of_nat (TermOver_size γ2)) >= ((Z.of_nat (TermOver_size (TermOverBoV_subst φ h ψ))) + d)%Z)%Z
+    ((TermOver_size γ1)) = (((TermOver_size φ)) + (d)) ->
+    (((TermOver_size γ2)) = (((TermOver_size (TermOverBoV_subst φ h ψ))) + d + (delta_in_val ρ ψ)))
 .
 Proof.
     intros Hnotinpsi Hnotinrho Hfilter Hsat1 Hsat2 Hsz.
@@ -3137,13 +3195,25 @@ Proof.
                         rewrite Forall_app in H6.
                         rewrite Forall_cons in H6.
                         destruct H6 as [H61 [H62 H63]].
+
                         specialize (IH2 t0 t).
-                        specialize (IH2 ((d +
-                            (Z.of_nat ((sum_list_with (S ∘ TermOver_size) (take i l)))) -
-                            (Z.of_nat ( sum_list_with (S ∘ TermOver_size) (take i l'γ) ))
+
+                        remember ((sum_list_with (S ∘ TermOver_size) (take i lγ))) as Y1.
+                        remember ((sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (take i l)))) as Y1'.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) lγ) ) as Y2.
+                        remember ( sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l)) ) as Y2'.
+                        remember (sum_list_with (S ∘ TermOver_size) (take i l)) as Y3.
+                        remember (sum_list_with (S ∘ TermOver_size) (take i l'γ)) as Y3'.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) l) ) as Y4.
+                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) l'γ) ) as Y4'.
+
+                        
+                        specialize (IH2 (((d) +
+                            (((sum_list_with (S ∘ TermOver_size) (take i l)))) -
+                            (( sum_list_with (S ∘ TermOver_size) (take i l'γ) ))
                             ) +
-                            ( (Z.of_nat (sum_list_with (S ∘ TermOver_size) (drop (S i) l))) -
-                              (Z.of_nat (sum_list_with (S ∘ TermOver_size) (drop (S i) l'γ))) ) )%Z  ).
+                            ( ((sum_list_with (S ∘ TermOver_size) (drop (S i) l))) -
+                              ((sum_list_with (S ∘ TermOver_size) (drop (S i) l'γ))) ) )  ).
                         ltac1:(ospecialize (IH2 _)).
                         {
                             rewrite <- Hi in Hsz.
@@ -3193,23 +3263,18 @@ Proof.
                         rewrite <- Hl'γi in Hsz.
                         rewrite sum_list_with_app in Hsz.
                         simpl in Hsz.
-                        remember ((sum_list_with (S ∘ TermOver_size) (take i lγ))) as Y1.
-                        remember ((sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (take i l)))) as Y1'.
-                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) lγ) ) as Y2.
-                        remember ( sum_list_with (S ∘ TermOver_size) (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) (drop (S i) l)) ) as Y2'.
-                        remember (sum_list_with (S ∘ TermOver_size) (take i l)) as Y3.
-                        remember (sum_list_with (S ∘ TermOver_size) (take i l'γ)) as Y3'.
-                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) l) ) as Y4.
-                        remember ( sum_list_with (S ∘ TermOver_size) (drop (S i) l'γ) ) as Y4'.
+
 
                         apply concrete_is_larger_than_symbolic in H32.
                         apply concrete_is_larger_than_symbolic in H62.
 
+                        (*
                         ltac1:( cut(((Z.of_nat (TermOver_size t)) >= (Z.of_nat (TermOver_size (TermOverBoV_subst x0 h ψ))) + d)%Z) ).
                         {
                             intros HH.
                             ltac1:(lia).
                         }
+                        *)
                         ltac1:(lia).
                     }
                     {
