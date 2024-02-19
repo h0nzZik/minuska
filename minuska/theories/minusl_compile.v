@@ -7,6 +7,8 @@ From Minuska Require Import
     varsof
 .
 
+Require Import Ring.
+Require Import ArithRing.
 Require Import Coq.Logic.FunctionalExtensionality.
 
 (*
@@ -2832,6 +2834,40 @@ Proof.
     }
 Qed.
 
+Lemma sum_list_fmap
+    {T: Type}
+    (f : T -> nat)
+    (l : list T)
+    :
+    sum_list ( f <$> l) = sum_list_with f l
+.
+Proof.
+    induction l; simpl.
+    { reflexivity. }
+    {
+        unfold fmap in IHl.
+        rewrite IHl.
+        reflexivity.
+    }
+Qed.
+
+Lemma sum_list_with_sum_list_with
+    {T: Type}
+    (f : T -> nat)
+    (l : list (list T))
+    :
+    sum_list_with (sum_list_with f) l = sum_list_with f (concat l)
+.
+Proof.
+    induction l; simpl.
+    { reflexivity. }
+    {
+        rewrite IHl.
+        rewrite sum_list_with_app.
+        reflexivity.
+    }
+Qed.
+
 Lemma subst_preserves_or_increases_delta
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -3445,8 +3481,65 @@ Proof.
                             by reflexivity
                         ).
                         rewrite sum_list_with_compose in HeqB1'.
-                        rewrite sum_list_with_compose in HeqB1'.
-                        
+                        ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                        repeat (rewrite sum_list_fmap).
+                        repeat (rewrite sum_list_fmap in HeqB1').
+                        ltac1:(
+                            replace
+                            (sum_list_with (λ ψ0 : TermOver BuiltinOrVar, sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ0)))
+                            with
+                            (sum_list_with (sum_list_with (size_of_var_in_val ρ) ∘ (vars_of_to_l2r)))
+                            by reflexivity
+                        ).
+                        (*
+                        ltac1:(
+                            replace
+                            (sum_list_with TermOver_size ((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> take i l))
+                            with
+                            (sum_list_with TermOver_size ((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> take i l))
+                        ).
+                        *)
+                        repeat (rewrite sum_list_with_compose).
+                        repeat (rewrite sum_list_fmap).
+                        unfold compose.
+                        do 2 (rewrite sum_list_with_sum_list_with).
+                        remember ((sum_list_with (size_of_var_in_val ρ) (concat (vars_of_to_l2r <$> take i l)) )) as N1.
+                        remember (sum_list_with TermOver_size (take i l)) as N0.
+                        remember (sum_list_with TermOver_size ((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> take i l)) as N0'.
+                        remember ((sum_list_with TermOver_size (drop (S i) l) )) as N3.
+                        remember ( (sum_list_with TermOver_size ((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> drop (S i) l) )) as N3'.
+                        remember ( (sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r x0) ) ) as N2.
+                        remember ( sum_list_with (size_of_var_in_val ρ) (concat (vars_of_to_l2r <$> drop (S i) l)) ) as N4.
+
+                        ltac1:(assert (N0 = (N0'))).
+                        {
+                            subst N0 N0'.
+                            apply sum_list_with_eq_pairwise.
+                            {
+                                rewrite fmap_length.
+                                reflexivity.
+                            }
+                            {
+                                intros i0 x1 x2 Hx1 Hx2.
+                                rewrite list_lookup_fmap in Hx2.
+                                simpl in Hx2.
+                                rewrite Hx1 in Hx2. simpl in Hx2.
+                                rewrite subst_notin in Hx2.
+                                {
+                                    inversion Hx2; subst; clear Hx2.
+                                    reflexivity.
+                                }
+                                {
+                                    
+                                }
+                            }
+                        }
+
+                        ltac1:(assert(N3 = N3')).
+                        {
+                            admit.
+                        }
+
                         ltac1:(lia).
                     }
                     {
