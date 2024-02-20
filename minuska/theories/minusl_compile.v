@@ -1518,6 +1518,47 @@ Proof.
     }
 Qed.
 
+Lemma h_in_l_impl_length_filter_l_gt_1
+    {T : Type}
+    (P : T -> Prop)
+    {_dP: forall x, Decision (P x)}
+    (l : list T)
+    (h : T)
+    :
+    h ∈ l ->
+    P h ->
+    length (filter P l) >= 1
+.
+Proof.
+    induction l; simpl.
+    {
+        intros HH. inversion HH.
+    }
+    {
+        intros HH1 HH2.
+        rewrite elem_of_cons in HH1.
+        destruct HH1 as [HH1|HH1].
+        {
+            subst. rewrite filter_cons.
+            destruct (decide (P a))>[|ltac1:(contradiction)].
+            simpl.
+            ltac1:(lia).
+        }
+        {
+            specialize (IHl HH1 HH2).
+            rewrite filter_cons.
+            ltac1:(case_match).
+            {
+                simpl. ltac1:(lia).
+            }
+            {
+                exact IHl.
+            }
+        }
+    }
+Qed.
+
+
 Lemma length_filter_l_1_impl_h_in_l'
     {T : Type}
     (P : T -> Prop)
@@ -3782,6 +3823,34 @@ Proof.
     }
 Qed.
 
+
+Lemma list_filter_Forall_all
+    {T : Type}
+    (P : T -> Prop)
+    {_dP : forall x, Decision (P x)}
+    (l : list T)
+    :
+    Forall P l ->
+    filter P l = l
+.
+Proof.
+    induction l; simpl; intros H.
+    {
+        reflexivity.
+    }
+    {
+        apply Forall_cons in H.
+        destruct H as [H1 H2].
+        specialize (IHl H2). clear H2.
+        rewrite filter_cons.
+        destruct (decide (P a)).
+        {
+            rewrite IHl. reflexivity.
+        }
+        ltac1:(contradiction).
+    }
+Qed.
+
 Lemma TermOver_size_not_zero
     {Σ : StaticModel}
     {A : Type}
@@ -4182,6 +4251,40 @@ Proof.
     }
 Qed.
 
+Lemma length_filter_eq__eq__length_filter_in
+    {T : Type}
+    {_edT: EqDecision T}
+    (h : T)
+    (l : list (list T))
+    :
+    length (filter (eq h) (concat l)) = 1 ->
+    length (filter (fun x => h ∈ x) l) = 1
+.
+Proof.
+    induction l; simpl; intros HH.
+    {
+        ltac1:(lia).
+    }
+    {
+        rewrite filter_cons.
+        rewrite filter_app in HH.
+        rewrite app_length in HH.
+        destruct (decide (h ∈ a)).
+        {
+            length_filter_l_1_impl_h_in_l
+            Search elem_of length filter.
+            destruct (decide (length (filter (eq h) (concat l)) = 1)) as [Heq|Hnoteq].
+            {
+                specialize (IHl Heq).
+            }
+            clear IHl.
+            simpl.
+            assert (length (filter (eq h) a) = 0).
+            Search filter elem_of.
+        }
+    }
+Qed.
+
 Lemma vars_of_to_l2r_subst
     {Σ : StaticModel}
     (φ ψ : TermOver BuiltinOrVar)
@@ -4216,6 +4319,46 @@ Proof.
     }
     {
         simpl in *.
+        assert (H'inφ := Hinφ).
+        apply count_one_split in Hinφ.
+        destruct Hinφ as [la [b [lc [HH1 [HH2 [HH3 HH4]]]]]].
+        subst b.
+        rewrite HH1.
+        rewrite filter_app.
+        rewrite filter_cons.
+        destruct (decide (h <> h))>[ltac1:(contradiction)|].
+        rewrite list_filter_Forall_all.
+        { 
+            rewrite list_filter_Forall_all.
+            {
+                clear n.
+                (* I need to somehow split [l] into some parts.
+                    Say, l1 l2 l3 such that concat l1 = la, concat l2 = [h], and concat l3 = lc.
+                    However, we cannot do it that precisely, since `l` does not necessarily
+                    contain exactly the variable `h` on positions,
+                    but rather some formula that contains only `h` as a free variable.
+                    So we should try to find such formula in `l`.
+                *)
+                assert (length (filter (fun x => h ∈ vars_of_to_l2r x) l) = 1).
+                {
+
+                }
+                Search map.
+            }
+            {
+                clear -HH4.
+                rewrite Forall_forall in HH4.
+                rewrite Forall_forall.
+                ltac1:(naive_solver).    
+            }
+        }
+        {
+            clear -HH3.
+            rewrite Forall_forall in HH3.
+            rewrite Forall_forall.
+            ltac1:(naive_solver).
+        }
+        Search Forall filter.
         Search filter "≡ₚ".
     }
 Qed.
