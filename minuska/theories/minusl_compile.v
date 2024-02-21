@@ -4670,7 +4670,8 @@ Lemma factor_by_subst_correct'
     satisfies (<[h := (uglify' xy.2)]>ρ) xy.1 φ
 .
 Proof.
-    induction sz; intros Hsz.
+    revert γ.
+    induction sz; intros γ Hsz.
     {
         destruct γ; simpl in Hsz; ltac1:(lia).
     }
@@ -4695,22 +4696,12 @@ Proof.
                     apply Heqmb.
                 }
 
-
-                (*
-                assert (Htmp := subst_preserves_or_increases_delta ρ γ γ h φ ψ).
-                ltac1:(ospecialize (Htmp _)).
-                {
-                    rewrite <- vars_of_uglify.
-                    exact Hnotinψ.
-                }
-                specialize (Htmp Hnotinρ Hlf).
-                *)
                 assert (Htmp2 := TermOver_size_not_zero ψ).
                 assert (Htmp3 := TermOver_size_not_zero φ).
                 assert (Hsat' := Hsat).
                 apply concrete_is_larger_than_symbolic in Hsat'.
                 apply concrete_is_larger_than_symbolic in Heqmb'.
-                Search sum_list.
+
                 unfold delta_in_val in Hsat'.
                 assert (Hperm := vars_of_to_l2r_subst φ ψ h Hlf Hnotinψ).
                 apply sum_list_with_perm with (f := (size_of_var_in_val ρ)) in Hperm.
@@ -4734,7 +4725,11 @@ Proof.
                         destruct (decide (h = x)).
                         {
                             subst.
-                            clear Heqmb' Hsat' Htmp2.
+                            clear Heqmb' Hsat' Htmp2. clear Hlf.
+                            simpl.
+                            apply satisfies_var.
+                            unfold Valuation in *.
+                            apply lookup_insert.
                         }
                         {
                             simpl in *. ltac1:(lia).
@@ -4760,25 +4755,110 @@ Proof.
                 {
                     assumption.
                 }
-                About vars_of_to_l2r_subst.
-                Search sum_list Permutation.
-                Search vars_of_to_l2r TermOverBoV_subst.
-                (*
-                assert (Htmp4 := subst_preserves_or_increases_delta ρ γ γ h φ ψ).
-                ltac1:(ospecialize (Htmp4 _)).
+            }
+        }
+        {
+            destruct γ.
+            {
+                destruct φ.
                 {
-                    rewrite <- vars_of_uglify.
-                    exact Hnotinψ.
+                    destruct a0; simpl in *.
+                    {
+                        ltac1:(lia).
+                    }
+                    {
+                        rewrite filter_cons in Hlf.
+                        destruct (decide (h = x)).
+                        {
+                            subst. simpl in *. clear Hlf.
+                            split>[exact Hsat|]. clear IHsz.
+                            apply satisfies_var.
+                            simpl.
+                            unfold Valuation in *.
+                            apply lookup_insert.
+                        }
+                        {
+                            simpl in Hlf. inversion Hlf.
+                        }
+                    }
                 }
-                specialize (Htmp Hnotinρ Hlf).
-                ltac1:(ospecialize (Htmp _)).
                 {
-                    unfold satisfies; simpl.
-                    apply Heqmb.
+                    simpl in *.
+                    apply satisfies_term_inv in Hsat.
+                    destruct Hsat as [? [HContra ?]].
+                    inversion HContra.
                 }
-                specialize (Htmp4 Hnotinρ Hlf).
-                *)
-                ltac1:(lia).
+            }
+            {
+                simpl in *.
+                destruct φ.
+                {
+                    simpl in *.
+                    destruct a.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        simpl in *.
+                        rewrite filter_cons in Hlf.
+                        destruct (decide (h = x)).
+                        {
+                            subst. simpl in *.
+                            clear Hlf.
+                            split>[apply Hsat|].
+                            apply satisfies_var.
+                            unfold Valuation in *.
+                            apply lookup_insert.
+                        }
+                        {
+                            simpl in *. ltac1:(lia).
+                        }
+                    }
+                }
+                {
+                    destruct (list_find (λ φi : TermOver BuiltinOrVar, h ∈ vars_of_to_l2r φi) l0) eqn:Hfind.
+                    {
+                        destruct p.
+                        apply list_find_Some in Hfind.
+                        destruct (l !! n) eqn:Hln.
+                        {
+                            apply satisfies_term_inv in Hsat.
+                            destruct Hsat as [lγ [H1 [H2 H3]]].
+                            inversion H1; subst; clear H1.
+                            simpl in *.
+                            fold (@TermOverBoV_subst Σ) in *.
+                            rewrite map_length in H2.
+                            destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+                            apply IHsz.
+                            
+                        }
+                        {
+                            simpl in *.
+                            apply satisfies_term_inv in Hsat.
+                            destruct Hsat as [lγ [H1 [H2 H3]]].
+                            inversion H1; subst; clear H1.
+                            simpl in *.
+                            rewrite map_length in H2.
+                            destruct Hfind as [HContra ?].
+                            apply lookup_lt_Some in HContra.
+                            apply lookup_ge_None in Hln.
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        apply list_find_None in Hfind.
+                        simpl in *.
+                        apply satisfies_term_inv in Hsat.
+                        destruct Hsat as [lγ [H1 [H2 H3]]].
+                        inversion H1; subst; clear H1.
+                        rewrite map_length in H2.
+                        clear Heqmb.
+                        apply IHsz.
+                    }
+                    (*
+                    specialize (IHsz ltac:(lia)).
+                    *)
+                }
             }
         }
     }
