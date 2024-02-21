@@ -4251,14 +4251,14 @@ Proof.
     }
 Qed.
 
-Lemma length_filter_eq__eq__length_filter_in
+Lemma length_filter_eq__eq__length_filter_in__zero
     {T : Type}
     {_edT: EqDecision T}
     (h : T)
     (l : list (list T))
     :
-    length (filter (eq h) (concat l)) = 1 ->
-    length (filter (fun x => h ∈ x) l) = 1
+    length (filter (eq h) (concat l)) = 0 ->
+    length (filter (elem_of h) l) = 0
 .
 Proof.
     induction l; simpl; intros HH.
@@ -4266,21 +4266,74 @@ Proof.
         ltac1:(lia).
     }
     {
-        rewrite filter_cons.
         rewrite filter_app in HH.
-        rewrite app_length in HH.
-        destruct (decide (h ∈ a)).
+        rewrite filter_cons.
+        destruct (decide (h ∈ a)) as [Hin|Hnotin].
         {
-            length_filter_l_1_impl_h_in_l
-            Search elem_of length filter.
-            destruct (decide (length (filter (eq h) (concat l)) = 1)) as [Heq|Hnoteq].
+            simpl. rewrite app_length in HH.
+            assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
+            ltac1:(exfalso).
+            ltac1:(lia).
+        }
+        {
+            simpl. rewrite app_length in HH.
+            apply IHl. ltac1:(lia).
+        }
+    }
+Qed.
+
+
+Lemma length_filter_eq__eq__length_filter_in__one
+    {T : Type}
+    {_edT: EqDecision T}
+    (h : T)
+    (l : list (list T))
+    :
+    length (filter (eq h) (concat l)) = 1 ->
+    length (filter (elem_of h) l) = 1
+.
+Proof.
+    {
+        induction l; simpl; intros HH.
+        {
+            ltac1:(lia).
+        }
+        {
+            rewrite filter_cons.
+            rewrite filter_app in HH.
+            rewrite app_length in HH.
+            destruct (decide (h ∈ a)) as [Hin|Hnotin].
             {
-                specialize (IHl Heq).
+                assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
+                simpl in *.
+                assert (length (filter (eq h) (concat l)) = 0).
+                {
+                    ltac1:(lia).
+                }
+                apply length_filter_eq__eq__length_filter_in__zero in H.
+                rewrite H.
+                reflexivity.                
             }
-            clear IHl.
-            simpl.
-            assert (length (filter (eq h) a) = 0).
-            Search filter elem_of.
+            {
+                apply IHl. clear IHl.
+                assert (length (filter (eq h) a) = 0).
+                {
+                    clear -Hnotin.
+                    induction a.
+                    {
+                        simpl. reflexivity.
+                    }
+                    {
+                        rewrite elem_of_cons in Hnotin.
+                        apply Decidable.not_or in Hnotin.
+                        destruct Hnotin as [Hnotin1 Hnotin2].
+                        rewrite filter_cons.
+                        destruct (decide (h = a))>[ltac1:(subst;contradiction)|].
+                        apply IHa. exact Hnotin2.
+                    }
+                }
+                ltac1:(lia).
+            }
         }
     }
 Qed.
