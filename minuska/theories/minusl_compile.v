@@ -4829,6 +4829,122 @@ Proof.
                             fold (@TermOverBoV_subst Σ) in *.
                             rewrite map_length in H2.
                             destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+                            specialize (IHsz t0).
+                            ltac1:(ospecialize (IHsz _)).
+                            {
+                                apply take_drop_middle in Hln.
+                                rewrite <- Hln in Hsz. simpl in Hsz.
+                                rewrite sum_list_with_app in Hsz. simpl in Hsz.
+                                ltac1:(lia).
+                            }
+                            specialize (IHsz Hnotinρ).
+                            ltac1:(ospecialize (IHsz _)).
+                            {
+                                assert (Hlf' := Hlf).
+                                apply take_drop_middle in Hfind1.
+                                rewrite <- Hfind1 in Hlf.
+                                rewrite map_app in Hlf.
+                                rewrite map_cons in Hlf.
+                                rewrite concat_app in Hlf.
+                                rewrite concat_cons in Hlf.
+                                rewrite filter_app in Hlf.
+                                rewrite filter_app in Hlf.
+                                rewrite list_filter_Forall_not in Hlf.
+                                {
+                                    clear IHsz. simpl in Hlf.
+                                    rewrite app_length in Hlf.
+                                    ltac1:(rewrite -> list_filter_Forall_not with (l := (concat (map vars_of_to_l2r (drop (S n) l0)))) in Hlf).
+                                    {
+                                        simpl in Hlf.
+                                        rewrite Nat.add_0_r in Hlf.
+                                        rewrite <- Hfind1.
+                                        rewrite map_app.
+                                        rewrite map_cons.
+                                        rewrite concat_app.
+                                        rewrite concat_cons.
+                                        rewrite filter_app.
+                                        rewrite filter_app.
+                                        
+                                        rewrite list_filter_Forall_not.
+                                        { 
+                                            simpl.
+                                            rewrite app_length.
+                                            rewrite Hlf.
+
+                                            rewrite <- Hfind1 in Hlf'.
+                                            rewrite map_app in Hlf'.
+                                            rewrite map_cons in Hlf'.
+                                            rewrite concat_app in Hlf'.
+                                            rewrite concat_cons in Hlf'.
+                                            rewrite filter_app in Hlf'.
+                                            rewrite filter_app in Hlf'.
+                                            rewrite app_length in Hlf'.
+                                            rewrite app_length in Hlf'.
+                                            ltac1:(lia).
+                                        }
+                                        {
+                                            clear -Hfind3.
+                                            rewrite Forall_forall.
+                                            intros x Hx.
+                                            rewrite elem_of_list_In in Hx.
+                                            rewrite in_concat in Hx.
+                                            destruct Hx as [x0 [H1x0 H2x0]].
+                                            rewrite in_map_iff in H1x0.
+                                            destruct H1x0 as [x1 [H1x1 H2x1]].
+                                            rewrite <- elem_of_list_In in H2x1.
+                                            rewrite <- elem_of_list_In in H2x0.
+                                            subst. intros HContra. subst.
+                                            rewrite elem_of_take in H2x1.
+                                            destruct H2x1 as [i [H1i H2i]].
+                                            ltac1:(naive_solver).
+                                        }
+                                    }
+                                    {
+                                        apply not_Exists_Forall.
+                                        { intros ?. apply variable_eqdec. }
+                                        {
+                                            intros HContra. rewrite Exists_exists in HContra.
+                                            destruct HContra as [x [HContra ?]].
+                                            subst x.
+                                            rewrite elem_of_list_lookup in HContra.
+                                            destruct HContra as [j1 HContra].
+                                            apply take_drop_middle in HContra.
+                                            rewrite elem_of_list_lookup in Hfind2.
+                                            destruct Hfind2 as [j2 Hfind2].
+                                            apply take_drop_middle in Hfind2.
+                                            rewrite <- Hfind2 in Hlf.
+                                            rewrite <- HContra in Hlf.
+                                            clear -Hlf.
+                                            rewrite filter_app in Hlf.
+                                            rewrite filter_app in Hlf.
+                                            rewrite filter_cons in Hlf.
+                                            rewrite filter_cons in Hlf.
+                                            destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                            simpl in Hlf.
+                                            rewrite app_length in Hlf.
+                                            rewrite app_length in Hlf.
+                                            simpl in Hlf.
+                                            ltac1:(lia).
+                                        }
+                                    }
+                                }
+                                {
+                                    clear -Hfind3.
+                                    rewrite Forall_forall.
+                                    intros x Hx.
+                                    rewrite elem_of_list_In in Hx.
+                                    rewrite in_concat in Hx.
+                                    destruct Hx as [x0 [H1x0 H2x0]].
+                                    rewrite in_map_iff in H1x0.
+                                    destruct H1x0 as [x1 [H1x1 H2x1]].
+                                    rewrite <- elem_of_list_In in H2x1.
+                                    rewrite <- elem_of_list_In in H2x0.
+                                    subst. intros HContra. subst.
+                                    rewrite elem_of_take in H2x1.
+                                    destruct H2x1 as [i [H1i H2i]].
+                                    ltac1:(naive_solver).
+                                }
+                            }
                             apply IHsz.
                             
                         }
