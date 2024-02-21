@@ -4555,6 +4555,92 @@ Proof.
                     ltac1:(lia).
                 }
                 rewrite IH2. clear IH2.
+                assert ( concat (vars_of_to_l2r <$> la1) ++ (filter (λ x : variable, x ≠ h) (vars_of_to_l2r b1)) = la ).
+                {
+                    rewrite <- Hih.
+                    rewrite filter_app.
+                    rewrite filter_cons.
+                    destruct (decide (h <> h))>[ltac1:(contradiction)|]. clear n.
+                    rewrite list_filter_Forall_all.
+                    {
+                        rewrite list_filter_Forall_all.
+                        {
+                            clear IHH1 IH3.
+                            rewrite -> HH'1 in HH1.
+                            ltac1:(replace map with (@fmap _ list_fmap) in HH1 by reflexivity).
+                            rewrite fmap_app in HH1.
+                            rewrite fmap_cons in HH1.
+                            rewrite concat_app in HH1.
+                            rewrite concat_cons in HH1.
+                        }
+                        {
+                            rewrite Forall_Exists_neg.
+                            intros HContra.
+                            rewrite Exists_exists in HContra.
+                            destruct HContra as [x [H1x H2x]].
+                            subst x.
+                            rewrite HH'1 in H'inφ.
+                            ltac1:(replace map with (@fmap _ list_fmap) in H'inφ by reflexivity).
+                            rewrite fmap_app in H'inφ.
+                            rewrite fmap_cons in H'inφ.
+                            rewrite concat_app in H'inφ.
+                            rewrite concat_cons in H'inφ.
+                            rewrite filter_app in H'inφ.
+                            rewrite filter_app in H'inφ.
+                            rewrite app_length in H'inφ.
+                            rewrite app_length in H'inφ.
+                            rewrite <- Hih in H'inφ.
+                            rewrite elem_of_list_lookup in H1x.
+                            destruct H1x as [i0 Hi0].
+                            apply take_drop_middle in Hi0.
+                            rewrite <- Hi0 in H'inφ.
+                            clear -H'inφ.
+                            rewrite filter_app in H'inφ.
+                            rewrite filter_cons in H'inφ.
+                            destruct (decide (h=h))>[|ltac1:(contradiction)]. clear e.
+                            rewrite app_length in H'inφ.
+                            simpl in H'inφ.
+                            rewrite filter_app in H'inφ.
+                            rewrite app_length in H'inφ.
+                            rewrite filter_cons in H'inφ.
+                            destruct (decide (h=h))>[|ltac1:(contradiction)]. clear e.
+                            simpl in H'inφ.
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        rewrite Forall_Exists_neg.
+                        intros HContra.
+                        rewrite Exists_exists in HContra.
+                        destruct HContra as [x [H1x H2x]].
+                        subst x.
+                        rewrite HH'1 in H'inφ.
+                        ltac1:(replace map with (@fmap _ list_fmap) in H'inφ by reflexivity).
+                        rewrite fmap_app in H'inφ.
+                        rewrite fmap_cons in H'inφ.
+                        rewrite concat_app in H'inφ.
+                        rewrite concat_cons in H'inφ.
+                        rewrite filter_app in H'inφ.
+                        rewrite filter_app in H'inφ.
+                        rewrite app_length in H'inφ.
+                        rewrite app_length in H'inφ.
+                        rewrite <- Hih in H'inφ.
+                        rewrite elem_of_list_lookup in H1x.
+                        destruct H1x as [i0 Hi0].
+                        apply take_drop_middle in Hi0.
+                        rewrite <- Hi0 in H'inφ.
+                        clear -H'inφ.
+                        rewrite filter_app in H'inφ.
+                        rewrite filter_app in H'inφ.
+                        rewrite filter_cons in H'inφ.
+                        rewrite filter_cons in H'inφ.
+                        destruct (decide (h=h))>[|ltac1:(contradiction)]. clear e.
+                        rewrite app_length in H'inφ.
+                        rewrite app_length in H'inφ.
+                        simpl in H'inφ.
+                        ltac1:(lia).
+                    }
+                }
 
             }
             {
