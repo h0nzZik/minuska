@@ -4370,6 +4370,53 @@ Proof.
     }
 Qed.
 
+Lemma on_a_shared_prefix
+    {T : Type}
+    (_edT : EqDecision T)
+    (b : T)
+    (l1 l2 l1' l2' : list T)
+    :
+    b ∉ l1 ->
+    b ∉ l1' ->
+    l1 ++ b::l2 = l1' ++ b::l2' ->
+    l1 = l1'
+.
+Proof.
+    revert l1'.
+    induction l1; simpl; intros l1' H1 H2 H3.
+    {
+        destruct l1'; simpl in *.
+        { reflexivity. }
+        {
+            ltac1:(exfalso).
+            inversion H3; subst; clear H3.
+            apply H2. clear H2.
+            rewrite elem_of_cons. left. reflexivity.
+        }
+    }
+    {
+        destruct l1'.
+        {
+            ltac1:(exfalso).
+            inversion H3; subst; clear H3.
+            apply H1. clear H1.
+            rewrite elem_of_cons. left. reflexivity.
+        }
+        {
+            rewrite elem_of_cons in H1.
+            rewrite elem_of_cons in H2.
+            apply Decidable.not_or in H1.
+            apply Decidable.not_or in H2.
+            destruct H1 as [H11 H12].
+            destruct H2 as [H21 H22].
+            simpl in H3. inversion H3; subst; clear H3.
+            specialize (IHl1 l1' H12 H22 H1).
+            subst l1'.
+            reflexivity.
+        }
+    }
+Qed.
+
 Lemma vars_of_to_l2r_subst
     {Σ : StaticModel}
     (φ ψ : TermOver BuiltinOrVar)
@@ -4495,6 +4542,44 @@ Proof.
                 rewrite Forall_cons in H.
                 destruct H as [IHH1 [IH2 IH3]].
 
+                assert (HJ1: Forall (λ x : variable, h ≠ x) (concat (vars_of_to_l2r <$> la1))).
+                {
+                    rewrite Forall_forall.
+                    rewrite Forall_forall in HH'3.
+                    intros x Hx.
+                    rewrite elem_of_list_In in Hx.
+                    rewrite in_concat in Hx.
+                    destruct Hx as [l0 [H1 H2]].
+                    rewrite <- elem_of_list_In in H2.
+                    rewrite <- elem_of_list_In in H1.
+                    rewrite elem_of_list_fmap in H1.
+                    destruct H1 as [t [H1t H2t]].
+                    subst l0.
+                    specialize (HH'3 t H2t).
+                    clear -HH'3 H2.
+                    intros HContra. subst.
+                    apply HH'3. apply H2.
+                }
+
+                assert (HJ2 : Forall (λ x : variable, h ≠ x) (concat (vars_of_to_l2r <$> lc1))).
+                {
+                    rewrite Forall_forall.
+                    rewrite Forall_forall in HH'4.
+                    intros x Hx.
+                    rewrite elem_of_list_In in Hx.
+                    rewrite in_concat in Hx.
+                    destruct Hx as [l0 [H1 H2]].
+                    rewrite <- elem_of_list_In in H2.
+                    rewrite <- elem_of_list_In in H1.
+                    rewrite elem_of_list_fmap in H1.
+                    destruct H1 as [t [H1t H2t]].
+                    subst l0.
+                    specialize (HH'4 t H2t).
+                    clear -HH'4 H2.
+                    intros HContra. subst.
+                    apply HH'4. apply H2.
+                }
+
                 ltac1:(ospecialize (IH2 _)).
                 {
 
@@ -4513,21 +4598,7 @@ Proof.
                         rewrite list_filter_Forall_not.
                         { reflexivity. }
                         {
-                            rewrite Forall_forall.
-                            rewrite Forall_forall in HH'3.
-                            intros x Hx.
-                            rewrite elem_of_list_In in Hx.
-                            rewrite in_concat in Hx.
-                            destruct Hx as [l0 [H1 H2]].
-                            rewrite <- elem_of_list_In in H2.
-                            rewrite <- elem_of_list_In in H1.
-                            rewrite elem_of_list_fmap in H1.
-                            destruct H1 as [t [H1t H2t]].
-                            subst l0.
-                            specialize (HH'3 t H2t).
-                            clear -HH'3 H2.
-                            intros HContra. subst.
-                            apply HH'3. apply H2.
+                            assumption.
                         }
                     }
                     assert (Hfil2 : length (filter (eq h) (concat (vars_of_to_l2r <$> lc1))) = 0).
@@ -4535,21 +4606,7 @@ Proof.
                         rewrite list_filter_Forall_not.
                         { reflexivity. }
                         {
-                            rewrite Forall_forall.
-                            rewrite Forall_forall in HH'4.
-                            intros x Hx.
-                            rewrite elem_of_list_In in Hx.
-                            rewrite in_concat in Hx.
-                            destruct Hx as [l0 [H1 H2]].
-                            rewrite <- elem_of_list_In in H2.
-                            rewrite <- elem_of_list_In in H1.
-                            rewrite elem_of_list_fmap in H1.
-                            destruct H1 as [t [H1t H2t]].
-                            subst l0.
-                            specialize (HH'4 t H2t).
-                            clear -HH'4 H2.
-                            intros HContra. subst.
-                            apply HH'4. apply H2.
+                            assumption.
                         }
                     }
                     ltac1:(lia).
@@ -4572,6 +4629,8 @@ Proof.
                             rewrite fmap_cons in HH1.
                             rewrite concat_app in HH1.
                             rewrite concat_cons in HH1.
+                            rewrite <- Hih in HH1.
+                            rewrite <- app_assoc in HH1.
                         }
                         {
                             rewrite Forall_Exists_neg.
