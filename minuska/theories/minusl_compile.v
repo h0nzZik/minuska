@@ -4631,6 +4631,144 @@ Proof.
                             rewrite concat_cons in HH1.
                             rewrite <- Hih in HH1.
                             rewrite <- app_assoc in HH1.
+
+                            assert (Htmp := @on_a_shared_prefix variable _ h).
+                            specialize (Htmp (concat (vars_of_to_l2r <$> la1) ++ take i (vars_of_to_l2r b1))).
+                            simpl in HH1.
+                            specialize (Htmp (drop (S i) (vars_of_to_l2r b1) ++ concat (vars_of_to_l2r <$> lc1))).
+                            specialize (Htmp la lc).
+                            ltac1:(ospecialize (Htmp _)).
+                            {
+                                clear Htmp.
+                                rewrite elem_of_app.
+                                intros HContra.
+                                destruct HContra as [HContra|HContra].
+                                {
+                                    rewrite HH'1 in H'inφ.
+                                    rewrite elem_of_list_lookup in HContra.
+                                    destruct HContra as [j Hj].
+                                    apply take_drop_middle in Hj.
+                                    ltac1:(replace map with (@fmap _ list_fmap) in H'inφ by reflexivity).
+                                    rewrite fmap_app in H'inφ.
+                                    rewrite fmap_cons in H'inφ.
+                                    rewrite concat_app in H'inφ.
+                                    rewrite concat_cons in H'inφ.
+                                    rewrite <- Hj in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite <- Hih in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite filter_cons in H'inφ.
+                                    rewrite filter_cons in H'inφ.
+                                    destruct (decide (h = h))>[|ltac1:(contradiction)]. clear e.
+                                    rewrite app_length in H'inφ.
+                                    rewrite app_length in H'inφ.
+                                    rewrite app_length in H'inφ.
+                                    rewrite app_length in H'inφ.
+                                    simpl in H'inφ.
+                                    ltac1:(lia).
+                                }
+                                {
+                                    rewrite HH'1 in H'inφ.
+                                    rewrite elem_of_list_lookup in HContra.
+                                    destruct HContra as [j Hj].
+                                    apply take_drop_middle in Hj.
+                                    ltac1:(replace map with (@fmap _ list_fmap) in H'inφ by reflexivity).
+                                    rewrite fmap_app in H'inφ.
+                                    rewrite fmap_cons in H'inφ.
+                                    rewrite concat_app in H'inφ.
+                                    rewrite concat_cons in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite app_length in H'inφ.
+                                    rewrite app_length in H'inφ.
+                                    rewrite <- (firstn_skipn i (vars_of_to_l2r b1)) in H'inφ.
+                                    rewrite <- Hj in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite <- Hih in H'inφ.
+                                    rewrite filter_app in H'inφ.
+                                    rewrite filter_cons in H'inφ.
+                                    destruct (decide (h = h))>[|ltac1:(contradiction)]. clear e.
+                                    rewrite app_length in H'inφ.
+                                    rewrite app_length in H'inφ.
+                                    rewrite take_app_ge in H'inφ.
+                                    {
+                                        simpl in H'inφ.
+                                        rewrite skipn_app in H'inφ.
+                                        rewrite filter_app in H'inφ.
+                                        rewrite take_length in H'inφ.
+                                        rewrite firstn_app in H'inφ.
+                                        rewrite take_length in H'inφ.
+                                        rewrite skipn_app in H'inφ.
+                                        rewrite take_length in H'inφ.
+                                        repeat (rewrite filter_app in H'inφ).
+                                        repeat (rewrite app_length in H'inφ).
+                                        destruct ((i - i `min` length (vars_of_to_l2r b1))) eqn:Heqi.
+                                        {
+                                            simpl in *.
+                                            apply Nat.sub_0_le in Heqi.
+                                            rewrite take_nil in H'inφ.
+                                            rewrite drop_nil in H'inφ.
+                                            rewrite filter_nil in H'inφ.
+                                            simpl in H'inφ.
+                                            rewrite filter_cons in H'inφ.
+                                            destruct (decide (h = h))>[|ltac1:(contradiction)]. clear e.
+                                            simpl in H'inφ.
+                                            ltac1:(lia).
+                                        }
+                                        {
+                                            assert ( i > (length (vars_of_to_l2r b1))) by ltac1:(lia).
+                                            rewrite firstn_cons in H'inφ.
+                                            simpl in H'inφ.
+                                            destruct ((j - i `min` length (vars_of_to_l2r b1))) eqn:Heqi2.
+                                            {
+                                                simpl in *.
+                                                destruct ((S j - i `min` length (vars_of_to_l2r b1))) eqn:Heqi3.
+                                                {
+                                                    simpl in *.
+                                                    rewrite filter_cons in H'inφ.
+                                                    destruct (decide (h = h))>[|ltac1:(contradiction)]. clear e.
+                                                    simpl in H'inφ.
+                                                    ltac1:(lia).
+                                                }
+                                                {
+                                                    simpl in *.
+                                                    clear H'inφ.
+                                                    rewrite firstn_all2 in Hih.
+                                                    {
+                                                        clear -Hih.
+                                                        ltac1:(replace (vars_of_to_l2r b1) with (vars_of_to_l2r b1 ++ []) in Hih at 3).
+                                                        {
+                                                            apply app_inv_head in Hih.
+                                                            inversion Hih.
+                                                        }
+                                                        {
+                                                            rewrite app_nil_r. reflexivity.
+                                                        }
+                                                    }
+                                                    {
+                                                        ltac1:(lia).
+                                                    }
+                                                }
+                                            }
+                                            {
+                                                rewrite firstn_cons in H'inφ.
+                                                simpl in H'inφ.
+                                                rewrite filter_cons in H'inφ.
+                                                destruct (decide (h = h))>[|ltac1:(contradiction)]. clear e.
+                                                simpl in H'inφ.
+                                                ltac1:(lia).
+                                            }
+
+                                        }
+                                    }
+                                    {
+                                        rewrite take_length.
+                                        ltac1:(lia).
+                                    }
+                                }
+                            }
                         }
                         {
                             rewrite Forall_Exists_neg.
@@ -4700,6 +4838,8 @@ Proof.
                         ltac1:(lia).
                     }
                 }
+
+                (* TODO *)
 
             }
             {
