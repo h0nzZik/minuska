@@ -4628,6 +4628,162 @@ Proof.
     }
 Qed.
 
+Lemma sum_list_with_perm
+    {T : Type}
+    (f : T -> nat)
+    (l1 l2 : list T)
+    :
+    l1 ≡ₚ l2 ->
+    sum_list_with f l1 = sum_list_with f l2
+.
+Proof.
+    intros H.
+    induction H.
+    {
+        reflexivity.
+    }
+    {
+        simpl. rewrite IHPermutation. reflexivity.
+    }
+    {
+        simpl. ltac1:(lia).
+    }
+    {
+        ltac1:(congruence).
+    }
+Qed.
+
+Lemma factor_by_subst_correct'
+    {Σ : StaticModel}
+    (sz : nat)
+    (ρ : Valuation)
+    (h : variable)
+    (γ : TermOver builtin_value)
+    (φ ψ : TermOver BuiltinOrVar)
+    : sz >= TermOver_size γ ->
+    h ∉ vars_of ρ ->
+    length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
+    ~ (h ∈ vars_of_to_l2r ψ) ->
+    satisfies ρ γ (TermOverBoV_subst φ h ψ) ->
+    let xy := factor_by_subst sz ρ h γ φ ψ in
+    satisfies ρ xy.2 ψ /\
+    satisfies (<[h := (uglify' xy.2)]>ρ) xy.1 φ
+.
+Proof.
+    induction sz; intros Hsz.
+    {
+        destruct γ; simpl in Hsz; ltac1:(lia).
+    }
+    {
+        intros Hnotinρ Hlf Hnotinψ Hsat.
+        unfold factor_by_subst. fold (@factor_by_subst Σ).
+        simpl.
+        destruct (matchesb ρ (uglify' γ) (uglify' ψ)) eqn:Heqmb.
+        {
+            simpl.
+            split.
+            {
+                apply matchesb_implies_satisfies in Heqmb.
+                unfold satisfies; simpl.
+                apply Heqmb.
+            }
+            {
+                apply matchesb_implies_satisfies in Heqmb.
+                assert (Heqmb': satisfies ρ γ ψ).
+                {
+                    unfold satisfies; simpl.
+                    apply Heqmb.
+                }
+
+
+                (*
+                assert (Htmp := subst_preserves_or_increases_delta ρ γ γ h φ ψ).
+                ltac1:(ospecialize (Htmp _)).
+                {
+                    rewrite <- vars_of_uglify.
+                    exact Hnotinψ.
+                }
+                specialize (Htmp Hnotinρ Hlf).
+                *)
+                assert (Htmp2 := TermOver_size_not_zero ψ).
+                assert (Htmp3 := TermOver_size_not_zero φ).
+                assert (Hsat' := Hsat).
+                apply concrete_is_larger_than_symbolic in Hsat'.
+                apply concrete_is_larger_than_symbolic in Heqmb'.
+                Search sum_list.
+                unfold delta_in_val in Hsat'.
+                assert (Hperm := vars_of_to_l2r_subst φ ψ h Hlf Hnotinψ).
+                apply sum_list_with_perm with (f := (size_of_var_in_val ρ)) in Hperm.
+                rewrite Hperm in Hsat'. clear Hperm.
+                rewrite TermOverBoV_subst_once_size in Hsat'.
+                {
+
+                    rewrite sum_list_with_app in Hsat'.
+                    unfold delta_in_val in Heqmb'.
+                    assert (Hszφ: TermOver_size φ = 1) by ltac1:(lia).
+                    clear Hsat.
+                    destruct φ.
+                    {
+                        simpl in *. clear Hszφ.
+                        clear Htmp3.
+                        destruct a.
+                        {
+                            simpl in *. ltac1:(lia).
+                        }
+                        simpl in *. rewrite filter_cons in Hlf.
+                        destruct (decide (h = x)).
+                        {
+                            subst.
+                            clear Heqmb' Hsat' Htmp2.
+                        }
+                        {
+                            simpl in *. ltac1:(lia).
+                        }
+                    }
+                    {
+                        simpl in Hszφ.
+                        destruct l.
+                        {
+                            simpl in *. clear Hszφ Htmp3 Heqmb' Hsat'.
+                            ltac1:(lia).
+                        }
+                        {
+                            simpl in *.
+                            ltac1:(lia).
+                        }
+                    }
+                }
+                {
+                    rewrite <- vars_of_uglify.
+                    assumption.
+                }
+                {
+                    assumption.
+                }
+                About vars_of_to_l2r_subst.
+                Search sum_list Permutation.
+                Search vars_of_to_l2r TermOverBoV_subst.
+                (*
+                assert (Htmp4 := subst_preserves_or_increases_delta ρ γ γ h φ ψ).
+                ltac1:(ospecialize (Htmp4 _)).
+                {
+                    rewrite <- vars_of_uglify.
+                    exact Hnotinψ.
+                }
+                specialize (Htmp Hnotinρ Hlf).
+                ltac1:(ospecialize (Htmp _)).
+                {
+                    unfold satisfies; simpl.
+                    apply Heqmb.
+                }
+                specialize (Htmp4 Hnotinρ Hlf).
+                *)
+                ltac1:(lia).
+            }
+        }
+    }
+Qed.
+
 
 Lemma compile_correct
     {Σ : StaticModel}
