@@ -4338,6 +4338,38 @@ Proof.
     }
 Qed.
 
+Lemma filter_fmap
+    {T1 T2: Type}
+    (f : T1 -> T2)
+    (P : T2 -> Prop)
+    {_decP : forall x, Decision (P x)}
+    {_decfP : forall x, Decision ((P ∘ f) x)}
+    (l : list T1)
+    :
+    filter P (f <$> l) = f <$> (filter (P ∘ f) l)
+.
+Proof.
+    induction l.
+    {
+        simpl. rewrite filter_nil. reflexivity.
+    }
+    {
+        rewrite filter_cons.
+        rewrite fmap_cons.
+        rewrite filter_cons.
+        rewrite IHl.
+        unfold compose.
+        simpl in *.
+        ltac1:(repeat case_match); try (ltac1:(contradiction)).
+        {
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
+
 Lemma vars_of_to_l2r_subst
     {Σ : StaticModel}
     (φ ψ : TermOver BuiltinOrVar)
@@ -4394,7 +4426,12 @@ Proof.
                 *)
                 assert (length (filter (fun x => h ∈ vars_of_to_l2r x) l) = 1).
                 {
-
+                    apply length_filter_eq__eq__length_filter_in__one in H'inφ.
+                    ltac1:(replace map with (@fmap _ list_fmap) in H'inφ by reflexivity).
+                    Set Printing Implicit.
+                    ltac1:(rewrite map_filter_fmap in H'inφ).
+                    Search list_filter fmap.
+                    About length_filter_eq__eq__length_filter_in__one.
                 }
                 Search map.
             }
