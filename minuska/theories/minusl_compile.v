@@ -5810,11 +5810,28 @@ Proof.
                             }
                         }
                         {
-
+                            eapply satisfies_ext>[|apply H3].
+                            unfold Valuation in *.
+                            apply insert_subseteq.
+                            clear -Hnocvρ.
+                            unfold vars_of in Hnocvρ.
+                            simpl in Hnocvρ.
+                            rewrite not_elem_of_dom in Hnocvρ.
+                            exact Hnocvρ.   
                         }
                     }
-                    split>[assumption|].
-                    reflexivity.
+                    {
+                        simpl.
+                        split>[|reflexivity].
+                        eapply satisfies_ext>[|apply H4].
+                        unfold Valuation in *.
+                        apply insert_subseteq.
+                        clear -Hnocvρ.
+                        unfold vars_of in Hnocvρ.
+                        simpl in Hnocvρ.
+                        rewrite not_elem_of_dom in Hnocvρ.
+                        exact Hnocvρ.
+                    }
                 }
             }
             {
@@ -5840,8 +5857,6 @@ Proof.
         }
         {
             simpl in *.
-            About down.
-            unfold down in *.
             
             (* (1) decompose the first substitution *)
             assert (Hfbsc1 := factor_by_subst_correct' (TermOver_size ctrl1) ρ h ctrl1 c ((TermOverBuiltin_to_TermOverBoV r))).
@@ -5920,9 +5935,9 @@ Proof.
 
             (* (4) Use the heating rule. *)
             assert (Htmp := @frto_step Σ Act Γ).
-            specialize (Htmp ((t_term topSymbol [ctrl1; state1]))).
-            specialize (Htmp ((t_term topSymbol [r; state1]))).
-            specialize (Htmp ((t_term topSymbol [v; state2]))).
+            specialize (Htmp (downC topSymbol cseqSymbol G1 state1 continuation)).
+            specialize (Htmp (downC topSymbol cseqSymbol F1 state1 (t_term cseqSymbol [G1; continuation]))).
+            specialize (Htmp (downC topSymbol cseqSymbol F2 state2 (t_term cseqSymbol [G2; continuation]))).
             specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
             specialize (Htmp invisible_act).
             specialize (Htmp _ H4).
@@ -5930,23 +5945,44 @@ Proof.
             {
                 clear Htmp.
                 unfold flattened_rewrites_to.
-                exists ρ.
+                exists (<[(fresh (vars_of_to_l2r c)):=uglify' continuation]>(<[h:=uglify' F1]> ρ)).
                 unfold flattened_rewrites_in_valuation_under_to.
-                simpl.
                 split.
                 {
                     clear Htmp'.
-                    ltac1:(
-                        replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)))))
-                        with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c))))))
-                        by reflexivity
-                    ).
-                    ltac1:(
-                        replace (apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable (fresh (vars_of_to_l2r c)))])
-                        with (uglify' (t_term cseqSymbol [c; t_over (bov_variable (fresh (vars_of_to_l2r c)))]))
-                        by reflexivity
-                    ).
                     apply satisfies_top_bov.
+                    split.
+                    {
+                        apply satisfies_top_bov.
+                        split.
+                        {
+                            unfold satisfies in HB1; simpl in HB1.
+                            unfold satisfies; simpl.
+                            erewrite satisfies_Term'_vars_of.
+                            { eapply HB1. }
+                            {
+                                intros.
+                                ltac1:(rewrite lookup_insert_ne).
+                                {
+                                    rewrite <- vars_of_uglify in H6.
+                                    intros HContra. subst x.
+                                    eapply is_fresh.
+                                    { apply H6. }
+                                }
+                                {
+                                    reflexivity.
+                                }
+                            }
+                        }
+                        {
+                            apply satisfies_var.
+                            unfold Valuation in *.
+                            apply lookup_insert.
+                        }
+                    }
+                    {
+
+                    }
                 }
             }
             specialize (Htmp IHHH).
