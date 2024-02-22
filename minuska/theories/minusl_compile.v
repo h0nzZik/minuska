@@ -118,7 +118,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
             fr_act := a;
         |})
         ]
-    | mld_context _ c h scs =>
+    | mld_context _ c h Hh scs =>
         let vars := vars_of_to_l2r c in
         let contVariable := fresh vars in
         let dataVariable := fresh (contVariable::vars) in
@@ -5081,11 +5081,6 @@ Proof.
                                                         ltac1:(lia).
                                                     }
                                                 }
-                                                Unshelve.
-                                                {
-                                                    unfold Valuation in *.
-                                                    apply _.
-                                                }
                                             }
                                             {
                                                 exact IH2.
@@ -5274,6 +5269,41 @@ Proof.
 Qed.
 
 
+Lemma frto_step_app
+    {Σ : StaticModel}
+    (Act : Set)
+    :
+    forall
+        Γ
+        (t1 t2 t3 : TermOver builtin_value)
+        (w : list Act)
+        (a : Act)
+        r,
+    r ∈ Γ ->
+    flattened_rewrites_to_over Γ t1 w t2 ->
+    flattened_rewrites_to r (uglify' t2) a (uglify' t3) ->
+    flattened_rewrites_to_over Γ t1 (w++[a]) t3
+.
+Proof.
+    intros Γ t1 t2 t3 w a r Hr H1 H2.
+    induction H1.
+    {
+        simpl.
+        eapply frto_step.
+        { exact Hr. }
+        { exact H2. }
+        { apply frto_base. }
+    }
+    {
+        simpl.
+        specialize (IHflattened_rewrites_to_over H2).
+        eapply frto_step.
+        { exact H. }
+        { exact H0. }
+        { apply IHflattened_rewrites_to_over. }
+    }
+Qed.
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -5379,6 +5409,35 @@ Proof.
         }
         {
             simpl in *.
+            About down.
+            unfold down in *.
+            
+            (* (1) decompose the first substitution *)
+            assert (Hfbsc1 := factor_by_subst_correct' (TermOver_size ctrl1) ρ h ctrl1 c ((TermOverBuiltin_to_TermOverBoV r))).
+            specialize (Hfbsc1 ltac:(lia) Hnotinρ Hh).
+            rewrite vars_of_to_l2r_of_tob in Hfbsc1.
+            specialize (Hfbsc1 ltac:(set_solver)).
+            specialize (Hfbsc1 H2).
+            simpl in Hfbsc1.
+            destruct Hfbsc1 as [HA1 HB1].
+            remember ((factor_by_subst (TermOver_size ctrl1) ρ h ctrl1 c (TermOverBuiltin_to_TermOverBoV r)).1) as G1.
+            remember ((factor_by_subst (TermOver_size ctrl1) ρ h ctrl1 c (TermOverBuiltin_to_TermOverBoV r)).2) as F1.
+            clear HeqF1 HeqG1.
+
+            (* (2) decompose the second substitution *)
+            assert (Hfbsc2 := factor_by_subst_correct' (TermOver_size ctrl2) ρ h ctrl2 c ((TermOverBuiltin_to_TermOverBoV v))).
+            specialize (Hfbsc2 ltac:(lia) Hnotinρ Hh).
+            rewrite vars_of_to_l2r_of_tob in Hfbsc2.
+            specialize (Hfbsc2 ltac:(set_solver)).
+            specialize (Hfbsc2 H3).
+            simpl in Hfbsc2.
+            destruct Hfbsc2 as [HA2 HB2].
+            remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).1) as G2.
+            remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).2) as F2.
+            clear HeqF2 HeqG2.
+
+
+
             assert (Htmp := @frto_step Σ Act Γ).
             (* I shouldn't specialize it with ctrl1.
             It should be: cSeq[ctrl1 with holeSymbol instead of ??;] 
@@ -5445,6 +5504,7 @@ Proof.
                     ).
                     simpl in Hi. inversion Hi; subst; clear Hi.
 
+
                     exists ρ.
                     unfold flattened_rewrites_in_valuation_under_to.
                     simpl.
@@ -5462,7 +5522,7 @@ Proof.
                             by reflexivity
                         ).
                         apply satisfies_top_bov.
-                        
+                        (* TODO something goes here *)                        
                     }
             
             }

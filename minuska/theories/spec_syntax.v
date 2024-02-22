@@ -586,6 +586,18 @@ Proof.
 Qed.
 
 
+Fixpoint vars_of_to_l2r
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    : list variable
+:= 
+    match t with
+    | t_over (bov_builtin _) => []
+    | t_over (bov_variable x) => [x]
+    | t_term s l => concat (map vars_of_to_l2r l)
+    end
+.
+
 Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_rewrite
     (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
@@ -595,6 +607,7 @@ Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_context
     (c : TermOver BuiltinOrVar)
     (h : variable)
+    (Hh : length (filter (eq h) (vars_of_to_l2r c)) = 1)
     (scs : list SideCondition)
 . 
 
@@ -606,7 +619,7 @@ Definition actions_of_decl
 :=
 match d with
 | mld_rewrite _ _ _ a _ _ _ => [a]
-| mld_context _ _ _ _ => []
+| mld_context _ _ _ _ _ => []
 end.
 
 
@@ -685,14 +698,28 @@ Definition TermOverBoV_to_TermOverExpr
     TermOver_map BoV_to_Expr t
 .
 
-Fixpoint vars_of_to_l2r
+Lemma vars_of_to_l2r_of_tob
     {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    : list variable
-:= 
-    match t with
-    | t_over (bov_builtin _) => []
-    | t_over (bov_variable x) => [x]
-    | t_term s l => concat (map vars_of_to_l2r l)
-    end
+    (r : TermOver builtin_value)
+    :
+    vars_of_to_l2r (TermOverBuiltin_to_TermOverBoV r) = []
 .
+Proof.
+    induction r; simpl.
+    { reflexivity. }
+    {
+        revert H.
+        induction l; intros H; simpl.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2). clear H2.
+            rewrite IHl.
+            unfold TermOverBuiltin_to_TermOverBoV  in *.
+            rewrite H1.
+            reflexivity.
+        }
+    }
+Qed.
+
