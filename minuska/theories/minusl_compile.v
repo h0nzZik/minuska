@@ -5436,9 +5436,73 @@ Proof.
             remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).2) as F2.
             clear HeqF2 HeqG2.
 
+            (* (3) Find the heating and cooling rules in Γ *)
+
+            assert (ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (vars_of_to_l2r c)) (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+            {
+                rewrite elem_of_list_lookup in H.
+                destruct H as [ir Hir].
+                apply take_drop_middle in Hir.
+                ltac1:(unfold Γ in IHHH).
+                ltac1:(unfold Γ).
+                ltac1:(rewrite - Hir).
+                unfold compile.
+                simpl.
+                ltac1:(rewrite map_app).
+                ltac1:(rewrite map_cons).
+                simpl.
+                ltac1:(rewrite concat_app).
+                ltac1:(rewrite concat_cons).
+                ltac1:(unfold Γ).
+                clear.
+                rewrite elem_of_app. right.
+                rewrite elem_of_app. left.
+                rewrite elem_of_cons. left.
+                reflexivity.
+            }
+
+            assert (ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (vars_of_to_l2r c)) (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)) iV c h ∈ Γ).
+            {
+                rewrite elem_of_list_lookup in H.
+                destruct H as [ir Hir].
+                apply take_drop_middle in Hir.
+                ltac1:(unfold Γ in IHHH).
+                ltac1:(unfold Γ).
+                ltac1:(rewrite - Hir).
+                unfold compile.
+                simpl.
+                ltac1:(rewrite map_app).
+                ltac1:(rewrite map_cons).
+                simpl.
+                ltac1:(rewrite concat_app).
+                ltac1:(rewrite concat_cons).
+                ltac1:(unfold Γ).
+                clear.
+                rewrite elem_of_app. right.
+                rewrite elem_of_app. left.
+                rewrite elem_of_cons. right.
+                rewrite elem_of_cons. left.
+                reflexivity.
+            }
+
+            
 
 
             assert (Htmp := @frto_step Σ Act Γ).
+
+            specialize (Htmp ((t_term topSymbol [ctrl1; state1]))).
+            specialize (Htmp ((t_term topSymbol [r; state1]))).
+            specialize (Htmp ((t_term topSymbol [v; state2]))).
+            specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
+            specialize (Htmp invisible_act).
+
+
+
+
+
+
+
+
             (* I shouldn't specialize it with ctrl1.
             It should be: cSeq[ctrl1 with holeSymbol instead of ??;] 
             *)
