@@ -179,6 +179,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
         ]
     | mld_context _ c h Hh scs =>
         let vars := vars_of_to_l2r c in
+        (* TODO we need to make these distinct from `h` also. *)
         let contVariable := fresh vars in
         let dataVariable := fresh (contVariable::vars) in
          [
@@ -6023,7 +6024,41 @@ Proof.
                 }
                 split.
                 {
-                    
+                    clear Htmp'.
+                    apply satisfies_top_expr.
+                    split.
+                    {
+                        apply satisfies_top_expr.
+                        split.
+                        {
+                            subst ρ'''.
+                            subst ρ''.
+                            subst ρ'.
+                            unfold Valuation in *.
+                            eapply satisfies_ext>[|(apply satisfies_var_expr;unfold Valuation in *; eapply lookup_insert with (m := ρ))].
+                            Search subseteq insert.
+                            unfold Valuation in *.
+                            apply insert_subseteq_r.
+                            {
+
+                            }
+                            {
+                                apply insert_subseteq_r.
+                                {
+
+                                }
+                                {
+                                    reflexivity.
+                                }
+                            }
+                        }
+                        {
+
+                        }
+                    }
+                    {
+
+                    }
                 }
             }
             specialize (Htmp IHHH).
