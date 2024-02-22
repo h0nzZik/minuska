@@ -5945,7 +5945,10 @@ Proof.
             {
                 clear Htmp.
                 unfold flattened_rewrites_to.
-                exists (<[(fresh (vars_of_to_l2r c)):=uglify' continuation]>(<[h:=uglify' F1]> ρ)).
+                remember ((<[h:=uglify' F1]> ρ)) as ρ'.
+                remember ((<[(fresh (vars_of_to_l2r c)):=uglify' continuation]>ρ')) as ρ''.
+                remember (<[(fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)):=(uglify' state1)]>ρ'') as ρ'''.
+                exists (ρ''').
                 unfold flattened_rewrites_in_valuation_under_to.
                 split.
                 {
@@ -5962,27 +5965,65 @@ Proof.
                             { eapply HB1. }
                             {
                                 intros.
+                                subst ρ'''.
+                                subst ρ'.
                                 ltac1:(rewrite lookup_insert_ne).
                                 {
                                     rewrite <- vars_of_uglify in H6.
                                     intros HContra. subst x.
-                                    eapply is_fresh.
-                                    { apply H6. }
+                                    assert (Htmp: fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)).
+                                    {
+                                        intros HContra'.
+                                        eapply infinite_is_fresh; apply HContra'.
+                                    }
+                                    apply Htmp. clear Htmp.
+                                    rewrite elem_of_cons.
+                                    right. assumption.
                                 }
+                                subst ρ''.
+                                ltac1:(rewrite lookup_insert_ne).
                                 {
-                                    reflexivity.
+                                    intros HContra. subst x.
+                                    rewrite <- vars_of_uglify in H6.
+                                    eapply infinite_is_fresh; apply H6.
                                 }
+                                reflexivity.
                             }
                         }
                         {
-                            apply satisfies_var.
+                            subst ρ'''.
+                            subst ρ''.
                             unfold Valuation in *.
-                            apply lookup_insert.
+                            rewrite insert_commute.
+                            {
+                                apply satisfies_var.
+                                unfold Valuation in *.
+                                apply lookup_insert.
+                            }
+                            {
+                                intros HContra.
+                                assert (Htmp : fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)).
+                                {
+                                    intros HContra'.
+                                    eapply infinite_is_fresh;apply HContra'.
+                                }
+                                rewrite HContra in Htmp.
+                                apply Htmp. clear HContra Htmp.
+                                rewrite elem_of_cons.
+                                left. reflexivity.
+                            }
                         }
                     }
                     {
-
+                        subst ρ'''.
+                        apply satisfies_var.
+                        unfold Valuation in *.
+                        apply lookup_insert.
                     }
+                }
+                split.
+                {
+                    
                 }
             }
             specialize (Htmp IHHH).
