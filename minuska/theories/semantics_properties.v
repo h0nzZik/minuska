@@ -925,3 +925,38 @@ Proof.
     }
 Qed.
 
+#[export]
+Instance SatisfiesProperties_TermOverBuiltin_TermOverBoV
+    {Σ : StaticModel}
+    : SatisfiesProperties
+        Valuation
+        (TermOver builtin_value)
+        (TermOver BuiltinOrVar)
+        variable
+.
+Proof.
+    constructor.
+    intros v1 v2 Hv1v2 a b.
+    unfold satisfies; simpl.
+    intros H.
+    eapply satisfies_ext>[|apply H].
+    exact Hv1v2.
+Defined.
+
+#[export]
+Instance SatisfiesProperties_TermOverBuiltin_TermOverExpression
+    {Σ : StaticModel}
+    : SatisfiesProperties
+        Valuation
+        (TermOver builtin_value)
+        (TermOver Expression)
+        variable
+.
+Proof.
+    constructor.
+    intros v1 v2 Hv1v2 a b.
+    unfold satisfies; simpl.
+    intros H.
+    eapply satisfies_ext>[|apply H].
+    exact Hv1v2.
+Defined.
