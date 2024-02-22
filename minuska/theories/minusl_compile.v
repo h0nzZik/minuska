@@ -91,6 +91,8 @@ Definition CompileT {Σ : StaticModel} {Act : Set} : Type :=
     MinusL_LangDef Act -> RewritingTheory Act
 .
 
+(* This should not be used *)
+(*
 Definition down
     {Σ : StaticModel}
     {A : Type}
@@ -100,11 +102,68 @@ Definition down
 :=
     t_term topSymbol [ctrl;data]
 .
+*)
 
+Definition down2
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol : symbol)
+    (continuationVariable : variable)
+    (ctrl data : TermOver BuiltinOrVar)
+    : TermOver BuiltinOrVar
+:=
+    t_term topSymbol
+        [
+            (t_term cseqSymbol
+                [
+                    ctrl;
+                    t_over (bov_variable continuationVariable)
+                ]
+            );
+            data
+        ]
+.
+
+Definition down2E
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol : symbol)
+    (continuationVariable : variable)
+    (ctrl data : TermOver Expression)
+    : TermOver Expression
+:=
+    t_term topSymbol
+        [
+            (t_term cseqSymbol
+                [
+                    ctrl;
+                    t_over (ft_variable continuationVariable)
+                ]
+            );
+            data
+        ]
+.
+
+Definition downC
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol : symbol)
+    (ctrl data continuation : TermOver builtin_value)
+    : TermOver builtin_value
+:=
+    t_term topSymbol
+        [
+            (t_term cseqSymbol
+                [
+                    ctrl;
+                    continuation
+                ]
+            );
+            data
+        ]
+.
 
 Definition compile' {Σ : StaticModel} {Act : Set}
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
+    (continuationVariable : variable)
     (isValue : Expression -> (list SideCondition))
     (d : MinusL_Decl Act)
     : (list (RewritingRule Act))
@@ -112,8 +171,8 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     match d with
     | mld_rewrite _ lc ld a rc rd scs => [
         ({|
-            fr_from := uglify' (down topSymbol lc ld) ;
-            fr_to := uglify' (down topSymbol rc rd) ;
+            fr_from := uglify' (down2 topSymbol cseqSymbol continuationVariable lc ld) ;
+            fr_to := uglify' (down2E topSymbol cseqSymbol continuationVariable rc rd) ;
             fr_scs := scs ;
             fr_act := a;
         |})
@@ -144,9 +203,12 @@ Definition compile' {Σ : StaticModel} {Act : Set}
 Definition compile {Σ : StaticModel}
     {Act : Set}
     (invisible_act : Act)
-    (topSymbol cseqSymbol holeSymbol : symbol) 
+    (topSymbol cseqSymbol holeSymbol : symbol)
+    (continuationVariable : variable)
     : CompileT :=
-    fun D => concat (map (compile' invisible_act topSymbol cseqSymbol holeSymbol (mlld_isValue Act D)) (mlld_decls Act D))
+    fun D => concat (map (
+        compile' invisible_act topSymbol cseqSymbol holeSymbol continuationVariable (mlld_isValue Act D)
+        ) (mlld_decls Act D))
 .
 
 Lemma satisfies_top_bov
@@ -463,6 +525,250 @@ Proof.
     }
 Qed.
 
+(* The proof if the same as for satisfies_top_bov_cons*)
+Lemma satisfies_top_bov_cons_expr
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (topSymbol topSymbol' : symbol)
+    (states : list (TermOver builtin_value))
+    (lds : list (TermOver Expression))
+    :
+    (
+        length states = length lds /\
+        Forall id (zip_with (satisfies ρ) states lds)
+        /\ topSymbol = topSymbol'
+    ) <->
+    (
+        satisfies ρ (fold_left helper (map uglify' states) (pt_operator topSymbol))
+        (fold_left helper (map uglify' lds) (pt_operator topSymbol'))
+    )
+.
+Proof.
+    split.
+    {
+        intros H.
+        destruct H as [Hlens H].
+        revert lds Hlens H.
+        induction states using rev_ind; intros lds Hlens H; simpl in *.
+        {
+            destruct lds; simpl in *.
+            {
+                destruct H as [_ H]. subst.
+                constructor.
+            }
+            {
+                inversion Hlens.
+            }
+        }
+        {
+            destruct (analyze_list_from_end lds) as [?|He].
+            {
+                subst. simpl in *.
+                rewrite app_length in Hlens.
+                simpl in Hlens.
+                ltac1:(lia).
+            }
+            {
+                destruct He as [l' [x0 Hl']].
+                subst lds.
+                rewrite map_app.
+                rewrite map_app.
+                rewrite fold_left_app.
+                rewrite fold_left_app.
+                simpl.
+                rewrite app_length in Hlens.
+                rewrite app_length in Hlens.
+                simpl in Hlens.
+                assert (Hlens': length states = length l') by (ltac1:(lia)).
+                rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens') in H.
+                destruct H as [H ?]. subst topSymbol'.
+                apply Forall_app in H.
+                destruct H as [H1 H2].
+                simpl in H2. rewrite Forall_cons in H2. destruct H2 as [H2 _].
+                unfold helper. simpl.
+                destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                    simpl in *.
+                {
+                    constructor.
+                    apply IHstates.
+                    {
+                        apply Hlens'.
+                    }
+                    {
+                        split>[|reflexivity].
+                        apply H1.
+                    }
+                    {
+                        apply (f_equal prettify) in Hux.
+                        apply (f_equal prettify) in Hux0.
+                        rewrite (cancel prettify uglify') in Hux.
+                        rewrite (cancel prettify uglify') in Hux0.
+                        subst.
+                        unfold satisfies in H2; simpl in H2.
+                        ltac1:(
+                            replace (prettify' ao)
+                            with (prettify (term_preterm ao))
+                            in H2
+                            by reflexivity
+                        ).
+                        ltac1:(
+                            replace (prettify' ao0)
+                            with (prettify (term_preterm ao0))
+                            in H2
+                            by reflexivity
+                        ).
+                        rewrite (cancel uglify' prettify) in H2.
+                        rewrite (cancel uglify' prettify) in H2.
+                        unfold satisfies in H2; simpl in H2.
+                        inversion H2; subst; clear H2; assumption.
+                    }
+                }
+                {
+                    unfold satisfies in H2. simpl in H2.
+                    rewrite Hux in H2. rewrite Hux0 in H2.
+                    inversion H2; subst; clear H2.
+                    constructor.
+                    { apply IHstates; (repeat split); try assumption; try reflexivity. }
+                    { apply H4. }
+                }
+                {
+                    unfold satisfies in H2. simpl in H2.
+                    rewrite Hux in H2. rewrite Hux0 in H2.
+                    inversion H2.
+                }
+                {
+                    unfold satisfies in H2. simpl in H2.
+                    rewrite Hux in H2. rewrite Hux0 in H2.
+                    inversion H2; subst; clear H2.
+                    constructor.
+                    { apply IHstates; (repeat split); try assumption; try reflexivity. }
+                    { assumption. }
+                }
+            }
+        }
+    }
+    {
+        intros H.
+        revert lds H.
+        induction states using rev_ind; intros lds pf.
+        {
+            destruct lds; simpl in *.
+            {
+                split>[reflexivity|].
+                split.
+                {
+                    apply Forall_nil. exact I.
+                }
+                {
+                    inversion pf. subst. reflexivity.
+                }
+            }
+            {
+                inversion pf; subst; clear pf.
+                ltac1:(exfalso).
+                induction lds using rev_ind.
+                {
+                    simpl in H2. unfold helper in H2.
+                    destruct (uglify' t); simpl in H2; inversion H2.
+                }
+                {
+                    rewrite map_app in H2.
+                    rewrite fold_left_app in H2.
+                    simpl in H2.
+                    unfold helper in H2.
+                    destruct (uglify' x) eqn:Hux.
+                    {
+                        inversion H2.
+                    }
+                    {
+                        inversion H2.
+                    }
+                }
+            }
+        }
+        {
+            destruct (analyze_list_from_end lds); simpl in *.
+            {
+                ltac1:(exfalso).
+                subst.
+
+                rewrite map_app in pf.
+                rewrite fold_left_app in pf.
+                simpl in pf.
+                unfold helper in pf.
+                destruct (uglify' x) eqn:Hux.
+                {
+                    inversion pf.
+                }
+                {
+                    inversion pf.
+                }
+            }
+            {
+                destruct e as [l' [x0 Hlds]].
+                subst lds; simpl in *.
+                rewrite map_app in pf.
+                rewrite map_app in pf.
+                simpl in pf.
+                rewrite fold_left_app in pf.
+                rewrite fold_left_app in pf.
+                simpl in pf.
+
+                specialize (IHstates l').
+                ltac1:(ospecialize (IHstates _)).
+                {
+                    destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                            simpl in *.
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                    {
+                        inversion pf; subst; clear pf.
+                        assumption.
+                    }
+                }
+                destruct IHstates as [IHlen [IHstates ?]].
+                subst topSymbol'.
+                do 2 (rewrite app_length).
+                simpl.
+                split>[ltac1:(lia)|].
+                split.
+                {                
+                    rewrite (zip_with_app (satisfies ρ) _ _ _ _ IHlen).
+                    rewrite Forall_app.
+                    split.
+                    {
+                        apply IHstates.
+                        
+                    }
+                    {
+                        simpl.
+                        rewrite Forall_cons.
+                        split>[|apply Forall_nil; exact I].
+                        destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                            simpl in *; inversion pf; subst; clear pf;
+                            unfold satisfies; simpl; rewrite Hux; rewrite Hux0;
+                            try constructor; try assumption.
+                        inversion H5.
+                    }
+                }
+                {
+                    reflexivity.
+                }
+            }
+        }
+    }
+Qed.
+
 Lemma satisfies_top_expr
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -508,6 +814,18 @@ Lemma satisfies_var
     x γ:
     ρ !! x = Some (uglify' γ) ->
     satisfies ρ γ (t_over (bov_variable x))
+.
+Proof.
+    intros H.
+    destruct γ; (repeat constructor); assumption.
+Qed.
+
+Lemma satisfies_var_expr
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    x γ:
+    ρ !! x = Some (uglify' γ) ->
+    satisfies ρ γ (t_over (ft_variable x))
 .
 Proof.
     intros H.
@@ -5309,21 +5627,26 @@ Lemma compile_correct
     {Act : Set}
     {_AD : EqDecision Act}
     (invisible_act : Act)
-    (topSymbol cseqSymbol holeSymbol : symbol) 
+    (topSymbol cseqSymbol holeSymbol : symbol)
+    (continuationVariable : variable) 
     (D : MinusL_LangDef Act)
     :
     ~ (invisible_act ∈ actions_of_ldef Act D) ->
-    let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol D in
+    let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol continuationVariable D in
     forall
         (lc ld rc rd : TermOver builtin_value)
         (w : list Act)
-        (ρ : Valuation),
+        (ρ : Valuation)
+        (Hnocvρ : continuationVariable ∉ vars_of ρ),
         MinusL_rewritesInVal Act D lc ld w  ρ rc rd
         <->
-        flattened_rewrites_to_over Γ
-            (down topSymbol lc ld)
-            (filter (fun x => x <> invisible_act) w)
-            (down topSymbol rc rd)
+        (
+            forall continuation,
+            flattened_rewrites_to_over Γ
+                (downC topSymbol cseqSymbol lc ld continuation)
+                (filter (fun x => x <> invisible_act) w)
+                (downC topSymbol cseqSymbol rc rd continuation)
+        )
 .
 Proof.
     intros Hinvisible.
@@ -5331,7 +5654,7 @@ Proof.
     destruct D as [iV ds]; simpl in *.
     split; intros HH.
     {
-        induction HH.
+        induction HH; intros continuation.
         {
             unfold compile in Γ. simpl in H. simpl in Γ.
             apply elem_of_list_lookup_1 in H.
@@ -5355,11 +5678,12 @@ Proof.
             simpl in Hi. inversion Hi; subst; clear Hi.
             rewrite map_app.
             rewrite concat_app.
-            simpl. rewrite filter_cons. rewrite filter_nil.
+            rewrite filter_cons. rewrite filter_nil.
             destruct (decide (a <> invisible_act)).
             {
                 eapply frto_step>[|()|apply frto_base].
                 {
+                    simpl.
                     rewrite elem_of_app.
                     right.
                     rewrite elem_of_cons.
@@ -5367,20 +5691,127 @@ Proof.
                     reflexivity.
                 }
                 {
-                    simpl.
                     unfold flattened_rewrites_to.
-                    exists ρ.
+                    exists (<[continuationVariable := (uglify' continuation)]>ρ).
                     unfold flattened_rewrites_in_valuation_under_to.
-                    simpl.
                     split.
                     {
-                        apply satisfies_top_bov.
-                        split; assumption.
+                        unfold apply_symbol'.
+                        unfold to_Term'.
+                        constructor.
+                        unfold to_PreTerm'.
+                        fold (@uglify' Σ).
+                        ltac1:(
+                            replace
+                            (term_preterm (fold_left helper [uglify' lc; term_operand (bov_variable continuationVariable)] (pt_operator cseqSymbol)))
+                            with
+                            (uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]))
+                            by reflexivity
+                        ).
+                        ltac1:(
+                            replace
+                            ([uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]); uglify' ld])
+                            with
+                            (map uglify' [((t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]));(ld)])
+                            by reflexivity
+                        ).
+                        apply satisfies_top_bov_cons.
+                        split.
+                        {
+                            simpl. reflexivity.
+                        }
+                        {
+                            split>[|reflexivity].
+                            simpl.
+                            rewrite Forall_cons.
+                            split.
+                            {
+                                apply satisfies_top_bov.
+                                split.
+                                {
+                                    eapply satisfies_ext>[|apply H0].
+                                    unfold Valuation in *.
+                                    apply insert_subseteq.
+                                    clear -Hnocvρ.
+                                    unfold vars_of in Hnocvρ.
+                                    simpl in Hnocvρ.
+                                    rewrite not_elem_of_dom in Hnocvρ.
+                                    exact Hnocvρ.
+                                }
+                                {
+                                    apply satisfies_var.
+                                    unfold Valuation in *.
+                                    apply lookup_insert.
+                                }
+                            }
+                            {
+                                rewrite Forall_cons.
+                                split.
+                                {
+                                    eapply satisfies_ext>[|apply H1].
+                                    unfold Valuation in *.
+                                    apply insert_subseteq.
+                                    clear -Hnocvρ.
+                                    unfold vars_of in Hnocvρ.
+                                    simpl in Hnocvρ.
+                                    rewrite not_elem_of_dom in Hnocvρ.
+                                    exact Hnocvρ.   
+                                }
+                                {
+                                    apply Forall_nil. exact I.
+                                }
+                            }
+                        }
                     }
                     split.
                     {
-                        apply satisfies_top_expr.
-                        split; assumption.
+                        unfold apply_symbol'.
+                        unfold to_Term'.
+                        constructor.
+                        unfold to_PreTerm'.
+                        fold (@uglify' Σ).
+                        ltac1:(
+                            replace
+                            ([term_preterm (fold_left helper [uglify' rc; term_operand (ft_variable continuationVariable)] (pt_operator cseqSymbol)); uglify' rd])
+                            with
+                            (
+                                map uglify' [(t_term cseqSymbol [rc; t_over (ft_variable continuationVariable)]);(rd)]
+                            )
+                            by reflexivity
+                        ).
+                        apply satisfies_top_bov_cons_expr.
+                        (repeat split); try reflexivity.
+                        simpl.
+                        repeat (rewrite Forall_cons).
+                        rewrite Forall_nil.
+                        (repeat split).
+                        {
+                            constructor.
+                            apply satisfies_top_bov_cons_expr.
+                            (repeat split).
+                            simpl.
+                            repeat (rewrite Forall_cons).
+                            rewrite Forall_nil.
+                            (repeat split).
+                            {
+                                eapply satisfies_ext>[|apply H2].
+                                unfold Valuation in *.
+                                apply insert_subseteq.
+                                clear -Hnocvρ.
+                                unfold vars_of in Hnocvρ.
+                                simpl in Hnocvρ.
+                                rewrite not_elem_of_dom in Hnocvρ.
+                                exact Hnocvρ.   
+                            }
+                            {
+                                apply satisfies_var_expr.
+                                unfold Valuation in *.
+                                apply lookup_insert.
+                            }
+                        }
+                        {
+
+                        }
                     }
                     split>[assumption|].
                     reflexivity.
@@ -5485,16 +5916,40 @@ Proof.
                 reflexivity.
             }
 
-            
 
 
+            (* (4) Use the heating rule. *)
             assert (Htmp := @frto_step Σ Act Γ).
-
             specialize (Htmp ((t_term topSymbol [ctrl1; state1]))).
             specialize (Htmp ((t_term topSymbol [r; state1]))).
             specialize (Htmp ((t_term topSymbol [v; state2]))).
             specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
             specialize (Htmp invisible_act).
+            specialize (Htmp _ H4).
+            ltac1:(ospecialize (Htmp _)).
+            {
+                clear Htmp.
+                unfold flattened_rewrites_to.
+                exists ρ.
+                unfold flattened_rewrites_in_valuation_under_to.
+                simpl.
+                split.
+                {
+                    clear Htmp'.
+                    ltac1:(
+                        replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)))))
+                        with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c))))))
+                        by reflexivity
+                    ).
+                    ltac1:(
+                        replace (apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable (fresh (vars_of_to_l2r c)))])
+                        with (uglify' (t_term cseqSymbol [c; t_over (bov_variable (fresh (vars_of_to_l2r c)))]))
+                        by reflexivity
+                    ).
+                    apply satisfies_top_bov.
+                }
+            }
+            specialize (Htmp IHHH).
 
 
 
