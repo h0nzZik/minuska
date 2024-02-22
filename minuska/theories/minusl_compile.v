@@ -180,8 +180,8 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     | mld_context _ c h Hh scs =>
         let vars := vars_of_to_l2r c in
         (* TODO we need to make these distinct from `h` also. *)
-        let contVariable := fresh vars in
-        let dataVariable := fresh (contVariable::vars) in
+        let contVariable := fresh (h::vars) in
+        let dataVariable := fresh (h::contVariable::vars) in
          [
             (ctx_heat
                 invisible_act
@@ -5623,6 +5623,22 @@ Proof.
     }
 Qed.
 
+Lemma satisfies_TermOver_vars_of
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation)
+    (g : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    (∀ x : variable, x ∈ vars_of (uglify' φ) → ρ1 !! x = ρ2 !! x) →
+    satisfies ρ1 g φ ↔ satisfies ρ2 g φ
+.
+Proof.
+    intros H.
+    assert (Htmp := satisfies_Term'_vars_of ρ1 ρ2 (uglify' g) (uglify' φ) H).
+    apply Htmp.
+Qed.
+
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -5885,7 +5901,7 @@ Proof.
 
             (* (3) Find the heating and cooling rules in Γ *)
 
-            assert (ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (vars_of_to_l2r c)) (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+            assert (ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
@@ -5908,7 +5924,7 @@ Proof.
                 reflexivity.
             }
 
-            assert (ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (vars_of_to_l2r c)) (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)) iV c h ∈ Γ).
+            assert (ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
@@ -5932,8 +5948,6 @@ Proof.
                 reflexivity.
             }
 
-
-
             (* (4) Use the heating rule. *)
             assert (Htmp := @frto_step Σ Act Γ).
             specialize (Htmp (downC topSymbol cseqSymbol G1 state1 continuation)).
@@ -5947,8 +5961,8 @@ Proof.
                 clear Htmp.
                 unfold flattened_rewrites_to.
                 remember ((<[h:=uglify' F1]> ρ)) as ρ'.
-                remember ((<[(fresh (vars_of_to_l2r c)):=uglify' continuation]>ρ')) as ρ''.
-                remember (<[(fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)):=(uglify' state1)]>ρ'') as ρ'''.
+                remember ((<[(fresh (h::vars_of_to_l2r c)):=uglify' continuation]>ρ')) as ρ''.
+                remember (<[(fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)):=(uglify' state1)]>ρ'') as ρ'''.
                 exists (ρ''').
                 unfold flattened_rewrites_in_valuation_under_to.
                 split.
@@ -5972,21 +5986,29 @@ Proof.
                                 {
                                     rewrite <- vars_of_uglify in H6.
                                     intros HContra. subst x.
-                                    assert (Htmp: fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)).
+                                    assert (Htmp: fresh (h:: (fresh (h:: vars_of_to_l2r c)) :: vars_of_to_l2r c) ∉ (h:: fresh (h:: vars_of_to_l2r c) :: vars_of_to_l2r c)).
                                     {
                                         intros HContra'.
                                         eapply infinite_is_fresh; apply HContra'.
                                     }
                                     apply Htmp. clear Htmp.
                                     rewrite elem_of_cons.
-                                    right. assumption.
+                                    right.
+                                    rewrite elem_of_cons.
+                                    right.
+                                    assumption.
                                 }
                                 subst ρ''.
                                 ltac1:(rewrite lookup_insert_ne).
                                 {
                                     intros HContra. subst x.
                                     rewrite <- vars_of_uglify in H6.
-                                    eapply infinite_is_fresh; apply H6.
+                                    assert (Htmp : fresh (h :: vars_of_to_l2r c) ∉ h :: vars_of_to_l2r c).
+                                    {
+                                        apply infinite_is_fresh.
+                                    }
+                                    apply Htmp. clear Htmp.
+                                    rewrite elem_of_cons. right. assumption.
                                 }
                                 reflexivity.
                             }
@@ -6003,7 +6025,7 @@ Proof.
                             }
                             {
                                 intros HContra.
-                                assert (Htmp : fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)).
+                                assert (Htmp : fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c) ∉ (h :: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)).
                                 {
                                     intros HContra'.
                                     eapply infinite_is_fresh;apply HContra'.
@@ -6011,6 +6033,7 @@ Proof.
                                 rewrite HContra in Htmp.
                                 apply Htmp. clear HContra Htmp.
                                 rewrite elem_of_cons.
+                                right. rewrite elem_of_cons.
                                 left. reflexivity.
                             }
                         }
@@ -6035,25 +6058,43 @@ Proof.
                             subst ρ''.
                             subst ρ'.
                             unfold Valuation in *.
-                            eapply satisfies_ext>[|(apply satisfies_var_expr;unfold Valuation in *; eapply lookup_insert with (m := ρ))].
-                            Search subseteq insert.
+                            apply satisfies_var_expr.
                             unfold Valuation in *.
-                            apply insert_subseteq_r.
+                            rewrite lookup_insert_ne.
                             {
-
+                                rewrite lookup_insert_ne.
+                                {
+                                    apply lookup_insert.
+                                }
+                                {
+                                    intros HContra.
+                                    assert (Htmp: fresh (h :: vars_of_to_l2r c) ∉ (h :: vars_of_to_l2r c)).
+                                    {
+                                        apply infinite_is_fresh.
+                                    }
+                                    apply Htmp. clear Htmp.
+                                    clear -HContra. ltac1:(set_solver).
+                                }
                             }
                             {
-                                apply insert_subseteq_r.
+                                intros HContra.
+                                assert (Htmp: fresh (h :: fresh (h :: vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (h :: fresh (h :: vars_of_to_l2r c) :: vars_of_to_l2r c)).
                                 {
-
+                                    apply infinite_is_fresh.
                                 }
-                                {
-                                    reflexivity.
-                                }
+                                apply Htmp. clear Htmp.
+                                ltac1:(set_solver).
                             }
                         }
                         {
+                            apply satisfies_top_expr.
+                            split.
+                            {
+                                subst ρ'''.
+                            }
+                            {
 
+                            }
                         }
                     }
                     {
