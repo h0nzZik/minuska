@@ -6491,6 +6491,137 @@ Proof.
     }
 Qed.
 
+Lemma satisfies_subst_subst
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ γ1 γ2 : TermOver builtin_value)
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    h ∉ vars_of (uglify' ψ) ->
+    h ∈ vars_of (uglify' φ) ->
+    satisfies ρ γ2 ψ ->
+    satisfies (<[h:=uglify' γ1]>ρ) γ φ ->
+    satisfies ρ
+        (TermOverBuiltin_subst γ γ1 γ2)
+        (TermOverBoV_subst φ h ψ)
+.
+Proof.
+    revert γ γ1 γ2 ψ.
+    induction φ; intros γ γ1 γ2 ψ Hhψ Hhφ HH1 HH2.
+    {
+        (* φ is BoV `a` *)
+        unfold TermOverBuiltin_subst.
+        destruct γ; simpl in *.
+        {
+            (* γ is a builtin value `a0` *)
+            inversion HH2; subst; clear HH2.
+            unfold is_left in *.
+            destruct (decide (t_over a0 = γ1)) as [Heq|Hneq].
+            {
+                subst.
+                unfold vars_of in Hhφ; simpl in Hhφ.
+                unfold vars_of in Hhφ; simpl in Hhφ.
+                destruct a.
+                {
+                    subst.
+                    inversion Hhφ; subst; clear Hhφ.
+                }
+                {
+                    simpl in Hhφ. rewrite elem_of_singleton in Hhφ.
+                    subst.
+                    destruct (decide (x=x))>[|ltac1:(contradiction)].
+                    exact HH1.
+                }
+            }
+            {
+                unfold vars_of in Hhφ; simpl in Hhφ.
+                unfold vars_of in Hhφ; simpl in Hhφ.
+                destruct a.
+                {
+                    simpl in Hhφ.
+                    rewrite elem_of_empty in Hhφ. inversion Hhφ.
+                }
+                {
+                    simpl in Hhφ.
+                    rewrite elem_of_singleton in Hhφ.
+                    subst.
+                    destruct (decide (x=x))>[|ltac1:(contradiction)].
+                    inversion pf; subst; clear pf.
+                    ltac1:(rewrite lookup_insert_Some in H1).
+                    destruct H1 as [H1|H1].
+                    {
+                        destruct H1 as [_ H1].
+                        apply (f_equal prettify) in H1.
+                        rewrite (cancel prettify uglify') in H1.
+                        subst. simpl in Hneq.
+                        ltac1:(contradiction Hneq).
+                        reflexivity.
+                    }
+                    {
+                        ltac1:(naive_solver).
+                    }
+                }
+            }
+        }
+        {
+            destruct a.
+            {
+                inversion HH2; subst; clear HH2.
+                apply satisfies_builtin_inv in H2.
+                inversion H2.
+            }
+            {
+                inversion HH2; subst; clear HH2.
+                inversion H2; subst; clear H2.
+                destruct (decide (h = x)).
+                {
+                    subst.
+                    ltac1:(rewrite lookup_insert in H0).
+                    inversion H0; subst; clear H0.
+                    apply (f_equal prettify) in H1.
+                    rewrite (cancel prettify uglify') in H1.
+                    subst.
+                    unfold is_left in *.
+                    ltac1:(repeat case_match); try assumption.
+                    {
+                        ltac1:(congruence).
+                    }
+                    {
+                        clear H0 H.
+                        ltac1:(rename n into HH).
+                        ltac1:(exfalso).
+                        apply HH. clear HH.
+                        simpl.
+                        rewrite <- (cancel prettify uglify').
+                        simpl.
+                        reflexivity.
+                    }
+                }
+                {
+                    unfold vars_of in Hhφ; simpl in Hhφ.
+                    unfold vars_of in Hhφ; simpl in Hhφ.
+                    ltac1:(set_solver).
+                }
+            }
+        }
+    }
+    {
+        destruct γ.
+        {
+            simpl in *.
+            unfold is_left.
+            apply satisfies_term_inv in HH2.
+            destruct HH2 as [? [HContra ?]].
+            inversion HContra.
+        }
+        {
+            apply satisfies_term_inv in HH2.
+            destruct HH2 as [lγ [HH2 [HH3 HH4]]].
+        }
+    }
+Qed.
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -6947,6 +7078,7 @@ Proof.
                             {
                                 subst ρ'''.
                                 subst G1'.
+                                rewrite satisfies_TermOverBoV_to_TermOverExpr.
                                 Search satisfies TermOverBoV_to_TermOverExpr.
                             }
                             {
