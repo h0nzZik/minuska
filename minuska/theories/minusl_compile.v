@@ -6618,6 +6618,58 @@ Proof.
         {
             apply satisfies_term_inv in HH2.
             destruct HH2 as [lγ [HH2 [HH3 HH4]]].
+            inversion HH2; subst; clear HH2.
+            simpl.
+            destruct (decide (t_term s lγ = γ1)).
+            {
+                rewrite <- vars_of_uglify in Hhφ.
+                simpl in *. subst.
+                (* FIXME this is screwed, since I currently do not know how many times `h` occurs in φ *)
+                rewrite elem_of_list_In in Hhφ.
+                rewrite in_concat in Hhφ.
+                destruct Hhφ as [lx [H1lx H2lx]].
+                rewrite in_map_iff in H1lx.
+                destruct H1lx as [φ' [H1φ' H2φ']].
+                subst.
+                
+                rewrite <- elem_of_list_In in H2lx.
+                rewrite elem_of_list_lookup in H2lx.
+                destruct H2lx as [i H2lx].
+                assert (H2lx' := H2lx).
+                apply take_drop_middle in H2lx'.
+                rewrite <- elem_of_list_In in H2φ'.
+                rewrite elem_of_list_lookup in H2φ'.
+                destruct H2φ' as [j Hj].
+                assert (Hj' := Hj).
+                apply take_drop_middle in Hj'.
+                rewrite <- Hj'.
+                ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                rewrite fmap_app.
+                rewrite fmap_cons.
+                rewrite <- Hj' in H.
+                rewrite Forall_app in H.
+                rewrite Forall_cons in H.
+                destruct H as [IH1 [IH2 IH3]].
+                assert (Htake: (((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> take j l) = take j l)).
+                {
+
+                }
+                assert (Hdrop: (((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> drop (S j) l) = drop (S j) l)).
+                {
+                    
+                }
+                rewrite Htake. rewrite Hdrop. clear Htake. clear Hdrop.
+                Search satisfies t_term.
+                rewrite <- H2lx'.
+                unfold satisfies; simpl.
+                unfold apply_symbol'; simpl.
+                unfold to_PreTerm'; simpl.
+                apply satisfies_top_bov_cons.
+                Search satisfies fold_left.
+            }
+            {
+
+            }
         }
     }
 Qed.
