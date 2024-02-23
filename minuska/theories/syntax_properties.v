@@ -420,4 +420,37 @@ match ao with
 | pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
+#[global]
+Instance TermOverBuiltin_eqdec
+    {Σ : StaticModel}
+    :
+    EqDecision (TermOver builtin_value)
+.
+Proof.
+    intros t1 t2.
+    destruct (decide (uglify' t1 = uglify' t2)) as [Heq|Hneq].
+    {
+        apply (f_equal prettify) in Heq.
+        rewrite (cancel prettify uglify') in Heq.
+        rewrite (cancel prettify uglify') in Heq.
+        subst.
+        left. reflexivity.
+    }
+    {
+        right. intros HContra. subst. apply Hneq.
+        reflexivity.
+    }
+Defined.
+
+Fixpoint TermOverBuiltin_subst
+    {Σ : StaticModel}
+    (t m v : TermOver builtin_value)
+    : TermOver builtin_value
+:=
+    if (decide (t = m)) then v else
+    match t with
+    | t_over o => t_over o
+    | t_term s l => t_term s (map (fun t'' => TermOverBuiltin_subst t'' m v) l)
+    end
+.
 

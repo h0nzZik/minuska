@@ -22,7 +22,7 @@ Definition ctx_heat
     (contVariable dataVariable : variable)
     (isValue : Expression -> (list SideCondition))
     (c : TermOver BuiltinOrVar)
-    (h : variable)
+    (h : variable) (* occurs once in `c` *)
     (scs : list SideCondition)
     :
     RewritingRule Act
@@ -179,7 +179,6 @@ Definition compile' {Σ : StaticModel} {Act : Set}
         ]
     | mld_context _ c h Hh scs =>
         let vars := vars_of_to_l2r c in
-        (* TODO we need to make these distinct from `h` also. *)
         let contVariable := fresh (h::vars) in
         let dataVariable := fresh (h::contVariable::vars) in
          [
@@ -5951,6 +5950,8 @@ Proof.
             (* (4) Use the heating rule. *)
             assert (Htmp := @frto_step Σ Act Γ).
             specialize (Htmp (downC topSymbol cseqSymbol G1 state1 continuation)).
+            (* There should not be G1, but something like G1, but G1 contains F1, and we want to have holeSymbol instead of F1 in that modified G1.
+            *)
             specialize (Htmp (downC topSymbol cseqSymbol F1 state1 (t_term cseqSymbol [G1; continuation]))).
             specialize (Htmp (downC topSymbol cseqSymbol F2 state2 (t_term cseqSymbol [G2; continuation]))).
             specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
