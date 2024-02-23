@@ -6407,12 +6407,86 @@ Proof.
         {
             unfold TermOverBoV_to_TermOverExpr in HH.
             simpl in HH.
-            satisfies_term_inv
             apply satisfies_term_expr_inv in HH.
-            Search satisfies t_term.
+            destruct HH as [lγ [H1 [H2 H3]]].
+            subst γ.
+            unfold satisfies; simpl.
+            unfold apply_symbol'; simpl.
+            constructor.
+            unfold to_PreTerm'; simpl.
+            apply satisfies_top_bov_cons.
+            split.
+            {
+                rewrite map_length in H2. ltac1:(lia).
+            }
+            {
+                split>[|reflexivity].
+                rewrite Forall_forall in H.
+                rewrite Forall_forall in H3.
+                rewrite Forall_forall.
+                intros P.
+                rewrite elem_of_lookup_zip_with.
+                intros HH.
+                ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
+                destruct HH as [i [x [y [HH1 [HH2 HH3]]]]].
+                subst P.
+                rewrite <- H.
+                {
+                    apply H3.
+                    exists i,x.
+                    exists (TermOverBoV_to_TermOverExpr y).
+                    split>[reflexivity|].
+                    split>[assumption|].
+                    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                    rewrite list_lookup_fmap.
+                    rewrite HH3. simpl. reflexivity.
+                }
+                {
+                    rewrite elem_of_list_lookup. exists i. assumption.
+                }
+            }
         }
         {
-
+            unfold TermOverBoV_to_TermOverExpr. simpl.
+            apply satisfies_term_inv in HH.
+            destruct HH as [lγ [HH1 [HH2 HH3]]].
+            subst γ.
+            unfold satisfies; simpl.
+            unfold apply_symbol'; simpl.
+            constructor.
+            unfold to_PreTerm'; simpl.
+            apply satisfies_top_bov_cons_expr.
+            split.
+            {
+                rewrite map_length. ltac1:(lia).
+            }
+            split>[|reflexivity].
+            rewrite Forall_forall in H.
+            rewrite Forall_forall in HH3.
+            rewrite Forall_forall.
+            intros P HP.
+            rewrite elem_of_lookup_zip_with in HP.
+            destruct HP as [i [x [y [HH4 [HH5 HH6]]]]].
+            subst P.
+            ltac1:(replace map with (@fmap _ list_fmap) in HH6 by reflexivity).
+            rewrite list_lookup_fmap in HH6.
+            destruct (l !! i) eqn:Hli.
+            {
+                simpl in HH6. inversion HH6. subst. clear HH6.
+                apply H.
+                {
+                    rewrite elem_of_list_lookup. exists i. assumption.
+                }
+                apply HH3.
+                rewrite elem_of_lookup_zip_with.
+                exists i,x,t.
+                repeat split; assumption.
+            }
+            {
+                apply lookup_ge_None in Hli.
+                apply lookup_lt_Some in HH5.
+                ltac1:(lia).
+            }
         }
     }
 Qed.
