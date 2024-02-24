@@ -6759,10 +6759,15 @@ Proof.
                                     { assumption. }
                                     apply satisfies_var.
                                     ltac1:(rewrite H3). clear H3. apply f_equal.
+                                    rewrite <- uglify'_prettify'.
+                                    apply f_equal.
                                     rewrite not_subterm_subst.
-                                    { rewrite uglify'_prettify'. reflexivity. }
+                                    { reflexivity. }
                                     {
-                                        
+                                        apply Is_true_false_1.
+                                        intros HContra.
+                                        Search false not.
+                                        (* TODO this is not possible due to sizes of lγ and axy *)
                                     }
                                 }
                             }
