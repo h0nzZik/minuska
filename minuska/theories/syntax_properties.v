@@ -454,3 +454,35 @@ Fixpoint TermOverBuiltin_subst
     end
 .
 
+Fixpoint is_subterm_b
+    {Σ : StaticModel}
+    (m t : TermOver builtin_value)
+    : bool
+:=
+    if (decide (t = m)) then true else
+    match t with
+    | t_over _ => false
+    | t_term _ l => existsb (is_subterm_b m) l
+    end
+.
+
+Lemma not_subterm_subst
+    {Σ : StaticModel}
+    (t m v : TermOver builtin_value)
+    :
+    is_subterm_b m t = false ->
+    TermOverBuiltin_subst t m v = t
+.
+Proof.
+    induction t; simpl; intros; ltac1:(case_match; try congruence).
+    f_equal.
+    clear H1. revert H0 H.
+    induction l; simpl; intros H0 H.
+    { reflexivity. }
+    rewrite Forall_cons in H.
+    destruct H as [H1 H2].
+    rewrite orb_false_iff in H0.
+    destruct H0 as [H01 H02].
+    specialize (IHl H02 H2). clear H0 H2.
+    rewrite IHl. rewrite (H1 H01). reflexivity.
+Qed.

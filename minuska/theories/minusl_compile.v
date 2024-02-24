@@ -6624,48 +6624,59 @@ Proof.
             {
                 rewrite <- vars_of_uglify in Hhφ.
                 simpl in *. subst.
-                (* FIXME this is screwed, since I currently do not know how many times `h` occurs in φ *)
-                rewrite elem_of_list_In in Hhφ.
-                rewrite in_concat in Hhφ.
-                destruct Hhφ as [lx [H1lx H2lx]].
-                rewrite in_map_iff in H1lx.
-                destruct H1lx as [φ' [H1φ' H2φ']].
-                subst.
-                
-                rewrite <- elem_of_list_In in H2lx.
-                rewrite elem_of_list_lookup in H2lx.
-                destruct H2lx as [i H2lx].
-                assert (H2lx' := H2lx).
-                apply take_drop_middle in H2lx'.
-                rewrite <- elem_of_list_In in H2φ'.
-                rewrite elem_of_list_lookup in H2φ'.
-                destruct H2φ' as [j Hj].
-                assert (Hj' := Hj).
-                apply take_drop_middle in Hj'.
-                rewrite <- Hj'.
-                ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
-                rewrite fmap_app.
-                rewrite fmap_cons.
-                rewrite <- Hj' in H.
-                rewrite Forall_app in H.
-                rewrite Forall_cons in H.
-                destruct H as [IH1 [IH2 IH3]].
-                assert (Htake: (((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> take j l) = take j l)).
+                assert (HmyIH: Forall id
+                    (
+                        zip_with
+                            (fun x y => satisfies ρ
+                                (TermOverBuiltin_subst x (t_term s lγ) γ2)
+                                (TermOverBoV_subst y h ψ)
+                            )
+                            lγ l
+                    )
+                ).
                 {
-
+                    rewrite Forall_forall.
+                    rewrite Forall_forall in HH4.
+                    rewrite Forall_forall in H.
+                    intros x Hx.
+                    rewrite elem_of_lookup_zip_with in Hx.
+                    destruct Hx as [i [x0 [y0 [HH5 [HH6 HH7]]]]].
+                    subst x.
+                    destruct (decide (h ∈ vars_of (uglify' y0))) as [Hhiny0|Hhnotiny0].
+                    {
+                        apply H.
+                        {
+                            rewrite elem_of_list_lookup. exists i. exact HH7.
+                        }
+                        {
+                            exact Hhψ.
+                        }
+                        {
+                            exact Hhiny0.
+                        }
+                        {
+                            exact HH1.
+                        }
+                        {
+                            apply HH4.
+                            rewrite elem_of_lookup_zip_with.
+                            exists i,x0,y0.
+                            repeat split; assumption.
+                        }
+                    }
+                    {
+                        rewrite <- vars_of_uglify in Hhnotiny0.
+                        rewrite subst_notin>[|exact Hhnotiny0].
+                        ltac1:(setoid_rewrite elem_of_lookup_zip_with in HH4).
+                        specialize (HH4 (satisfies (<[h:=uglify' (t_term s lγ)]> ρ) x0 y0)).
+                        ltac1:(ospecialize (HH4 _)).
+                        {
+                            exists i, x0, y0.
+                            repeat split; assumption.
+                        }
+                        apply HH4.
+                    }
                 }
-                assert (Hdrop: (((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> drop (S j) l) = drop (S j) l)).
-                {
-                    
-                }
-                rewrite Htake. rewrite Hdrop. clear Htake. clear Hdrop.
-                Search satisfies t_term.
-                rewrite <- H2lx'.
-                unfold satisfies; simpl.
-                unfold apply_symbol'; simpl.
-                unfold to_PreTerm'; simpl.
-                apply satisfies_top_bov_cons.
-                Search satisfies fold_left.
             }
             {
 
