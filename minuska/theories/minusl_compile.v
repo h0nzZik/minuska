@@ -6500,6 +6500,7 @@ Lemma satisfies_subst_subst
     :
     h ∉ vars_of (uglify' ψ) ->
     h ∈ vars_of (uglify' φ) ->
+    is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1) φ = false ->
     satisfies ρ γ2 ψ ->
     satisfies (<[h:=uglify' γ1]>ρ) γ φ ->
     satisfies ρ
@@ -6508,7 +6509,7 @@ Lemma satisfies_subst_subst
 .
 Proof.
     revert γ γ1 γ2 ψ.
-    induction φ; intros γ γ1 γ2 ψ Hhψ Hhφ HH1 HH2.
+    induction φ; intros γ γ1 γ2 ψ Hhψ Hhφ Hnotsub HH1 HH2.
     {
         (* φ is BoV `a` *)
         unfold TermOverBuiltin_subst.
@@ -6583,6 +6584,7 @@ Proof.
                     rewrite (cancel prettify uglify') in H1.
                     subst.
                     unfold is_left in *.
+                    clear Hnotsub.
                     ltac1:(repeat case_match); try assumption.
                     {
                         ltac1:(congruence).
@@ -6591,7 +6593,7 @@ Proof.
                         clear H0 H.
                         ltac1:(rename n into HH).
                         ltac1:(exfalso).
-                        apply HH. clear HH.
+                        apply HH. clear H2 HH.
                         simpl.
                         rewrite <- (cancel prettify uglify').
                         simpl.
@@ -6655,6 +6657,25 @@ Proof.
                             exact Hhiny0.
                         }
                         {
+                            destruct (decide ((t_term s l = TermOverBuiltin_to_TermOverBoV (t_term s lγ)))).
+                            {
+                                simpl in Hnotsub. inversion Hnotsub.    
+                            }
+                            {
+                                simpl in Hnotsub.
+                                eapply existsb_nth with (n := i) in Hnotsub.
+                                {
+                                    eapply nth_lookup_Some in HH7.
+                                    erewrite HH7 in Hnotsub.
+                                    apply Hnotsub.
+                                }
+                                {
+                                    apply lookup_lt_Some in HH7.
+                                    exact HH7.
+                                }
+                            }
+                        }
+                        {
                             exact HH1.
                         }
                         {
@@ -6674,7 +6695,120 @@ Proof.
                             exists i, x0, y0.
                             repeat split; assumption.
                         }
-                        apply HH4.
+                        destruct (decide ((t_term s l = TermOverBuiltin_to_TermOverBoV (t_term s lγ)))) as [H1eq|H1neq].
+                        {
+                            simpl in *. inversion Hnotsub.
+                        }
+                        simpl in *.
+                        assert (H1neq': l <> fmap TermOverBuiltin_to_TermOverBoV lγ).
+                        {
+                            intros HContra. subst. apply H1neq. clear H1neq.
+                            unfold TermOverBuiltin_to_TermOverBoV at 2.
+                            unfold TermOver_map. fold (@TermOver_map Σ).
+                            ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                            reflexivity.
+                        }
+                        clear H1neq.
+                        unfold TermOverBuiltin_to_TermOverBoV in Hnotsub.
+                        unfold TermOver_map in Hnotsub. fold (@TermOver_map Σ) in Hnotsub.
+                        assert (Hnst : is_subterm_b ( (t_term s (map (TermOver_map bov_builtin) lγ)) ) y0 = false).
+                        {
+                            apply take_drop_middle in HH7.
+                            rewrite <- HH7 in Hnotsub.
+                            rewrite existsb_app in Hnotsub.
+                            rewrite orb_false_iff in Hnotsub.
+                            destruct Hnotsub as [Hns1 Hns2].
+                            simpl in Hns2.
+                            rewrite orb_false_iff in Hns2.
+                            destruct Hns2 as [Hns2 Hns3].
+                            exact Hns2.
+                        }
+                        destruct y0; simpl in *.
+                        {
+                            inversion HH4; subst; clear HH4.
+                            {
+                                apply (f_equal prettify) in H2.
+                                rewrite (cancel prettify uglify') in H2.
+                                subst x0. simpl in *.
+                                inversion pf; subst; clear pf.
+                                {
+                                    constructor.
+                                    constructor.
+                                }
+                                {
+                                    constructor.
+                                    constructor.
+                                    assert (Hxh : h <> x) by ltac1:(set_solver).
+                                    ltac1:(rewrite lookup_insert_ne in H0).
+                                    { apply Hxh. }
+                                    { assumption. }
+                                }
+                            }
+                            {
+                                apply (f_equal prettify) in H0.
+                                rewrite (cancel prettify uglify') in H0.
+                                subst x0. simpl in *.
+                                unfold satisfies in H3; simpl in H3.
+                                destruct a; simpl in *.
+                                {
+                                    inversion H3.
+                                }
+                                {
+                                    assert (Hxh : h <> x) by ltac1:(set_solver).
+                                    ltac1:(rewrite lookup_insert_ne in H3).
+                                    { assumption. }
+                                    apply satisfies_var.
+                                    ltac1:(rewrite H3). clear H3. apply f_equal.
+                                    rewrite not_subterm_subst.
+                                    { rewrite uglify'_prettify'. reflexivity. }
+                                    {
+                                        
+                                    }
+                                }
+                            }
+                        }
+                        (* *********************** *)
+
+                        destruct (is_subterm_b (t_term s lγ) x0) eqn:Hnss.
+                        {
+                            destruct x0; simpl in *.
+                            {
+                                inversion Hnss.
+                            }
+                            clear Hnss.
+                            simpl in *.
+                            
+                            simpl in *.
+
+
+
+                            destruct (decide (t_term s0 l0 = t_term s lγ)) as [Heq|Hneq]; simpl in *.
+                            {
+                                inversion Heq; subst; clear Heq.
+                            }
+                            {
+
+                            }
+                        }
+                        {
+                            rewrite not_subterm_subst>[|exact Hnss].
+                            erewrite satisfies_TermOver_vars_of in HH4.
+                            { apply HH4. }
+                            {
+                                intros x Hx.
+                                rewrite <- vars_of_uglify in Hx.
+                                destruct (decide (x = h)).
+                                {
+                                    subst.
+                                    ltac1:(contradiction Hhnotiny0).
+                                }
+                                {
+                                    ltac1:(rewrite lookup_insert_ne).
+                                    { ltac1:(congruence). }
+                                    reflexivity.
+                                }
+                            }
+                        }
                     }
                 }
             }

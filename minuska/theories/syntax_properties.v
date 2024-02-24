@@ -421,10 +421,12 @@ match ao with
 end.
 
 #[global]
-Instance TermOverBuiltin_eqdec
+Instance TermOver_eqdec
     {Σ : StaticModel}
+    {A : Type}
+    {_edA : EqDecision A}
     :
-    EqDecision (TermOver builtin_value)
+    EqDecision (TermOver A)
 .
 Proof.
     intros t1 t2.
@@ -456,7 +458,9 @@ Fixpoint TermOverBuiltin_subst
 
 Fixpoint is_subterm_b
     {Σ : StaticModel}
-    (m t : TermOver builtin_value)
+    {A : Type}
+    {_edA : EqDecision A}
+    (m t : TermOver A)
     : bool
 :=
     if (decide (t = m)) then true else
