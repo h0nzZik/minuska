@@ -6501,6 +6501,7 @@ Lemma satisfies_subst_subst
     h ∉ vars_of (uglify' ψ) ->
     h ∈ vars_of (uglify' φ) ->
     is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1) φ = false ->
+    (forall x, ρ !! x <> Some (uglify' γ2)) ->
     satisfies ρ γ2 ψ ->
     satisfies (<[h:=uglify' γ1]>ρ) γ φ ->
     satisfies ρ
@@ -6509,7 +6510,7 @@ Lemma satisfies_subst_subst
 .
 Proof.
     revert γ γ1 γ2 ψ.
-    induction φ; intros γ γ1 γ2 ψ Hhψ Hhφ Hnotsub HH1 HH2.
+    induction φ; intros γ γ1 γ2 ψ Hhψ Hhφ Hnotsub Hnotincod HH1 HH2.
     {
         (* φ is BoV `a` *)
         unfold TermOverBuiltin_subst.
@@ -6618,14 +6619,84 @@ Proof.
             inversion HContra.
         }
         {
+            rewrite <- vars_of_uglify in Hhφ.
+            assert (HHsizes := HH2).
+            apply concrete_is_larger_than_symbolic in HHsizes.
             apply satisfies_term_inv in HH2.
             destruct HH2 as [lγ [HH2 [HH3 HH4]]].
             inversion HH2; subst; clear HH2.
             simpl.
             destruct (decide (t_term s lγ = γ1)).
             {
-                rewrite <- vars_of_uglify in Hhφ.
                 simpl in *. subst.
+                ltac1:(exfalso).
+                clear -HHsizes Hhφ.
+                unfold delta_in_val in HHsizes.
+                unfold size_of_var_in_val in HHsizes.
+                rewrite elem_of_list_In in Hhφ.
+                rewrite in_concat in Hhφ.
+                destruct Hhφ as [x [H1x H2x]].
+                rewrite in_map_iff in H1x.
+                destruct H1x as [x0 [H1x0 H2x0]].
+                subst.
+                rewrite <- elem_of_list_In in H2x0.
+                ltac1:(rewrite elem_of_list_lookup in H2x0).
+                destruct H2x0 as [i Hi].
+                apply take_drop_middle in Hi.
+                rewrite <- Hi in HHsizes.
+                repeat (rewrite sum_list_with_app in HHsizes).
+                simpl in HHsizes.
+                rewrite map_app in HHsizes.
+                rewrite map_cons in HHsizes.
+                rewrite concat_app in HHsizes.
+                rewrite concat_cons in HHsizes.
+                repeat (rewrite sum_list_with_app in HHsizes).
+                simpl in HHsizes.
+                rewrite <- elem_of_list_In in H2x.
+                rewrite elem_of_list_lookup in H2x.
+                destruct H2x as [j Hj].
+                apply take_drop_middle in Hj.
+                rewrite <- Hj in HHsizes.
+                repeat (rewrite sum_list_with_app in HHsizes).
+                simpl in HHsizes.
+                ltac1:(case_match).
+                {
+                    ltac1:(rewrite lookup_insert in H).
+                    inversion H; subst; clear H.
+                    remember ((λ x : variable,
+                        match
+                        <[h:=apply_symbol' s (map uglify' lγ)]> ρ
+                        !! x
+                        with
+                        | Some g =>
+                            Init.Nat.pred
+                        (TermOver_size (prettify g))
+                        | None => 0
+                        end)
+                    ) as F.
+                    ltac1:(replace ((prettify (apply_symbol' s (map uglify' lγ)))) with (t_term s lγ) in HHsizes).
+                    {
+                        simpl in HHsizes.
+                        repeat (rewrite sum_list_with_compose in HHsizes).
+                        unfold compose in HHsizes.
+                        repeat (rewrite sum_list_with_S in HHsizes).
+                        repeat (rewrite sum_list_fmap in HHsizes).
+                        repeat (rewrite fmap_length in HHsizes).
+                        repeat (rewrite drop_length in HHsizes).
+                        assert (Htmp := TermOver_size_not_zero ((t_term s lγ))).
+                        ltac1:(lia).
+                    }
+                    {
+                        rewrite <- (cancel prettify uglify').
+                        simpl. reflexivity.
+                    }
+                }
+                {
+                    ltac1:(rewrite lookup_insert in H).
+                    inversion H.
+                }
+            }
+
                 assert (HmyIH: Forall id
                     (
                         zip_with
@@ -6674,6 +6745,9 @@ Proof.
                                     exact HH7.
                                 }
                             }
+                        }
+                        {
+                            exact Hnotincod.
                         }
                         {
                             exact HH1.
@@ -6766,56 +6840,61 @@ Proof.
                                     {
                                         apply Is_true_false_1.
                                         intros HContra.
-                                        Search false not.
-                                        (* TODO this is not possible due to sizes of lγ and axy *)
+                                        rewrite Is_true_true in HContra.
+                                        apply is_subterm_sizes in HContra.
+                                        clear - HH6 HContra.
+                                        apply take_drop_middle in HH6.
+                                        rewrite <- HH6 in HContra.
+                                        simpl in HContra.
+                                        rewrite sum_list_with_app in HContra.
+                                        simpl in HContra.
+                                        ltac1:(lia).
                                     }
                                 }
                             }
                         }
-                        (* *********************** *)
-
-                        destruct (is_subterm_b (t_term s lγ) x0) eqn:Hnss.
                         {
-                            destruct x0; simpl in *.
+                            destruct (decide ((t_term s0 l0 = t_term s (map (TermOver_map bov_builtin) lγ)))).
                             {
-                                inversion Hnss.
+                                simpl in *. inversion Hnst.
                             }
-                            clear Hnss.
                             simpl in *.
-                            
-                            simpl in *.
-
-
-
-                            destruct (decide (t_term s0 l0 = t_term s lγ)) as [Heq|Hneq]; simpl in *.
+                            rewrite not_subterm_subst.
                             {
-                                inversion Heq; subst; clear Heq.
-                            }
-                            {
-
-                            }
-                        }
-                        {
-                            rewrite not_subterm_subst>[|exact Hnss].
-                            erewrite satisfies_TermOver_vars_of in HH4.
-                            { apply HH4. }
-                            {
+                                erewrite satisfies_TermOver_vars_of.
+                                { apply HH4. }
                                 intros x Hx.
-                                rewrite <- vars_of_uglify in Hx.
-                                destruct (decide (x = h)).
+                                ltac1:(rewrite lookup_insert_ne).
                                 {
-                                    subst.
-                                    ltac1:(contradiction Hhnotiny0).
+                                    intros HContra. subst.
+                                    rewrite <- vars_of_uglify in Hx.
+                                    apply Hhnotiny0. apply Hx.
                                 }
-                                {
-                                    ltac1:(rewrite lookup_insert_ne).
-                                    { ltac1:(congruence). }
-                                    reflexivity.
-                                }
+                                { reflexivity. }
+                            }
+                            {
+                                 apply Is_true_false_1.
+                                intros HContra.
+                                rewrite Is_true_true in HContra.
+                                apply is_subterm_sizes in HContra.
+                                clear - HH6 HContra.
+                                apply take_drop_middle in HH6.
+                                rewrite <- HH6 in HContra.
+                                simpl in HContra.
+                                rewrite sum_list_with_app in HContra.
+                                simpl in HContra.
+                                ltac1:(lia).
                             }
                         }
                     }
                 }
+                destruct (decide ((t_term s l = TermOverBuiltin_to_TermOverBoV (t_term s lγ)))) as [?|Htsl].
+                {
+                    simpl in *. inversion Hnotsub.
+                }
+                simpl in *.
+                clear HH4 H.
+                Search γ2.
             }
             {
 
@@ -6839,7 +6918,8 @@ Lemma compile_correct
         (lc ld rc rd : TermOver builtin_value)
         (w : list Act)
         (ρ : Valuation)
-        (Hnocvρ : continuationVariable ∉ vars_of ρ),
+        (Hnocvρ : continuationVariable ∉ vars_of ρ)
+        (HnoHoleSymbolInRho : forall x, ρ !! x <> Some (uglify' (t_term holeSymbol []))),
         MinusL_rewritesInVal Act D lc ld w  ρ rc rd
         <->
         (
