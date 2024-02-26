@@ -6626,7 +6626,7 @@ Proof.
             destruct HH2 as [lγ [HH2 [HH3 HH4]]].
             inversion HH2; subst; clear HH2.
             simpl.
-            destruct (decide (t_term s lγ = γ1)).
+            destruct (decide (t_term s lγ = γ1)) as [?|Hneq].
             {
                 simpl in *. subst.
                 ltac1:(exfalso).
@@ -6696,6 +6696,93 @@ Proof.
                     inversion H.
                 }
             }
+            {
+                simpl.
+                unfold satisfies; simpl.
+                unfold apply_symbol'; simpl.
+                constructor.
+                unfold to_PreTerm'; simpl.
+                apply satisfies_top_bov_cons.
+                rewrite map_length.
+                rewrite map_length.
+                split>[ltac1:(lia)|].
+                split>[|reflexivity].
+                rewrite Forall_forall.
+                rewrite Forall_forall in HH4.
+                ltac1:(setoid_rewrite elem_of_lookup_zip_with).
+                ltac1:(setoid_rewrite elem_of_lookup_zip_with in HH4).
+                intros x Hx.
+                destruct Hx as [i [x0 [y0 [Hx1 [Hx2 Hx3]]]]].
+                subst x.
+                ltac1:(replace map with (@fmap _ list_fmap) in Hx2).
+                ltac1:(replace map with (@fmap _ list_fmap) in Hx3).
+                rewrite list_lookup_fmap in Hx2.
+                rewrite list_lookup_fmap in Hx3.
+                rewrite Forall_forall in H.
+                destruct ((l!!i)) eqn:Hli.
+                {
+                    simpl in Hx3.
+                    inversion Hx3; subst; clear Hx3.
+                    destruct (lγ!!i) eqn:Hlγi.
+                    {
+                        simpl in Hx2.
+                        inversion Hx2; subst; clear Hx2.
+
+                        specialize (HH4 (satisfies (<[h:=uglify' γ1]> ρ) t0 t)).
+                        ltac1:(ospecialize (HH4 _)).
+                        {
+                            exists i, t0, t.
+                            split>[reflexivity|].
+                            split;assumption.
+                        }
+                        
+                        destruct 
+                            (is_subterm_b γ1 t0) eqn:Hsγ1t0,
+                            (decide (h ∈ (vars_of (uglify' t)))) as[Hhint|Hhnotint].
+                        {
+                            specialize (H t).
+                            ltac1:(ospecialize (H _)).
+                            {
+                                rewrite elem_of_list_lookup.
+                                exists i.
+                                exact Hli.
+                            }
+                            
+
+                        }
+                        {
+
+                        }
+                        {
+
+                        }
+                        {
+                            rewrite not_subterm_subst>[|assumption].
+                            rewrite subst_notin>[|(rewrite <- vars_of_uglify in Hhnotint;assumption)].
+                            erewrite satisfies_TermOver_vars_of>[apply HH4|].
+                            intros x Hx.
+                            destruct (decide (h = x)).
+                            {
+                                subst. ltac1:(contradiction Hhnotint).
+                            }
+                            {
+                                ltac1:(rewrite lookup_insert_ne).
+                                { assumption. }
+                                { reflexivity. }
+                            }
+                        }
+                    }
+                    {
+                        simpl in Hx2. inversion Hx2.
+                    }
+                }
+                {
+                    simpl in Hx3.
+                    inversion Hx3.
+                }
+            }
+
+
 
                 assert (HmyIH: Forall id
                     (
