@@ -6747,8 +6747,35 @@ Proof.
                                 exists i.
                                 exact Hli.
                             }
-                            
-
+                            specialize (H t0 γ1 γ2 ψ).
+                            specialize (H ltac:(assumption)).
+                            specialize (H ltac:(assumption)).
+                            simpl in Hnotsub.
+                            destruct (decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)) as [His|Hisnot].
+                            {
+                                simpl in Hnotsub. inversion Hnotsub.
+                            }
+                            {
+                                simpl in Hnotsub.
+                                assert (Hnot' := @existsb_nth (TermOver BuiltinOrVar)).
+                                specialize (Hnot' (is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1)) l).
+                                specialize (Hnot' i t).
+                                ltac1:(ospecialize (Hnot' _)).
+                                {
+                                    apply lookup_lt_Some in Hli.
+                                    exact Hli.
+                                }
+                                specialize (Hnot' Hnotsub).
+                                assert (Hli' := Hli).
+                                apply nth_lookup_Some with (d := t) in Hli'.
+                                rewrite Hli' in Hnot'.
+                                specialize (H Hnot').
+                                clear Hli' Hnot'.
+                                specialize (H Hnotincod).
+                                specialize (H HH1).
+                                specialize (H HH4).
+                                exact H.
+                            }
                         }
                         {
 
