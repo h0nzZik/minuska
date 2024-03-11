@@ -6491,26 +6491,123 @@ Proof.
     }
 Qed.
 
+Lemma subterm_matches_variable
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ γ' : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    satisfies ρ γ φ  ->
+    is_subterm_b γ' γ = true  ->
+    is_subterm_b (TermOverBuiltin_to_TermOverBoV γ') φ = false ->
+    ∃ x γ'', ρ !! x = Some (uglify' γ'') /\ is_subterm_b γ' γ''
+    (*/\ is_subterm_b γ'' γ *)
+.
+Proof.
+    revert γ.
+    induction φ; intros γ H1 H2 H3.
+    {
+        simpl in *.
+        ltac1:(case_match).
+        { ltac1:(congruence). }
+        destruct a; simpl in *.
+        {
+            inversion H1; subst; clear H1.
+            {
+                apply (f_equal prettify) in H5.
+                rewrite (cancel prettify uglify') in H5.
+                subst γ.
+                simpl in *.
+                ltac1:(case_match).
+                {
+                    unfold satisfies in pf; simpl in pf.
+                    unfold builtin_satisfies_BuiltinOrVar' in pf; simpl in pf.
+                    inversion pf; subst; clear pf.
+                    simpl in *.
+                    unfold is_left in *.
+                    ltac1:(repeat case_match); try ltac1:(congruence).
+                    subst; simpl in *.
+                    ltac1:(contradiction n).
+                    simpl. reflexivity.
+                }
+                {
+                    ltac1:(congruence).
+                }
+            }
+            {
+                apply (f_equal prettify) in H0.
+                rewrite (cancel prettify uglify') in H0.
+                subst γ.
+                simpl in *.
+                unfold is_left in *.
+                ltac1:(repeat case_match); try ltac1:(congruence).
+                inversion H6; subst; clear H6.
+            }
+        }
+        {
+            inversion H1; subst; clear H1.
+            {
+                inversion pf; subst; clear pf.
+                unfold is_left in *.
+                ltac1:(repeat case_match); try ltac1:(congruence).
+                exists x.
+                exists γ.
+                rewrite <- H5.
+                split>[assumption|].
+                assumption.
+            }
+            {
+                unfold is_left in *.
+                ltac1:(repeat case_match); try ltac1:(congruence).
+                inversion H6; subst; clear H6.
+                exists x.
+                exists γ.
+                rewrite <- H0.
+                split>[assumption|].
+                assumption.
+            }
+        }
+    }
+    {
+        destruct γ; simpl in *.
+        {
+            inversion H1.
+        }
+        apply satisfies_term_inv in H1.
+        destruct H1 as [lγ [H4 [H5 H6]]].
+        simpl in *.
+        unfold is_left in *.
+        ltac1:(repeat case_match; try congruence); simpl in *.
+        {
+            inversion H4; subst; clear H4.
+            clear H0 H1 H2 H7 H8.
+        }
+        {
+            inversion H4; subst; clear H4.
+            simpl in *.
+        }
+    }
+Qed.
+
 Lemma satisfies_subst_subst
     {Σ : StaticModel}
     (ρ : Valuation)
-    (γ γ1 γ2 : TermOver builtin_value)
+    (γ γ1 : TermOver builtin_value)
     (h : variable)
-    (φ ψ : TermOver BuiltinOrVar)
+    (holeSymbol : symbol)
+    (φ : TermOver BuiltinOrVar)
     :
-    h ∉ vars_of (uglify' ψ) ->
     h ∈ vars_of (uglify' φ) ->
     is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1) φ = false ->
-    (forall x, ρ !! x <> Some (uglify' γ2)) ->
-    satisfies ρ γ2 ψ ->
+    (forall x, ρ !! x <> Some (uglify' (t_term holeSymbol []))) ->
     satisfies (<[h:=uglify' γ1]>ρ) γ φ ->
     satisfies ρ
-        (TermOverBuiltin_subst γ γ1 γ2)
-        (TermOverBoV_subst φ h ψ)
+        (TermOverBuiltin_subst γ γ1 (t_term holeSymbol []))
+        (TermOverBoV_subst φ h (t_term holeSymbol []))
 .
 Proof.
-    revert γ γ1 γ2 ψ.
-    induction φ; intros γ γ1 γ2 ψ Hhψ Hhφ Hnotsub Hnotincod HH1 HH2.
+    revert γ γ1 holeSymbol.
+    induction φ; intros γ γ1 holeSymbol Hhφ Hnotsub Hnotincod HH2.
     {
         (* φ is BoV `a` *)
         unfold TermOverBuiltin_subst.
@@ -6533,7 +6630,7 @@ Proof.
                     simpl in Hhφ. rewrite elem_of_singleton in Hhφ.
                     subst.
                     destruct (decide (x=x))>[|ltac1:(contradiction)].
-                    exact HH1.
+                    constructor. constructor.
                 }
             }
             {
@@ -6586,9 +6683,9 @@ Proof.
                     subst.
                     unfold is_left in *.
                     clear Hnotsub.
-                    ltac1:(repeat case_match); try assumption.
+                    ltac1:(repeat case_match); try assumption; try ltac1:(congruence).
                     {
-                        ltac1:(congruence).
+                        do 2 constructor.
                     }
                     {
                         clear H0 H.
@@ -6747,8 +6844,7 @@ Proof.
                                 exists i.
                                 exact Hli.
                             }
-                            specialize (H t0 γ1 γ2 ψ).
-                            specialize (H ltac:(assumption)).
+                            specialize (H t0 γ1 holeSymbol).
                             specialize (H ltac:(assumption)).
                             simpl in Hnotsub.
                             destruct (decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)) as [His|Hisnot].
@@ -6772,13 +6868,46 @@ Proof.
                                 specialize (H Hnot').
                                 clear Hli' Hnot'.
                                 specialize (H Hnotincod).
-                                specialize (H HH1).
                                 specialize (H HH4).
                                 exact H.
                             }
                         }
                         {
-                            ltac1:(exfalso).
+                            rewrite subst_notin>[|rewrite <- vars_of_uglify in Hhnotint; exact Hhnotint].
+                            (*ltac1:(exfalso).*)
+                            simpl in *.
+                            destruct ((decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)));
+                                inversion Hnotsub; subst; clear Hnotsub.
+                            rewrite satisfies_TermOver_vars_of with (ρ2 := ρ) in HH4.
+                            {
+                                assert (is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1) t = false).
+                                {
+                                    apply take_drop_middle in Hli.
+                                    rewrite <- Hli in H1.
+                                    rewrite existsb_app in H1.
+                                    simpl in H1.
+                                    rewrite orb_false_iff in H1.
+                                    destruct H1 as [H11 H12].
+                                    rewrite orb_false_iff in H12.
+                                    destruct H12 as [H12 H13].
+                                    exact H12.
+                                }
+                                clear H1 Hhnotint.
+                                clear Hli Hlγi.
+                                Search holeSymbol.
+                            }
+                            {
+                                intros x Hx.
+                                destruct (decide (h = x)).
+                                {
+                                    subst. ltac1:(contradiction Hhnotint).
+                                }
+                                {
+                                    ltac1:(rewrite lookup_insert_ne).
+                                    { assumption. }
+                                    { reflexivity. }
+                                }
+                            }
                         }
                         {
                             specialize (H t).
@@ -6788,8 +6917,7 @@ Proof.
                                 exists i.
                                 exact Hli.
                             }
-                            specialize (H t0 γ1 γ2 ψ).
-                            specialize (H ltac:(assumption)).
+                            specialize (H t0 γ1 γ2 holeSymbol).
                             specialize (H ltac:(assumption)).
                             simpl in Hnotsub.
                             destruct (decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)) as [His|Hisnot].
@@ -6842,211 +6970,6 @@ Proof.
                     simpl in Hx3.
                     inversion Hx3.
                 }
-            }
-
-
-
-                assert (HmyIH: Forall id
-                    (
-                        zip_with
-                            (fun x y => satisfies ρ
-                                (TermOverBuiltin_subst x (t_term s lγ) γ2)
-                                (TermOverBoV_subst y h ψ)
-                            )
-                            lγ l
-                    )
-                ).
-                {
-                    rewrite Forall_forall.
-                    rewrite Forall_forall in HH4.
-                    rewrite Forall_forall in H.
-                    intros x Hx.
-                    rewrite elem_of_lookup_zip_with in Hx.
-                    destruct Hx as [i [x0 [y0 [HH5 [HH6 HH7]]]]].
-                    subst x.
-                    destruct (decide (h ∈ vars_of (uglify' y0))) as [Hhiny0|Hhnotiny0].
-                    {
-                        apply H.
-                        {
-                            rewrite elem_of_list_lookup. exists i. exact HH7.
-                        }
-                        {
-                            exact Hhψ.
-                        }
-                        {
-                            exact Hhiny0.
-                        }
-                        {
-                            destruct (decide ((t_term s l = TermOverBuiltin_to_TermOverBoV (t_term s lγ)))).
-                            {
-                                simpl in Hnotsub. inversion Hnotsub.    
-                            }
-                            {
-                                simpl in Hnotsub.
-                                eapply existsb_nth with (n := i) in Hnotsub.
-                                {
-                                    eapply nth_lookup_Some in HH7.
-                                    erewrite HH7 in Hnotsub.
-                                    apply Hnotsub.
-                                }
-                                {
-                                    apply lookup_lt_Some in HH7.
-                                    exact HH7.
-                                }
-                            }
-                        }
-                        {
-                            exact Hnotincod.
-                        }
-                        {
-                            exact HH1.
-                        }
-                        {
-                            apply HH4.
-                            rewrite elem_of_lookup_zip_with.
-                            exists i,x0,y0.
-                            repeat split; assumption.
-                        }
-                    }
-                    {
-                        rewrite <- vars_of_uglify in Hhnotiny0.
-                        rewrite subst_notin>[|exact Hhnotiny0].
-                        ltac1:(setoid_rewrite elem_of_lookup_zip_with in HH4).
-                        specialize (HH4 (satisfies (<[h:=uglify' (t_term s lγ)]> ρ) x0 y0)).
-                        ltac1:(ospecialize (HH4 _)).
-                        {
-                            exists i, x0, y0.
-                            repeat split; assumption.
-                        }
-                        destruct (decide ((t_term s l = TermOverBuiltin_to_TermOverBoV (t_term s lγ)))) as [H1eq|H1neq].
-                        {
-                            simpl in *. inversion Hnotsub.
-                        }
-                        simpl in *.
-                        assert (H1neq': l <> fmap TermOverBuiltin_to_TermOverBoV lγ).
-                        {
-                            intros HContra. subst. apply H1neq. clear H1neq.
-                            unfold TermOverBuiltin_to_TermOverBoV at 2.
-                            unfold TermOver_map. fold (@TermOver_map Σ).
-                            ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
-                            reflexivity.
-                        }
-                        clear H1neq.
-                        unfold TermOverBuiltin_to_TermOverBoV in Hnotsub.
-                        unfold TermOver_map in Hnotsub. fold (@TermOver_map Σ) in Hnotsub.
-                        assert (Hnst : is_subterm_b ( (t_term s (map (TermOver_map bov_builtin) lγ)) ) y0 = false).
-                        {
-                            apply take_drop_middle in HH7.
-                            rewrite <- HH7 in Hnotsub.
-                            rewrite existsb_app in Hnotsub.
-                            rewrite orb_false_iff in Hnotsub.
-                            destruct Hnotsub as [Hns1 Hns2].
-                            simpl in Hns2.
-                            rewrite orb_false_iff in Hns2.
-                            destruct Hns2 as [Hns2 Hns3].
-                            exact Hns2.
-                        }
-                        destruct y0; simpl in *.
-                        {
-                            inversion HH4; subst; clear HH4.
-                            {
-                                apply (f_equal prettify) in H2.
-                                rewrite (cancel prettify uglify') in H2.
-                                subst x0. simpl in *.
-                                inversion pf; subst; clear pf.
-                                {
-                                    constructor.
-                                    constructor.
-                                }
-                                {
-                                    constructor.
-                                    constructor.
-                                    assert (Hxh : h <> x) by ltac1:(set_solver).
-                                    ltac1:(rewrite lookup_insert_ne in H0).
-                                    { apply Hxh. }
-                                    { assumption. }
-                                }
-                            }
-                            {
-                                apply (f_equal prettify) in H0.
-                                rewrite (cancel prettify uglify') in H0.
-                                subst x0. simpl in *.
-                                unfold satisfies in H3; simpl in H3.
-                                destruct a; simpl in *.
-                                {
-                                    inversion H3.
-                                }
-                                {
-                                    assert (Hxh : h <> x) by ltac1:(set_solver).
-                                    ltac1:(rewrite lookup_insert_ne in H3).
-                                    { assumption. }
-                                    apply satisfies_var.
-                                    ltac1:(rewrite H3). clear H3. apply f_equal.
-                                    rewrite <- uglify'_prettify'.
-                                    apply f_equal.
-                                    rewrite not_subterm_subst.
-                                    { reflexivity. }
-                                    {
-                                        apply Is_true_false_1.
-                                        intros HContra.
-                                        rewrite Is_true_true in HContra.
-                                        apply is_subterm_sizes in HContra.
-                                        clear - HH6 HContra.
-                                        apply take_drop_middle in HH6.
-                                        rewrite <- HH6 in HContra.
-                                        simpl in HContra.
-                                        rewrite sum_list_with_app in HContra.
-                                        simpl in HContra.
-                                        ltac1:(lia).
-                                    }
-                                }
-                            }
-                        }
-                        {
-                            destruct (decide ((t_term s0 l0 = t_term s (map (TermOver_map bov_builtin) lγ)))).
-                            {
-                                simpl in *. inversion Hnst.
-                            }
-                            simpl in *.
-                            rewrite not_subterm_subst.
-                            {
-                                erewrite satisfies_TermOver_vars_of.
-                                { apply HH4. }
-                                intros x Hx.
-                                ltac1:(rewrite lookup_insert_ne).
-                                {
-                                    intros HContra. subst.
-                                    rewrite <- vars_of_uglify in Hx.
-                                    apply Hhnotiny0. apply Hx.
-                                }
-                                { reflexivity. }
-                            }
-                            {
-                                 apply Is_true_false_1.
-                                intros HContra.
-                                rewrite Is_true_true in HContra.
-                                apply is_subterm_sizes in HContra.
-                                clear - HH6 HContra.
-                                apply take_drop_middle in HH6.
-                                rewrite <- HH6 in HContra.
-                                simpl in HContra.
-                                rewrite sum_list_with_app in HContra.
-                                simpl in HContra.
-                                ltac1:(lia).
-                            }
-                        }
-                    }
-                }
-                destruct (decide ((t_term s l = TermOverBuiltin_to_TermOverBoV (t_term s lγ)))) as [?|Htsl].
-                {
-                    simpl in *. inversion Hnotsub.
-                }
-                simpl in *.
-                clear HH4 H.
-                Search γ2.
-            }
-            {
-
             }
         }
     }
@@ -7510,7 +7433,27 @@ Proof.
                                 subst ρ'''.
                                 subst G1'.
                                 rewrite satisfies_TermOverBoV_to_TermOverExpr.
-                                Search satisfies TermOverBoV_to_TermOverExpr.
+                                remember (fresh (h :: vars_of_to_l2r c)) as X0.
+                                remember (fresh (h :: X0 :: vars_of_to_l2r c)) as X1.
+                                assert (F1 = r).
+                                {
+                                    (* TODO by HA1 *)
+                                    admit.
+                                }
+                                assert (F2 = v).
+                                {
+                                    (* TODO by HA2 *)
+                                    admit.
+                                }
+                                subst F1 F2.
+                                subst ρ' ρ''.
+                                (* How many times can `r` occur in `G1`? *)
+                                (*
+                                    Also, `r` should use only the original symbol set.
+                                    In particular, it does not contain the `holeSymbol`.
+                                    The original formulas (`c`) do not contain `holeSymbol` either.
+                                *)
+                                (* HERE *)
                             }
                             {
 
