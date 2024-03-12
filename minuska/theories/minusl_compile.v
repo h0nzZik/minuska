@@ -6985,6 +6985,7 @@ Lemma compile_correct
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable) 
     (D : MinusL_LangDef Act)
+    (HcvD: continuationVariable ∉ vars_of D)
     :
     ~ (invisible_act ∈ actions_of_ldef Act D) ->
     let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol continuationVariable D in
@@ -7102,21 +7103,38 @@ Proof.
                                 erewrite satisfies_TermOver_vars_of.
                                 { apply H0. }
                                 intros x Hx.
-                                destruct (decide (x = continuationVariable)).
+                                destruct (decide (continuationVariable = x)).
                                 {
                                     subst x.
+                                    unfold vars_of in HcvD. simpl in HcvD.
+                                    ltac1:(exfalso).
+                                    apply HcvD. clear HcvD.
+                                    rewrite elem_of_union_list.
+                                    exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                                    split.
+                                    {
+                                        rewrite elem_of_list_fmap.
+                                        exists (mld_rewrite Act lc ld a rc rd scs).
+                                        split>[reflexivity|].
+                                        rewrite <- (take_drop i ds).
+                                        rewrite elem_of_app.
+                                        rewrite <- Heqds'.
+                                        right.
+                                        rewrite elem_of_cons. left.
+                                        reflexivity.
+                                    }
+                                    {
+                                        unfold vars_of; simpl.
+                                        unfold vars_of; simpl.
+                                        clear -Hx.
+                                        ltac1:(set_solver).
+                                    }
                                 }
-                                rewrite <- vars_of_uglify in Hx.
-                                (*
-                                eapply satisfies_ext>[|apply H0].
-                                unfold Valuation in *.
-                                apply insert_subseteq.
-                                clear -Hnocvρ.
-                                unfold vars_of in Hnocvρ.
-                                simpl in Hnocvρ.
-                                rewrite not_elem_of_dom in Hnocvρ.
-                                exact Hnocvρ.
-                                *)
+                                {
+                                    ltac1:(rewrite lookup_insert_ne).
+                                    { assumption. }
+                                    { reflexivity. }
+                                }
                             }
                             {
 
