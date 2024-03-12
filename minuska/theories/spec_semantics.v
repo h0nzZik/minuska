@@ -865,13 +865,12 @@ Section MinusL_sem.
         (Act : Set)
     .
 
-    Inductive MinusL_rewritesInVal
+    Inductive MinusL_rewrites
         (D : MinusL_LangDef Act)
         :
         (TermOver builtin_value) ->
         (TermOver builtin_value) ->
         (list Act)  ->
-        Valuation ->
         (TermOver builtin_value) ->
         (TermOver builtin_value) ->
         Prop :=
@@ -883,23 +882,23 @@ Section MinusL_sem.
             (rc : TermOver Expression) (rd : TermOver Expression)
             (scs : list SideCondition),
             (mld_rewrite Act lc ld a rc rd scs) ∈ (mlld_decls Act D) ->
-        forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value) ρ,
+        forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value)
+            (ρ : Valuation),
             satisfies ρ ctrl1 lc ->
             satisfies ρ state1 ld ->
             satisfies ρ ctrl2 rc ->
             satisfies ρ state2 rd ->
             satisfies ρ () scs ->
-        MinusL_rewritesInVal D ctrl1 state1 [a] ρ ctrl2 state2
-(*
+        MinusL_rewrites D ctrl1 state1 [a] ctrl2 state2
+
     | mlr_trans :
         forall
             (ctrl1 state1 ctrl2 state2 ctrl3 state3 : TermOver builtin_value)
-            (w1 w2 : list Act)
-            (ρ : Valuation),
-        MinusL_rewritesInVal D (ctrl1,state1) w1 ρ (ctrl2,state2) ->
-        MinusL_rewritesInVal D (ctrl2,state2) w2 ρ (ctrl3,state3) ->
-        MinusL_rewritesInVal D (ctrl1,state1) (w1 ++ w2) ρ (ctrl3,state3)
-*)
+            (w1 w2 : list Act),
+        MinusL_rewrites D ctrl1 state1 w1 ctrl2 state2 ->
+        MinusL_rewrites D ctrl2 state2 w2 ctrl3 state3 ->
+        MinusL_rewrites D ctrl1 state1 (w1 ++ w2) ctrl3 state3
+
     | mlr_context :
         forall
             (c : TermOver BuiltinOrVar)
@@ -908,13 +907,11 @@ Section MinusL_sem.
             (scs : list SideCondition),
             (mld_context Act c h Hh scs) ∈ (mlld_decls Act D) ->
         forall (ctrl1 state1 ctrl2 state2 r v : TermOver builtin_value)
-            (w : list Act) (ρ : Valuation) (Hnotinρ: h ∉ vars_of ρ),
-            satisfies ρ () scs ->
-            satisfies ρ () (mlld_isValue Act D (ft_element (uglify' v))) ->
-            satisfies ρ ctrl1 (TermOverBoV_subst c h (TermOverBuiltin_to_TermOverBoV r)) ->
-            satisfies ρ ctrl2 (TermOverBoV_subst c h (TermOverBuiltin_to_TermOverBoV v)) ->
-            MinusL_rewritesInVal D r state1 w ρ v state2 ->
-            MinusL_rewritesInVal D ctrl1 state1 w ρ ctrl2 state2
+            (w : list Act),
+            (∃ (ρ1 : Valuation), satisfies (<[h := uglify' r]>ρ1) ctrl1 c /\ satisfies ρ1 () scs) ->
+            (∃ (ρ2 : Valuation), satisfies (<[h := uglify' v]>ρ2) ctrl2 c /\ satisfies ρ2 () (mlld_isValue Act D (ft_element (uglify' v)))) ->
+            MinusL_rewrites D r state1 w v state2 ->
+            MinusL_rewrites D ctrl1 state1 w ctrl2 state2
     .
 
 End MinusL_sem.

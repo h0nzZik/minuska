@@ -7238,7 +7238,7 @@ Proof.
 
             (* (3) Find the heating and cooling rules in Γ *)
 
-            assert (ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+            assert (Hheat: ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
@@ -7261,7 +7261,7 @@ Proof.
                 reflexivity.
             }
 
-            assert (ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
+            assert (Hcool: ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
@@ -7284,6 +7284,7 @@ Proof.
                 rewrite elem_of_cons. left.
                 reflexivity.
             }
+            
 
             (* (4) Use the heating rule. *)
             assert (Htmp := @frto_step Σ Act Γ).
@@ -7295,7 +7296,7 @@ Proof.
             specialize (Htmp (downC topSymbol cseqSymbol F2 state2 (t_term cseqSymbol [G2; continuation]))).
             specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
             specialize (Htmp invisible_act).
-            specialize (Htmp _ H4).
+            specialize (Htmp _ Hheat).
             ltac1:(ospecialize (Htmp _)).
             {
                 clear Htmp.
