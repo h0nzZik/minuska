@@ -186,6 +186,6 @@ Instance VarsOf_MinusL_LangDef
     (Act : Set)
     : VarsOf (MinusL_LangDef Act) variable
 := {|
-    vars_of := fun D => union_list (vars_of <$> (mlld_decls D)) ; 
+    vars_of := fun D => union_list (vars_of <$> (mlld_decls Act D)) ; 
 |}.
 
