@@ -150,3 +150,42 @@ Instance VarsOf_Term'
 := {|
     vars_of := vars_of_Term'B ; 
 |}.
+
+#[export]
+Instance VarsOf_TermOverBoV
+    {Σ : StaticModel}
+    : VarsOf (TermOver BuiltinOrVar) variable
+:= {|
+    vars_of := fun t => vars_of (uglify' t)
+|}.
+
+#[export]
+Instance VarsOf_TermOverExpression
+    {Σ : StaticModel}
+    : VarsOf (TermOver Expression) variable
+:= {|
+    vars_of := fun t => vars_of (uglify' t)
+|}.
+
+#[export]
+Instance VarsOf_MinusL_Decl
+    {Σ : StaticModel}
+    (Act : Set)
+    : VarsOf (MinusL_Decl Act) variable
+:= {|
+    vars_of := fun D => match D with
+    | mld_rewrite _ lc ld _ rc rd scs => (vars_of lc) ∪ vars_of ld ∪
+        vars_of rc ∪ vars_of rd ∪ vars_of scs
+    | mld_context _ c h _ scs => (vars_of c) ∪ {[h]} ∪ vars_of scs
+    end ; 
+|}.
+
+#[export]
+Instance VarsOf_MinusL_LangDef
+    {Σ : StaticModel}
+    (Act : Set)
+    : VarsOf (MinusL_LangDef Act) variable
+:= {|
+    vars_of := fun D => union_list (vars_of <$> (mlld_decls D)) ; 
+|}.
+

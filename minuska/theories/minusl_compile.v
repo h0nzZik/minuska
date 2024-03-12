@@ -6491,6 +6491,7 @@ Proof.
     }
 Qed.
 
+(*
 Lemma subterm_matches_variable
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -6588,7 +6589,8 @@ Proof.
         }
     }
 Qed.
-
+*)
+(*
 Lemma satisfies_subst_subst
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -6974,7 +6976,7 @@ Proof.
         }
     }
 Qed.
-
+*)
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -6988,205 +6990,53 @@ Lemma compile_correct
     let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol continuationVariable D in
     forall
         (lc ld rc rd : TermOver builtin_value)
-        (w : list Act)
-        (ρ : Valuation)
-        (Hnocvρ : continuationVariable ∉ vars_of ρ)
-        (HnoHoleSymbolInRho : forall x, ρ !! x <> Some (uglify' (t_term holeSymbol []))),
-        MinusL_rewritesInVal Act D lc ld w  ρ rc rd
-        <->
+        (w : list Act),
+        MinusL_rewrites Act D lc ld w rc rd
+        -> (* TODO we also need the backwards implication but the actions might be different*)
         (
-            forall continuation,
+            exists (w' : list Act), 
+            w = (filter (fun x => x <> invisible_act) w') /\
+            forall cont,
             flattened_rewrites_to_over Γ
-                (downC topSymbol cseqSymbol lc ld continuation)
-                (filter (fun x => x <> invisible_act) w)
-                (downC topSymbol cseqSymbol rc rd continuation)
+                (downC topSymbol cseqSymbol lc ld cont)
+                w'
+                (downC topSymbol cseqSymbol rc rd cont)
         )
 .
 Proof.
     intros Hinvisible.
-    intros.
+    intros Γ c1 d1 c2 d2 w HH.
     destruct D as [iV ds]; simpl in *.
-    split; intros HH.
+
+    induction HH.
     {
-        induction HH; intros continuation.
+        exists [a].
+        unfold compile in Γ. simpl in H. simpl in Γ.
+        apply elem_of_list_lookup_1 in H.
+        destruct H as [i Hi].
+        ltac1:(unfold Γ).
+        assert (i < length ds).
         {
-            unfold compile in Γ. simpl in H. simpl in Γ.
-            apply elem_of_list_lookup_1 in H.
-            destruct H as [i Hi].
-            ltac1:(unfold Γ).
-            assert (i < length ds).
-            {
-                apply lookup_lt_Some in Hi.
-                exact Hi.
-            }
-            rewrite <- (firstn_skipn i ds).
-            rewrite <- (firstn_skipn i ds) in Hi.
-            rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
-            rewrite take_length in Hi.
-            ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
-            remember (drop i ds) as ds'.
-            destruct ds'.
-            {
-                simpl in Hi. inversion Hi.
-            }
-            simpl in Hi. inversion Hi; subst; clear Hi.
-            rewrite map_app.
-            rewrite concat_app.
-            rewrite filter_cons. rewrite filter_nil.
+            apply lookup_lt_Some in Hi.
+            exact Hi.
+        }
+        
+        rewrite <- (firstn_skipn i ds) in Hi.
+        rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
+        rewrite take_length in Hi.
+        ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
+        remember (drop i ds) as ds'.
+        destruct ds'.
+        {
+            simpl in Hi. inversion Hi.
+        }
+        simpl in Hi. inversion Hi; subst; clear Hi.
+        rewrite filter_cons. rewrite filter_nil.
+        split.
+        {
             destruct (decide (a <> invisible_act)).
             {
-                eapply frto_step>[|()|apply frto_base].
-                {
-                    simpl.
-                    rewrite elem_of_app.
-                    right.
-                    rewrite elem_of_cons.
-                    left.
-                    reflexivity.
-                }
-                {
-                    unfold flattened_rewrites_to.
-                    exists (<[continuationVariable := (uglify' continuation)]>ρ).
-                    unfold flattened_rewrites_in_valuation_under_to.
-                    split.
-                    {
-                        unfold apply_symbol'.
-                        unfold to_Term'.
-                        constructor.
-                        unfold to_PreTerm'.
-                        fold (@uglify' Σ).
-                        ltac1:(
-                            replace
-                            (term_preterm (fold_left helper [uglify' lc; term_operand (bov_variable continuationVariable)] (pt_operator cseqSymbol)))
-                            with
-                            (uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]))
-                            by reflexivity
-                        ).
-                        ltac1:(
-                            replace
-                            ([uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]); uglify' ld])
-                            with
-                            (map uglify' [((t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]));(ld)])
-                            by reflexivity
-                        ).
-                        apply satisfies_top_bov_cons.
-                        split.
-                        {
-                            simpl. reflexivity.
-                        }
-                        {
-                            split>[|reflexivity].
-                            simpl.
-                            rewrite Forall_cons.
-                            split.
-                            {
-                                apply satisfies_top_bov.
-                                split.
-                                {
-                                    eapply satisfies_ext>[|apply H0].
-                                    unfold Valuation in *.
-                                    apply insert_subseteq.
-                                    clear -Hnocvρ.
-                                    unfold vars_of in Hnocvρ.
-                                    simpl in Hnocvρ.
-                                    rewrite not_elem_of_dom in Hnocvρ.
-                                    exact Hnocvρ.
-                                }
-                                {
-                                    apply satisfies_var.
-                                    unfold Valuation in *.
-                                    apply lookup_insert.
-                                }
-                            }
-                            {
-                                rewrite Forall_cons.
-                                split.
-                                {
-                                    eapply satisfies_ext>[|apply H1].
-                                    unfold Valuation in *.
-                                    apply insert_subseteq.
-                                    clear -Hnocvρ.
-                                    unfold vars_of in Hnocvρ.
-                                    simpl in Hnocvρ.
-                                    rewrite not_elem_of_dom in Hnocvρ.
-                                    exact Hnocvρ.   
-                                }
-                                {
-                                    apply Forall_nil. exact I.
-                                }
-                            }
-                        }
-                    }
-                    split.
-                    {
-                        unfold apply_symbol'.
-                        unfold to_Term'.
-                        constructor.
-                        unfold to_PreTerm'.
-                        fold (@uglify' Σ).
-                        ltac1:(
-                            replace
-                            ([term_preterm (fold_left helper [uglify' rc; term_operand (ft_variable continuationVariable)] (pt_operator cseqSymbol)); uglify' rd])
-                            with
-                            (
-                                map uglify' [(t_term cseqSymbol [rc; t_over (ft_variable continuationVariable)]);(rd)]
-                            )
-                            by reflexivity
-                        ).
-                        apply satisfies_top_bov_cons_expr.
-                        (repeat split); try reflexivity.
-                        simpl.
-                        repeat (rewrite Forall_cons).
-                        rewrite Forall_nil.
-                        (repeat split).
-                        {
-                            constructor.
-                            apply satisfies_top_bov_cons_expr.
-                            (repeat split).
-                            simpl.
-                            repeat (rewrite Forall_cons).
-                            rewrite Forall_nil.
-                            (repeat split).
-                            {
-                                eapply satisfies_ext>[|apply H2].
-                                unfold Valuation in *.
-                                apply insert_subseteq.
-                                clear -Hnocvρ.
-                                unfold vars_of in Hnocvρ.
-                                simpl in Hnocvρ.
-                                rewrite not_elem_of_dom in Hnocvρ.
-                                exact Hnocvρ.   
-                            }
-                            {
-                                apply satisfies_var_expr.
-                                unfold Valuation in *.
-                                apply lookup_insert.
-                            }
-                        }
-                        {
-                            eapply satisfies_ext>[|apply H3].
-                            unfold Valuation in *.
-                            apply insert_subseteq.
-                            clear -Hnocvρ.
-                            unfold vars_of in Hnocvρ.
-                            simpl in Hnocvρ.
-                            rewrite not_elem_of_dom in Hnocvρ.
-                            exact Hnocvρ.   
-                        }
-                    }
-                    {
-                        simpl.
-                        split>[|reflexivity].
-                        eapply satisfies_ext>[|apply H4].
-                        unfold Valuation in *.
-                        apply insert_subseteq.
-                        clear -Hnocvρ.
-                        unfold vars_of in Hnocvρ.
-                        simpl in Hnocvρ.
-                        rewrite not_elem_of_dom in Hnocvρ.
-                        exact Hnocvρ.
-                    }
-                }
+                reflexivity.
             }
             {
                 unfold actions_of_ldef in Hinvisible.
@@ -7210,263 +7060,489 @@ Proof.
             }
         }
         {
-            simpl in *.
-            
-            (* (1) decompose the first substitution *)
-            assert (Hfbsc1 := factor_by_subst_correct' (TermOver_size ctrl1) ρ h ctrl1 c ((TermOverBuiltin_to_TermOverBoV r))).
-            specialize (Hfbsc1 ltac:(lia) Hnotinρ Hh).
-            rewrite vars_of_to_l2r_of_tob in Hfbsc1.
-            specialize (Hfbsc1 ltac:(set_solver)).
-            specialize (Hfbsc1 H2).
-            simpl in Hfbsc1.
-            destruct Hfbsc1 as [HA1 HB1].
-            remember ((factor_by_subst (TermOver_size ctrl1) ρ h ctrl1 c (TermOverBuiltin_to_TermOverBoV r)).1) as G1.
-            remember ((factor_by_subst (TermOver_size ctrl1) ρ h ctrl1 c (TermOverBuiltin_to_TermOverBoV r)).2) as F1.
-            clear HeqF1 HeqG1.
-
-            (* (2) decompose the second substitution *)
-            assert (Hfbsc2 := factor_by_subst_correct' (TermOver_size ctrl2) ρ h ctrl2 c ((TermOverBuiltin_to_TermOverBoV v))).
-            specialize (Hfbsc2 ltac:(lia) Hnotinρ Hh).
-            rewrite vars_of_to_l2r_of_tob in Hfbsc2.
-            specialize (Hfbsc2 ltac:(set_solver)).
-            specialize (Hfbsc2 H3).
-            simpl in Hfbsc2.
-            destruct Hfbsc2 as [HA2 HB2].
-            remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).1) as G2.
-            remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).2) as F2.
-            clear HeqF2 HeqG2.
-
-            (* (3) Find the heating and cooling rules in Γ *)
-
-            assert (Hheat: ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+            intros cont.
+            unfold flattened_rewrites_to.
+            rewrite <- (firstn_skipn i ds).
+            rewrite map_app.
+            rewrite concat_app.
+            rewrite <- Heqds'.
+            simpl.
+            eapply frto_step>[()|()|apply frto_base].
             {
-                rewrite elem_of_list_lookup in H.
-                destruct H as [ir Hir].
-                apply take_drop_middle in Hir.
-                ltac1:(unfold Γ in IHHH).
-                ltac1:(unfold Γ).
-                ltac1:(rewrite - Hir).
-                unfold compile.
-                simpl.
-                ltac1:(rewrite map_app).
-                ltac1:(rewrite map_cons).
-                simpl.
-                ltac1:(rewrite concat_app).
-                ltac1:(rewrite concat_cons).
-                ltac1:(unfold Γ).
-                clear.
-                rewrite elem_of_app. right.
-                rewrite elem_of_app. left.
-                rewrite elem_of_cons. left.
+                rewrite elem_of_app.
+                right.
+                rewrite elem_of_cons.
+                left.
                 reflexivity.
             }
-
-            assert (Hcool: ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
             {
-                rewrite elem_of_list_lookup in H.
-                destruct H as [ir Hir].
-                apply take_drop_middle in Hir.
-                ltac1:(unfold Γ in IHHH).
-                ltac1:(unfold Γ).
-                ltac1:(rewrite - Hir).
-                unfold compile.
-                simpl.
-                ltac1:(rewrite map_app).
-                ltac1:(rewrite map_cons).
-                simpl.
-                ltac1:(rewrite concat_app).
-                ltac1:(rewrite concat_cons).
-                ltac1:(unfold Γ).
-                clear.
-                rewrite elem_of_app. right.
-                rewrite elem_of_app. left.
-                rewrite elem_of_cons. right.
-                rewrite elem_of_cons. left.
-                reflexivity.
-            }
-            
-
-            (* (4) Use the heating rule. *)
-            assert (Htmp := @frto_step Σ Act Γ).
-            specialize (Htmp (downC topSymbol cseqSymbol G1 state1 continuation)).
-            (* There should not be G1, but something like G1, but G1 contains F1, and we want to have holeSymbol instead of F1 in that modified G1.
-            *)
-            remember (TermOverBuiltin_subst G1 F1 (t_term holeSymbol [])) as G1'.
-            specialize (Htmp (downC topSymbol cseqSymbol F1 state1 (t_term cseqSymbol [G1'; continuation]))).
-            specialize (Htmp (downC topSymbol cseqSymbol F2 state2 (t_term cseqSymbol [G2; continuation]))).
-            specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
-            specialize (Htmp invisible_act).
-            specialize (Htmp _ Hheat).
-            ltac1:(ospecialize (Htmp _)).
-            {
-                clear Htmp.
                 unfold flattened_rewrites_to.
-                remember ((<[h:=uglify' F1]> ρ)) as ρ'.
-                remember ((<[(fresh (h::vars_of_to_l2r c)):=uglify' continuation]>ρ')) as ρ''.
-                remember (<[(fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)):=(uglify' state1)]>ρ'') as ρ'''.
-                exists (ρ''').
+                exists (<[continuationVariable := (uglify' cont)]>ρ).
                 unfold flattened_rewrites_in_valuation_under_to.
-                split.
+                (repeat split).
                 {
-                    clear Htmp'.
-                    apply satisfies_top_bov.
-                    split.
+                    simpl.
+                    ltac1:(cut(satisfies (<[continuationVariable := uglify' cont]>ρ)
+                        (uglify' (t_term topSymbol [(t_term cseqSymbol [ctrl1; cont]);(state1)]))
+                        (uglify' (t_term topSymbol [(t_term cseqSymbol [lc;(t_over (bov_variable continuationVariable))]);(ld)]))
+                    )).
                     {
-                        apply satisfies_top_bov.
+                        intros Htmp. apply Htmp.
+                    }
+                    constructor.
+                    apply satisfies_top_bov_cons.
+                    (repeat split).
+                    {
+                        apply Forall_cons.
                         split.
                         {
-                            unfold satisfies in HB1; simpl in HB1.
-                            unfold satisfies; simpl.
-                            erewrite satisfies_Term'_vars_of.
-                            { eapply HB1. }
+                            apply satisfies_top_bov.
+                            split.
                             {
-                                intros.
-                                subst ρ'''.
-                                subst ρ'.
-                                ltac1:(rewrite lookup_insert_ne).
+                                erewrite satisfies_TermOver_vars_of.
+                                { apply H0. }
+                                intros x Hx.
+                                destruct (decide (x = continuationVariable)).
                                 {
-                                    rewrite <- vars_of_uglify in H6.
-                                    intros HContra. subst x.
-                                    assert (Htmp: fresh (h:: (fresh (h:: vars_of_to_l2r c)) :: vars_of_to_l2r c) ∉ (h:: fresh (h:: vars_of_to_l2r c) :: vars_of_to_l2r c)).
-                                    {
-                                        intros HContra'.
-                                        eapply infinite_is_fresh; apply HContra'.
-                                    }
-                                    apply Htmp. clear Htmp.
-                                    rewrite elem_of_cons.
-                                    right.
-                                    rewrite elem_of_cons.
-                                    right.
-                                    assumption.
+                                    subst x.
                                 }
-                                subst ρ''.
-                                ltac1:(rewrite lookup_insert_ne).
-                                {
-                                    intros HContra. subst x.
-                                    rewrite <- vars_of_uglify in H6.
-                                    assert (Htmp : fresh (h :: vars_of_to_l2r c) ∉ h :: vars_of_to_l2r c).
-                                    {
-                                        apply infinite_is_fresh.
-                                    }
-                                    apply Htmp. clear Htmp.
-                                    rewrite elem_of_cons. right. assumption.
-                                }
-                                reflexivity.
+                                rewrite <- vars_of_uglify in Hx.
+                                (*
+                                eapply satisfies_ext>[|apply H0].
+                                unfold Valuation in *.
+                                apply insert_subseteq.
+                                clear -Hnocvρ.
+                                unfold vars_of in Hnocvρ.
+                                simpl in Hnocvρ.
+                                rewrite not_elem_of_dom in Hnocvρ.
+                                exact Hnocvρ.
+                                *)
+                            }
+                            {
+
                             }
                         }
                         {
-                            subst ρ'''.
-                            subst ρ''.
-                            unfold Valuation in *.
-                            rewrite insert_commute.
+                            apply Forall_cons.
+                        }
+                    }
+                    {
+
+                    }
+                    {
+
+                    }
+                }
+                {
+
+                }
+                {
+
+                }
+            }
+            
+                split.
+                {
+                    unfold apply_symbol'.
+                    unfold to_Term'.
+                    constructor.
+                    unfold to_PreTerm'.
+                    fold (@uglify' Σ).
+                    ltac1:(
+                        replace
+                        (term_preterm (fold_left helper [uglify' lc; term_operand (bov_variable continuationVariable)] (pt_operator cseqSymbol)))
+                        with
+                        (uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]))
+                        by reflexivity
+                    ).
+                    ltac1:(
+                        replace
+                        ([uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]); uglify' ld])
+                        with
+                        (map uglify' [((t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]));(ld)])
+                        by reflexivity
+                    ).
+                    apply satisfies_top_bov_cons.
+                    split.
+                    {
+                        simpl. reflexivity.
+                    }
+                    {
+                        split>[|reflexivity].
+                        simpl.
+                        rewrite Forall_cons.
+                        split.
+                        {
+                            apply satisfies_top_bov.
+                            split.
+                            {
+                                eapply satisfies_ext>[|apply H0].
+                                unfold Valuation in *.
+                                apply insert_subseteq.
+                                clear -Hnocvρ.
+                                unfold vars_of in Hnocvρ.
+                                simpl in Hnocvρ.
+                                rewrite not_elem_of_dom in Hnocvρ.
+                                exact Hnocvρ.
+                            }
                             {
                                 apply satisfies_var.
                                 unfold Valuation in *.
                                 apply lookup_insert.
                             }
+                        }
+                        {
+                            rewrite Forall_cons.
+                            split.
                             {
-                                intros HContra.
-                                assert (Htmp : fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c) ∉ (h :: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)).
-                                {
-                                    intros HContra'.
-                                    eapply infinite_is_fresh;apply HContra'.
-                                }
-                                rewrite HContra in Htmp.
-                                apply Htmp. clear HContra Htmp.
-                                rewrite elem_of_cons.
-                                right. rewrite elem_of_cons.
-                                left. reflexivity.
+                                eapply satisfies_ext>[|apply H1].
+                                unfold Valuation in *.
+                                apply insert_subseteq.
+                                clear -Hnocvρ.
+                                unfold vars_of in Hnocvρ.
+                                simpl in Hnocvρ.
+                                rewrite not_elem_of_dom in Hnocvρ.
+                                exact Hnocvρ.   
+                            }
+                            {
+                                apply Forall_nil. exact I.
                             }
                         }
-                    }
-                    {
-                        subst ρ'''.
-                        apply satisfies_var.
-                        unfold Valuation in *.
-                        apply lookup_insert.
                     }
                 }
                 split.
                 {
-                    clear Htmp'.
+                    unfold apply_symbol'.
+                    unfold to_Term'.
+                    constructor.
+                    unfold to_PreTerm'.
+                    fold (@uglify' Σ).
+                    ltac1:(
+                        replace
+                        ([term_preterm (fold_left helper [uglify' rc; term_operand (ft_variable continuationVariable)] (pt_operator cseqSymbol)); uglify' rd])
+                        with
+                        (
+                            map uglify' [(t_term cseqSymbol [rc; t_over (ft_variable continuationVariable)]);(rd)]
+                        )
+                        by reflexivity
+                    ).
+                    apply satisfies_top_bov_cons_expr.
+                    (repeat split); try reflexivity.
+                    simpl.
+                    repeat (rewrite Forall_cons).
+                    rewrite Forall_nil.
+                    (repeat split).
+                    {
+                        constructor.
+                        apply satisfies_top_bov_cons_expr.
+                        (repeat split).
+                        simpl.
+                        repeat (rewrite Forall_cons).
+                        rewrite Forall_nil.
+                        (repeat split).
+                        {
+                            eapply satisfies_ext>[|apply H2].
+                            unfold Valuation in *.
+                            apply insert_subseteq.
+                            clear -Hnocvρ.
+                            unfold vars_of in Hnocvρ.
+                            simpl in Hnocvρ.
+                            rewrite not_elem_of_dom in Hnocvρ.
+                            exact Hnocvρ.   
+                        }
+                        {
+                            apply satisfies_var_expr.
+                            unfold Valuation in *.
+                            apply lookup_insert.
+                        }
+                    }
+                    {
+                        eapply satisfies_ext>[|apply H3].
+                        unfold Valuation in *.
+                        apply insert_subseteq.
+                        clear -Hnocvρ.
+                        unfold vars_of in Hnocvρ.
+                        simpl in Hnocvρ.
+                        rewrite not_elem_of_dom in Hnocvρ.
+                        exact Hnocvρ.   
+                    }
+                }
+                {
+                    simpl.
+                    split>[|reflexivity].
+                    eapply satisfies_ext>[|apply H4].
+                    unfold Valuation in *.
+                    apply insert_subseteq.
+                    clear -Hnocvρ.
+                    unfold vars_of in Hnocvρ.
+                    simpl in Hnocvρ.
+                    rewrite not_elem_of_dom in Hnocvρ.
+                    exact Hnocvρ.
+                }
+            }
+        }
+        {
+            
+        }
+    }
+    {
+        simpl in *.
+        
+        (* (1) decompose the first substitution *)
+        assert (Hfbsc1 := factor_by_subst_correct' (TermOver_size ctrl1) ρ h ctrl1 c ((TermOverBuiltin_to_TermOverBoV r))).
+        specialize (Hfbsc1 ltac:(lia) Hnotinρ Hh).
+        rewrite vars_of_to_l2r_of_tob in Hfbsc1.
+        specialize (Hfbsc1 ltac:(set_solver)).
+        specialize (Hfbsc1 H2).
+        simpl in Hfbsc1.
+        destruct Hfbsc1 as [HA1 HB1].
+        remember ((factor_by_subst (TermOver_size ctrl1) ρ h ctrl1 c (TermOverBuiltin_to_TermOverBoV r)).1) as G1.
+        remember ((factor_by_subst (TermOver_size ctrl1) ρ h ctrl1 c (TermOverBuiltin_to_TermOverBoV r)).2) as F1.
+        clear HeqF1 HeqG1.
+
+        (* (2) decompose the second substitution *)
+        assert (Hfbsc2 := factor_by_subst_correct' (TermOver_size ctrl2) ρ h ctrl2 c ((TermOverBuiltin_to_TermOverBoV v))).
+        specialize (Hfbsc2 ltac:(lia) Hnotinρ Hh).
+        rewrite vars_of_to_l2r_of_tob in Hfbsc2.
+        specialize (Hfbsc2 ltac:(set_solver)).
+        specialize (Hfbsc2 H3).
+        simpl in Hfbsc2.
+        destruct Hfbsc2 as [HA2 HB2].
+        remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).1) as G2.
+        remember ((factor_by_subst (TermOver_size ctrl2) ρ h ctrl2 c (TermOverBuiltin_to_TermOverBoV v)).2) as F2.
+        clear HeqF2 HeqG2.
+
+        (* (3) Find the heating and cooling rules in Γ *)
+
+        assert (Hheat: ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+        {
+            rewrite elem_of_list_lookup in H.
+            destruct H as [ir Hir].
+            apply take_drop_middle in Hir.
+            ltac1:(unfold Γ in IHHH).
+            ltac1:(unfold Γ).
+            ltac1:(rewrite - Hir).
+            unfold compile.
+            simpl.
+            ltac1:(rewrite map_app).
+            ltac1:(rewrite map_cons).
+            simpl.
+            ltac1:(rewrite concat_app).
+            ltac1:(rewrite concat_cons).
+            ltac1:(unfold Γ).
+            clear.
+            rewrite elem_of_app. right.
+            rewrite elem_of_app. left.
+            rewrite elem_of_cons. left.
+            reflexivity.
+        }
+
+        assert (Hcool: ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
+        {
+            rewrite elem_of_list_lookup in H.
+            destruct H as [ir Hir].
+            apply take_drop_middle in Hir.
+            ltac1:(unfold Γ in IHHH).
+            ltac1:(unfold Γ).
+            ltac1:(rewrite - Hir).
+            unfold compile.
+            simpl.
+            ltac1:(rewrite map_app).
+            ltac1:(rewrite map_cons).
+            simpl.
+            ltac1:(rewrite concat_app).
+            ltac1:(rewrite concat_cons).
+            ltac1:(unfold Γ).
+            clear.
+            rewrite elem_of_app. right.
+            rewrite elem_of_app. left.
+            rewrite elem_of_cons. right.
+            rewrite elem_of_cons. left.
+            reflexivity.
+        }
+        
+
+        (* (4) Use the heating rule. *)
+        assert (Htmp := @frto_step Σ Act Γ).
+        specialize (Htmp (downC topSymbol cseqSymbol G1 state1 continuation)).
+        (* There should not be G1, but something like G1, but G1 contains F1, and we want to have holeSymbol instead of F1 in that modified G1.
+        *)
+        remember (TermOverBuiltin_subst G1 F1 (t_term holeSymbol [])) as G1'.
+        specialize (Htmp (downC topSymbol cseqSymbol F1 state1 (t_term cseqSymbol [G1'; continuation]))).
+        specialize (Htmp (downC topSymbol cseqSymbol F2 state2 (t_term cseqSymbol [G2; continuation]))).
+        specialize (Htmp ((filter (λ x : Act, x ≠ invisible_act) w))).
+        specialize (Htmp invisible_act).
+        specialize (Htmp _ Hheat).
+        ltac1:(ospecialize (Htmp _)).
+        {
+            clear Htmp.
+            unfold flattened_rewrites_to.
+            remember ((<[h:=uglify' F1]> ρ)) as ρ'.
+            remember ((<[(fresh (h::vars_of_to_l2r c)):=uglify' continuation]>ρ')) as ρ''.
+            remember (<[(fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)):=(uglify' state1)]>ρ'') as ρ'''.
+            exists (ρ''').
+            unfold flattened_rewrites_in_valuation_under_to.
+            split.
+            {
+                clear Htmp'.
+                apply satisfies_top_bov.
+                split.
+                {
+                    apply satisfies_top_bov.
+                    split.
+                    {
+                        unfold satisfies in HB1; simpl in HB1.
+                        unfold satisfies; simpl.
+                        erewrite satisfies_Term'_vars_of.
+                        { eapply HB1. }
+                        {
+                            intros.
+                            subst ρ'''.
+                            subst ρ'.
+                            ltac1:(rewrite lookup_insert_ne).
+                            {
+                                rewrite <- vars_of_uglify in H6.
+                                intros HContra. subst x.
+                                assert (Htmp: fresh (h:: (fresh (h:: vars_of_to_l2r c)) :: vars_of_to_l2r c) ∉ (h:: fresh (h:: vars_of_to_l2r c) :: vars_of_to_l2r c)).
+                                {
+                                    intros HContra'.
+                                    eapply infinite_is_fresh; apply HContra'.
+                                }
+                                apply Htmp. clear Htmp.
+                                rewrite elem_of_cons.
+                                right.
+                                rewrite elem_of_cons.
+                                right.
+                                assumption.
+                            }
+                            subst ρ''.
+                            ltac1:(rewrite lookup_insert_ne).
+                            {
+                                intros HContra. subst x.
+                                rewrite <- vars_of_uglify in H6.
+                                assert (Htmp : fresh (h :: vars_of_to_l2r c) ∉ h :: vars_of_to_l2r c).
+                                {
+                                    apply infinite_is_fresh.
+                                }
+                                apply Htmp. clear Htmp.
+                                rewrite elem_of_cons. right. assumption.
+                            }
+                            reflexivity.
+                        }
+                    }
+                    {
+                        subst ρ'''.
+                        subst ρ''.
+                        unfold Valuation in *.
+                        rewrite insert_commute.
+                        {
+                            apply satisfies_var.
+                            unfold Valuation in *.
+                            apply lookup_insert.
+                        }
+                        {
+                            intros HContra.
+                            assert (Htmp : fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c) ∉ (h :: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)).
+                            {
+                                intros HContra'.
+                                eapply infinite_is_fresh;apply HContra'.
+                            }
+                            rewrite HContra in Htmp.
+                            apply Htmp. clear HContra Htmp.
+                            rewrite elem_of_cons.
+                            right. rewrite elem_of_cons.
+                            left. reflexivity.
+                        }
+                    }
+                }
+                {
+                    subst ρ'''.
+                    apply satisfies_var.
+                    unfold Valuation in *.
+                    apply lookup_insert.
+                }
+            }
+            split.
+            {
+                clear Htmp'.
+                apply satisfies_top_expr.
+                split.
+                {
                     apply satisfies_top_expr.
                     split.
+                    {
+                        subst ρ'''.
+                        subst ρ''.
+                        subst ρ'.
+                        unfold Valuation in *.
+                        apply satisfies_var_expr.
+                        unfold Valuation in *.
+                        rewrite lookup_insert_ne.
+                        {
+                            rewrite lookup_insert_ne.
+                            {
+                                apply lookup_insert.
+                            }
+                            {
+                                intros HContra.
+                                assert (Htmp: fresh (h :: vars_of_to_l2r c) ∉ (h :: vars_of_to_l2r c)).
+                                {
+                                    apply infinite_is_fresh.
+                                }
+                                apply Htmp. clear Htmp.
+                                clear -HContra. ltac1:(set_solver).
+                            }
+                        }
+                        {
+                            intros HContra.
+                            assert (Htmp: fresh (h :: fresh (h :: vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (h :: fresh (h :: vars_of_to_l2r c) :: vars_of_to_l2r c)).
+                            {
+                                apply infinite_is_fresh.
+                            }
+                            apply Htmp. clear Htmp.
+                            ltac1:(set_solver).
+                        }
+                    }
                     {
                         apply satisfies_top_expr.
                         split.
                         {
                             subst ρ'''.
-                            subst ρ''.
-                            subst ρ'.
-                            unfold Valuation in *.
-                            apply satisfies_var_expr.
-                            unfold Valuation in *.
-                            rewrite lookup_insert_ne.
+                            subst G1'.
+                            rewrite satisfies_TermOverBoV_to_TermOverExpr.
+                            remember (fresh (h :: vars_of_to_l2r c)) as X0.
+                            remember (fresh (h :: X0 :: vars_of_to_l2r c)) as X1.
+                            assert (F1 = r).
                             {
-                                rewrite lookup_insert_ne.
-                                {
-                                    apply lookup_insert.
-                                }
-                                {
-                                    intros HContra.
-                                    assert (Htmp: fresh (h :: vars_of_to_l2r c) ∉ (h :: vars_of_to_l2r c)).
-                                    {
-                                        apply infinite_is_fresh.
-                                    }
-                                    apply Htmp. clear Htmp.
-                                    clear -HContra. ltac1:(set_solver).
-                                }
+                                (* TODO by HA1 *)
+                                admit.
                             }
+                            assert (F2 = v).
                             {
-                                intros HContra.
-                                assert (Htmp: fresh (h :: fresh (h :: vars_of_to_l2r c) :: vars_of_to_l2r c) ∉ (h :: fresh (h :: vars_of_to_l2r c) :: vars_of_to_l2r c)).
-                                {
-                                    apply infinite_is_fresh.
-                                }
-                                apply Htmp. clear Htmp.
-                                ltac1:(set_solver).
+                                (* TODO by HA2 *)
+                                admit.
                             }
+                            subst F1 F2.
+                            subst ρ' ρ''.
+                            (* How many times can `r` occur in `G1`? *)
+                            (*
+                                Also, `r` should use only the original symbol set.
+                                In particular, it does not contain the `holeSymbol`.
+                                The original formulas (`c`) do not contain `holeSymbol` either.
+                            *)
+                            (* HERE *)
                         }
                         {
-                            apply satisfies_top_expr.
-                            split.
-                            {
-                                subst ρ'''.
-                                subst G1'.
-                                rewrite satisfies_TermOverBoV_to_TermOverExpr.
-                                remember (fresh (h :: vars_of_to_l2r c)) as X0.
-                                remember (fresh (h :: X0 :: vars_of_to_l2r c)) as X1.
-                                assert (F1 = r).
-                                {
-                                    (* TODO by HA1 *)
-                                    admit.
-                                }
-                                assert (F2 = v).
-                                {
-                                    (* TODO by HA2 *)
-                                    admit.
-                                }
-                                subst F1 F2.
-                                subst ρ' ρ''.
-                                (* How many times can `r` occur in `G1`? *)
-                                (*
-                                    Also, `r` should use only the original symbol set.
-                                    In particular, it does not contain the `holeSymbol`.
-                                    The original formulas (`c`) do not contain `holeSymbol` either.
-                                *)
-                                (* HERE *)
-                            }
-                            {
 
-                            }
                         }
                     }
-                    {
+                }
+                {
 
-                    }
                 }
             }
-            specialize (Htmp IHHH).
+        }
+        specialize (Htmp IHHH).
 
 
 
@@ -7475,107 +7551,104 @@ Proof.
 
 
 
-            (* I shouldn't specialize it with ctrl1.
-            It should be: cSeq[ctrl1 with holeSymbol instead of ??;] 
-            *)
-            specialize (Htmp (down topSymbol ctrl1 state1)).
-            apply elem_of_list_lookup_1 in H.
-            destruct H as [i Hi].
-            assert (i < length ds).
+        (* I shouldn't specialize it with ctrl1.
+        It should be: cSeq[ctrl1 with holeSymbol instead of ??;] 
+        *)
+        specialize (Htmp (down topSymbol ctrl1 state1)).
+        apply elem_of_list_lookup_1 in H.
+        destruct H as [i Hi].
+        assert (i < length ds).
+        {
+            apply lookup_lt_Some in Hi.
+            exact Hi.
+        }
+        ltac1:(unfold Γ in Htmp).
+        rewrite <- (firstn_skipn i ds) in Htmp.
+        unfold compile in Htmp.
+        simpl in Htmp.
+        rewrite map_app in Htmp.
+        rewrite concat_app in Htmp.
+        remember (drop i ds) as dids.
+        destruct dids.
+        {
+            rewrite <- (firstn_skipn i ds) in Hi.
+            rewrite <- Heqdids in Hi.
+            rewrite app_nil_r in Hi.
+            apply lookup_take_Some in Hi.
+            destruct Hi as [Hi Hcontra].
+            clear -Hcontra.
+            ltac1:(lia).
+        }
+        simpl in Htmp.
+        ltac1:(setoid_rewrite elem_of_app in Htmp).
+        ltac1:(setoid_rewrite elem_of_app in Htmp).
+        unfold compile' at 2 in Htmp'.
+        destruct m; simpl in *.
+        {
+            clear Htmp.
+            rewrite <- (firstn_skipn i ds) in Hi.
+            rewrite <- Heqdids in Hi.
+            rewrite lookup_app_r in Hi>[|rewrite take_length;ltac1:(lia)].
+            rewrite take_length in Hi.
+            ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
+            simpl in Hi.
+            inversion Hi.
+        }
+        {
+            ltac1:(epose proof(Htmp' := Htmp ?[t2] ?[t3] ?[w0] ?[a] ?[r])).
+            clear Htmp.
+            
+            ltac1:(ospecialize (Htmp' _)).
             {
-                apply lookup_lt_Some in Hi.
-                exact Hi.
+                right. left. rewrite elem_of_list_In. constructor.
+                reflexivity.
             }
-            ltac1:(unfold Γ in Htmp).
-            rewrite <- (firstn_skipn i ds) in Htmp.
-            unfold compile in Htmp.
-            simpl in Htmp.
-            rewrite map_app in Htmp.
-            rewrite concat_app in Htmp.
-            remember (drop i ds) as dids.
-            destruct dids.
+            ltac1:(ospecialize (Htmp' _)).
             {
-                rewrite <- (firstn_skipn i ds) in Hi.
+                unfold flattened_rewrites_to.
+                ltac1:(rewrite <- (firstn_skipn i ds) in Hi).
                 rewrite <- Heqdids in Hi.
-                rewrite app_nil_r in Hi.
-                apply lookup_take_Some in Hi.
-                destruct Hi as [Hi Hcontra].
-                clear -Hcontra.
-                ltac1:(lia).
-            }
-            simpl in Htmp.
-            ltac1:(setoid_rewrite elem_of_app in Htmp).
-            ltac1:(setoid_rewrite elem_of_app in Htmp).
-            unfold compile' at 2 in Htmp'.
-            destruct m; simpl in *.
-            {
-                clear Htmp.
-                rewrite <- (firstn_skipn i ds) in Hi.
-                rewrite <- Heqdids in Hi.
-                rewrite lookup_app_r in Hi>[|rewrite take_length;ltac1:(lia)].
-                rewrite take_length in Hi.
-                ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
-                simpl in Hi.
-                inversion Hi.
-            }
-            {
-                ltac1:(epose proof(Htmp' := Htmp ?[t2] ?[t3] ?[w0] ?[a] ?[r])).
-                clear Htmp.
-                
-                ltac1:(ospecialize (Htmp' _)).
+                rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
+                ltac1:(
+                    replace (i - length (take i ds)) with (0)
+                    in Hi
+                    by (rewrite take_length; lia)
+                ).
+                simpl in Hi. inversion Hi; subst; clear Hi.
+
+
+                exists ρ.
+                unfold flattened_rewrites_in_valuation_under_to.
+                simpl.
+                split.
                 {
-                    right. left. rewrite elem_of_list_In. constructor.
-                    reflexivity.
-                }
-                ltac1:(ospecialize (Htmp' _)).
-                {
-                    unfold flattened_rewrites_to.
-                    ltac1:(rewrite <- (firstn_skipn i ds) in Hi).
-                    rewrite <- Heqdids in Hi.
-                    rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
+                    clear Htmp'.
                     ltac1:(
-                        replace (i - length (take i ds)) with (0)
-                        in Hi
-                        by (rewrite take_length; lia)
+                        replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)))))
+                        with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c))))))
+                        by reflexivity
                     ).
-                    simpl in Hi. inversion Hi; subst; clear Hi.
-
-
-                    exists ρ.
-                    unfold flattened_rewrites_in_valuation_under_to.
-                    simpl.
-                    split.
-                    {
-                        clear Htmp'.
-                        ltac1:(
-                            replace ((term_operand (bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c)))))
-                            with (uglify' (t_over ((bov_variable (fresh (fresh (vars_of_to_l2r c) :: vars_of_to_l2r c))))))
-                            by reflexivity
-                        ).
-                        ltac1:(
-                            replace (apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable (fresh (vars_of_to_l2r c)))])
-                            with (uglify' (t_term cseqSymbol [c; t_over (bov_variable (fresh (vars_of_to_l2r c)))]))
-                            by reflexivity
-                        ).
-                        apply satisfies_top_bov.
-                        (* TODO something goes here *)                        
-                    }
-            
-            }
-
-
-            rewrite concat_app in Htmp.
-            ltac1:(setoid_rewrite elem_of_list_In in Htmp).
-            ltac1:(setoid_rewrite in_concat in Htmp).
-            Search concat.
-            rewrite elem_of_concat in Htmp.
-            
-            About frto_step.
-            eapply frto_step in IHHH.
-
+                    ltac1:(
+                        replace (apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable (fresh (vars_of_to_l2r c)))])
+                        with (uglify' (t_term cseqSymbol [c; t_over (bov_variable (fresh (vars_of_to_l2r c)))]))
+                        by reflexivity
+                    ).
+                    apply satisfies_top_bov.
+                    (* TODO something goes here *)                        
+                }
+        
         }
 
-    }
+
+        rewrite concat_app in Htmp.
+        ltac1:(setoid_rewrite elem_of_list_In in Htmp).
+        ltac1:(setoid_rewrite in_concat in Htmp).
+        Search concat.
+        rewrite elem_of_concat in Htmp.
+        
+        About frto_step.
+        eapply frto_step in IHHH.
+
     }
 
 Qed.
