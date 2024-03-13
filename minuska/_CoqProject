@@ -20,6 +20,7 @@ theories/default_static_model.v
 theories/notations.v
 theories/frontend.v
 theories/minusl_compile.v
+theories/minusl_compile_properties.v
 theories/dt.v
 theories/interp_loop.v
 
