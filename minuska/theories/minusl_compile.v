@@ -6616,7 +6616,7 @@ Lemma satisfies_TermOverExpression_vars_of
 .
 Proof.
     intros H.
-    assert (Htmp := satisfies_Term'_vars_of ρ1 ρ2 (uglify' g) (uglify' φ) H).
+    assert (Htmp := satisfies_Term'Expression_vars_of ρ1 ρ2 (uglify' g) (uglify' φ) H).
     apply Htmp.
 Qed.
 
