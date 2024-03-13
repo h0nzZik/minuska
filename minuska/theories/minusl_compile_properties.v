@@ -7505,6 +7505,117 @@ Proof.
 Qed.
 
 
+Lemma satisfies_TermOverBoV__impl__vars_subseteq
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (c : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    satisfies ρ c φ ->
+    vars_of φ ⊆ vars_of ρ
+.
+Proof.
+    revert ρ c.
+    induction φ; intros ρ c HH.
+    {
+        inversion HH; subst; clear HH.
+        {
+            apply (f_equal prettify) in H1.
+            rewrite (cancel prettify uglify') in H1.
+            simpl in H1.
+            destruct a; simpl in *.
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                apply empty_subseteq.
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                inversion pf; subst; clear pf.
+                rewrite elem_of_subseteq.
+                intros x' Hx'.
+                rewrite elem_of_singleton in Hx'.
+                subst x'.
+                rewrite elem_of_dom.
+                exists (term_operand y).
+                exact H2.
+            }
+        }
+        {
+            destruct a; simpl in *.
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                apply empty_subseteq.
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                inversion H2; subst; clear H2.
+                rewrite elem_of_subseteq.
+                intros x' Hx'.
+                rewrite elem_of_singleton in Hx'.
+                subst x'.
+                rewrite elem_of_dom.
+                exists (term_preterm axy).
+                exact H1.
+            }
+        }
+    }
+    {
+        rewrite vars_of_t_term.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        rewrite elem_of_union_list in Hx.
+        destruct Hx as [X [HX Hx]].
+        rewrite elem_of_list_fmap in HX.
+        destruct HX as [y [HX Hy]].
+        subst X.
+        apply elem_of_list_split in Hy.
+        destruct Hy as [l1 [l2 Hy]].
+        subst l.
+        rewrite Forall_app in H.
+        rewrite Forall_cons in H.
+        destruct H as [H1 [H2 H3]].
+        apply satisfies_term_inv in HH.
+        destruct HH as [lγ [H4 [H5 H6]]].
+        subst c.
+        rewrite <- (firstn_skipn (length l1) lγ) in H6.
+        rewrite zip_with_app in H6.
+        {
+            rewrite Forall_app in H6.
+            destruct H6 as [H6 H7].
+            destruct (drop (length l1) lγ) eqn:Hed.
+            {
+                clear -Hed H5.
+                rewrite <- (firstn_skipn (length l1) lγ) in H5.
+                rewrite app_length in H5.
+                rewrite app_length in H5.
+                rewrite take_length in H5.
+                rewrite Hed in H5.
+                simpl in H5.
+                ltac1:(lia).
+            }
+            simpl in H7.
+            rewrite Forall_cons in H7.
+            destruct H7 as [H7 H8].
+            specialize (H2 ρ t H7).
+            clear -H2 Hx.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite take_length.
+            rewrite app_length in H5.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -7952,6 +8063,7 @@ Proof.
             unfold downC in *.
             remember ((TermOverBoV_subst c h (t_term holeSymbol []))) as substituted.
             destruct H0 as [ρ1 [H01 H02]].
+            Check TermOverBoV_eval.
             Search satisfies.
             eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [substituted; cont])]); state1])).
             { apply Hheat. }
