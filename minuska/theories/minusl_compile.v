@@ -6620,6 +6620,157 @@ Proof.
     apply Htmp.
 Qed.
 
+Lemma valaution_restrict_subseteq
+    {Σ : StaticModel}
+    (e : Expression)
+    (ρ1 ρ2 : Valuation)
+    :
+    (∀ x : variable, x ∈ vars_of e → ρ1 !! x = ρ2 !! x) ->
+    vars_of e ⊆ vars_of ρ1 ->
+    vars_of e ⊆ vars_of ρ2 -> 
+    valuation_restrict ρ1 (vars_of e) = valuation_restrict ρ2 (vars_of e)
+.
+Proof.
+    intros HH H1 H2.
+    unfold valuation_restrict.
+    rewrite map_filter_strong_ext.
+    intros i x. simpl.
+    rewrite elem_of_subseteq in H1.
+    rewrite elem_of_subseteq in H2.
+    specialize (H1 i).
+    specialize (H2 i).
+    unfold vars_of in H1; simpl in H1.
+    unfold vars_of in H2; simpl in H2.
+    rewrite elem_of_dom in H1.
+    rewrite elem_of_dom in H2.
+    split; intros [H3 H4]; specialize (H1 H3); specialize (H2 H3);
+        split; try assumption.
+    {
+        destruct H1 as [x1 Hx1].
+        destruct H2 as [x2 Hx2].
+        specialize (HH i H3).
+        ltac1:(rewrite HH in H4).
+        exact H4.
+    }
+    {
+        destruct H1 as [x1 Hx1].
+        destruct H2 as [x2 Hx2].
+        specialize (HH i H3).
+        ltac1:(rewrite HH).
+        exact H4.
+    }
+Qed.
+
+Lemma satisfies_scs_vars_of
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation)
+    (scs : list SideCondition)
+    :
+    (∀ x : variable, x ∈ vars_of scs → ρ1 !! x = ρ2 !! x) →
+    satisfies ρ1 () scs ↔ satisfies ρ2 () scs
+.
+Proof.
+    intros H.
+    unfold satisfies; simpl.
+    induction scs.
+    {
+
+    }
+    {
+        split; intros HH; apply Forall_cons;
+            rewrite Forall_cons_iff in HH;
+            destruct HH as [HH1 HH2];
+            specialize (IHscs ltac:(set_solver));
+            split; try ltac1:(naive_solver).
+        (* satisfies ρ2 () a *)
+        {
+            clear IHscs HH2.
+            assert (H': ∀ x : variable, x ∈ vars_of (a) → ρ1 !! x = ρ2 !! x).
+            {
+                unfold vars_of in H. simpl in H.
+                ltac1:(set_solver).
+            }
+            clear H scs.
+            destruct a; simpl in *.
+            destruct c; simpl in *.
+            unfold satisfies in HH1; simpl in HH1.
+            unfold satisfies in HH1; simpl in HH1.
+            unfold satisfies; simpl.
+            unfold satisfies; simpl.
+            destruct HH1 as [HH1 HH2].
+            unfold is_Some in HH2.
+            destruct HH2 as [x11 Hx11].
+            assert (Hx12 : Expression_evaluate ρ1 e2 = Some x11).
+            {
+                ltac1:(congruence).
+            }
+            apply expression_evaluate_some_valuation in Hx11 as Hx11'.
+            apply expression_evaluate_some_valuation in Hx12 as Hx12'.
+            unfold is_Some.
+            rewrite Expression_evalute_total_iff.
+            unfold vars_of in H'; simpl in H'.
+            unfold vars_of in H'; simpl in H'.
+            assert (H2: vars_of e1 ⊆ vars_of ρ2).
+            {
+                rewrite elem_of_subseteq in Hx11'.
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                specialize (Hx11' x Hx).
+                specialize (H' x ltac:(set_solver)).
+                unfold vars_of in *; simpl in *.
+                rewrite elem_of_dom.
+                rewrite elem_of_dom in Hx11'.
+                unfold is_Some in *.
+                destruct Hx11' as [y Hy].
+                exists y.
+                ltac1:(rewrite - H').
+                exact Hy.
+            }
+            assert (H3: vars_of e2 ⊆ vars_of ρ2).
+            {
+                rewrite elem_of_subseteq in Hx12'.
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                specialize (Hx12' x Hx).
+                specialize (H' x ltac:(set_solver)).
+                unfold vars_of in *; simpl in *.
+                rewrite elem_of_dom.
+                rewrite elem_of_dom in Hx12'.
+                unfold is_Some in *.
+                destruct Hx12' as [y Hy].
+                exists y.
+                ltac1:(rewrite - H').
+                exact Hy.
+            }
+            split.
+            {
+                rewrite Expression_evaluate_val_restrict with (t := e1)(ρ2 := ρ1).
+                {
+                    rewrite HH1.
+                    rewrite Expression_evaluate_val_restrict with (t := e2)(ρ2 := ρ2).
+                    { reflexivity. }
+                    {
+                        
+                    }
+                }
+                Search Expression_evaluate.
+            }
+            {
+                exact H2.
+            }
+            
+            Search Expression_evaluate.
+            {
+
+            }
+        }
+        (* satisfies ρ1 () a *)
+        {
+
+        }
+    }
+Qed.
+
 Lemma uglify'_prettify'
     {Σ : StaticModel}
     {T : Type}
@@ -7545,10 +7696,8 @@ Proof.
                             apply satisfies_top_expr.
                             split.
                             {
-                                Search satisfies "vars_of".
-                                satisfies_TermOver_vars_of
-                                erewrite satisfies_TermOver_vars_of.
-                                { apply H0. }
+                                erewrite satisfies_TermOverExpression_vars_of.
+                                { apply H2. }
                                 intros x Hx.
                                 destruct (decide (continuationVariable = x)).
                                 {
@@ -7584,7 +7733,7 @@ Proof.
                                 }
                             }
                             {
-                                apply satisfies_var.
+                                apply satisfies_var_expr.
                                 ltac1:(rewrite lookup_insert).
                                 reflexivity.
                             }
@@ -7593,8 +7742,8 @@ Proof.
                             apply Forall_cons.
                             split.
                             {
-                                erewrite satisfies_TermOver_vars_of.
-                                { apply H1. }
+                                erewrite satisfies_TermOverExpression_vars_of.
+                                { apply H3. }
                                 intros x Hx.
                                 destruct (decide (continuationVariable = x)).
                                 {
@@ -7636,7 +7785,42 @@ Proof.
                     }
                 }
                 {
-
+                    simpl.
+                    erewrite satisfies_TermOverExpression_vars_of.
+                    { apply H3. }
+                    intros x Hx.
+                    destruct (decide (continuationVariable = x)).
+                    {
+                        subst x.
+                        unfold vars_of in HcvD. simpl in HcvD.
+                        ltac1:(exfalso).
+                        apply HcvD. clear HcvD.
+                        rewrite elem_of_union_list.
+                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                        split.
+                        {
+                            rewrite elem_of_list_fmap.
+                            exists (mld_rewrite Act lc ld a rc rd scs).
+                            split>[reflexivity|].
+                            rewrite <- (take_drop i ds).
+                            rewrite elem_of_app.
+                            rewrite <- Heqds'.
+                            right.
+                            rewrite elem_of_cons. left.
+                            reflexivity.
+                        }
+                        {
+                            unfold vars_of; simpl.
+                            unfold vars_of; simpl.
+                            clear -Hx.
+                            ltac1:(set_solver).
+                        }
+                    }
+                    {
+                        ltac1:(rewrite lookup_insert_ne).
+                        { assumption. }
+                        { reflexivity. }
+                    }
                 }
             }
             
