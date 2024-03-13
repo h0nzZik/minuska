@@ -6275,16 +6275,14 @@ Lemma frto_app
     forall
         Γ
         (t1 t2 t3 : TermOver builtin_value)
-        (w1 w2 : list Act)
-        r,
-    r ∈ Γ ->
+        (w1 w2 : list Act),
     flattened_rewrites_to_over Γ t1 w1 t2 ->
     flattened_rewrites_to_over Γ t2 w2 t3 ->
     flattened_rewrites_to_over Γ t1 (w1++w2) t3
 .
 Proof.
     intros.
-    revert t1 t2 t3 w2 H0 H1.
+    revert t1 t2 t3 w2 H H0.
     induction w1; intros t1 t2 t3 w2 H0 H1.
     {
         inversion H0; subst; clear H0.
@@ -6294,11 +6292,11 @@ Proof.
     {
         simpl.
         inversion H0; subst; clear H0.
-        eapply frto_step>[|apply H6|].
+        eapply frto_step>[|apply H5|].
         { assumption. }
         {
             eapply IHw1.
-            { apply H8. }
+            { apply H7. }
             { apply H1. }
         }
     }
@@ -7950,8 +7948,10 @@ Proof.
             reflexivity.
         }
         {
-            intros cont. Locate frto_step_app.
-            Search flattened_rewrites_to_over.
+            intros cont.
+            eapply frto_app.
+            { apply H2w'1. }
+            { apply H2w'2. }
         }
     }
     {
