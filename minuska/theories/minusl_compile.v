@@ -10,6 +10,7 @@ From Minuska Require Import
 
 Require Import Ring.
 Require Import ArithRing.
+Require Import Coq.Program.Wf.
 Require Import Coq.Logic.FunctionalExtensionality.
 
 (*
@@ -7577,6 +7578,118 @@ Proof.
     }
 Qed.
 *)
+
+(*
+About vars_of.
+Lemma vars_of_t_term_app
+    {Σ : StaticModel}
+    (s : symbol)
+    (l1 l2 : list (TermOver BuiltinOrVar))
+    :
+    @vars_of _ variable _ _ _ (t_term s (l1 ++ l2))
+    = (@vars_of _ variable _ _ _ (t_term s l1))
+    ∪ (@vars_of _ variable _ _ _ (t_term s l2))
+.
+*)
+
+Lemma vars_of_t_term
+    {Σ : StaticModel}
+    (s : symbol)
+    (l : list (TermOver BuiltinOrVar))
+    :
+    vars_of (t_term s l) = union_list ( vars_of <$> l)
+.
+Proof.
+    induction l using rev_ind.
+    {
+        reflexivity.
+    }
+    {
+        unfold vars_of in *; simpl in *.
+        unfold apply_symbol' in *.
+        unfold to_Term' in *.
+        unfold vars_of in *; simpl in *.
+        unfold to_PreTerm' in *.
+        rewrite map_app.
+        rewrite fold_left_app.
+        simpl. unfold helper at 1.
+        destruct (uglify' x) eqn:Hux.
+        {
+            unfold vars_of in *; simpl in *.
+            rewrite IHl.
+            rewrite fmap_app.
+            rewrite union_list_app_L.
+            simpl.
+            rewrite Hux. simpl.
+            ltac1:(set_solver).
+        }
+        {
+            unfold vars_of in *; simpl in *.
+            rewrite IHl.
+            rewrite fmap_app.
+            rewrite union_list_app_L.
+            simpl.
+            rewrite Hux. simpl.
+            ltac1:(set_solver).
+        }
+    }
+Qed.
+
+Program Fixpoint TermOverBoV_eval
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (φ : TermOver BuiltinOrVar)
+    (pf : vars_of φ ⊆ vars_of ρ)
+    {measure (TermOver_size φ)}
+    : TermOver builtin_value
+:=
+match φ with
+| t_over (bov_builtin b) => t_over b
+| t_over (bov_variable x) =>
+    match ρ !! x with
+    | Some t => prettify t
+    | None => _
+    end
+| t_term s l =>
+    t_term s (pfmap l (fun φ' pf' => TermOverBoV_eval ρ φ' _))
+end
+.
+Next Obligation.
+    intros.
+    rewrite elem_of_subseteq in pf.
+    specialize (pf x).
+    subst φ.
+    unfold vars_of in pf. simpl in pf.
+    unfold vars_of in pf. simpl in pf.
+    unfold vars_of in pf. simpl in pf.
+    rewrite elem_of_singleton in pf.
+    specialize (pf eq_refl).
+    rewrite elem_of_dom in pf.
+    ltac1:(unfold filtered_var in Heq_anonymous).
+    ltac1:(rewrite - Heq_anonymous in pf).
+    Search is_Some None.
+    ltac1:(exfalso).
+    eapply is_Some_None.
+    apply pf.
+Defined.
+Next Obligation.
+    intros. subst.
+    apply elem_of_list_split in pf'.
+    destruct pf' as [l1 [l2 Hl1l2]].
+    subst l.
+    Search vars_of app.
+    unfold vars_of in pf at 1. simpl in pf.
+    unfold vars_of in pf at 1. simpl in pf.
+    rewrite map_app in pf. unfold apply_symbol' in pf.
+    unfold to_Term' in pf. simpl in pf.
+    
+    unfold to_PreTerm' in pf.
+    rewrite fold_left_app in pf.
+    simpl in pf.
+    Search elem_of list app.
+Defined.
+Fail Next Obligation.
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -7952,6 +8065,84 @@ Proof.
             eapply frto_app.
             { apply H2w'1. }
             { apply H2w'2. }
+        }
+    }
+    {
+        destruct IHHH as [w' [Hw' IH]].
+        exists (invisible_act::(w' ++ [invisible_act])).
+        split.
+        {
+            rewrite filter_cons.
+            destruct (decide (invisible_act <> invisible_act))>[ltac1:(congruence)|].
+            rewrite filter_app.
+            rewrite filter_cons.
+            destruct (decide (invisible_act <> invisible_act))>[ltac1:(congruence)|].
+            rewrite filter_nil.
+            rewrite app_nil_r.
+            exact Hw'.
+        }
+        {
+
+            assert (Hheat: ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+            {
+                rewrite elem_of_list_lookup in H.
+                destruct H as [ir Hir].
+                apply take_drop_middle in Hir.
+                ltac1:(unfold Γ in IH).
+                ltac1:(unfold Γ).
+                simpl in *.
+                ltac1:(rewrite - Hir).
+                unfold compile.
+                simpl.
+                ltac1:(rewrite map_app).
+                ltac1:(rewrite map_cons).
+                simpl.
+                ltac1:(rewrite concat_app).
+                ltac1:(rewrite concat_cons).
+                ltac1:(unfold Γ).
+                clear.
+                rewrite elem_of_app. right.
+                rewrite elem_of_app. left.
+                rewrite elem_of_cons. left.
+                reflexivity.
+            }
+
+            assert (Hcool: ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
+            {
+                rewrite elem_of_list_lookup in H.
+                destruct H as [ir Hir].
+                apply take_drop_middle in Hir.
+                ltac1:(unfold Γ in IH).
+                ltac1:(unfold Γ).
+                simpl in *.
+                ltac1:(rewrite - Hir).
+                unfold compile.
+                simpl.
+                ltac1:(rewrite map_app).
+                ltac1:(rewrite map_cons).
+                simpl.
+                ltac1:(rewrite concat_app).
+                ltac1:(rewrite concat_cons).
+                ltac1:(unfold Γ).
+                clear.
+                rewrite elem_of_app. right.
+                rewrite elem_of_app. left.
+                rewrite elem_of_cons. right.
+                rewrite elem_of_cons. left.
+                reflexivity.
+            }
+        
+
+            intros cont.
+            unfold downC in *.
+            remember ((TermOverBoV_subst c h (t_term holeSymbol []))) as substituted.
+            destruct H0 as [ρ1 [H01 H02]].
+            Search satisfies.
+            eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [substituted; cont])]); state1])).
+            { apply Hheat. }
+            
+            >[()|()|eapply frto_step_app].
+            Search flattened_rewrites_to_over.
         }
     }
     {
