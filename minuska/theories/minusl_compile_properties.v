@@ -8119,9 +8119,25 @@ Proof.
             remember ((TermOverBoV_subst c h (t_term holeSymbol []))) as substituted.
             destruct H0 as [ρ1 [H01 H02]].
             apply satisfies_TermOverBoV__impl__vars_subseteq in H01 as H01'.
-            Search vars_of TermOverBoV_subst.
-            Check TermOverBoV_eval.
-            Search satisfies.
+            assert (Hvars := vars_of__TermOverBoV_subst__varless c h (t_term holeSymbol []) eq_refl).
+            assert (Htmp1 : vars_of substituted ⊆ vars_of ρ1).
+            {
+                subst.
+                rewrite vars_of__TermOverBoV_subst__varless>[|reflexivity].
+                clear -H01'.
+                unfold vars_of in H01'. simpl in H01'.
+                unfold vars_of; simpl.
+                assert (Htmp: (vars_of (uglify' c)) ∖ {[h]} ⊆ (dom (<[h:=uglify' r]> ρ1)) ∖ {[h]}).
+                {
+                    ltac1:(set_solver).
+                }
+                clear H01'.
+                ltac1:(rewrite dom_insert_L in Htmp).
+                ltac1:(set_solver).
+            }
+            remember (TermOverBoV_eval ρ1 substituted Htmp1) as ceval.
+            
+
             eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [substituted; cont])]); state1])).
             { apply Hheat. }
             
