@@ -6267,6 +6267,43 @@ Proof.
     }
 Qed.
 
+
+Lemma frto_app
+    {Σ : StaticModel}
+    (Act : Set)
+    :
+    forall
+        Γ
+        (t1 t2 t3 : TermOver builtin_value)
+        (w1 w2 : list Act)
+        r,
+    r ∈ Γ ->
+    flattened_rewrites_to_over Γ t1 w1 t2 ->
+    flattened_rewrites_to_over Γ t2 w2 t3 ->
+    flattened_rewrites_to_over Γ t1 (w1++w2) t3
+.
+Proof.
+    intros.
+    revert t1 t2 t3 w2 H0 H1.
+    induction w1; intros t1 t2 t3 w2 H0 H1.
+    {
+        inversion H0; subst; clear H0.
+        simpl.
+        exact H1.
+    }
+    {
+        simpl.
+        inversion H0; subst; clear H0.
+        eapply frto_step>[|apply H6|].
+        { assumption. }
+        {
+            eapply IHw1.
+            { apply H8. }
+            { apply H1. }
+        }
+    }
+Qed.
+
 Lemma satisfies_TermOver_vars_of
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
@@ -7902,7 +7939,20 @@ Proof.
         }
     }
     {
-        
+        destruct IHHH1 as [w'1 [H1w'1 H2w'1]].
+        destruct IHHH2 as [w'2 [H1w'2 H2w'2]].
+        exists (w'1 ++ w'2).
+        split.
+        {
+            subst w1 w2.
+            clear.
+            rewrite filter_app.
+            reflexivity.
+        }
+        {
+            intros cont. Locate frto_step_app.
+            Search flattened_rewrites_to_over.
+        }
     }
     {
         simpl in *.
