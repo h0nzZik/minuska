@@ -7862,8 +7862,8 @@ Proof.
                 }
                 {
                     simpl.
-                    erewrite satisfies_TermOverExpression_vars_of.
-                    { apply H3. }
+                    erewrite satisfies_scs_vars_of.
+                    { apply H4. }
                     intros x Hx.
                     destruct (decide (continuationVariable = x)).
                     {
@@ -7899,150 +7899,10 @@ Proof.
                     }
                 }
             }
-            
-                split.
-                {
-                    unfold apply_symbol'.
-                    unfold to_Term'.
-                    constructor.
-                    unfold to_PreTerm'.
-                    fold (@uglify' Σ).
-                    ltac1:(
-                        replace
-                        (term_preterm (fold_left helper [uglify' lc; term_operand (bov_variable continuationVariable)] (pt_operator cseqSymbol)))
-                        with
-                        (uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]))
-                        by reflexivity
-                    ).
-                    ltac1:(
-                        replace
-                        ([uglify' (t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]); uglify' ld])
-                        with
-                        (map uglify' [((t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]));(ld)])
-                        by reflexivity
-                    ).
-                    apply satisfies_top_bov_cons.
-                    split.
-                    {
-                        simpl. reflexivity.
-                    }
-                    {
-                        split>[|reflexivity].
-                        simpl.
-                        rewrite Forall_cons.
-                        split.
-                        {
-                            apply satisfies_top_bov.
-                            split.
-                            {
-                                eapply satisfies_ext>[|apply H0].
-                                unfold Valuation in *.
-                                apply insert_subseteq.
-                                clear -Hnocvρ.
-                                unfold vars_of in Hnocvρ.
-                                simpl in Hnocvρ.
-                                rewrite not_elem_of_dom in Hnocvρ.
-                                exact Hnocvρ.
-                            }
-                            {
-                                apply satisfies_var.
-                                unfold Valuation in *.
-                                apply lookup_insert.
-                            }
-                        }
-                        {
-                            rewrite Forall_cons.
-                            split.
-                            {
-                                eapply satisfies_ext>[|apply H1].
-                                unfold Valuation in *.
-                                apply insert_subseteq.
-                                clear -Hnocvρ.
-                                unfold vars_of in Hnocvρ.
-                                simpl in Hnocvρ.
-                                rewrite not_elem_of_dom in Hnocvρ.
-                                exact Hnocvρ.   
-                            }
-                            {
-                                apply Forall_nil. exact I.
-                            }
-                        }
-                    }
-                }
-                split.
-                {
-                    unfold apply_symbol'.
-                    unfold to_Term'.
-                    constructor.
-                    unfold to_PreTerm'.
-                    fold (@uglify' Σ).
-                    ltac1:(
-                        replace
-                        ([term_preterm (fold_left helper [uglify' rc; term_operand (ft_variable continuationVariable)] (pt_operator cseqSymbol)); uglify' rd])
-                        with
-                        (
-                            map uglify' [(t_term cseqSymbol [rc; t_over (ft_variable continuationVariable)]);(rd)]
-                        )
-                        by reflexivity
-                    ).
-                    apply satisfies_top_bov_cons_expr.
-                    (repeat split); try reflexivity.
-                    simpl.
-                    repeat (rewrite Forall_cons).
-                    rewrite Forall_nil.
-                    (repeat split).
-                    {
-                        constructor.
-                        apply satisfies_top_bov_cons_expr.
-                        (repeat split).
-                        simpl.
-                        repeat (rewrite Forall_cons).
-                        rewrite Forall_nil.
-                        (repeat split).
-                        {
-                            eapply satisfies_ext>[|apply H2].
-                            unfold Valuation in *.
-                            apply insert_subseteq.
-                            clear -Hnocvρ.
-                            unfold vars_of in Hnocvρ.
-                            simpl in Hnocvρ.
-                            rewrite not_elem_of_dom in Hnocvρ.
-                            exact Hnocvρ.   
-                        }
-                        {
-                            apply satisfies_var_expr.
-                            unfold Valuation in *.
-                            apply lookup_insert.
-                        }
-                    }
-                    {
-                        eapply satisfies_ext>[|apply H3].
-                        unfold Valuation in *.
-                        apply insert_subseteq.
-                        clear -Hnocvρ.
-                        unfold vars_of in Hnocvρ.
-                        simpl in Hnocvρ.
-                        rewrite not_elem_of_dom in Hnocvρ.
-                        exact Hnocvρ.   
-                    }
-                }
-                {
-                    simpl.
-                    split>[|reflexivity].
-                    eapply satisfies_ext>[|apply H4].
-                    unfold Valuation in *.
-                    apply insert_subseteq.
-                    clear -Hnocvρ.
-                    unfold vars_of in Hnocvρ.
-                    simpl in Hnocvρ.
-                    rewrite not_elem_of_dom in Hnocvρ.
-                    exact Hnocvρ.
-                }
-            }
         }
-        {
-            
-        }
+    }
+    {
+        
     }
     {
         simpl in *.
