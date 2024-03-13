@@ -6474,22 +6474,68 @@ Proof.
     {
         rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ1 ao ao0)).
         rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ2 ao ao0)).
-        apply satisfies_PreTerm'_vars_of.
+        apply satisfies_PreTerm'Expression_vars_of.
         apply Hvars.
     }
     {
         unfold matchesb; simpl.
-        destruct operand; simpl.
-        { ltac1:(tauto). }
+
+        destruct
+            (decide (Expression_evaluate ρ1 operand = Some (term_preterm ao))) as [Hsome1|Hnone1],
+            (decide (Expression_evaluate ρ2 operand = Some (term_preterm ao))) as [Hsome2|Hnone2].
         {
-            rewrite Hvars.
-            { reflexivity. }
+            rewrite Hsome1. rewrite Hsome2.
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            apply Hnone2. clear Hnone2.
+            assert (Hsome1' := Hsome1).
+            apply expression_evaluate_some_valuation in Hsome1'.
+            erewrite Expression_evaluate_val_restrict.
+            { apply Hsome1. }
+            unfold valuation_restrict.
+            rewrite map_filter_strong_ext.
+            intros i x.
+            simpl.
+            clear IHg.
+            specialize (Hvars i).
+            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+                split; try assumption.
             {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                rewrite elem_of_singleton.
-                reflexivity.
+                ltac1:(rewrite Hvars). assumption.
             }
+            {
+                ltac1:(rewrite -Hvars). assumption.
+            }
+        }
+        {
+            ltac1:(exfalso).
+            apply Hnone1. clear Hnone1.
+            assert (Hsome2' := Hsome2).
+            apply expression_evaluate_some_valuation in Hsome2'.
+            erewrite Expression_evaluate_val_restrict.
+            { apply Hsome2. }
+            unfold valuation_restrict.
+            rewrite map_filter_strong_ext.
+            intros i x.
+            simpl.
+            clear IHg.
+            specialize (Hvars i).
+            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+                split; try assumption.
+            {
+                ltac1:(rewrite -Hvars). assumption.
+            }
+            {
+                ltac1:(rewrite Hvars). assumption.
+            }
+        }
+        {
+            clear IHg Hvars.
+            rewrite bool_decide_eq_true.
+            rewrite bool_decide_eq_true.
+            ltac1:(tauto).
         }
     }
     {
@@ -6497,17 +6543,64 @@ Proof.
     }
     {
         unfold matchesb; simpl.
-        destruct operand0; simpl.
-        { ltac1:(tauto). }
+
+
+        destruct
+            (decide (Expression_evaluate ρ1 operand0 = Some (term_operand operand))) as [Hsome1|Hnone1],
+            (decide (Expression_evaluate ρ2 operand0 = Some (term_operand operand))) as [Hsome2|Hnone2].
         {
-            rewrite Hvars.
-            { reflexivity. }
+            rewrite Hsome1. rewrite Hsome2.
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            apply Hnone2. clear Hnone2.
+            assert (Hsome1' := Hsome1).
+            apply expression_evaluate_some_valuation in Hsome1'.
+            erewrite Expression_evaluate_val_restrict.
+            { apply Hsome1. }
+            unfold valuation_restrict.
+            rewrite map_filter_strong_ext.
+            intros i x.
+            simpl.
+            clear IHg.
+            specialize (Hvars i).
+            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+                split; try assumption.
             {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                rewrite elem_of_singleton.
-                reflexivity.
+                ltac1:(rewrite Hvars). assumption.
             }
+            {
+                ltac1:(rewrite -Hvars). assumption.
+            }
+        }
+        {
+            ltac1:(exfalso).
+            apply Hnone1. clear Hnone1.
+            assert (Hsome2' := Hsome2).
+            apply expression_evaluate_some_valuation in Hsome2'.
+            erewrite Expression_evaluate_val_restrict.
+            { apply Hsome2. }
+            unfold valuation_restrict.
+            rewrite map_filter_strong_ext.
+            intros i x.
+            simpl.
+            clear IHg.
+            specialize (Hvars i).
+            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+                split; try assumption.
+            {
+                ltac1:(rewrite -Hvars). assumption.
+            }
+            {
+                ltac1:(rewrite Hvars). assumption.
+            }
+        }
+        {
+            clear IHg Hvars.
+            rewrite bool_decide_eq_true.
+            rewrite bool_decide_eq_true.
+            ltac1:(tauto).
         }
     }
 Qed.
