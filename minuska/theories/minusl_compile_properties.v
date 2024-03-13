@@ -7616,6 +7616,61 @@ Proof.
     }
 Qed.
 
+
+Lemma vars_of__TermOverBoV_subst__varless
+    {Σ : StaticModel} c x v
+    :
+    vars_of v = ∅ ->
+    vars_of (TermOverBoV_subst c x v) = vars_of c ∖ {[x]}
+.
+Proof.
+    induction c; simpl in *; intros HH.
+    {
+        destruct a.
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            unfold vars_of at 2; simpl.
+            unfold vars_of at 2; simpl.
+            destruct (decide (x = x0)).
+            {
+                unfold vars_of at 2; simpl.
+                subst.
+                ltac1:(set_solver).
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        rewrite vars_of_t_term.
+        rewrite vars_of_t_term.
+        apply set_eq.
+        revert HH H.
+        induction l; intros HH H.
+        {
+            intros x0. simpl. ltac1:(set_solver).
+        }
+        {
+            intros x0.
+            specialize (IHl HH).
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2). clear H2.
+            specialize (H1 HH).
+            ltac1:(set_solver).
+        }
+    }
+Qed.
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -8063,6 +8118,8 @@ Proof.
             unfold downC in *.
             remember ((TermOverBoV_subst c h (t_term holeSymbol []))) as substituted.
             destruct H0 as [ρ1 [H01 H02]].
+            apply satisfies_TermOverBoV__impl__vars_subseteq in H01 as H01'.
+            Search vars_of TermOverBoV_subst.
             Check TermOverBoV_eval.
             Search satisfies.
             eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [substituted; cont])]); state1])).
