@@ -19,6 +19,8 @@ theories/interpreter_results.v
 theories/default_static_model.v
 theories/notations.v
 theories/frontend.v
+theories/minusl_syntax.v
+theories/minusl_semantics.v
 theories/minusl_compile.v
 theories/minusl_compile_properties.v
 theories/dt.v

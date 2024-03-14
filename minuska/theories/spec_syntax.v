@@ -598,49 +598,6 @@ Fixpoint vars_of_to_l2r
     end
 .
 
-Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
-| mld_rewrite
-    (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
-    (a : Act)
-    (rc : TermOver Expression) (rd : TermOver Expression)
-    (scs : list SideCondition)
-| mld_context
-    (c : TermOver BuiltinOrVar)
-    (h : variable)
-    (Hh : length (filter (eq h) (vars_of_to_l2r c)) = 1)
-    (scs : list SideCondition)
-. 
-
-Definition actions_of_decl
-    {Σ : StaticModel}
-    (Act : Set)
-    (d : MinusL_Decl Act)
-    : list Act
-:=
-match d with
-| mld_rewrite _ _ _ a _ _ _ => [a]
-| mld_context _ _ _ _ _ => []
-end.
-
-
-Record MinusL_LangDef
-    {Σ : StaticModel}
-    (Act : Set)
-    : Type
- := mkMinusL_LangDef {
-    mlld_isValue : Expression -> (list SideCondition) ;
-    mlld_decls : list (MinusL_Decl Act) ;
-}.
-
-
-Definition actions_of_ldef
-    {Σ : StaticModel}
-    (Act : Set)
-    (D : MinusL_LangDef Act)
-    : list Act
-:=
-    concat (map (actions_of_decl Act) (mlld_decls Act D))
-.
 
 Fixpoint TermOverBoV_subst
     {Σ : StaticModel}

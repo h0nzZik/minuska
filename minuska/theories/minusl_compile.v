@@ -6,6 +6,7 @@ From Minuska Require Import
     basic_matching
     varsof
     syntax_properties
+    minusl_syntax
 .
 
 Require Import Ring.
@@ -178,10 +179,11 @@ Definition compile' {Σ : StaticModel} {Act : Set}
             fr_act := a;
         |})
         ]
-    | mld_context _ c h Hh scs =>
+    | mld_context _ c h Hh scs Hhscs =>
         let vars := vars_of_to_l2r c in
-        let contVariable := fresh (h::vars) in
-        let dataVariable := fresh (h::contVariable::vars) in
+        let scs_vars := elements (vars_of scs) in
+        let contVariable := fresh (h::(vars++scs_vars)) in
+        let dataVariable := fresh (h::contVariable::(vars++scs_vars)) in
          [
             (ctx_heat
                 invisible_act

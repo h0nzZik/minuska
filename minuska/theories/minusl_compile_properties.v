@@ -7,6 +7,8 @@ From Minuska Require Import
     varsof
     syntax_properties
     minusl_compile
+    minusl_syntax
+    minusl_semantics
 .
 
 Require Import Ring.
@@ -1657,7 +1659,6 @@ Proof.
                         rewrite Forall_forall.
                         rewrite Forall_forall in Hlγ3.
                         intros x Hin.
-                        Search zip_with elem_of.
                         rewrite elem_of_lookup_zip_with in Hin.
                         destruct Hin as [i [a [b [Hab1 [Hab2 Hab3]]]]].
                         specialize (Hlγ3 x).
@@ -6900,505 +6901,6 @@ Proof.
     }
 Qed.
 
-(*
-Lemma subterm_matches_variable
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (γ γ' : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
-    :
-    satisfies ρ γ φ  ->
-    is_subterm_b γ' γ = true  ->
-    is_subterm_b (TermOverBuiltin_to_TermOverBoV γ') φ = false ->
-    ∃ x γ'', ρ !! x = Some (uglify' γ'') /\ is_subterm_b γ' γ''
-    (*/\ is_subterm_b γ'' γ *)
-.
-Proof.
-    revert γ.
-    induction φ; intros γ H1 H2 H3.
-    {
-        simpl in *.
-        ltac1:(case_match).
-        { ltac1:(congruence). }
-        destruct a; simpl in *.
-        {
-            inversion H1; subst; clear H1.
-            {
-                apply (f_equal prettify) in H5.
-                rewrite (cancel prettify uglify') in H5.
-                subst γ.
-                simpl in *.
-                ltac1:(case_match).
-                {
-                    unfold satisfies in pf; simpl in pf.
-                    unfold builtin_satisfies_BuiltinOrVar' in pf; simpl in pf.
-                    inversion pf; subst; clear pf.
-                    simpl in *.
-                    unfold is_left in *.
-                    ltac1:(repeat case_match); try ltac1:(congruence).
-                    subst; simpl in *.
-                    ltac1:(contradiction n).
-                    simpl. reflexivity.
-                }
-                {
-                    ltac1:(congruence).
-                }
-            }
-            {
-                apply (f_equal prettify) in H0.
-                rewrite (cancel prettify uglify') in H0.
-                subst γ.
-                simpl in *.
-                unfold is_left in *.
-                ltac1:(repeat case_match); try ltac1:(congruence).
-                inversion H6; subst; clear H6.
-            }
-        }
-        {
-            inversion H1; subst; clear H1.
-            {
-                inversion pf; subst; clear pf.
-                unfold is_left in *.
-                ltac1:(repeat case_match); try ltac1:(congruence).
-                exists x.
-                exists γ.
-                rewrite <- H5.
-                split>[assumption|].
-                assumption.
-            }
-            {
-                unfold is_left in *.
-                ltac1:(repeat case_match); try ltac1:(congruence).
-                inversion H6; subst; clear H6.
-                exists x.
-                exists γ.
-                rewrite <- H0.
-                split>[assumption|].
-                assumption.
-            }
-        }
-    }
-    {
-        destruct γ; simpl in *.
-        {
-            inversion H1.
-        }
-        apply satisfies_term_inv in H1.
-        destruct H1 as [lγ [H4 [H5 H6]]].
-        simpl in *.
-        unfold is_left in *.
-        ltac1:(repeat case_match; try congruence); simpl in *.
-        {
-            inversion H4; subst; clear H4.
-            clear H0 H1 H2 H7 H8.
-        }
-        {
-            inversion H4; subst; clear H4.
-            simpl in *.
-        }
-    }
-Qed.
-*)
-(*
-Lemma satisfies_subst_subst
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (γ γ1 : TermOver builtin_value)
-    (h : variable)
-    (holeSymbol : symbol)
-    (φ : TermOver BuiltinOrVar)
-    :
-    h ∈ vars_of (uglify' φ) ->
-    is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1) φ = false ->
-    (forall x, ρ !! x <> Some (uglify' (t_term holeSymbol []))) ->
-    satisfies (<[h:=uglify' γ1]>ρ) γ φ ->
-    satisfies ρ
-        (TermOverBuiltin_subst γ γ1 (t_term holeSymbol []))
-        (TermOverBoV_subst φ h (t_term holeSymbol []))
-.
-Proof.
-    revert γ γ1 holeSymbol.
-    induction φ; intros γ γ1 holeSymbol Hhφ Hnotsub Hnotincod HH2.
-    {
-        (* φ is BoV `a` *)
-        unfold TermOverBuiltin_subst.
-        destruct γ; simpl in *.
-        {
-            (* γ is a builtin value `a0` *)
-            inversion HH2; subst; clear HH2.
-            unfold is_left in *.
-            destruct (decide (t_over a0 = γ1)) as [Heq|Hneq].
-            {
-                subst.
-                unfold vars_of in Hhφ; simpl in Hhφ.
-                unfold vars_of in Hhφ; simpl in Hhφ.
-                destruct a.
-                {
-                    subst.
-                    inversion Hhφ; subst; clear Hhφ.
-                }
-                {
-                    simpl in Hhφ. rewrite elem_of_singleton in Hhφ.
-                    subst.
-                    destruct (decide (x=x))>[|ltac1:(contradiction)].
-                    constructor. constructor.
-                }
-            }
-            {
-                unfold vars_of in Hhφ; simpl in Hhφ.
-                unfold vars_of in Hhφ; simpl in Hhφ.
-                destruct a.
-                {
-                    simpl in Hhφ.
-                    rewrite elem_of_empty in Hhφ. inversion Hhφ.
-                }
-                {
-                    simpl in Hhφ.
-                    rewrite elem_of_singleton in Hhφ.
-                    subst.
-                    destruct (decide (x=x))>[|ltac1:(contradiction)].
-                    inversion pf; subst; clear pf.
-                    ltac1:(rewrite lookup_insert_Some in H1).
-                    destruct H1 as [H1|H1].
-                    {
-                        destruct H1 as [_ H1].
-                        apply (f_equal prettify) in H1.
-                        rewrite (cancel prettify uglify') in H1.
-                        subst. simpl in Hneq.
-                        ltac1:(contradiction Hneq).
-                        reflexivity.
-                    }
-                    {
-                        ltac1:(naive_solver).
-                    }
-                }
-            }
-        }
-        {
-            destruct a.
-            {
-                inversion HH2; subst; clear HH2.
-                apply satisfies_builtin_inv in H2.
-                inversion H2.
-            }
-            {
-                inversion HH2; subst; clear HH2.
-                inversion H2; subst; clear H2.
-                destruct (decide (h = x)).
-                {
-                    subst.
-                    ltac1:(rewrite lookup_insert in H0).
-                    inversion H0; subst; clear H0.
-                    apply (f_equal prettify) in H1.
-                    rewrite (cancel prettify uglify') in H1.
-                    subst.
-                    unfold is_left in *.
-                    clear Hnotsub.
-                    ltac1:(repeat case_match); try assumption; try ltac1:(congruence).
-                    {
-                        do 2 constructor.
-                    }
-                    {
-                        clear H0 H.
-                        ltac1:(rename n into HH).
-                        ltac1:(exfalso).
-                        apply HH. clear H2 HH.
-                        simpl.
-                        rewrite <- (cancel prettify uglify').
-                        simpl.
-                        reflexivity.
-                    }
-                }
-                {
-                    unfold vars_of in Hhφ; simpl in Hhφ.
-                    unfold vars_of in Hhφ; simpl in Hhφ.
-                    ltac1:(set_solver).
-                }
-            }
-        }
-    }
-    {
-        destruct γ.
-        {
-            simpl in *.
-            unfold is_left.
-            apply satisfies_term_inv in HH2.
-            destruct HH2 as [? [HContra ?]].
-            inversion HContra.
-        }
-        {
-            rewrite <- vars_of_uglify in Hhφ.
-            assert (HHsizes := HH2).
-            apply concrete_is_larger_than_symbolic in HHsizes.
-            apply satisfies_term_inv in HH2.
-            destruct HH2 as [lγ [HH2 [HH3 HH4]]].
-            inversion HH2; subst; clear HH2.
-            simpl.
-            destruct (decide (t_term s lγ = γ1)) as [?|Hneq].
-            {
-                simpl in *. subst.
-                ltac1:(exfalso).
-                clear -HHsizes Hhφ.
-                unfold delta_in_val in HHsizes.
-                unfold size_of_var_in_val in HHsizes.
-                rewrite elem_of_list_In in Hhφ.
-                rewrite in_concat in Hhφ.
-                destruct Hhφ as [x [H1x H2x]].
-                rewrite in_map_iff in H1x.
-                destruct H1x as [x0 [H1x0 H2x0]].
-                subst.
-                rewrite <- elem_of_list_In in H2x0.
-                ltac1:(rewrite elem_of_list_lookup in H2x0).
-                destruct H2x0 as [i Hi].
-                apply take_drop_middle in Hi.
-                rewrite <- Hi in HHsizes.
-                repeat (rewrite sum_list_with_app in HHsizes).
-                simpl in HHsizes.
-                rewrite map_app in HHsizes.
-                rewrite map_cons in HHsizes.
-                rewrite concat_app in HHsizes.
-                rewrite concat_cons in HHsizes.
-                repeat (rewrite sum_list_with_app in HHsizes).
-                simpl in HHsizes.
-                rewrite <- elem_of_list_In in H2x.
-                rewrite elem_of_list_lookup in H2x.
-                destruct H2x as [j Hj].
-                apply take_drop_middle in Hj.
-                rewrite <- Hj in HHsizes.
-                repeat (rewrite sum_list_with_app in HHsizes).
-                simpl in HHsizes.
-                ltac1:(case_match).
-                {
-                    ltac1:(rewrite lookup_insert in H).
-                    inversion H; subst; clear H.
-                    remember ((λ x : variable,
-                        match
-                        <[h:=apply_symbol' s (map uglify' lγ)]> ρ
-                        !! x
-                        with
-                        | Some g =>
-                            Init.Nat.pred
-                        (TermOver_size (prettify g))
-                        | None => 0
-                        end)
-                    ) as F.
-                    ltac1:(replace ((prettify (apply_symbol' s (map uglify' lγ)))) with (t_term s lγ) in HHsizes).
-                    {
-                        simpl in HHsizes.
-                        repeat (rewrite sum_list_with_compose in HHsizes).
-                        unfold compose in HHsizes.
-                        repeat (rewrite sum_list_with_S in HHsizes).
-                        repeat (rewrite sum_list_fmap in HHsizes).
-                        repeat (rewrite fmap_length in HHsizes).
-                        repeat (rewrite drop_length in HHsizes).
-                        assert (Htmp := TermOver_size_not_zero ((t_term s lγ))).
-                        ltac1:(lia).
-                    }
-                    {
-                        rewrite <- (cancel prettify uglify').
-                        simpl. reflexivity.
-                    }
-                }
-                {
-                    ltac1:(rewrite lookup_insert in H).
-                    inversion H.
-                }
-            }
-            {
-                simpl.
-                unfold satisfies; simpl.
-                unfold apply_symbol'; simpl.
-                constructor.
-                unfold to_PreTerm'; simpl.
-                apply satisfies_top_bov_cons.
-                rewrite map_length.
-                rewrite map_length.
-                split>[ltac1:(lia)|].
-                split>[|reflexivity].
-                rewrite Forall_forall.
-                rewrite Forall_forall in HH4.
-                ltac1:(setoid_rewrite elem_of_lookup_zip_with).
-                ltac1:(setoid_rewrite elem_of_lookup_zip_with in HH4).
-                intros x Hx.
-                destruct Hx as [i [x0 [y0 [Hx1 [Hx2 Hx3]]]]].
-                subst x.
-                ltac1:(replace map with (@fmap _ list_fmap) in Hx2).
-                ltac1:(replace map with (@fmap _ list_fmap) in Hx3).
-                rewrite list_lookup_fmap in Hx2.
-                rewrite list_lookup_fmap in Hx3.
-                rewrite Forall_forall in H.
-                destruct ((l!!i)) eqn:Hli.
-                {
-                    simpl in Hx3.
-                    inversion Hx3; subst; clear Hx3.
-                    destruct (lγ!!i) eqn:Hlγi.
-                    {
-                        simpl in Hx2.
-                        inversion Hx2; subst; clear Hx2.
-
-                        specialize (HH4 (satisfies (<[h:=uglify' γ1]> ρ) t0 t)).
-                        ltac1:(ospecialize (HH4 _)).
-                        {
-                            exists i, t0, t.
-                            split>[reflexivity|].
-                            split;assumption.
-                        }
-                        
-                        destruct 
-                            (is_subterm_b γ1 t0) eqn:Hsγ1t0,
-                            (decide (h ∈ (vars_of (uglify' t)))) as[Hhint|Hhnotint].
-                        {
-                            specialize (H t).
-                            ltac1:(ospecialize (H _)).
-                            {
-                                rewrite elem_of_list_lookup.
-                                exists i.
-                                exact Hli.
-                            }
-                            specialize (H t0 γ1 holeSymbol).
-                            specialize (H ltac:(assumption)).
-                            simpl in Hnotsub.
-                            destruct (decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)) as [His|Hisnot].
-                            {
-                                simpl in Hnotsub. inversion Hnotsub.
-                            }
-                            {
-                                simpl in Hnotsub.
-                                assert (Hnot' := @existsb_nth (TermOver BuiltinOrVar)).
-                                specialize (Hnot' (is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1)) l).
-                                specialize (Hnot' i t).
-                                ltac1:(ospecialize (Hnot' _)).
-                                {
-                                    apply lookup_lt_Some in Hli.
-                                    exact Hli.
-                                }
-                                specialize (Hnot' Hnotsub).
-                                assert (Hli' := Hli).
-                                apply nth_lookup_Some with (d := t) in Hli'.
-                                rewrite Hli' in Hnot'.
-                                specialize (H Hnot').
-                                clear Hli' Hnot'.
-                                specialize (H Hnotincod).
-                                specialize (H HH4).
-                                exact H.
-                            }
-                        }
-                        {
-                            rewrite subst_notin>[|rewrite <- vars_of_uglify in Hhnotint; exact Hhnotint].
-                            (*ltac1:(exfalso).*)
-                            simpl in *.
-                            destruct ((decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)));
-                                inversion Hnotsub; subst; clear Hnotsub.
-                            rewrite satisfies_TermOver_vars_of with (ρ2 := ρ) in HH4.
-                            {
-                                assert (is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1) t = false).
-                                {
-                                    apply take_drop_middle in Hli.
-                                    rewrite <- Hli in H1.
-                                    rewrite existsb_app in H1.
-                                    simpl in H1.
-                                    rewrite orb_false_iff in H1.
-                                    destruct H1 as [H11 H12].
-                                    rewrite orb_false_iff in H12.
-                                    destruct H12 as [H12 H13].
-                                    exact H12.
-                                }
-                                clear H1 Hhnotint.
-                                clear Hli Hlγi.
-                                Search holeSymbol.
-                            }
-                            {
-                                intros x Hx.
-                                destruct (decide (h = x)).
-                                {
-                                    subst. ltac1:(contradiction Hhnotint).
-                                }
-                                {
-                                    ltac1:(rewrite lookup_insert_ne).
-                                    { assumption. }
-                                    { reflexivity. }
-                                }
-                            }
-                        }
-                        {
-                            specialize (H t).
-                            ltac1:(ospecialize (H _)).
-                            {
-                                rewrite elem_of_list_lookup.
-                                exists i.
-                                exact Hli.
-                            }
-                            specialize (H t0 γ1 γ2 holeSymbol).
-                            specialize (H ltac:(assumption)).
-                            simpl in Hnotsub.
-                            destruct (decide (t_term s l = TermOverBuiltin_to_TermOverBoV γ1)) as [His|Hisnot].
-                            {
-                                simpl in Hnotsub. inversion Hnotsub.
-                            }
-                            {
-                                simpl in Hnotsub.
-                                assert (Hnot' := @existsb_nth (TermOver BuiltinOrVar)).
-                                specialize (Hnot' (is_subterm_b (TermOverBuiltin_to_TermOverBoV γ1)) l).
-                                specialize (Hnot' i t).
-                                ltac1:(ospecialize (Hnot' _)).
-                                {
-                                    apply lookup_lt_Some in Hli.
-                                    exact Hli.
-                                }
-                                specialize (Hnot' Hnotsub).
-                                assert (Hli' := Hli).
-                                apply nth_lookup_Some with (d := t) in Hli'.
-                                rewrite Hli' in Hnot'.
-                                specialize (H Hnot').
-                                clear Hli' Hnot'.
-                                specialize (H Hnotincod).
-                                specialize (H HH1).
-                                specialize (H HH4).
-                                exact H.
-                            }
-                        }
-                        {
-                            rewrite not_subterm_subst>[|assumption].
-                            rewrite subst_notin>[|(rewrite <- vars_of_uglify in Hhnotint;assumption)].
-                            erewrite satisfies_TermOver_vars_of>[apply HH4|].
-                            intros x Hx.
-                            destruct (decide (h = x)).
-                            {
-                                subst. ltac1:(contradiction Hhnotint).
-                            }
-                            {
-                                ltac1:(rewrite lookup_insert_ne).
-                                { assumption. }
-                                { reflexivity. }
-                            }
-                        }
-                    }
-                    {
-                        simpl in Hx2. inversion Hx2.
-                    }
-                }
-                {
-                    simpl in Hx3.
-                    inversion Hx3.
-                }
-            }
-        }
-    }
-Qed.
-*)
-
-(*
-About vars_of.
-Lemma vars_of_t_term_app
-    {Σ : StaticModel}
-    (s : symbol)
-    (l1 l2 : list (TermOver BuiltinOrVar))
-    :
-    @vars_of _ variable _ _ _ (t_term s (l1 ++ l2))
-    = (@vars_of _ variable _ _ _ (t_term s l1))
-    ∪ (@vars_of _ variable _ _ _ (t_term s l2))
-.
-*)
 
 Lemma vars_of_t_term
     {Σ : StaticModel}
@@ -8064,7 +7566,11 @@ Proof.
         }
         {
 
-            assert (Hheat: ctx_heat invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h :: vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h scs ∈ Γ).
+            assert (Hheat:
+                ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
+                (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs))))
+                (fresh (h:: (fresh (h :: (vars_of_to_l2r c ++ ( elements (vars_of scs))))) :: (vars_of_to_l2r c ++  elements (vars_of scs))))
+                iV c h scs ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
@@ -8088,7 +7594,10 @@ Proof.
                 reflexivity.
             }
 
-            assert (Hcool: ctx_cool invisible_act topSymbol cseqSymbol holeSymbol (fresh (h::vars_of_to_l2r c)) (fresh (h:: (fresh (h::vars_of_to_l2r c)) :: vars_of_to_l2r c)) iV c h ∈ Γ).
+            assert (Hcool:
+                ctx_cool invisible_act topSymbol cseqSymbol holeSymbol
+                (fresh (h::(vars_of_to_l2r c ++  elements (vars_of scs))))
+                (fresh (h:: (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs)))) :: (vars_of_to_l2r c ++ elements (vars_of scs)))) iV c h ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
@@ -8141,8 +7650,8 @@ Proof.
             eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [ceval; cont])]); state1])).
             { apply Hheat. }
             {
-                remember (fresh (h :: vars_of_to_l2r c)) as V1.
-                remember (fresh (h :: V1 :: vars_of_to_l2r c)) as V2.
+                remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.
+                remember (fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))) as V2.
                 unfold ctx_heat. simpl.
                 unfold flattened_rewrites_to. simpl.
                 exists (<[h := uglify' r]>(<[V2 := uglify' state1]>(<[V1 := uglify' cont]>ρ1))).
@@ -8155,7 +7664,35 @@ Proof.
 
                 }
                 {
+                    rewrite satisfies_scs_vars_of.
+                    { apply H02. }
+                    intros x Hx.
+                    unfold Valuation in *.
+                    repeat (rewrite lookup_insert_ne).
+                    { reflexivity. }
+                    {
+                        clear -Hx HeqV1.
+                        intros HContra. subst.
+                        assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        {
+                            ltac1:(set_solver).
+                        }
+                        eapply infinite_is_fresh.
+                        { apply Hx'. }
+                    }
+                    {
+                        clear -Hx HeqV2.
+                        intros HContra. subst.
+                        assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        {
+                            ltac1:(set_solver).
+                        }
+                        eapply infinite_is_fresh.
+                        { apply Hx'. }
+                    }
+                    {
 
+                    }
                 }
             }
             (*
