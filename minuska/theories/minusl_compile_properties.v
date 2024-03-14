@@ -2294,6 +2294,32 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
+Lemma pflookup'_spec
+    {A : Type}
+    (l : list A)
+    (i : nat)
+    (pflt : i < length l)
+    :
+    Some (proj1_sig (pflookup' l i pflt)) = l !! i
+.
+Proof.
+    revert i pflt.
+    induction l; intros i pflt.
+    {
+        simpl in pflt. ltac1:(lia).
+    }
+    {
+        destruct i;
+            simpl in *.
+        {
+            reflexivity.
+        }
+        {
+            apply IHl.
+        }
+    }
+Qed.
+
 Lemma length_pfmap
     {A B : Type}
     (l : list A)
@@ -7373,6 +7399,13 @@ Proof.
             intros P HP.
             rewrite elem_of_lookup_zip_with in HP.
             destruct HP as [i [x [y [HP1 [HP2 HP3]]]]].
+            assert (HP4 := @pfmap_lookup_Some_1 (TermOver BuiltinOrVar)).
+            specialize (HP4 (TermOver builtin_value) l).
+            specialize (HP4 _ i x HP2).
+            simpl in HP4.
+            subst P.
+            rewrite HP4.
+            apply H.
         }
     }
     {
