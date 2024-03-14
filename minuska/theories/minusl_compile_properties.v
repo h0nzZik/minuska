@@ -7411,25 +7411,34 @@ Proof.
                 apply pflookup'_spec.
             }
             apply (inj Some) in Htmp1.
-            (* ltac1:(unshelve(erewrite <- pflookup'_spec in HP3)).
-            {
-                clear HP4.
-                apply pfmap_lookup_Some_lt in HP2.
-                apply HP2.
-            }
-            (*About inj.*)
-            inversion HP3; subst; clear HP3.
-            ltac1:(unshelve(erewrite -> pflookup'_spec)). *)
             rewrite <- Htmp1.
             ltac1:(unshelve(eapply H0))>[()|()|reflexivity|()].
             unfold eq_rect. reflexivity.
         }
     }
     {
-
+        simpl.
+        apply satisfies_var.
+        unfold Valuation in *.
+        ltac1:(rewrite pf').
+        apply f_equal.
+        rewrite <- Heqcall.
+        rewrite (cancel uglify' prettify).
+        reflexivity.
     }
     {
-
+        unfold vars_of in pf; simpl in pf.
+        unfold vars_of in pf; simpl in pf.
+        unfold vars_of in pf; simpl in pf.
+        clear H Heqcall.
+        unfold Valuation in *.
+        apply not_elem_of_dom_2 in pf'.
+        ltac1:(exfalso).
+        apply pf'. clear pf'.
+        rewrite elem_of_subseteq in pf.
+        apply pf.
+        rewrite elem_of_singleton.
+        reflexivity.
     }
 Qed.
 
