@@ -7934,6 +7934,17 @@ Proof.
             }
             remember (TermOverBoV_eval ρ2 substituted Htmp2) as ceval2.
 
+            
+            assert (ceval = ceval2).
+            {
+                subst ceval ceval2.
+                (* TODO we need to use Htmp1 and Htmp2
+                and some lemma saying that TermOverBov_eval
+                is independent of the other variables (that are not
+                in the given symbolic term)
+                *)
+            }
+
             remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.
             remember (fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))) as V2.
 
