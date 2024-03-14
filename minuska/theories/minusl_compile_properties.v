@@ -7715,18 +7715,54 @@ Proof.
                                 }
                                 {
                                     (* V2 <> x *)
+                                    clear -Hx HeqV2.
+                                    intros HContra. subst.
+                                    assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    {
+                                        rewrite <- vars_of_uglify in Hx.
+                                        ltac1:(set_solver).
+                                    }
+                                    eapply infinite_is_fresh.
+                                    { apply Hx'. }
                                 }
                             }
                         }
                         {
-
+                            apply satisfies_var.
+                            unfold Valuation in *.
+                            rewrite lookup_insert_ne.
+                            rewrite lookup_insert_ne.
+                            rewrite lookup_insert.
+                            { reflexivity. }
+                            {
+                                clear -HeqV2.
+                                intros HContra. subst.
+                                assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                {
+                                    rewrite <- HContra at 2.
+                                    ltac1:(set_solver).
+                                }
+                                eapply infinite_is_fresh.
+                                { apply Hx'. }
+                            }
+                            {
+                                clear -HeqV1.
+                                intros HContra. subst.
+                                assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                {
+                                    rewrite HContra at 2.
+                                    ltac1:(set_solver).
+                                }
+                                eapply infinite_is_fresh.
+                                { apply Hx'. }
+                            }
                         }
                         {
                             apply Forall_nil. exact I.
                         }
                     }
                     {
-
+                        
                     }
                     {
                         apply Forall_nil. exact I.
