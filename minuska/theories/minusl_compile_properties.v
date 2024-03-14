@@ -2233,6 +2233,31 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
+Program Fixpoint pflookup
+    {A : Type}
+    (l : list A)
+    (i : nat)
+    : option ({ x : A | x ∈ l})
+:=
+match l with
+| [] => None
+| x::xs =>
+    match i with
+    | 0 => Some (exist _ x _ )
+    | S i' =>
+        tmp ← pflookup xs i';
+        let x := proj1_sig tmp in
+        let pf := proj2_sig tmp in
+        Some (exist _ x _)
+    end
+end.
+Next Obligation.
+    left.
+Defined.
+Next Obligation.
+    right. exact H.
+Defined.
+Fail Next Obligation.
 
 Lemma length_pfmap
     {A B : Type}
@@ -2280,6 +2305,18 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma pfmap_lookup_Some_1
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A), x ∈ l -> B)
+    (i : nat)
+    (y : B)
+    (pf : pfmap l f !! i = Some y)
+    :
+    Some y = (fun x => ) <$> (l !! i)
+
 
 
 Fixpoint factor_by_subst
