@@ -8099,7 +8099,56 @@ Proof.
                                 subst ceval.
                                 rewrite <- Heqsubstituted.
                                 rewrite satisfies_TermOverBoV_to_TermOverExpr.
-                                Search TermOverBoV_to_TermOverExpr.
+                                erewrite satisfies_TermOver_vars_of.
+                                { apply satisfies_TermOverBoV_eval. }
+                                intros x Hx.
+                                destruct (decide (x = h)).
+                                {
+                                    ltac1:(exfalso).
+                                    subst x.
+                                    subst substituted.
+                                    clear -Hx Hvars.
+                                    ltac1:(set_solver).
+                                }
+                                unfold Valuation in *.
+                                rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                destruct (decide (x = V2)).
+                                {
+                                    ltac1:(exfalso).
+                                    subst x.
+                                    subst substituted.
+                                    assert (Htmp: V2 ∈ vars_of c) by ltac1:(set_solver).
+                                    unfold vars_of in Htmp; simpl in Htmp.
+                                    rewrite <- vars_of_uglify in Htmp.
+                                    clear -Htmp HeqV2.
+                                    subst V2.
+                                    assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    {
+                                        ltac1:(set_solver).
+                                    }
+                                    eapply infinite_is_fresh.
+                                    apply Htmp2.
+                                }
+                                rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                destruct (decide (x = V1)).
+                                {
+                                    ltac1:(exfalso).
+                                    subst x.
+                                    subst substituted.
+                                    assert (Htmp: V1 ∈ vars_of c) by ltac1:(set_solver).
+                                    unfold vars_of in Htmp; simpl in Htmp.
+                                    rewrite <- vars_of_uglify in Htmp.
+                                    clear -Htmp HeqV1.
+                                    subst V1.
+                                    assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    {
+                                        ltac1:(set_solver).
+                                    }
+                                    eapply infinite_is_fresh.
+                                    apply Htmp2.
+                                }
+                                rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                reflexivity.
                             }
                             {
                                 apply satisfies_var_expr.
