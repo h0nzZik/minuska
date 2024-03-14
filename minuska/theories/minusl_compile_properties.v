@@ -7405,7 +7405,24 @@ Proof.
             simpl in HP4.
             subst P.
             rewrite HP4.
-            apply H.
+            assert (Htmp1: Some (proj1_sig ((pflookup' l i (pfmap_lookup_Some_lt HP2)))) = Some y).
+            {
+                rewrite <- HP3.
+                apply pflookup'_spec.
+            }
+            apply (inj Some) in Htmp1.
+            (* ltac1:(unshelve(erewrite <- pflookup'_spec in HP3)).
+            {
+                clear HP4.
+                apply pfmap_lookup_Some_lt in HP2.
+                apply HP2.
+            }
+            (*About inj.*)
+            inversion HP3; subst; clear HP3.
+            ltac1:(unshelve(erewrite -> pflookup'_spec)). *)
+            rewrite <- Htmp1.
+            ltac1:(unshelve(eapply H0))>[()|()|reflexivity|()].
+            unfold eq_rect. reflexivity.
         }
     }
     {
