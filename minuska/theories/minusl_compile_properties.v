@@ -2249,6 +2249,39 @@ Proof.
     }
 Qed.
 
+Lemma pfmap_lookup_Some_lt
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A), x ∈ l -> B)
+    (i : nat)
+    (y : B)
+    :
+    pfmap l f !! i = Some y ->
+    i < length l
+.
+Proof.
+    revert i f.
+    induction l; intros i f H.
+    {
+        simpl in H.
+        rewrite lookup_nil in H.
+        inversion H.
+    }
+    {
+        simpl in *.
+        destruct i.
+        {
+            ltac1:(lia).
+        }
+        {
+            simpl in H.
+            specialize (IHl i _ H).
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+
 Fixpoint factor_by_subst
     {Σ : StaticModel}
     (sz : nat)
@@ -7207,7 +7240,16 @@ Proof.
         fold (@uglify' Σ).
         unfold to_PreTerm'.
         apply satisfies_top_bov_cons.
-        Check pfmap.
+        repeat split.
+        {
+            rewrite length_pfmap. reflexivity.
+        }
+        {
+            rewrite Forall_forall.
+            intros P HP.
+            rewrite elem_of_lookup_zip_with in HP.
+            destruct HP as [i [x [y [HP1 [HP2 HP3]]]]].
+        }
     }
     {
 
