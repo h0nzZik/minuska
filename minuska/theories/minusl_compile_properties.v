@@ -14,7 +14,7 @@ From Minuska Require Import
 Require Import Ring.
 Require Import ArithRing.
 Require Import Coq.Logic.FunctionalExtensionality.
-(* Require Import Recdef. *)
+Require Import Coq.Logic.ProofIrrelevance.
 Require Import Coq.Program.Wf.
 
 From Equations Require Export Equations.
@@ -2259,6 +2259,41 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
+
+
+Program Fixpoint pflookup'
+    {A : Type}
+    (l : list A)
+    (i : nat)
+    (pflt : i < length l)
+    : { x : A | x ∈ l}
+:=
+match l with
+| [] => _
+| x::xs =>
+    match i with
+    | 0 => (exist _ x _ )
+    | S i' =>
+        let tmp := pflookup' xs i' _ in
+        let x' := proj1_sig tmp in
+        let pf := proj2_sig tmp in
+        (exist _ x' _)
+    end
+end.
+Next Obligation.
+    abstract(ltac1:(lia)).
+Defined.
+Next Obligation.
+    left.
+Defined.
+Next Obligation.
+    abstract(ltac1:(lia)).
+Defined.
+Next Obligation.
+    right; assumption.
+Defined.
+Fail Next Obligation.
+
 Lemma length_pfmap
     {A B : Type}
     (l : list A)
@@ -2306,6 +2341,7 @@ Proof.
     }
 Qed.
 
+Arguments pfmap_lookup_Some_lt {A B}%type_scope {l}%list_scope {f}%function_scope {i}%nat_scope {y} _.
 
 Lemma pfmap_lookup_Some_1
     {A B : Type}
@@ -2315,8 +2351,59 @@ Lemma pfmap_lookup_Some_1
     (y : B)
     (pf : pfmap l f !! i = Some y)
     :
-    Some y = (fun x => ) <$> (l !! i)
-
+    let pflt : i < length l := pfmap_lookup_Some_lt pf in
+    y = (let xpf := (pflookup' l i pflt) in (f (proj1_sig xpf) (proj2_sig xpf) ))
+.
+Proof.
+    simpl.
+    revert i y f pf.
+    induction l; intros i y f pf.
+    {
+        simpl in pf. ltac1:(exfalso). rewrite lookup_nil in pf. inversion pf.
+    }
+    {
+        destruct i.
+        {
+            simpl in *. inversion pf; subst; clear pf.
+            f_equal.
+            apply proof_irrelevance.
+        }
+        {
+            simpl in *.
+            (* specialize (IHl i y). *)
+            ltac1:(unshelve(erewrite IHl at 1))>[()|()|apply pf|].
+            simpl.
+            ltac1:(assert (Htmp0: 
+                    (
+                    (@pfmap_lookup_Some_lt A B l
+                    (fun (x' : A)
+                    (pf' : @elem_of A (list A) (@elem_of_list A) x' l)
+                    =>
+                    f x'
+                    (@flip2 Prop iff (fun x y0 : Prop => impl y0 x)
+                    iff_flip_impl_subrelation
+                    (@elem_of A (list A) (@elem_of_list A) x' (@cons A a l))
+                    (or (@eq A x' a)
+                    (@elem_of A (list A) (@elem_of_list A) x' l))
+                    (@elem_of_cons A l x' a)
+                    (@or_intror (@eq A x' a)
+                    (@elem_of A (list A) (@elem_of_list A) x' l) pf')))
+                    i y
+                    pf))
+                    
+                =
+                    (pflookup'_obligation_3_subproof A i l
+                    (@pfmap_lookup_Some_lt A B (@cons A a l) f (S i) y pf)))
+            ).
+            {
+                apply proof_irrelevance.
+            }
+            rewrite Htmp0.
+            apply f_equal.
+            apply proof_irrelevance.
+        }
+    }
+Qed.
 
 
 Fixpoint factor_by_subst
