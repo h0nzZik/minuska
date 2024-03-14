@@ -8185,7 +8185,24 @@ Proof.
                         }
                     }
                     {
-
+                        apply satisfies_var_expr.
+                        destruct (decide (h = V2)).
+                        {
+                            subst h.
+                            ltac1:(exfalso).
+                            clear -HeqV2.
+                            assert (Htmp: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                            {
+                                rewrite HeqV2 at 2.
+                                ltac1:(set_solver).
+                            }
+                            eapply infinite_is_fresh.
+                            apply Htmp.
+                        }
+                        unfold Valuation in *.
+                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                        rewrite lookup_insert.
+                        reflexivity.
                     }
                 }
                 {
