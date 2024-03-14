@@ -8136,13 +8136,32 @@ Proof.
                 ltac1:(set_solver).
             }
             remember (TermOverBoV_eval ρ1 substituted Htmp1) as ceval.
-            
 
-            eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [substituted; cont])]); state1])).
+
+            eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [ceval; cont])]); state1])).
             { apply Hheat. }
-            
+            {
+                remember (fresh (h :: vars_of_to_l2r c)) as V1.
+                remember (fresh (h :: V1 :: vars_of_to_l2r c)) as V2.
+                unfold ctx_heat. simpl.
+                unfold flattened_rewrites_to. simpl.
+                exists (<[h := uglify' r]>(<[V2 := uglify' state1]>(<[V1 := uglify' cont]>ρ1))).
+                unfold flattened_rewrites_in_valuation_under_to. simpl.
+                (repeat split).
+                {
+
+                }
+                {
+
+                }
+                {
+
+                }
+            }
+            (*
             >[()|()|eapply frto_step_app].
             Search flattened_rewrites_to_over.
+            *)
         }
     }
     {
