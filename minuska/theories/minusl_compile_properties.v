@@ -2233,7 +2233,21 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
-About list_find.
+
+Lemma length_pfmap
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A), x ∈ l -> B)
+    :
+    length (pfmap l f) = length l
+.
+Proof.
+    induction l; simpl.
+    { reflexivity. }
+    {
+        rewrite IHl. reflexivity.
+    }
+Qed.
 
 Fixpoint factor_by_subst
     {Σ : StaticModel}
@@ -7173,6 +7187,36 @@ Proof.
     }
 Qed.
 
+
+Lemma satisfies_TermOverBoV_eval
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (φ : TermOver BuiltinOrVar)
+    pf
+    :
+    satisfies ρ (TermOverBoV_eval ρ φ pf) φ
+.
+Proof.
+    ltac1:(funelim (TermOverBoV_eval ρ φ pf)).
+    {
+        constructor. constructor.
+    }
+    {
+        rewrite <- Heqcall.
+        constructor.
+        fold (@uglify' Σ).
+        unfold to_PreTerm'.
+        apply satisfies_top_bov_cons.
+        Check pfmap.
+    }
+    {
+
+    }
+    {
+
+    }
+Qed.
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
@@ -7827,7 +7871,10 @@ Proof.
                             rewrite Forall_nil.
                             (repeat split).
                             {
-                                
+                                subst ceval.
+                                rewrite <- Heqsubstituted.
+                                rewrite satisfies_TermOverBoV_to_TermOverExpr.
+                                Search TermOverBoV_to_TermOverExpr.
                             }
                             {
                                 apply satisfies_var_expr.
