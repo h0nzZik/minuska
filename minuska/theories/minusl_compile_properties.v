@@ -7762,14 +7762,110 @@ Proof.
                         }
                     }
                     {
-                        
+                        apply satisfies_var.
+                        unfold Valuation in *.
+                        rewrite lookup_insert_ne.
+                        rewrite lookup_insert.
+                        { reflexivity. }
+                        {
+                            clear -HeqV2.
+                            intros HContra. subst.
+                            assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                            {
+                                rewrite HContra at 2.
+                                ltac1:(set_solver).
+                            }
+                            eapply infinite_is_fresh.
+                            { apply Hx'. }
+                        }
                     }
                     {
                         apply Forall_nil. exact I.
                     }
                 }
                 {
+                    constructor.
+                    unfold to_PreTerm'.
+                    ltac1:(
+                        replace ([apply_symbol' cseqSymbol [uglify' r; apply_symbol' cseqSymbol [uglify' ceval; uglify' cont]]; uglify' state1])
+                        with (map uglify' [(t_term cseqSymbol [r; (t_term cseqSymbol [ceval; cont])]); state1])
+                        by reflexivity
+                    ).
+                    ltac1:(
+                        replace ([apply_symbol' cseqSymbol [term_operand (ft_variable h); apply_symbol' cseqSymbol [uglify' (TermOverBoV_to_TermOverExpr (TermOverBoV_subst c h (t_term holeSymbol []))); term_operand (ft_variable V1)]]; term_operand (ft_variable V2)])
+                        with (map uglify' [(t_term cseqSymbol [t_over (ft_variable h); (t_term cseqSymbol [(TermOverBoV_to_TermOverExpr (TermOverBoV_subst c h (t_term holeSymbol []))); (t_over (ft_variable V1))])]); (t_over (ft_variable V2))])
+                        by reflexivity
+                    ).
+                    apply satisfies_top_bov_cons_expr.
+                    (repeat split).
+                    simpl.
+                    repeat (rewrite Forall_cons).
+                    rewrite Forall_nil.
+                    (repeat split).
+                    {
+                        constructor.
+                        fold (@uglify' Σ).
+                        apply satisfies_top_bov_cons_expr.
+                        (repeat split).
+                        simpl.
+                        repeat (rewrite Forall_cons).
+                        rewrite Forall_nil.
+                        (repeat split).
+                        {
+                            apply satisfies_var_expr.
+                            unfold Valuation in *.
+                            rewrite lookup_insert.
+                            reflexivity.
+                        }
+                        {
+                            constructor.
+                            fold (@uglify' Σ).
+                            apply satisfies_top_bov_cons_expr.
+                            (repeat split).
+                            simpl.
+                            (repeat (rewrite Forall_cons)).
+                            rewrite Forall_nil.
+                            (repeat split).
+                            {
+                                
+                            }
+                            {
+                                apply satisfies_var_expr.
+                                unfold Valuation in *.
+                                rewrite lookup_insert_ne.
+                                rewrite lookup_insert_ne.
+                                rewrite lookup_insert.
+                                { reflexivity. }
+                                {
+                                    clear -HeqV2.
+                                    intros HContra.
+                                    subst.
+                                    assert (H': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    {
+                                        rewrite <- HContra at 2.
+                                        clear. ltac1:(set_solver).
+                                    }
+                                    eapply infinite_is_fresh.
+                                    apply H'.
+                                }
+                                {
+                                    clear -HeqV1.
+                                    intros HContra.
+                                    subst.
+                                    assert (H': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    {
+                                        rewrite HContra at 2.
+                                        clear. ltac1:(set_solver).
+                                    }
+                                    eapply infinite_is_fresh.
+                                    apply H'.
+                                }
+                            }
+                        }
+                    }
+                    {
 
+                    }
                 }
                 {
                     rewrite satisfies_scs_vars_of.
