@@ -7658,7 +7658,79 @@ Proof.
                 unfold flattened_rewrites_in_valuation_under_to. simpl.
                 (repeat split).
                 {
+                    constructor.
+                    unfold to_PreTerm'.
+                    ltac1:(
+                        replace ([apply_symbol' cseqSymbol [uglify' ctrl1; uglify' cont]; uglify' state1])
+                        with (map uglify' [(t_term cseqSymbol [ctrl1; cont]);state1])
+                        by reflexivity
+                    ).
+                    ltac1:(
+                        replace ([apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable V1)]; term_operand (bov_variable V2)])
+                        with (map uglify' [t_term cseqSymbol [c; (t_over (bov_variable V1))]; (t_over (bov_variable V2))])
+                        by reflexivity
+                    ).
+                    apply satisfies_top_bov_cons.
+                    (repeat split).
+                    simpl.
+                    repeat (rewrite Forall_cons).
+                    (repeat split).
+                    {
+                        constructor.
+                        fold (@uglify' Σ).
+                        apply satisfies_top_bov_cons.
+                        (repeat split).
+                        simpl.
+                        repeat (rewrite Forall_cons).
+                        (repeat split).
+                        {
+                            erewrite satisfies_TermOver_vars_of.
+                            { apply H01. }
+                            intros x Hx.
+                            destruct (decide (x = h)).
+                            {
+                                subst x.
+                                ltac1:(rewrite lookup_insert).
+                                ltac1:(rewrite lookup_insert).
+                                reflexivity.
+                            }
+                            {
+                                unfold Valuation in *.
+                                ltac1:(rewrite lookup_insert_ne).
+                                { ltac1:(congruence). }
+                                ltac1:(rewrite -> lookup_insert_ne with (i := h))>[|ltac1:(congruence)].
+                                repeat (rewrite lookup_insert_ne).
+                                { reflexivity. }
+                                {
+                                    (* V1 <> x *)
+                                    clear -Hx HeqV1.
+                                    intros HContra. subst.
+                                    assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    {
+                                        rewrite <- vars_of_uglify in Hx.
+                                        ltac1:(set_solver).
+                                    }
+                                    eapply infinite_is_fresh.
+                                    { apply Hx'. }
+                                }
+                                {
+                                    (* V2 <> x *)
+                                }
+                            }
+                        }
+                        {
 
+                        }
+                        {
+                            apply Forall_nil. exact I.
+                        }
+                    }
+                    {
+
+                    }
+                    {
+                        apply Forall_nil. exact I.
+                    }
                 }
                 {
 
@@ -7691,7 +7763,9 @@ Proof.
                         { apply Hx'. }
                     }
                     {
-
+                        clear -Hhscs Hx.
+                        intros HContra. subst.
+                        apply Hhscs. apply Hx.
                     }
                 }
             }
