@@ -55,9 +55,14 @@ Section MinusL_sem.
             (Hhscs : h ∉ vars_of scs),
             (mld_context Act c h Hh scs Hhscs) ∈ (mlld_decls Act D) ->
         forall (ctrl1 state1 ctrl2 state2 r v : TermOver builtin_value)
-            (w : list Act),
-            (∃ (ρ1 : Valuation), satisfies (<[h := uglify' r]>ρ1) ctrl1 c /\ satisfies ρ1 () scs) ->
-            (∃ (ρ2 : Valuation), satisfies (<[h := uglify' v]>ρ2) ctrl2 c /\ satisfies ρ2 () (mlld_isValue Act D (ft_element (uglify' v)))) ->
+            (w : list Act)
+            (ρ1 : Valuation)
+            (ρ2 : Valuation),
+            (∀ x, x ∈ vars_of_to_l2r c -> ρ1 !! x = ρ2 !! x) ->
+            satisfies (<[h := uglify' r]>ρ1) ctrl1 c ->
+            satisfies ρ1 () scs ->
+            satisfies (<[h := uglify' v]>ρ2) ctrl2 c ->
+            satisfies ρ2 () (mlld_isValue Act D (ft_element (uglify' v))) ->
             MinusL_rewrites D r state1 w v state2 ->
             MinusL_rewrites D ctrl1 state1 w ctrl2 state2
     .

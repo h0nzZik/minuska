@@ -163,7 +163,6 @@ Proof.
                         rewrite (cancel prettify uglify') in Hux0.
                         subst.
                         unfold satisfies in H2; simpl in H2.
-                        Print prettify.
                         ltac1:(
                             replace (prettify' ao)
                             with (prettify (term_preterm ao))
@@ -1628,7 +1627,6 @@ Proof.
                     rewrite Forall_app.
                     split.
                     {
-                        Print Term'.
                         specialize (IHl ((prettify (term_preterm xy1)))).
                         ltac1:(ospecialize (IHl _)).
                         {
@@ -1924,7 +1922,6 @@ Proof.
                     rewrite Forall_app.
                     split.
                     {
-                        Print Term'.
                         specialize (IHl ((prettify (term_preterm xy1)))).
                         ltac1:(ospecialize (IHl _)).
                         {
