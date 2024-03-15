@@ -7168,18 +7168,19 @@ Equations? TermOverBoV_eval
 .
 Proof.
     {
-        rewrite elem_of_subseteq in pf.
-        specialize (pf x).
-        unfold vars_of in pf. simpl in pf.
-        unfold vars_of in pf. simpl in pf.
-        unfold vars_of in pf. simpl in pf.
-        rewrite elem_of_singleton in pf.
-        specialize (pf eq_refl).
-        rewrite elem_of_dom in pf.
-        ltac1:(rewrite pf' in pf).
         ltac1:(exfalso).
-        eapply is_Some_None.
-        apply pf.
+        abstract(
+        rewrite elem_of_subseteq in pf;
+        specialize (pf x);
+        unfold vars_of in pf; simpl in pf;
+        unfold vars_of in pf; simpl in pf;
+        unfold vars_of in pf; simpl in pf;
+        rewrite elem_of_singleton in pf;
+        specialize (pf eq_refl);
+        rewrite elem_of_dom in pf;
+        ltac1:(rewrite pf' in pf);
+        eapply is_Some_None;
+        apply pf).
     }
     {
         intros. subst.
@@ -7201,7 +7202,7 @@ Proof.
         simpl.
         ltac1:(lia).
     }
-Qed.
+Defined.
 
 
 Lemma satisfies_TermOverBoV__impl__vars_subseteq
@@ -7439,6 +7440,63 @@ Proof.
         apply pf.
         rewrite elem_of_singleton.
         reflexivity.
+    }
+Qed.
+
+Lemma TermOverBoV_eval__varsofindependent
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation)
+    (φ : TermOver BuiltinOrVar)
+    pf1 pf2
+    :
+    (∀ x, x ∈ vars_of φ -> ρ1 !! x = ρ2 !! x) ->
+    TermOverBoV_eval ρ1 φ pf1 = TermOverBoV_eval ρ1 φ pf2
+.
+Proof.
+    ltac1:(funelim (TermOverBoV_eval ρ1 φ pf1)).
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        apply f_equal.
+        apply f_equal.
+        simpl.
+        ltac1:(replace pf2 with pf).
+        { reflexivity. }
+        {
+            apply proof_irrelevance.
+        }
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        simpl.
+        unfold TermOverBoV_eval_obligation_1.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        ltac1:(rewrite -> pf').
+        intros HHH.
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        simpl.
+        unfold TermOverBoV_eval_obligation_1.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        rewrite pf'.
+        intros ?.
+        f_equal.
+        apply proof_irrelevance.
     }
 Qed.
 
@@ -7942,6 +8000,7 @@ Proof.
                 and some lemma saying that TermOverBov_eval
                 is independent of the other variables (that are not
                 in the given symbolic term)
+                TermOverBoV_eval
                 *)
             }
 
