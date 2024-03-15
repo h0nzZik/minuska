@@ -7554,8 +7554,21 @@ Proof.
         simpl.
         unfold TermOverBoV_eval_obligation_1.
         ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        assert (pf'2 : ρ2 !! x = Some t).
+        {
+            rewrite <- HH.
+            exact pf'.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            rewrite elem_of_singleton.
+            reflexivity.
+        }
         ltac1:(rewrite -> pf').
         intros HHH.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ2 x)).
+        ltac1:(rewrite -> pf'2).
+        intros HHH2.
         reflexivity.
     }
     {
@@ -7567,6 +7580,20 @@ Proof.
         unfold TermOverBoV_eval_obligation_1.
         ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
         rewrite pf'.
+        intros ?.
+        f_equal.
+        assert (pf'2 : ρ2 !! x = None).
+        {
+            rewrite <- HH.
+            exact pf'.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            rewrite elem_of_singleton.
+            reflexivity.
+        }
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ2 x)).
+        rewrite pf'2.
         intros ?.
         f_equal.
         apply proof_irrelevance.
