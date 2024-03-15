@@ -2230,6 +2230,7 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
+(*
 Program Fixpoint pflookup
     {A : Type}
     (l : list A)
@@ -2254,7 +2255,7 @@ Defined.
 Next Obligation.
     right. exact H.
 Defined.
-Fail Next Obligation.
+Fail Next Obligation.*)
 
 
 
@@ -2396,9 +2397,10 @@ Proof.
             (* specialize (IHl i y). *)
             ltac1:(unshelve(erewrite IHl at 1))>[()|()|apply pf|].
             simpl.
-            ltac1:(assert (Htmp0: 
+            Check pflookup'_obligation_3_subproof.
+            assert (Htmp0: 
                     (
-                    (@pfmap_lookup_Some_lt A B l
+                    (@pfmap_lookup_Some_lt A _ l
                     (fun (x' : A)
                     (pf' : @elem_of A (list A) (@elem_of_list A) x' l)
                     =>
@@ -2416,7 +2418,7 @@ Proof.
                     
                 =
                     (pflookup'_obligation_3_subproof A i l
-                    (@pfmap_lookup_Some_lt A B (@cons A a l) f (S i) y pf)))
+                    (@pfmap_lookup_Some_lt A _ (@cons A a l) f (S i) y pf))
             ).
             {
                 apply proof_irrelevance.
