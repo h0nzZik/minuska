@@ -7450,7 +7450,7 @@ Lemma TermOverBoV_eval__varsofindependent
     pf1 pf2
     :
     (∀ x, x ∈ vars_of φ -> ρ1 !! x = ρ2 !! x) ->
-    TermOverBoV_eval ρ1 φ pf1 = TermOverBoV_eval ρ1 φ pf2
+    TermOverBoV_eval ρ1 φ pf1 = TermOverBoV_eval ρ2 φ pf2
 .
 Proof.
     ltac1:(funelim (TermOverBoV_eval ρ1 φ pf1)).
@@ -7467,11 +7467,84 @@ Proof.
         apply f_equal.
         apply f_equal.
         simpl.
-        ltac1:(replace pf2 with pf).
-        { reflexivity. }
-        {
-            apply proof_irrelevance.
+        ltac1:(move: TermOverBoV_eval_obligation_2).
+        intros HHpf.
+
+        eapply functional_extensionality_dep.
+        intros x.
+        eapply functional_extensionality_dep.
+        intros pf3.
+        ltac1:(unshelve(eapply H0)).
+        { exact x. }
+        { exact pf3. }
+        { 
+            abstract(
+                apply f_equal;
+                apply f_equal;
+                apply f_equal;
+                apply proof_irrelevance
+            ).
         }
+        {
+            unfold eq_rect.
+            ltac1:(move: (TermOverBoV_eval__varsofindependent_subproof _ _ _ _ _ _ _ _)).
+            intros mypf.
+            assert(Htmp1:
+                TermOverBoV_eval_obligation_2 Σ ρ s l pf
+                (λ (x0 : StaticModel) (x1 : Valuation) (x2 : TermOver
+                BuiltinOrVar) (x3 : vars_of
+                x2
+                ⊆ vars_of
+                x1) (_ : TermOver_size
+                x2 <
+                TermOver_size
+                (t_term
+                s
+                l)),
+                TermOverBoV_eval x1 x2 x3)
+                x
+                pf3
+            =
+                HHpf Σ ρ s l pf
+                (λ (x0 : StaticModel) (x1 : Valuation) (x2 : TermOver
+                BuiltinOrVar) (x3 : vars_of
+                x2
+                ⊆ vars_of
+                x1) (_ : TermOver_size
+                x2 <
+                S
+                (sum_list_with
+                (S
+                ∘ TermOver_size)
+                l)),
+                TermOverBoV_eval x1 x2 x3)
+                x
+                pf3
+            ).
+            {
+                apply proof_irrelevance.
+            }
+            revert mypf.
+            rewrite Htmp1.
+            intros mypf.
+            assert (Htmp2: mypf = eq_refl).
+            {
+                apply proof_irrelevance.
+            }
+            rewrite Htmp2.
+            reflexivity.
+        }
+        intros x0 Hx0.
+        apply HH.
+        clear -pf3 Hx0.
+        rewrite vars_of_t_term.
+        rewrite elem_of_union_list.
+        exists (vars_of x).
+        split>[|assumption].
+        rewrite elem_of_list_fmap.
+        exists x.
+        split>[reflexivity|].
+        exact pf3.
     }
     {
         intros HH.
@@ -8002,6 +8075,7 @@ Proof.
                 in the given symbolic term)
                 TermOverBoV_eval
                 *)
+                eapply TermOverBoV_eval__varsofindependent.
             }
 
             remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.
