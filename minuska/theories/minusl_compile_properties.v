@@ -8103,6 +8103,11 @@ Proof.
                 TermOverBoV_eval
                 *)
                 eapply TermOverBoV_eval__varsofindependent.
+                intros x Hx.
+                rewrite elem_of_subseteq in Htmp1.
+                rewrite elem_of_subseteq in Htmp2.
+                specialize (Htmp1 x Hx).
+                specialize (Htmp2 x Hx).
             }
 
             remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.
