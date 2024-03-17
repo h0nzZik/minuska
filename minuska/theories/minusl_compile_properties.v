@@ -2252,17 +2252,18 @@ match l with
 end.
 Next Obligation.
     abstract(ltac1:(lia)).
-Defined.
+Qed.
 Next Obligation.
     abstract(left).
-Defined.
+Qed.
 Next Obligation.
     abstract(ltac1:(lia)).
-Defined.
+Qed.
 Next Obligation.
     abstract(right; assumption).
 Defined.
 Fail Next Obligation.
+
 
 Lemma pflookup_spec
     {A : Type}
@@ -2360,7 +2361,7 @@ Proof.
     {
         destruct i.
         {
-            simpl in *. inversion pf; subst; clear pf.
+            simpl in *. inversion pf; subst.
             f_equal.
             apply proof_irrelevance.
         }
@@ -2369,29 +2370,14 @@ Proof.
             (* specialize (IHl i y). *)
             ltac1:(unshelve(erewrite IHl at 1))>[()|()|apply pf|].
             simpl.
-            Check pflookup_obligation_3_subproof.
-            assert (Htmp0: 
-                    (
-                    (@pfmap_lookup_Some_lt A _ l
-                    (fun (x' : A)
-                    (pf' : @elem_of A (list A) (@elem_of_list A) x' l)
-                    =>
-                    f x'
-                    (@flip2 Prop iff (fun x y0 : Prop => impl y0 x)
-                    iff_flip_impl_subrelation
-                    (@elem_of A (list A) (@elem_of_list A) x' (@cons A a l))
-                    (or (@eq A x' a)
-                    (@elem_of A (list A) (@elem_of_list A) x' l))
-                    (@elem_of_cons A l x' a)
-                    (@or_intror (@eq A x' a)
-                    (@elem_of A (list A) (@elem_of_list A) x' l) pf')))
-                    i y
-                    pf))
-                    
-                =
-                    (pflookup_obligation_3_subproof A i l
-                    (@pfmap_lookup_Some_lt A _ (@cons A a l) f (S i) y pf))
-            ).
+            Set Printing Implicit.
+            assert (Htmp0: ((@pfmap_lookup_Some_lt A _ l
+          (λ (x' : A) (pf' : x' ∈ l),
+             f x'
+               (@flip2 Prop iff (λ x y0 : Prop, impl y0 x) iff_flip_impl_subrelation 
+                  (x' ∈ a :: l) (x' = a ∨ x' ∈ l) (@elem_of_cons A l x' a)
+                  (@or_intror (x' = a) (x' ∈ l) pf'))) i y pf)) = ((pflookup_obligation_3 A (a :: l) (S i) (@pfmap_lookup_Some_lt A _ (a :: l) f (S i) y pf) a l
+          erefl i erefl))).
             {
                 apply proof_irrelevance.
             }
