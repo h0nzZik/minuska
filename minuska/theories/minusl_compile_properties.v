@@ -8048,7 +8048,7 @@ Proof.
             remember (TermOverBoV_eval ρ2 substituted Htmp2) as ceval2.
 
             
-            assert (ceval = ceval2).
+            assert (Hceval12: ceval = ceval2).
             {
                 subst ceval ceval2.
                 (* TODO we need to use Htmp1 and Htmp2
@@ -8063,7 +8063,17 @@ Proof.
                 rewrite elem_of_subseteq in Htmp2.
                 specialize (Htmp1 x Hx).
                 specialize (Htmp2 x Hx).
+                subst substituted. clear -Hx H0.
+                rewrite vars_of__TermOverBoV_subst__varless in Hx>[|reflexivity].
                 apply H0.
+                {
+                    rewrite vars_of_uglify.
+                    unfold vars_of in Hx; simpl in Hx.
+                    ltac1:(set_solver).
+                }
+                {
+                    ltac1:(set_solver).
+                }
             }
 
             remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.
@@ -8105,7 +8115,7 @@ Proof.
                         (repeat split).
                         {
                             erewrite satisfies_TermOver_vars_of.
-                            { apply H01. }
+                            { apply H1. }
                             intros x Hx.
                             destruct (decide (x = h)).
                             {
@@ -8358,7 +8368,7 @@ Proof.
                 }
                 {
                     rewrite satisfies_scs_vars_of.
-                    { apply H02. }
+                    { apply H2. }
                     intros x Hx.
                     unfold Valuation in *.
                     repeat (rewrite lookup_insert_ne).
@@ -8433,6 +8443,7 @@ Proof.
                         rewrite Forall_nil.
                         (repeat split).
                         {
+                            rewrite Hceval12.
                             subst ceval2.
                             rewrite <- Heqsubstituted.
                             erewrite satisfies_TermOver_vars_of.
@@ -8488,7 +8499,7 @@ Proof.
                             reflexivity.
                         }
                         {
-
+                            
                         }
 
                     }
