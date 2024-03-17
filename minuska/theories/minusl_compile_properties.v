@@ -2230,36 +2230,8 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
-(*
+
 Program Fixpoint pflookup
-    {A : Type}
-    (l : list A)
-    (i : nat)
-    : option ({ x : A | x ∈ l})
-:=
-match l with
-| [] => None
-| x::xs =>
-    match i with
-    | 0 => Some (exist _ x _ )
-    | S i' =>
-        tmp ← pflookup xs i';
-        let x := proj1_sig tmp in
-        let pf := proj2_sig tmp in
-        Some (exist _ x _)
-    end
-end.
-Next Obligation.
-    left.
-Defined.
-Next Obligation.
-    right. exact H.
-Defined.
-Fail Next Obligation.*)
-
-
-
-Program Fixpoint pflookup'
     {A : Type}
     (l : list A)
     (i : nat)
@@ -2272,7 +2244,7 @@ match l with
     match i with
     | 0 => (exist _ x _ )
     | S i' =>
-        let tmp := pflookup' xs i' _ in
+        let tmp := pflookup xs i' _ in
         let x' := proj1_sig tmp in
         let pf := proj2_sig tmp in
         (exist _ x' _)
@@ -2282,23 +2254,23 @@ Next Obligation.
     abstract(ltac1:(lia)).
 Defined.
 Next Obligation.
-    left.
+    abstract(left).
 Defined.
 Next Obligation.
     abstract(ltac1:(lia)).
 Defined.
 Next Obligation.
-    right; assumption.
+    abstract(right; assumption).
 Defined.
 Fail Next Obligation.
 
-Lemma pflookup'_spec
+Lemma pflookup_spec
     {A : Type}
     (l : list A)
     (i : nat)
     (pflt : i < length l)
     :
-    Some (proj1_sig (pflookup' l i pflt)) = l !! i
+    Some (proj1_sig (pflookup l i pflt)) = l !! i
 .
 Proof.
     revert i pflt.
@@ -2376,7 +2348,7 @@ Lemma pfmap_lookup_Some_1
     (pf : pfmap l f !! i = Some y)
     :
     let pflt : i < length l := pfmap_lookup_Some_lt pf in
-    y = (let xpf := (pflookup' l i pflt) in (f (proj1_sig xpf) (proj2_sig xpf) ))
+    y = (let xpf := (pflookup l i pflt) in (f (proj1_sig xpf) (proj2_sig xpf) ))
 .
 Proof.
     simpl.
@@ -2397,7 +2369,7 @@ Proof.
             (* specialize (IHl i y). *)
             ltac1:(unshelve(erewrite IHl at 1))>[()|()|apply pf|].
             simpl.
-            Check pflookup'_obligation_3_subproof.
+            Check pflookup_obligation_3_subproof.
             assert (Htmp0: 
                     (
                     (@pfmap_lookup_Some_lt A _ l
@@ -2417,7 +2389,7 @@ Proof.
                     pf))
                     
                 =
-                    (pflookup'_obligation_3_subproof A i l
+                    (pflookup_obligation_3_subproof A i l
                     (@pfmap_lookup_Some_lt A _ (@cons A a l) f (S i) y pf))
             ).
             {
@@ -7405,10 +7377,10 @@ Proof.
             simpl in HP4.
             subst P.
             rewrite HP4.
-            assert (Htmp1: Some (proj1_sig ((pflookup' l i (pfmap_lookup_Some_lt HP2)))) = Some y).
+            assert (Htmp1: Some (proj1_sig ((pflookup l i (pfmap_lookup_Some_lt HP2)))) = Some y).
             {
                 rewrite <- HP3.
-                apply pflookup'_spec.
+                apply pflookup_spec.
             }
             apply (inj Some) in Htmp1.
             rewrite <- Htmp1.
