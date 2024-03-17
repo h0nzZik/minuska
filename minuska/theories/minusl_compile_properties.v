@@ -8655,11 +8655,32 @@ Proof.
                     }
                 }
                 {
-                    
+                    apply satisfies_var_expr.
+                    assert (V2 <> h).
+                    {
+                        intros HContra. subst h.
+                        clear - HeqV2.
+                        assert (Htmp1: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        {
+                            rewrite HeqV2 at 2. ltac1:(set_solver).
+                        }
+                        eapply infinite_is_fresh.
+                        apply Htmp1.
+                    }
+                    unfold Valuation in *.
+                    rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                    apply lookup_insert.
                 }
             }
             {
-
+                simpl.
+                simpl in H4.
+                (* Now we want to use H4. Somehow. *)
+                erewrite satisfies_scs_vars_of.
+                {
+                    (* We would like somethiing like this: *) 
+                    apply H4.
+                }
             }
 
         }
