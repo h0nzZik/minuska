@@ -8553,7 +8553,82 @@ Proof.
                 }
             }
             {
+                constructor.
+                fold (@uglify' Σ).
+                unfold to_PreTerm'.
+                apply satisfies_top_bov_cons_expr.
+                (repeat split).
+                unfold zip_with.
+                repeat (rewrite Forall_cons).
+                rewrite Forall_nil.
+                (repeat split).
+                {
+                    constructor.
+                    fold (@uglify' Σ).
+                    unfold to_PreTerm'.
+                    apply satisfies_top_bov_cons_expr.
+                    (repeat split).
+                    unfold zip_with.
+                    repeat (rewrite Forall_cons).
+                    rewrite Forall_nil.
+                    (repeat split).
+                    {
+                        rewrite satisfies_TermOverBoV_to_TermOverExpr.
+                        erewrite satisfies_TermOver_vars_of.
+                        { apply H3. }
+                        intros x Hx.
+                        destruct (decide (x = h)).
+                        {
+                            subst x.
+                            unfold Valuation in *.
+                            rewrite lookup_insert.
+                            rewrite lookup_insert.
+                            reflexivity.
+                        }
+                        {
+                            unfold Valuation in *.
+                            rewrite lookup_insert_ne with (i := h) (j := x)>
+                                [|ltac1:(congruence)].
+                            rewrite lookup_insert_ne with (i := h) (j := x)>
+                                [|ltac1:(congruence)].
+                            destruct (decide (x = V2)).
+                            {
+                                ltac1:(exfalso).
+                                subst x.
+                                rewrite <- vars_of_uglify in Hx.
+                                clear - HeqV2 Hx.
+                                assert (Htmp1: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                {
+                                    ltac1:(set_solver).
+                                }
+                                eapply infinite_is_fresh.
+                                apply Htmp1.
+                            }
+                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                            destruct (decide (x = V1)).
+                            {
+                                ltac1:(exfalso).
+                                subst x.
+                                rewrite <- vars_of_uglify in Hx.
+                                clear - HeqV1 Hx.
+                                assert (Htmp1: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                {
+                                    ltac1:(set_solver).
+                                }
+                                eapply infinite_is_fresh.
+                                apply Htmp1.
+                            }
+                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                            reflexivity.
+                        }
+                    }
+                    {
 
+                    }
+                }
+                {
+
+                }
             }
             {
 
