@@ -58,7 +58,7 @@ Section MinusL_sem.
             (w : list Act)
             (ρ1 : Valuation)
             (ρ2 : Valuation),
-            (∀ x, x ∈ vars_of_to_l2r c -> ρ1 !! x = ρ2 !! x) ->
+            (∀ x, x ∈ vars_of_to_l2r c -> x <> h -> ρ1 !! x = ρ2 !! x) ->
             satisfies (<[h := uglify' r]>ρ1) ctrl1 c ->
             satisfies ρ1 () scs ->
             satisfies (<[h := uglify' v]>ρ2) ctrl2 c ->

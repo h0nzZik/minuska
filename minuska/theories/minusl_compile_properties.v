@@ -2370,7 +2370,6 @@ Proof.
             (* specialize (IHl i y). *)
             ltac1:(unshelve(erewrite IHl at 1))>[()|()|apply pf|].
             simpl.
-            Set Printing Implicit.
             assert (Htmp0: ((@pfmap_lookup_Some_lt A _ l
           (λ (x' : A) (pf' : x' ∈ l),
              f x'
@@ -8010,8 +8009,8 @@ Proof.
             intros cont.
             unfold downC in *.
             remember ((TermOverBoV_subst c h (t_term holeSymbol []))) as substituted.
-            destruct H0 as [ρ1 [H01 H02]].
-            apply satisfies_TermOverBoV__impl__vars_subseteq in H01 as H01'.
+            
+            apply satisfies_TermOverBoV__impl__vars_subseteq in H1 as H01'.
             assert (Hvars := vars_of__TermOverBoV_subst__varless c h (t_term holeSymbol []) eq_refl).
             assert (Htmp1 : vars_of substituted ⊆ vars_of ρ1).
             {
@@ -8030,8 +8029,7 @@ Proof.
             }
             remember (TermOverBoV_eval ρ1 substituted Htmp1) as ceval.
 
-            destruct H1 as [ρ2 [H11 H12]].
-            apply satisfies_TermOverBoV__impl__vars_subseteq in H11 as H11'.
+            apply satisfies_TermOverBoV__impl__vars_subseteq in H3 as H11'.
             assert (Htmp2 : vars_of substituted ⊆ vars_of ρ2).
             {
                 subst.
@@ -8065,6 +8063,7 @@ Proof.
                 rewrite elem_of_subseteq in Htmp2.
                 specialize (Htmp1 x Hx).
                 specialize (Htmp2 x Hx).
+                apply H0.
             }
 
             remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.

@@ -93,19 +93,6 @@ Definition CompileT {Σ : StaticModel} {Act : Set} : Type :=
     MinusL_LangDef Act -> RewritingTheory Act
 .
 
-(* This should not be used *)
-(*
-Definition down
-    {Σ : StaticModel}
-    {A : Type}
-    (topSymbol : symbol)
-    (ctrl data : TermOver A)
-    : TermOver A
-:=
-    t_term topSymbol [ctrl;data]
-.
-*)
-
 Definition down2
     {Σ : StaticModel}
     (topSymbol cseqSymbol : symbol)
