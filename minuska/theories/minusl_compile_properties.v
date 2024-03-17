@@ -8499,13 +8499,57 @@ Proof.
                             reflexivity.
                         }
                         {
-                            
+                            apply satisfies_var.
+                            destruct (decide (h = V1)).
+                            {
+                                ltac1:(exfalso).
+                                subst h.
+                                clear -HeqV1.
+                                assert (Htmp1: fresh (V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                {
+                                    rewrite HeqV1 at 2.
+                                    ltac1:(set_solver).
+                                }
+                                eapply infinite_is_fresh.
+                                apply Htmp1.
+                            }
+                            unfold Valuation in *.
+                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                            destruct (decide (V2 = V1)) as [Heq|?].
+                            {
+                                ltac1:(exfalso).
+                                clear - HeqV2 Heq.
+                                subst V1.
+                                assert (Htmp1: fresh (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                {
+                                    rewrite HeqV2 at 2.
+                                    ltac1:(set_solver).
+                                }
+                                eapply infinite_is_fresh.
+                                apply Htmp1.
+                            }
+                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                            apply lookup_insert.
                         }
-
                     }
                 }
                 {
-
+                    apply satisfies_var.
+                    destruct (decide (h = V2)) as [Heq|?].
+                    {
+                        ltac1:(exfalso).
+                        subst h.
+                        clear - HeqV2.
+                        assert (Htmp1: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        {
+                            rewrite HeqV2 at 2. ltac1:(set_solver).
+                        }
+                        eapply infinite_is_fresh.
+                        apply Htmp1.
+                    }
+                    unfold Valuation in *.
+                    rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                    apply lookup_insert.
                 }
             }
             {
