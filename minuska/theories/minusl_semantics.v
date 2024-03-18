@@ -62,7 +62,7 @@ Section MinusL_sem.
             satisfies (<[h := uglify' r]>ρ1) ctrl1 c ->
             satisfies ρ1 () scs ->
             satisfies (<[h := uglify' v]>ρ2) ctrl2 c ->
-            satisfies ρ2 () (mlld_isValue Act D (ft_element (uglify' v))) ->
+            satisfies ρ2 () (MinusL_isValue Act D (ft_element (uglify' v))) ->
             MinusL_rewrites D r state1 w v state2 ->
             MinusL_rewrites D ctrl1 state1 w ctrl2 state2
     .

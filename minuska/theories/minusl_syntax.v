@@ -39,9 +39,37 @@ Record MinusL_LangDef
     (Act : Set)
     : Type
  := mkMinusL_LangDef {
-    mlld_isValue : Expression -> (list SideCondition) ;
+    mlld_isValue_scs : list SideCondition ;
+    mlld_isValue_var : variable ;
     mlld_decls : list (MinusL_Decl Act) ;
 }.
+
+Definition MinusL_isValue
+    {Σ : StaticModel}
+    (Act : Set)
+    (D : MinusL_LangDef Act)
+    :
+    Expression -> list SideCondition
+:=
+    let x := (mlld_isValue_var Act D) in
+    fun e =>
+        (fun c => 
+            match c with
+            | sc_constraint (apeq e1 e2) =>
+                sc_constraint (apeq (
+                    Expression_subst
+                        e1
+                        x
+                        e
+                ) (
+                    Expression_subst
+                        e2
+                        x
+                        e
+                ))
+            end
+        ) <$> (mlld_isValue_scs Act D)
+.
 
 
 Definition actions_of_ldef

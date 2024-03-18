@@ -197,6 +197,6 @@ Definition compile {Σ : StaticModel}
     (continuationVariable : variable)
     : CompileT :=
     fun D => concat (map (
-        compile' invisible_act topSymbol cseqSymbol holeSymbol continuationVariable (mlld_isValue Act D)
+        compile' invisible_act topSymbol cseqSymbol holeSymbol continuationVariable (MinusL_isValue Act D)
         ) (mlld_decls Act D))
 .
