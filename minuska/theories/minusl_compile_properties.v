@@ -7640,6 +7640,51 @@ Proof.
 Qed.
 
 
+Lemma satisfies__MinusL_isValue__subst
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (g : GroundTerm)
+    (Act : Set)
+    (D : MinusL_LangDef Act)
+    :
+    satisfies ρ () (MinusL_isValue Act D (ft_element g)) ->
+    satisfies (<[(mlld_isValue_var Act D) := g]>ρ) () (mlld_isValue_scs Act D)
+.
+Proof.
+    intros HH.
+    unfold satisfies in *; simpl in *.
+    rewrite Forall_forall in HH.
+    rewrite Forall_forall.
+    intros sc1. intros H1.
+    unfold MinusL_isValue in HH.
+    (* specialize (HH sc1). *)
+    unfold satisfies in *; simpl in *.
+    unfold valuation_satisfies_sc in *.
+    destruct sc1 as [[e1 e2]].
+    unfold satisfies in *; simpl.
+
+    specialize (HH (sc_constraint (apeq (Expression_subst e1 (mlld_isValue_var Act D) (ft_element g)) (Expression_subst e2 (mlld_isValue_var Act D) (ft_element g))))).
+    simpl in HH.
+    ltac1:(ospecialize (HH _)).
+    {
+        rewrite elem_of_list_fmap.
+        exists (sc_constraint (apeq e1 e2)).
+        split>[reflexivity|].
+        exact H1.
+    }
+    destruct HH as [HH1 HH2].
+    destruct HH2 as [g' HH2].
+    assert(Htmp1 := Expression_evaluate_subst ρ e1 g g' (mlld_isValue_var Act D)).
+    specialize (Htmp1 ltac:(congruence)).
+    rewrite Htmp1.
+    assert(Htmp2 := Expression_evaluate_subst ρ e2 g g' (mlld_isValue_var Act D)).
+    specialize (Htmp2 ltac:(congruence)).
+    rewrite Htmp2.
+    split>[reflexivity|].
+    unfold is_Some. exists g'. reflexivity.
+Qed.
+
+
 Lemma compile_correct
     {Σ : StaticModel}
     {Act : Set}
