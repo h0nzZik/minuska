@@ -680,3 +680,21 @@ Proof.
     }
 Qed.
 
+Fixpoint Expression_subst
+    {Σ : StaticModel}
+    (e : Expression)
+    (x : variable)
+    (e' : Expression)
+    : Expression
+:=    
+match e with
+| ft_element g => ft_element g
+| ft_variable y =>
+    if (decide (y = x)) then e' else (ft_variable y)
+| ft_nullary f => ft_nullary f
+| ft_unary f e1 => ft_unary f (Expression_subst e1 x e')
+| ft_binary f e1 e2 => ft_binary f (Expression_subst e1 x e') (Expression_subst e2 x e')
+| ft_ternary f e1 e2 e3 => ft_ternary f (Expression_subst e1 x e') (Expression_subst e2 x e') (Expression_subst e3 x e')
+end
+.
+
