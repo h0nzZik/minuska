@@ -8027,7 +8027,7 @@ Proof.
 Qed.
 
 
-Lemma compile_correct
+Lemma compile_correct_1
     {Σ : StaticModel}
     {Act : Set}
     {_AD : EqDecision Act}
@@ -9240,3 +9240,231 @@ Proof.
 Qed.
 
 
+Definition isDownC
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol : symbol)
+    (t : TermOver builtin_value)
+    : Prop
+:=
+    exists ctrl data cont,
+    t = downC topSymbol cseqSymbol ctrl data cont
+.
+
+Definition projTopCtrl
+    {Σ : StaticModel}
+    (t : TermOver builtin_value)
+    : option (TermOver builtin_value)
+:=
+    match t with
+    | t_term _ [t_term _ [ctrl; _]; _] => Some ctrl
+    | _ => None
+    end
+.
+
+Definition projTopData
+    {Σ : StaticModel}
+    (t : TermOver builtin_value)
+    : option (TermOver builtin_value)
+:=
+    match t with
+    | t_term _ [_; data] => Some data
+    | _ => None
+    end
+.
+
+Lemma in_compile_inv
+    {Σ : StaticModel}
+    (Act : Set)
+    (D: MinusL_LangDef Act)
+    (invisible_act : Act)
+    (topSymbol cseqSymbol holeSymbol : symbol)
+    (continuationVariable : variable)
+    (r : RewritingRule Act)
+:
+  r
+∈ compile invisible_act topSymbol cseqSymbol holeSymbol
+  continuationVariable D ->
+  (
+    (
+        exists lc ld a rc rd scs,
+            mld_rewrite Act lc ld a rc rd scs ∈ mlld_decls Act D /\
+            r =
+            {|
+                fr_from :=
+                apply_symbol' topSymbol
+                [apply_symbol' cseqSymbol
+                [uglify' lc; term_operand (bov_variable continuationVariable)];
+                uglify' ld];
+                fr_to :=
+                apply_symbol' topSymbol
+                [apply_symbol' cseqSymbol
+                [uglify' rc; term_operand (ft_variable continuationVariable)];
+                uglify' rd];
+                fr_scs := scs;
+                fr_act := a
+            |}
+    ) \/ (
+        exists c h Hh scs Hhscs,
+        mld_context Act c h Hh scs Hhscs ∈ mlld_decls Act D /\
+        (
+            r = ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
+                (fresh
+                (h
+                :: vars_of_to_l2r c ++
+                elements (vars_of scs) ++
+                elements (vars_of (mlld_isValue_scs Act D))))
+                (fresh
+                (h
+                :: fresh
+                (h
+                :: vars_of_to_l2r c ++
+                elements (vars_of scs) ++
+                elements (vars_of (mlld_isValue_scs Act D)))
+                :: vars_of_to_l2r c ++
+                elements (vars_of scs) ++
+                elements (vars_of (mlld_isValue_scs Act D))))
+                (MinusL_isValue Act D) c h
+                scs
+            \/
+            r =
+            ctx_cool invisible_act topSymbol cseqSymbol holeSymbol
+            (fresh
+            (h
+            :: vars_of_to_l2r c ++
+            elements (vars_of scs) ++
+            elements (vars_of (mlld_isValue_scs Act D))))
+            (fresh
+            (h
+            :: fresh
+            (h
+            :: vars_of_to_l2r c ++
+            elements (vars_of scs) ++
+            elements (vars_of (mlld_isValue_scs Act D)))
+            :: vars_of_to_l2r c ++
+            elements (vars_of scs) ++
+            elements (vars_of (mlld_isValue_scs Act D))))
+            (MinusL_isValue Act D) c
+          h
+        )
+    )
+  )
+.
+Proof.
+    intros HH.
+    unfold compile in HH.
+    rewrite elem_of_list_In in HH.
+    rewrite in_concat in HH.
+    destruct HH as [rs [H1rs H2rs]].
+    rewrite in_map_iff in H1rs.
+    destruct H1rs as [a [Hcompile' H1rs]].
+    rewrite <- elem_of_list_In in H1rs.
+    rewrite <- elem_of_list_In in H2rs.
+    subst rs.
+    unfold compile' in H2rs.
+    destruct a; simpl in *.
+    {
+        rewrite elem_of_list_singleton in H2rs.
+        left.
+        exists lc,ld,a,rc,rd,scs.
+        split;assumption.
+    }
+    {
+        rewrite elem_of_cons in H2rs.
+        rewrite elem_of_cons in H2rs.
+        rewrite elem_of_nil in H2rs.
+        right.
+        exists c,h,Hh,scs,Hhscs.
+        split>[assumption|].
+        ltac1:(naive_solver).
+    }
+Qed.
+
+
+Lemma compile_correct_2
+    {Σ : StaticModel}
+    {Act : Set}
+    {_AD : EqDecision Act}
+    (invisible_act : Act)
+    (topSymbol cseqSymbol holeSymbol : symbol)
+    (continuationVariable : variable) 
+    (D : MinusL_LangDef Act)
+    (HcvD: continuationVariable ∉ vars_of D)
+    (wfD : MinusL_LangDef_wf Act D)
+    :
+    ~ (invisible_act ∈ actions_of_ldef Act D) ->
+    let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol continuationVariable D in
+    forall
+        (lc ld rc rd : TermOver builtin_value)
+        (w : list Act),
+        (
+            exists (w' : list Act), 
+            w = (filter (fun x => x <> invisible_act) w') /\
+            w <> [] /\
+            forall cont,
+            flattened_rewrites_to_over Γ
+                (downC topSymbol cseqSymbol lc ld cont)
+                w'
+                (downC topSymbol cseqSymbol rc rd cont)
+        ) ->
+        MinusL_rewrites Act D lc ld w rc rd
+.
+Proof.
+    intros H1 Γ ctrl1 data1 ctrl2 data2 w H2.
+    destruct H2 as [w' [H1w' [H2w' H3w']]].
+    unfold downC in H3w'.
+    specialize (H3w' (t_term cseqSymbol [])).
+    remember ((t_term topSymbol [t_term cseqSymbol [ctrl1; t_term cseqSymbol []]; data1])) as from.
+    remember ((t_term topSymbol [t_term cseqSymbol [ctrl2; t_term cseqSymbol []]; data2])) as to.
+    assert (HfrIDC: isDownC topSymbol cseqSymbol from).
+    {
+        subst from. eexists. eexists. eexists. reflexivity.
+    }
+    assert (HtoIDC: isDownC topSymbol cseqSymbol to).
+    {
+        subst to. eexists. eexists. eexists. reflexivity.
+    }
+    assert (Hc1: projTopCtrl from = Some ctrl1).
+    {
+        subst from. simpl. reflexivity.
+    }
+    assert (Hd1: projTopData from = Some data1).
+    {
+        subst from. simpl. reflexivity.
+    }
+    assert (Hc2: projTopCtrl to = Some ctrl2).
+    {
+        subst to. simpl. reflexivity.
+    }
+    assert (Hd2: projTopData to = Some data2).
+    {
+        subst to. simpl. reflexivity.
+    }
+    clear Heqfrom Heqto.
+    revert w H1w' H2w' ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
+    induction H3w'; intros w'' H1w' H2w' ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
+    {
+        ltac1:(exfalso).
+        rewrite filter_nil in H1w'.
+        apply H2w'. apply H1w'.
+    }
+    {
+        ltac1:(unfold Γ in H).
+        Search compile.
+        rewrite filter_cons in H1w'.
+        destruct (decide (a <> invisible_act)).
+        {
+            clear H2w'.
+            subst w''.
+            destruct (decide (filter (λ x : Act, x ≠ invisible_act) w = [])) as [Hwnil|Hwnnil].
+            {
+                rewrite Hwnil.
+                eapply mlr_rule.
+            }
+            Print MinusL_rewrites.
+        }
+        {
+
+        }
+    }
+
+Qed.
