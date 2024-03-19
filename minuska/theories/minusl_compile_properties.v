@@ -8036,6 +8036,7 @@ Lemma compile_correct
     (continuationVariable : variable) 
     (D : MinusL_LangDef Act)
     (HcvD: continuationVariable ∉ vars_of D)
+    (wfD : MinusL_LangDef_wf Act D)
     :
     ~ (invisible_act ∈ actions_of_ldef Act D) ->
     let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol continuationVariable D in
@@ -9151,7 +9152,16 @@ Proof.
                 apply satisfies__MinusL_isValue__subst in H4.
                 simpl in H4.
                 apply satisfies_insert_MinusL_isValue; simpl.
-                { admit. }
+                { 
+                    intros HContra.
+                    unfold MinusL_LangDef_wf in wfD.
+                    revert wfD. intros wfD. simpl in wfD.
+                    destruct wfD as [wf1D wf2D].
+                    rewrite wf1D in HContra.
+                    rewrite elem_of_singleton in HContra.
+                    subst h.
+                    eapply wf2D. apply H. reflexivity.
+                }
                 {
                     unfold Valuation in *.
                     rewrite insert_commute with (i := iV_var)(j := V2).

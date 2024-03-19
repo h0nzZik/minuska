@@ -44,6 +44,25 @@ Record MinusL_LangDef
     mlld_decls : list (MinusL_Decl Act) ;
 }.
 
+Definition MinusL_LangDef_wf
+    {Σ : StaticModel}
+    (Act : Set)
+    (D : MinusL_LangDef Act)
+    : Prop
+:=
+    vars_of (mlld_isValue_scs Act D) = {[ mlld_isValue_var Act D ]}
+    /\ (
+        ∀ c h Hh scs Hhscs,
+        (mld_context Act c h Hh scs Hhscs) ∈ (mlld_decls Act D) ->
+        h <> (mlld_isValue_var Act D)
+    )
+.
+(*
+    ∀ c h Hh scs Hhscs,
+        (mld_context Act c h Hh scs Hhscs) ∈ (mlld_decls Act D) ->
+        h ∉ vars_of (mlld_isValue_scs Act D)
+.
+*)
 Definition MinusL_isValue
     {Σ : StaticModel}
     (Act : Set)
