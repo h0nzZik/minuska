@@ -7933,10 +7933,29 @@ Proof.
     {
         unfold vars_of in Hh1; simpl in Hh1.
         rewrite elem_of_union in Hh1.
-        apply apply Decidable.not_or in Hh1.
+        apply Decidable.not_or in Hh1.
         destruct Hh1 as [H1h1 H2h1].
         specialize (IHe1 g h1 h2 H1h1).
         specialize (IHe2 g h1 h2 H2h1).
+        rewrite IHe1.
+        rewrite IHe2.
+        reflexivity.
+    }
+    {
+        unfold vars_of in Hh1; simpl in Hh1.
+        rewrite elem_of_union in Hh1.
+        apply Decidable.not_or in Hh1.
+        destruct Hh1 as [Hh1 H3h1].
+        rewrite elem_of_union in Hh1.
+        apply Decidable.not_or in Hh1.
+        destruct Hh1 as [H1h1 H2h1].
+        specialize (IHe1 g h1 h2 H1h1).
+        specialize (IHe2 g h1 h2 H2h1).
+        specialize (IHe3 g h1 h2 H3h1).
+        rewrite IHe1.
+        rewrite IHe2.
+        rewrite IHe3.
+        reflexivity.
     }
 Qed.
 
