@@ -7959,7 +7959,7 @@ Proof.
     }
 Qed.
 
-Lemma helper
+Lemma satisfies_insert_MinusL_isValue
     {Σ : StaticModel}
     (ρ : Valuation)
     (g : GroundTerm)
@@ -7967,7 +7967,7 @@ Lemma helper
     (Act : Set)
     (D : MinusL_LangDef Act)
     :
-    h <> mlld_isValue_var Act D ->
+    h ∉ vars_of (mlld_isValue_scs Act D) ->
     satisfies
         (<[mlld_isValue_var Act D:=g]> ρ)
         ()
@@ -7988,16 +7988,42 @@ Proof.
     destruct H1 as [y [H1y H2y]].
     subst sc1.
     destruct y as [ [e1 e2] ].
-    specialize (HH _ H2y). clear H2y.
+    specialize (HH _ H2y).
     unfold satisfies in HH; simpl in HH.
     unfold satisfies in HH; simpl in HH.
-    destruct HH as [H1 H2].
+    
     unfold satisfies; simpl.
     unfold satisfies; simpl.
-    assert (Htmp1 := Expression_evaluate_subst ρ e1).
-    Check Expression_evaluate_subst.
-    Search Expression_subst.
 
+    unfold vars_of in Hh; simpl in Hh.
+
+    rewrite Expression_evaluate_subst_var.
+    rewrite Expression_evaluate_subst_var.
+    exact HH.
+    {
+        intros HContra. apply Hh. clear Hh.
+        rewrite elem_of_union_list.
+        exists (vars_of e1 ∪ vars_of e2).
+        split>[|ltac1:(set_solver)].
+        rewrite elem_of_list_fmap.
+        exists (sc_constraint (apeq e1 e2)).
+        split>[|exact H2y].
+        unfold vars_of at 2; simpl.
+        unfold vars_of at 2; simpl.
+        ltac1:(set_solver).
+    }
+    {
+        intros HContra. apply Hh. clear Hh.
+        rewrite elem_of_union_list.
+        exists (vars_of e1 ∪ vars_of e2).
+        split>[|ltac1:(set_solver)].
+        rewrite elem_of_list_fmap.
+        exists (sc_constraint (apeq e1 e2)).
+        split>[|exact H2y].
+        unfold vars_of at 2; simpl.
+        unfold vars_of at 2; simpl.
+        ltac1:(set_solver).
+    }
 Qed.
 
 
