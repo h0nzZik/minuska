@@ -9150,15 +9150,26 @@ Proof.
                 revert H4. intros H4.
                 apply satisfies__MinusL_isValue__subst in H4.
                 simpl in H4.
-                unfold MinusL_isValue.
-                (* Now we want to use H4. Somehow. *)
-                erewrite satisfies_scs_vars_of.
+                apply satisfies_insert_MinusL_isValue; simpl.
+                { admit. }
                 {
-                    (* We would like somethiing like this: *) 
-                    apply H4.
+                    unfold Valuation in *.
+                    rewrite insert_commute with (i := iV_var)(j := V2).
+                    rewrite insert_commute with (i := iV_var)(j := V1).
+                    erewrite satisfies_scs_vars_of.
+                    { apply H4. }
+                    {
+                        intros x Hx.
+                        destruct (decide (x = V2)).
+                        {
+                            subst x.
+                            admit.
+                        }
+                        admit.
+                    }
+                    admit. admit.
                 }
             }
-
         }
     }
 Qed.
