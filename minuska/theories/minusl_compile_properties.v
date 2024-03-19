@@ -9527,7 +9527,44 @@ Proof.
             inversion pf; subst; clear pf.
 
             (* do the same with Hρ2, but have fresh names *)
-
+            assert (Hρ2': satisfies ρ1 t2 (t_term topSymbol [(t_term cseqSymbol [(rc);(t_over (ft_variable continuationVariable))]);rd])).
+            {
+                apply Hρ2.
+            }
+            clear Hρ2.
+            apply satisfies_term_expr_inv in Hρ2'.
+            destruct Hρ2' as [lγ2 [Ht2 [HH21 HH22]]].
+            simpl in HH21.
+            destruct lγ2 as [|γ4 lγ2].
+            { simpl in HH21. inversion HH21. }
+            destruct lγ2 as [|γ5 lγ2].
+            { simpl in HH21. inversion HH21. }
+            destruct lγ2>[|simpl in HH21; ltac1:(lia)].
+            clear HH21.
+            unfold zip_with in HH22.
+            repeat (rewrite Forall_cons in HH22).
+            destruct HH22 as [HH22 [HH23 _]].
+            subst.
+            apply satisfies_term_expr_inv in HH22.
+            destruct HH22 as [lγ [Hγ4 [HH24 HH25]]].
+            simpl in HH24. subst.
+            destruct lγ as [|γ6 lγ].
+            { simpl in HH24. inversion HH24. }
+            destruct lγ as [|γ7 lγ].
+            { simpl in HH24. inversion HH24. }
+            destruct lγ>[|simpl in HH24; ltac1:(lia)].
+            clear HH24.
+            unfold zip_with in HH25.
+            repeat (rewrite Forall_cons in HH25).
+            destruct HH25 as [HH25 [HH26 _]].
+            inversion HH26; subst; clear HH26.
+            apply (f_equal prettify) in H2.
+            rewrite (cancel prettify uglify') in H2.
+            subst. simpl in *.
+            inversion pf; subst; clear pf.
+            ltac1:(rewrite H0 in H3).
+            inversion H3; subst; clear H3.
+            ltac1:(simplify_eq/=).
 
 
             Search Forall satisfies "inv".
