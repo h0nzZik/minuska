@@ -9175,11 +9175,64 @@ Proof.
                         {
                             subst x.
                             ltac1:(exfalso).
-                            admit.
+                            clear -Hx HeqV2.
+                            
+                            assert (Htmp3: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs))).
+                            {
+                                ltac1:(set_solver).
+                            }
+                            eapply infinite_is_fresh.
+                            apply Htmp3.
                         }
-                        admit.
+                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                        destruct (decide (x = V1)).
+                        {
+                            subst x.
+                            ltac1:(exfalso).
+                            clear -Hx HeqV1.
+                            
+                            assert (Htmp3: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs))).
+                            {
+                                ltac1:(set_solver).
+                            }
+                            eapply infinite_is_fresh.
+                            apply Htmp3.
+                        }
+                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                        reflexivity.
                     }
-                    admit. admit.
+                    {
+                        intros HContra.
+                        revert wfD. intros wfD.
+                        unfold MinusL_LangDef_wf in wfD. simpl in wfD.
+                        destruct wfD as [wf1D wf2D].
+                        clear - HContra HeqV1 wf1D.
+                        rewrite wf1D in HeqV1. clear wf1D.
+                        rewrite elements_singleton in HeqV1.
+                        rewrite HContra in HeqV1. clear HContra.
+                        assert (Htmp3: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ [V1]) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ [V1])).
+                        {
+                            rewrite HeqV1 at 2. ltac1:(set_solver).
+                        }
+                        eapply infinite_is_fresh.
+                        apply Htmp3.
+                    }
+                    {
+                        intros HContra.
+                        revert wfD. intros wfD.
+                        unfold MinusL_LangDef_wf in wfD. simpl in wfD.
+                        destruct wfD as [wf1D wf2D].
+                        clear - HContra HeqV2 wf1D.
+                        rewrite wf1D in HeqV2. clear wf1D.
+                        rewrite elements_singleton in HeqV2.
+                        rewrite HContra in HeqV2. clear HContra.
+                        assert (Htmp3: fresh (h :: V1:: vars_of_to_l2r c ++ elements (vars_of scs) ++ [V2]) ∈ (h :: V1:: vars_of_to_l2r c ++ elements (vars_of scs) ++ [V2])).
+                        {
+                            rewrite HeqV2 at 2. ltac1:(set_solver).
+                        }
+                        eapply infinite_is_fresh.
+                        apply Htmp3.
+                    }
                 }
             }
         }
