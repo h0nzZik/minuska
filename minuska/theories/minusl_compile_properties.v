@@ -5633,6 +5633,11 @@ Proof.
     }
 Qed.
 
+(* TODO we need a lemma like this that does not assume h ∉ ρ.
+   Instead of the uses of that assumption for satisfies_ext,
+   we have to use the `vars_of` lemmas about `satisfies`,
+   and it should still work.
+*)
 Lemma factor_by_subst_correct'
     {Σ : StaticModel}
     (sz : nat)
@@ -9667,6 +9672,55 @@ Proof.
                 rewrite (cancel prettify uglify') in H0.
                 rewrite (cancel prettify uglify') in H0.
                 subst γ6.
+
+                rewrite filter_cons.
+                destruct (decide (invisible_act <> invisible_act))>[ltac1:(congruence)|].
+                clear n.
+
+                rewrite HH7' in HH13'.
+                inversion HH13'; subst; clear HH13'.
+                apply (f_equal prettify) in H0.
+                rewrite (cancel prettify uglify') in H0.
+                rewrite (cancel prettify uglify') in H0.
+                subst γ10.
+                apply satisfies_var_expr_inv in HH10'.
+                
+                simpl in Hc1. inversion Hc1; subst; clear Hc1.
+                simpl in Hd1. inversion Hd1; subst; clear Hd1.
+
+                rewrite satisfies_TermOverBoV_to_TermOverExpr in HH12'.
+                remember (fresh
+                    (h
+                    :: vars_of_to_l2r c ++
+                    elements (vars_of scs) ++
+                    elements (vars_of (mlld_isValue_scs Act D)))) as V1.
+                
+                remember (fresh
+                    (h
+                    :: V1
+                    :: vars_of_to_l2r c ++
+                    elements (vars_of scs) ++
+                    elements (vars_of (mlld_isValue_scs Act D)))) as V2.
+
+                (* This does not work because ρ1 contains h *)
+                apply factor_by_subst_correct' with (sz := TermOver_size γ9) in HH12'
+                    >[()|ltac1:(lia)|()|()|].
+                *)
+                Search TermOverBoV_subst satisfies.
+                eapply mlr_context>[apply HH1|()|()|(apply HH4)|()|()|].
+                Search h.
+                
+                Print MinusL_rewrites.
+                Search ctrl1.
+                (* Not sure since this point*)
+                (* apply factor_by_subst_correct' with (sz := TermOver_size γ9) in HH12' . *)
+                
+                apply IHH3w'.
+                { reflexivity. }
+                {
+                    simpl.
+                    Search ctrl1.
+                }
             }
             {
 
