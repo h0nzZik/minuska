@@ -9453,7 +9453,7 @@ Lemma compile_correct_2
         (
             exists (w' : list Act), 
             w = (filter (fun x => x <> invisible_act) w') /\
-            w <> [] /\
+            (* w <> [] /\ *)
             forall cont,
             flattened_rewrites_to_over Γ
                 (downC topSymbol cseqSymbol lc ld cont)
@@ -9464,7 +9464,7 @@ Lemma compile_correct_2
 .
 Proof.
     intros H1 Γ ctrl1 data1 ctrl2 data2 w H2.
-    destruct H2 as [w' [H1w' [H2w' H3w']]].
+    destruct H2 as [w' [H1w' (*[H2w'*) H3w' (*]*)]].
     unfold downC in H3w'.
     specialize (H3w' (t_term cseqSymbol [])).
     remember ((t_term topSymbol [t_term cseqSymbol [ctrl1; t_term cseqSymbol []]; data1])) as from.
@@ -9494,12 +9494,14 @@ Proof.
         subst to. simpl. reflexivity.
     }
     clear Heqfrom Heqto.
-    revert w H1w' H2w' ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
-    induction H3w'; intros w'' H1w' H2w' ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
+    revert w H1w' (* H2w' *) ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
+    induction H3w'; intros w'' H1w' (* H2w' *) ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
     {
-        ltac1:(exfalso).
         rewrite filter_nil in H1w'.
-        apply H2w'. apply H1w'.
+        unfold projTopCtrl in *.
+        unfold projTopData in *.
+        ltac1:(repeat case_match); ltac1:(simplify_eq/=).
+        (* TODO need MinusL_rewrites to be reflexive *)
     }
     {
         assert (H' := H). (* just to have some backup *)
@@ -9621,6 +9623,9 @@ Proof.
             rewrite (cancel prettify uglify') in H0.
             subst γ7.
 
+            (*destruct (decide (filter (λ x : Act, x ≠ invisible_act) w = [])) as [Hnil|Hnnil].*)
+            
+
             ltac1:(
                 replace 
                     ((a :: filter (λ x : Act, x ≠ invisible_act) (w)))
@@ -9639,7 +9644,11 @@ Proof.
                 { assumption. }
             }
             {
-                
+                apply IHH3w'; simpl in *.
+                { reflexivity. }
+                {
+
+                }
             }
 
             (*
@@ -9658,24 +9667,7 @@ Proof.
                 { assumption. }
                 { assumption. }
             }
-            {
-
-
-                ltac1:(
-                    replace 
-                        ((a :: filter (λ x : Act, x ≠ invisible_act) (a0 :: w0)))
-                    with
-                        (([a] ++ filter (λ x : Act, x ≠ invisible_act) (a0 :: w0)))
-                    by reflexivity
-                ).
-                eapply mlr_trans.
-                {
-                    Print MinusL_rewrites.
-                }
-            }
-            (* Not yet *)
-            apply IHH3w'; simpl in *.
-            *)
+           *)
 
             Print MinusL_rewrites.
         }
