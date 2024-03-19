@@ -9577,13 +9577,8 @@ Proof.
             destruct HH5 as [HH5 [HH6 _]].
             
             subst.
+            apply satisfies_var_inv in HH6.
             
-            Check satisfies_var.
-            Search satisfies bov_variable.
-            inversion HH6; subst; clear HH6.
-            apply (f_equal prettify) in H2.
-            rewrite (cancel prettify uglify') in H2.
-            inversion pf; subst; clear pf.
 
             (* do the same with Hρ2, but have fresh names *)
             assert (Hρ2': satisfies ρ1 t2 (t_term topSymbol [(t_term cseqSymbol [(rc);(t_over (ft_variable continuationVariable))]);rd])).
@@ -9594,7 +9589,7 @@ Proof.
             apply satisfies_term_expr_inv in Hρ2'.
             destruct Hρ2' as [lγ2 [Ht2 [HH21 HH22]]].
             simpl in HH21.
-            destruct lγ2 as [|γ4 lγ2].
+            destruct lγ2 as [|γ4' lγ2].
             { simpl in HH21. inversion HH21. }
             destruct lγ2 as [|γ5 lγ2].
             { simpl in HH21. inversion HH21. }
@@ -9616,35 +9611,71 @@ Proof.
             unfold zip_with in HH25.
             repeat (rewrite Forall_cons in HH25).
             destruct HH25 as [HH25 [HH26 _]].
-            inversion HH26; subst; clear HH26.
-            apply (f_equal prettify) in H2.
-            rewrite (cancel prettify uglify') in H2.
-            subst. simpl in *.
-            inversion pf; subst; clear pf.
-            ltac1:(rewrite H0 in H3).
-            inversion H3; subst; clear H3.
+            apply satisfies_var_expr_inv in HH26.
             inversion Hd1; subst; clear Hd1.
             inversion Hc1; subst; clear Hc1.
-            
+
+            rewrite HH6 in HH26. inversion HH26; subst; clear HH26.
+            apply (f_equal prettify) in H0.
+            rewrite (cancel prettify uglify') in H0.
+            rewrite (cancel prettify uglify') in H0.
+            subst γ7.
+
+            ltac1:(
+                replace 
+                    ((a :: filter (λ x : Act, x ≠ invisible_act) (w)))
+                with
+                    (([a] ++ filter (λ x : Act, x ≠ invisible_act) (w)))
+                by reflexivity
+            ).
+            eapply mlr_trans.
+            {
+                eapply mlr_rule with (ρ := ρ1).
+                { apply H1r. }
+                { assumption. }
+                { assumption. }
+                { apply HH25. }
+                { apply HH23. }
+                { assumption. }
+            }
+            {
+                
+            }
+
+            (*
             inversion H3w'; subst; clear H3w'.
-            rewrite filter_nil.
-            simpl in *.
-            inversion Hd2; subst; clear Hd2.
-            inversion Hc2; subst; clear Hc2.
+            {
+                rewrite filter_nil.
+                simpl in *.
+                inversion Hd2; subst; clear Hd2.
+                inversion Hc2; subst; clear Hc2.
 
-            eapply mlr_rule with (ρ := ρ1).
-            { apply H1r. }
-            { assumption. }
-            { assumption. }
-            { assumption. }
-            { assumption. }
-            { assumption. }
-            
+                eapply mlr_rule with (ρ := ρ1).
+                { apply H1r. }
+                { assumption. }
+                { assumption. }
+                { assumption. }
+                { assumption. }
+                { assumption. }
+            }
+            {
 
-            
+
+                ltac1:(
+                    replace 
+                        ((a :: filter (λ x : Act, x ≠ invisible_act) (a0 :: w0)))
+                    with
+                        (([a] ++ filter (λ x : Act, x ≠ invisible_act) (a0 :: w0)))
+                    by reflexivity
+                ).
+                eapply mlr_trans.
+                {
+                    Print MinusL_rewrites.
+                }
+            }
             (* Not yet *)
-            apply IHH3w'.
-            
+            apply IHH3w'; simpl in *.
+            *)
 
             Print MinusL_rewrites.
         }
