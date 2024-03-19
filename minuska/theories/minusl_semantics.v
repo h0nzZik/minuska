@@ -22,6 +22,10 @@ Section MinusL_sem.
         (TermOver builtin_value) ->
         Prop :=
 
+    | mlr_refl :
+        forall ctrl state,
+            MinusL_rewrites D ctrl state [] ctrl state
+
     | mlr_rule : 
         forall
             (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)

@@ -7784,163 +7784,6 @@ Proof.
     }
 Qed.
 
-(*
-Lemma Expression_evaluate_insert_rename
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (e : Expression)
-    (h h1 h2 : variable)
-    (g g' : GroundTerm)
-    :
-    Expression_evaluate
-        (<[h1:=g]> ρ)
-        (Expression_subst e h (ft_variable h1))
-    = Some g' ->
-    Expression_evaluate
-        (<[h2:=g]> ρ)
-        (Expression_subst e h (ft_variable h2))
-    = Some g'
-.
-Proof.
-    revert h h1 h2 g.
-    induction e; simpl; intros h h1 h2 g HH.
-    {
-        exact HH.
-    }
-    {
-        simpl.
-        unfold Valuation in *.
-        destruct (decide (x = h)) as [?|Hneq].
-        {
-            subst. simpl in *.
-            rewrite lookup_insert.
-            rewrite lookup_insert in HH.
-            exact HH.
-        }
-        {
-            simpl in *.
-            destruct (decide (x = h1)).
-            {
-                subst.
-                rewrite lookup_insert in HH.
-                inversion HH; subst; clear HH.
-                destruct (decide (h1 = h2)).
-                {
-                    subst. rewrite lookup_insert. reflexivity.
-                }
-                {
-                    rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                }
-
-            }
-            unfold vars_of in Hhe; simpl in Hhe.
-            rewrite elem_of_singleton in Hhe.
-            subst.
-            ltac1:(contradiction Hneq).
-            reflexivity.
-        }
-    }
-    {
-        reflexivity.
-    }
-    {
-        erewrite IHe. reflexivity.
-        unfold vars_of in Hhe; simpl in Hhe.
-        exact Hhe.
-    }
-    {
-        unfold vars_of in Hhe; simpl in Hhe.
-        rewrite elem_of_union in Hhe.
-        destruct
-            (decide (h ∈ vars_of_Expression e1)) as [H1in|H1notin],
-            (decide (h ∈ vars_of_Expression e2)) as [H2in|H2notin].
-        {
-            erewrite IHe1. erewrite IHe2. reflexivity.
-            assumption. assumption.
-        }
-        {
-            rewrite Expression_subst_notin with (e := e2)>[|assumption].
-            rewrite Expression_subst_notin with (e := e2)>[|assumption].
-            About Expression_subst_notin.
-            (* ltac1:((rewrite -(Expression_subst_notin e2 (ft_variable h1) h)))>[assumption|]. *)
-            (*
-            ltac1:((rewrite -[in X in ( X = _) ](Expression_subst_notin e2 (ft_variable h1) h)))>[assumption|].
-            ltac1:((rewrite -[in X in ( _ = X) ](Expression_subst_notin e2 (ft_variable h2) h)))>[assumption|].
-            *)
-
-
-            erewrite IHe1>[|assumption].
-            
-
-        }
-        {
-
-        }
-        {
-            ltac1:(set_solver).
-        }
-    }
-Qed.
-*)
-(*
-Lemma satisfies__MinusL_isValue__rename
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (g : GroundTerm)
-    (h1 h2 : variable)
-    (Act : Set)
-    (D : MinusL_LangDef Act)
-    :
-    satisfies (<[h1 := g]>ρ) () (MinusL_isValue Act D (ft_variable h1)) ->
-    satisfies (<[h2 := g]>ρ) () (MinusL_isValue Act D (ft_variable h2))
-.
-Proof.
-    intros HH.
-    unfold satisfies in *; simpl in *.
-    rewrite Forall_forall in HH.
-    rewrite Forall_forall.
-    intros sc1. intros H1.
-    unfold MinusL_isValue in *.
-    rewrite elem_of_list_fmap in H1.
-    destruct H1 as [y [H1y H2y]].
-    subst sc1.
-    destruct y as [ [e1 e2] ].
-
-    specialize (HH ((sc_constraint
-        (apeq (Expression_subst e1 (mlld_isValue_var Act D) (ft_variable h1))
-            (Expression_subst e2 (mlld_isValue_var Act D) (ft_variable h1))))
-    )).
-    ltac1:(ospecialize (HH _)).
-    {
-        rewrite elem_of_list_fmap.
-        exists (sc_constraint (apeq e1 e2) ).
-        split>[reflexivity|].
-        exact H2y.
-    }
-
-    unfold satisfies in HH; simpl in HH.
-    unfold satisfies in HH; simpl in HH.
-    destruct HH as [H1 H2].
-    unfold satisfies; simpl.
-    unfold satisfies; simpl.
-    Search Expression_evaluate.
-Qed.
-*)
-(*
-Lemma MinusL_isValue_subst_var
-    {Σ : StaticModel}
-    {Act : Set}
-    iV_scs iV_var ds
-    :
-    (MinusL_isValue Act
-        {|
-            mlld_isValue_scs := iV_scs; mlld_isValue_var := iV_var;
-            mlld_decls := ds
-        |}
-        (ft_variable h)
-    ) 
-    *)
-
 
 Lemma Expression_evaluate_subst_var
     {Σ : StaticModel}
@@ -8115,6 +7958,13 @@ Proof.
     destruct D as [iV_scs iV_var ds]; simpl in *.
 
     induction HH.
+    {
+        exists [].
+        rewrite filter_nil.
+        split>[reflexivity|].
+        intros cont.
+        constructor.
+    }
     {
         exists [a].
         unfold compile in Γ. simpl in H. simpl in Γ.
@@ -9501,7 +9351,7 @@ Proof.
         unfold projTopCtrl in *.
         unfold projTopData in *.
         ltac1:(repeat case_match); ltac1:(simplify_eq/=).
-        (* TODO need MinusL_rewrites to be reflexive *)
+        apply mlr_refl.
     }
     {
         assert (H' := H). (* just to have some backup *)
@@ -9646,36 +9496,21 @@ Proof.
             {
                 apply IHH3w'; simpl in *.
                 { reflexivity. }
+                { reflexivity. }
+                { reflexivity. }
+                { assumption. }
+                { assumption. }
                 {
-
+                    unfold isDownC.
+                    eexists. eexists. eexists.
+                    reflexivity.
                 }
-            }
-
-            (*
-            inversion H3w'; subst; clear H3w'.
-            {
-                rewrite filter_nil.
-                simpl in *.
-                inversion Hd2; subst; clear Hd2.
-                inversion Hc2; subst; clear Hc2.
-
-                eapply mlr_rule with (ρ := ρ1).
-                { apply H1r. }
-                { assumption. }
-                { assumption. }
-                { assumption. }
-                { assumption. }
                 { assumption. }
             }
-           *)
-
-            Print MinusL_rewrites.
         }
         {
-
+            
         }
-
-        
     }
 
 Qed.
