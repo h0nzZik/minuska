@@ -9448,23 +9448,109 @@ Proof.
         apply H2w'. apply H1w'.
     }
     {
+        assert (H' := H). (* just to have some backup *)
         ltac1:(unfold Γ in H).
-        Search compile.
-        rewrite filter_cons in H1w'.
-        destruct (decide (a <> invisible_act)).
+        apply in_compile_inv in H.
+        destruct H as [H|H].
         {
-            clear H2w'.
-            subst w''.
-            destruct (decide (filter (λ x : Act, x ≠ invisible_act) w = [])) as [Hwnil|Hwnnil].
+            destruct H as [lc [ld [a0 [rc [rd [scs [H1r H2r]]]]]]].
+            subst r. simpl in *.
+            unfold flattened_rewrites_to in H0.
+            destruct H0 as [ρ1 Hρ1].
+            unfold flattened_rewrites_in_valuation_under_to in Hρ1.
+            destruct Hρ1 as [Hρ1 [Hρ2 [Hρ3 Hρ4]]].
+            simpl in *.
+            subst a0.
+
+            rewrite filter_cons in H1w'.
+            destruct (decide (a = invisible_act)).
             {
-                rewrite Hwnil.
-                eapply mlr_rule.
+                subst a.
+                ltac1:(exfalso).
+                clear - H1 H1r.
+                apply H1. clear H1.
+                unfold actions_of_ldef.
+                rewrite elem_of_list_In.
+                rewrite in_concat.
+                eexists.
+                rewrite in_map_iff.
+                unfold actions_of_decl.
+                split.
+                {
+                    exists (mld_rewrite Act lc ld invisible_act rc rd scs).
+                    split>[reflexivity|].
+                    rewrite <- elem_of_list_In.
+                    exact H1r.
+                }
+                constructor. reflexivity.
             }
+            rewrite decide_True in H1w'>[|assumption].
+            clear H2w'. subst w''.
+            assert (Hρ1':
+                satisfies ρ1 t1 (t_term topSymbol [(t_term cseqSymbol [lc; t_over (bov_variable continuationVariable)]);(ld)])
+            ).
+            {
+                apply Hρ1.
+            }
+            clear Hρ1.
+            apply satisfies_term_inv in Hρ1'.
+            destruct Hρ1' as [lγ1 [Ht1 [HH1 HH2]]].
+            simpl in HH1.
+            destruct lγ1 as [|γ1 lγ1].
+            {
+                simpl in HH1. inversion HH1.
+            }
+            destruct lγ1 as [|γ2 lγ2].
+            {
+                simpl in HH1. inversion HH1.
+            }
+            destruct lγ2>[|simpl in HH1; ltac1:(lia)].
+            clear HH1.
+            unfold zip_with in HH2.
+            repeat (rewrite Forall_cons in HH2).
+            destruct HH2 as [HH2 [HH3 _]].
+            apply satisfies_term_inv in HH2.
+            destruct HH2 as [lγ [Hγ1 [HH4 HH5]]].
+            simpl in HH4.
+            destruct lγ as [|γ3 lγ].
+            { simpl in HH4. inversion HH4. }
+            destruct lγ as [|γ4 lγ].
+            { simpl in HH4. inversion HH4. }
+            destruct lγ>[|simpl in HH4; ltac1:(lia)].
+            clear HH4.
+            unfold zip_with in HH5.
+            repeat (rewrite Forall_cons in HH5).
+            destruct HH5 as [HH5 [HH6 _]].
+            inversion HH6; subst; clear HH6.
+            apply (f_equal prettify) in H2.
+            rewrite (cancel prettify uglify') in H2.
+            inversion pf; subst; clear pf.
+
+            (* do the same with Hρ2, but have fresh names *)
+
+
+
+            Search Forall satisfies "inv".
+
+            destruct (decide (filter (λ x : Act, x ≠ invisible_act) w = [])) as [Hnil|Hnnil].
+            {
+                rewrite Hnil.
+                eapply mlr_rule with (ρ := ρ1).
+                { apply H1r. }
+                { assumption. }
+            }
+            {
+
+            }
+            
+
             Print MinusL_rewrites.
         }
         {
 
         }
+
+        
     }
 
 Qed.
