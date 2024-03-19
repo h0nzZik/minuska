@@ -643,6 +643,60 @@ Proof.
     destruct γ; (repeat constructor); assumption.
 Qed.
 
+
+Lemma satisfies_var_inv
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    x γ:
+    satisfies ρ γ (t_over (bov_variable x)) ->
+    ρ !! x = Some (uglify' γ)
+.
+Proof.
+    intros H.
+    inversion H; subst; clear H.
+    {
+        apply (f_equal prettify) in H2.
+        rewrite (cancel prettify uglify') in H2.
+        subst.
+        inversion pf; subst; clear pf.
+        assumption.
+    }
+    {
+        apply (f_equal prettify) in H0.
+        rewrite (cancel prettify uglify') in H0.
+        subst.
+        inversion H3; subst; clear H3.
+        assumption.
+    }
+Qed.
+
+Lemma satisfies_var_expr_inv
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    x γ:
+    satisfies ρ γ (t_over (ft_variable x)) ->
+    ρ !! x = Some (uglify' γ)
+.
+Proof.
+    intros H.
+    inversion H; subst; clear H.
+    {
+        apply (f_equal prettify) in H2.
+        rewrite (cancel prettify uglify') in H2.
+        subst.
+        inversion pf; subst; clear pf.
+        assumption.
+    }
+    {
+        apply (f_equal prettify) in H0.
+        rewrite (cancel prettify uglify') in H0.
+        subst.
+        inversion H3; subst; clear H3.
+        assumption.
+    }
+Qed.
+
+
 Lemma subst_notin
     {Σ : StaticModel}
     (h : variable)
@@ -9521,6 +9575,11 @@ Proof.
             unfold zip_with in HH5.
             repeat (rewrite Forall_cons in HH5).
             destruct HH5 as [HH5 [HH6 _]].
+            
+            subst.
+            
+            Check satisfies_var.
+            Search satisfies bov_variable.
             inversion HH6; subst; clear HH6.
             apply (f_equal prettify) in H2.
             rewrite (cancel prettify uglify') in H2.
@@ -9564,21 +9623,27 @@ Proof.
             inversion pf; subst; clear pf.
             ltac1:(rewrite H0 in H3).
             inversion H3; subst; clear H3.
-            ltac1:(simplify_eq/=).
+            inversion Hd1; subst; clear Hd1.
+            inversion Hc1; subst; clear Hc1.
+            
+            inversion H3w'; subst; clear H3w'.
+            rewrite filter_nil.
+            simpl in *.
+            inversion Hd2; subst; clear Hd2.
+            inversion Hc2; subst; clear Hc2.
 
+            eapply mlr_rule with (ρ := ρ1).
+            { apply H1r. }
+            { assumption. }
+            { assumption. }
+            { assumption. }
+            { assumption. }
+            { assumption. }
+            
 
-            Search Forall satisfies "inv".
-
-            destruct (decide (filter (λ x : Act, x ≠ invisible_act) w = [])) as [Hnil|Hnnil].
-            {
-                rewrite Hnil.
-                eapply mlr_rule with (ρ := ρ1).
-                { apply H1r. }
-                { assumption. }
-            }
-            {
-
-            }
+            
+            (* Not yet *)
+            apply IHH3w'.
             
 
             Print MinusL_rewrites.
