@@ -8423,8 +8423,8 @@ Proof.
 
             assert (Hheat:
                 ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
-                (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs))))
-                (fresh (h:: (fresh (h :: (vars_of_to_l2r c ++ ( elements (vars_of scs))))) :: (vars_of_to_l2r c ++  elements (vars_of scs))))
+                (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))))
+                (fresh (h:: (fresh (h :: (vars_of_to_l2r c ++ ( elements (vars_of scs) ++ (elements (vars_of iV_scs)))))) :: (vars_of_to_l2r c ++  elements (vars_of scs) ++ (elements (vars_of iV_scs)))))
                 (MinusL_isValue Act (@mkMinusL_LangDef Σ Act iV_scs iV_var ds)) c h scs ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
@@ -8451,8 +8451,8 @@ Proof.
 
             assert (Hcool:
                 ctx_cool invisible_act topSymbol cseqSymbol holeSymbol
-                (fresh (h::(vars_of_to_l2r c ++  elements (vars_of scs))))
-                (fresh (h:: (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs)))) :: (vars_of_to_l2r c ++ elements (vars_of scs))))
+                (fresh (h::(vars_of_to_l2r c ++  elements (vars_of scs) ++ (elements (vars_of iV_scs)))))
+                (fresh (h:: (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))))) :: (vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))))
                 (MinusL_isValue Act (@mkMinusL_LangDef Σ Act iV_scs iV_var ds)) c h ∈ Γ).
             {
                 rewrite elem_of_list_lookup in H.
@@ -8549,8 +8549,8 @@ Proof.
                 }
             }
 
-            remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs))) as V1.
-            remember (fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))) as V2.
+            remember (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))) as V1.
+            remember (fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))) as V2.
 
             eapply frto_step with (t2 := (t_term topSymbol [(t_term cseqSymbol [r; (t_term cseqSymbol [ceval; cont])]); state1])).
             { apply Hheat. }
@@ -8608,7 +8608,7 @@ Proof.
                                     (* V1 <> x *)
                                     clear -Hx HeqV1.
                                     intros HContra. subst.
-                                    assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
                                         rewrite <- vars_of_uglify in Hx.
                                         ltac1:(set_solver).
@@ -8620,7 +8620,7 @@ Proof.
                                     (* V2 <> x *)
                                     clear -Hx HeqV2.
                                     intros HContra. subst.
-                                    assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
                                         rewrite <- vars_of_uglify in Hx.
                                         ltac1:(set_solver).
@@ -8640,7 +8640,7 @@ Proof.
                             {
                                 clear -HeqV2.
                                 intros HContra. subst.
-                                assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     rewrite <- HContra at 2.
                                     ltac1:(set_solver).
@@ -8651,7 +8651,7 @@ Proof.
                             {
                                 clear -HeqV1.
                                 intros HContra. subst.
-                                assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     rewrite HContra at 2.
                                     ltac1:(set_solver).
@@ -8673,7 +8673,7 @@ Proof.
                         {
                             clear -HeqV2.
                             intros HContra. subst.
-                            assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                            assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                             {
                                 rewrite HContra at 2.
                                 ltac1:(set_solver).
@@ -8756,7 +8756,7 @@ Proof.
                                     rewrite <- vars_of_uglify in Htmp.
                                     clear -Htmp HeqV2.
                                     subst V2.
-                                    assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
                                         ltac1:(set_solver).
                                     }
@@ -8774,7 +8774,7 @@ Proof.
                                     rewrite <- vars_of_uglify in Htmp.
                                     clear -Htmp HeqV1.
                                     subst V1.
-                                    assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
                                         ltac1:(set_solver).
                                     }
@@ -8795,7 +8795,7 @@ Proof.
                                     clear -HeqV2.
                                     intros HContra.
                                     subst.
-                                    assert (H': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    assert (H': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
                                         rewrite <- HContra at 2.
                                         clear. ltac1:(set_solver).
@@ -8807,7 +8807,7 @@ Proof.
                                     clear -HeqV1.
                                     intros HContra.
                                     subst.
-                                    assert (H': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                    assert (H': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
                                         rewrite HContra at 2.
                                         clear. ltac1:(set_solver).
@@ -8825,7 +8825,7 @@ Proof.
                             subst h.
                             ltac1:(exfalso).
                             clear -HeqV2.
-                            assert (Htmp: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                            assert (Htmp: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                             {
                                 rewrite HeqV2 at 2.
                                 ltac1:(set_solver).
@@ -8849,7 +8849,7 @@ Proof.
                     {
                         clear -Hx HeqV1.
                         intros HContra. subst.
-                        assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                         {
                             ltac1:(set_solver).
                         }
@@ -8859,7 +8859,7 @@ Proof.
                     {
                         clear -Hx HeqV2.
                         intros HContra. subst.
-                        assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                         {
                             ltac1:(set_solver).
                         }
@@ -8943,7 +8943,7 @@ Proof.
                                 rewrite <- vars_of_uglify in Htmp.
                                 clear -Htmp HeqV2.
                                 subst V2.
-                                assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     ltac1:(set_solver).
                                 }
@@ -8961,7 +8961,7 @@ Proof.
                                 rewrite <- vars_of_uglify in Htmp.
                                 clear -Htmp HeqV1.
                                 subst V1.
-                                assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     ltac1:(set_solver).
                                 }
@@ -8978,7 +8978,7 @@ Proof.
                                 ltac1:(exfalso).
                                 subst h.
                                 clear -HeqV1.
-                                assert (Htmp1: fresh (V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert (Htmp1: fresh (V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     rewrite HeqV1 at 2.
                                     ltac1:(set_solver).
@@ -8993,7 +8993,7 @@ Proof.
                                 ltac1:(exfalso).
                                 clear - HeqV2 Heq.
                                 subst V1.
-                                assert (Htmp1: fresh (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert (Htmp1: fresh (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     rewrite HeqV2 at 2.
                                     ltac1:(set_solver).
@@ -9013,7 +9013,7 @@ Proof.
                         ltac1:(exfalso).
                         subst h.
                         clear - HeqV2.
-                        assert (Htmp1: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        assert (Htmp1: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                         {
                             rewrite HeqV2 at 2. ltac1:(set_solver).
                         }
@@ -9070,7 +9070,7 @@ Proof.
                                 subst x.
                                 rewrite <- vars_of_uglify in Hx.
                                 clear - HeqV2 Hx.
-                                assert (Htmp1: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert (Htmp1: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     ltac1:(set_solver).
                                 }
@@ -9084,7 +9084,7 @@ Proof.
                                 subst x.
                                 rewrite <- vars_of_uglify in Hx.
                                 clear - HeqV1 Hx.
-                                assert (Htmp1: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                                assert (Htmp1: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                 {
                                     ltac1:(set_solver).
                                 }
@@ -9101,7 +9101,7 @@ Proof.
                         {
                             intros HContra. subst h.
                             clear - HeqV1.
-                            assert (Htmp1: fresh (V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                            assert (Htmp1: fresh (V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                             {
                                 rewrite HeqV1 at 2. ltac1:(set_solver).
                             }
@@ -9115,7 +9115,7 @@ Proof.
                             ltac1:(exfalso).
                             clear - HeqV2 Heq.
                             subst V1.
-                            assert (Htmp1: fresh (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                            assert (Htmp1: fresh (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V2 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                             {
                                 rewrite HeqV2 at 2.
                                 ltac1:(set_solver).
@@ -9133,7 +9133,7 @@ Proof.
                     {
                         intros HContra. subst h.
                         clear - HeqV2.
-                        assert (Htmp1: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs)) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs))).
+                        assert (Htmp1: fresh (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (V2 :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                         {
                             rewrite HeqV2 at 2. ltac1:(set_solver).
                         }
@@ -9170,9 +9170,11 @@ Proof.
                     { apply H4. }
                     {
                         intros x Hx.
+                        unfold Valuation in *.
                         destruct (decide (x = V2)).
                         {
                             subst x.
+                            ltac1:(exfalso).
                             admit.
                         }
                         admit.

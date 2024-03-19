@@ -154,6 +154,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
     (isValue : Expression -> (list SideCondition))
+    (avoid : gset variable)
     (d : MinusL_Decl Act)
     : (list (RewritingRule Act))
 :=
@@ -169,8 +170,9 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     | mld_context _ c h Hh scs Hhscs =>
         let vars := vars_of_to_l2r c in
         let scs_vars := elements (vars_of scs) in
-        let contVariable := fresh (h::(vars++scs_vars)) in
-        let dataVariable := fresh (h::contVariable::(vars++scs_vars)) in
+        let lavoid := elements avoid in
+        let contVariable := fresh (h::(vars++scs_vars++lavoid)) in
+        let dataVariable := fresh (h::contVariable::(vars++scs_vars++lavoid)) in
          [
             (ctx_heat
                 invisible_act
@@ -197,6 +199,13 @@ Definition compile {Σ : StaticModel}
     (continuationVariable : variable)
     : CompileT :=
     fun D => concat (map (
-        compile' invisible_act topSymbol cseqSymbol holeSymbol continuationVariable (MinusL_isValue Act D)
+        compile'
+            invisible_act
+            topSymbol
+            cseqSymbol
+            holeSymbol
+            continuationVariable
+            (MinusL_isValue Act D)
+            (vars_of (mlld_isValue_scs Act D))
         ) (mlld_decls Act D))
 .
