@@ -9509,7 +9509,168 @@ Proof.
             }
         }
         {
-            
+            destruct H as [c [h [Hh [scs [Hhscs [HH1 HH2]]]]]].
+            destruct HH2 as [HH2|HH2].
+            {
+                subst r.
+                unfold flattened_rewrites_to in H0.
+                destruct H0 as [ρ1 Hρ1].
+                unfold flattened_rewrites_in_valuation_under_to in Hρ1.
+                destruct Hρ1 as [HH2 [HH3 [HH4 HH5]]].
+                simpl in *.
+                subst a.
+                clear H'.
+
+                assert (
+                    HH2':
+                    satisfies ρ1 t1 (t_term topSymbol [
+                        (t_term cseqSymbol [
+                            (c)
+                            ;
+                            (t_over ((bov_variable
+                                (fresh
+                                (h
+                                :: vars_of_to_l2r c ++
+                                elements (vars_of scs) ++
+                                elements (vars_of (mlld_isValue_scs Act D)))))))
+                        ])
+                        ;
+                        (t_over ((bov_variable
+                                (fresh
+                                (h
+                                :: fresh
+                                (h
+                                :: vars_of_to_l2r c ++
+                                elements (vars_of scs) ++
+                                elements (vars_of (mlld_isValue_scs Act D)))
+                                :: vars_of_to_l2r c ++
+                                elements (vars_of scs) ++
+                                elements (vars_of (mlld_isValue_scs Act D)))))))
+                    ])
+                ).
+                {
+                    apply HH2.
+                }
+                clear HH2.
+                assert ( HH3':
+                    satisfies ρ1 t2 (
+                        t_term topSymbol [
+                            (t_term cseqSymbol [
+                                (t_over (ft_variable h))
+                                ;
+                                (t_term cseqSymbol [
+                                    (TermOverBoV_to_TermOverExpr
+  (TermOverBoV_subst c h (t_term holeSymbol [])));
+                                    (
+                                        t_over (
+                                            (ft_variable
+                                                (fresh
+                                                (h
+                                                :: vars_of_to_l2r c ++
+                                                elements (vars_of scs) ++
+                                                elements (vars_of (mlld_isValue_scs Act D)))))
+                                        )
+                                    )
+                                ])
+                            ]);
+                            (
+                                t_over (
+                                    (ft_variable
+                                        (fresh
+                                        (h
+                                        :: fresh
+                                        (h
+                                        :: vars_of_to_l2r c ++
+                                        elements (vars_of scs) ++
+                                        elements (vars_of (mlld_isValue_scs Act D)))
+                                        :: vars_of_to_l2r c ++
+                                        elements (vars_of scs) ++
+                                        elements (vars_of (mlld_isValue_scs Act D)))))
+                                )
+                            )
+                        ]
+                    )
+                ).
+                {
+                    apply HH3.
+                }
+                clear HH3.
+                apply satisfies_term_inv in HH2'.
+                destruct HH2' as [lγ [Ht1 [Hlen Hfa]]].
+                simpl in *.
+                destruct lγ as [|γ1 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ as [|γ2 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ>[|simpl in Hlen; ltac1:(lia)].
+                unfold zip_with in Hfa.
+                repeat (rewrite Forall_cons in Hfa).
+                rewrite Forall_nil in Hfa.
+                destruct Hfa as [HH4' [HH5' _]].
+                clear Hlen.
+
+                apply satisfies_term_inv in HH4'.
+                destruct HH4' as [lγ [Hγ1 [Hlen Hfa]]].
+                simpl in *.
+                destruct lγ as [|γ3 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ as [|γ4 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ>[|simpl in Hlen; ltac1:(lia)].
+                unfold zip_with in Hfa.
+                repeat (rewrite Forall_cons in Hfa).
+                rewrite Forall_nil in Hfa.
+                destruct Hfa as [HH6' [HH7' _]].
+                clear Hlen.
+                apply satisfies_var_inv in HH7'.
+                apply satisfies_var_inv in HH5'.
+
+                apply satisfies_term_expr_inv in HH3'.
+                destruct HH3' as [lγ [Hγ2 [Hlen Hfa]]].
+                simpl in *.
+                destruct lγ as [|γ5 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ as [|γ6 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ>[|simpl in Hlen; ltac1:(lia)].
+                unfold zip_with in Hfa.
+                repeat (rewrite Forall_cons in Hfa).
+                rewrite Forall_nil in Hfa.
+                destruct Hfa as [HH8' [HH9' _]].
+                clear Hlen.
+
+                apply satisfies_term_expr_inv in HH8'.
+                destruct HH8' as [lγ [Hγ3 [Hlen Hfa]]].
+                simpl in *.
+                destruct lγ as [|γ7 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ as [|γ8 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ>[|simpl in Hlen; ltac1:(lia)].
+                unfold zip_with in Hfa.
+                repeat (rewrite Forall_cons in Hfa).
+                rewrite Forall_nil in Hfa.
+                destruct Hfa as [HH10' [HH11' _]].
+                clear Hlen.
+
+                apply satisfies_term_expr_inv in HH11'.
+                destruct HH11' as [lγ [Hγ4 [Hlen Hfa]]].
+                simpl in *.
+                destruct lγ as [|γ9 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ as [|γ10 lγ] >[simpl in Hlen; inversion Hlen|].
+                destruct lγ>[|simpl in Hlen; ltac1:(lia)].
+                unfold zip_with in Hfa.
+                repeat (rewrite Forall_cons in Hfa).
+                rewrite Forall_nil in Hfa.
+                destruct Hfa as [HH12' [HH13' _]].
+                clear Hlen.
+
+                apply satisfies_var_expr_inv in HH13'.
+                apply satisfies_var_expr_inv in HH9'.
+                subst.
+
+                rewrite HH5' in HH9'.
+                inversion HH9'; subst; clear HH9'.
+                apply (f_equal prettify) in H0.
+                rewrite (cancel prettify uglify') in H0.
+                rewrite (cancel prettify uglify') in H0.
+                subst γ6.
+            }
+            {
+
+            }
         }
     }
 
