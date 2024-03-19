@@ -7828,7 +7828,7 @@ Proof.
     }
 Qed.
 *)
-
+(*
 Lemma satisfies__MinusL_isValue__rename
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -7871,7 +7871,7 @@ Proof.
     unfold satisfies; simpl.
     Search Expression_evaluate.
 Qed.
-
+*)
 (*
 Lemma MinusL_isValue_subst_var
     {Σ : StaticModel}
@@ -7887,6 +7887,99 @@ Lemma MinusL_isValue_subst_var
     ) 
     *)
 
+
+Lemma Expression_evaluate_subst_var
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (e : Expression)
+    (g : GroundTerm)
+    (h1 h2 : variable)
+    :
+    h1 ∉ vars_of e ->
+    Expression_evaluate (<[h1 := g]>ρ) (Expression_subst e h2 (ft_variable h1))
+    = Expression_evaluate (<[h2 := g]>ρ) e
+.
+Proof.
+    revert g h1 h2.
+    induction e; simpl; intros g h1 h2 Hh1.
+    {
+        reflexivity.
+    }
+    {
+        unfold Valuation in *.
+        destruct (decide (x = h2)); simpl.
+        {
+            subst.
+            rewrite lookup_insert.
+            rewrite lookup_insert.
+            reflexivity.
+        }
+        {
+            unfold vars_of in Hh1; simpl in Hh1.
+            rewrite elem_of_singleton in Hh1.
+            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+            reflexivity.
+        }
+    }
+    {
+        reflexivity.
+    }
+    {
+        specialize (IHe g h1 h2 Hh1).
+        rewrite IHe.
+        reflexivity.
+    }
+    {
+        unfold vars_of in Hh1; simpl in Hh1.
+        rewrite elem_of_union in Hh1.
+        apply apply Decidable.not_or in Hh1.
+        destruct Hh1 as [H1h1 H2h1].
+        specialize (IHe1 g h1 h2 H1h1).
+        specialize (IHe2 g h1 h2 H2h1).
+    }
+Qed.
+
+Lemma helper
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (g : GroundTerm)
+    (h : variable)
+    (Act : Set)
+    (D : MinusL_LangDef Act)
+    :
+    h <> mlld_isValue_var Act D ->
+    satisfies
+        (<[mlld_isValue_var Act D:=g]> ρ)
+        ()
+        (mlld_isValue_scs Act D)  ->
+    satisfies
+        (<[h:=g]>  ρ)
+        ()
+        (MinusL_isValue Act D (ft_variable h))
+.
+Proof.
+    intros Hh HH.
+    unfold satisfies in *; simpl in *.
+    rewrite Forall_forall in HH.
+    rewrite Forall_forall.
+    intros sc1. intros H1.
+    unfold MinusL_isValue in *.
+    rewrite elem_of_list_fmap in H1.
+    destruct H1 as [y [H1y H2y]].
+    subst sc1.
+    destruct y as [ [e1 e2] ].
+    specialize (HH _ H2y). clear H2y.
+    unfold satisfies in HH; simpl in HH.
+    unfold satisfies in HH; simpl in HH.
+    destruct HH as [H1 H2].
+    unfold satisfies; simpl.
+    unfold satisfies; simpl.
+    assert (Htmp1 := Expression_evaluate_subst ρ e1).
+    Check Expression_evaluate_subst.
+    Search Expression_subst.
+
+Qed.
 
 
 Lemma compile_correct
