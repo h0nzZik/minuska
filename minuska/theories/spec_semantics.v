@@ -867,7 +867,7 @@ Inductive flattened_rewrites_to_over
     TermOver builtin_value ->
     list Act ->
     TermOver builtin_value ->
-    Prop
+    Type
 :=
 | frto_base: forall t,
         flattened_rewrites_to_over Γ t nil t

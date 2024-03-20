@@ -20,7 +20,7 @@ Section MinusL_sem.
         (list Act)  ->
         (TermOver builtin_value) ->
         (TermOver builtin_value) ->
-        Prop :=
+        Type :=
 
     | mlr_refl :
         forall ctrl state,

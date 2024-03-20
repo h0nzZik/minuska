@@ -6285,8 +6285,8 @@ Proof.
         simpl.
         specialize (IHflattened_rewrites_to_over H2).
         eapply frto_step.
-        { exact H. }
-        { exact H0. }
+        { exact e. }
+        { exact f. }
         { apply IHflattened_rewrites_to_over. }
     }
 Qed.
@@ -6306,7 +6306,7 @@ Lemma frto_app
 .
 Proof.
     intros.
-    revert t1 t2 t3 w2 H H0.
+    revert t1 t2 t3 w2 X X0.
     induction w1; intros t1 t2 t3 w2 H0 H1.
     {
         inversion H0; subst; clear H0.
@@ -6316,11 +6316,11 @@ Proof.
     {
         simpl.
         inversion H0; subst; clear H0.
-        eapply frto_step>[|apply H5|].
+        eapply frto_step>[|apply H6|].
         { assumption. }
         {
             eapply IHw1.
-            { apply H7. }
+            { apply X. }
             { apply H1. }
         }
     }
@@ -8660,6 +8660,23 @@ Proof.
     }
 Qed.
 
+Lemma list_find_elem_of_isSome
+    {A : Type}
+    (P : A -> Prop)
+    {_dP : forall x, Decision (P x)}
+    (l : list A)
+    (x : A)
+    :
+    x ∈ l -> P x -> isSome (list_find P l).
+Proof.
+    ltac1:(induction 1 as [|x y l ? IH]; intros; simplify_option_eq; eauto).
+    specialize (IH ltac:(assumption)).
+    Set Printing Coercions.
+    unfold is_true, isSome in *.
+    destruct (list_find P l) eqn:Hfound; simpl.
+    { reflexivity. }
+    { inversion IH. }
+Qed.
 
 Lemma compile_correct_1
     {Σ : StaticModel}
@@ -8680,13 +8697,16 @@ Lemma compile_correct_1
         MinusL_rewrites Act D lc ld w rc rd
         -> (* TODO we also need the backwards implication but the actions might be different*)
         (
-            exists (w' : list Act), 
-            w = (filter (fun x => x <> invisible_act) w') /\
+            { w' : list Act &
+            (
+            (w = (filter (fun x => x <> invisible_act) w')) *
             forall cont,
             flattened_rewrites_to_over Γ
                 (downC topSymbol cseqSymbol lc ld cont)
                 w'
                 (downC topSymbol cseqSymbol rc rd cont)
+            )%type
+            }
         )
 .
 Proof.
@@ -8704,328 +8724,350 @@ Proof.
     }
     {
         exists [a].
-        unfold compile in Γ. simpl in H. simpl in Γ.
-        apply elem_of_list_lookup_1 in H.
-        destruct H as [i Hi].
-        ltac1:(unfold Γ).
-        assert (i < length ds).
+        unfold compile in Γ.
+        ltac1:(rename e into H).
+        simpl in H. simpl in Γ.
+        eapply list_find_elem_of_isSome with (P := (eq (mld_rewrite Act lc ld a rc rd scs))) in H as H''.
         {
-            apply lookup_lt_Some in Hi.
-            exact Hi.
-        }
-        
-        rewrite <- (firstn_skipn i ds) in Hi.
-        rewrite lookup_app_r in Hi>[|rewrite take_length; ltac1:(lia)].
-        rewrite take_length in Hi.
-        ltac1:(replace ((i - i `min` length ds)) with (0) in Hi by lia).
-        remember (drop i ds) as ds'.
-        destruct ds'.
-        {
-            simpl in Hi. inversion Hi.
-        }
-        simpl in Hi. inversion Hi; subst; clear Hi.
-        rewrite filter_cons. rewrite filter_nil.
-        split.
-        {
-            destruct (decide (a <> invisible_act)).
+            unfold isSome,is_true in H''.
+            ltac1:(case_match)>[|ltac1:(congruence)].
+            ltac1:(rename H0 into Hfound).
+            destruct p as [idx decl].
+            rewrite -> list_find_Some in Hfound.
+            clear H''.
+            destruct Hfound as [Hdsidx [? HfoundIsFirst]].
+            subst decl.
+
+            ltac1:(unfold Γ).
+            assert (idx < length ds).
             {
-                reflexivity.
+                apply lookup_lt_Some in Hdsidx.
+                exact Hdsidx.
+            }
+            
+            rewrite <- (firstn_skipn idx ds) in Hdsidx.
+            rewrite lookup_app_r in Hdsidx>[|rewrite take_length; ltac1:(lia)].
+            rewrite take_length in Hdsidx.
+            ltac1:(replace ((idx - idx `min` length ds)) with (0) in Hdsidx by lia).
+            remember (drop idx ds) as ds'.
+            ltac1:(rename idx into i).
+            ltac1:(rename Hdsidx into Hi).
+
+            destruct ds'.
+            {
+                simpl in Hi. inversion Hi.
+            }
+            simpl in Hi. inversion Hi; subst; clear Hi.
+            rewrite filter_cons. rewrite filter_nil.
+
+            split.
+            {
+                destruct (decide (a <> invisible_act)).
+                {
+                    reflexivity.
+                }
+                {
+                    unfold actions_of_ldef in Hinvisible.
+                    simpl in Hinvisible.
+                    rewrite elem_of_list_In in Hinvisible.
+                    rewrite in_concat in Hinvisible.
+                    ltac1:(exfalso).
+                    apply n.
+                    clear n. intros Hsub. subst a. apply Hinvisible. clear Hinvisible.
+                    exists [invisible_act].
+                    split>[|constructor].
+                    rewrite in_map_iff.
+                    rewrite <- (firstn_skipn i ds).
+                    exists (mld_rewrite Act lc ld invisible_act rc rd scs).
+                    simpl.
+                    split>[reflexivity|].
+                    apply in_or_app.
+                    right.
+                    rewrite <- Heqds'.
+                    constructor. reflexivity. reflexivity.
+                }
             }
             {
-                unfold actions_of_ldef in Hinvisible.
-                simpl in Hinvisible.
-                rewrite elem_of_list_In in Hinvisible.
-                rewrite in_concat in Hinvisible.
-                ltac1:(exfalso).
-                apply n.
-                clear n. intros Hsub. subst a. apply Hinvisible. clear Hinvisible.
-                exists [invisible_act].
-                split>[|constructor].
-                rewrite in_map_iff.
-                rewrite <- (firstn_skipn i ds).
-                exists (mld_rewrite Act lc ld invisible_act rc rd scs).
-                simpl.
-                split>[reflexivity|].
-                apply in_or_app.
-                right.
-                rewrite <- Heqds'.
-                constructor. reflexivity. reflexivity.
-            }
-        }
-        {
-            intros cont.
-            unfold flattened_rewrites_to.
-            rewrite <- (firstn_skipn i ds).
-            rewrite map_app.
-            rewrite concat_app.
-            rewrite <- Heqds'.
-            simpl.
-            eapply frto_step>[()|()|apply frto_base].
-            {
-                rewrite elem_of_app.
-                right.
-                rewrite elem_of_cons.
-                left.
-                reflexivity.
-            }
-            {
+                intros cont.
                 unfold flattened_rewrites_to.
-                exists (<[continuationVariable := (uglify' cont)]>ρ).
-                unfold flattened_rewrites_in_valuation_under_to.
-                (repeat split).
+                rewrite <- (firstn_skipn i ds).
+                rewrite map_app.
+                rewrite concat_app.
+                rewrite <- Heqds'.
+                simpl.
+                eapply frto_step>[()|()|apply frto_base].
                 {
-                    simpl.
-                    ltac1:(cut(satisfies (<[continuationVariable := uglify' cont]>ρ)
-                        (uglify' (t_term topSymbol [(t_term cseqSymbol [ctrl1; cont]);(state1)]))
-                        (uglify' (t_term topSymbol [(t_term cseqSymbol [lc;(t_over (bov_variable continuationVariable))]);(ld)]))
-                    )).
-                    {
-                        intros Htmp. apply Htmp.
-                    }
-                    constructor.
-                    apply satisfies_top_bov_cons.
+                    rewrite elem_of_app.
+                    right.
+                    rewrite elem_of_cons.
+                    left.
+                    reflexivity.
+                }
+                {
+                    unfold flattened_rewrites_to.
+                    exists (<[continuationVariable := (uglify' cont)]>ρ).
+                    unfold flattened_rewrites_in_valuation_under_to.
                     (repeat split).
                     {
-                        apply Forall_cons.
-                        split.
+                        simpl.
+                        ltac1:(cut(satisfies (<[continuationVariable := uglify' cont]>ρ)
+                            (uglify' (t_term topSymbol [(t_term cseqSymbol [ctrl1; cont]);(state1)]))
+                            (uglify' (t_term topSymbol [(t_term cseqSymbol [lc;(t_over (bov_variable continuationVariable))]);(ld)]))
+                        )).
                         {
-                            apply satisfies_top_bov.
-                            split.
-                            {
-                                erewrite satisfies_TermOver_vars_of.
-                                { apply H0. }
-                                intros x Hx.
-                                destruct (decide (continuationVariable = x)).
-                                {
-                                    subst x.
-                                    unfold vars_of in HcvD. simpl in HcvD.
-                                    ltac1:(exfalso).
-                                    apply HcvD. clear HcvD.
-                                    rewrite elem_of_union_list.
-                                    exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
-                                    split.
-                                    {
-                                        rewrite elem_of_list_fmap.
-                                        exists (mld_rewrite Act lc ld a rc rd scs).
-                                        split>[reflexivity|].
-                                        rewrite <- (take_drop i ds).
-                                        rewrite elem_of_app.
-                                        rewrite <- Heqds'.
-                                        right.
-                                        rewrite elem_of_cons. left.
-                                        reflexivity.
-                                    }
-                                    {
-                                        unfold vars_of; simpl.
-                                        unfold vars_of; simpl.
-                                        clear -Hx.
-                                        ltac1:(set_solver).
-                                    }
-                                }
-                                {
-                                    ltac1:(rewrite lookup_insert_ne).
-                                    { assumption. }
-                                    { reflexivity. }
-                                }
-                            }
-                            {
-                                apply satisfies_var.
-                                ltac1:(rewrite lookup_insert).
-                                reflexivity.
-                            }
+                            intros Htmp. apply Htmp.
                         }
+                        constructor.
+                        apply satisfies_top_bov_cons.
+                        (repeat split).
                         {
                             apply Forall_cons.
                             split.
                             {
-                                erewrite satisfies_TermOver_vars_of.
-                                { apply H1. }
-                                intros x Hx.
-                                destruct (decide (continuationVariable = x)).
+                                apply satisfies_top_bov.
+                                split.
                                 {
-                                    subst x.
-                                    unfold vars_of in HcvD. simpl in HcvD.
-                                    ltac1:(exfalso).
-                                    apply HcvD. clear HcvD.
-                                    rewrite elem_of_union_list.
-                                    exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
-                                    split.
+                                    erewrite satisfies_TermOver_vars_of.
+                                    { apply s. }
+                                    intros x Hx.
+                                    destruct (decide (continuationVariable = x)).
                                     {
-                                        rewrite elem_of_list_fmap.
-                                        exists (mld_rewrite Act lc ld a rc rd scs).
-                                        split>[reflexivity|].
-                                        rewrite <- (take_drop i ds).
-                                        rewrite elem_of_app.
-                                        rewrite <- Heqds'.
-                                        right.
-                                        rewrite elem_of_cons. left.
-                                        reflexivity.
+                                        subst x.
+                                        unfold vars_of in HcvD. simpl in HcvD.
+                                        ltac1:(exfalso).
+                                        apply HcvD. clear HcvD.
+                                        rewrite elem_of_union_list.
+                                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                                        split.
+                                        {
+                                            rewrite elem_of_list_fmap.
+                                            exists (mld_rewrite Act lc ld a rc rd scs).
+                                            split>[reflexivity|].
+                                            rewrite <- (take_drop i ds).
+                                            rewrite elem_of_app.
+                                            rewrite <- Heqds'.
+                                            right.
+                                            rewrite elem_of_cons. left.
+                                            reflexivity.
+                                        }
+                                        {
+                                            unfold vars_of; simpl.
+                                            unfold vars_of; simpl.
+                                            clear -Hx.
+                                            ltac1:(set_solver).
+                                        }
                                     }
                                     {
-                                        unfold vars_of; simpl.
-                                        unfold vars_of; simpl.
-                                        clear -Hx.
-                                        ltac1:(set_solver).
+                                        ltac1:(rewrite lookup_insert_ne).
+                                        { assumption. }
+                                        { reflexivity. }
                                     }
                                 }
                                 {
-                                    ltac1:(rewrite lookup_insert_ne).
-                                    { assumption. }
-                                    { reflexivity. }
+                                    apply satisfies_var.
+                                    ltac1:(rewrite lookup_insert).
+                                    reflexivity.
                                 }
                             }
                             {
-                                apply Forall_nil. exact I.
+                                apply Forall_cons.
+                                split.
+                                {
+                                    erewrite satisfies_TermOver_vars_of.
+                                    { apply s0. }
+                                    intros x Hx.
+                                    destruct (decide (continuationVariable = x)).
+                                    {
+                                        subst x.
+                                        unfold vars_of in HcvD. simpl in HcvD.
+                                        ltac1:(exfalso).
+                                        apply HcvD. clear HcvD.
+                                        rewrite elem_of_union_list.
+                                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                                        split.
+                                        {
+                                            rewrite elem_of_list_fmap.
+                                            exists (mld_rewrite Act lc ld a rc rd scs).
+                                            split>[reflexivity|].
+                                            rewrite <- (take_drop i ds).
+                                            rewrite elem_of_app.
+                                            rewrite <- Heqds'.
+                                            right.
+                                            rewrite elem_of_cons. left.
+                                            reflexivity.
+                                        }
+                                        {
+                                            unfold vars_of; simpl.
+                                            unfold vars_of; simpl.
+                                            clear -Hx.
+                                            ltac1:(set_solver).
+                                        }
+                                    }
+                                    {
+                                        ltac1:(rewrite lookup_insert_ne).
+                                        { assumption. }
+                                        { reflexivity. }
+                                    }
+                                }
+                                {
+                                    apply Forall_nil. exact I.
+                                }
                             }
                         }
                     }
-                }
-                {
-                    simpl.
-                    ltac1:(cut(satisfies (<[continuationVariable := uglify' cont]>ρ)
-                        (uglify' (t_term topSymbol [(t_term cseqSymbol [ctrl2; cont]);(state2)]))
-                        (uglify' (t_term topSymbol [(t_term cseqSymbol [rc;(t_over (ft_variable continuationVariable))]);(rd)]))
-                    )).
                     {
-                        intros Htmp. apply Htmp.
-                    }
-                    constructor.
-                    apply satisfies_top_bov_cons_expr.
-                    (repeat split).
-                    {
-                        apply Forall_cons.
-                        split.
+                        simpl.
+                        ltac1:(cut(satisfies (<[continuationVariable := uglify' cont]>ρ)
+                            (uglify' (t_term topSymbol [(t_term cseqSymbol [ctrl2; cont]);(state2)]))
+                            (uglify' (t_term topSymbol [(t_term cseqSymbol [rc;(t_over (ft_variable continuationVariable))]);(rd)]))
+                        )).
                         {
-                            apply satisfies_top_expr.
-                            split.
-                            {
-                                erewrite satisfies_TermOverExpression_vars_of.
-                                { apply H2. }
-                                intros x Hx.
-                                destruct (decide (continuationVariable = x)).
-                                {
-                                    subst x.
-                                    unfold vars_of in HcvD. simpl in HcvD.
-                                    ltac1:(exfalso).
-                                    apply HcvD. clear HcvD.
-                                    rewrite elem_of_union_list.
-                                    exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
-                                    split.
-                                    {
-                                        rewrite elem_of_list_fmap.
-                                        exists (mld_rewrite Act lc ld a rc rd scs).
-                                        split>[reflexivity|].
-                                        rewrite <- (take_drop i ds).
-                                        rewrite elem_of_app.
-                                        rewrite <- Heqds'.
-                                        right.
-                                        rewrite elem_of_cons. left.
-                                        reflexivity.
-                                    }
-                                    {
-                                        unfold vars_of; simpl.
-                                        unfold vars_of; simpl.
-                                        clear -Hx.
-                                        ltac1:(set_solver).
-                                    }
-                                }
-                                {
-                                    ltac1:(rewrite lookup_insert_ne).
-                                    { assumption. }
-                                    { reflexivity. }
-                                }
-                            }
-                            {
-                                apply satisfies_var_expr.
-                                ltac1:(rewrite lookup_insert).
-                                reflexivity.
-                            }
+                            intros Htmp. apply Htmp.
                         }
+                        constructor.
+                        apply satisfies_top_bov_cons_expr.
+                        (repeat split).
                         {
                             apply Forall_cons.
                             split.
                             {
-                                erewrite satisfies_TermOverExpression_vars_of.
-                                { apply H3. }
-                                intros x Hx.
-                                destruct (decide (continuationVariable = x)).
+                                apply satisfies_top_expr.
+                                split.
                                 {
-                                    subst x.
-                                    unfold vars_of in HcvD. simpl in HcvD.
-                                    ltac1:(exfalso).
-                                    apply HcvD. clear HcvD.
-                                    rewrite elem_of_union_list.
-                                    exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
-                                    split.
+                                    erewrite satisfies_TermOverExpression_vars_of.
+                                    { apply s1. }
+                                    intros x Hx.
+                                    destruct (decide (continuationVariable = x)).
                                     {
-                                        rewrite elem_of_list_fmap.
-                                        exists (mld_rewrite Act lc ld a rc rd scs).
-                                        split>[reflexivity|].
-                                        rewrite <- (take_drop i ds).
-                                        rewrite elem_of_app.
-                                        rewrite <- Heqds'.
-                                        right.
-                                        rewrite elem_of_cons. left.
-                                        reflexivity.
+                                        subst x.
+                                        unfold vars_of in HcvD. simpl in HcvD.
+                                        ltac1:(exfalso).
+                                        apply HcvD. clear HcvD.
+                                        rewrite elem_of_union_list.
+                                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                                        split.
+                                        {
+                                            rewrite elem_of_list_fmap.
+                                            exists (mld_rewrite Act lc ld a rc rd scs).
+                                            split>[reflexivity|].
+                                            rewrite <- (take_drop i ds).
+                                            rewrite elem_of_app.
+                                            rewrite <- Heqds'.
+                                            right.
+                                            rewrite elem_of_cons. left.
+                                            reflexivity.
+                                        }
+                                        {
+                                            unfold vars_of; simpl.
+                                            unfold vars_of; simpl.
+                                            clear -Hx.
+                                            ltac1:(set_solver).
+                                        }
                                     }
                                     {
-                                        unfold vars_of; simpl.
-                                        unfold vars_of; simpl.
-                                        clear -Hx.
-                                        ltac1:(set_solver).
+                                        ltac1:(rewrite lookup_insert_ne).
+                                        { assumption. }
+                                        { reflexivity. }
                                     }
                                 }
                                 {
-                                    ltac1:(rewrite lookup_insert_ne).
-                                    { assumption. }
-                                    { reflexivity. }
+                                    apply satisfies_var_expr.
+                                    ltac1:(rewrite lookup_insert).
+                                    reflexivity.
                                 }
                             }
                             {
-                                apply Forall_nil. exact I.
+                                apply Forall_cons.
+                                split.
+                                {
+                                    erewrite satisfies_TermOverExpression_vars_of.
+                                    { apply s2. }
+                                    intros x Hx.
+                                    destruct (decide (continuationVariable = x)).
+                                    {
+                                        subst x.
+                                        unfold vars_of in HcvD. simpl in HcvD.
+                                        ltac1:(exfalso).
+                                        apply HcvD. clear HcvD.
+                                        rewrite elem_of_union_list.
+                                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                                        split.
+                                        {
+                                            rewrite elem_of_list_fmap.
+                                            exists (mld_rewrite Act lc ld a rc rd scs).
+                                            split>[reflexivity|].
+                                            rewrite <- (take_drop i ds).
+                                            rewrite elem_of_app.
+                                            rewrite <- Heqds'.
+                                            right.
+                                            rewrite elem_of_cons. left.
+                                            reflexivity.
+                                        }
+                                        {
+                                            unfold vars_of; simpl.
+                                            unfold vars_of; simpl.
+                                            clear -Hx.
+                                            ltac1:(set_solver).
+                                        }
+                                    }
+                                    {
+                                        ltac1:(rewrite lookup_insert_ne).
+                                        { assumption. }
+                                        { reflexivity. }
+                                    }
+                                }
+                                {
+                                    apply Forall_nil. exact I.
+                                }
                             }
                         }
                     }
-                }
-                {
-                    simpl.
-                    erewrite satisfies_scs_vars_of.
-                    { apply H4. }
-                    intros x Hx.
-                    destruct (decide (continuationVariable = x)).
                     {
-                        subst x.
-                        unfold vars_of in HcvD. simpl in HcvD.
-                        ltac1:(exfalso).
-                        apply HcvD. clear HcvD.
-                        rewrite elem_of_union_list.
-                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
-                        split.
+                        simpl.
+                        erewrite satisfies_scs_vars_of.
+                        { apply s3. }
+                        intros x Hx.
+                        destruct (decide (continuationVariable = x)).
                         {
-                            rewrite elem_of_list_fmap.
-                            exists (mld_rewrite Act lc ld a rc rd scs).
-                            split>[reflexivity|].
-                            rewrite <- (take_drop i ds).
-                            rewrite elem_of_app.
-                            rewrite <- Heqds'.
-                            right.
-                            rewrite elem_of_cons. left.
-                            reflexivity.
+                            subst x.
+                            unfold vars_of in HcvD. simpl in HcvD.
+                            ltac1:(exfalso).
+                            apply HcvD. clear HcvD.
+                            rewrite elem_of_union_list.
+                            exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                            split.
+                            {
+                                rewrite elem_of_list_fmap.
+                                exists (mld_rewrite Act lc ld a rc rd scs).
+                                split>[reflexivity|].
+                                rewrite <- (take_drop i ds).
+                                rewrite elem_of_app.
+                                rewrite <- Heqds'.
+                                right.
+                                rewrite elem_of_cons. left.
+                                reflexivity.
+                            }
+                            {
+                                unfold vars_of; simpl.
+                                unfold vars_of; simpl.
+                                clear -Hx.
+                                ltac1:(set_solver).
+                            }
                         }
                         {
-                            unfold vars_of; simpl.
-                            unfold vars_of; simpl.
-                            clear -Hx.
-                            ltac1:(set_solver).
+                            ltac1:(rewrite lookup_insert_ne).
+                            { assumption. }
+                            { reflexivity. }
                         }
-                    }
-                    {
-                        ltac1:(rewrite lookup_insert_ne).
-                        { assumption. }
-                        { reflexivity. }
                     }
                 }
             }
+
+        }
+        { reflexivity. }
+        Unshelve.
+        {
+            intros d. apply _.
         }
     }
     {
@@ -9068,6 +9110,7 @@ Proof.
                 (fresh (h:: (fresh (h :: (vars_of_to_l2r c ++ ( elements (vars_of scs) ++ (elements (vars_of iV_scs)))))) :: (vars_of_to_l2r c ++  elements (vars_of scs) ++ (elements (vars_of iV_scs)))))
                 (MinusL_isValue Act (@mkMinusL_LangDef Σ Act iV_scs iV_var ds)) c h scs ∈ Γ).
             {
+                ltac1:(rename e into H).
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
                 apply take_drop_middle in Hir.
@@ -9096,6 +9139,7 @@ Proof.
                 (fresh (h:: (fresh (h::(vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))))) :: (vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))))
                 (MinusL_isValue Act (@mkMinusL_LangDef Σ Act iV_scs iV_var ds)) c h ∈ Γ).
             {
+                ltac1:(rename e into H).
                 rewrite elem_of_list_lookup in H.
                 destruct H as [ir Hir].
                 apply take_drop_middle in Hir.
@@ -9124,7 +9168,7 @@ Proof.
             unfold downC in *.
             remember ((TermOverBoV_subst c h (t_term holeSymbol []))) as substituted.
             
-            apply satisfies_TermOverBoV__impl__vars_subseteq in H1 as H01'.
+            apply satisfies_TermOverBoV__impl__vars_subseteq in s as H01'.
             assert (Hvars := vars_of__TermOverBoV_subst__varless c h (t_term holeSymbol []) eq_refl).
             assert (Htmp1 : vars_of substituted ⊆ vars_of ρ1).
             {
@@ -9143,7 +9187,7 @@ Proof.
             }
             remember (TermOverBoV_eval ρ1 substituted Htmp1) as ceval.
 
-            apply satisfies_TermOverBoV__impl__vars_subseteq in H3 as H11'.
+            apply satisfies_TermOverBoV__impl__vars_subseteq in s1 as H11'.
             assert (Htmp2 : vars_of substituted ⊆ vars_of ρ2).
             {
                 subst.
@@ -9165,21 +9209,15 @@ Proof.
             assert (Hceval12: ceval = ceval2).
             {
                 subst ceval ceval2.
-                (* TODO we need to use Htmp1 and Htmp2
-                and some lemma saying that TermOverBov_eval
-                is independent of the other variables (that are not
-                in the given symbolic term)
-                TermOverBoV_eval
-                *)
                 eapply TermOverBoV_eval__varsofindependent.
                 intros x Hx.
                 rewrite elem_of_subseteq in Htmp1.
                 rewrite elem_of_subseteq in Htmp2.
                 specialize (Htmp1 x Hx).
                 specialize (Htmp2 x Hx).
-                subst substituted. clear -Hx H0.
+                subst substituted.
                 rewrite vars_of__TermOverBoV_subst__varless in Hx>[|reflexivity].
-                apply H0.
+                apply e0.
                 {
                     rewrite vars_of_uglify.
                     unfold vars_of in Hx; simpl in Hx.
@@ -9229,7 +9267,7 @@ Proof.
                         (repeat split).
                         {
                             erewrite satisfies_TermOver_vars_of.
-                            { apply H1. }
+                            { apply s. }
                             intros x Hx.
                             destruct (decide (x = h)).
                             {
@@ -9482,7 +9520,7 @@ Proof.
                 }
                 {
                     rewrite satisfies_scs_vars_of.
-                    { apply H2. }
+                    { apply s0. }
                     intros x Hx.
                     unfold Valuation in *.
                     repeat (rewrite lookup_insert_ne).
@@ -9689,7 +9727,7 @@ Proof.
                     {
                         rewrite satisfies_TermOverBoV_to_TermOverExpr.
                         erewrite satisfies_TermOver_vars_of.
-                        { apply H3. }
+                        { apply s1. }
                         intros x Hx.
                         destruct (decide (x = h)).
                         {
@@ -9788,10 +9826,8 @@ Proof.
             }
             {
                 simpl.
-                simpl in H4.
-                revert H4. intros H4.
-                apply satisfies__MinusL_isValue__subst in H4.
-                simpl in H4.
+                apply satisfies__MinusL_isValue__subst in s2.
+                simpl in s2.
                 apply satisfies_insert_MinusL_isValue; simpl.
                 { 
                     intros HContra.
@@ -9801,14 +9837,14 @@ Proof.
                     rewrite wf1D in HContra.
                     rewrite elem_of_singleton in HContra.
                     subst h.
-                    eapply wf2D. apply H. reflexivity.
+                    eapply wf2D. apply e. reflexivity.
                 }
                 {
                     unfold Valuation in *.
                     rewrite insert_commute with (i := iV_var)(j := V2).
                     rewrite insert_commute with (i := iV_var)(j := V1).
                     erewrite satisfies_scs_vars_of.
-                    { apply H4. }
+                    { apply s2. }
                     {
                         intros x Hx.
                         unfold Valuation in *.
@@ -10020,6 +10056,27 @@ Proof.
     }
 Qed.
 
+
+(*
+Lemma split_frto_by_state_pred
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : RewritingTheory Act)
+    (P : TermOver builtin_value -> Prop)
+    (_dP : forall t, Decision (P t))
+    (x z : TermOver builtin_value)
+    (w : list Act)
+    (r : flattened_rewrites_to_over Γ x w z)
+    :
+    ∃ (w1 w2 : list Act) (y : TermOver builtin_value),
+        flattened_rewrites_to_over Γ x w1 y /\
+        flattened_rewrites_to_over Γ y w2 z /\
+        w1 ++ w2 = w
+.
+Proof.
+    ltac1:(induction r).
+Qed.
+*)
 
 Lemma compile_correct_2
     {Σ : StaticModel}
@@ -10452,7 +10509,7 @@ Proof.
                     [(ltac1:(exfalso); subst; apply Hhscs; apply Hx)|unfold Valuation in *; (rewrite lookup_insert_ne>[reflexivity|(ltac1:(congruence))])]
                     (*apply HH4*) 
                 )|()|()|].
-                
+
                 
                 (* Not sure since this point*)
                 (* apply factor_by_subst_correct' with (sz := TermOver_size γ9) in HH12' . *)
