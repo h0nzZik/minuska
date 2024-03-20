@@ -7931,11 +7931,6 @@ Proof.
 Qed.
 
 
-(* TODO we need a lemma like this that does not assume h ∉ ρ.
-   Instead of the uses of that assumption for satisfies_ext,
-   we have to use the `vars_of` lemmas about `satisfies`,
-   and it should still work.
-*)
 Lemma factor_by_subst_correct_2
     {Σ : StaticModel}
     (sz : nat)
@@ -8437,84 +8432,7 @@ Proof.
                                                 {
                                                     apply H3.
                                                     exists (S n + i),x0,y0;(split>[reflexivity|]).
-                                                }
-                                                {
-                                                    intros x Hx.
-                                                    destruct (decide (x = h)).
-                                                    {
-                                                        subst x.
-                                                        ltac1:(exfalso).
-                                                        apply take_drop_middle in HH3.
-                                                        rewrite <- Hfind1 in Hlf.
-                                                        rewrite <- HH3 in Hlf.
 
-                                                        rewrite map_app in Hlf.
-                                                        simpl in Hlf.
-                                                        
-                                                        simpl in Hlf.
-                                                        rewrite concat_app in Hlf.
-
-                                                        rewrite filter_app in Hlf.
-                                                        simpl in Hlf.
-                                                        rewrite app_length in Hlf.
-                                                        rewrite filter_app in Hlf.
-                                                        rewrite app_length in Hlf.
-                                                        rewrite elem_of_list_lookup in Hfind2.
-                                                        rewrite <- vars_of_uglify in Hx.
-                                                        rewrite elem_of_list_lookup in Hx.
-                                                        destruct Hfind2 as [i1 Hi1].
-                                                        destruct Hx as [i2 Hi2].
-                                                        apply take_drop_middle in Hi1.
-                                                        apply take_drop_middle in Hi2.
-                                                        rewrite <- Hi1 in Hlf.
-                                                        ltac1:(rewrite take_app_le in Hlf).
-                                                        {
-                                                            rewrite take_length.
-                                                            ltac1:(lia).
-                                                        }
-                                                        rewrite filter_app in Hlf.
-                                                        rewrite app_length in Hlf.
-                                                        rewrite drop_app in Hlf.
-                                                        rewrite map_app in Hlf.
-                                                        rewrite concat_app in Hlf.
-                                                        destruct (decide ((S n - length (take (S (n + i)) l0)) = 0)) as [Hz | Hnz].
-                                                        {
-                                                            rewrite Hz in Hlf.
-                                                            simpl in Hlf.
-                                                            rewrite <- Hi2 in Hlf.
-                                                            rewrite filter_app in Hlf.
-                                                            rewrite filter_app in Hlf.
-                                                            rewrite filter_app in Hlf.
-                                                            rewrite filter_cons in Hlf.
-                                                            rewrite filter_cons in Hlf.
-                                                            destruct (decide (h=h))>[|ltac1:(congruence)].
-                                                            simpl in Hlf.
-                                                            rewrite app_length in Hlf.
-                                                            rewrite app_length in Hlf.
-                                                            rewrite app_length in Hlf.
-                                                            simpl in Hlf.
-                                                            ltac1:(lia).
-                                                        }
-                                                        {
-                                                            rewrite take_length in Hnz.
-                                                            ltac1:(lia).
-                                                        }
-                                                    }
-                                                    {
-                                                        unfold Valuation in *.
-                                                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                                                        reflexivity.
-                                                    }
-                                                }
-                                                eapply satisfies_ext>[|apply H3;exists (S n + i),x0,y0;(split>[reflexivity|])].
-                                                {
-                                                    unfold Valuation in *.
-                                                    apply insert_subseteq.
-                                                    clear -Hnotinρ.
-                                                    unfold vars_of in Hnotinρ; simpl in Hnotinρ.
-                                                    apply not_elem_of_dom_1. exact Hnotinρ.
-                                                }
-                                                {
                                                     split>[exact HH2|].
                                                     ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
                                                     rewrite list_lookup_fmap.
@@ -8601,6 +8519,74 @@ Proof.
                                                             simpl in Hlf.
                                                             ltac1:(lia).
                                                         }
+                                                    }
+                                                }
+                                                {
+                                                    intros x Hx.
+                                                    destruct (decide (x = h)).
+                                                    {
+                                                        subst x.
+                                                        ltac1:(exfalso).
+                                                        apply take_drop_middle in HH3.
+                                                        rewrite <- Hfind1 in Hlf.
+                                                        rewrite <- HH3 in Hlf.
+
+                                                        rewrite map_app in Hlf.
+                                                        simpl in Hlf.
+                                                        
+                                                        simpl in Hlf.
+                                                        rewrite concat_app in Hlf.
+
+                                                        rewrite filter_app in Hlf.
+                                                        simpl in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite elem_of_list_lookup in Hfind2.
+                                                        rewrite <- vars_of_uglify in Hx.
+                                                        rewrite elem_of_list_lookup in Hx.
+                                                        destruct Hfind2 as [i1 Hi1].
+                                                        destruct Hx as [i2 Hi2].
+                                                        apply take_drop_middle in Hi1.
+                                                        apply take_drop_middle in Hi2.
+                                                        rewrite <- Hi1 in Hlf.
+                                                        ltac1:(rewrite take_app_le in Hlf).
+                                                        {
+                                                            rewrite take_length.
+                                                            ltac1:(lia).
+                                                        }
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite drop_app in Hlf.
+                                                        rewrite map_app in Hlf.
+                                                        rewrite concat_app in Hlf.
+                                                        destruct (decide ((S n - length (take (S (n + i)) l0)) = 0)) as [Hz | Hnz].
+                                                        {
+                                                            rewrite Hz in Hlf.
+                                                            simpl in Hlf.
+                                                            rewrite <- Hi2 in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite filter_cons in Hlf.
+                                                            rewrite filter_cons in Hlf.
+                                                            destruct (decide (h=h))>[|ltac1:(congruence)].
+                                                            simpl in Hlf.
+                                                            rewrite app_length in Hlf.
+                                                            rewrite app_length in Hlf.
+                                                            rewrite app_length in Hlf.
+                                                            simpl in Hlf.
+                                                            ltac1:(lia).
+                                                        }
+                                                        {
+                                                            rewrite take_length in Hnz.
+                                                            ltac1:(lia).
+                                                        }
+                                                    }
+                                                    {
+                                                        unfold Valuation in *.
+                                                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                                        reflexivity.
                                                     }
                                                 }
                                             }
