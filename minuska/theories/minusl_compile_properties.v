@@ -10445,7 +10445,14 @@ Proof.
                 unfold Valuation in *.
                 eapply mlr_context with (ρ1 := (<[h:=uglify' fs2]> ρ1))(r := γ7) >[apply HH1|()|(
                     unfold Valuation in *; rewrite insert_insert; rewrite insert_id>[exact HH6'|exact HH10']
-                )|( (*apply HH4*) )|()|()|].
+                )|(
+                    rewrite satisfies_scs_vars_of >[apply HH4|];
+                    intros x Hx;
+                    destruct (decide (x = h))>
+                    [(ltac1:(exfalso); subst; apply Hhscs; apply Hx)|unfold Valuation in *; (rewrite lookup_insert_ne>[reflexivity|(ltac1:(congruence))])]
+                    (*apply HH4*) 
+                )|()|()|].
+                
                 
                 (* Not sure since this point*)
                 (* apply factor_by_subst_correct' with (sz := TermOver_size γ9) in HH12' . *)
