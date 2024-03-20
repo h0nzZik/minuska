@@ -167,7 +167,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
             fr_act := a;
         |})
         ]
-    | mld_context _ c h Hh scs Hhscs =>
+    | mld_context _ c h scs =>
         let vars := vars_of_to_l2r c in
         let scs_vars := elements (vars_of scs) in
         let lavoid := elements avoid in

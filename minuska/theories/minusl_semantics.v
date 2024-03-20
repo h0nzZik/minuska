@@ -54,10 +54,8 @@ Section MinusL_sem.
         forall
             (c : TermOver BuiltinOrVar)
             (h : variable)
-            (Hh : length (filter (eq h) (vars_of_to_l2r c)) = 1)
-            (scs : list SideCondition)
-            (Hhscs : h ∉ vars_of scs),
-            (mld_context Act c h Hh scs Hhscs) ∈ (mlld_decls Act D) ->
+            (scs : list SideCondition),
+            (mld_context Act c h scs) ∈ (mlld_decls Act D) ->
         forall (ctrl1 state1 ctrl2 state2 r v : TermOver builtin_value)
             (w : list Act)
             (ρ1 : Valuation)

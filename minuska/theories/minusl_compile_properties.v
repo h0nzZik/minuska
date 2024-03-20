@@ -9546,9 +9546,13 @@ Proof.
                         { apply Hx'. }
                     }
                     {
-                        clear -Hhscs Hx.
                         intros HContra. subst.
-                        apply Hhscs. apply Hx.
+                        simpl in *.
+                        unfold MinusL_LangDef_wf in wfD.
+                        simpl in wfD.
+                        destruct wfD as [wf1D wf2D].
+                        specialize (wf2D _ _ _ e).
+                        ltac1:(naive_solver).
                     }
                 }
             }
@@ -9837,7 +9841,9 @@ Proof.
                     rewrite wf1D in HContra.
                     rewrite elem_of_singleton in HContra.
                     subst h.
-                    eapply wf2D. apply e. reflexivity.
+                    eapply wf2D. apply e.
+                    specialize (wf2D _ _ _ e).
+                    ltac1:(naive_solver).
                 }
                 {
                     unfold Valuation in *.

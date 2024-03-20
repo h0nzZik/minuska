@@ -3,10 +3,9 @@ From stdpp Require Import finite.
 From Minuska Require Import
     prelude
     spec_syntax
+    syntax_properties
     varsof
 .
-
-
 
 Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_rewrite
@@ -17,10 +16,20 @@ Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_context
     (c : TermOver BuiltinOrVar)
     (h : variable)
-    (Hh : length (filter (eq h) (vars_of_to_l2r c)) = 1)
     (scs : list SideCondition)
-    (Hhscs : h ∉ vars_of scs)
-. 
+.
+
+#[export]
+Instance MinusL_Decl_eqDec
+    {Σ : StaticModel}
+    (Act : Set)
+    {_eA : EqDecision Act}
+    :
+    EqDecision (MinusL_Decl Act)
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
 
 Definition actions_of_decl
     {Σ : StaticModel}
@@ -30,7 +39,7 @@ Definition actions_of_decl
 :=
 match d with
 | mld_rewrite _ _ _ a _ _ _ => [a]
-| mld_context _ _ _ _ _ _ => []
+| mld_context _ _ _ _ => []
 end.
 
 
@@ -52,9 +61,11 @@ Definition MinusL_LangDef_wf
 :=
     vars_of (mlld_isValue_scs Act D) = {[ mlld_isValue_var Act D ]}
     /\ (
-        ∀ c h Hh scs Hhscs,
-        (mld_context Act c h Hh scs Hhscs) ∈ (mlld_decls Act D) ->
+        ∀ c h scs,
+        (mld_context Act c h scs) ∈ (mlld_decls Act D) ->
         h <> (mlld_isValue_var Act D)
+        /\ (length (filter (eq h) (vars_of_to_l2r c)) = 1)
+        /\ (h ∉ vars_of scs)
     )
 .
 (*
@@ -110,7 +121,7 @@ Instance VarsOf_MinusL_Decl
     vars_of := fun D => match D with
     | mld_rewrite _ lc ld _ rc rd scs => (vars_of lc) ∪ vars_of ld ∪
         vars_of rc ∪ vars_of rd ∪ vars_of scs
-    | mld_context _ c h _ scs _ => (vars_of c) ∪ {[h]} ∪ vars_of scs
+    | mld_context _ c h scs => (vars_of c) ∪ {[h]} ∪ vars_of scs
     end ; 
 |}.
 
