@@ -10434,25 +10434,29 @@ Proof.
                     elements (vars_of scs) ++
                     elements (vars_of (mlld_isValue_scs Act D)))) as V2.
 
-                (* This does not work because ρ1 contains h *)
-                apply factor_by_subst_correct' with (sz := TermOver_size γ9) in HH12'
-                    >[()|ltac1:(lia)|()|()|].
-                *)
-                Search TermOverBoV_subst satisfies.
-                eapply mlr_context>[apply HH1|()|()|(apply HH4)|()|()|].
-                Search h.
+                apply factor_by_subst_correct_2 with (sz := TermOver_size γ9) in HH12'
+                    >[()|ltac1:(lia)|(exact Hh)|(simpl; ltac1:(set_solver))].
+
+                destruct HH12' as [Hfs1 Hfs2].
+
+                remember ((factor_by_subst (TermOver_size γ9) ρ1 h γ9 c
+  (t_term holeSymbol [])).2) as fs2.
+
+                unfold Valuation in *.
+                eapply mlr_context with (ρ1 := (<[h:=uglify' fs2]> ρ1))(r := γ7) >[apply HH1|()|(
+                    unfold Valuation in *; rewrite insert_insert; rewrite insert_id>[exact HH6'|exact HH10']
+                )|( (*apply HH4*) )|()|()|].
                 
-                Print MinusL_rewrites.
-                Search ctrl1.
                 (* Not sure since this point*)
                 (* apply factor_by_subst_correct' with (sz := TermOver_size γ9) in HH12' . *)
-                
+                (*
                 apply IHH3w'.
                 { reflexivity. }
                 {
                     simpl.
                     Search ctrl1.
                 }
+                *)
             }
             {
 
