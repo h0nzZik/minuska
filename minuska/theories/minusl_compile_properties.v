@@ -10275,6 +10275,7 @@ Proof.
         assert (H' := e). (* just to have some backup *)
         ltac1:(unfold Γ in e).
         apply in_compile_inv in e.
+        (*
         destruct e as [e|e].
         {
             destruct H as [lc [ld [a0 [rc [rd [scs [H1r H2r]]]]]]].
@@ -10650,6 +10651,7 @@ Proof.
 
             }
         }
+        *)
+        admit.
     }
-
-Qed.
+Abort.
