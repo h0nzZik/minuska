@@ -10035,6 +10035,7 @@ Qed.
 Lemma in_compile_inv
     {Σ : StaticModel}
     (Act : Set)
+    {_aD : EqDecision Act}
     (D: MinusL_LangDef Act)
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
@@ -10176,6 +10177,8 @@ Proof.
     {
         reflexivity.
     }
+    Unshelve.
+    intros ?. apply _.
 Qed.
 
 
@@ -10652,6 +10655,7 @@ Proof.
             }
         }
         *)
+        admit.
         admit.
     }
 Abort.

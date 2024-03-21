@@ -112,6 +112,17 @@ Section eqdec.
         ltac1:(solve_decision).
     Defined.
 
+    #[export]
+    Instance RewritingRule_eqdec
+        {Σ : StaticModel}
+        (Act : Set)
+        {_aD : EqDecision Act}
+        : EqDecision (RewritingRule Act)
+    .
+    Proof.
+        ltac1:(solve_decision).
+    Defined.
+
 End eqdec.
 
 
