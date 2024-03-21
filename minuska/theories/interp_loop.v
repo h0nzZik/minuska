@@ -42,7 +42,8 @@ end
 
 Definition interp_in_from'
         {Σ : StaticModel}
-        (Γ : (RewritingTheory)*(list string))
+        {Act : Set}
+        (Γ : (RewritingTheory Act)*(list string))
         (fuel : nat)
         (from : GroundTerm)
         :  nat * GroundTerm * list (option string)
@@ -70,7 +71,8 @@ Definition concat_list_option_str
 
 Definition interp_in_from
         {Σ : StaticModel}
-        (Γ : (RewritingTheory)*(list string))
+        {Act : Set}
+        (Γ : (RewritingTheory Act)*(list string))
         (fuel : nat)
         (from : GroundTerm)
         :  nat * GroundTerm * string
