@@ -12,6 +12,9 @@ From Minuska Require Import
     interp_loop
 .
 
+Variant Act := default_act | invisible_act.
+
+
 Module unary_nat.
 
     (* In this module we represent natural numbers using the unary encoding.
@@ -68,17 +71,17 @@ Module unary_nat.
     Definition nat_add {_br : BasicResolver} := (apply_symbol "nat_add").
     Arguments nat_add {_br} _%rs.
 
-    Notation "'simple_rule' '[' s ']:' l '~>' r 'where' c" := (
+    Notation "'simple_rule' '[' s ']:' l '~>{' a '}' r 'where' c" := (
         rule [ s ]:
             u_cfg [ u_cseq [ l, $REST_SEQ ] ]
-         ~> u_cfg [ u_cseq [ r, $REST_SEQ ] ]
+         ~>{a} u_cfg [ u_cseq [ r, $REST_SEQ ] ]
          where c
     ) (at level 90).
 
-    Notation "'simple_rule' '[' s ']:' l '~>' r 'always'" := (
+    Notation "'simple_rule' '[' s ']:' l '~>{' a '}' r 'always'" := (
         rule [ s ]:
             u_cfg [ u_cseq [ l, $REST_SEQ ] ]
-         ~> u_cfg [ u_cseq [ r, $REST_SEQ ] ]
+         ~>{a} u_cfg [ u_cseq [ r, $REST_SEQ ] ]
     ) (at level 90).
 
     Definition Decls_nat_add : list Declaration := [
@@ -86,13 +89,13 @@ Module unary_nat.
         decl_rule (
             simple_rule ["nat-add-0"]:
                 nat_add [nat_zero [], ($Y) ]
-                ~> $Y
+                ~>{default_act} $Y
             always
         );
         decl_rule (
             simple_rule ["nat-add-S"]:
                 nat_add [nat_succ [ $X ], ($Y) ]
-                ~> nat_add [$X, nat_succ [$Y] ]
+                ~>{default_act} nat_add [$X, nat_succ [$Y] ]
             always
         )
     ].
@@ -105,13 +108,13 @@ Module unary_nat.
         decl_rule (
             simple_rule ["nat-sub-0"]:
                 nat_sub [$X, nat_zero [] ]
-                ~> $X
+                ~>{default_act} $X
                 where (isValue ($X))
         );
         decl_rule (
             simple_rule ["nat-sub-S"]:
                 nat_add [ nat_succ [ $X ], nat_succ [ $Y ] ]
-                ~> nat_add [$X, $Y ]
+                ~>{default_act} nat_add [$X, $Y ]
             always
         )
     ].
@@ -125,13 +128,13 @@ Module unary_nat.
         decl_rule (
             simple_rule ["nat-mul-0"]:
                 nat_mul [nat_zero [], $Y ]
-                ~> nat_zero []
+                ~>{default_act} nat_zero []
                 where (isValue ($Y))
         );
         decl_rule (
             simple_rule ["nat-mul-S"]:
                 nat_mul [ nat_succ [ $X ], $Y ]
-                ~> nat_add [$Y, nat_mul[ $X, $Y] ]
+                ~>{default_act} nat_add [$Y, nat_mul[ $X, $Y] ]
                 where (isValue ($Y))
         )
     ].
@@ -150,25 +153,25 @@ Module unary_nat.
         decl_rule (
             simple_rule ["nat-fact"]:
                 nat_fact [ $X ]
-                ~> nat_fact' [ $X, nat_succ [nat_zero []] ]
+                ~>{default_act} nat_fact' [ $X, nat_succ [nat_zero []] ]
                 where (isValue ($X))
         );
         decl_rule (
             simple_rule ["nat-fact'-0"]:
                 nat_fact' [ nat_zero [], $Y ]
-                ~> $Y
+                ~>{default_act} $Y
                 where (isValue ($Y))
         );
         decl_rule (
             simple_rule ["nat-fact'-S"]:
                 nat_fact' [ nat_succ [ $X ], $Y ]
-                ~> nat_fact' [ $X, nat_mul [ nat_succ [ $X ], $Y ]  ]
+                ~>{default_act} nat_fact' [ $X, nat_mul [ nat_succ [ $X ], $Y ]  ]
                 where (isValue ($Y))
         )
     ].
 
-    Definition Γfact : RewritingTheory*(list string) := Eval vm_compute in 
-    (to_theory (process_declarations (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
+    Definition Γfact : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    (to_theory Act (process_declarations Act default_act (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
 
     Definition initial_expr (x : Term' symbol builtin_value) :=
         (ground (
@@ -242,20 +245,20 @@ Module unary_nat.
         decl_rule (
             simple_rule ["just-0"]:
                nat_fib [ nat_zero [] ]
-            ~> nat_zero []
+            ~>{default_act} nat_zero []
             always
         );
         decl_rule (
             simple_rule ["just-1"]:
                nat_fib [ nat_succ [nat_zero []] ]
-            ~> nat_succ [nat_zero []]
+            ~>{default_act} nat_succ [nat_zero []]
             always
         );
         decl_strict (symbol "nat_fib'" of arity 4 strict in [2]); (* TODO *)
         decl_rule (
             simple_rule ["two-or-more"]:
                nat_fib [ nat_succ [nat_succ [ $X ] ] ]
-            ~> nat_fib' [
+            ~>{default_act} nat_fib' [
                 nat_succ [nat_succ [ $X ] ],
                 nat_succ [nat_succ [ nat_zero [] ] ],
                 nat_succ [ nat_zero [] ],
@@ -266,19 +269,19 @@ Module unary_nat.
         decl_rule (
             simple_rule ["step"]:
                nat_fib' [ $Tgt, $Curr, $X, $Y ]
-            ~> nat_fib' [ $Tgt, nat_succ [ $Curr ], nat_add [$X, $Y], $X ]
+            ~>{default_act} nat_fib' [ $Tgt, nat_succ [ $Curr ], nat_add [$X, $Y], $X ]
             where (~~ ($Curr ==Gen $Tgt))
         );
         decl_rule (
             simple_rule ["result"]:
                nat_fib' [ $Tgt, $Tgt, $X, $Y ]
-            ~> $X
+            ~>{default_act} $X
             always
         )
     ].
 
-    Definition Γfib : RewritingTheory*(list string) := Eval vm_compute in 
-    (to_theory (process_declarations (Decls_nat_fib ++ Decls_nat_add))).
+    Definition Γfib : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    (to_theory Act (process_declarations Act default_act (Decls_nat_fib ++ Decls_nat_add))).
 
     Definition initial_fib (n : nat) := initial_expr (
         (ground (nat_fib [(nat_to_unary n)]))
