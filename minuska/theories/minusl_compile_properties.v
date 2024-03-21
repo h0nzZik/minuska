@@ -10125,7 +10125,49 @@ Proof.
             subst d.
             apply flat_map_lookup_Some in HH1.
             destruct HH1 as [j [x [k [HH3 HH4]]]].
-            Search map lookup.
+            apply map_lookup_Some in HH3.
+            destruct HH3 as [y [H1y H2y]].
+            subst x.
+            unfold compile' in HH4.
+            destruct y.
+            {
+                destruct k.
+                {
+                    left. do 6 (eexists).
+                    rewrite elem_of_list_lookup.
+                    split.
+                    {
+                        eexists. eapply H1y.
+                    }
+                    {
+                        simpl in HH4. inversion HH4; subst; clear HH4.
+                        reflexivity.
+                    }
+                }
+                {
+                    inversion HH4.
+                }
+            }
+            {
+                right.
+                do 3 eexists.
+                split.
+                {
+                    rewrite elem_of_list_lookup.
+                    eexists. eapply H1y.
+                }
+                {
+                    destruct k; inversion HH4; subst; clear HH4.
+                    {
+                        left. reflexivity.
+                    }
+
+                    destruct k; inversion H0; subst; clear H0.
+                    {
+                        right. reflexivity.
+                    }
+                }
+            }
         }
         {
             inversion HH.
@@ -10133,32 +10175,6 @@ Proof.
     }
     {
         reflexivity.
-    }
-
-    rewrite elem_of_list_In in HH.
-    rewrite in_concat in HH.
-    destruct HH as [rs [H1rs H2rs]].
-    rewrite in_map_iff in H1rs.
-    destruct H1rs as [a [Hcompile' H1rs]].
-    rewrite <- elem_of_list_In in H1rs.
-    rewrite <- elem_of_list_In in H2rs.
-    subst rs.
-    unfold compile' in H2rs.
-    destruct a; simpl in *.
-    {
-        rewrite elem_of_list_singleton in H2rs.
-        left.
-        exists lc,ld,a,rc,rd,scs.
-        split;assumption.
-    }
-    {
-        rewrite elem_of_cons in H2rs.
-        rewrite elem_of_cons in H2rs.
-        rewrite elem_of_nil in H2rs.
-        right.
-        exists c,h,scs.
-        split>[assumption|].
-        ltac1:(naive_solver).
     }
 Qed.
 
