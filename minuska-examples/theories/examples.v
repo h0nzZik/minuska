@@ -16,6 +16,9 @@ From Minuska Require Import
     interp_loop
 .
 
+Variant Act := default_act | invisible_act.
+
+
 Module example_1.
 
     #[local]
@@ -35,12 +38,13 @@ Module example_1.
         decl_rule (
             rule ["my_rule"]:
                 cfg [ s [ s [ ($X) ] ] ]
-                ~> cfg [ $X ]
+                ~>{default_act} cfg [ $X ]
         )
     ].
 
-    Definition Γ : RewritingTheory*(list string)
-        := Eval vm_compute in (to_theory (process_declarations (Decls))).
+    About process_declarations.
+    Definition Γ : (RewritingTheory Act)*(list string)
+        := Eval vm_compute in (to_theory Act (process_declarations Act default_act (Decls))).
 
     Definition interp :=
         naive_interpreter Γ.1
@@ -149,12 +153,12 @@ Module two_counters.
     Definition s {_br : BasicResolver} := (apply_symbol "s").
     Arguments s {_br} _%rs.
 
-    Definition Γ : RewritingTheory*(list string) :=
-    Eval vm_compute in (to_theory (process_declarations ([
+    Definition Γ : (RewritingTheory Act)*(list string) :=
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
                 cfg [ state [ s [ $M ], $N ] ]
-            ~> cfg [ state [ $M, s [ $N ]  ] ]
+            ~>{default_act} cfg [ state [ $M, s [ $N ]  ] ]
         )
     ]))).
     
@@ -227,12 +231,12 @@ Module two_counters_Z.
     Arguments state {_br} _%rs.
 
     Print Expression.
-    Definition Γ : RewritingTheory*(list string) :=
-    Eval vm_compute in (to_theory (process_declarations ([
+    Definition Γ : (RewritingTheory Act)*(list string) :=
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
                state [ $M , $N ]
-            ~> state [
+            ~>{default_act} state [
                 (($M) -Z (ft_element (term_operand (bv_Z 1)))),
                 (($N) +Z ($M))
                 ]
@@ -346,7 +350,7 @@ Module arith.
         decl_rule (
             rule ["plus-nat-nat"]:
                 cfg [ u_cseq [ ($X + $Y), $REST_SEQ ] ]
-            ~> cfg [ u_cseq [ ($X +Nat $Y) , $REST_SEQ ] ]
+            ~>{default_act} cfg [ u_cseq [ ($X +Nat $Y) , $REST_SEQ ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -358,7 +362,7 @@ Module arith.
         decl_rule (
             rule ["minus-nat-nat"]:
                 cfg [ u_cseq [ ($X - $Y), $REST_SEQ ] ]
-            ~> cfg [ u_cseq [ ($X -Nat $Y) , $REST_SEQ ] ]
+            ~>{default_act} cfg [ u_cseq [ ($X -Nat $Y) , $REST_SEQ ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -370,7 +374,7 @@ Module arith.
         decl_rule (
             rule ["times-nat-nat"]:
                 cfg [ u_cseq [ (($X) * ($Y)), $REST_SEQ ] ]
-            ~> cfg [ u_cseq [ ($X *Nat $Y) , $REST_SEQ ] ]
+            ~>{default_act} cfg [ u_cseq [ ($X *Nat $Y) , $REST_SEQ ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -382,7 +386,7 @@ Module arith.
         decl_rule (
             rule ["div-nat-nat"]:
                 cfg [ u_cseq [ (($X) / ($Y)), $REST_SEQ ] ]
-            ~> cfg [ u_cseq [ ($X /Nat $Y) , $REST_SEQ ] ]
+            ~>{default_act} cfg [ u_cseq [ ($X /Nat $Y) , $REST_SEQ ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -392,8 +396,8 @@ Module arith.
         decl_strict (symbol "div" of arity 2 strict in [0;1])
     ].
 
-    Definition Γ : RewritingTheory*(list string) := Eval vm_compute in 
-    (to_theory (process_declarations (Decls))).
+    Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    (to_theory Act (process_declarations Act default_act (Decls))).
 
 
     (*
@@ -511,17 +515,17 @@ Module fib_native.
         decl_rule (
             rule ["just-0"]:
                initialState [ (bov_builtin (bv_Z 0)) ]
-            ~> resultState [ (ft_element (term_operand (bv_Z 0))) ]
+            ~>{default_act} resultState [ (ft_element (term_operand (bv_Z 0))) ]
         );
         decl_rule (
             rule ["just-1"]:
                initialState [ (bov_builtin (bv_Z 1)) ]
-            ~> resultState [ (ft_element (term_operand (bv_Z 1))) ]
+            ~>{default_act} resultState [ (ft_element (term_operand (bv_Z 1))) ]
         );
         decl_rule (
             rule ["two-or-more"]:
                initialState [ $Tgt ]
-            ~> state [
+            ~>{default_act} state [
                 $Tgt,
                 (ft_element (term_operand (bv_Z 2))),
                 (ft_element (term_operand (bv_Z 1))),
@@ -533,19 +537,19 @@ Module fib_native.
         decl_rule (
             rule ["step"]:
                state [ $Tgt, $Curr, $X, $Y ]
-            ~> state [ $Tgt, ($Curr +Z (ft_element (term_operand (bv_Z 1)))), ($X +Z $Y), $X ]
+            ~>{default_act} state [ $Tgt, ($Curr +Z (ft_element (term_operand (bv_Z 1)))), ($X +Z $Y), $X ]
             where (~~ ($Curr ==Z $Tgt))
         );
         decl_rule (
             rule ["result"]:
                state [ $Tgt, $Curr, $X, $Y ]
-            ~> resultState [ $X ]
+            ~>{default_act} resultState [ $X ]
                 where (($Curr ==Z $Tgt))
         )
     ].
 
-    Definition Γ : RewritingTheory*(list string) := Eval vm_compute in 
-    (to_theory (process_declarations (Decls))).
+    Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    (to_theory Act (process_declarations Act default_act (Decls))).
 
 
     Definition interp_from (fuel : nat) from
@@ -741,17 +745,17 @@ Module imp.
     |}.
 
 
-    Notation "'simple_rule' '[' s ']:' l '~>' r 'where' c" := (
+    Notation "'simple_rule' '[' s ']:' l '~>{' a '}' r 'where' c" := (
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
-         ~> u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+         ~>{a} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
          where c
     ) (at level 90).
 
-    Notation "'simple_rule' '[' s ']:' l '~>' r 'always'" := (
+    Notation "'simple_rule' '[' s ']:' l '~>{' a '}' r 'always'" := (
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
-         ~> u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+         ~>{a} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
     ) (at level 90).
 
     Definition Decls : list Declaration := [
@@ -763,7 +767,7 @@ Module imp.
         decl_rule (
             simple_rule ["plus-Z-Z"]:
                ($X + $Y)
-            ~> ($X +Z $Y)
+            ~>{default_act} ($X +Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -774,7 +778,7 @@ Module imp.
         decl_rule (
             simple_rule ["minus-Z-Z"]:
                ($X - $Y)
-            ~> ($X -Z $Y)
+            ~>{default_act} ($X -Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -785,7 +789,7 @@ Module imp.
         decl_rule (
             simple_rule ["times-Z-Z"]:
                (($X) * ($Y))
-            ~> ($X *Z $Y)
+            ~>{default_act} ($X *Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -796,7 +800,7 @@ Module imp.
         decl_rule (
             simple_rule ["div-Z-Z"]:
                 (($X) / ($Y))
-            ~> ($X /Z $Y)
+            ~>{default_act} ($X /Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -809,7 +813,7 @@ Module imp.
         decl_rule (
             rule ["assign-value"]:
                 u_cfg [ u_state [ u_cseq [ (var [$X]) <:= $Y, $REST_SEQ], $VALUES ] ]
-            ~> u_cfg [ u_state [
+            ~>{default_act} u_cfg [ u_state [
                     u_cseq [unitValue[], $REST_SEQ],
                     (ft_ternary b_map_update ($VALUES) ($X) ($Y))
                 ] ]
@@ -818,7 +822,7 @@ Module imp.
         decl_rule (
             rule ["var-lookup"]:
                 u_cfg [ u_state [ u_cseq [ var [$X], $REST_SEQ], $VALUES]]
-            ~> u_cfg [ u_state [
+            ~>{default_act} u_cfg [ u_state [
                 u_cseq [(ft_binary b_map_lookup ($VALUES) ($X)), $REST_SEQ],
                 $VALUES
             ]]
@@ -827,7 +831,7 @@ Module imp.
         decl_rule (
             simple_rule ["seq-unit-value"]:
                 stmt_seq [unitValue [], $X ]
-            ~> $X
+            ~>{default_act} $X
             where ((isValue ($X)))
         );
         decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
@@ -840,50 +844,50 @@ Module imp.
         decl_rule (
             simple_rule ["bexpr-eq-Z-Z"]:
                 bexpr_eq [ $X, $Y ]
-            ~> ((ft_binary b_eq ($X) ($Y)))
+            ~>{default_act} ((ft_binary b_eq ($X) ($Y)))
             where ((isValue ($X)) && (isValue ($Y)))
         );
         decl_rule (
             simple_rule ["bexpr-le-Z-Z"]:
                 bexpr_le [ $X, $Y ]
-            ~> ((ft_binary b_Z_isLe ($X) ($Y)))
+            ~>{default_act} ((ft_binary b_Z_isLe ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         );
         decl_rule (
             simple_rule ["bexpr-lt-Z-Z"]:
                bexpr_lt [ $X, $Y ]
-            ~> ((ft_binary b_Z_isLt ($X) ($Y)))
+            ~>{default_act} ((ft_binary b_Z_isLt ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         );
         decl_rule (
             simple_rule ["bexpr-negb-bool"]:
                bexpr_negb [$X]
-            ~> (ft_unary b_bool_neg ($X))
+            ~>{default_act} (ft_unary b_bool_neg ($X))
             where ((isBool ($X)))
         );
         decl_strict (symbol "stmt_ifthenelse" of arity 3 strict in [0]);
         decl_rule (
             simple_rule ["stmt-ite-true"]:
                stmt_ifthenelse [$B, $X, $Y]
-            ~> $X
+            ~>{default_act} $X
             where ((($B) ==Bool true))
         );
         decl_rule (
             simple_rule ["stmt-ite-false"]:
                stmt_ifthenelse [$B, $X, $Y]
-            ~> $Y
+            ~>{default_act} $Y
             where ((($B) ==Bool false))
         );
         decl_rule (
             simple_rule ["while-unfold"]:
             stmt_while [$B, $X]
-            ~> (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
+            ~>{default_act} (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
             always
         )
     ]%limp.
 
-    Definition Γ : RewritingTheory*(list string) := Eval vm_compute in 
-    (to_theory (process_declarations (Decls))).
+    Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    (to_theory Act (process_declarations Act default_act (Decls))).
 
     (* Compute (length (Γ.1)). *)
 
