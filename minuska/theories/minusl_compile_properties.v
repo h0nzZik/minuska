@@ -9955,6 +9955,50 @@ Definition projTopData
     end
 .
 
+Lemma flat_map_lookup_Some
+    {A B : Type}
+    (f : A -> list B)
+    (l : list A)
+    (i : nat)
+    (y : B)
+    :
+    (flat_map f l) !! i = Some y ->
+    { j : nat & { x : A & { k : nat & l !! j = Some x /\ (f x) !! k = Some y } } }
+.
+Proof.
+    revert i.
+    induction l; simpl; intros i HH.
+    {
+        rewrite lookup_nil in HH.
+        inversion HH.
+    }
+    {
+        destruct (decide (i < length (f a))) as [Hlt|Hgeq].
+        {
+            rewrite lookup_app_l in HH>[|exact Hlt].
+            exists 0.
+            exists a.
+            exists i.
+            simpl.
+            split>[reflexivity|].
+            exact HH.            
+        }
+        {
+            rewrite lookup_app_r in HH.
+            specialize (IHl _ HH).
+            destruct IHl as [j [x [k [H1 H2]]]].
+            exists (S j).
+            exists x.
+            exists k.
+            simpl.
+            split>[apply H1|].
+            exact H2.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+
 Lemma in_compile_inv
     {Σ : StaticModel}
     (Act : Set)
@@ -9986,9 +10030,9 @@ Lemma in_compile_inv
                 fr_scs := scs;
                 fr_act := a
             |}
-    ) \/ (
-        exists c h Hh scs Hhscs,
-        mld_context Act c h Hh scs Hhscs ∈ mlld_decls Act D /\
+    ) + (
+        exists c h scs,
+        mld_context Act c h scs ∈ mlld_decls Act D /\
         (
             r = ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
                 (fresh
@@ -10035,6 +10079,29 @@ Lemma in_compile_inv
 Proof.
     intros HH.
     unfold compile in HH.
+    eapply list_find_elem_of_isSome with (P := (eq r)) in HH.
+    {
+        unfold is_true,isSome in *.
+        ltac1:(case_match).
+        {
+            clear HH.
+            ltac1:(rename H into HH).
+            destruct p as [i d].
+            apply list_find_Some in HH.
+            destruct HH as [HH1 [? HH2]].
+            subst d.
+            apply flat_map_lookup_Some in HH1.
+            destruct HH1 as [j [x [k [HH3 HH4]]]].
+            Search map lookup.
+        }
+        {
+            inversion HH.
+        }
+    }
+    {
+        reflexivity.
+    }
+
     rewrite elem_of_list_In in HH.
     rewrite in_concat in HH.
     destruct HH as [rs [H1rs H2rs]].
@@ -10056,7 +10123,7 @@ Proof.
         rewrite elem_of_cons in H2rs.
         rewrite elem_of_nil in H2rs.
         right.
-        exists c,h,Hh,scs,Hhscs.
+        exists c,h,scs.
         split>[assumption|].
         ltac1:(naive_solver).
     }
@@ -10101,14 +10168,16 @@ Lemma compile_correct_2
         (lc ld rc rd : TermOver builtin_value)
         (w : list Act),
         (
-            exists (w' : list Act), 
-            w = (filter (fun x => x <> invisible_act) w') /\
+            { w' : list Act & 
+            ((w = (filter (fun x => x <> invisible_act) w')) *
             (* w <> [] /\ *)
             forall cont,
             flattened_rewrites_to_over Γ
                 (downC topSymbol cseqSymbol lc ld cont)
                 w'
                 (downC topSymbol cseqSymbol rc rd cont)
+            )%type
+            }
         ) ->
         MinusL_rewrites Act D lc ld w rc rd
 .
@@ -10154,10 +10223,10 @@ Proof.
         apply mlr_refl.
     }
     {
-        assert (H' := H). (* just to have some backup *)
-        ltac1:(unfold Γ in H).
-        apply in_compile_inv in H.
-        destruct H as [H|H].
+        assert (H' := e). (* just to have some backup *)
+        ltac1:(unfold Γ in e).
+        apply in_compile_inv in e.
+        destruct e as [e|e].
         {
             destruct H as [lc [ld [a0 [rc [rd [scs [H1r H2r]]]]]]].
             subst r. simpl in *.
