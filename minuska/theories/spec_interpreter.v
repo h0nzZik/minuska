@@ -63,28 +63,34 @@ Definition RewritingTheory_wf
     Forall RewritingRule_wf Γ
 .
 
+Print relation.
+Locate relation.
 Definition rewriting_relation_flat
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule Act))
-    : relation GroundTerm
+    : GroundTerm -> GroundTerm -> Type
     := fun from to =>
-        exists r a, r ∈ Γ /\ flattened_rewrites_to r from a to
+        { r : _ & { a : _ & ((r ∈ Γ) * flattened_rewrites_to r from a to)%type}}
 .
 
 Definition not_stuck_flat
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule Act))
-    (e : GroundTerm) : Prop
-:= exists e', rewriting_relation_flat Γ e e'.
+    (e : GroundTerm) : Type
+:=
+    { e' : _ & rewriting_relation_flat Γ e e' }
+.
 
 Definition flat_stuck
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule Act))
-    (e : GroundTerm) : Prop
-:= not (not_stuck_flat Γ e).
+    (e : GroundTerm) : Type
+:=
+    notT (not_stuck_flat Γ e)
+.
 
 
 Definition FlatInterpreter
@@ -100,18 +106,19 @@ Definition FlatInterpreter_sound'
     {Act : Set}
     (Γ : list (RewritingRule Act))
     (interpreter : FlatInterpreter Γ)
-    : Prop
-    :=  (
+    : Type
+    := ((
         forall e1 e2,
             interpreter e1 = Some e2 ->
             rewriting_relation_flat Γ e1 e2
     )
-    /\
+    *
     (forall e,
         flat_stuck Γ e -> interpreter e = None)
-    /\ (forall e,
+    * (forall e,
         not_stuck_flat Γ e ->
         exists e', interpreter e = Some e')
+    )%type
 .
 
 
@@ -120,7 +127,7 @@ Definition FlatInterpreter_sound
     {Act : Set}
     (Γ : list (RewritingRule Act))
     (interpreter : FlatInterpreter Γ)
-    : Prop
+    : Type
 := 
     RewritingTheory_wf Γ ->
     FlatInterpreter_sound' Γ interpreter

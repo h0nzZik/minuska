@@ -894,7 +894,28 @@ Definition naive_interpreter
     ei ← naive_interpreter_ext Γ e;
     Some ei.1
 .
-About naive_interpreter.
+
+Lemma bind_Some_T_1
+    (A B : Type)
+    (f : A -> option B)
+    (mx : option A)
+    (y : B)
+    :
+    (mbind f mx) = Some y ->
+    {x : A & mx = Some x /\ f x = Some y}
+.
+Proof.
+    intros HH.
+    destruct mx; simpl in *.
+    {
+        exists a.
+        split>[reflexivity|exact HH].
+    }
+    { inversion HH. }
+Qed.
+
+
+
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
     {Act : Set}
@@ -907,17 +928,18 @@ Proof.
     unfold FlatInterpreter_sound.
     unfold flat_stuck,not_stuck_flat.
     unfold naive_interpreter_ext.
-    split.
+    repeat split.
     {
         intros e1 e2.
-        rewrite bind_Some.
-        intros [x [H1x H2x]].
+        intros Hbind.
+        apply bind_Some_T_1 in Hbind.
+        destruct Hbind as [x [H1x H2x]].
         destruct (thy_lhs_match_one e1 Γ) eqn:Hmatch.
         {
             destruct p as [[r ρ] idx].
             apply thy_lhs_match_one_Some in Hmatch.
             inversion H2x; subst; clear H2x.
-            rewrite bind_Some in H1x.
+            apply bind_Some_T_1 in H1x.
             destruct H1x as [y [H1y H2y]].
             inversion H2y; subst; clear H2y.
             simpl.
@@ -942,7 +964,6 @@ Proof.
             inversion H1x.
         }
     }
-    split.
     {
         intros e Hstuck.
         destruct (thy_lhs_match_one e Γ) eqn:Hmatch>[|reflexivity].

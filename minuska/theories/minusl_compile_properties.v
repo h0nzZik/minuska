@@ -1452,6 +1452,24 @@ Proof.
     }
 Qed.
 
+Lemma rev_list_ind_T [A : Type] :
+    forall P:list A-> Type,
+    P [] ->
+    (forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
+    forall l:list A, P (rev l). 
+Proof.
+    intros P ? ? l; induction l; auto.
+Qed.
+
+Lemma rev_ind_T :
+∀ [A : Type] (P : list A → Type),
+  P [] → (∀ (x : A) (l : list A), P l → P (l ++ [x])) → ∀ l : list A, P l
+.
+Proof.
+    intros A P ? ? l. rewrite <- (rev_involutive l).
+    apply (rev_list_ind_T P); cbn; auto.
+Qed.
+
 Lemma satisfies_term_inv
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -1460,14 +1478,15 @@ Lemma satisfies_term_inv
     (l : list (TermOver BuiltinOrVar))
     :
     satisfies ρ γ (t_term s l) ->
-    exists (lγ : list (TermOver builtin_value)),
+    { lγ : list (TermOver builtin_value) &
         γ = (t_term s lγ) /\
         length l = length lγ /\
         Forall (fun p => p) (zip_with (satisfies ρ) lγ l)
+    }
 .
 Proof.
     revert γ.
-    induction l using rev_ind; intros γ.
+    induction l using rev_ind_T; intros γ.
     {
         intros H. exists []. inversion H; subst; clear H.
         unfold to_PreTerm' in pf. simpl in pf.
@@ -6316,11 +6335,11 @@ Proof.
     {
         simpl.
         inversion H0; subst; clear H0.
-        eapply frto_step>[|apply H6|].
+        eapply frto_step>[|apply X|].
         { assumption. }
         {
             eapply IHw1.
-            { apply X. }
+            { apply X0. }
             { apply H1. }
         }
     }
@@ -9939,12 +9958,12 @@ Fixpoint hasDepthExactly
     (depth : nat)
     (t : TermOver builtin_value)
 :=
-    isDownC topSymbol cseqSymbol t /\
     match t with
     | t_term _ [t_term _ [ctlr; cont]; _] =>
         match depth with
         | 0 => False
         | S depth' =>
+            isDownC topSymbol cseqSymbol t /\
             hasDepthExactly topSymbol cseqSymbol depth' cont
         end
     | _ => depth = 0
@@ -10137,7 +10156,12 @@ Lemma in_compile_inv
   continuationVariable D ->
   (
     (
-        exists lc ld a rc rd scs,
+        { lc : TermOver BuiltinOrVar &
+        { ld : TermOver BuiltinOrVar &
+        { a : Act &
+        { rc : TermOver Expression &
+        { rd : TermOver Expression &
+        { scs : list SideCondition &
             mld_rewrite Act lc ld a rc rd scs ∈ mlld_decls Act D /\
             r =
             {|
@@ -10154,8 +10178,11 @@ Lemma in_compile_inv
                 fr_scs := scs;
                 fr_act := a
             |}
+        }}}}}}
     ) + (
-        exists c h scs,
+        { c : _ &
+        { h : variable &
+        { scs : list SideCondition &
         mld_context Act c h scs ∈ mlld_decls Act D /\
         (
             r = ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
@@ -10197,6 +10224,7 @@ Lemma in_compile_inv
             (MinusL_isValue Act D) c
           h
         )
+        }}}
     )
   )
 .
@@ -10418,9 +10446,22 @@ Proof.
     {
         subst to. simpl. reflexivity.
     }
-    clear Heqfrom Heqto.
-    revert w H1w' (* H2w' *) ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
-    induction H3w'; intros w'' H1w' (* H2w' *) ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC.
+    remember (1) as depth in |-.
+    assert (Hfrdepth: hasDepthExactly topSymbol cseqSymbol depth from).
+    {
+        subst from depth. simpl.
+        split>[|reflexivity].
+        assumption.
+    }
+    assert (Htodepth: hasDepthExactly topSymbol cseqSymbol depth to).
+    {
+        subst to depth. simpl.
+        split>[|reflexivity].
+        assumption.
+    }
+    clear Heqfrom Heqto Heqdepth.
+    revert w H1w' (* H2w' *) ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC depth Hfrdepth Htodepth.
+    induction H3w'; intros w'' H1w' (* H2w' *) ctrl1 data1 ctrl2 data2 Hc1 Hd1 Hc2 Hd2 HfrIDC HtoIDC depth Hfrdepth Htodepth.
     {
         rewrite filter_nil in H1w'.
         unfold projTopCtrl in *.
@@ -10433,14 +10474,13 @@ Proof.
         ltac1:(unfold Γ in e).
         apply in_compile_inv in e>[|apply _].
         assert (Hsplit := @split_frto_by_state_pred Σ Act Γ).
-        Check split_frto_by_state_pred.
-        (*
+
         destruct e as [e|e].
         {
-            destruct H as [lc [ld [a0 [rc [rd [scs [H1r H2r]]]]]]].
+            destruct e as [lc [ld [a0 [rc [rd [scs [H1r H2r]]]]]]].
             subst r. simpl in *.
-            unfold flattened_rewrites_to in H0.
-            destruct H0 as [ρ1 Hρ1].
+            unfold flattened_rewrites_to in f.
+            destruct f as [ρ1 Hρ1].
             unfold flattened_rewrites_in_valuation_under_to in Hρ1.
             destruct Hρ1 as [Hρ1 [Hρ2 [Hρ3 Hρ4]]].
             simpl in *.
@@ -10587,6 +10627,7 @@ Proof.
             }
         }
         {
+            (*
             destruct H as [c [h [Hh [scs [Hhscs [HH1 HH2]]]]]].
             destruct HH2 as [HH2|HH2].
             {
@@ -10809,8 +10850,8 @@ Proof.
             {
 
             }
+            *)
         }
-        *)
         admit.
     }
 Abort.

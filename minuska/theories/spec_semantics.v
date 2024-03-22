@@ -828,9 +828,10 @@ Definition flattened_rewrites_to
     (from : GroundTerm)
     (under : Act)
     (to : GroundTerm)
-    : Prop
-:= exists ρ,
+    : Type
+:= { ρ : Valuation &
     flattened_rewrites_in_valuation_under_to ρ r from under to
+   }
 .
 
 #[export]
