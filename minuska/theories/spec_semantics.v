@@ -75,7 +75,7 @@ Class Satisfies
     :=
 mkSatisfies {
     satisfies :
-        V -> A -> B -> Prop ;
+        V -> A -> B -> Type ;
 }.
 
 Arguments satisfies : simpl never.
@@ -83,7 +83,7 @@ Arguments satisfies : simpl never.
 
 Definition val_satisfies_ap
     {Σ : StaticModel} (ρ : Valuation) (ap : AtomicProposition)
-    : Prop :=
+    : Type :=
 match ap with
 | apeq e1 e2 => 
     let v1 := Expression_evaluate ρ e1 in
@@ -120,7 +120,7 @@ Inductive aoxy_satisfies_aoxz
     V ->
     ((PreTerm' X Y)) ->
     PreTerm' X Z ->
-    Prop :=
+    Type :=
 
 | asa_x:
     forall ρ x,
@@ -203,7 +203,7 @@ Inductive aoxyo_satisfies_aoxzo
     : V ->
         ((Term' X Y)) ->
         (Term' X Z) ->
-        Prop
+        Type
 :=
 | axysaxz_app:
     forall
@@ -246,7 +246,7 @@ Inductive builtin_satisfies_BuiltinOrVar
     :
     builtin_value ->
     BuiltinOrVar ->
-    Prop :=
+    Type :=
 
 | bsbv_builtin:
     forall b,
@@ -263,7 +263,7 @@ Definition builtin_satisfies_BuiltinOrVar'
     (ρ : Valuation)
     (b : builtin_value)
     (bov : BuiltinOrVar)
-    : Prop
+    : Type
 := builtin_satisfies_BuiltinOrVar ρ b bov.
 
 #[export]
@@ -289,7 +289,7 @@ Definition PreTerm'_symbol_builtin_satisfies_BuiltinOrVar
     (ρ : Valuation)
     (aop : PreTerm' symbol builtin_value)
     (bov : BuiltinOrVar)
-    : Prop :=
+    : Type :=
 match bov with
 | bov_builtin _ => False
 | bov_variable x => ρ !! x = Some (term_preterm aop)
@@ -308,7 +308,7 @@ Definition PreTerm'_symbol_builtin_satisfies'_BuiltinOrVar
     (ρ : Valuation)
     (aop : (PreTerm' symbol builtin_value))
     (bov : BuiltinOrVar)
-    : Prop
+    : Type
 := PreTerm'_symbol_builtin_satisfies_BuiltinOrVar ρ aop bov.
 
 #[export]
@@ -433,7 +433,7 @@ Defined.
 Definition valuation_satisfies_sc
     {Σ : StaticModel}
     (ρ : Valuation)
-    (sc : SideCondition) : Prop :=
+    (sc : SideCondition) : Type :=
 match sc with
 | sc_constraint c => satisfies ρ () c
 end.
@@ -457,7 +457,7 @@ Definition GroundTerm_satisfies_BuiltinOrVar
     (ρ : Valuation)
     (g : GroundTerm)
     (bov : BuiltinOrVar)
-    : Prop :=
+    : Type :=
 match bov with
 | bov_builtin b =>
     match g with
@@ -483,7 +483,7 @@ Definition builtin_value_satisfies_SymbolicTerm
     Valuation ->
     builtin_value ->
     SymbolicTerm ->
-    Prop := fun ρ b t =>
+    Type := fun ρ b t =>
 match t with
 | term_preterm _ => False
 | term_operand bov =>
@@ -508,7 +508,7 @@ Definition PreTerm'_symbol_builtin_value_satisfies_BOV
     (ρ : Valuation)
     (ao : (PreTerm' symbol builtin_value))
     (bov : BuiltinOrVar)
-    : Prop
+    : Type
 :=
 match bov with
 | bov_builtin _ => False
@@ -544,7 +544,7 @@ Definition PreTerm'_symbol_A_satisfies_SymbolicTermB'
     V ->
     (PreTerm' symbol A) ->
     Term' symbol B ->
-    Prop
+    Type
 :=  fun ρ a =>
     satisfies
     ρ (term_preterm a)
@@ -605,7 +605,7 @@ Definition PreTerm'_symbol_builtin_satisfies_SymbolicTerm
     V ->
     ((PreTerm' symbol builtin_value)) ->
     SymbolicTerm ->
-    Prop
+    Type
 :=  fun ρ a =>
     satisfies ρ (term_preterm a)
 .
@@ -747,8 +747,8 @@ Instance Satisfies_Valuation_LR_SideCondition
 
 Definition GroundTerm_satisfies_SymbolicTerm
     {Σ : StaticModel}
-    : GroundTerm -> SymbolicTerm -> Prop :=
-    fun g φ => ∃ (ρ : Valuation), satisfies ρ g φ
+    : GroundTerm -> SymbolicTerm -> Type :=
+    fun g φ => { ρ : Valuation & satisfies ρ g φ }
 .
 
 #[export]
@@ -783,7 +783,7 @@ Instance Satisfies_valuation_scs
         (list SideCondition)
         variable
 := {|
-    satisfies := fun ρ _ => Forall (satisfies ρ ());
+    satisfies := fun ρ _ l => forall x, x ∈ l -> satisfies ρ () x;
 |}.
 
 #[export]
@@ -813,11 +813,12 @@ Definition flattened_rewrites_in_valuation_under_to
     (from : GroundTerm)
     (under : Act)
     (to : GroundTerm)
-    : Prop
-:= satisfies ρ from (fr_from r)
-/\ satisfies ρ to (fr_to r)
-/\ satisfies ρ () (fr_scs r)
-/\ under = fr_act r
+    : Type
+:= ((satisfies ρ from (fr_from r))
+* (satisfies ρ to (fr_to r))
+* (@satisfies Σ Valuation unit (list SideCondition) _ _ _ _ _ _ ρ tt (fr_scs r))
+* (under = fr_act r)
+)%type
 .
 
 

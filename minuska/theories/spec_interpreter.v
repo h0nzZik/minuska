@@ -36,35 +36,34 @@ Definition RewritingRule_wf2
     {Σ : StaticModel}
     {Act : Set}
     (r : RewritingRule Act)
-    : Prop
+    : Type
 := 
     forall (g : GroundTerm) (ρ : Valuation),
         satisfies ρ g (fr_from r) ->
         satisfies ρ () (fr_scs r) ->
-        exists (g' : GroundTerm),
+        { g' : GroundTerm &
             satisfies ρ g' (fr_to r)
+        }
 .
 
 Definition RewritingRule_wf
     {Σ : StaticModel}
     {Act : Set}
     (r : RewritingRule Act)
-    : Prop
+    : Type
 :=
-    RewritingRule_wf1 r /\ RewritingRule_wf2 r
+    RewritingRule_wf1 r * RewritingRule_wf2 r
 .
 
 Definition RewritingTheory_wf
     {Σ : StaticModel}
     {Act : Set}
     (Γ : RewritingTheory Act)
-    : Prop
+    : Type
 :=
-    Forall RewritingRule_wf Γ
+    forall r, r ∈ Γ -> RewritingRule_wf r
 .
 
-Print relation.
-Locate relation.
 Definition rewriting_relation_flat
     {Σ : StaticModel}
     {Act : Set}

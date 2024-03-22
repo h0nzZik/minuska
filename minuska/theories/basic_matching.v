@@ -112,9 +112,13 @@ Class Matches
     matchesb:
         (gmap var GroundTerm) -> A -> B -> bool ;
 
+    satisfies_matchesb :
+        ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
+            (satisfies v a b) -> (matchesb v a b) ;
+
     matchesb_satisfies :
         ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
-            reflect (satisfies v a b) (matchesb v a b) ;
+            (matchesb v a b) -> (satisfies v a b) ;
 
     matchesb_vars_of :
         ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
@@ -129,46 +133,6 @@ Class Matches
 
 Arguments satisfies : simpl never.
 Arguments matchesb : simpl never.
-
-Lemma matchesb_implies_satisfies
-    {Σ : StaticModel}
-    (A B var : Type)
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_VA : VarsOf B var}
-    {_SAB : Satisfies (gmap var GroundTerm) A B var}
-    {_MAB : Matches A B var}
-    :
-    forall (v : gmap var GroundTerm) (a : A) (b : B),
-        matchesb v a b = true ->
-        satisfies v a b
-.
-Proof.
-    intros.
-    assert (HR := matchesb_satisfies v a b).
-    apply reflect_iff in HR.
-    ltac1:(naive_solver).
-Qed.
-
-Lemma satisfies_implies_matchesb
-    {Σ : StaticModel}
-    (A B var : Type)
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_VA : VarsOf B var}
-    {_SAB : Satisfies (gmap var GroundTerm) A B var}
-    {_MAB : Matches A B var}
-    :
-    forall (v : (gmap var GroundTerm)) (a : A) (b : B),
-        satisfies v a b ->
-        matchesb v a b = true
-.
-Proof.
-    intros.
-    assert (HR := matchesb_satisfies v a b).
-    apply reflect_iff in HR.
-    ltac1:(naive_solver).
-Qed.
 
 Lemma matchesb_ext
     {Σ : StaticModel}
@@ -188,8 +152,8 @@ Lemma matchesb_ext
 .
 Proof.
     intros.
-    apply matchesb_implies_satisfies in H0.
-    apply satisfies_implies_matchesb.
+    apply matchesb_satisfies in H0.
+    apply satisfies_matchesb.
     eapply satisfies_ext.
     { exact H. }
     { assumption. }
@@ -331,177 +295,154 @@ Section with_signature.
             matchesb :=
                 ApppliedOperator'_matches_PreTerm' ;
             matchesb_satisfies := _;
+            satisfies_matchesb := _;
         |}.
     Next Obligation.
         simpl.
         ltac1:(rename v into ρ).
         ltac1:(rename a into x).
         ltac1:(rename b into y).
-        revert y.
-        induction x; intros y; destruct y.
+        revert y X.
+        induction x; intros y X; destruct y.
         {
             simpl.
             unfold bool_decide.
             ltac1:(case_match).
             {
-                apply ReflectT.
                 subst.
                 constructor.
             }
             {
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                ltac1:(contradiction).
+                inversion X; subst.
+                ltac1:(congruence).
             }
         }
         {
-
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
+            inversion X; subst; clear X.
         }
         {
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
+            inversion X; subst; clear X.
         }
         {
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
+            inversion X; subst; clear X.
         }
         {
+            inversion X; subst; clear X.
             simpl.
-            specialize (IHx y).
-            simpl in IHx.
-            destruct ((ApppliedOperator'_matches_PreTerm' ρ x y)) eqn:Heqm1.
-            {
-                simpl.
-                apply reflect_iff in IHx.
-                apply proj2 in IHx.
-                specialize (IHx eq_refl).
-                destruct (matchesb ρ b b0) eqn:Heqm.
-                {
-                    apply ReflectT.
-                    constructor.
-                    apply IHx.
-                    assert(reflect_matches := matchesb_satisfies ρ b b0).
-                    apply reflect_iff in reflect_matches.
-                    apply reflect_matches.
-                    exact Heqm.
-                }
-                {
-                    apply ReflectF.
-                    intros HContra.
-                    inversion HContra; subst; clear HContra.
-                    assert(reflect_matches := matchesb_satisfies ρ b b0).
-                    apply reflect_iff in reflect_matches.
-                    apply reflect_matches in H5.
-                    rewrite Heqm in H5.
-                    inversion H5.
-                }
-            }
-            {
-                simpl.
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                simpl in H5.
-                apply reflect_iff in IHx.
-                apply proj1 in IHx.
-                specialize (IHx ltac:(assumption)).
-                inversion IHx.
-            }
-        }
-        {
-            simpl.
-            specialize (IHx y1).
-            simpl in IHx.
-            unfold satisfies; simpl.
-            destruct ((ApppliedOperator'_matches_PreTerm' ρ x y1)) eqn:Heqm1.
-            {
-                simpl.
-                apply reflect_iff in IHx.
-                apply proj2 in IHx.
-                specialize (IHx eq_refl).
-                destruct (matchesb ρ b y2) eqn:Heqm.
-                {
-                    apply ReflectT.
-                    constructor.
-                    apply IHx.
-                    assert(reflect_matches := matchesb_satisfies ρ b y2).
-                    apply reflect_iff in reflect_matches.
-                    apply reflect_matches.
-                    exact Heqm.
-                }
-                {
-                    apply ReflectF.
-                    intros HContra.
-                    inversion HContra; subst; clear HContra.
-                    assert(reflect_matches := matchesb_satisfies ρ b y2).
-                    apply reflect_iff in reflect_matches.
-                    apply reflect_matches in H5.
-                    rewrite Heqm in H5.
-                    inversion H5.
-                }
-            }
-            {
-                simpl.
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                simpl in H5.
-                apply reflect_iff in IHx.
-                apply proj1 in IHx.
-                specialize (IHx ltac:(assumption)).
-                inversion IHx.
-            }
-        }
-        {
-            simpl.
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
-        }
-        {
-            simpl.
-            specialize (IHx1 y).
-            apply reflect_iff in IHx1.
-            simpl in IHx1.
-            apply iff_reflect.
+            unfold is_true.
             rewrite andb_true_iff.
-            rewrite <- IHx1.
-            ltac1:(cut ((satisfies ρ x2 b) <-> (matchesb ρ x2 b = true))).
+            split.
             {
-                intros HH0. rewrite <- HH0.
-                simpl.    
-                split; intros HH.
-                {
-                    inversion HH; subst; clear HH.
-                    split; assumption.
-                }
-                {
-                    constructor;
-                    destruct HH; assumption.
-                }
+                apply IHx. apply X0.
             }
-            assert(reflect_matches_app_2 := matchesb_satisfies ρ x2 b).
-            apply reflect_iff in reflect_matches_app_2.
-            apply reflect_matches_app_2.
+            {
+                apply satisfies_matchesb in X1.
+                apply X1.
+            }
         }
         {
-            specialize (IHx1 y1).
-            specialize (IHx2 y2).
-            apply reflect_iff in IHx1.
-            apply reflect_iff in IHx2.
-            apply iff_reflect.
+            inversion X; subst; clear X.
             simpl.
+            unfold is_true.
             rewrite andb_true_iff.
-            rewrite <- IHx1.
-            rewrite <- IHx2.
+            split.
+            {
+                apply IHx. apply X0.
+            }
+            {
+                apply satisfies_matchesb in X1.
+                apply X1.
+            }
+        }
+        {
+            inversion X; subst; clear X.
+        }
+        {
+            inversion X; subst; clear X.
             simpl.
-            split; intros HH; inversion HH; subst; clear HH; constructor; assumption.
+            unfold is_true.
+            rewrite andb_true_iff.
+            split.
+            {
+                apply IHx1. apply X0.
+            }
+            {
+                apply satisfies_matchesb in X1.
+                apply X1.
+            }
+        }
+        {
+            inversion X; subst; clear X.
+            simpl.
+            unfold is_true.
+            rewrite andb_true_iff.
+            split.
+            {
+                apply IHx1. apply X0.
+            }
+            {
+                apply IHx2. apply X1.
+            }
+        }
+    Qed.
+    Next Obligation.
+        simpl.
+        ltac1:(rename v into ρ).
+        ltac1:(rename a into x).
+        ltac1:(rename b into y).
+        revert y H.
+        induction x; intros y H; destruct y.
+        {
+            simpl in H.
+            apply bool_decide_eq_true in H.
+            subst.
+            constructor.
+        }
+        {
+            simpl in H. inversion H.
+        }
+        {
+            simpl in H. inversion H.
+        }
+        {
+            simpl in H. inversion H.
+        }
+        {
+            simpl in H.
+            unfold is_true in H.
+            rewrite andb_true_iff in H.
+            destruct H as [H1 H2].
+            constructor; try ltac1:(naive_solver).
+            apply matchesb_satisfies in H2.
+            exact H2.
+        }
+        {
+            simpl in H.
+            unfold is_true in H.
+            rewrite andb_true_iff in H.
+            destruct H as [H1 H2].
+            constructor; try ltac1:(naive_solver).
+            apply matchesb_satisfies in H2.
+            exact H2.
+        }
+        {
+            simpl in H. inversion H.
+        }
+        {
+            simpl in H.
+            unfold is_true in H.
+            rewrite andb_true_iff in H.
+            destruct H as [H1 H2].
+            constructor; try ltac1:(naive_solver).
+            apply matchesb_satisfies in H2.
+            exact H2.
+        }
+        {
+            simpl in H.
+            unfold is_true in H.
+            rewrite andb_true_iff in H.
+            destruct H as [H1 H2].
+            constructor; try ltac1:(naive_solver).
         }
     Qed.
     Next Obligation.

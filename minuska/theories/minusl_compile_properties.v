@@ -1479,9 +1479,9 @@ Lemma satisfies_term_inv
     :
     satisfies ρ γ (t_term s l) ->
     { lγ : list (TermOver builtin_value) &
-        γ = (t_term s lγ) /\
-        length l = length lγ /\
-        Forall (fun p => p) (zip_with (satisfies ρ) lγ l)
+        ((γ = (t_term s lγ)) *
+        (length l = length lγ) *
+        (Forall (fun p => p) (zip_with (satisfies ρ) lγ l)))%type
     }
 .
 Proof.
@@ -1491,10 +1491,12 @@ Proof.
         intros H. exists []. inversion H; subst; clear H.
         unfold to_PreTerm' in pf. simpl in pf.
         inversion pf. subst; clear pf.
-        rewrite <- (cancel prettify uglify' γ).
-        rewrite <- H2.
+        apply (f_equal prettify) in H2.
+        rewrite (cancel prettify uglify') in H2.
+        subst γ.
         simpl.
-        repeat constructor.
+        repeat split.
+        rewrite Forall_nil. exact I.
     }
     {
         intros H.

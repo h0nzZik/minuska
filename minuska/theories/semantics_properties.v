@@ -376,8 +376,9 @@ Proof.
     constructor. intros.
     destruct b; simpl in *.
     {
-        destruct H0 as [H1 [x Hx]].
-        unfold satisfies; simpl.
+        unfold satisfies in *; simpl in *.
+        destruct X as [H1 [x Hx]].
+
         rewrite (Expression_evaluate_extensive_Some v1 v2 _ x H Hx).
         split>[|eexists; reflexivity].
         rewrite H1 in Hx.
@@ -395,12 +396,12 @@ Instance SatisfiesProperties_builtin_BuiltinOrVar
 .
 Proof.
     constructor. intros.
-    inversion H0; constructor.
+    inversion X; constructor.
     {
         subst.
         unfold Valuation in *.
         eapply lookup_weaken.
-        { apply H1. }
+        { apply H0. }
         { assumption. }
     }
 Qed.
@@ -419,7 +420,7 @@ Proof.
         unfold satisfies; simpl.
         unfold Valuation in *.
         eapply lookup_weaken.
-        { apply H0. }
+        { apply X. }
         { assumption. }
     }
 Qed.
@@ -438,7 +439,7 @@ Proof.
         unfold satisfies; simpl.
         unfold Valuation in *.
         eapply lookup_weaken.
-        { apply H0. }
+        { apply X. }
         { assumption. }
     }
 Qed.
@@ -483,7 +484,7 @@ Instance SatisfiesProperties_aoxyo_aoxzo
 .
 Proof.
     constructor. intros.
-    destruct H0; constructor.
+    destruct X0; constructor.
     {
         eapply satisfies_ext.
         { exact H. }
@@ -522,21 +523,21 @@ Instance SatisfiesProperties_aoxy_aoxz
 Proof.
     constructor. intros.
     revert v2 H.
-    induction H0; intros v2 HH; constructor; try (ltac1:(naive_solver)).
+    induction X0; intros v2 HH; constructor; try (ltac1:(naive_solver)).
     {
         eapply satisfies_ext.
         { apply HH. }
-        { exact H. }
+        { assumption. }
     }
     {
         eapply satisfies_ext.
         { apply HH. }
-        { exact H. }
+        { assumption. }
     }
     {
         eapply satisfies_ext.
         { apply HH. }
-        { exact H. }
+        { assumption. }
     }
 Qed.
 
@@ -644,7 +645,7 @@ Proof.
     {
         unfold Valuation in *.
         eapply lookup_weaken.
-        { apply H0. }
+        { apply X. }
         { assumption. }
     }
 Qed.
@@ -786,7 +787,7 @@ Proof.
     simpl. intros.
     inversion H; subst.
     eapply satisfies_ext.
-    { apply H1. }
+    { apply H0. }
     { assumption. }
 Qed.
 
@@ -819,8 +820,7 @@ Instance SatisfiesProperties_valuation_scs
 Proof.
     constructor. unfold satisfies. simpl. 
     intros. simpl in *.
-    rewrite Forall_forall. rewrite Forall_forall in H0.
-    intros x Hx. specialize (H0 x Hx).
+    specialize (X x H0).
     eapply satisfies_ext.
     { apply H. }
     { assumption. }
