@@ -10181,8 +10181,25 @@ Proof.
     intros ?. apply _.
 Qed.
 
+Fixpoint frto_all_nonlast_states_satisfy
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : RewritingTheory Act)
+    (P : TermOver builtin_value -> Prop)
+    (x y : TermOver builtin_value)
+    (w : list Act)
+    (r : flattened_rewrites_to_over Γ x w y)
+    :
+    Prop
+:=
+    match r with
+    | frto_base _ _ => True
+    | frto_step _ t1 t2 t3 _ _ d _ _ r' =>
+        P t1 /\
+        frto_all_nonlast_states_satisfy Γ P _ _ _ r'
+    end
+.
 
-(*
 Lemma split_frto_by_state_pred
     {Σ : StaticModel}
     {Act : Set}
@@ -10193,15 +10210,62 @@ Lemma split_frto_by_state_pred
     (w : list Act)
     (r : flattened_rewrites_to_over Γ x w z)
     :
-    ∃ (w1 w2 : list Act) (y : TermOver builtin_value),
-        flattened_rewrites_to_over Γ x w1 y /\
-        flattened_rewrites_to_over Γ y w2 z /\
-        w1 ++ w2 = w
+    (
+    { w1 : list Act &
+    { w2 : list Act &
+    { y : TermOver builtin_value &
+    { r1 : flattened_rewrites_to_over Γ x w1 y & 
+        (
+        (flattened_rewrites_to_over Γ y w2 z) *
+        (w1 ++ w2 = w) *
+        (frto_all_nonlast_states_satisfy Γ (fun arg => ~ (P arg)) _ _ _ r1) *
+        (P y)
+        )%type
+    }
+    } } }
+    ) + ( frto_all_nonlast_states_satisfy Γ (fun arg => ~ (P arg)) _ _ _ r )
 .
 Proof.
     ltac1:(induction r).
+    {
+        right. simpl. exact I.
+    }
+    {
+        destruct (decide (P t1)) as [holds|nhold].
+        {
+            left.
+            exists [].
+            exists (a::w).
+            exists t1.
+            exists (frto_base _ t1).
+            (repeat split).
+            {
+                econstructor.
+                { apply e. }
+                { apply f. }
+                { apply r0. }
+            }
+            { apply holds. }
+        }
+        {
+            destruct IHr as [IHr|IHr].
+            {
+                left.
+                destruct IHr as [w1 [w2 [y [r1 [[[IH1 IH2] IH3] IH4]]]]].
+                subst w.
+                exists (a::w1).
+                exists w2.
+                exists y.
+                exists (frto_step _ t1 t2 y (w1) a r e f r1).
+                (repeat split); assumption.
+
+            }
+            {
+                right. simpl. split;assumption.
+            }
+        }
+    }
 Qed.
-*)
 
 Lemma compile_correct_2
     {Σ : StaticModel}

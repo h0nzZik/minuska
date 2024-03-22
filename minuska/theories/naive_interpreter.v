@@ -894,7 +894,7 @@ Definition naive_interpreter
     ei ← naive_interpreter_ext Γ e;
     Some ei.1
 .
-
+About naive_interpreter.
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
     {Act : Set}
