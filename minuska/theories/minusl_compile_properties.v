@@ -9944,6 +9944,17 @@ Definition projTopCtrl
     end
 .
 
+Definition projTopCont
+    {Σ : StaticModel}
+    (t : TermOver builtin_value)
+    : option (TermOver builtin_value)
+:=
+    match t with
+    | t_term _ [t_term _ [_; cont]; _] => Some cont
+    | _ => None
+    end
+.
+
 Definition projTopData
     {Σ : StaticModel}
     (t : TermOver builtin_value)
@@ -9954,6 +9965,67 @@ Definition projTopData
     | _ => None
     end
 .
+
+#[export]
+Instance IsDownC_dec
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol : symbol)
+    (t : TermOver builtin_value)
+    : Decision (isDownC topSymbol cseqSymbol t)
+.
+Proof.
+    unfold isDownC.
+    remember (projTopCtrl t) as mctrl.
+    remember (projTopCont t) as mcont.
+    remember (projTopData t) as mdata.
+    destruct mctrl.
+    {
+        destruct mcont.
+        {
+            destruct mdata.
+            {
+                unfold downC.
+                unfold projTopCtrl, projTopCont,projTopData in *.
+                ltac1:(repeat case_match; simplify_eq/=).
+                destruct (decide (s = topSymbol)).
+                {
+                    destruct (decide (s0 = cseqSymbol)).
+                    {
+                        subst.
+                        left.
+                        exists t5,t4,t6.
+                        reflexivity.
+                    }
+                    {
+                        right.
+                        intros HContra.
+                        ltac1:(naive_solver).
+                    }
+                }
+                {
+                    right.
+                    intros HContra.
+                    ltac1:(naive_solver).
+                }
+            }
+            {
+                right.
+                unfold projTopData in Heqmdata.
+                ltac1:(repeat case_match; simplify_eq/=; naive_solver).
+            }
+        }
+        {
+            right.
+            unfold projTopCont in Heqmcont.
+            ltac1:(repeat case_match; simplify_eq/=; naive_solver).
+        }
+    }
+    {
+        right.
+        unfold projTopCtrl in Heqmctrl.
+        ltac1:(repeat case_match; simplify_eq/=; naive_solver).
+    }
+Defined.
 
 Lemma flat_map_lookup_Some
     {A B : Type}
@@ -10341,7 +10413,9 @@ Proof.
     {
         assert (H' := e). (* just to have some backup *)
         ltac1:(unfold Γ in e).
-        apply in_compile_inv in e.
+        apply in_compile_inv in e>[|apply _].
+        assert (Hsplit := @split_frto_by_state_pred Σ Act Γ).
+        Check split_frto_by_state_pred.
         (*
         destruct e as [e|e].
         {
