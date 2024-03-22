@@ -9933,6 +9933,24 @@ Definition isDownC
     t = downC topSymbol cseqSymbol ctrl data cont
 .
 
+Fixpoint hasDepthExactly
+    {Σ : StaticModel}
+    (topSymbol cseqSymbol : symbol)
+    (depth : nat)
+    (t : TermOver builtin_value)
+:=
+    isDownC topSymbol cseqSymbol t /\
+    match t with
+    | t_term _ [t_term _ [ctlr; cont]; _] =>
+        match depth with
+        | 0 => False
+        | S depth' =>
+            hasDepthExactly topSymbol cseqSymbol depth' cont
+        end
+    | _ => depth = 0
+    end
+.
+
 Definition projTopCtrl
     {Σ : StaticModel}
     (t : TermOver builtin_value)
@@ -10793,7 +10811,6 @@ Proof.
             }
         }
         *)
-        admit.
         admit.
     }
 Abort.
