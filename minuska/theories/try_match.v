@@ -312,10 +312,11 @@ Class TryMatch
     try_match_complete :
         ∀ (a : A) (b : B) (ρ : Valuation),
             matchesb ρ a b = true ->
-            ∃ (ρ' : Valuation),
+            { ρ' : Valuation &
                 vars_of ρ' = vars_of b /\
                 ρ' ⊆ ρ /\
-                try_match a b = Some ρ' ;
+                try_match a b = Some ρ' 
+            } ;
 
     (* It does not invent variables out of thin air *)
     try_match_noOOTA :
@@ -667,10 +668,11 @@ Lemma ApppliedOperator'_try_match_PreTerm'_complete
     (b : PreTerm' symbol Operand2)
     :
     matchesb ρ a b = true ->
-    ∃ ρ',
+    { ρ' : _ &
         vars_of ρ' = vars_of b /\
         ρ' ⊆ ρ /\
         ApppliedOperator'_try_match_PreTerm' a b = Some ρ'
+    }
 .
 Proof.
     unfold Valuation in *.

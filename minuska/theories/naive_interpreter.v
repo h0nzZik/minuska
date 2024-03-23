@@ -241,7 +241,7 @@ Proof.
                     subst.
                     repeat constructor.
                     clear -H.
-                    apply matchesb_implies_satisfies in H.
+                    apply matchesb_satisfies in H.
 
                     induction H.
                     {
@@ -250,7 +250,7 @@ Proof.
                         reflexivity.
                     }
                     {
-                        cbn in H0.
+                        cbn in s.
                         cbn.
                         rewrite bind_Some.
                         cbn.
@@ -272,13 +272,13 @@ Proof.
                         eexists.
                         split>[apply IHaoxy_satisfies_aoxz|].
                         eexists.
-                        split>[apply H0|].
+                        split>[apply s|].
                         apply f_equal.
-                        rewrite H0.
+                        rewrite s.
                         reflexivity.
                     }
                     {
-                        cbn in H0.
+                        cbn in s.
                         cbn.
                         rewrite bind_Some.
                         cbn in *.
@@ -300,12 +300,12 @@ Proof.
                         eexists.
                         split>[apply IHaoxy_satisfies_aoxz|].
                         eexists.
-                        split>[apply H0|].
+                        split>[apply s|].
                         reflexivity.
                     }
                     {
-                        unfold satisfies in H0; simpl in H0.
-                        inversion H0.
+                        unfold satisfies in s; simpl in s.
+                        inversion s.
                     }
                     {
                         cbn in H0.
@@ -337,14 +337,14 @@ Proof.
                 {
                     subst. cbn.
                     apply f_equal.
-                    apply matchesb_implies_satisfies in H.
+                    apply matchesb_satisfies in H.
                     induction H.
                     {
                         cbn. reflexivity.
                     }
                     {
                         cbn in *.
-                        rewrite H0.
+                        rewrite s.
                         rewrite IHaoxy_satisfies_aoxz.
                         reflexivity.
                     }
@@ -354,8 +354,8 @@ Proof.
                         reflexivity.
                     }
                     {
-                        unfold satisfies in H0; simpl in H0.
-                        inversion H0.
+                        unfold satisfies in s; simpl in s.
+                        inversion s.
                     }
                     {
                         cbn in *.
@@ -478,6 +478,64 @@ Instance VarsOf_list_SideCondition
 |}.
 *)
 
+Lemma bind_Some_T_1
+    (A B : Type)
+    (f : A -> option B)
+    (mx : option A)
+    (y : B)
+    :
+    (mbind f mx) = Some y ->
+    {x : A & mx = Some x /\ f x = Some y}
+.
+Proof.
+    intros HH.
+    destruct mx; simpl in *.
+    {
+        exists a.
+        split>[reflexivity|exact HH].
+    }
+    { inversion HH. }
+Qed.
+
+Lemma bind_Some_T_2
+    (A B : Type)
+    (f : A -> option B)
+    (mx : option A)
+    (y : B)
+    :
+    {x : A & mx = Some x /\ f x = Some y} ->
+    (mbind f mx) = Some y
+.
+Proof.
+    intros HH.
+    destruct HH as [x HH].
+    destruct HH as [H1 H2].
+    destruct mx; simpl in *.
+    {
+        inversion H1; subst; clear H1.
+        exact H2.
+    }
+    {
+        inversion H1.
+    }
+Qed.
+
+Lemma bind_None_T_1 (A B : Type) (f : A → option B) (mx : option A):
+  mbind f mx = None ->
+  (mx = None) +
+  ({ x : A & mx = Some x ∧ f x = None })
+.
+Proof.
+    intros H.
+    destruct mx; simpl in *.
+    {
+        right. exists a. split>[reflexivity|]. exact H.
+    }
+    {
+        left. reflexivity.
+    }
+Qed.
+
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
     {Act : Set}
@@ -488,10 +546,12 @@ Lemma try_match_lhs_with_sc_complete
     vars_of (fr_scs r) ⊆ vars_of (fr_from r) ->
     matchesb ρ g (fr_from r) = true ->
     matchesb ρ () (fr_scs r) = true ->
-    ∃ ρ' : (gmap variable GroundTerm),
+    {
+        ρ' : (gmap variable GroundTerm) &
         vars_of ρ' = vars_of (fr_from r) ∧
         ρ' ⊆ ρ ∧
         try_match_lhs_with_sc g r = Some ρ'
+    }   
 .
 Proof.
     (*
@@ -515,7 +575,7 @@ Proof.
     {
         
         unfold try_match_lhs_with_sc.
-        ltac1:(setoid_rewrite bind_Some).
+        (* ltac1:(setoid_rewrite bind_Some). *)
         exists ρ1.
         split.
         {
@@ -527,6 +587,7 @@ Proof.
         {
             assumption.
         }
+        apply bind_Some_T_2.
         exists ρ1.
         split>[apply H3ρ2|].
         unfold matchesb in *; simpl in *.
@@ -667,7 +728,7 @@ Definition thy_lhs_match_one
         := (try_match_lhs_with_sc e) <$> Γ
     in
     let found : option (nat * option Valuation)
-        := list_find is_Some vs
+        := list_find isSome vs
     in
     nov ← found;
     let idx : nat := nov.1 in
@@ -685,13 +746,15 @@ Lemma thy_lhs_match_one_None
     (wfΓ : RewritingTheory_wf Γ)
     :
     thy_lhs_match_one e Γ = None ->
-    ~ exists (r : RewritingRule Act) (ρ : Valuation),
-        r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
+    notT { r : RewritingRule Act & { ρ : Valuation &
+        ((r ∈ Γ) * (satisfies ρ e (fr_from r)) * (satisfies ρ tt (fr_scs r)))%type
+    } }
+        
 .
 Proof.
     unfold thy_lhs_match_one.
-    intros H [r [ρ [Hin HContra]]].
-    destruct (list_find is_Some (try_match_lhs_with_sc e <$> Γ)) eqn:Heqfound.
+    intros H [r [ρ [[Hin HContra1] HContra2]]].
+    destruct (list_find isSome (try_match_lhs_with_sc e <$> Γ)) eqn:Heqfound.
     {
         destruct p as [n oρ].
         rewrite list_find_Some in Heqfound.
@@ -701,47 +764,35 @@ Proof.
         simpl in H2.
         inversion H1; subst; clear H1.
         ltac1:(destruct Heqfound as [Hfound [HSome HFirst]]).
-        rewrite bind_None in H2.
-        destruct HSome as [ρ2' HSome].
-        subst.
-        (destruct H2 as [H2|H2])>[inversion H2|].
-        destruct H2 as [ρ3 [H2 H3]].
-        inversion H2; subst; clear H2.
-        rewrite bind_None in H3.
-        destruct H3 as [H3|H3].
+        apply bind_None_T_1 in H2.
+        destruct H2 as [H2|H2].
         {
-            unfold try_match_lhs_with_sc in Hfound.
-            rewrite list_lookup_fmap in Hfound.
-            rewrite fmap_Some in Hfound.
-            destruct Hfound as [r' [H1r' H2r']].
-            rewrite H3 in H1r'. inversion H1r'.
+            rewrite H2 in HSome. inversion HSome.
         }
         {
-            destruct H3 as [r' [H1r' H2r']].
-            inversion H2r'.
+            destruct H2 as [x [H21 H22]].
+            apply bind_None_T_1 in H22.
+            destruct H22 as [H22|H22].
+            {
+                rewrite list_lookup_fmap in Hfound.
+                rewrite H22 in Hfound.
+                simpl in Hfound. inversion Hfound.
+            }
+            {
+                subst ρ2.
+                destruct H22 as [x0 [H221 HContra]].
+                inversion HContra.
+            }
         }
     }
     {
         clear H.
         rewrite list_find_None in Heqfound.
         rewrite Forall_forall in Heqfound.
-        destruct HContra as [Hsat1 Hsat2].
-        ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat1)).
-        {
-            unfold GroundTerm, SymbolicTerm.
-            apply _.
-        }
-        {
-            apply _.
-        }
-        ltac1:(unshelve(eapply satisfies_implies_matchesb in Hsat2)).
-        {
-            unfold GroundTerm, SymbolicTerm.
-            apply _.
-        }
-        {
-            apply _.
-        }
+        ltac1:(rename HContra1 into Hsat1).
+        ltac1:(rename HContra2 into Hsat2).
+        apply satisfies_matchesb in Hsat1.
+        apply satisfies_matchesb in Hsat2.
         apply try_match_complete in Hsat1.
         destruct Hsat1 as [ρ' [H1 [H2 H3]]].
 
@@ -751,7 +802,6 @@ Proof.
         {
             unfold RewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
-            rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             unfold RewritingRule_wf in wfΓ.
             specialize (wfΓ Hin).
@@ -766,7 +816,6 @@ Proof.
             apply Hsat2.
             unfold RewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
-            rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             unfold RewritingRule_wf in wfΓ.
             specialize (wfΓ Hin).
@@ -797,12 +846,47 @@ Proof.
             }
         }
         apply Heqfound.
-        unfold is_Some.
-        exists ρ''.
+        unfold isSome.
         reflexivity.
     }
 Qed.
 
+Lemma list_find_elem_of_isSome
+    {A : Type}
+    (P : A -> Prop)
+    {_dP : forall x, Decision (P x)}
+    (l : list A)
+    (x : A)
+    :
+    x ∈ l -> P x -> isSome (list_find P l).
+Proof.
+    ltac1:(induction 1 as [|x y l ? IH]; intros; simplify_option_eq; eauto).
+    specialize (IH ltac:(assumption)).
+    Set Printing Coercions.
+    unfold is_true, isSome in *.
+    destruct (list_find P l) eqn:Hfound; simpl.
+    { reflexivity. }
+    { inversion IH. }
+Qed.
+
+Check @fmap_Some.
+
+Lemma fmap_Some_T_1 (A B : Type) (f : A → B) (mx : option A) (y : B):
+  f <$> mx = Some y ->
+  {x : A & mx = Some x ∧ y = f x }
+.
+Proof.
+    intros H.
+    destruct mx; simpl in *.
+    {
+        inversion H; subst; clear H.
+        exists a.
+        split;reflexivity.
+    }
+    {
+        inversion H.
+    }
+Qed.
 
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
@@ -814,7 +898,7 @@ Lemma thy_lhs_match_one_Some
     (rule_idx : nat)
     :
     thy_lhs_match_one e Γ = Some (r, ρ, rule_idx) ->
-    r ∈ Γ /\ satisfies ρ e (fr_from r) /\ satisfies ρ () (fr_scs r)
+    ((r ∈ Γ) * (satisfies ρ e (fr_from r)) * (satisfies ρ tt (fr_scs r)))%type
 .
 Proof.
     intros H.
@@ -822,42 +906,67 @@ Proof.
     unfold is_Some in H.
     (repeat ltac1:(case_match)); subst.
     {
-        rewrite bind_Some in H.
+        apply bind_Some_T_1 in H.
         destruct H as [[idx oρ][H1 H2]].
         simpl in *.
         rewrite list_find_Some in H1.
         destruct H1 as [H11 H12].
         rewrite list_lookup_fmap in H11.
-        rewrite fmap_Some in H11.
+        apply fmap_Some_T_1 in H11.
         destruct H11 as [ot [Hot1 Hot2]].
         subst.
-        rewrite bind_Some in H2.
+        apply bind_Some_T_1 in H2.
         destruct H2 as [ρ' [H1ρ' H2ρ']].
-        rewrite bind_Some in H2ρ'.
+        apply bind_Some_T_1 in H2ρ'.
         destruct H2ρ' as [r' [H1r' H2r']].
         inversion H2r'; subst; clear H2r'.
         rewrite Hot1 in H1r'.
         inversion H1r'; subst; clear H1r'.
         split.
         {
-            rewrite elem_of_list_lookup.
-            exists rule_idx. apply Hot1.
+            split.
+            {
+                rewrite elem_of_list_lookup.
+                exists rule_idx. apply Hot1.
+            }
+            {
+                destruct H12 as [H1 H2].
+                unfold is_true, isSome in H1.
+                destruct (try_match_lhs_with_sc e r) eqn:HTM>[|inversion H1].
+                clear H1.
+                inversion H1ρ'; subst; clear H1ρ'.
+                unfold try_match_lhs_with_sc in HTM.
+                apply bind_Some_T_1 in HTM.
+                destruct HTM as [x [H1x H2x]].
+                destruct (matchesb x () (fr_scs r)) eqn:Heq.
+                {
+                    inversion H2x; subst; clear H2x.
+                    apply try_match_correct in H1x.
+                    apply matchesb_satisfies in Heq.
+                    apply matchesb_satisfies in H1x.
+                    assumption.
+                }
+                {
+                    inversion H2x.
+                }         
+            }
         }
         {
             destruct H12 as [H1 H2].
-            destruct H1 as [x Hx].
-            rewrite Hx in H1ρ'.
+            unfold is_true, isSome in H1.
+            destruct (try_match_lhs_with_sc e r) eqn:HTM>[|inversion H1].
+            clear H1.
             inversion H1ρ'; subst; clear H1ρ'.
-            unfold try_match_lhs_with_sc in Hx.
-            rewrite bind_Some in Hx.
-            destruct Hx as [x [H1x H2x]].
+            unfold try_match_lhs_with_sc in HTM.
+            apply bind_Some_T_1 in HTM.
+            destruct HTM as [x [H1x H2x]].
             destruct (matchesb x () (fr_scs r)) eqn:Heq.
             {
                 inversion H2x; subst; clear H2x.
                 apply try_match_correct in H1x.
-                apply matchesb_implies_satisfies in Heq.
-                apply matchesb_implies_satisfies in H1x.
-                split; assumption.
+                apply matchesb_satisfies in Heq.
+                apply matchesb_satisfies in H1x.
+                assumption.
             }
             {
                 inversion H2x.
@@ -895,24 +1004,6 @@ Definition naive_interpreter
     Some ei.1
 .
 
-Lemma bind_Some_T_1
-    (A B : Type)
-    (f : A -> option B)
-    (mx : option A)
-    (y : B)
-    :
-    (mbind f mx) = Some y ->
-    {x : A & mx = Some x /\ f x = Some y}
-.
-Proof.
-    intros HH.
-    destruct mx; simpl in *.
-    {
-        exists a.
-        split>[reflexivity|exact HH].
-    }
-    { inversion HH. }
-Qed.
 
 
 

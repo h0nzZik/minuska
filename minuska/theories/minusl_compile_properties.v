@@ -8681,23 +8681,6 @@ Proof.
     }
 Qed.
 
-Lemma list_find_elem_of_isSome
-    {A : Type}
-    (P : A -> Prop)
-    {_dP : forall x, Decision (P x)}
-    (l : list A)
-    (x : A)
-    :
-    x ∈ l -> P x -> isSome (list_find P l).
-Proof.
-    ltac1:(induction 1 as [|x y l ? IH]; intros; simplify_option_eq; eauto).
-    specialize (IH ltac:(assumption)).
-    Set Printing Coercions.
-    unfold is_true, isSome in *.
-    destruct (list_find P l) eqn:Hfound; simpl.
-    { reflexivity. }
-    { inversion IH. }
-Qed.
 
 Lemma compile_correct_1
     {Σ : StaticModel}
