@@ -1036,19 +1036,15 @@ Proof.
             simpl.
             unfold rewriting_relation_flat.
             exists r.
-            destruct Hmatch as [Hin [Hm1 Hm2]].
+            destruct Hmatch as [[Hin Hm1] Hm2].
             exists (fr_act r).
             split>[apply Hin|].
             unfold flattened_rewrites_to.
             exists ρ.
             unfold flattened_rewrites_in_valuation_under_to.
-            split.
-            {
-                exact Hm1.
-            }
-            (repeat split)>[|exact Hm2].
+            repeat split; try assumption.
             apply evaluate_rhs_pattern_correct in H1y.
-            apply matchesb_implies_satisfies in H1y.
+            apply matchesb_satisfies in H1y.
             exact H1y.
         }
         {
@@ -1083,17 +1079,14 @@ Proof.
                 destruct HContra as [pg' Hg'].
                 rewrite Hev in Hg'.
                 clear Hev.
-                apply matchesb_implies_satisfies in Hg'.
+                apply matchesb_satisfies in Hg'.
                 apply Hstuck. clear Hstuck.
                 exists pg'. exists r.
                 exists (fr_act r).
+                destruct Hin.
                 split>[assumption|].
                 exists ρ.
-                split>[apply Hsat|].
-                split>[assumption|].
-                split.
-                apply Hsat.
-                reflexivity.
+                repeat split; try assumption.
             }
         }
     }
@@ -1124,41 +1117,36 @@ Proof.
                 ltac1:(exfalso).
                 unfold RewritingTheory_wf in wfΓ.
                 unfold RewritingRule_wf in wfΓ.
-                rewrite Forall_forall in wfΓ.
                 specialize (wfΓ r).
+                destruct Hin.
                 specialize (wfΓ ltac:(assumption)).
                 destruct wfΓ as [wf1 wf2].
                 unfold RewritingRule_wf2 in wf2.
                 specialize (wf2 e ρ).
-                destruct Hsat as [Hsat1 Hsat2].
-                specialize (wf2 Hsat1 Hsat2).
+                specialize (wf2 ltac:(assumption) ltac:(assumption)).
                 destruct wf2 as [g' Hg'].
-                ltac1:(unshelve(eapply satisfies_implies_matchesb in Hg')).
-                {
-                    apply _.
-                }
-                {
-                    apply _.
-                }
-
-                assert (Hn : ~ exists g, evaluate_rhs_pattern ρ (fr_to r) = Some g).
+                apply satisfies_matchesb in Hg'.
+                assert (Hn : notT { g : _ & evaluate_rhs_pattern ρ (fr_to r) = Some g } ).
                 {
                     intros HContra.
                     destruct HContra as [g HContra].
                     rewrite Heval in HContra.
                     inversion HContra.
                 }
-                ltac1:(setoid_rewrite evaluate_rhs_pattern_correct in Hn).
-                apply Hn. clear Hn. clear Heval.
+                apply Hn. clear Hn.
                 exists g'.
+                rewrite evaluate_rhs_pattern_correct.
                 apply Hg'.
             }
         }
         {
             ltac1:(exfalso).
+            destruct Hρ' as [[[H1 H2] H3] H4].
             apply thy_lhs_match_one_None in Hmatch.
-            { ltac1:(naive_solver). }
-            { assumption. }
+            apply Hmatch.
+            exists r'. exists ρ'.
+            (repeat split); try assumption.
+            assumption.
         }
     }
 Qed.
