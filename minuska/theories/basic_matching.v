@@ -1113,20 +1113,25 @@ Section with_signature.
             matchesb_satisfies := _;
         |}.
     Next Obligation.
-        destruct b; simpl.
+        destruct b; simpl in *.
         {
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
+            inversion X.
         }
         {
-            unfold bool_decide.
-            apply iff_reflect.
-            ltac1:(case_match; split; intros HH; inversion HH; simplify_eq/=).
-            { reflexivity. }
-            { 
-                unfold satisfies. simpl. assumption.
-            }
+            inversion X; subst; clear X.
+            unfold is_true.
+            rewrite bool_decide_eq_true.
+            reflexivity.
+        }
+    Qed.
+    Next Obligation.
+        destruct b; simpl in *.
+        { inversion H. }
+        {
+            unfold satisfies; simpl.
+            unfold is_true in H.
+            rewrite bool_decide_eq_true in H.
+            apply H.
         }
     Qed.
     Next Obligation.
@@ -1196,12 +1201,6 @@ Section with_signature.
     := {|
         matchesb := fun _ _ _ => false ;
     |}.
-    Next Obligation.
-        unfold satisfies. simpl.
-        apply ReflectF.
-        intros HContra.
-        inversion HContra.
-    Qed.
     Fail Next Obligation.
 
     #[export]
@@ -1250,11 +1249,6 @@ Section with_signature.
     := {|
         matchesb := fun _ _ _ => false
     |}.
-    Next Obligation.
-        apply ReflectF.
-        unfold satisfies; simpl.
-        ltac1:(tauto).
-    Qed.
     Fail Next Obligation.
     
     #[export]
@@ -1474,44 +1468,34 @@ Program Instance Matches_val_ap
     matchesb := fun a b c => val_satisfies_ap_bool a c;
 |}.
 Next Obligation.
-    induction b; simpl.
+    destruct b.
+    unfold satisfies in X; simpl in X.
+    destruct X as [H1 H2].
+    unfold val_satisfies_ap_bool.
+    unfold is_true.
+    rewrite andb_true_iff.
+    rewrite bool_decide_eq_true.
+    split>[exact H1|].
+    unfold is_Some in H2.
+    destruct H2 as [x H2].
+    unfold isSome.
+    rewrite H2.
+    reflexivity.
+Qed.
+Next Obligation.
+    destruct b; simpl in *.
+    unfold is_true in H.
+    rewrite andb_true_iff in H.
+    destruct H as [H1 H2].
+    rewrite bool_decide_eq_true in H1.
+    constructor.
+    { exact H1. }
     {
-        unfold satisfies.
-        simpl.
-        unfold is_Some, bool_decide.
-        ltac1:(case_match).
-        {
-            simpl.
-            apply iff_reflect.
-            split; intros HH.
-            {
-                destruct HH as [HH1 [x HHx]].
-                rewrite HHx.
-                reflexivity.
-            }
-            {
-                split.
-                {
-                    assumption.
-                }
-                {
-                    unfold isSome in *|-.
-                    ltac1:(case_match).
-                    {
-                        exists g. reflexivity.
-                    }
-                    {
-                        inversion HH.
-                    }
-                }
-            }
-        }
-        {
-            simpl.
-            apply ReflectF.
-            intros [HContra1 [x HContrax]].
-            ltac1:(simplify_eq/=).
-        }
+        unfold isSome in H2.
+        unfold is_Some.
+        destruct (Expression_evaluate v e1).
+        { exists g. reflexivity. }
+        { inversion H2. }
     }
 Qed.
 Next Obligation.
@@ -1570,11 +1554,15 @@ Program Instance Matches_valuation_sc
     matchesb := fun a b c => valuation_satisfies_sc_bool a c;
 |}.
 Next Obligation.
-    destruct b.
-    {
-        unfold satisfies; simpl.
-        apply matchesb_satisfies.
-    }
+    destruct b; simpl in *.
+    unfold satisfies in X; simpl in X.
+    apply satisfies_matchesb.
+    assumption.
+Qed.
+Next Obligation.
+    destruct b; simpl in *.
+    apply matchesb_satisfies in H.
+    apply H.
 Qed.
 Next Obligation.
     destruct b; unfold vars_of; simpl in *.
@@ -1601,29 +1589,24 @@ Program Instance Matches_valuation_scs
     matchesb := fun ρ b c => forallb (matchesb ρ ()) c;
 |}.
 Next Obligation.
-    unfold satisfies. simpl.
-    apply iff_reflect.
-    rewrite Forall_forall.
+    unfold satisfies in X; simpl in X.
+    unfold is_true.
     rewrite forallb_forall.
-    split; intros H' x Hin.
-    {
-        apply elem_of_list_In in Hin.
-        specialize (H' x Hin).
-        eapply introT.
-        { apply matchesb_satisfies. }
-        {
-            apply H'.
-        }
-    }
-    {
-        apply elem_of_list_In in Hin.
-        specialize (H' x Hin).
-        eapply elimT.
-        { apply matchesb_satisfies. }
-        {
-            apply H'.
-        }
-    }
+    intros x Hx.
+    rewrite <- elem_of_list_In in Hx.
+    specialize (X x Hx).
+    apply satisfies_matchesb.
+    assumption.
+Qed.
+Next Obligation.
+    unfold is_true in H.
+    rewrite forallb_forall in H.
+    unfold satisfies; simpl.
+    intros x Hx.
+    rewrite elem_of_list_In in Hx.
+    specialize (H x Hx).
+    apply matchesb_satisfies.
+    assumption.
 Qed.
 Next Obligation.
     unfold vars_of; simpl.
@@ -1683,7 +1666,15 @@ Program Instance Matches__builtin__Expr
 |}.
 Next Obligation.
     unfold satisfies. simpl.
-    apply bool_decide_reflect.
+    unfold is_true.
+    rewrite bool_decide_eq_true.
+    unfold satisfies in X; simpl in X.
+    exact X.
+Qed.
+Next Obligation.
+    unfold is_true in H.
+    rewrite bool_decide_eq_true in H.
+    apply H.
 Qed.
 Next Obligation.
     apply bool_decide_eq_true in H.
@@ -1709,8 +1700,14 @@ Program Instance Matches_asb_expr
         bool_decide (Expression_evaluate ρ e = Some (term_preterm x))   ) ;
 |}.
 Next Obligation.
-    unfold satisfies. simpl.
-    apply bool_decide_reflect.
+    unfold is_true.
+    rewrite bool_decide_eq_true.
+    apply X.
+Qed.
+Next Obligation.
+    unfold is_true in H.
+    rewrite bool_decide_eq_true in H.
+    apply H.
 Qed.
 Next Obligation.
     apply bool_decide_eq_true in H.
