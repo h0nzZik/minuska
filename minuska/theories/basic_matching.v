@@ -636,90 +636,39 @@ Section with_signature.
             matchesb_satisfies := _;
         |}.
     Next Obligation.
-        ltac1:(rewrite /fst).
-        ltac1:(rewrite /snd).
-        ltac1:(rename v into ρ).
-        ltac1:(rename a into x).
-        ltac1:(rename b into y).
-        
-        simpl.
-        destruct x; simpl.
+        destruct a,b; simpl.
         {
-            destruct y; simpl.
-            {
-                unfold ApppliedOperatorOr'_matches_Term'.
-                simpl.
-                unfold satisfies; simpl.
-
-                apply iff_reflect.
-                split; intros HH.
-                {
-                    inversion HH; subst; clear HH.
-                    eapply introT.
-                    { apply matchesb_satisfies. }
-                    { assumption. }
-                }
-                {
-                    constructor.
-                    eapply elimT.
-                    { apply matchesb_satisfies. }
-                    { assumption. }
-                }
-            }
-            {
-                unfold ApppliedOperatorOr'_matches_Term'.
-                simpl.
-                apply iff_reflect.
-                split; intros HH.
-                {
-                    inversion HH; subst; clear HH.
-                    eapply introT.
-                    { apply matchesb_satisfies. }
-                    { assumption. }
-                }
-                {
-                    constructor.
-                    eapply elimT.
-                    { apply matchesb_satisfies. }
-                    { assumption. }
-                }
-            }
+            inversion X; subst; clear X.
+            apply satisfies_matchesb.
+            assumption.
         }
         {
-            unfold ApppliedOperatorOr'_matches_Term'.
-            simpl.
-            destruct y; simpl.
-            {
-                unfold satisfies.
-                simpl.
-                apply iff_reflect.
-                split; intros HH.
-                {
-                    inversion HH; subst; clear HH.
-                }
-                {
-                    ltac1:(exfalso).
-                    inversion HH.
-                }
-            }
-            {
-                unfold satisfies.
-                simpl.
-                apply iff_reflect.
-                split; intros HH.
-                {
-                    inversion HH; subst; clear HH.
-                    eapply introT.
-                    { apply matchesb_satisfies. }
-                    { assumption. }
-                }
-                {
-                    constructor.
-                    eapply elimT.
-                    { apply matchesb_satisfies. }
-                    { assumption. }
-                }
-            }
+            inversion X; subst; clear X.
+            apply satisfies_matchesb.
+            assumption.
+        }
+        {
+            inversion X.
+        }
+        {
+            inversion X; subst; clear X.
+            apply satisfies_matchesb.
+            assumption.
+        }
+    Qed.
+    Next Obligation.
+        destruct a,b; simpl in H.
+        {
+            constructor. apply matchesb_satisfies. assumption.
+        }
+        {
+            constructor. apply matchesb_satisfies. assumption.
+        }
+        {
+            inversion H.
+        }
+        {
+            constructor. apply matchesb_satisfies. assumption.
         }
     Qed.
     Next Obligation.
@@ -783,56 +732,47 @@ Section with_signature.
             matchesb_satisfies := _;
         |}.
     Next Obligation.
-        unfold satisfies; simpl.
-        destruct b; unfold builtin_satisfies_BuiltinOrVar'; simpl.
+        destruct b; simpl.
         {
-            apply iff_reflect.
-            split; intros HH.
-            {
-                inversion HH; subst; clear HH.
-                unfold bool_decide.
-                ltac1:(case_match; subst; naive_solver).
-            }
-            {
-                unfold bool_decide in HH.
-                ltac1:(case_match; subst; try contradiction; try constructor; naive_solver).
-            }
+            inversion X; subst; clear X.
+            unfold is_true.
+            rewrite bool_decide_eq_true.
+            reflexivity.
+        }
+        {
+            inversion X; subst; clear X.
+            rewrite H1.
+            unfold is_true.
+            rewrite bool_decide_eq_true.
+            reflexivity.
+        }
+    Qed.
+    Next Obligation.
+        destruct b; simpl in H.
+        {
+            unfold is_true in H.
+            rewrite bool_decide_eq_true in H.
+            subst.
+            constructor.
         }
         {
             unfold Valuation in *.
-            destruct (v !! x) as [a0|] eqn:Hvx; simpl.
+            destruct (v !! x) eqn:Hvx.
             {
-                destruct a0; simpl.
+                destruct t.
                 {
-                    apply ReflectF.
-                    intros HContra.
-                    inversion HContra; subst; clear HContra.
-                    ltac1:(rewrite Hvx in H1).
-                    inversion H1.
+                    inversion H.
                 }
                 {
-                    unfold bool_decide.
-                    ltac1:(case_match).
-                    {
-                        apply ReflectT.
-                        constructor. subst. assumption.
-                    }
-                    {
-                        apply ReflectF.
-                        intros HContra.
-                        inversion HContra; subst; clear HContra.
-                        ltac1:(rewrite Hvx in H2).
-                        inversion H2.
-                        ltac1:(congruence).
-                    }
+                    unfold is_true in H.
+                    rewrite bool_decide_eq_true in H.
+                    subst a.
+                    constructor.
+                    exact Hvx.
                 }
             }
             {
-                apply ReflectF.
-                intros HContra.
-                inversion HContra; subst; clear HContra.
-                ltac1:(rewrite Hvx in H1).
-                inversion H1.
+                inversion H.
             }
         }
     Qed.
@@ -984,26 +924,57 @@ Section with_signature.
             matchesb_satisfies := _;
         |}.
     Next Obligation.
-        destruct b; simpl.
+        destruct b; simpl in *.
         {
-            apply ReflectF.
-            intros HContra.
-            inversion HContra.
+            inversion X.
         }
         {
-            unfold bool_decide.
-            ltac1:((repeat case_match); simplify_eq/=);
-                try (apply ReflectF; intros HContra; inversion HContra; subst; clear HContra;
-                    ltac1:(simplify_eq/=)).
+            destruct operand.
             {
-                apply ReflectT.
+                inversion X; subst; clear X.
+                unfold is_true.
+                rewrite bool_decide_eq_true.
+                reflexivity.
+            }
+            {
+                inversion X; subst; clear X.
+                rewrite H1.
+                unfold is_true.
+                rewrite bool_decide_eq_true.
+                reflexivity.
+            }
+        }
+    Qed.
+    Next Obligation.
+        destruct b; simpl in *.
+        { inversion H. }
+        {
+            destruct operand.
+            {
+                unfold is_true in H.
+                rewrite bool_decide_eq_true in H.
+                subst.
                 constructor.
             }
             {
-                apply ReflectT.
-                constructor.
-                simpl.
-                assumption.
+                unfold Valuation in *.
+                destruct (v !! x) eqn:Hvx.
+                {
+                    destruct t.
+                    {
+                        inversion H.
+                    }
+                    {
+                        unfold is_true in H.
+                        rewrite bool_decide_eq_true in H.
+                        subst.
+                        constructor.
+                        exact Hvx.
+                    }
+                }
+                {
+                    inversion H.
+                }
             }
         }
     Qed.
