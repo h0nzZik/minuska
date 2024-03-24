@@ -23,47 +23,28 @@ From Equations Require Export Equations.
 #[global]
 Set Equations Transparent.
 
-Lemma satisfies_top_bov
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    topSymbol
-    (ctrl1 state1 : TermOver builtin_value) (lc ld : TermOver BuiltinOrVar)
-    :
-    (satisfies ρ ctrl1 lc /\ satisfies ρ state1 ld) <->
-    satisfies ρ (apply_symbol' topSymbol [uglify' ctrl1; uglify' state1])
-        (apply_symbol' topSymbol [uglify' lc; uglify' ld])
-.
+
+Lemma rev_list_ind_T [A : Type] :
+    forall P:list A-> Type,
+    P [] ->
+    (forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
+    forall l:list A, P (rev l). 
 Proof.
-    split.
-    {
-        intros [H1 H2].
-        unfold apply_symbol'. simpl.
-        destruct ctrl1,lc,state1,ld; simpl in *; (repeat constructor);
-            inversion H1; inversion H2; subst; assumption.
-    }
-    {
-        intros H.
-        inversion H; subst; clear H.
-        inversion pf; subst; clear pf;
-        destruct ctrl1,lc,state1,ld;
-            unfold to_PreTerm' in *;
-            simpl in *;
-            try (solve [inversion H1]);
-            ltac1:(simplify_eq/=);
-            try (inversion H; subst; clear H);
-            try (inversion H2; subst; clear H2);
-            try (inversion H0; subst; clear H0);
-            split; unfold satisfies; simpl;
-            (repeat constructor); try assumption;
-            unfold apply_symbol'; simpl;
-            try constructor; try assumption;
-            try (solve [inversion H7]);
-            try (solve [inversion H3]).
-    }
+    intros P ? ? l; induction l; auto.
 Qed.
 
+Lemma rev_ind_T :
+∀ [A : Type] (P : list A → Type),
+  P [] → (∀ (x : A) (l : list A), P l → P (l ++ [x])) → ∀ l : list A, P l
+.
+Proof.
+    intros A P ? ? l. rewrite <- (rev_involutive l).
+    apply (rev_list_ind_T P); cbn; auto.
+Qed.
+
+
 Definition analyze_list_from_end {A : Type} (l : list A)
-    : {l = nil} + { (exists (l' : list A) (x : A), l = l'++[x])}
+    : (l = nil) + ( ({ l' : list A & { x : A & l = l'++[x] } }))
 .
 Proof.
     induction l.
@@ -84,252 +65,332 @@ Proof.
     }
 Qed.
 
-Lemma satisfies_top_bov_cons
+Lemma satisfies_top_bov_cons_1
     {Σ : StaticModel}
     (ρ : Valuation)
     (topSymbol topSymbol' : symbol)
     (states : list (TermOver builtin_value))
     (lds : list (TermOver BuiltinOrVar))
     :
-    (
-        length states = length lds /\
-        Forall id (zip_with (satisfies ρ) states lds)
-        /\ topSymbol = topSymbol'
-    ) <->
+    length states = length lds ->
+    topSymbol = topSymbol' ->
+    ( forall (i : nat) s l,
+            states !! i = Some s ->
+            lds !! i = Some l ->
+            satisfies ρ s l
+    ) ->
     (
         satisfies ρ (fold_left helper (map uglify' states) (pt_operator topSymbol))
         (fold_left helper (map uglify' lds) (pt_operator topSymbol'))
     )
 .
 Proof.
-    split.
+    revert lds.
+    induction states using rev_ind_T; intros lds Hlens H; simpl in *.
     {
-        intros H.
-        destruct H as [Hlens H].
-        revert lds Hlens H.
-        induction states using rev_ind; intros lds Hlens H; simpl in *.
+        destruct lds; simpl in *.
         {
-            destruct lds; simpl in *.
-            {
-                destruct H as [_ H]. subst.
-                constructor.
-            }
-            {
-                inversion Hlens.
-            }
+            subst.
+            constructor.
         }
         {
-            destruct (analyze_list_from_end lds) as [?|He].
+            inversion Hlens.
+        }
+    }
+    {
+        destruct (analyze_list_from_end lds) as [?|He].
+        {
+            subst. simpl in *.
+            rewrite app_length in Hlens.
+            simpl in Hlens.
+            ltac1:(lia).
+        }
+        {
+            destruct He as [l' [x0 Hl']].
+            subst lds.
+            rewrite map_app.
+            rewrite map_app.
+            rewrite fold_left_app.
+            rewrite fold_left_app.
+            simpl.
+            rewrite app_length in Hlens.
+            rewrite app_length in Hlens.
+            simpl in Hlens.
+            assert (Hlens': length states = length l') by (ltac1:(lia)).
+            intros HH.
+            subst topSymbol'.
+            unfold helper. simpl.
+            destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                simpl in *.
             {
-                subst. simpl in *.
-                rewrite app_length in Hlens.
-                simpl in Hlens.
-                ltac1:(lia).
+                constructor.
+                apply IHstates.
+                {
+                    apply Hlens'.
+                }
+                {
+                    reflexivity.
+                }
+                {
+                    clear -HH.
+                    intros i s l H1i H2i.
+                    eapply HH.
+                    {
+                        rewrite lookup_app_l. apply H1i.
+                        apply lookup_lt_Some in H1i. apply H1i.
+                    }
+                    {
+                        rewrite lookup_app_l. apply H2i.
+                        apply lookup_lt_Some in H2i. apply H2i.
+                    }
+                }
+                {
+                    apply (f_equal prettify) in Hux.
+                    apply (f_equal prettify) in Hux0.
+                    rewrite (cancel prettify uglify') in Hux.
+                    rewrite (cancel prettify uglify') in Hux0.
+                    subst.
+                    unfold satisfies in HH; simpl in HH.
+                    ltac1:(
+                        replace (prettify' ao)
+                        with (prettify (term_preterm ao))
+                        in HH
+                        by reflexivity
+                    ).
+                    ltac1:(
+                        replace (prettify' ao0)
+                        with (prettify (term_preterm ao0))
+                        in HH
+                        by reflexivity
+                    ).
+                    specialize (HH (length states)).
+                    specialize (HH (prettify (term_preterm ao))).
+                    specialize (HH (prettify (term_preterm ao0))).
+                    rewrite (cancel uglify' prettify) in HH.
+                    rewrite (cancel uglify' prettify) in HH.
+                    rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                    rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                    rewrite Nat.sub_diag in HH.
+                    rewrite Hlens' in HH.
+                    rewrite Nat.sub_diag in HH.
+                    simpl in HH.
+                    specialize (HH eq_refl eq_refl).
+                    inversion HH; subst; clear HH; assumption.
+                }
             }
             {
-                destruct He as [l' [x0 Hl']].
-                subst lds.
-                rewrite map_app.
-                rewrite map_app.
-                rewrite fold_left_app.
-                rewrite fold_left_app.
-                simpl.
-                rewrite app_length in Hlens.
-                rewrite app_length in Hlens.
-                simpl in Hlens.
-                assert (Hlens': length states = length l') by (ltac1:(lia)).
-                rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens') in H.
-                destruct H as [H ?]. subst topSymbol'.
-                apply Forall_app in H.
-                destruct H as [H1 H2].
-                simpl in H2. rewrite Forall_cons in H2. destruct H2 as [H2 _].
-                unfold helper. simpl.
-                destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
-                    simpl in *.
+                assert (HH' := HH).
+                unfold satisfies in HH. simpl in HH.
+                specialize (HH (length states) x x0).
+                rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                rewrite Nat.sub_diag in HH.
+                rewrite Hlens' in HH.
+                rewrite Nat.sub_diag in HH.
+                specialize (HH eq_refl eq_refl).
+                rewrite Hux in HH. rewrite Hux0 in HH.
+                inversion HH; subst; clear HH.
+                constructor.
                 {
-                    constructor.
-                    apply IHstates.
+                    apply IHstates; try assumption; try reflexivity.
+                    intros i s l H1i H2i.
+                    eapply HH'.
                     {
-                        apply Hlens'.
+                        rewrite lookup_app_l. apply H1i.
+                        apply lookup_lt_Some in H1i. apply H1i.
                     }
                     {
-                        split>[|reflexivity].
-                        apply H1.
-                    }
-                    {
-                        apply (f_equal prettify) in Hux.
-                        apply (f_equal prettify) in Hux0.
-                        rewrite (cancel prettify uglify') in Hux.
-                        rewrite (cancel prettify uglify') in Hux0.
-                        subst.
-                        unfold satisfies in H2; simpl in H2.
-                        ltac1:(
-                            replace (prettify' ao)
-                            with (prettify (term_preterm ao))
-                            in H2
-                            by reflexivity
-                        ).
-                        ltac1:(
-                            replace (prettify' ao0)
-                            with (prettify (term_preterm ao0))
-                            in H2
-                            by reflexivity
-                        ).
-                        rewrite (cancel uglify' prettify) in H2.
-                        rewrite (cancel uglify' prettify) in H2.
-                        unfold satisfies in H2; simpl in H2.
-                        inversion H2; subst; clear H2; assumption.
+                        rewrite lookup_app_l. apply H2i.
+                        apply lookup_lt_Some in H2i. apply H2i.
                     }
                 }
+                { assumption. }
+            }
+            {
+                unfold satisfies in HH. simpl in HH.
+                specialize (HH (length states) x x0).
+                rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                rewrite Nat.sub_diag in HH.
+                rewrite Hlens' in HH.
+                rewrite Nat.sub_diag in HH.
+                specialize (HH eq_refl eq_refl).
+                rewrite Hux in HH. rewrite Hux0 in HH.
+                inversion HH.
+            }
+            {
+                assert (HH' := HH).
+                unfold satisfies in HH. simpl in HH.
+                specialize (HH (length states) x x0).
+                rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                rewrite lookup_app_r in HH>[|ltac1:(lia)].
+                rewrite Nat.sub_diag in HH.
+                rewrite Hlens' in HH.
+                rewrite Nat.sub_diag in HH.
+                specialize (HH eq_refl eq_refl).
+                rewrite Hux in HH. rewrite Hux0 in HH.
+                inversion HH; subst; clear HH.
+                constructor.
                 {
-                    unfold satisfies in H2. simpl in H2.
-                    rewrite Hux in H2. rewrite Hux0 in H2.
-                    inversion H2; subst; clear H2.
-                    constructor.
-                    { apply IHstates; (repeat split); try assumption; try reflexivity. }
-                    { apply H4. }
+                    apply IHstates; try assumption; try reflexivity.
+                    intros i s l H1i H2i.
+                    eapply HH'.
+                    {
+                        rewrite lookup_app_l. apply H1i.
+                        apply lookup_lt_Some in H1i. apply H1i.
+                    }
+                    {
+                        rewrite lookup_app_l. apply H2i.
+                        apply lookup_lt_Some in H2i. apply H2i.
+                    }
                 }
+                { assumption. }
+            }
+        }
+    }
+Qed.
+
+Lemma satisfies_top_bov_cons_2
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (topSymbol topSymbol' : symbol)
+    (states : list (TermOver builtin_value))
+    (lds : list (TermOver BuiltinOrVar))
+    :
+    satisfies ρ (fold_left helper (map uglify' states) (pt_operator topSymbol))
+        (fold_left helper (map uglify' lds) (pt_operator topSymbol')) ->
+    (
+        ((length states = length lds)
+        * (topSymbol = topSymbol')
+        * ( forall (i : nat) s l,
+            states !! i = Some s ->
+            lds !! i = Some l ->
+            satisfies ρ s l
+        )
+        )%type
+    )
+.
+Proof.
+    revert lds.
+    induction states using rev_ind_T; intros lds pf.
+    {
+        destruct lds; simpl in *.
+        {
+            (repeat split).
+            inversion pf. subst. reflexivity.
+            intros.
+            rewrite lookup_nil in H. inversion H.
+        }
+        {
+            inversion pf; subst; clear pf.
+            ltac1:(exfalso).
+            induction lds using rev_ind.
+            {
+                simpl in H2. unfold helper in H2.
+                destruct (uglify' t); simpl in H2; inversion H2.
+            }
+            {
+                rewrite map_app in H2.
+                rewrite fold_left_app in H2.
+                simpl in H2.
+                unfold helper in H2.
+                destruct (uglify' x) eqn:Hux.
                 {
-                    unfold satisfies in H2. simpl in H2.
-                    rewrite Hux in H2. rewrite Hux0 in H2.
                     inversion H2.
                 }
                 {
-                    unfold satisfies in H2. simpl in H2.
-                    rewrite Hux in H2. rewrite Hux0 in H2.
-                    inversion H2; subst; clear H2.
-                    constructor.
-                    { apply IHstates; (repeat split); try assumption; try reflexivity. }
-                    { assumption. }
+                    inversion H2.
                 }
             }
         }
     }
     {
-        intros H.
-        revert lds H.
-        induction states using rev_ind; intros lds pf.
+        destruct (analyze_list_from_end lds); simpl in *.
         {
-            destruct lds; simpl in *.
+            ltac1:(exfalso).
+            subst.
+
+            rewrite map_app in pf.
+            rewrite fold_left_app in pf.
+            simpl in pf.
+            unfold helper in pf.
+            destruct (uglify' x) eqn:Hux.
             {
-                split>[reflexivity|].
-                split.
-                {
-                    apply Forall_nil. exact I.
-                }
-                {
-                    inversion pf. subst. reflexivity.
-                }
+                inversion pf.
             }
             {
-                inversion pf; subst; clear pf.
-                ltac1:(exfalso).
-                induction lds using rev_ind.
-                {
-                    simpl in H2. unfold helper in H2.
-                    destruct (uglify' t); simpl in H2; inversion H2.
-                }
-                {
-                    rewrite map_app in H2.
-                    rewrite fold_left_app in H2.
-                    simpl in H2.
-                    unfold helper in H2.
-                    destruct (uglify' x) eqn:Hux.
-                    {
-                        inversion H2.
-                    }
-                    {
-                        inversion H2.
-                    }
-                }
+                inversion pf.
             }
         }
         {
-            destruct (analyze_list_from_end lds); simpl in *.
+            destruct s as [l' [x0 Hlds]].
+            subst lds; simpl in *.
+            rewrite map_app in pf.
+            rewrite map_app in pf.
+            simpl in pf.
+            rewrite fold_left_app in pf.
+            rewrite fold_left_app in pf.
+            simpl in pf.
+            specialize (IHstates l').
+            ltac1:(ospecialize (IHstates _)).
             {
-                ltac1:(exfalso).
-                subst.
-
-                rewrite map_app in pf.
-                rewrite fold_left_app in pf.
-                simpl in pf.
-                unfold helper in pf.
-                destruct (uglify' x) eqn:Hux.
+                destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
+                        simpl in *.
                 {
-                    inversion pf.
+                    inversion pf; subst; clear pf.
+                    assumption.
                 }
                 {
-                    inversion pf.
+                    inversion pf; subst; clear pf.
+                    assumption.
+                }
+                {
+                    inversion pf; subst; clear pf.
+                    assumption.
+                }
+                {
+                    inversion pf; subst; clear pf.
+                    assumption.
                 }
             }
+            destruct IHstates as [[IHlen ?] IHstates].
+            subst topSymbol'.
+            do 2 (rewrite app_length).
+            simpl.
+            repeat split.
+            { ltac1:(lia). }
             {
-                destruct e as [l' [x0 Hlds]].
-                subst lds; simpl in *.
-                rewrite map_app in pf.
-                rewrite map_app in pf.
-                simpl in pf.
-                rewrite fold_left_app in pf.
-                rewrite fold_left_app in pf.
-                simpl in pf.
-                (*
-                unfold helper in pf.
-                rewrite app_length in Hlens.
-                rewrite app_length in Hlens.
-                simpl in Hlens.
-                assert (Hlens': length states = length l') by (ltac1:(lia)).
-                
-                rewrite (zip_with_app (satisfies ρ) _ _ _ _ Hlens').
-                *)
+                intros i s l H1i H2i.
+                destruct (decide (i < length states)).
+                {
+                    rewrite lookup_app_l in H1i>[|assumption].
+                    rewrite lookup_app_l in H2i>[|ltac1:(lia)].
+                    specialize (IHstates i s l H1i H2i).
+                    apply IHstates.
+                }
+                {
+                    assert (i = length states).
+                    {
+                        apply lookup_lt_Some in H1i.
+                        rewrite app_length in H1i. simpl in H1i.
+                        ltac1:(lia).
+                    }
+                    rewrite lookup_app_r in H1i>[|ltac1:(lia)].
+                    rewrite lookup_app_r in H2i>[|ltac1:(lia)].
+                    subst i.
+                    rewrite Nat.sub_diag in H1i.
+                    rewrite IHlen in H2i.
+                    rewrite Nat.sub_diag in H2i.
+                    simpl in *.
+                    inversion H2i; subst; clear H2i.
+                    inversion H1i; subst; clear H1i.
+                    unfold satisfies; simpl.
 
-                specialize (IHstates l').
-                ltac1:(ospecialize (IHstates _)).
-                {
-                    destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
-                            simpl in *.
-                    {
-                        inversion pf; subst; clear pf.
-                        assumption.
-                    }
-                    {
-                        inversion pf; subst; clear pf.
-                        assumption.
-                    }
-                    {
-                        inversion pf; subst; clear pf.
-                        assumption.
-                    }
-                    {
-                        inversion pf; subst; clear pf.
-                        assumption.
-                    }
-                }
-                destruct IHstates as [IHlen [IHstates ?]].
-                subst topSymbol'.
-                do 2 (rewrite app_length).
-                simpl.
-                split>[ltac1:(lia)|].
-                split.
-                {                
-                    rewrite (zip_with_app (satisfies ρ) _ _ _ _ IHlen).
-                    rewrite Forall_app.
-                    split.
-                    {
-                        apply IHstates.
-                        
-                    }
-                    {
-                        simpl.
-                        rewrite Forall_cons.
-                        split>[|apply Forall_nil; exact I].
-                        destruct (uglify' x) eqn:Hux, (uglify' x0) eqn:Hux0;
-                            simpl in *; inversion pf; subst; clear pf;
-                            unfold satisfies; simpl; rewrite Hux; rewrite Hux0;
-                            try constructor; try assumption.
-                        inversion H5.
-                    }
-                }
-                {
-                    reflexivity.
+
+                    destruct (uglify' s) eqn:Hux, (uglify' l) eqn:Hux0;
+                        simpl in *; inversion pf; subst; clear pf;
+                        try constructor; try assumption.
+                    unfold satisfies in X0; simpl in X0. inversion X0.
                 }
             }
         }
@@ -1450,24 +1511,6 @@ Proof.
             }
         }
     }
-Qed.
-
-Lemma rev_list_ind_T [A : Type] :
-    forall P:list A-> Type,
-    P [] ->
-    (forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
-    forall l:list A, P (rev l). 
-Proof.
-    intros P ? ? l; induction l; auto.
-Qed.
-
-Lemma rev_ind_T :
-∀ [A : Type] (P : list A → Type),
-  P [] → (∀ (x : A) (l : list A), P l → P (l ++ [x])) → ∀ l : list A, P l
-.
-Proof.
-    intros A P ? ? l. rewrite <- (rev_involutive l).
-    apply (rev_list_ind_T P); cbn; auto.
 Qed.
 
 Lemma satisfies_term_inv
