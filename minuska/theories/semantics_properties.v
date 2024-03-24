@@ -345,6 +345,75 @@ Proof.
     }
 Qed.
 
+Lemma Expression_evalute_total_T_2
+    {Σ : StaticModel}
+    (t : Expression)
+    (ρ : Valuation)
+    :
+    ( vars_of t ⊆ vars_of ρ ) ->
+    { e:GroundTerm & Expression_evaluate ρ t = Some e }
+.
+Proof.
+    induction t; cbn; intros H.
+    {
+        exists e.
+        reflexivity.
+    }
+    {
+
+        rewrite elem_of_subseteq in H.
+        specialize (H x).
+        unfold vars_of in H; simpl in H.
+        rewrite elem_of_singleton in H.
+        specialize (H erefl).
+        destruct (ρ !! x) eqn:Hρx.
+        {
+            exists g. apply Hρx.
+        }
+        {
+            unfold Valuation in *.
+            apply not_elem_of_dom_2 in Hρx.
+            ltac1:(contradiction Hρx).
+        }
+    }
+    {
+        eexists. reflexivity.
+    }
+    {
+        unfold vars_of in H; simpl in H.
+        specialize (IHt H).
+        destruct IHt as [e He].
+        eexists. rewrite He. reflexivity.
+    }
+    {
+        unfold vars_of in H; simpl in H.
+        rewrite union_subseteq in H.
+        destruct H as [H1 H2].
+        specialize (IHt1 H1).
+        specialize (IHt2 H2).
+        destruct IHt1 as [e1 He1].
+        destruct IHt2 as [e2 Hee].
+        unfold mbind,option_bind.
+        rewrite He1.
+        rewrite Hee.
+        eexists. reflexivity.
+    }
+    {
+        unfold vars_of in H; simpl in H.
+        rewrite union_subseteq in H.
+        rewrite union_subseteq in H.
+        destruct H as [[H1 H2] H3].
+        specialize (IHt1 H1).
+        specialize (IHt2 H2).
+        specialize (IHt3 H3).
+        destruct IHt1 as [e1 He1].
+        destruct IHt2 as [e2 He2].
+        destruct IHt3 as [e3 He3].
+        rewrite He1. rewrite He2. rewrite He3. simpl.
+        eexists. reflexivity.
+    }
+Qed.
+
 Class SatisfiesProperties
     {Σ : StaticModel}
     (V A B var : Type)

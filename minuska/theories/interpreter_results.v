@@ -24,13 +24,7 @@ Proof.
     intros g ρ Hfrom Hscs.
     clear Hscs.
     
-    ltac1:(unshelve(eapply satisfies_implies_matchesb in Hfrom)).
-    {
-        apply _.
-    }
-    {
-        apply _.
-    }
+    apply satisfies_matchesb in Hfrom.
     apply matchesb_vars_of in Hfrom.
     assert (Hvtρ : vars_of (fr_to r) ⊆ vars_of ρ).
     {
@@ -40,7 +34,7 @@ Proof.
     remember (fr_to r) as to.
     destruct to as [ao|e].
     {
-        ltac1:(cut (exists (g'' : PreTerm' symbol builtin_value), satisfies ρ g'' ao)).
+        ltac1:(cut ({ g'' : PreTerm' symbol builtin_value & satisfies ρ g'' ao})).
         {
             intros [g'' Hg''].
             eexists. econstructor. apply Hg''.

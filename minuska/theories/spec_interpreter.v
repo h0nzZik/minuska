@@ -11,7 +11,7 @@ Definition RewritingRule_wf1
     {Σ : StaticModel}
     {Act : Set}
     (r : RewritingRule Act)
-    : Prop
+    : Type
 := 
     let vs1 : gset variable := vars_of (fr_scs r) in
     let vs2 : gset variable := vars_of (fr_from r) in
@@ -22,7 +22,7 @@ Definition RewritingRule_wf2'
     {Σ : StaticModel}
     {Act : Set}
     (r : RewritingRule Act)
-    : Prop
+    : Type
 := 
     (vars_of (fr_to r) ⊆ vars_of (fr_from r))
 .
