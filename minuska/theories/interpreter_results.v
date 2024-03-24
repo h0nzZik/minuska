@@ -49,7 +49,7 @@ Proof.
             specialize (IHao ltac:(set_solver)).
             destruct IHao as [g'' Hg''].
             assert (HH: vars_of b ⊆ vars_of ρ) by ltac1:(set_solver).
-            apply Expression_evalute_total_iff in HH.
+            apply Expression_evalute_total_T_2 in HH.
             destruct HH as [g''' Hg'''].
             destruct g'''.
             {
@@ -72,10 +72,10 @@ Proof.
     }
     {
         unfold vars_of in Hvtρ at 1. simpl in Hvtρ.
-        apply Expression_evalute_total_iff in Hvtρ.
+        apply Expression_evalute_total_T_2 in Hvtρ.
         destruct Hvtρ as [g' Hg'].
         exists g'.
-        ltac1:(unshelve(eapply matchesb_implies_satisfies)).
+        apply matchesb_satisfies.
         unfold matchesb; simpl.
         unfold ApppliedOperatorOr'_matches_Term'.
         destruct g'; unfold matchesb; simpl.
@@ -88,6 +88,7 @@ Proof.
     }
 Qed.
 
+(*
 #[export]
 Instance RewritingRule_wf1_dec
     {Σ : StaticModel}
@@ -101,6 +102,7 @@ Proof.
     apply _.
 Defined.
 
+
 #[export]
 Instance RewritingRule_wf2'_dec
     {Σ : StaticModel}
@@ -113,6 +115,7 @@ Proof.
     unfold RewritingRule_wf2'.
     apply _.
 Defined.
+*)
 
 Definition RewritingRule_wf2_heuristics
     {Σ : StaticModel}
@@ -124,8 +127,8 @@ Definition RewritingRule_wf2_heuristics
 Proof.
     eapply option_map.
     { apply wf2'_impl_wf2. }
-    assert (H := RewritingRule_wf2'_dec r).
-    destruct H as [H|H].
+    unfold RewritingRule_wf2'.
+    destruct (decide (vars_of (fr_to r) ⊆ (vars_of (fr_from r)))) as [H|H].
     {
         exact (Some H).
     }
@@ -140,13 +143,14 @@ Definition RewritingRule_wf_heuristics
 .
 Proof.
     unfold RewritingRule_wf.
-    assert (H1 := RewritingRule_wf1_dec r).
-    assert (H2 := RewritingRule_wf2_heuristics r).
-    destruct H1 as [H1|H1].
+    destruct (decide (vars_of (fr_scs r) ⊆ (vars_of (fr_from r)))) as [H|H].
     {
+
+        assert (H2 := RewritingRule_wf2_heuristics r).
+        unfold RewritingRule_wf1.
         destruct H2 as [H2|].
         {
-            exact (Some (conj H1 H2)).
+            exact (Some (H, H2)).
         }
         exact None.
     }
@@ -156,6 +160,7 @@ Defined.
 Definition RewritingTheory_wf_heuristics
     {Σ : StaticModel}
     {Act : Set}
+    {_dAct : EqDecision Act}
     (Γ : RewritingTheory Act)
     : option (RewritingTheory_wf Γ)
 .
@@ -164,8 +169,9 @@ Proof.
     induction Γ.
     {
         apply Some.
-        apply Forall_nil.
-        exact I.
+        intros r Hr.
+        rewrite elem_of_nil in Hr.
+        inversion Hr.
     }
     {
         destruct IHΓ as [IHΓ|].
@@ -174,10 +180,30 @@ Proof.
             destruct H as [H|].
             {
                 apply Some.
-                apply Forall_cons.
+                intros r Hr.
                 split.
-                apply H.
-                apply IHΓ.
+                {
+                    destruct (decide (r = a)).
+                    {
+                        subst. apply H.
+
+                    }
+                    {
+                        assert (r ∈ Γ) by (ltac1:(set_solver)).
+                        apply IHΓ; assumption.
+                    }
+                }
+                {
+                    destruct (decide (r = a)).
+                    {
+                        subst. apply H.
+
+                    }
+                    {
+                        assert (r ∈ Γ) by (ltac1:(set_solver)).
+                        apply IHΓ; assumption.
+                    }
+                }
             }
             exact None.
         }
