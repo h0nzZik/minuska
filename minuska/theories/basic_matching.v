@@ -114,11 +114,11 @@ Class Matches
 
     satisfies_matchesb :
         ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
-            (satisfies v a b) -> (matchesb v a b) ;
+            (satisfies v a b) -> (matchesb v a b = true) ;
 
     matchesb_satisfies :
         ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
-            (matchesb v a b) -> (satisfies v a b) ;
+            (matchesb v a b = true) -> (satisfies v a b) ;
 
     matchesb_vars_of :
         ∀ (v : (gmap var GroundTerm)) (a : A) (b : B),
@@ -130,7 +130,7 @@ Class Matches
             valuation_restrict v1 (vars_of b) = valuation_restrict v2 (vars_of b) ->
             matchesb v1 a b = matchesb v2 a b ;            
 }.
-
+(* Set Typeclasses Debug. *)
 Arguments satisfies : simpl never.
 Arguments matchesb : simpl never.
 

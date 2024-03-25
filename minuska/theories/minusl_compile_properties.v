@@ -2323,7 +2323,7 @@ Proof.
     }
 Qed.
 
-Lemma satisfies_PreTerm'_vars_of
+Lemma satisfies_PreTerm'_vars_of_1
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
     (g : PreTerm' symbol builtin_value)
@@ -2332,74 +2332,85 @@ Lemma satisfies_PreTerm'_vars_of
     (forall (x : variable), x ∈ vars_of φ -> ρ1!!x = ρ2!!x) ->
     (
     satisfies ρ1 g φ
-    <->
+    ->
     satisfies ρ2 g φ
     )
 .
 Proof.
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ1 g φ)).
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ2 g φ)).
+    unfold Valuation in *.
+    intros H1 H2.
+    apply satisfies_matchesb in H2.
+    apply matchesb_satisfies.
+    revert H1 H2.
     revert φ.
     induction g; intros φ Hvars; destruct φ;
         unfold matchesb in *; unfold vars_of in *;
         simpl in *;
         try ltac1:(tauto).
     {
+        unfold is_true.
         do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg).
+        intros [HH1 HH2].
+        split.
         {
+            apply IHg>[|assumption].
             ltac1:(set_solver).
         }
-        unfold matchesb; simpl.
-        destruct b0; simpl.
         {
-            ltac1:(tauto).
-        }
-        rewrite Hvars.
-        { reflexivity. }
-        {
-            simpl. unfold vars_of; simpl.
-            ltac1:(set_solver).
-        }
-    }
-    {
-        do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg).
-        {
-            ltac1:(set_solver).
-        }
-        unfold matchesb; simpl.
-        ltac1:(tauto).
-    }
-    {
-        do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg1).
-        {
-            ltac1:(set_solver).
-        }
-        unfold matchesb; simpl.
-        destruct b; simpl.
-        {
-            ltac1:(tauto).
-        }
-        rewrite Hvars.
-        { reflexivity. }
-        {
+            unfold matchesb in HH2; simpl in HH2.
+            unfold matchesb; simpl.
+            destruct b0; simpl in *.
+            { apply HH2. }
+            rewrite Hvars in HH2.
+            apply HH2.
             unfold vars_of; simpl.
             ltac1:(set_solver).
         }
     }
     {
         do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg1).
-        { ltac1:(set_solver). }
-        ltac1:(rewrite IHg2).
-        { ltac1:(set_solver). }
-        reflexivity.
+        intros [HH1 HH2].
+        split.
+        {
+            apply IHg>[|assumption].
+            ltac1:(set_solver).
+        }
+        {
+            unfold matchesb in HH2; simpl in HH2.
+            unfold matchesb; simpl.
+            apply HH2.
+        }
+    }
+    {
+        unfold is_true.
+        do 2 (rewrite andb_true_iff).
+        intros [HH1 HH2].
+        split.
+        {
+            apply IHg1>[|assumption].
+            ltac1:(set_solver).
+        }
+        {
+            unfold matchesb in HH2; simpl in HH2.
+            unfold matchesb; simpl.
+            destruct b; simpl in *.
+            { inversion HH2. }
+            {
+                rewrite Hvars in HH2.
+                apply HH2.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        do 2 (rewrite andb_true_iff).
+        intros [HH1 HH2].
+        split; ltac1:(set_solver).
     }
 Qed.
 
-Lemma satisfies_Term'_vars_of
+Lemma satisfies_Term'_vars_of_1
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
     (g : Term' symbol builtin_value)
@@ -2408,19 +2419,22 @@ Lemma satisfies_Term'_vars_of
     (forall (x : variable), x ∈ vars_of φ -> ρ1!!x = ρ2!!x) ->
     (
     satisfies ρ1 g φ
-    <->
+    ->
     satisfies ρ2 g φ
     )
 .
 Proof.
+    intros H1 H2.
+    apply matchesb_satisfies.
+    apply satisfies_matchesb in H2.
+    revert H1 H2.
     intros Hvars.
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ1 g φ)).
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ2 g φ)).
     destruct g, φ; unfold matchesb; simpl.
     {
-        rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ1 ao ao0)).
-        rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ2 ao ao0)).
-        apply satisfies_PreTerm'_vars_of.
+        intros HH1.
+        apply matchesb_satisfies in HH1.
+        apply satisfies_matchesb.
+        eapply satisfies_PreTerm'_vars_of_1>[|apply HH1].
         apply Hvars.
     }
     {
@@ -2429,7 +2443,7 @@ Proof.
         { ltac1:(tauto). }
         {
             rewrite Hvars.
-            { reflexivity. }
+            { ltac1:(tauto). }
             {
                 unfold vars_of; simpl.
                 unfold vars_of; simpl.
@@ -2447,7 +2461,7 @@ Proof.
         { ltac1:(tauto). }
         {
             rewrite Hvars.
-            { reflexivity. }
+            { ltac1:(tauto). }
             {
                 unfold vars_of; simpl.
                 unfold vars_of; simpl.
