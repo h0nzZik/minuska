@@ -272,6 +272,7 @@ Section custom_induction_principle.
 
 End custom_induction_principle.
 
+
 Fixpoint TermOver_size
     {Σ : StaticModel}
     {A : Type}

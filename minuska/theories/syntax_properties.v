@@ -455,6 +455,62 @@ Proof.
     }
 Defined.
 
+Lemma elem_of_next
+    {A : Type}
+    (x y : A)
+    (l : list A)
+    :
+    x <> y ->
+    x ∈ (y::l) ->
+    x ∈ l
+.
+Proof.
+    intros. inversion H0; subst; clear H0.
+    { ltac1:(contradiction). }
+    { assumption. }
+Qed.
+
+(* TODO *)
+Section custom_induction_principle_2.
+
+    Context
+        {Σ : StaticModel}
+        {A : Type}
+        {_edA : EqDecision A}
+        (P : TermOver A -> Type)
+        (true_for_over : forall a, P (t_over a) )
+        (preserved_by_term :
+            forall
+                (s : symbol)
+                (l : list (TermOver A)),
+                (forall x, x ∈ l -> P x) ->
+                P (t_term s l)
+        )
+    .
+
+    Fixpoint TermOver_rect (p : TermOver A) : P p :=
+    match p with
+    | t_over a => true_for_over a
+    | t_term s l =>  preserved_by_term s l
+        (fun x pf => 
+            (fix go (l' : list (TermOver A)) : x ∈ l' -> P x :=
+            match l' as l'0 return x ∈ l'0 -> P x with
+            | nil => fun pf' => match not_elem_of_nil _ pf' with end
+            | y::ys => 
+                match (decide (x = y)) return x ∈ (y::ys) -> P x with
+                | left e => fun pf' => (@eq_rect (TermOver A) y P (TermOver_rect y) x (eq_sym e)) 
+                | right n => fun pf' =>
+                    let H := @elem_of_next _ _ _ _ n pf' in
+                    go ys H
+                end
+            end
+            ) l pf
+        )
+    end.
+
+End custom_induction_principle_2.
+
+
 Fixpoint TermOverBuiltin_subst
     {Σ : StaticModel}
     (t m v : TermOver builtin_value)
