@@ -2958,7 +2958,7 @@ Lemma satisfies_TermOverBuiltin_to_TermOverBoV
 .
 Proof.
     unfold satisfies; simpl.
-    induction γ; constructor.
+    ltac1:(induction γ using TermOver_rect); constructor.
     {
         constructor.
     }
@@ -2966,23 +2966,27 @@ Proof.
         fold (@uglify' Σ).
         fold (@TermOver_map Σ).
         unfold to_PreTerm'.
-        rewrite <- satisfies_top_bov_cons.
-        (repeat split).
+        apply satisfies_top_bov_cons_1.
         {
             rewrite map_length. reflexivity.
         }
-        induction l; simpl.
-        { apply Forall_nil. exact I. }
+        { reflexivity. }
         {
-            rewrite Forall_cons in H.
-            destruct H as [H1 H2].
-            specialize (IHl H2).
-            rewrite Forall_cons.
-            split.
+            intros i s0 l0 H1i H2i.
+            specialize (X s0).
+            ltac1:(ospecialize (X _)).
             {
-                apply H1.
+                rewrite elem_of_list_lookup.
+                exists i. exact H1i.
             }
-            apply IHl.
+            {
+                ltac1:(replace (map) with (@fmap _ list_fmap) in H2i by reflexivity).
+                rewrite list_lookup_fmap in H2i.
+                rewrite H1i in H2i.
+                simpl in H2i.
+                inversion H2i; subst; clear H2i.
+                apply X.
+            }
         }
     }
 Qed.
@@ -3109,8 +3113,8 @@ Lemma forall_satisfies_inv'
     sum_list_with (S ∘ TermOver_size) l < sz ->
     length γ1 = length l ->
     length γ2 = length l ->
-    Forall id (zip_with (satisfies ρ) γ1 l) ->
-    Forall id (zip_with (satisfies ρ) γ2 l) ->
+    (forall idx a b, γ1 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
+    (forall idx a b, γ2 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
     γ1 = γ2
 with satisfies_inv'
     {Σ : StaticModel}
@@ -3131,11 +3135,8 @@ Proof.
         {
             ltac1:(lia).
         }
-        rewrite Forall_forall.
-        rewrite Forall_forall in H3.
+
         intros H4.
-        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
-        ltac1:(setoid_rewrite elem_of_lookup_zip_with in H4).
         apply list_eq.
         intros i.
         destruct
@@ -3144,20 +3145,8 @@ Proof.
         {
             destruct (l !! i) eqn:Hli.
             {
-                specialize (H3 (satisfies ρ t t1)).
-                ltac1:(ospecialize (H3 _)).
-                {
-                    exists i,t,t1.
-                    split>[reflexivity|].
-                    split;assumption.
-                }
-                specialize (H4 (satisfies ρ t0 t1)).
-                ltac1:(ospecialize (H4 _)).
-                {
-                    exists i,t0,t1.
-                    split>[reflexivity|].
-                    split;assumption.
-                }
+                specialize (H3 i t t1 Hγ1i Hli).
+                specialize (H4 i t0 t1 Hγ2i Hli).
                 clear -H3 H4 satisfies_inv' sz Hsz Hli.
                 f_equal.
                 specialize (satisfies_inv' Σ sz ρ t t0 t1).
@@ -3221,12 +3210,12 @@ Proof.
             {
                 inversion pf; subst; clear pf.
                 unfold to_PreTerm' in H3.
-                apply satisfies_builtin_inv in H3.
-                inversion H3.
+                apply satisfies_builtin_inv in X.
+                inversion X.
             }
             {
                 inversion pf; subst; clear pf.
-                inversion H3; subst; clear H3.
+                inversion X; subst; clear X.
                 ltac1:(simplify_eq /=).
             }
         }
@@ -3239,13 +3228,13 @@ Proof.
             destruct az.
             {
                 inversion pf; subst; clear pf.
-                unfold to_PreTerm' in H4.
-                apply satisfies_builtin_inv in H4.
-                inversion H4.
+                unfold to_PreTerm' in X.
+                apply satisfies_builtin_inv in X.
+                inversion X.
             }
             {
                 inversion pf; subst; clear pf.
-                inversion H4; subst; clear H4.
+                inversion X; subst; clear X.
                 ltac1:(simplify_eq /=).
             }
         }
@@ -3257,12 +3246,12 @@ Proof.
             inversion H2; subst; clear H2.
             destruct az.
             {
-                apply satisfies_builtin_inv in H3.
-                inversion H3.
+                apply satisfies_builtin_inv in X.
+                inversion X.
             }
             {
-                inversion H4; subst; clear H4.
-                inversion H3; subst; clear H3.
+                inversion X; subst; clear X.
+                inversion X0; subst; clear X0.
                 ltac1:(simplify_eq /=).
                 apply to_preterm_eq_inv in H.
                 destruct H as [H1 H2].
@@ -3277,17 +3266,19 @@ Proof.
             inversion H2; subst; clear H2.
             unfold to_PreTerm' in pf.
             unfold to_PreTerm' in pf0.
-            rewrite <- satisfies_top_bov_cons in pf.
-            rewrite <- satisfies_top_bov_cons in pf0.
+            apply satisfies_top_bov_cons_2 in pf.
+            apply satisfies_top_bov_cons_2 in pf0.
             destruct pf as [H1 H2].
             destruct pf0 as [H3 H4].
             assert (IH1 := forall_satisfies_inv' Σ sz ρ lx ly lz).
-            destruct H2 as [H21 H22].
-            destruct H4 as [H41 H42].
+            destruct H1. subst cx.
+            destruct H3. subst cy.
             simpl in Hsz.
             specialize (IH1 ltac:(lia)).
-            subst.
-            specialize (IH1 H1 H3 H21 H41).
+            specialize (IH1 ltac:(assumption)).
+            specialize (IH1 ltac:(assumption)).
+            specialize (IH1 ltac:(assumption)).
+            specialize (IH1 ltac:(assumption)).
             subst.
             reflexivity.
         }
@@ -3302,8 +3293,8 @@ Lemma forall_satisfies_inv
     :
     length γ1 = length l ->
     length γ2 = length l ->
-    Forall id (zip_with (satisfies ρ) γ1 l) ->
-    Forall id (zip_with (satisfies ρ) γ2 l) ->
+    (forall idx a b, γ1 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
+    (forall idx a b, γ2 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
     γ1 = γ2
 .
 Proof.
