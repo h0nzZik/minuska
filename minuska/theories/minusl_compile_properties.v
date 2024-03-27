@@ -6050,6 +6050,7 @@ Proof.
     }
 Qed.
 
+(*
 (* TODO we need a lemma like this that does not assume h ∉ ρ.
    Instead of the uses of that assumption for satisfies_ext,
    we have to use the `vars_of` lemmas about `satisfies`,
@@ -6669,7 +6670,7 @@ Proof.
         }
     }
 Qed.
-
+*)
 
 
 
