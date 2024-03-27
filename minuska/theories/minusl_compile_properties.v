@@ -6946,20 +6946,23 @@ Lemma satisfies_Term'Expression_vars_of
     (forall (x : variable), x ∈ vars_of φ -> ρ1!!x = ρ2!!x) ->
     (
     satisfies ρ1 g φ
-    <->
+    ->
     satisfies ρ2 g φ
     )
 .
 Proof.
-    intros Hvars.
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ1 g φ)).
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ2 g φ)).
+    intros Hvars H1.
+    apply matchesb_satisfies.
+    apply satisfies_matchesb in H1.
+    revert H1.
     destruct g, φ; unfold matchesb; simpl.
     {
-        rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ1 ao ao0)).
-        rewrite <- (reflect_iff _ _ (matchesb_satisfies ρ2 ao ao0)).
-        apply satisfies_PreTerm'Expression_vars_of.
+        intros H1.
+        apply matchesb_satisfies in H1.
+        apply satisfies_matchesb.
+        eapply satisfies_PreTerm'Expression_vars_of.
         apply Hvars.
+        apply H1.
     }
     {
         unfold matchesb; simpl.
@@ -6969,7 +6972,7 @@ Proof.
             (decide (Expression_evaluate ρ2 operand = Some (term_preterm ao))) as [Hsome2|Hnone2].
         {
             rewrite Hsome1. rewrite Hsome2.
-            reflexivity.
+            ltac1:(tauto).
         }
         {
             ltac1:(exfalso).
@@ -7034,7 +7037,7 @@ Proof.
             (decide (Expression_evaluate ρ2 operand0 = Some (term_operand operand))) as [Hsome2|Hnone2].
         {
             rewrite Hsome1. rewrite Hsome2.
-            reflexivity.
+            ltac1:(tauto).
         }
         {
             ltac1:(exfalso).
