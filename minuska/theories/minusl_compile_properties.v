@@ -7355,16 +7355,16 @@ Lemma satisfies_TermOverBoV_to_TermOverExpr
     (φ : TermOver BuiltinOrVar)
     :
     satisfies ρ γ (TermOverBoV_to_TermOverExpr φ)
-    <->
+    ->
     satisfies ρ γ φ
 .
 Proof.
     revert γ.
-    induction φ; intros γ.
+    ltac1:(induction φ using TermOver_rect); intros γ.
     {
         unfold TermOverBoV_to_TermOverExpr.
         simpl.
-        split; intros H.
+        intros H.
         {
             destruct a; simpl in *.
             {
@@ -7378,10 +7378,10 @@ Proof.
                     constructor.
                 }   
                 {
-                    apply (f_equal prettify) in H0.
-                    rewrite (cancel prettify uglify') in H0.
+                    apply (f_equal prettify) in H2.
+                    rewrite (cancel prettify uglify') in H2.
                     subst γ.
-                    inversion H3.
+                    inversion X.
                 }             
             }
             {
@@ -7396,10 +7396,10 @@ Proof.
                     assumption.
                 }
                 {
-                    apply (f_equal prettify) in H0.
-                    rewrite (cancel prettify uglify') in H0.
+                    apply (f_equal prettify) in H2.
+                    rewrite (cancel prettify uglify') in H2.
                     subst γ.
-                    inversion H3; subst; clear H3.
+                    inversion X; subst; clear X.
                     simpl.
                     apply satisfies_var.
                     rewrite uglify'_prettify'.
@@ -7407,138 +7407,40 @@ Proof.
                 }
             }
         }
-        {
-            destruct a.
-            {
-                inversion H; subst; clear H.
-                {
-                    apply (f_equal prettify) in H2.
-                    rewrite (cancel prettify uglify') in H2.
-                    subst γ.
-                    simpl.
-                    constructor.
-                    inversion pf; subst; clear pf.
-                    constructor.
-                }
-                {
-
-                    apply (f_equal prettify) in H0.
-                    rewrite (cancel prettify uglify') in H0.
-                    subst γ.
-                    simpl.
-                    inversion H3.
-                }
-            }
-            {
-                inversion H; subst; clear H.
-                {
-                    apply (f_equal prettify) in H2.
-                    rewrite (cancel prettify uglify') in H2.
-                    subst γ.
-                    simpl.
-                    inversion pf; subst; clear pf.
-                    constructor.
-                    unfold satisfies; simpl.
-                    assumption.
-                }
-                {
-                    apply (f_equal prettify) in H0.
-                    rewrite (cancel prettify uglify') in H0.
-                    subst γ.
-                    simpl.
-                    inversion H3; subst; clear H3.
-                    unfold satisfies; simpl.
-                    rewrite uglify'_prettify'.
-                    constructor.
-                    assumption.
-                }
-            }
-        }
     }
     {
-        split; intros HH.
+        intros HH.
         {
             unfold TermOverBoV_to_TermOverExpr in HH.
             simpl in HH.
             apply satisfies_term_expr_inv in HH.
-            destruct HH as [lγ [H1 [H2 H3]]].
+            destruct HH as [lγ [[H1 H2] H3]].
             subst γ.
             unfold satisfies; simpl.
             unfold apply_symbol'; simpl.
             constructor.
             unfold to_PreTerm'; simpl.
-            apply satisfies_top_bov_cons.
-            split.
+            apply satisfies_top_bov_cons_1.
             {
                 rewrite map_length in H2. ltac1:(lia).
             }
+            { reflexivity. }
             {
-                split>[|reflexivity].
-                rewrite Forall_forall in H.
-                rewrite Forall_forall in H3.
-                rewrite Forall_forall.
-                intros P.
-                rewrite elem_of_lookup_zip_with.
-                intros HH.
-                ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
-                destruct HH as [i [x [y [HH1 [HH2 HH3]]]]].
-                subst P.
-                rewrite <- H.
+                intros i s0 l0 H1i H2i.
+                apply X.
                 {
-                    apply H3.
-                    exists i,x.
-                    exists (TermOverBoV_to_TermOverExpr y).
-                    split>[reflexivity|].
-                    split>[assumption|].
+                    rewrite elem_of_list_lookup.
+                    exists i. assumption.
+                }
+                eapply H3.
+                { apply H1i. }
+                {
                     ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
                     rewrite list_lookup_fmap.
-                    rewrite HH3. simpl. reflexivity.
+                    rewrite H2i.
+                    simpl.      
+                    reflexivity.              
                 }
-                {
-                    rewrite elem_of_list_lookup. exists i. assumption.
-                }
-            }
-        }
-        {
-            unfold TermOverBoV_to_TermOverExpr. simpl.
-            apply satisfies_term_inv in HH.
-            destruct HH as [lγ [HH1 [HH2 HH3]]].
-            subst γ.
-            unfold satisfies; simpl.
-            unfold apply_symbol'; simpl.
-            constructor.
-            unfold to_PreTerm'; simpl.
-            apply satisfies_top_bov_cons_expr.
-            split.
-            {
-                rewrite map_length. ltac1:(lia).
-            }
-            split>[|reflexivity].
-            rewrite Forall_forall in H.
-            rewrite Forall_forall in HH3.
-            rewrite Forall_forall.
-            intros P HP.
-            rewrite elem_of_lookup_zip_with in HP.
-            destruct HP as [i [x [y [HH4 [HH5 HH6]]]]].
-            subst P.
-            ltac1:(replace map with (@fmap _ list_fmap) in HH6 by reflexivity).
-            rewrite list_lookup_fmap in HH6.
-            destruct (l !! i) eqn:Hli.
-            {
-                simpl in HH6. inversion HH6. subst. clear HH6.
-                apply H.
-                {
-                    rewrite elem_of_list_lookup. exists i. assumption.
-                }
-                apply HH3.
-                rewrite elem_of_lookup_zip_with.
-                exists i,x,t.
-                repeat split; assumption.
-            }
-            {
-                apply lookup_ge_None in Hli.
-                apply lookup_lt_Some in HH5.
-                ltac1:(lia).
             }
         }
     }
@@ -7702,14 +7604,14 @@ Proof.
                 unfold vars_of; simpl.
                 unfold vars_of; simpl.
                 unfold vars_of; simpl.
-                inversion H2; subst; clear H2.
+                inversion X; subst; clear X.
                 rewrite elem_of_subseteq.
                 intros x' Hx'.
                 rewrite elem_of_singleton in Hx'.
                 subst x'.
                 rewrite elem_of_dom.
                 exists (term_preterm axy).
-                exact H1.
+                exact H0.
             }
         }
     }
@@ -7728,36 +7630,49 @@ Proof.
         rewrite Forall_app in H.
         rewrite Forall_cons in H.
         destruct H as [H1 [H2 H3]].
-        apply satisfies_term_inv in HH.
-        destruct HH as [lγ [H4 [H5 H6]]].
+        apply satisfies_term_bov_inv in HH.
+        destruct HH as [lγ [[H4 H5] H6]].
         subst c.
         rewrite <- (firstn_skipn (length l1) lγ) in H6.
-        rewrite zip_with_app in H6.
+        destruct (drop (length l1) lγ) as [|m ms] eqn:Hed.
         {
-            rewrite Forall_app in H6.
-            destruct H6 as [H6 H7].
-            destruct (drop (length l1) lγ) eqn:Hed.
+            clear -Hed H5.
+            rewrite <- (firstn_skipn (length l1) lγ) in H5.
+            rewrite app_length in H5.
+            rewrite app_length in H5.
+            rewrite take_length in H5.
+            rewrite Hed in H5.
+            simpl in H5.
+            ltac1:(lia).
+        }
+
+        eapply H2>[|apply Hx].
+        eapply H6 with (i := length l1).
+        {
+            rewrite lookup_app_r.
             {
-                clear -Hed H5.
-                rewrite <- (firstn_skipn (length l1) lγ) in H5.
+                rewrite take_length.
                 rewrite app_length in H5.
-                rewrite app_length in H5.
-                rewrite take_length in H5.
-                rewrite Hed in H5.
                 simpl in H5.
-                ltac1:(lia).
+                ltac1:(
+                    replace (length l1 - length l1 `min` length lγ)
+                    with 0
+                    by lia
+                ).
+                reflexivity.
             }
-            simpl in H7.
-            rewrite Forall_cons in H7.
-            destruct H7 as [H7 H8].
-            specialize (H2 ρ t H7).
-            clear -H2 Hx.
-            ltac1:(set_solver).
+            {
+                rewrite take_length. ltac1:(lia).
+            }
         }
         {
-            rewrite take_length.
-            rewrite app_length in H5.
-            ltac1:(lia).
+            rewrite lookup_app_r.
+            {
+                rewrite Nat.sub_diag. simpl. reflexivity.
+            }
+            {
+                ltac1:(lia).
+            }
         }
     }
 Qed.
