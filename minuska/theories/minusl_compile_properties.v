@@ -4078,7 +4078,71 @@ Proof.
                                     }
                                 }
                                 {
+                                    clear H8.
+                                    unfold is_left.
+                                    ltac1:(repeat case_match; try lia).
+                                    {
+                                        ltac1:(
+                                            replace ((l1 ++ [φ; t]) ++ l2)
+                                            with ((l1 ++ [φ]) ++ t::l2)
+                                            by (repeat rewrite <- app_assoc; reflexivity)
+                                        ).
+                                        rewrite lookup_app_l.
+                                        {
+                                            rewrite lookup_app_l in H0.
+                                            {
+                                                assumption.
+                                            }
+                                            {
+                                                clear H3. rewrite app_length in l.
+                                                rewrite app_length. simpl in *.
+                                                ltac1:(lia).
+                                            }
 
+                                        }
+                                        {
+                                            clear H3.
+                                            rewrite app_length in l.
+                                            rewrite app_length. simpl in *.
+                                            ltac1:(lia).
+                                        }
+                                    }
+                                    {
+                                        ltac1:(
+                                            replace ((l1 ++ [φ; t]) ++ l2)
+                                            with ((l1 ++ [φ]) ++ t::l2)
+                                            by (repeat rewrite <- app_assoc; reflexivity)
+                                        ).
+                                        rewrite lookup_app_r.
+                                        {
+                                            rewrite lookup_app_r in H0.
+                                            {
+                                                ltac1:(
+                                                    replace ((S i - length (l1 ++ [φ])))
+                                                    with (S(i - length (l1 ++ [φ])))
+                                                    by lia
+                                                ).
+                                                simpl. assumption.
+
+                                            }
+                                            {
+                                                clear H3.
+                                                rewrite app_length in n.
+                                                rewrite app_length.
+                                                simpl in *.
+                                                ltac1:(lia).
+                                            }
+
+
+                                        }
+                                        {
+                                            clear H3.
+                                            rewrite app_length in n.
+                                            rewrite app_length.
+                                            simpl in *.
+                                            ltac1:(lia).
+                                        }
+                                    }
                                 }
                             }
                             {
