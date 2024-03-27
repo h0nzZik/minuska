@@ -3379,11 +3379,11 @@ Proof.
                 ltac1:(lia).
             }
             {
-                apply (f_equal prettify) in H.
-                rewrite (cancel prettify uglify') in H.
+                apply (f_equal prettify) in H1.
+                rewrite (cancel prettify uglify') in H1.
                 subst t.
                 simpl in *.
-                inversion H2; subst; clear H2.
+                inversion X; subst; clear X.
                 rewrite H0 in Hsome. inversion Hsome; subst; clear Hsome.
                 apply (f_equal prettify) in H1.
                 rewrite (cancel prettify uglify') in H1.
@@ -3394,8 +3394,8 @@ Proof.
         }
     }
     {
-        apply satisfies_term_inv in Hsat.
-        destruct Hsat as [lγ [H1 [H2 H3]]].
+        apply satisfies_term_bov_inv in Hsat.
+        destruct Hsat as [lγ [[H1 H2] H3]].
         subst.
         simpl.
         rewrite <- vars_of_uglify in Hin.
@@ -3419,17 +3419,9 @@ Proof.
                 rewrite elem_of_list_lookup.
                 exists i. exact Hli.
             }
-            rewrite Forall_forall in H3.
-            ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
             destruct (lγ !! i) eqn:Hlγi.
             {
-                specialize (H3 (satisfies ρ t0 t)).            
-                ltac1:(ospecialize (H3 _)).
-                {
-                    exists i, t0, t.
-                    split>[reflexivity|].
-                    split;assumption.
-                }
+                specialize (H3 _ _ _ Hlγi Hli).
                 specialize (H t0).
                 rewrite <- vars_of_uglify in H.
                 specialize (H H2x0 Hsome H3).
@@ -3466,12 +3458,12 @@ Proof.
         inversion H1; subst; clear H1.
         inversion H2; subst; clear H2.
         unfold to_PreTerm' in pf.
-        rewrite <- satisfies_top_bov_cons in pf.
-        destruct pf as [pf1 [pf2 pf3]].
+        apply satisfies_top_bov_cons_2 in pf.
+        destruct pf as [[pf1 pf2] pf3].
         subst cz.
         destruct ay.
         {
-            inversion H4; subst; clear H4.
+            inversion X; subst; clear X.
         }
         {
             
@@ -3481,7 +3473,7 @@ Proof.
             unfold vars_of in Hvars; simpl in Hvars.
             unfold vars_of in Hvars; simpl in Hvars.
 
-            inversion H4; subst; clear H4.
+            inversion X; subst; clear X.
             assert (∃ z, z ∈ map uglify' lz /\ x ∈ (vars_of z)).
             {
                 clear -Hvars.
@@ -3578,22 +3570,12 @@ Proof.
             destruct (lz !! i) eqn:Hlzi.
             {
                 inversion Hi; subst; clear Hi.
-                rewrite Forall_forall in pf2.
-                ltac1:(setoid_rewrite elem_of_lookup_zip_with in pf2).
 
                 destruct (lx !! i) eqn:Hlxi.
                 {
-                    specialize (pf2 (satisfies ρ t0 t)).
-                    ltac1:(ospecialize (pf2 _)).
-                    {
-                        exists i.
-                        exists t0.
-                        exists t.
-                        split>[reflexivity|].
-                        split; assumption.
-                    }
+                    specialize (pf3 _ _ _ Hlxi Hlzi).
                     specialize (Htmp1 t0 (t_term cx lx)).
-                    specialize (Htmp1 t H2z H0 pf2).
+                    specialize (Htmp1 t H2z H0 pf3).
                     simpl in Htmp1.
                     clear - Htmp1 Hlxi.
                     apply take_drop_middle in Hlxi.
@@ -3627,7 +3609,7 @@ Lemma double_satisfies_contradiction_weaker
 .
 Proof.
     intros.
-    eapply double_satisfies_contradiction>[|apply H0|apply H1].
+    eapply double_satisfies_contradiction>[|apply X|apply X0].
     apply set_eq.
     intros x.
     rewrite <- vars_of_uglify.
@@ -3733,11 +3715,11 @@ Proof.
             destruct a.
             {
                 inversion H1; subst; clear H1.
-                inversion H4.
+                inversion X.
             }
             {
                 inversion H1; subst; clear H1.
-                inversion H4; subst; clear H4.
+                inversion X; subst; clear X.
                 simpl.
                 unfold delta_in_val. simpl.
                 unfold size_of_var_in_val.
@@ -3756,8 +3738,8 @@ Proof.
             }
         }
         {
-            apply satisfies_term_inv in H1.
-            destruct H1 as [lγ [H2 [H3 H4]]].
+            apply satisfies_term_bov_inv in H1.
+            destruct H1 as [lγ [[H2 H3] H4]].
             inversion H2; subst; clear H2.
             simpl.
             revert l0 H3 H4.
@@ -3782,11 +3764,12 @@ Proof.
                     destruct H as [H H'].
                     specialize (IHlγ H').
                     specialize (IHlγ l0 ltac:(lia)).
-                    rewrite Forall_cons in H4.
-                    destruct H4 as [H4 H4'].
-                    specialize (IHlγ H4').
+                    ltac1:(ospecialize (IHlγ _)).
+                    {
+                        intros. eapply H4 with (i := S i); simpl; assumption.
+                    }
                     simpl in *.
-                    specialize (H _ H4).
+                    specialize (H _ (H4 0 a t eq_refl eq_refl)).
                     unfold delta_in_val. simpl.
                     rewrite sum_list_with_app.
                     rewrite H.
@@ -3820,8 +3803,8 @@ Lemma enveloping_preserves_or_increases_delta
 Proof.
     intros H1 H2 H3.
     simpl.
-    apply satisfies_term_inv in H2.
-    destruct H2 as [lγ [h4 [H5 H6]]].
+    apply satisfies_term_bov_inv in H2.
+    destruct H2 as [lγ [[h4 H5] H6]].
     subst γ2. simpl in *.
     rewrite sum_list_with_app. simpl.
     rewrite app_length in H5. simpl in H5.
@@ -3830,17 +3813,34 @@ Proof.
     {
         apply take_drop_middle in Hγ.
         rewrite <- Hγ in H6.
-        rewrite zip_with_app in H6.
         {
-            rewrite Forall_app in H6.
-            simpl in H6.
-            rewrite Forall_cons in H6.
-            destruct H6 as [H6 [H7 H8]].
             assert (t = γ1).
             {
                 eapply satisfies_inv.
                 {
-                    apply H7.
+                    apply H6 with (i := length l1).
+                    {
+                        rewrite lookup_app_r.
+                        {
+                            rewrite take_length.
+                            ltac1:(replace ((length l1 - length l1 `min` length lγ)) with 0 by lia).
+                            simpl. reflexivity.
+                        }
+                        {
+                            rewrite take_length.
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        rewrite lookup_app_r.
+                        {
+                            rewrite Nat.sub_diag. simpl.
+                            reflexivity.
+                        }
+                        {
+                            ltac1:(lia).
+                        }
+                    }
                 }
                 {
                     apply H1.
@@ -3869,11 +3869,13 @@ Proof.
                         simpl in *. ltac1:(lia).
                     }
                     {
-                        simpl in H6.
-                        rewrite Forall_cons in H6.
-                        destruct H6 as [Hsat H6].
+                        assert (Hsat := H6 0 t a eq_refl eq_refl).
                         apply concrete_is_larger_than_symbolic in Hsat.
-                        specialize (IHl1 _ H6).
+                        specialize (IHl1 lγ).
+                        ltac1:(ospecialize (IHl1 _)).
+                        {
+                            intros. eapply H6 with (i := S i); simpl. apply H.
+                        }
                         simpl in *.
                         specialize (IHl1 ltac:(lia)).
                         ltac1:(lia).
@@ -3889,9 +3891,9 @@ Proof.
                     rewrite drop_length.
                     ltac1:(lia).
                 }
-                clear -Hlen H8.
-                revert l2 Hlen H8.
-                induction lγ'; intros l2 Hlen H8.
+                clear -Hlen H6 H5.
+                revert l2 Hlen H6 H5.
+                induction lγ'; intros l2 Hlen H8 H5.
                 {
                     destruct l2.
                     {
@@ -3908,11 +3910,185 @@ Proof.
                     }
                     {
                         simpl in *.
-                        rewrite Forall_cons in H8.
-                        destruct H8 as [H1 H2].
+                        assert (H1 := H8 (S (length l1)) a t). simpl in H1.
+                        ltac1:(ospecialize (H1 _ _)).
+                        {
+                            ltac1:(
+                                replace (take (length l1) lγ ++ γ1 :: a :: lγ')
+                                with (((take (length l1) lγ) ++ [γ1]) ++ a :: lγ')
+                            ).
+                            {
+                                rewrite lookup_app_r.
+                                {
+                                    rewrite app_length.
+                                    rewrite take_length.
+                                    simpl.
+                                    ltac1:(
+                                        replace (S (length l1) - (length l1 `min` length lγ + 1))
+                                        with (0)
+                                        by lia
+                                    ).
+                                    reflexivity.
+                                }
+                                {
+                                    rewrite app_length.
+                                    rewrite take_length.
+                                    simpl.
+                                    ltac1:(lia).
+                                }
+                            }
+                            {
+                                rewrite <- app_assoc.
+                                simpl. reflexivity.
+                            }
+                        }
+                        {
+                            ltac1:(
+                                replace (l1 ++ φ :: t :: l2)
+                                with ((l1 ++ [φ]) ++ t :: l2)
+                            ).
+                            {
+                                rewrite lookup_app_r.
+                                {
+                                    rewrite app_length. simpl.
+                                    ltac1:(
+                                        replace
+                                            (S (length l1) - (length l1 + 1))
+                                        with (0)
+                                        by lia
+                                    ).
+                                    reflexivity.
+                                }
+                                {
+                                    rewrite app_length. simpl.
+                                    ltac1:(lia).
+                                }
+                            }
+                            {
+                                rewrite <- app_assoc.
+                                reflexivity.
+                            }
+                        }
                         apply concrete_is_larger_than_symbolic in H1.
-                        specialize (IHlγ' l2 ltac:(lia) H2).
-                        ltac1:(lia).
+                        specialize (IHlγ' l2 ltac:(lia)).
+                        ltac1:(ospecialize (IHlγ' _)).
+                        {
+                            intros.
+                            ltac1:(
+                                replace (l1 ++ φ :: l2)
+                                with ((l1 ++ [φ]) ++ l2)
+                                in H0
+                            ).
+                            {
+
+
+                                specialize (H8 (if (decide (i < length (l1 ++ [φ]))) then i else (S i))).
+                                specialize (H8 γ e).
+                                ltac1:(
+                                    replace (take (length l1) lγ ++ γ1 :: lγ')
+                                    with ((take (length l1) lγ ++ [γ1]) ++ lγ')
+                                    in H
+                                    by (rewrite <- app_assoc; reflexivity)
+                                ).
+                                ltac1:(
+                                    replace (take (length l1) lγ ++ γ1 :: a :: lγ')
+                                    with ((take (length l1) lγ ++ [γ1; a]) ++ lγ')
+                                    in H8
+                                    by (rewrite <- app_assoc; reflexivity)
+                                ).
+                                ltac1:(
+                                    replace ((l1 ++ φ :: t :: l2))
+                                    with ((l1 ++ [φ ; t]) ++ l2)
+                                    in H8
+                                    by (rewrite <- app_assoc; reflexivity)
+                                ).
+                                apply H8.
+                                {
+                                    unfold is_left.
+                                    (repeat ltac1:(case_match)); simpl in *; try ltac1:(lia).
+                                    {
+                                        ltac1:(
+                                            replace ((take (length l1) lγ ++ [γ1; a]) ++ lγ')
+                                            with ((take (length l1) lγ ++ [γ1]) ++ a::lγ')
+                                        ).
+                                        {
+                                            rewrite lookup_app_l.
+                                            {
+                                                rewrite lookup_app_l in H.
+                                                {
+                                                    apply H.
+                                                }
+                                                {
+                                                    rewrite app_length.
+                                                    rewrite take_length.
+                                                    clear H4.
+                                                    rewrite app_length in l.
+                                                    simpl in *.
+                                                    ltac1:(lia).
+                                                }
+                                            }
+                                            {
+                                                rewrite app_length.
+                                                rewrite take_length.
+                                                clear H4.
+                                                rewrite app_length in l.
+                                                simpl in *.
+                                                ltac1:(lia).
+                                            }
+                                        }
+                                        {
+                                            simpl.
+                                            rewrite <- app_assoc.
+                                            rewrite <- app_assoc.
+                                            simpl. reflexivity.
+                                        }
+                                    }
+                                    {
+                                        rewrite lookup_app_r.
+                                        {
+                                            rewrite app_length.
+                                            rewrite take_length.
+                                            simpl in *.
+                                            rewrite lookup_app_r in H.
+                                            {
+                                                rewrite app_length in H.
+                                                rewrite take_length in H.
+                                                simpl in H.
+                                                rewrite <- H.
+                                                f_equal.
+                                                ltac1:(lia).
+                                            }
+                                            {
+                                                clear H4.
+                                                rewrite app_length in n.
+                                                rewrite app_length.
+                                                rewrite take_length.
+                                                simpl in *.
+                                                ltac1:(lia).
+                                            }
+                                        }
+                                        {
+                                            clear H4.
+                                            rewrite app_length in n.
+                                            rewrite app_length.
+                                            rewrite take_length.
+                                            simpl in *.
+                                            ltac1:(lia).
+                                        }
+                                    }
+                                }
+                                {
+
+                                }
+                            }
+                            {
+                                rewrite <- app_assoc. reflexivity.
+                            }
+                        }
+                        {
+                            specialize (IHlγ' ltac:(lia)).
+                            ltac1:(lia).
+                        }
                     }
                 }
             }
