@@ -3874,7 +3874,7 @@ Proof.
                         specialize (IHl1 lγ).
                         ltac1:(ospecialize (IHl1 _)).
                         {
-                            intros. eapply H6 with (i := S i); simpl. apply H.
+                            intros. eapply H6 with (i := S i); simpl. apply H. assumption.
                         }
                         simpl in *.
                         specialize (IHl1 ltac:(lia)).
@@ -3892,8 +3892,65 @@ Proof.
                     ltac1:(lia).
                 }
                 clear -Hlen H6 H5.
-                revert l2 Hlen H6 H5.
-                induction lγ'; intros l2 Hlen H8 H5.
+                assert (H7: ∀ i γ e, lγ' !! i = Some γ -> l2 !! i = Some e -> satisfies ρ γ e).
+                {
+                    intros.
+                    specialize (H6 (i + (length (l1 ++ [φ]))) γ e).
+                    ltac1:(
+                        replace (take (length l1) lγ ++ γ1 :: lγ')
+                        with ((take (length l1) lγ ++ [γ1]) ++ lγ')
+                        in H6
+                        by (rewrite <- app_assoc; reflexivity)
+                    ).
+                    rewrite lookup_app_r in H6.
+                    {
+                        rewrite app_length in H6.
+                        rewrite app_length in H6.
+                        rewrite take_length in H6.
+                        simpl in H6.
+                        ltac1:(
+                            replace (i + (length l1 + 1) - (length l1 `min` length lγ + 1))
+                            with (i)
+                            in H6
+                            by lia
+                        ).
+                        specialize (H6 ltac:(assumption)).
+                        ltac1:(
+                            replace (l1 ++ (φ :: l2))
+                            with ((l1 ++ [φ]) ++ l2)
+                            in H6
+                            by (rewrite <- app_assoc; reflexivity)
+                        ).
+                        rewrite lookup_app_r in H6.
+                        {
+                            rewrite app_length in H6.
+                            simpl in H6.
+                            ltac1:(
+                                replace ((i + (length l1 + 1) - (length l1 + 1)))
+                                with (i)
+                                in H6
+                                by lia
+                            ).
+                            specialize (H6 ltac:(assumption)).
+                            apply H6.
+                        }
+                        {
+                            rewrite app_length. simpl.
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        rewrite app_length.
+                        rewrite app_length.
+                        rewrite take_length.
+                        simpl.
+                        ltac1:(lia).
+                    }
+                }
+                clear H6.
+                clear H5 lγ.
+                revert l2 Hlen H7.
+                induction lγ'; intros l2 Hlen H8.
                 {
                     destruct l2.
                     {
@@ -3910,260 +3967,21 @@ Proof.
                     }
                     {
                         simpl in *.
-                        assert (H1 := H8 (S (length l1)) a t). simpl in H1.
-                        ltac1:(ospecialize (H1 _ _)).
-                        {
-                            ltac1:(
-                                replace (take (length l1) lγ ++ γ1 :: a :: lγ')
-                                with (((take (length l1) lγ) ++ [γ1]) ++ a :: lγ')
-                            ).
-                            {
-                                rewrite lookup_app_r.
-                                {
-                                    rewrite app_length.
-                                    rewrite take_length.
-                                    simpl.
-                                    ltac1:(
-                                        replace (S (length l1) - (length l1 `min` length lγ + 1))
-                                        with (0)
-                                        by lia
-                                    ).
-                                    reflexivity.
-                                }
-                                {
-                                    rewrite app_length.
-                                    rewrite take_length.
-                                    simpl.
-                                    ltac1:(lia).
-                                }
-                            }
-                            {
-                                rewrite <- app_assoc.
-                                simpl. reflexivity.
-                            }
-                        }
-                        {
-                            ltac1:(
-                                replace (l1 ++ φ :: t :: l2)
-                                with ((l1 ++ [φ]) ++ t :: l2)
-                            ).
-                            {
-                                rewrite lookup_app_r.
-                                {
-                                    rewrite app_length. simpl.
-                                    ltac1:(
-                                        replace
-                                            (S (length l1) - (length l1 + 1))
-                                        with (0)
-                                        by lia
-                                    ).
-                                    reflexivity.
-                                }
-                                {
-                                    rewrite app_length. simpl.
-                                    ltac1:(lia).
-                                }
-                            }
-                            {
-                                rewrite <- app_assoc.
-                                reflexivity.
-                            }
-                        }
+                        assert (H1 := H8 (0) a t eq_refl eq_refl). simpl in H1.
                         apply concrete_is_larger_than_symbolic in H1.
                         specialize (IHlγ' l2 ltac:(lia)).
                         ltac1:(ospecialize (IHlγ' _)).
                         {
                             intros.
-                            ltac1:(
-                                replace (l1 ++ φ :: l2)
-                                with ((l1 ++ [φ]) ++ l2)
-                                in H0
-                            ).
-                            {
-
-
-                                specialize (H8 (if (decide (i < length (l1 ++ [φ]))) then i else (S i))).
-                                specialize (H8 γ e).
-                                ltac1:(
-                                    replace (take (length l1) lγ ++ γ1 :: lγ')
-                                    with ((take (length l1) lγ ++ [γ1]) ++ lγ')
-                                    in H
-                                    by (rewrite <- app_assoc; reflexivity)
-                                ).
-                                ltac1:(
-                                    replace (take (length l1) lγ ++ γ1 :: a :: lγ')
-                                    with ((take (length l1) lγ ++ [γ1; a]) ++ lγ')
-                                    in H8
-                                    by (rewrite <- app_assoc; reflexivity)
-                                ).
-                                ltac1:(
-                                    replace ((l1 ++ φ :: t :: l2))
-                                    with ((l1 ++ [φ ; t]) ++ l2)
-                                    in H8
-                                    by (rewrite <- app_assoc; reflexivity)
-                                ).
-                                apply H8.
-                                {
-                                    unfold is_left.
-                                    (repeat ltac1:(case_match)); simpl in *; try ltac1:(lia).
-                                    {
-                                        ltac1:(
-                                            replace ((take (length l1) lγ ++ [γ1; a]) ++ lγ')
-                                            with ((take (length l1) lγ ++ [γ1]) ++ a::lγ')
-                                        ).
-                                        {
-                                            rewrite lookup_app_l.
-                                            {
-                                                rewrite lookup_app_l in H.
-                                                {
-                                                    apply H.
-                                                }
-                                                {
-                                                    rewrite app_length.
-                                                    rewrite take_length.
-                                                    clear H4.
-                                                    rewrite app_length in l.
-                                                    simpl in *.
-                                                    ltac1:(lia).
-                                                }
-                                            }
-                                            {
-                                                rewrite app_length.
-                                                rewrite take_length.
-                                                clear H4.
-                                                rewrite app_length in l.
-                                                simpl in *.
-                                                ltac1:(lia).
-                                            }
-                                        }
-                                        {
-                                            simpl.
-                                            rewrite <- app_assoc.
-                                            rewrite <- app_assoc.
-                                            simpl. reflexivity.
-                                        }
-                                    }
-                                    {
-                                        rewrite lookup_app_r.
-                                        {
-                                            rewrite app_length.
-                                            rewrite take_length.
-                                            simpl in *.
-                                            rewrite lookup_app_r in H.
-                                            {
-                                                rewrite app_length in H.
-                                                rewrite take_length in H.
-                                                simpl in H.
-                                                rewrite <- H.
-                                                f_equal.
-                                                ltac1:(lia).
-                                            }
-                                            {
-                                                clear H4.
-                                                rewrite app_length in n.
-                                                rewrite app_length.
-                                                rewrite take_length.
-                                                simpl in *.
-                                                ltac1:(lia).
-                                            }
-                                        }
-                                        {
-                                            clear H4.
-                                            rewrite app_length in n.
-                                            rewrite app_length.
-                                            rewrite take_length.
-                                            simpl in *.
-                                            ltac1:(lia).
-                                        }
-                                    }
-                                }
-                                {
-                                    clear H8.
-                                    unfold is_left.
-                                    ltac1:(repeat case_match; try lia).
-                                    {
-                                        ltac1:(
-                                            replace ((l1 ++ [φ; t]) ++ l2)
-                                            with ((l1 ++ [φ]) ++ t::l2)
-                                            by (repeat rewrite <- app_assoc; reflexivity)
-                                        ).
-                                        rewrite lookup_app_l.
-                                        {
-                                            rewrite lookup_app_l in H0.
-                                            {
-                                                assumption.
-                                            }
-                                            {
-                                                clear H3. rewrite app_length in l.
-                                                rewrite app_length. simpl in *.
-                                                ltac1:(lia).
-                                            }
-
-                                        }
-                                        {
-                                            clear H3.
-                                            rewrite app_length in l.
-                                            rewrite app_length. simpl in *.
-                                            ltac1:(lia).
-                                        }
-                                    }
-                                    {
-                                        ltac1:(
-                                            replace ((l1 ++ [φ; t]) ++ l2)
-                                            with ((l1 ++ [φ]) ++ t::l2)
-                                            by (repeat rewrite <- app_assoc; reflexivity)
-                                        ).
-                                        rewrite lookup_app_r.
-                                        {
-                                            rewrite lookup_app_r in H0.
-                                            {
-                                                ltac1:(
-                                                    replace ((S i - length (l1 ++ [φ])))
-                                                    with (S(i - length (l1 ++ [φ])))
-                                                    by lia
-                                                ).
-                                                simpl. assumption.
-
-                                            }
-                                            {
-                                                clear H3.
-                                                rewrite app_length in n.
-                                                rewrite app_length.
-                                                simpl in *.
-                                                ltac1:(lia).
-                                            }
-
-
-                                        }
-                                        {
-                                            clear H3.
-                                            rewrite app_length in n.
-                                            rewrite app_length.
-                                            simpl in *.
-                                            ltac1:(lia).
-                                        }
-                                    }
-                                }
-                            }
-                            {
-                                rewrite <- app_assoc. reflexivity.
-                            }
+                            exact (H8 (S i) γ e ltac:(assumption) ltac:(assumption)).
                         }
-                        {
-                            specialize (IHlγ' ltac:(lia)).
-                            ltac1:(lia).
-                        }
+                        ltac1:(lia).
                     }
                 }
             }
             
             ltac1:(lia).
         }
-        {
-            rewrite take_length.
-            ltac1:(lia).
-        }
-        
     }
     {
         apply lookup_ge_None_1 in Hγ.
