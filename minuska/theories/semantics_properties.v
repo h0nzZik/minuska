@@ -446,13 +446,13 @@ Proof.
     destruct b; simpl in *.
     {
         unfold satisfies in *; simpl in *.
-        destruct X as [H1 [x Hx]].
-
-        rewrite (Expression_evaluate_extensive_Some v1 v2 _ x H Hx).
-        split>[|eexists; reflexivity].
-        rewrite H1 in Hx.
-        rewrite (Expression_evaluate_extensive_Some v1 v2 e2 x H Hx).
-        reflexivity.
+        destruct X as [H1 H2].
+        unfold isSome in *.
+        destruct (Expression_evaluate v1 e1) eqn:Hev1e1>[|inversion H2].
+        symmetry in H1.
+        rewrite (Expression_evaluate_extensive_Some v1 v2 _ g H H1).
+        rewrite (Expression_evaluate_extensive_Some v1 v2 e1 g H Hev1e1).
+        repeat split.
     }
 Qed.
 

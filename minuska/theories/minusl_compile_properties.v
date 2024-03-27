@@ -7099,7 +7099,7 @@ Lemma satisfies_TermOverExpression_vars_of
     (φ : TermOver Expression)
     :
     (∀ x : variable, x ∈ vars_of (uglify' φ) → ρ1 !! x = ρ2 !! x) →
-    satisfies ρ1 g φ ↔ satisfies ρ2 g φ
+    satisfies ρ1 g φ -> satisfies ρ2 g φ
 .
 Proof.
     intros H.
@@ -7154,46 +7154,40 @@ Lemma satisfies_scs_vars_of
     (scs : list SideCondition)
     :
     (∀ x : variable, x ∈ vars_of scs → ρ1 !! x = ρ2 !! x) →
-    satisfies ρ1 () scs ↔ satisfies ρ2 () scs
+    satisfies ρ1 () scs -> satisfies ρ2 () scs
 .
 Proof.
     intros H.
     unfold satisfies; simpl.
     induction scs.
     {
-        split; intros _; apply Forall_nil; exact I.
+        intros HH1 HH2 HH3.
+        rewrite elem_of_nil in HH3.
+        inversion HH3.
     }
     {
-        split; intros HH; apply Forall_cons;
-            rewrite Forall_cons_iff in HH;
-            destruct HH as [HH1 HH2];
-            specialize (IHscs ltac:(set_solver));
-            split; try ltac1:(naive_solver).
-        (* satisfies ρ2 () a *)
+        intros HH x Hx.
+        
+        destruct (decide (x = a)).
         {
-            clear IHscs HH2.
-            assert (H': ∀ x : variable, x ∈ vars_of (a) → ρ1 !! x = ρ2 !! x).
-            {
-                unfold vars_of in H. simpl in H.
-                ltac1:(set_solver).
-            }
-            clear H scs.
-            destruct a; simpl in *.
-            destruct c; simpl in *.
-            unfold satisfies in HH1; simpl in HH1.
-            unfold satisfies in HH1; simpl in HH1.
-            unfold satisfies; simpl.
-            unfold satisfies; simpl.
-            destruct HH1 as [HH1 HH2].
-            unfold is_Some in HH2.
-            destruct HH2 as [x11 Hx11].
-            assert (Hx12 : Expression_evaluate ρ1 e2 = Some x11).
-            {
-                ltac1:(congruence).
-            }
-            apply expression_evaluate_some_valuation in Hx11 as Hx11'.
-            apply expression_evaluate_some_valuation in Hx12 as Hx12'.
-            unfold is_Some.
+            specialize (HH x Hx).
+            rewrite elem_of_cons in Hx.
+            subst x.
+            clear -HH H.
+            unfold satisfies in *; simpl in *.
+            unfold valuation_satisfies_sc in *; simpl in *.
+            destruct a as [c].
+            unfold satisfies in *; simpl in *.
+            unfold val_satisfies_ap in *; simpl in *.
+            destruct c as [e1 e2].
+
+            destruct HH as [HH1 HH2].
+            unfold isSome in *.
+            (destruct (Expression_evaluate ρ1 e1) as [x11|] eqn:H11)>[|inversion HH2].
+            symmetry in HH1. clear HH2.
+            apply expression_evaluate_some_valuation in HH1 as Hx11'.
+            apply expression_evaluate_some_valuation in H11 as Hx12'.
+            Locate Expression_evalute_total_iff.
             rewrite Expression_evalute_total_iff.
             unfold vars_of in H'; simpl in H'.
             unfold vars_of in H'; simpl in H'.
@@ -7229,6 +7223,15 @@ Proof.
                 ltac1:(rewrite - H').
                 exact Hy.
             }
+        }
+        {
+            assert (x ∈ scs) by ltac1:(set_solver).
+            specialize (IHscs ltac:(set_solver)).
+            eapply IHscs>[|assumption].
+            intros x0 Hx0.
+            exact (HH x0 ltac:(set_solver)).
+        }
+            
             split.
             {
                 rewrite Expression_evaluate_val_restrict with (t := e1)(ρ2 := ρ1).

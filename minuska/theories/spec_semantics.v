@@ -88,7 +88,7 @@ match ap with
 | apeq e1 e2 => 
     let v1 := Expression_evaluate ρ e1 in
     let v2 := Expression_evaluate ρ e2 in
-    v1 = v2 /\ is_Some v1
+    v1 = v2 /\ isSome v1
 end
 .
 

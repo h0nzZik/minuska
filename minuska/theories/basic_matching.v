@@ -1476,10 +1476,9 @@ Next Obligation.
     rewrite andb_true_iff.
     rewrite bool_decide_eq_true.
     split>[exact H1|].
-    unfold is_Some in H2.
-    destruct H2 as [x H2].
+    unfold isSome in H2.
+    destruct (Expression_evaluate v e1) eqn:H2'>[|inversion H2].
     unfold isSome.
-    rewrite H2.
     reflexivity.
 Qed.
 Next Obligation.
@@ -1494,7 +1493,7 @@ Next Obligation.
         unfold isSome in H2.
         unfold is_Some.
         destruct (Expression_evaluate v e1).
-        { exists g. reflexivity. }
+        { reflexivity. }
         { inversion H2. }
     }
 Qed.
