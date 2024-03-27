@@ -7148,6 +7148,26 @@ Proof.
     }
 Qed.
 
+Lemma val_elem_of_dom_1
+    {Σ : StaticModel}
+    (ρ : gmap variable GroundTerm)
+    (x : variable)
+    :
+    x ∈ dom ρ -> isSome (ρ !! x) = true
+.
+Proof.
+    rewrite elem_of_dom.
+    destruct (ρ!!x); simpl.
+    {
+        intros _. reflexivity.
+    }
+    {
+        intros H. unfold is_Some in H.
+        destruct H as [x0 Hx0].
+        inversion Hx0.
+    }
+Qed.
+
 Lemma satisfies_scs_vars_of
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
@@ -7187,42 +7207,136 @@ Proof.
             symmetry in HH1. clear HH2.
             apply expression_evaluate_some_valuation in HH1 as Hx11'.
             apply expression_evaluate_some_valuation in H11 as Hx12'.
-            Locate Expression_evalute_total_iff.
-            rewrite Expression_evalute_total_iff.
-            unfold vars_of in H'; simpl in H'.
-            unfold vars_of in H'; simpl in H'.
+
             assert (H2: vars_of e1 ⊆ vars_of ρ2).
             {
                 rewrite elem_of_subseteq in Hx11'.
                 rewrite elem_of_subseteq.
                 intros x Hx.
-                specialize (Hx11' x Hx).
-                specialize (H' x ltac:(set_solver)).
-                unfold vars_of in *; simpl in *.
-                rewrite elem_of_dom.
-                rewrite elem_of_dom in Hx11'.
-                unfold is_Some in *.
-                destruct Hx11' as [y Hy].
-                exists y.
-                ltac1:(rewrite - H').
-                exact Hy.
+                specialize (H x).
+                unfold vars_of in H; simpl in H.
+                unfold vars_of at 1 in H; simpl in H.
+                unfold vars_of at 1 in H; simpl in H.
+                specialize (H ltac:(set_solver)).
+                unfold vars_of; simpl.
+
+                rewrite elem_of_subseteq in Hx12'.
+                specialize (Hx12' x Hx).
+                unfold vars_of in Hx12'; simpl in Hx12'.
+                apply val_elem_of_dom_1 in Hx12'.
+                unfold Valuation in *.
+                unfold isSome in *.
+                destruct (ρ1 !! x)>[|inversion Hx12'].
+                eapply elem_of_dom_2.
+                rewrite <- H.
+                reflexivity.
             }
             assert (H3: vars_of e2 ⊆ vars_of ρ2).
             {
-                rewrite elem_of_subseteq in Hx12'.
+                rewrite elem_of_subseteq in Hx11'.
                 rewrite elem_of_subseteq.
                 intros x Hx.
-                specialize (Hx12' x Hx).
-                specialize (H' x ltac:(set_solver)).
-                unfold vars_of in *; simpl in *.
-                rewrite elem_of_dom.
-                rewrite elem_of_dom in Hx12'.
-                unfold is_Some in *.
-                destruct Hx12' as [y Hy].
-                exists y.
-                ltac1:(rewrite - H').
-                exact Hy.
+                specialize (H x).
+                unfold vars_of in H; simpl in H.
+                unfold vars_of at 1 in H; simpl in H.
+                unfold vars_of at 1 in H; simpl in H.
+                specialize (H ltac:(set_solver)).
+                unfold vars_of; simpl.
+                unfold Valuation in *.
+
+                specialize (Hx11' x Hx).
+                unfold vars_of in Hx11'; simpl in Hx11'.
+                apply val_elem_of_dom_1 in Hx11'.
+                unfold isSome in Hx11'.
+                destruct (ρ1 !! x) eqn:Htmp>[|inversion Hx11'].
+                eapply elem_of_dom_2.
+                rewrite <- H.
+                reflexivity.
             }
+
+            apply Expression_evalute_total_T_2 in H2 as H2'.
+            apply Expression_evalute_total_T_2 in H3 as H3'.
+            destruct H2' as [g2 H2'].
+            destruct H3' as [g3 H3'].
+            rewrite H2'. rewrite <- H2'.
+            split>[|reflexivity].
+            assert (Some g2 = Some x11).
+            {
+                rewrite <- H11.
+                rewrite <- H2'.
+                apply Expression_evaluate_val_restrict.
+                unfold valuation_restrict.
+                rewrite map_filter_strong_ext.
+                intros i x. simpl.
+                split; intros [HH'1 HH'2].
+                {
+                    rewrite H.
+                    {
+                        unfold Valuation in *.
+                        rewrite HH'2.
+                        split>[assumption|reflexivity].
+                    }
+                    {
+                        unfold vars_of; simpl.
+                        unfold vars_of at 1; simpl.
+                        unfold vars_of at 1; simpl.
+                        ltac1:(set_solver).
+                    }
+                }
+                {
+                    rewrite <- H.
+                    {
+                        unfold Valuation in *.
+                        rewrite HH'2.
+                        split>[assumption|reflexivity].
+                    }
+                    {
+                        unfold vars_of; simpl.
+                        unfold vars_of at 1; simpl.
+                        unfold vars_of at 1; simpl.
+                        ltac1:(set_solver).
+                    }
+                }
+            }
+            assert (Some g3 = Some x11).
+            {
+                rewrite <- HH1.
+                rewrite <- H3'.
+                apply Expression_evaluate_val_restrict.
+                unfold valuation_restrict.
+                rewrite map_filter_strong_ext.
+                intros i x. simpl.
+                split; intros [HH'1 HH'2].
+                {
+                    rewrite H.
+                    {
+                        unfold Valuation in *.
+                        rewrite HH'2.
+                        split>[assumption|reflexivity].
+                    }
+                    {
+                        unfold vars_of; simpl.
+                        unfold vars_of at 1; simpl.
+                        unfold vars_of at 1; simpl.
+                        ltac1:(set_solver).
+                    }
+                }
+                {
+                    rewrite <- H.
+                    {
+                        unfold Valuation in *.
+                        rewrite HH'2.
+                        split>[assumption|reflexivity].
+                    }
+                    {
+                        unfold vars_of; simpl.
+                        unfold vars_of at 1; simpl.
+                        unfold vars_of at 1; simpl.
+                        ltac1:(set_solver).
+                    }
+                }
+            }
+            ltac1:(congruence).
         }
         {
             assert (x ∈ scs) by ltac1:(set_solver).
@@ -7230,109 +7344,6 @@ Proof.
             eapply IHscs>[|assumption].
             intros x0 Hx0.
             exact (HH x0 ltac:(set_solver)).
-        }
-            
-            split.
-            {
-                rewrite Expression_evaluate_val_restrict with (t := e1)(ρ2 := ρ1).
-                {
-                    rewrite HH1.
-                    rewrite Expression_evaluate_val_restrict with (t := e2)(ρ2 := ρ2).
-                    { reflexivity. }
-                    {
-                        apply valaution_restrict_subseteq; try assumption.
-                        { ltac1:(set_solver). }
-                    }
-                }
-                {
-                    apply valaution_restrict_subseteq; try assumption.
-                    { ltac1:(set_solver). }
-                }
-            }
-            {
-                exact H2.
-            }
-        }
-        (* satisfies ρ1 () a *)
-        {
-            clear IHscs HH2.
-            assert (H': ∀ x : variable, x ∈ vars_of (a) → ρ1 !! x = ρ2 !! x).
-            {
-                unfold vars_of in H. simpl in H.
-                ltac1:(set_solver).
-            }
-            clear H scs.
-            destruct a; simpl in *.
-            destruct c; simpl in *.
-            unfold satisfies in HH1; simpl in HH1.
-            unfold satisfies in HH1; simpl in HH1.
-            unfold satisfies; simpl.
-            unfold satisfies; simpl.
-            destruct HH1 as [HH1 HH2].
-            unfold is_Some in HH2.
-            destruct HH2 as [x11 Hx11].
-            assert (Hx12 : Expression_evaluate ρ2 e2 = Some x11).
-            {
-                ltac1:(congruence).
-            }
-            apply expression_evaluate_some_valuation in Hx11 as Hx11'.
-            apply expression_evaluate_some_valuation in Hx12 as Hx12'.
-            unfold is_Some.
-            rewrite Expression_evalute_total_iff.
-            unfold vars_of in H'; simpl in H'.
-            unfold vars_of in H'; simpl in H'.
-            assert (H2: vars_of e1 ⊆ vars_of ρ1).
-            {
-                rewrite elem_of_subseteq in Hx11'.
-                rewrite elem_of_subseteq.
-                intros x Hx.
-                specialize (Hx11' x Hx).
-                specialize (H' x ltac:(set_solver)).
-                unfold vars_of in *; simpl in *.
-                rewrite elem_of_dom.
-                rewrite elem_of_dom in Hx11'.
-                unfold is_Some in *.
-                destruct Hx11' as [y Hy].
-                exists y.
-                ltac1:(rewrite H').
-                exact Hy.
-            }
-            assert (H3: vars_of e2 ⊆ vars_of ρ1).
-            {
-                rewrite elem_of_subseteq in Hx12'.
-                rewrite elem_of_subseteq.
-                intros x Hx.
-                specialize (Hx12' x Hx).
-                specialize (H' x ltac:(set_solver)).
-                unfold vars_of in *; simpl in *.
-                rewrite elem_of_dom.
-                rewrite elem_of_dom in Hx12'.
-                unfold is_Some in *.
-                destruct Hx12' as [y Hy].
-                exists y.
-                ltac1:(rewrite H').
-                exact Hy.
-            }
-            split.
-            {
-                rewrite Expression_evaluate_val_restrict with (t := e1)(ρ2 := ρ2).
-                {
-                    rewrite HH1.
-                    rewrite Expression_evaluate_val_restrict with (t := e2)(ρ2 := ρ1).
-                    { reflexivity. }
-                    {
-                        apply valaution_restrict_subseteq; try assumption.
-                        { ltac1:(set_solver). }
-                    }
-                }
-                {
-                    apply valaution_restrict_subseteq; try assumption.
-                    { ltac1:(set_solver). }
-                }
-            }
-            {
-                exact H2.
-            }
         }
     }
 Qed.
