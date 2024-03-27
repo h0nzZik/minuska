@@ -6751,11 +6751,11 @@ Lemma satisfies_TermOver_vars_of
     (φ : TermOver BuiltinOrVar)
     :
     (∀ x : variable, x ∈ vars_of (uglify' φ) → ρ1 !! x = ρ2 !! x) →
-    satisfies ρ1 g φ ↔ satisfies ρ2 g φ
+    satisfies ρ1 g φ -> satisfies ρ2 g φ
 .
 Proof.
     intros H.
-    assert (Htmp := satisfies_Term'_vars_of ρ1 ρ2 (uglify' g) (uglify' φ) H).
+    assert (Htmp := satisfies_Term'_vars_of_1 ρ1 ρ2 (uglify' g) (uglify' φ) H).
     apply Htmp.
 Qed.
 
@@ -6769,13 +6769,15 @@ Lemma satisfies_PreTerm'Expression_vars_of
     (forall (x : variable), x ∈ vars_of φ -> ρ1!!x = ρ2!!x) ->
     (
     satisfies ρ1 g φ
-    <->
+    ->
     satisfies ρ2 g φ
     )
 .
 Proof.
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ1 g φ)).
-    rewrite (reflect_iff _ _ (matchesb_satisfies ρ2 g φ)).
+    intros H1 H2.
+    apply matchesb_satisfies.
+    apply satisfies_matchesb in H2.
+    revert H1 H2.
     revert φ.
     induction g; intros φ Hvars; destruct φ;
         unfold matchesb in *; unfold vars_of in *;
@@ -6783,17 +6785,19 @@ Proof.
         try ltac1:(tauto).
     {
         do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg).
+        intros [HH1 HH2].
+        split.
         {
+            apply IHg; try assumption.
             ltac1:(set_solver).
         }
-        unfold matchesb; simpl.
+        unfold matchesb in *; simpl in *.
         destruct
             (decide (Expression_evaluate ρ1 b0 = Some (term_operand b))) as [Hsome1|Hnone1],
             (decide (Expression_evaluate ρ2 b0 = Some (term_operand b))) as [Hsome2|Hnone2].
         {
-            rewrite Hsome1. rewrite Hsome2.
-            reflexivity.
+            rewrite Hsome1 in HH2. rewrite Hsome2.
+            exact HH2.
         }
         {
             ltac1:(exfalso).
@@ -6808,7 +6812,7 @@ Proof.
             simpl.
             clear IHg.
             specialize (Hvars i).
-            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+            split; intros [HH'1 HH'2]; specialize (Hvars ltac:(set_solver));
                 split; try assumption.
             {
                 ltac1:(rewrite Hvars). assumption.
@@ -6830,7 +6834,7 @@ Proof.
             simpl.
             clear IHg.
             specialize (Hvars i).
-            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+            split; intros [HH'1 HH'2]; specialize (Hvars ltac:(set_solver));
                 split; try assumption.
             {
                 ltac1:(rewrite -Hvars). assumption.
@@ -6841,33 +6845,39 @@ Proof.
         }
         {
             clear IHg Hvars.
-            rewrite bool_decide_eq_true.
+            rewrite bool_decide_eq_true in HH2.
             rewrite bool_decide_eq_true.
             ltac1:(tauto).
         }
     }
     {
         do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg).
+        intros [HH1 HH2].
+        split.
         {
+            apply IHg.
             ltac1:(set_solver).
+            assumption.
         }
-        unfold matchesb; simpl.
+        unfold matchesb in *; simpl in *.
         ltac1:(tauto).
     }
     {
         do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg1).
+        intros [HH1 HH2].
+        split.
         {
+            apply IHg1.
             ltac1:(set_solver).
+            assumption.
         }
-        unfold matchesb; simpl.
+        unfold matchesb in *; simpl in *.
         destruct
             (decide (Expression_evaluate ρ1 b = Some (term_preterm g2))) as [Hsome1|Hnone1],
             (decide (Expression_evaluate ρ2 b = Some (term_preterm g2))) as [Hsome2|Hnone2].
         {
-            rewrite Hsome1. rewrite Hsome2.
-            reflexivity.
+            rewrite Hsome1 in HH2. rewrite Hsome2.
+            assumption.
         }
         {
             ltac1:(exfalso).
@@ -6882,7 +6892,7 @@ Proof.
             simpl.
             clear IHg.
             specialize (Hvars i).
-            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+            split; intros [HH'1 HH'2]; specialize (Hvars ltac:(set_solver));
                 split; try assumption.
             {
                 ltac1:(rewrite Hvars). assumption.
@@ -6904,7 +6914,7 @@ Proof.
             simpl.
             clear IHg.
             specialize (Hvars i).
-            split; intros [HH1 HH2]; specialize (Hvars ltac:(set_solver));
+            split; intros [HH'1 HH'2]; specialize (Hvars ltac:(set_solver));
                 split; try assumption.
             {
                 ltac1:(rewrite -Hvars). assumption.
@@ -6915,18 +6925,15 @@ Proof.
         }
         {
             clear IHg Hvars.
-            rewrite bool_decide_eq_true.
+            rewrite bool_decide_eq_true in HH2.
             rewrite bool_decide_eq_true.
             ltac1:(tauto).
         }
     }
     {
         do 2 (rewrite andb_true_iff).
-        ltac1:(rewrite IHg1).
-        { ltac1:(set_solver). }
-        ltac1:(rewrite IHg2).
-        { ltac1:(set_solver). }
-        reflexivity.
+        intros [HH1 HH2].
+        split; ltac1:(set_solver).
     }
 Qed.
 
