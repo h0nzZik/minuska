@@ -7751,30 +7751,30 @@ Proof.
         constructor.
         fold (@uglify' Σ).
         unfold to_PreTerm'.
-        apply satisfies_top_bov_cons.
-        repeat split.
+        apply satisfies_top_bov_cons_1.
         {
             rewrite length_pfmap. reflexivity.
         }
         {
-            rewrite Forall_forall.
-            intros P HP.
-            rewrite elem_of_lookup_zip_with in HP.
-            destruct HP as [i [x [y [HP1 [HP2 HP3]]]]].
+            reflexivity.
+        }
+        {
+            intros i s0 l0 H1i H2i.
+            Search pfmap lookup.
             assert (HP4 := @pfmap_lookup_Some_1 (TermOver BuiltinOrVar)).
             specialize (HP4 (TermOver builtin_value) l).
-            specialize (HP4 _ i x HP2).
+            specialize (HP4 _ i _ H1i).
             simpl in HP4.
-            subst P.
+            (*subst s0.*)
             rewrite HP4.
-            assert (Htmp1: Some (proj1_sig ((pflookup l i (pfmap_lookup_Some_lt HP2)))) = Some y).
+            assert (Htmp1: Some (proj1_sig ((pflookup l i (pfmap_lookup_Some_lt H1i)))) = Some l0).
             {
-                rewrite <- HP3.
+                rewrite <- H2i.
                 apply pflookup_spec.
             }
             apply (inj Some) in Htmp1.
             rewrite <- Htmp1.
-            ltac1:(unshelve(eapply H0))>[()|()|reflexivity|()].
+            ltac1:(unshelve(eapply X0))>[()|()|reflexivity|()].
             unfold eq_rect. reflexivity.
         }
     }
