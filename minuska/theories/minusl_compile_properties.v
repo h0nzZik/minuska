@@ -8058,8 +8058,6 @@ Lemma satisfies__MinusL_isValue__subst
 Proof.
     intros HH.
     unfold satisfies in *; simpl in *.
-    rewrite Forall_forall in HH.
-    rewrite Forall_forall.
     intros sc1. intros H1.
     unfold MinusL_isValue in HH.
     (* specialize (HH sc1). *)
@@ -8078,15 +8076,18 @@ Proof.
         exact H1.
     }
     destruct HH as [HH1 HH2].
-    destruct HH2 as [g' HH2].
-    assert(Htmp1 := Expression_evaluate_subst ρ e1 g g' (mlld_isValue_var Act D)).
+    unfold is_true in *. unfold isSome in *.
+    destruct (Expression_evaluate ρ (Expression_subst e1 (mlld_isValue_var Act D) (ft_element g)))
+        eqn:HH2'>[|inversion HH2].
+    
+    assert(Htmp1 := Expression_evaluate_subst ρ e1 g g0 (mlld_isValue_var Act D)).
     specialize (Htmp1 ltac:(congruence)).
     rewrite Htmp1.
-    assert(Htmp2 := Expression_evaluate_subst ρ e2 g g' (mlld_isValue_var Act D)).
+    assert(Htmp2 := Expression_evaluate_subst ρ e2 g g0 (mlld_isValue_var Act D)).
     specialize (Htmp2 ltac:(congruence)).
     rewrite Htmp2.
     split>[reflexivity|].
-    unfold is_Some. exists g'. reflexivity.
+    unfold is_Some. reflexivity.
 Qed.
 
 Lemma Expression_subst_notin
@@ -8207,6 +8208,35 @@ Proof.
     }
 Qed.
 
+Lemma elem_of_list_fmap_T_1
+    {A B : Type}
+    {_eB : EqDecision B}
+    (f : A → B) (l : list A) (x : B)
+    :
+    x ∈ f <$> l ->
+    { y : A & x = f y ∧ y ∈ l }
+.
+Proof.
+    induction l; simpl; intros HH.
+    { rewrite elem_of_nil in HH. inversion HH. }
+    {
+        destruct (decide (x = f a)).
+        {
+            subst x.
+            exists a.
+            split>[reflexivity|].
+            left.
+        }
+        {
+            specialize(IHl ltac:(set_solver)).
+            destruct IHl as [y [H1y H2y]].
+            exists y.
+            split>[exact H1y|].
+            right. exact H2y.
+        }
+    }
+Qed.
+
 Lemma satisfies_insert_MinusL_isValue
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -8228,11 +8258,9 @@ Lemma satisfies_insert_MinusL_isValue
 Proof.
     intros Hh HH.
     unfold satisfies in *; simpl in *.
-    rewrite Forall_forall in HH.
-    rewrite Forall_forall.
     intros sc1. intros H1.
     unfold MinusL_isValue in *.
-    rewrite elem_of_list_fmap in H1.
+    apply elem_of_list_fmap_T_1 in H1.
     destruct H1 as [y [H1y H2y]].
     subst sc1.
     destruct y as [ [e1 e2] ].
@@ -8287,8 +8315,8 @@ Lemma factor_by_subst_correct_2
     ~ (h ∈ vars_of_to_l2r ψ) ->
     satisfies ρ γ (TermOverBoV_subst φ h ψ) ->
     let xy := factor_by_subst sz ρ h γ φ ψ in
-    satisfies ρ xy.2 ψ /\
-    satisfies (<[h := (uglify' xy.2)]>ρ) xy.1 φ
+    ((satisfies ρ xy.2 ψ) *
+    (satisfies (<[h := (uglify' xy.2)]>ρ) xy.1 φ))%type
 .
 Proof.
     revert γ φ.
@@ -8305,12 +8333,12 @@ Proof.
             simpl.
             split.
             {
-                apply matchesb_implies_satisfies in Heqmb.
+                apply matchesb_satisfies in Heqmb.
                 unfold satisfies; simpl.
                 apply Heqmb.
             }
             {
-                apply matchesb_implies_satisfies in Heqmb.
+                apply matchesb_satisfies in Heqmb.
                 assert (Heqmb': satisfies ρ γ ψ).
                 {
                     unfold satisfies; simpl.
@@ -8405,7 +8433,7 @@ Proof.
                 }
                 {
                     simpl in *.
-                    apply satisfies_term_inv in Hsat.
+                    apply satisfies_term_bov_inv in Hsat.
                     destruct Hsat as [? [HContra ?]].
                     inversion HContra.
                 }
@@ -8443,8 +8471,8 @@ Proof.
                         apply list_find_Some in Hfind.
                         destruct (l !! n) eqn:Hln.
                         {
-                            apply satisfies_term_inv in Hsat.
-                            destruct Hsat as [lγ [H1 [H2 H3]]].
+                            apply satisfies_term_bov_inv in Hsat.
+                            destruct Hsat as [lγ [[H1 H2] H3]].
                             inversion H1; subst; clear H1.
                             simpl in *.
                             fold (@TermOverBoV_subst Σ) in *.
@@ -8536,19 +8564,33 @@ Proof.
                                 rewrite <- Hln in H3.
                                 rewrite map_app in H3.
                                 rewrite map_cons in H3.
-                                rewrite zip_with_app in H3.
+                                eapply H3 with (i := length (take n lγ)).
                                 {
-                                    rewrite Forall_app in H3.
-                                    simpl in H3.
-                                    rewrite Forall_cons in H3.
-                                    destruct H3 as [H31 [H32 H33]].
-                                    exact H32.
+                                    rewrite lookup_app_r.
+                                    {
+                                        rewrite Nat.sub_diag. reflexivity.
+                                    }
+                                    {
+                                        ltac1:(lia).
+                                    }
                                 }
                                 {
-                                    rewrite take_length.
-                                    rewrite map_length.
-                                    rewrite take_length.
-                                    ltac1:(lia).
+                                    rewrite lookup_app_r.
+                                    {
+                                        rewrite take_length.
+                                        rewrite map_length.
+                                        rewrite take_length.
+                                        rewrite H2.
+                                        rewrite Nat.sub_diag.
+                                        simpl.
+                                        reflexivity.
+                                    }
+                                    {
+                                        rewrite take_length.
+                                        rewrite map_length.
+                                        rewrite take_length.
+                                        ltac1:(lia).
+                                    }
                                 }
                             }
                             destruct IHsz as [IH1 IH2].
@@ -8558,11 +8600,11 @@ Proof.
                             unfold to_PreTerm'.
                             unfold to_Term'.
                             constructor.
-                            apply satisfies_top_bov_cons.
-                            (repeat split); try reflexivity.
+                            apply satisfies_top_bov_cons_1.
                             {
                                 rewrite insert_length. ltac1:(lia).
                             }
+                            { reflexivity. }
                             {
                                 assert (Hln' := Hln).
                                 assert (Hfind1' := Hfind1).
@@ -8577,6 +8619,223 @@ Proof.
                                     {
                                         rewrite Nat.sub_diag.
                                         simpl.
+                                        intros i s l.
+                                        intros H1i H2i.
+                                        destruct (decide (i < length (take n lγ))) as [Hlt|Hge].
+                                        {
+                                            rewrite lookup_app_l in H1i>[|ltac1:(lia)].
+                                            rewrite lookup_app_l in H2i.
+                                            {
+                                                eapply satisfies_TermOver_vars_of>[|eapply H3].
+                                                {
+                                                    intros x Hx.
+                                                    destruct (decide (h = x)).
+                                                    {
+                                                        subst.
+                                                        ltac1:(exfalso).
+                                                        rewrite <- vars_of_uglify in Hx.
+
+                                                        rewrite elem_of_list_lookup in Hx.
+                                                        destruct Hx as [j Hj].
+                                                        apply take_drop_middle in Hj.
+                                                        specialize (H3 i s l).
+                                                        ltac1:(ospecialize (H3 _)).
+                                                        {
+                                                            
+                                                        }
+
+                                                        apply take_drop_middle in HH3.
+                                                        rewrite <- HH3 in Hlf.
+                                                        
+                                                        rewrite map_app in Hlf.
+                                                        rewrite map_cons in Hlf.
+                                                        rewrite concat_app in Hlf.
+                                                        rewrite concat_cons in Hlf.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite <- Hj in Hlf.
+                                                        clear Hj.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite filter_cons in Hlf.
+                                                        destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                                        clear e.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        simpl in Hlf.
+                                                        rewrite <- Hfind1 in Hlf.
+                                                        assert (Hnl0: n < length l0).
+                                                        {
+                                                            apply lookup_lt_Some in Hfind1'.
+                                                            exact Hfind1'.
+                                                        }
+                                                        (* clear -Hlf Hfind2 Hnl0. *)
+                                                        apply elem_of_list_lookup in Hfind2.
+                                                        destruct Hfind2 as [j' Hj'].
+                                                        apply take_drop_middle in Hj'.
+                                                        rewrite take_app in Hlf.
+                                                        rewrite drop_app in Hlf.
+                                                        rewrite take_length in Hlf.
+                                                        destruct ((i - n `min` length l0)) eqn:Heq1.
+                                                        {
+                                                            simpl in Hlf.
+                                                            destruct ((S i - n `min` length l0)) eqn:Heq2.
+                                                            {
+                                                                simpl in Hlf.
+                                                                rewrite map_app in Hlf.
+                                                                rewrite map_app in Hlf.
+                                                                rewrite map_cons in Hlf.
+                                                                simpl in Hlf.
+                                                                rewrite concat_app in Hlf.
+                                                                rewrite concat_app in Hlf.
+                                                                rewrite concat_cons in Hlf.
+                                                                rewrite <- Hj' in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_cons in Hlf.
+                                                                destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                                                repeat (rewrite app_length in Hlf).
+                                                                simpl in Hlf.
+                                                                ltac1:(lia).
+                                                            }
+                                                            {
+                                                                ltac1:(lia).
+                                                            }
+                                                        }
+                                                        {
+                                                            repeat (rewrite map_app in Hlf).
+                                                            repeat (rewrite concat_app in Hlf).
+                                                            repeat (rewrite filter_app in Hlf).
+                                                            simpl in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite <- Hj' in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite filter_cons in Hlf.
+                                                            destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                                            repeat (rewrite app_length in Hlf).
+                                                            simpl in Hlf.
+                                                            ltac1:(lia).
+                                                        }
+                                                    }
+                                                    {
+                                                        unfold Valuation in *.
+                                                        rewrite lookup_insert_ne>[reflexivity|ltac1:(congruence)].
+                                                    }
+                                                }
+                                            }
+                                            {
+                                                rewrite take_length.
+                                                rewrite take_length in Hlt.
+                                                ltac1:(lia).
+                                            }
+                                            
+                                            { 
+                                                apply H3.
+                                                exists i,x0,y0.
+                                                split>[reflexivity|].
+                                                {
+                                                    rewrite lookup_take in HH2.
+                                                    split>[exact HH2|].
+                                                    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                                                    rewrite list_lookup_fmap.
+                                                    rewrite lookup_take in HH3.
+                                                    rewrite HH3.
+                                                    simpl.
+                                                    rewrite subst_notin.
+                                                    { reflexivity. }
+                                                    {
+                                                        intros HContra.
+                                                        rewrite elem_of_list_lookup in HContra.
+                                                        destruct HContra as [j Hj].
+                                                        apply take_drop_middle in Hj.
+                                                        apply take_drop_middle in HH3.
+                                                        rewrite <- HH3 in Hlf.
+                                                        
+                                                        rewrite map_app in Hlf.
+                                                        rewrite map_cons in Hlf.
+                                                        rewrite concat_app in Hlf.
+                                                        rewrite concat_cons in Hlf.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite <- Hj in Hlf.
+                                                        clear Hj.
+                                                        rewrite filter_app in Hlf.
+                                                        rewrite filter_cons in Hlf.
+                                                        destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                                        clear e.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        rewrite app_length in Hlf.
+                                                        simpl in Hlf.
+                                                        rewrite <- Hfind1 in Hlf.
+                                                        assert (Hnl0: n < length l0).
+                                                        {
+                                                            apply lookup_lt_Some in Hfind1'.
+                                                            exact Hfind1'.
+                                                        }
+                                                        (* clear -Hlf Hfind2 Hnl0. *)
+                                                        apply elem_of_list_lookup in Hfind2.
+                                                        destruct Hfind2 as [j' Hj'].
+                                                        apply take_drop_middle in Hj'.
+                                                        rewrite take_app in Hlf.
+                                                        rewrite drop_app in Hlf.
+                                                        rewrite take_length in Hlf.
+                                                        destruct ((i - n `min` length l0)) eqn:Heq1.
+                                                        {
+                                                            simpl in Hlf.
+                                                            destruct ((S i - n `min` length l0)) eqn:Heq2.
+                                                            {
+                                                                simpl in Hlf.
+                                                                rewrite map_app in Hlf.
+                                                                rewrite map_app in Hlf.
+                                                                rewrite map_cons in Hlf.
+                                                                simpl in Hlf.
+                                                                rewrite concat_app in Hlf.
+                                                                rewrite concat_app in Hlf.
+                                                                rewrite concat_cons in Hlf.
+                                                                rewrite <- Hj' in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_app in Hlf.
+                                                                rewrite filter_cons in Hlf.
+                                                                destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                                                repeat (rewrite app_length in Hlf).
+                                                                simpl in Hlf.
+                                                                ltac1:(lia).
+                                                            }
+                                                            {
+                                                                ltac1:(lia).
+                                                            }
+                                                        }
+                                                        {
+                                                            repeat (rewrite map_app in Hlf).
+                                                            repeat (rewrite concat_app in Hlf).
+                                                            repeat (rewrite filter_app in Hlf).
+                                                            simpl in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite <- Hj' in Hlf.
+                                                            rewrite filter_app in Hlf.
+                                                            rewrite filter_cons in Hlf.
+                                                            destruct (decide (h=h))>[|ltac1:(contradiction)].
+                                                            repeat (rewrite app_length in Hlf).
+                                                            simpl in Hlf.
+                                                            ltac1:(lia).
+                                                        }
+                                                    }
+                                                    {
+                                                        ltac1:(lia).
+                                                    }
+                                                    {
+                                                        ltac1:(lia).
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+
                                         rewrite zip_with_app.
                                         {
                                             simpl.
@@ -8598,7 +8857,7 @@ Proof.
                                                 rewrite Forall_forall in H3.
                                                 ltac1:(setoid_rewrite elem_of_lookup_zip_with in H3).
                                                 Search satisfies vars_of.
-                                                erewrite satisfies_TermOver_vars_of.
+                                                (* erewrite satisfies_TermOver_vars_of.
                                                 { 
                                                     apply H3.
                                                     exists i,x0,y0.
@@ -8700,7 +8959,7 @@ Proof.
                                                             ltac1:(lia).
                                                         }
                                                     }
-                                                }
+                                                } *)
                                                 {
                                                     intros x Hx.
                                                     destruct (decide (x = h)).
