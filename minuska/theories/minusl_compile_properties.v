@@ -9228,7 +9228,7 @@ Proof.
                                     inversion HH1; subst; clear HH1.
                                     inversion HH2; subst; clear HH2.
 
-                                    eapply satisfies_TermOver_vars_of.
+                                    eapply satisfies_TermOver_vars_of>[|apply s].
                                     intros x Hx.
 
                                     destruct (decide (continuationVariable = x)).
@@ -9265,7 +9265,6 @@ Proof.
                                         { assumption. }
                                         { reflexivity. }
                                     }
-                                    { apply s. }
                                 }
                                 {
                                     destruct i0; simpl in *.
@@ -9274,24 +9273,27 @@ Proof.
                                         symmetry in HH1. symmetry in HH2.
                                         inversion HH1; subst; clear HH1.
                                         inversion HH2; subst; clear HH2.
+                                        apply satisfies_var.
+                                        ltac1:(rewrite lookup_insert).
+                                        reflexivity.
                                     }
                                     {
                                         intros HContra.
-                                        Search lookup nil.
-                                         apply lookup_nil in HContra. inversion HContra
+                                        rewrite lookup_nil in HContra.
+                                        inversion HContra.
                                     }
                                 }
                             }
+                            {
+                                destruct i0; simpl in *.
+                                {
+                                    symmetry in HH1; inversion HH1; subst; clear HH1.
+                                    symmetry in HH2; inversion HH2; subst; clear HH2.
+                                    
 
-                            apply Forall_cons.
-                            split.
-                            {
-                                apply satisfies_top_bov.
-                                split.
-                                {
-                                    erewrite satisfies_TermOver_vars_of.
-                                    { apply s. }
+                                    eapply satisfies_TermOver_vars_of>[|apply s0].
                                     intros x Hx.
+
                                     destruct (decide (continuationVariable = x)).
                                     {
                                         subst x.
@@ -9315,6 +9317,8 @@ Proof.
                                         {
                                             unfold vars_of; simpl.
                                             unfold vars_of; simpl.
+                                            (*rewrite <- vars_of_uglify in Hx. *)
+                                            simpl in Hx.
                                             clear -Hx.
                                             ltac1:(set_solver).
                                         }
@@ -9324,55 +9328,11 @@ Proof.
                                         { assumption. }
                                         { reflexivity. }
                                     }
+
                                 }
                                 {
-                                    apply satisfies_var.
-                                    ltac1:(rewrite lookup_insert).
-                                    reflexivity.
-                                }
-                            }
-                            {
-                                apply Forall_cons.
-                                split.
-                                {
-                                    erewrite satisfies_TermOver_vars_of.
-                                    { apply s0. }
-                                    intros x Hx.
-                                    destruct (decide (continuationVariable = x)).
-                                    {
-                                        subst x.
-                                        unfold vars_of in HcvD. simpl in HcvD.
-                                        ltac1:(exfalso).
-                                        apply HcvD. clear HcvD.
-                                        rewrite elem_of_union_list.
-                                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
-                                        split.
-                                        {
-                                            rewrite elem_of_list_fmap.
-                                            exists (mld_rewrite Act lc ld a rc rd scs).
-                                            split>[reflexivity|].
-                                            rewrite <- (take_drop i ds).
-                                            rewrite elem_of_app.
-                                            rewrite <- Heqds'.
-                                            right.
-                                            rewrite elem_of_cons. left.
-                                            reflexivity.
-                                        }
-                                        {
-                                            unfold vars_of; simpl.
-                                            unfold vars_of; simpl.
-                                            clear -Hx.
-                                            ltac1:(set_solver).
-                                        }
-                                    }
-                                    {
-                                        ltac1:(rewrite lookup_insert_ne).
-                                        { assumption. }
-                                        { reflexivity. }
-                                    }
-                                }
-                                {
-                                    apply Forall_nil. exact I.
+                                    rewrite lookup_nil in HH1.
+                                    inversion HH1.
                                 }
                             }
                         }
@@ -9387,17 +9347,25 @@ Proof.
                             intros Htmp. apply Htmp.
                         }
                         constructor.
-                        apply satisfies_top_bov_cons_expr.
-                        (repeat split).
+                        apply satisfies_top_bov_cons_expr_1.
+                        { reflexivity. }
+                        { reflexivity. }
                         {
-                            apply Forall_cons.
-                            split.
+                            intros i0 s4 l HH1 HH2.
+                            destruct i0; simpl in *.
                             {
-                                apply satisfies_top_expr.
-                                split.
+                                inversion HH1; subst; clear HH1.
+                                inversion HH2; subst; clear HH2.
+                                constructor.
+                                eapply satisfies_top_bov_cons_expr_1.
+                                { reflexivity. }
+                                { reflexivity. }
+                                intros i0 s4 l HH1 HH2.
+                                destruct i0; simpl in *.
                                 {
-                                    erewrite satisfies_TermOverExpression_vars_of.
-                                    { apply s1. }
+                                    symmetry in HH1; inversion HH1; subst; clear HH1.
+                                    symmetry in HH2; inversion HH2; subst; clear HH2.
+                                    eapply satisfies_TermOverExpression_vars_of>[|apply s1].
                                     intros x Hx.
                                     destruct (decide (continuationVariable = x)).
                                     {
@@ -9433,17 +9401,25 @@ Proof.
                                     }
                                 }
                                 {
-                                    apply satisfies_var_expr.
-                                    ltac1:(rewrite lookup_insert).
-                                    reflexivity.
+                                    destruct i0; simpl in *.
+                                    {
+                                        symmetry in HH1; inversion HH1; subst; clear HH1.
+                                        symmetry in HH2; inversion HH2; subst; clear HH2.
+                                        apply satisfies_var_expr.
+                                        ltac1:(rewrite lookup_insert).
+                                        reflexivity.
+                                    }
+                                    {
+                                        rewrite lookup_nil in HH1. inversion HH1.
+                                    }
                                 }
                             }
                             {
-                                apply Forall_cons.
-                                split.
+                                destruct i0; simpl in *.
                                 {
-                                    erewrite satisfies_TermOverExpression_vars_of.
-                                    { apply s2. }
+                                    symmetry in HH1; inversion HH1; subst; clear HH1.
+                                    symmetry in HH2; inversion HH2; subst; clear HH2.
+                                    eapply satisfies_TermOverExpression_vars_of>[|apply s2].
                                     intros x Hx.
                                     destruct (decide (continuationVariable = x)).
                                     {
@@ -9479,7 +9455,7 @@ Proof.
                                     }
                                 }
                                 {
-                                    apply Forall_nil. exact I.
+                                    rewrite lookup_nil in HH1. inversion HH1.
                                 }
                             }
                         }
