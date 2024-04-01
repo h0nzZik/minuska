@@ -7760,7 +7760,6 @@ Proof.
         }
         {
             intros i s0 l0 H1i H2i.
-            Search pfmap lookup.
             assert (HP4 := @pfmap_lookup_Some_1 (TermOver BuiltinOrVar)).
             specialize (HP4 (TermOver builtin_value) l).
             specialize (HP4 _ i _ H1i).
@@ -9202,9 +9201,88 @@ Proof.
                             intros Htmp. apply Htmp.
                         }
                         constructor.
-                        apply satisfies_top_bov_cons.
-                        (repeat split).
+                        apply satisfies_top_bov_cons_1.
+                        { reflexivity. }
+                        { reflexivity. }
                         {
+                            intros i0 s4 l HH1 HH2.
+                            destruct i0; simpl in *.
+                            {
+                                injection HH1 as HH1.
+                                injection HH2 as HH2.
+                                subst s4.
+                                subst l.
+                                constructor.
+                                eapply satisfies_top_bov_cons_1.
+                                {
+                                    reflexivity.
+                                }
+                                {
+                                    reflexivity.
+                                }
+                                intros i0 s4 l.
+                                destruct i0; simpl in *.
+                                {
+                                    intros HH1 HH2.
+                                    symmetry in HH1. symmetry in HH2.
+                                    inversion HH1; subst; clear HH1.
+                                    inversion HH2; subst; clear HH2.
+
+                                    eapply satisfies_TermOver_vars_of.
+                                    intros x Hx.
+
+                                    destruct (decide (continuationVariable = x)).
+                                    {
+                                        subst x.
+                                        unfold vars_of in HcvD. simpl in HcvD.
+                                        ltac1:(exfalso).
+                                        apply HcvD. clear HcvD.
+                                        rewrite elem_of_union_list.
+                                        exists (vars_of ((mld_rewrite Act lc ld a rc rd scs))).
+                                        split.
+                                        {
+                                            rewrite elem_of_list_fmap.
+                                            exists (mld_rewrite Act lc ld a rc rd scs).
+                                            split>[reflexivity|].
+                                            rewrite <- (take_drop i ds).
+                                            rewrite elem_of_app.
+                                            rewrite <- Heqds'.
+                                            right.
+                                            rewrite elem_of_cons. left.
+                                            reflexivity.
+                                        }
+                                        {
+                                            unfold vars_of; simpl.
+                                            unfold vars_of; simpl.
+                                            (*rewrite <- vars_of_uglify in Hx. *)
+                                            simpl in Hx.
+                                            clear -Hx.
+                                            ltac1:(set_solver).
+                                        }
+                                    }
+                                    {
+                                        ltac1:(rewrite lookup_insert_ne).
+                                        { assumption. }
+                                        { reflexivity. }
+                                    }
+                                    { apply s. }
+                                }
+                                {
+                                    destruct i0; simpl in *.
+                                    {
+                                        intros HH1 HH2.
+                                        symmetry in HH1. symmetry in HH2.
+                                        inversion HH1; subst; clear HH1.
+                                        inversion HH2; subst; clear HH2.
+                                    }
+                                    {
+                                        intros HContra.
+                                        Search lookup nil.
+                                         apply lookup_nil in HContra. inversion HContra
+                                    }
+                                }
+                            }
+
                             apply Forall_cons.
                             split.
                             {
