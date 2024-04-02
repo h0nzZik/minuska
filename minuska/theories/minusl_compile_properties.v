@@ -7446,6 +7446,105 @@ Proof.
     }
 Qed.
 
+Lemma satisfies_TermOverBoV_to_TermOverExpr_2
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    (γ : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :    
+    satisfies ρ γ φ ->
+    satisfies ρ γ (TermOverBoV_to_TermOverExpr φ)
+.
+Proof.
+    revert γ.
+    ltac1:(induction φ using TermOver_rect); intros γ.
+    {
+        unfold TermOverBoV_to_TermOverExpr.
+        simpl.
+        intros H.
+        {
+            destruct a; simpl in *.
+            {
+                inversion H; subst; clear H.
+                {
+                    apply (f_equal prettify) in H2.
+                    rewrite (cancel prettify uglify') in H2.
+                    subst γ.
+                    constructor.
+                    inversion pf; subst; clear pf.
+                    constructor.
+                }   
+                {
+                    apply (f_equal prettify) in H2.
+                    rewrite (cancel prettify uglify') in H2.
+                    subst γ.
+                    inversion X.
+                }             
+            }
+            {
+                inversion H; subst; clear H.
+                {
+                    apply (f_equal prettify) in H2.
+                    rewrite (cancel prettify uglify') in H2.
+                    subst γ.
+                    constructor.
+                    inversion pf; subst; clear pf.
+                    assumption.
+                }
+                {
+                    apply (f_equal prettify) in H2.
+                    rewrite (cancel prettify uglify') in H2.
+                    subst γ.
+                    inversion X; subst; clear X.
+                    simpl.
+                    unfold satisfies; simpl.
+                    rewrite uglify'_prettify'.
+                    constructor.
+                    assumption.
+                }
+            }
+        }
+    }
+    {
+        intros HH.
+        {
+            unfold TermOverBoV_to_TermOverExpr in HH.
+            simpl in HH.
+            unfold TermOverBoV_to_TermOverExpr.
+            
+
+            apply satisfies_term_bov_inv in HH.
+            destruct HH as [lγ [[HH1 HH2] HH3]].
+            subst.
+            constructor.
+            fold (@uglify' Σ).
+            fold (@TermOver_map Σ).
+            unfold to_PreTerm'.
+            eapply satisfies_top_bov_cons_expr_1.
+            {
+                rewrite map_length. ltac1:(lia).
+            }
+            { reflexivity. }
+                
+            intros i s0 l0 HH'1 HH'2.
+            ltac1:(replace (map) with (@fmap _ list_fmap) in HH'2 by reflexivity).
+            rewrite list_lookup_fmap in HH'2.
+            destruct (l!!i) as [l0'|] eqn:Hli > [|inversion HH'2].
+            specialize (X l0').
+            simpl in HH'2. injection HH'2 as HH'2.
+            subst l0.
+            specialize (HH3 _ _ _ HH'1 Hli).
+            ltac1:(ospecialize (X _)).
+            {
+                rewrite elem_of_list_lookup.
+                exists i. apply Hli.
+            }
+            specialize (X _ HH3).
+            exact X.
+        }
+    }
+Qed.
+
 
 Lemma vars_of_t_term
     {Σ : StaticModel}
@@ -9462,8 +9561,7 @@ Proof.
                     }
                     {
                         simpl.
-                        erewrite satisfies_scs_vars_of.
-                        { apply s3. }
+                        eapply satisfies_scs_vars_of>[|apply s3].
                         intros x Hx.
                         destruct (decide (continuationVariable = x)).
                         {
@@ -9690,117 +9788,140 @@ Proof.
                         with (map uglify' [t_term cseqSymbol [c; (t_over (bov_variable V1))]; (t_over (bov_variable V2))])
                         by reflexivity
                     ).
-                    apply satisfies_top_bov_cons.
-                    (repeat split).
-                    simpl.
-                    repeat (rewrite Forall_cons).
-                    (repeat split).
+                    apply satisfies_top_bov_cons_1.
+                    { reflexivity. }
+                    { reflexivity. }
                     {
-                        constructor.
-                        fold (@uglify' Σ).
-                        apply satisfies_top_bov_cons.
-                        (repeat split).
-                        simpl.
-                        repeat (rewrite Forall_cons).
-                        (repeat split).
+                        intros i s3 l HH1 HH2.
+                        destruct i; simpl in *.
                         {
-                            erewrite satisfies_TermOver_vars_of.
-                            { apply s. }
-                            intros x Hx.
-                            destruct (decide (x = h)).
+                            inversion HH1; subst; clear HH1.
+                            inversion HH2; subst; clear HH2.
+                            constructor.
+                            apply satisfies_top_bov_cons_1.
                             {
-                                subst x.
-                                ltac1:(rewrite lookup_insert).
-                                ltac1:(rewrite lookup_insert).
                                 reflexivity.
                             }
                             {
+                                reflexivity.
+                            }
+                            {
+                                intros i s3 l HH1 HH2.
+                                destruct i; simpl in *.
+                                {
+                                    symmetry in HH1; inversion HH1; subst; clear HH1.
+                                    symmetry in HH2; inversion HH2; subst; clear HH2.
+                                    eapply satisfies_TermOver_vars_of>[|apply s].
+                                    intros x Hx.
+                                    destruct (decide (x = h)).
+                                    {
+                                        subst x.
+                                        ltac1:(rewrite lookup_insert).
+                                        ltac1:(rewrite lookup_insert).
+                                        reflexivity.
+                                    }
+                                    {
+                                        unfold Valuation in *.
+                                        ltac1:(rewrite lookup_insert_ne).
+                                        { ltac1:(congruence). }
+                                        ltac1:(rewrite -> lookup_insert_ne with (i := h))>[|ltac1:(congruence)].
+                                        repeat (rewrite lookup_insert_ne).
+                                        { reflexivity. }
+                                        {
+                                            (* V1 <> x *)
+                                            clear -Hx HeqV1.
+                                            intros HContra. subst.
+                                            assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                            {
+                                                rewrite <- vars_of_uglify in Hx.
+                                                ltac1:(set_solver).
+                                            }
+                                            eapply infinite_is_fresh.
+                                            { apply Hx'. }
+                                        }
+                                        {
+                                            (* V2 <> x *)
+                                            (*clear -Hx HeqV2.*)
+                                            intros HContra. subst.
+                                            assert(Hx': fresh (h :: (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs))) :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs))) :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                            {
+                                                rewrite <- vars_of_uglify in Hx.
+                                                ltac1:(set_solver).
+                                            }
+                                            eapply infinite_is_fresh.
+                                            { apply Hx'. }
+                                        }
+                                    }
+                                }
+                                {
+                                    destruct i; simpl in *.
+                                    {
+                                        symmetry in HH1; inversion HH1; subst; clear HH1.
+                                        symmetry in HH2; inversion HH2; subst; clear HH2.
+                                        apply satisfies_var.
+                                        unfold Valuation in *.
+                                        rewrite lookup_insert_ne.
+                                        rewrite lookup_insert_ne.
+                                        rewrite lookup_insert.
+                                        { reflexivity. }
+                                        {
+                                            (*clear -HeqV2.*)
+                                            intros HContra. subst.
+                                            assert(Hx': fresh (h :: (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs))) :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs))) :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                            {
+                                                rewrite <- HContra at 2.
+                                                ltac1:(set_solver).
+                                            }
+                                            eapply infinite_is_fresh.
+                                            { apply Hx'. }
+                                        }
+                                        {
+                                            clear -HeqV1.
+                                            intros HContra. subst.
+                                            assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                            {
+                                                rewrite HContra at 2.
+                                                ltac1:(set_solver).
+                                            }
+                                            eapply infinite_is_fresh.
+                                            { apply Hx'. }
+                                        }
+                                    }
+                                    {
+                                        rewrite lookup_nil in HH1.
+                                        inversion HH1.
+                                    }
+                                }
+                            }
+                        }
+                        {
+                            destruct i; simpl in *.
+                            {
+                                symmetry in HH1; inversion HH1; subst; clear HH1.
+                                symmetry in HH2; inversion HH2; subst; clear HH2.
+                                apply satisfies_var.
                                 unfold Valuation in *.
-                                ltac1:(rewrite lookup_insert_ne).
-                                { ltac1:(congruence). }
-                                ltac1:(rewrite -> lookup_insert_ne with (i := h))>[|ltac1:(congruence)].
-                                repeat (rewrite lookup_insert_ne).
+                                rewrite lookup_insert_ne.
+                                rewrite lookup_insert.
                                 { reflexivity. }
                                 {
-                                    (* V1 <> x *)
-                                    clear -Hx HeqV1.
+                                    (*clear -HeqV2.*)
                                     intros HContra. subst.
-                                    assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                    assert(Hx': fresh (h :: (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs)) ) :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: (fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ elements (vars_of iV_scs)) ) :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                     {
-                                        rewrite <- vars_of_uglify in Hx.
-                                        ltac1:(set_solver).
-                                    }
-                                    eapply infinite_is_fresh.
-                                    { apply Hx'. }
-                                }
-                                {
-                                    (* V2 <> x *)
-                                    clear -Hx HeqV2.
-                                    intros HContra. subst.
-                                    assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
-                                    {
-                                        rewrite <- vars_of_uglify in Hx.
+                                        rewrite HContra at 3.
+                                        clear.
                                         ltac1:(set_solver).
                                     }
                                     eapply infinite_is_fresh.
                                     { apply Hx'. }
                                 }
                             }
-                        }
-                        {
-                            apply satisfies_var.
-                            unfold Valuation in *.
-                            rewrite lookup_insert_ne.
-                            rewrite lookup_insert_ne.
-                            rewrite lookup_insert.
-                            { reflexivity. }
                             {
-                                clear -HeqV2.
-                                intros HContra. subst.
-                                assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
-                                {
-                                    rewrite <- HContra at 2.
-                                    ltac1:(set_solver).
-                                }
-                                eapply infinite_is_fresh.
-                                { apply Hx'. }
-                            }
-                            {
-                                clear -HeqV1.
-                                intros HContra. subst.
-                                assert(Hx': fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
-                                {
-                                    rewrite HContra at 2.
-                                    ltac1:(set_solver).
-                                }
-                                eapply infinite_is_fresh.
-                                { apply Hx'. }
+                                rewrite lookup_nil in HH1.
+                                inversion HH1.
                             }
                         }
-                        {
-                            apply Forall_nil. exact I.
-                        }
-                    }
-                    {
-                        apply satisfies_var.
-                        unfold Valuation in *.
-                        rewrite lookup_insert_ne.
-                        rewrite lookup_insert.
-                        { reflexivity. }
-                        {
-                            clear -HeqV2.
-                            intros HContra. subst.
-                            assert(Hx': fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
-                            {
-                                rewrite HContra at 2.
-                                ltac1:(set_solver).
-                            }
-                            eapply infinite_is_fresh.
-                            { apply Hx'. }
-                        }
-                    }
-                    {
-                        apply Forall_nil. exact I.
                     }
                 }
                 {
@@ -9816,26 +9937,114 @@ Proof.
                         with (map uglify' [(t_term cseqSymbol [t_over (ft_variable h); (t_term cseqSymbol [(TermOverBoV_to_TermOverExpr (TermOverBoV_subst c h (t_term holeSymbol []))); (t_over (ft_variable V1))])]); (t_over (ft_variable V2))])
                         by reflexivity
                     ).
-                    apply satisfies_top_bov_cons_expr.
-                    (repeat split).
-                    simpl.
-                    repeat (rewrite Forall_cons).
-                    rewrite Forall_nil.
-                    (repeat split).
+                    apply satisfies_top_bov_cons_expr_1.
+                    { reflexivity. }
+                    { reflexivity. }
                     {
-                        constructor.
-                        fold (@uglify' Σ).
-                        apply satisfies_top_bov_cons_expr.
-                        (repeat split).
-                        simpl.
-                        repeat (rewrite Forall_cons).
-                        rewrite Forall_nil.
-                        (repeat split).
+                        intros i s3 l HH1 HH2.
+                        destruct i; simpl in *.
                         {
-                            apply satisfies_var_expr.
-                            unfold Valuation in *.
-                            rewrite lookup_insert.
-                            reflexivity.
+                            injection HH1 as HH1; subst s3.
+                            injection HH2 as HH2; subst l.
+                            constructor.
+                            apply satisfies_top_bov_cons_expr_1.
+                            {
+                                reflexivity.
+                            }
+                            {
+                                reflexivity.
+                            }
+                            {
+                                intros i s3 l HH1 HH2.
+                                destruct i; simpl in *.
+                                {
+                                    injection HH1 as HH1; subst s3.
+                                    injection HH2 as HH2; subst l.
+                                    apply satisfies_var_expr.
+                                    unfold Valuation in *.
+                                    rewrite lookup_insert.
+                                    reflexivity.
+                                }
+                                {
+                                    destruct i; simpl in *.
+                                    {
+                                        injection HH1 as HH1; subst s3.
+                                        injection HH2 as HH2; subst l.
+                                        constructor.
+                                        apply satisfies_top_bov_cons_expr_1.
+                                        { reflexivity. }
+                                        { reflexivity. }
+                                        intros i s3 l HH1 HH2.
+                                        destruct i; simpl in *.
+                                        {
+                                            injection HH1 as HH1; subst s3.
+                                            injection HH2 as HH2; subst l.
+                                            subst ceval.
+                                            rewrite <- Heqsubstituted.
+                                            eapply satisfies_TermOverBoV_to_TermOverExpr.
+                                            eapply satisfies_TermOverExpression_vars_of.
+                                            { apply satisfies_TermOverBoV_eval. }
+                                            intros x Hx.
+                                            destruct (decide (x = h)).
+                                            {
+                                                ltac1:(exfalso).
+                                                subst x.
+                                                subst substituted.
+                                                clear -Hx Hvars.
+                                                ltac1:(set_solver).
+                                            }
+                                            unfold Valuation in *.
+                                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                            destruct (decide (x = V2)).
+                                            {
+                                                ltac1:(exfalso).
+                                                subst x.
+                                                subst substituted.
+                                                assert (Htmp: V2 ∈ vars_of c) by ltac1:(set_solver).
+                                                unfold vars_of in Htmp; simpl in Htmp.
+                                                rewrite <- vars_of_uglify in Htmp.
+                                                clear -Htmp HeqV2.
+                                                subst V2.
+                                                assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                                {
+                                                    ltac1:(set_solver).
+                                                }
+                                                eapply infinite_is_fresh.
+                                                apply Htmp2.
+                                            }
+                                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                            destruct (decide (x = V1)).
+                                            {
+                                                ltac1:(exfalso).
+                                                subst x.
+                                                subst substituted.
+                                                assert (Htmp: V1 ∈ vars_of c) by ltac1:(set_solver).
+                                                unfold vars_of in Htmp; simpl in Htmp.
+                                                rewrite <- vars_of_uglify in Htmp.
+                                                clear -Htmp HeqV1.
+                                                subst V1.
+                                                assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
+                                                {
+                                                    ltac1:(set_solver).
+                                                }
+                                                eapply infinite_is_fresh.
+                                                apply Htmp2.
+                                            }
+                                            rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                                            reflexivity.
+                                        }
+                                        {
+
+                                        }
+                                    }
+
+                                }
+                                
+
+                            }
+                        }
+                        {
+
                         }
                         {
                             constructor.
@@ -9847,59 +10056,7 @@ Proof.
                             rewrite Forall_nil.
                             (repeat split).
                             {
-                                subst ceval.
-                                rewrite <- Heqsubstituted.
-                                rewrite satisfies_TermOverBoV_to_TermOverExpr.
-                                erewrite satisfies_TermOver_vars_of.
-                                { apply satisfies_TermOverBoV_eval. }
-                                intros x Hx.
-                                destruct (decide (x = h)).
-                                {
-                                    ltac1:(exfalso).
-                                    subst x.
-                                    subst substituted.
-                                    clear -Hx Hvars.
-                                    ltac1:(set_solver).
-                                }
-                                unfold Valuation in *.
-                                rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                                destruct (decide (x = V2)).
-                                {
-                                    ltac1:(exfalso).
-                                    subst x.
-                                    subst substituted.
-                                    assert (Htmp: V2 ∈ vars_of c) by ltac1:(set_solver).
-                                    unfold vars_of in Htmp; simpl in Htmp.
-                                    rewrite <- vars_of_uglify in Htmp.
-                                    clear -Htmp HeqV2.
-                                    subst V2.
-                                    assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
-                                    {
-                                        ltac1:(set_solver).
-                                    }
-                                    eapply infinite_is_fresh.
-                                    apply Htmp2.
-                                }
-                                rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                                destruct (decide (x = V1)).
-                                {
-                                    ltac1:(exfalso).
-                                    subst x.
-                                    subst substituted.
-                                    assert (Htmp: V1 ∈ vars_of c) by ltac1:(set_solver).
-                                    unfold vars_of in Htmp; simpl in Htmp.
-                                    rewrite <- vars_of_uglify in Htmp.
-                                    clear -Htmp HeqV1.
-                                    subst V1.
-                                    assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
-                                    {
-                                        ltac1:(set_solver).
-                                    }
-                                    eapply infinite_is_fresh.
-                                    apply Htmp2.
-                                }
-                                rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                                reflexivity.
+                                
                             }
                             {
                                 apply satisfies_var_expr.
