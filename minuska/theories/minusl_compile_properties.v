@@ -11212,11 +11212,12 @@ Proof.
             inversion Hc1; subst; clear Hc1.
             subst.
 
+            (*
             rewrite HH6 in HH26. inversion HH26; subst; clear HH26.
             apply (f_equal prettify) in H0.
             rewrite (cancel prettify uglify') in H0.
             rewrite (cancel prettify uglify') in H0.
-            subst γ7.
+            subst γ7.*)
 
             (*destruct (decide (filter (λ x : Act, x ≠ invisible_act) w = [])) as [Hnil|Hnnil].*)
             
