@@ -11108,7 +11108,7 @@ Proof.
             unfold flattened_rewrites_to in f.
             destruct f as [ρ1 Hρ1].
             unfold flattened_rewrites_in_valuation_under_to in Hρ1.
-            destruct Hρ1 as [Hρ1 [Hρ2 [Hρ3 Hρ4]]].
+            destruct Hρ1 as [[[Hρ1 Hρ2] Hρ3] Hρ4].
             simpl in *.
             subst a0.
 
@@ -11143,8 +11143,8 @@ Proof.
                 apply Hρ1.
             }
             clear Hρ1.
-            apply satisfies_term_inv in Hρ1'.
-            destruct Hρ1' as [lγ1 [Ht1 [HH1 HH2]]].
+            apply satisfies_term_bov_inv in Hρ1'.
+            destruct Hρ1' as [lγ1 [[Ht1 HH1] HH2]].
             simpl in HH1.
             destruct lγ1 as [|γ1 lγ1].
             {
@@ -11156,11 +11156,11 @@ Proof.
             }
             destruct lγ2>[|simpl in HH1; ltac1:(lia)].
             clear HH1.
-            unfold zip_with in HH2.
-            repeat (rewrite Forall_cons in HH2).
-            destruct HH2 as [HH2 [HH3 _]].
-            apply satisfies_term_inv in HH2.
-            destruct HH2 as [lγ [Hγ1 [HH4 HH5]]].
+            assert (HH20 := HH2 0 _ _ eq_refl eq_refl).
+            assert (HH21 := HH2 1 _ _ eq_refl eq_refl).
+            clear HH2.
+            apply satisfies_term_bov_inv in HH20.
+            destruct HH20 as [lγ [[Hγ1 HH4] HH5]].
             simpl in HH4.
             destruct lγ as [|γ3 lγ].
             { simpl in HH4. inversion HH4. }
@@ -11168,12 +11168,12 @@ Proof.
             { simpl in HH4. inversion HH4. }
             destruct lγ>[|simpl in HH4; ltac1:(lia)].
             clear HH4.
-            unfold zip_with in HH5.
-            repeat (rewrite Forall_cons in HH5).
-            destruct HH5 as [HH5 [HH6 _]].
+            assert (HH50 := HH5 0 _ _ eq_refl eq_refl).
+            assert (HH51 := HH5 1 _ _ eq_refl eq_refl).
+            clear HH5.
             
             subst.
-            apply satisfies_var_inv in HH6.
+            apply satisfies_var_inv in HH51.
             
 
             (* do the same with Hρ2, but have fresh names *)
@@ -11183,33 +11183,34 @@ Proof.
             }
             clear Hρ2.
             apply satisfies_term_expr_inv in Hρ2'.
-            destruct Hρ2' as [lγ2 [Ht2 [HH21 HH22]]].
-            simpl in HH21.
+            destruct Hρ2' as [lγ2 [[Ht2 HH3] HH4]].
+            simpl in *.
             destruct lγ2 as [|γ4' lγ2].
-            { simpl in HH21. inversion HH21. }
+            { simpl in HH21. inversion HH3. }
             destruct lγ2 as [|γ5 lγ2].
-            { simpl in HH21. inversion HH21. }
-            destruct lγ2>[|simpl in HH21; ltac1:(lia)].
-            clear HH21.
-            unfold zip_with in HH22.
-            repeat (rewrite Forall_cons in HH22).
-            destruct HH22 as [HH22 [HH23 _]].
+            { simpl in HH21. inversion HH3. }
+            destruct lγ2>[|simpl in HH3; ltac1:(lia)].
+            clear HH30.
+            assert (HH40 := HH4 0 _ _ eq_refl eq_refl).
+            assert (HH41 := HH4 1 _ _ eq_refl eq_refl).
             subst.
-            apply satisfies_term_expr_inv in HH22.
-            destruct HH22 as [lγ [Hγ4 [HH24 HH25]]].
-            simpl in HH24. subst.
+            clear HH4.
+            apply satisfies_term_expr_inv in HH40.
+            destruct HH40 as [lγ [[Hγ4 HH5] HH6]].
+            simpl in *. subst.
             destruct lγ as [|γ6 lγ].
-            { simpl in HH24. inversion HH24. }
+            { inversion HH5. }
             destruct lγ as [|γ7 lγ].
-            { simpl in HH24. inversion HH24. }
-            destruct lγ>[|simpl in HH24; ltac1:(lia)].
-            clear HH24.
-            unfold zip_with in HH25.
-            repeat (rewrite Forall_cons in HH25).
-            destruct HH25 as [HH25 [HH26 _]].
-            apply satisfies_var_expr_inv in HH26.
+            { inversion HH5. }
+            destruct lγ>[|simpl in HH5; ltac1:(lia)].
+            clear HH5 HH3.
+            assert (HH60 := HH6 0 _ _ eq_refl eq_refl).
+            assert (HH61 := HH6 1 _ _ eq_refl eq_refl).
+            clear HH6.
+            apply satisfies_var_expr_inv in HH61.
             inversion Hd1; subst; clear Hd1.
             inversion Hc1; subst; clear Hc1.
+            subst.
 
             rewrite HH6 in HH26. inversion HH26; subst; clear HH26.
             apply (f_equal prettify) in H0.
@@ -11233,12 +11234,12 @@ Proof.
                 { apply H1r. }
                 { assumption. }
                 { assumption. }
-                { apply HH25. }
-                { apply HH23. }
+                { apply HH60. }
+                { apply HH41. }
                 { assumption. }
             }
             {
-                apply IHH3w'; simpl in *.
+                apply IHH3w' with (depth := S depth); simpl in *.
                 { reflexivity. }
                 { reflexivity. }
                 { reflexivity. }
@@ -11250,6 +11251,11 @@ Proof.
                     reflexivity.
                 }
                 { assumption. }
+                {
+                    simpl.
+                    admit.
+                }
+                admit.
             }
         }
         {
