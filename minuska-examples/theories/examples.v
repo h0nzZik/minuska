@@ -18,6 +18,11 @@ From Minuska Require Import
 
 Variant Act := default_act | invisible_act.
 
+#[global]
+Instance Act_eqDec : EqDecision Act.
+Proof.
+    ltac1:(solve_decision).
+Defined.
 
 Module example_1.
 
@@ -905,13 +910,13 @@ Module imp.
     .
     Proof.
         apply naive_interpreter_sound.
-        ltac1:(cut(is_Some(RewritingTheory_wf_heuristics (Γ.1)))).
+        ltac1:(assert(Htmp: isSome(RewritingTheory_wf_heuristics (Γ.1)))).
         {
-            intros H.
-            destruct H as [x H].
-            exact x.
+            ltac1:(compute_done).
         }
-        ltac1:(compute_done).
+        unfold is_true, isSome in Htmp.
+        destruct (RewritingTheory_wf_heuristics Γ.1) eqn:Heq>[|inversion Htmp].
+        assumption.
     Qed.
 
     Definition imp_interp_from (fuel : nat) (from : GroundTerm)
