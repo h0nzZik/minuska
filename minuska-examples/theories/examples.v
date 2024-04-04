@@ -750,17 +750,21 @@ Module imp.
     |}.
 
 
-    Notation "'simple_rule' '[' s ']:' l '~>' r 'where' c" := (
+    Notation "'decl_simple_rule' '[' s ']:' l '~>' r 'where' c" := (
+        decl_rule (
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
          ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
          where c
+        )
     ) (at level 90).
 
-    Notation "'simple_rule' '[' s ']:' l '~>' r 'always'" := (
+    Notation "'decl_simple_rule' '[' s ']:' l '~>' r 'always'" := (
+        decl_rule (
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
          ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+        )
     ) (at level 90).
 
     Definition Decls : list Declaration := [
@@ -769,19 +773,9 @@ Module imp.
         decl_strict (symbol "arith_times" of arity 2 strict in [0;1]);
         decl_strict (symbol "arith_div" of arity 2 strict in [0;1]);
         (* plus *)
-        decl_rule (
-            simple_rule ["plus-Z-Z"]:
-               ($X + $Y)
-            ~> ($X +Z $Y)
-                where (
-                    (isZ ($X))
-                    &&
-                    (isZ ($Y))
-                )
-        );
+        decl_simple_rule ["plus-Z-Z"]: ($X + $Y) ~> ($X +Z $Y) where ((isZ ($X)) && (isZ ($Y)));
         (* minus *)
-        decl_rule (
-            simple_rule ["minus-Z-Z"]:
+        decl_simple_rule ["minus-Z-Z"]:
                ($X - $Y)
             ~> ($X -Z $Y)
                 where (
@@ -789,10 +783,9 @@ Module imp.
                     &&
                     (isZ ($Y))
                 )
-        );
+        ;
         (* times *)
-        decl_rule (
-            simple_rule ["times-Z-Z"]:
+        decl_simple_rule ["times-Z-Z"]:
                (($X) * ($Y))
             ~> ($X *Z $Y)
                 where (
@@ -800,10 +793,9 @@ Module imp.
                     &&
                     (isZ ($Y))
                 )
-        );
+        ;
         (* div *)
-        decl_rule (
-            simple_rule ["div-Z-Z"]:
+        decl_simple_rule ["div-Z-Z"]:
                 (($X) / ($Y))
             ~> ($X /Z $Y)
                 where (
@@ -812,9 +804,10 @@ Module imp.
                     (isZ ($Y))
                     (* TODO test that $Y is not 0*)
                 )
-        );
+        ;
         
         decl_strict (symbol "stmt_assign" of arity 2 strict in [1]);
+
         decl_rule (
             rule ["assign-value"]:
                 u_cfg [ u_state [ u_cseq [ (var [$X]) <:= $Y, $REST_SEQ], $VALUES ] ]
@@ -833,12 +826,11 @@ Module imp.
             ]]
         );
         (* TODO stmt_seq does not have to be strict in the second argument, and the following rule does not need to check the value-ness of the second argument*)
-        decl_rule (
-            simple_rule ["seq-unit-value"]:
+        decl_simple_rule ["seq-unit-value"]:
                 stmt_seq [unitValue [], $X ]
             ~> $X
             where ((isValue ($X)))
-        );
+        ;
         decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
 
         decl_strict (symbol "bexpr_eq" of arity 2 strict in [0;1]);
@@ -846,49 +838,41 @@ Module imp.
         decl_strict (symbol "bexpr_le" of arity 2 strict in [0;1]);
         decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]);
 
-        decl_rule (
-            simple_rule ["bexpr-eq-Z-Z"]:
+        decl_simple_rule ["bexpr-eq-Z-Z"]:
                 bexpr_eq [ $X, $Y ]
             ~> ((ft_binary b_eq ($X) ($Y)))
             where ((isValue ($X)) && (isValue ($Y)))
-        );
-        decl_rule (
-            simple_rule ["bexpr-le-Z-Z"]:
+        ;
+        decl_simple_rule ["bexpr-le-Z-Z"]:
                 bexpr_le [ $X, $Y ]
             ~> ((ft_binary b_Z_isLe ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
-        );
-        decl_rule (
-            simple_rule ["bexpr-lt-Z-Z"]:
+        ;
+        decl_simple_rule ["bexpr-lt-Z-Z"]:
                bexpr_lt [ $X, $Y ]
             ~> ((ft_binary b_Z_isLt ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
-        );
-        decl_rule (
-            simple_rule ["bexpr-negb-bool"]:
+        ;
+        decl_simple_rule ["bexpr-negb-bool"]:
                bexpr_negb [$X]
             ~> (ft_unary b_bool_neg ($X))
             where ((isBool ($X)))
-        );
+        ;
         decl_strict (symbol "stmt_ifthenelse" of arity 3 strict in [0]);
-        decl_rule (
-            simple_rule ["stmt-ite-true"]:
+        decl_simple_rule ["stmt-ite-true"]:
                stmt_ifthenelse [$B, $X, $Y]
             ~> $X
             where ((($B) ==Bool true))
-        );
-        decl_rule (
-            simple_rule ["stmt-ite-false"]:
+        ;
+        decl_simple_rule ["stmt-ite-false"]:
                stmt_ifthenelse [$B, $X, $Y]
             ~> $Y
             where ((($B) ==Bool false))
-        );
-        decl_rule (
-            simple_rule ["while-unfold"]:
+        ;
+        decl_simple_rule ["while-unfold"]:
             stmt_while [$B, $X]
             ~> (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
             always
-        )
     ]%limp.
 
     Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
