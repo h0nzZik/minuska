@@ -750,17 +750,17 @@ Module imp.
     |}.
 
 
-    Notation "'simple_rule' '[' s ']:' l '~>{' a '}' r 'where' c" := (
+    Notation "'simple_rule' '[' s ']:' l '~>' r 'where' c" := (
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
-         ~>{a} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+         ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
          where c
     ) (at level 90).
 
-    Notation "'simple_rule' '[' s ']:' l '~>{' a '}' r 'always'" := (
+    Notation "'simple_rule' '[' s ']:' l '~>' r 'always'" := (
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
-         ~>{a} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+         ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
     ) (at level 90).
 
     Definition Decls : list Declaration := [
@@ -772,7 +772,7 @@ Module imp.
         decl_rule (
             simple_rule ["plus-Z-Z"]:
                ($X + $Y)
-            ~>{default_act} ($X +Z $Y)
+            ~> ($X +Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -783,7 +783,7 @@ Module imp.
         decl_rule (
             simple_rule ["minus-Z-Z"]:
                ($X - $Y)
-            ~>{default_act} ($X -Z $Y)
+            ~> ($X -Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -794,7 +794,7 @@ Module imp.
         decl_rule (
             simple_rule ["times-Z-Z"]:
                (($X) * ($Y))
-            ~>{default_act} ($X *Z $Y)
+            ~> ($X *Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -805,7 +805,7 @@ Module imp.
         decl_rule (
             simple_rule ["div-Z-Z"]:
                 (($X) / ($Y))
-            ~>{default_act} ($X /Z $Y)
+            ~> ($X /Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -836,7 +836,7 @@ Module imp.
         decl_rule (
             simple_rule ["seq-unit-value"]:
                 stmt_seq [unitValue [], $X ]
-            ~>{default_act} $X
+            ~> $X
             where ((isValue ($X)))
         );
         decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
@@ -849,44 +849,44 @@ Module imp.
         decl_rule (
             simple_rule ["bexpr-eq-Z-Z"]:
                 bexpr_eq [ $X, $Y ]
-            ~>{default_act} ((ft_binary b_eq ($X) ($Y)))
+            ~> ((ft_binary b_eq ($X) ($Y)))
             where ((isValue ($X)) && (isValue ($Y)))
         );
         decl_rule (
             simple_rule ["bexpr-le-Z-Z"]:
                 bexpr_le [ $X, $Y ]
-            ~>{default_act} ((ft_binary b_Z_isLe ($X) ($Y)))
+            ~> ((ft_binary b_Z_isLe ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         );
         decl_rule (
             simple_rule ["bexpr-lt-Z-Z"]:
                bexpr_lt [ $X, $Y ]
-            ~>{default_act} ((ft_binary b_Z_isLt ($X) ($Y)))
+            ~> ((ft_binary b_Z_isLt ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         );
         decl_rule (
             simple_rule ["bexpr-negb-bool"]:
                bexpr_negb [$X]
-            ~>{default_act} (ft_unary b_bool_neg ($X))
+            ~> (ft_unary b_bool_neg ($X))
             where ((isBool ($X)))
         );
         decl_strict (symbol "stmt_ifthenelse" of arity 3 strict in [0]);
         decl_rule (
             simple_rule ["stmt-ite-true"]:
                stmt_ifthenelse [$B, $X, $Y]
-            ~>{default_act} $X
+            ~> $X
             where ((($B) ==Bool true))
         );
         decl_rule (
             simple_rule ["stmt-ite-false"]:
                stmt_ifthenelse [$B, $X, $Y]
-            ~>{default_act} $Y
+            ~> $Y
             where ((($B) ==Bool false))
         );
         decl_rule (
             simple_rule ["while-unfold"]:
             stmt_while [$B, $X]
-            ~>{default_act} (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
+            ~> (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
             always
         )
     ]%limp.
