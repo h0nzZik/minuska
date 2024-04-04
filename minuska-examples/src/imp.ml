@@ -8,7 +8,7 @@ type token =
   | LEFT_ROUND_BRACK
   | RIGHT_ROUND_BRACK
   | COMMA
-  | COLON
+  | COLONEQ
   | EOF
 
 type id =

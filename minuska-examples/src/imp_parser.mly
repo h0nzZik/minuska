@@ -8,7 +8,6 @@
 %token RIGHT_CURLY_BRACK
 %token LEFT_ROUND_BRACK
 %token RIGHT_ROUND_BRACK
-%token COMMA
 %token WHILE
 %token PLUS
 %token SEMICOLON
@@ -18,8 +17,13 @@
 %token EOF
 
 
-%start <imp.ast option> stmt
+%start <imp.ast option> main
+
+%type <aexpr> aexpr 
+%type <bexpr> bexpr 
+%type <stmt> stmt
 %%
+
 
 aexpr:
   | n = INT               { Some (IntConstant n) }
@@ -37,9 +41,9 @@ bexpr:
     e2 = bexpr            { Some (BoolAnd e1 e2) }
   | NOT;
     e = bexpr             { Some (BoolNot e) }
-  | e1 = aepxr;
+  | e1 = aexpr;
     LEQ;
-    e2 = aepxr            { Some (Leq e1 e2) }
+    e2 = aexpr            { Some (Leq e1 e2) }
   ;
 
 stmt:
@@ -57,4 +61,8 @@ stmt:
     RIGHT_CURLY_BRACK;
     SEMICOLON             { Some (WhileStmt b s) }
   | s1 = stmt; s2 = stmt  { Some (SeqStmt s1 s2) }
+  ;
+
+main:
+  | s = stmt; EOF { s }
   ;
