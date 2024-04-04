@@ -59,6 +59,7 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
+            coq.ocamlPackages.menhir
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
