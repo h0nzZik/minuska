@@ -235,17 +235,18 @@ Module two_counters_Z.
     Definition state {_br : BasicResolver} := (apply_symbol "state").
     Arguments state {_br} _%rs.
 
-    Print Expression.
+    Coercion Z_to_builtin (x : Z) := (ft_element (term_operand (bv_Z x))).
+
     Definition Γ : (RewritingTheory Act)*(list string) :=
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
                state [ $M , $N ]
             ~>{default_act} state [
-                (($M) -Z (ft_element (term_operand (bv_Z 1)))),
-                (($N) +Z ($M))
+                ($M -Z 1%Z),
+                ($N +Z $M)
                 ]
-            where (($M) >Z (ft_element (term_operand (bv_Z 0))))
+            where ($M >Z 0%Z)
         )
     ]))).
     
