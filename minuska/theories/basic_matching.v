@@ -51,13 +51,16 @@ Proof.
     simpl in *.
     rewrite elem_of_subseteq in H1.
     specialize (H1 x).
-    unfold mbind,option_bind,mguard,option_guard in *; simpl in *.
-    ltac1:(repeat case_match); try reflexivity;
-        ltac1:(simplify_eq/=).
-    { reflexivity. }
-    { ltac1:(exfalso; naive_solver). }
-    { ltac1:(exfalso; naive_solver). }
-    { ltac1:(exfalso; naive_solver). }
+    simpl in *.
+    ltac1:(case_guard as Hcg1; case_guard as Hcg2); simpl in *; try ltac1:(auto with nocore).
+    {
+        destruct (ρ1 !! x) eqn:Hρ1x, (ρ2 !! x) eqn:Hρ2x; simpl in *;
+            reflexivity.
+    }
+    {
+        ltac1:(exfalso).
+        ltac1:(auto with nocore).
+    }
 Qed.
 
 Lemma valuation_restrict_eq_impl_lookup
@@ -79,26 +82,9 @@ Proof.
     rewrite map_eq_iff in H2.
     specialize (H2 x).
     do 2 (rewrite map_lookup_filter in H2).
-    unfold mguard,option_guard in H2.
-    simpl in H2.
-    destruct (decide_rel elem_of x r) eqn:Heq,
-        (ρ1 !! x) eqn:Heq2,
-        (ρ2 !! x) eqn:Heq3;
-        simpl in *;
-        try reflexivity;
-        ltac1:(simplify_eq/=).
-    {
-        reflexivity.
-    }
-    {
-        ltac1:(contradiction).
-    }
-    {
-        ltac1:(contradiction).
-    }
-    {
-        ltac1:(contradiction).
-    }
+    destruct (ρ1 !! x) eqn:Hρ1x, (ρ2 !! x) eqn:Hρ2x; simpl in *;
+        ltac1:(simplify_eq/=; repeat case_guard; simplify_eq/=);
+        (auto with nocore); try reflexivity; ltac1:(try solve[exfalso; auto]).
 Qed.
 
 Class Matches
@@ -232,10 +218,7 @@ Section with_signature.
         rewrite map_lookup_filter in Hw.
         rewrite bind_Some in Hw.
         destruct Hw as [g [H1g H2g]].
-        unfold mguard,option_guard in H2g.
-        simpl in *.
-        ltac1:(case_match); inversion H2g;
-            subst; clear H2g.
+        ltac1:(repeat case_guard; simpl in *; simplify_eq/=).
         assumption.
     Qed.
 
@@ -261,10 +244,7 @@ Section with_signature.
         rewrite map_lookup_filter in Hw.
         rewrite bind_Some in Hw.
         destruct Hw as [g [H1g H2g]].
-        unfold mguard,option_guard in H2g.
-        simpl in *.
-        ltac1:(case_match); inversion H2g;
-            subst; clear H2g.
+        ltac1:(repeat case_guard; simpl in *; simplify_eq/=).
         unfold vars_of; simpl.
         rewrite elem_of_dom.
         exists w. assumption.
@@ -817,13 +797,7 @@ Section with_signature.
                 ltac1:(rewrite H0 in H).
                 ltac1:(rewrite H2 in H).
                 simpl in H.
-                unfold mguard,option_guard in H.
-                ltac1:(case_match);
-                    inversion H; subst; clear H.
-                clear -n.
-                rewrite elem_of_singleton in n.
-                ltac1:(contradiction n).
-                reflexivity.
+                ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
             }
             {
                 apply bool_decide_eq_false.
@@ -833,13 +807,7 @@ Section with_signature.
                 ltac1:(rewrite H0 in H).
                 ltac1:(rewrite H2 in H).
                 simpl in H.
-                unfold mguard,option_guard in H.
-                ltac1:(case_match);
-                    inversion H; subst; clear H.
-                clear -n.
-                rewrite elem_of_singleton in n.
-                ltac1:(contradiction n).
-                reflexivity.
+                ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
             }
             {
                 unfold bool_decide.
@@ -847,14 +815,7 @@ Section with_signature.
                 ltac1:(rewrite H0 in H).
                 ltac1:(rewrite H2 in H).
                 simpl in H.
-                unfold mguard,option_guard in H.
-                ltac1:(case_match);
-                    inversion H; subst; clear H.
-                { reflexivity. }
-                clear -n.
-                ltac1:(contradiction n).
-                rewrite elem_of_singleton.
-                reflexivity.
+                ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
             }
             {
                 apply bool_decide_eq_false.
@@ -865,13 +826,7 @@ Section with_signature.
                 ltac1:(rewrite H0 in H).
                 ltac1:(rewrite H2 in H).
                 simpl in H.
-                unfold mguard,option_guard in H.
-                ltac1:(case_match);
-                    inversion H; subst; clear H.
-                clear -n.
-                apply n.
-                rewrite elem_of_singleton.
-                reflexivity.
+                ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
             }
             {
                 symmetry.
@@ -883,13 +838,7 @@ Section with_signature.
                 ltac1:(rewrite H0 in H).
                 ltac1:(rewrite H1 in H).
                 simpl in H.
-                unfold mguard,option_guard in H.
-                ltac1:(case_match);
-                    inversion H; subst; clear H.
-                clear -n.
-                apply n.
-                rewrite elem_of_singleton.
-                reflexivity.
+                ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
             }
         }
     Qed.
@@ -1369,40 +1318,13 @@ Proof.
         do 2 (rewrite map_lookup_filter in H1).
         destruct (ρ1!!x),(ρ2!!x); simpl in *; try reflexivity.
         {
-            unfold mguard,option_guard in H1.
-            ltac1:(repeat case_match).
-            {
-                assumption.
-            }
-            {
-                ltac1:(contradiction n).
-                rewrite elem_of_singleton.
-                reflexivity.
-            }
+            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
         }
         {
-            unfold mguard,option_guard in H1.
-            ltac1:(repeat case_match).
-            {
-                assumption.
-            }
-            {
-                ltac1:(contradiction n).
-                rewrite elem_of_singleton.
-                reflexivity. 
-            }
+            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
         }
         {
-            unfold mguard,option_guard in H1.
-            ltac1:(repeat case_match).
-            {
-                assumption.
-            }
-            {
-                ltac1:(contradiction n).
-                rewrite elem_of_singleton.
-                reflexivity. 
-            }
+            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; set_solver).
         }
     }
     {

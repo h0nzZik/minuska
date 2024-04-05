@@ -16,7 +16,43 @@
         #};
 
         pkgs = nixpkgs.legacyPackages.${system};
-	be-pkgs = benchexec-nixpkgs.legacyPackages.${system};
+	      be-pkgs = benchexec-nixpkgs.legacyPackages.${system};
+
+        stdppFun = { lib, mkCoqDerivation, coq }: (
+          mkCoqDerivation rec {
+            pname = "stdpp";
+            domain = "gitlab.mpi-sws.org";
+            owner = "iris";
+            defaultVersion = with lib.versions; lib.switch coq.coq-version [
+              { case = range "8.19" "8.19"; out = "a91260bd12710952c407622f6174eb53eafebf8b"; }
+              { case = range "8.16" "8.18"; out = "coq-stdpp-1.9.0"; }
+              { case = range "8.13" "8.17"; out = "coq-stdpp-1.8.0"; }
+              { case = range "8.12" "8.14"; out = "coq-stdpp-1.6.0"; }
+              { case = range "8.11" "8.13"; out = "coq-stdpp-1.5.0"; }
+              { case = range "8.8" "8.10";  out = "coq-stdpp-1.4.0"; }
+            ] null;
+            release."a91260bd12710952c407622f6174eb53eafebf8b".sha256 = "sha256-7kOtz69Bu3/8tDZGLFgsafOJZJa6VjjMxk8nGcRf8Dk=";
+            release."coq-stdpp-1.9.0".sha256 = "sha256-OXeB+XhdyzWMp5Karsz8obp0rTeMKrtG7fu/tmc9aeI=";
+            release."coq-stdpp-1.8.0".sha256 = "sha256-VkIGBPHevHeHCo/Q759Q7y9WyhSF/4SMht4cOPuAXHU=";
+            release."coq-stdpp-1.7.0".sha256 = "sha256:0447wbzm23f9rl8byqf6vglasfn6c1wy6cxrrwagqjwsh3i5lx8y";
+            release."coq-stdpp-1.6.0".sha256 = "1l1w6srzydjg0h3f4krrfgvz455h56shyy2lbcnwdbzjkahibl7v";
+            release."coq-stdpp-1.5.0".sha256 = "1ym0fy620imah89p8b6rii8clx2vmnwcrbwxl3630h24k42092nf";
+            release."coq-stdpp-1.4.0".sha256 = "1m6c7ibwc99jd4cv14v3r327spnfvdf3x2mnq51f9rz99rffk68r";
+            releaseRev = v: "${v}";
+
+            preBuild = ''
+              if [[ -f coq-lint.sh ]]
+              then patchShebangs coq-lint.sh
+              fi
+            '';
+
+            meta = with lib; {
+              description = "An extended “Standard Library” for Coq";
+              license = licenses.bsd3;
+              maintainers = [ maintainers.vbgl maintainers.ineol ];
+            };
+          }
+        );
 
         minuskaFun = { coqPackages }: (
           coqPackages.callPackage 
@@ -28,7 +64,13 @@
             propagatedBuildInputs = [
               coq
               coqPackages.equations
-              coqPackages.stdpp
+              # (
+              #   coqPackages.lib.overrideCoqDerivation {
+              #     inherit coq;
+              #     defaultVersion = "1.9.0"; 
+              #   } pkgs.coqPackages_8_18.stdpp
+              # )
+              (stdppFun {lib = coqPackages.lib; mkCoqDerivation = coqPackages.mkCoqDerivation; inherit coq; })
               coq.ocaml
               coq.ocamlPackages.zarith
             ];
@@ -39,16 +81,11 @@
           } ) { } 
         );
 
-        #benchexec = import ./nix/benchexec.nix { };
-        coqPackages = pkgs.coqPackages_8_18;
-
       in {
 
         packages.minuska-coq_8_19 = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
-        packages.minuska-coq_8_18 = minuskaFun { coqPackages = pkgs.coqPackages_8_18; } ;
-        packages.minuska-coq_8_17 = minuskaFun { coqPackages = pkgs.coqPackages_8_17; } ;
 
-        packages.minuska = self.outputs.packages.${system}.minuska-coq_8_18;
+        packages.minuska = self.outputs.packages.${system}.minuska-coq_8_19;
 
         packages.minuska-examples
         = coqPackages.callPackage 
@@ -117,6 +154,17 @@
                 inputsFrom = [minuska];
                 packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide minuska.coqPackages.vscoq-language-server];
               };
+
+
+          minuska-coq_8_19 =
+            let
+              minuska = self.outputs.packages.${system}.minuska-coq_8_19;
+            in
+              pkgs.mkShell {
+                inputsFrom = [minuska];
+                packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide ];
+              };
+
 
           minuska-examples =
             let

@@ -615,24 +615,17 @@ Proof.
         
         destruct (ρ!!i) eqn:Hρi, (ρ1!!i) eqn:Hρ1i; simpl in *.
         {
-            unfold mguard,option_guard; simpl.
-            ltac1:(case_match).
-            {
-                ltac1:(rewrite map_subseteq_spec in H2ρ1).
-                specialize (H2ρ1 i).
-                specialize (H2ρ1 g1 Hρ1i).
-                ltac1:(simplify_eq/=).
-                reflexivity.
-            }
-            {
-                reflexivity.
-            }
+            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity).
+            ltac1:(rewrite map_subseteq_spec in H2ρ1).
+            specialize (H2ρ1 i).
+            specialize (H2ρ1 g1 Hρ1i).
+            ltac1:(simplify_eq/=).
+            reflexivity.
         }
         {
-            unfold mguard,option_guard; simpl.
-            ltac1:(case_match)>[|reflexivity].
+            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity).
             ltac1:(exfalso).
-            clear H.
+
             ltac1:(cut(i ∈ vars_of ρ1)).
             {
                 intros HHH. unfold vars_of in HHH; simpl in HHH.
@@ -685,26 +678,29 @@ Proof.
     destruct (ρ' !! i) eqn:Hρ'i.
     {
         simpl.
-        unfold mguard,option_guard; simpl.
-        assert (Hρi: ρ !! i = Some g).
+        ltac1:(repeat case_guard; simpl in *; simplify_eq/=).
         {
-            eapply lookup_weaken>[|apply H].
-            assumption.
+            assert (Hρi: ρ !! i = Some g).
+            {
+                eapply lookup_weaken>[|apply H].
+                assumption.
+            }
+            rewrite Hρi.
+            simpl.
+            reflexivity.
         }
-        rewrite Hρi.
-        simpl.
-        reflexivity.
+        {
+            destruct (ρ !! i); reflexivity.
+        }
     }
     {
         simpl.
         destruct (ρ!!i) eqn:Hρi; simpl.
         {
-            unfold mguard, option_guard.
-            ltac1:(case_match)>[|reflexivity].
-            unfold vars_of in e. clear H0.
-            simpl in e.
-            rewrite elem_of_dom in e.
-            destruct e as [g' Hg'].
+            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity; exfalso).
+            unfold vars_of in *; simpl in *.
+            rewrite elem_of_dom in H0.
+            destruct H0 as [g' Hg'].
             rewrite Hρ'i in Hg'.
             inversion Hg'.
         }

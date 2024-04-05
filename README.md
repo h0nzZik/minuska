@@ -5,5 +5,6 @@
 
 # Dependencies
 
-- [Coq](https://coq.inria.fr/) 8.18 or 8.17
-- [stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.9.0
+- [Coq](https://coq.inria.fr/) 8.19
+- [stdpp](https://gitlab.mpi-sws.org/iris/stdpp) > 1.9.0
+- [equations](https://mattam82.github.io/Coq-Equations/) 1.3
