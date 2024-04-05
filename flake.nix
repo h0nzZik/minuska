@@ -88,7 +88,7 @@
         packages.minuska = self.outputs.packages.${system}.minuska-coq_8_19;
 
         packages.minuska-examples
-        = coqPackages_8_19.callPackage 
+        = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "minuska-examples";
@@ -101,13 +101,13 @@
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
-          passthru = { inherit coqPackages; };
+          passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
 
 
 
         packages.minuska-bench
-        = coqPackages.callPackage 
+        = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "minuska-bench";
@@ -123,11 +123,11 @@
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
-          passthru = { inherit coqPackages; };
+          passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
 
         packages.minuska-symbolic
-        = coqPackages.callPackage 
+        = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "minuska-symbolic";
@@ -135,12 +135,12 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
-            coqPackages.CoLoR
+            pkgs.coqPackages_8_19.CoLoR
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
-          passthru = { inherit coqPackages; };
+          passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
 
         packages.default = self.outputs.packages.${system}.minuska;
