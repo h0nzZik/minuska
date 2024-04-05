@@ -704,8 +704,8 @@ Module imp.
     Definition stmt_seq {_br : BasicResolver} := (apply_symbol "stmt_seq").
     Arguments stmt_seq {_br} _%rs.
 
-    Definition stmt_ifthenelse {_br : BasicResolver} := (apply_symbol "stmt_ifthenelse").
-    Arguments stmt_ifthenelse {_br} _%rs.
+    Definition stmt_ite {_br : BasicResolver} := (apply_symbol "stmt_ite").
+    Arguments stmt_ite {_br} _%rs.
 
     Definition stmt_while {_br : BasicResolver} := (apply_symbol "stmt_while").
     Arguments stmt_while {_br} _%rs.
@@ -726,7 +726,7 @@ Module imp.
     Notation "x '<:=' y" := (stmt_assign [x, y]) (at level 90) : LangImpScope.
     Notation "c ';' 'then' d" := (stmt_seq [c, d]) (at level 90, right associativity) : LangImpScope.
     Notation "'if' c 'then' x 'else' y "
-        := (stmt_ifthenelse [c, x, y])
+        := (stmt_ite [c, x, y])
             (at level 200, c at level 200, x at level 200, y at level 200)
             : LangImpScope.
 
@@ -755,7 +755,7 @@ Module imp.
         rule [ s ]:
             u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
          ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
-         where c
+         where (c)
         )
     ) (at level 90).
 
@@ -858,21 +858,19 @@ Module imp.
             ~> (ft_unary b_bool_neg ($X))
             where ((isBool ($X)))
         ;
-        decl_strict (symbol "stmt_ifthenelse" of arity 3 strict in [0]);
-        decl_simple_rule ["stmt-ite-true"]:
-               stmt_ifthenelse [$B, $X, $Y]
-            ~> $X
-            where ((($B) ==Bool true))
-        ;
-        decl_simple_rule ["stmt-ite-false"]:
-               stmt_ifthenelse [$B, $X, $Y]
-            ~> $Y
-            where ((($B) ==Bool false))
-        ;
+        decl_strict (symbol "stmt_ite" of arity 3 strict in [0]) ;
+        decl_simple_rule ["stmt-ite-true"]: stmt_ite [$B, $X, $Y] ~> $X where ($B) ;
+        decl_simple_rule ["stmt-ite-false"]: stmt_ite [$B, $X, $Y] ~> $Y where ($B ==Bool false) ;
+        (* (* sugared *)
         decl_simple_rule ["while-unfold"]:
             stmt_while [$B, $X]
             ~> (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
             always
+        *)
+        decl_simple_rule ["while-unfold"]:
+            stmt_while [$B, $X]
+            ~> stmt_ite [$B, stmt_seq [$X, stmt_while [$B, $X]], unitValue [] ]
+            where (true)
     ]%limp.
 
     Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
