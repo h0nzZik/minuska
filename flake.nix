@@ -152,7 +152,7 @@
             in
               pkgs.mkShell {
                 inputsFrom = [minuska];
-                packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide minuska.coqPackages.vscoq-language-server];
+                packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide];
               };
 
 
