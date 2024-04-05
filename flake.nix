@@ -88,7 +88,7 @@
         packages.minuska = self.outputs.packages.${system}.minuska-coq_8_19;
 
         packages.minuska-examples
-        = coqPackages.callPackage 
+        = coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "minuska-examples";
