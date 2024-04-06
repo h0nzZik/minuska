@@ -23,48 +23,6 @@ From Equations Require Export Equations.
 #[global]
 Set Equations Transparent.
 
-
-Lemma rev_list_ind_T [A : Type] :
-    forall P:list A-> Type,
-    P [] ->
-    (forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
-    forall l:list A, P (rev l). 
-Proof.
-    intros P ? ? l; induction l; auto.
-Qed.
-
-Lemma rev_ind_T :
-∀ [A : Type] (P : list A → Type),
-  P [] → (∀ (x : A) (l : list A), P l → P (l ++ [x])) → ∀ l : list A, P l
-.
-Proof.
-    intros A P ? ? l. rewrite <- (rev_involutive l).
-    apply (rev_list_ind_T P); cbn; auto.
-Qed.
-
-
-Definition analyze_list_from_end {A : Type} (l : list A)
-    : (l = nil) + ( ({ l' : list A & { x : A & l = l'++[x] } }))
-.
-Proof.
-    induction l.
-    {
-        left. reflexivity.
-    }
-    {
-        right.
-        destruct IHl as [IHl|IHl].
-        {
-            subst. exists []. exists a. reflexivity.
-        }
-        {
-            destruct IHl as [l' [x Hl']].
-            subst.
-            exists (a::l'). exists x. simpl. reflexivity.
-        }
-    }
-Qed.
-
 Lemma satisfies_top_bov_cons_1
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -923,19 +881,6 @@ Proof.
     induction H; simpl; (ltac1:(congruence)).
 Qed.
 
-
-Lemma uglify'_prettify'
-    {Σ : StaticModel}
-    {T : Type}
-    (t : PreTerm' symbol T)
-    :
-    uglify' (prettify' t) = term_preterm t
-.
-Proof.
-    rewrite <- (cancel uglify' prettify (term_preterm t)).
-    apply f_equal.
-    simpl. reflexivity.
-Qed.
 
 Lemma satisfies_term_expr_inv
     {Σ : StaticModel}

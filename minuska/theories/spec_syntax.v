@@ -599,6 +599,18 @@ Fixpoint vars_of_to_l2r
     end
 .
 
+Lemma uglify'_prettify'
+    {Σ : StaticModel}
+    {T : Type}
+    (t : PreTerm' symbol T)
+    :
+    uglify' (prettify' t) = term_preterm t
+.
+Proof.
+    rewrite <- (cancel uglify' prettify (term_preterm t)).
+    apply f_equal.
+    simpl. reflexivity.
+Qed.
 
 Fixpoint TermOverBoV_subst
     {Σ : StaticModel}

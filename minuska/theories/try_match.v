@@ -1015,7 +1015,7 @@ Next Obligation.
     assumption.
 Qed.
 Next Obligation.
-    intros. intros x Hx.
+    intros. ltac1:(rename H0 into Hx).
     revert a ρ H x Hx.
     induction b; unfold vars_of; simpl in *; intros a' ρ' H' x Hx.
     {
@@ -1357,14 +1357,14 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
-    intros. intros x H0.
+    intros. ltac1:(rename H0 into Hx).
     destruct b; simpl in *.
     {
         destruct (decide (a = b)); subst;
             simpl in *.
         {
             inversion H; subst; clear H.
-            apply H0.
+            apply Hx.
         }
         {
             inversion H.
@@ -1374,8 +1374,8 @@ Next Obligation.
         inversion H; subst; clear H.
         unfold vars_of in *; simpl in *.
         unfold Valuation in *.
-        rewrite elem_of_dom in H0.
-        destruct H0 as [y Hy].
+        rewrite elem_of_dom in Hx.
+        destruct Hx as [y Hy].
         destruct (decide (x = x0)).
         {
             subst.
@@ -1479,15 +1479,15 @@ Next Obligation.
     }
 Qed.
 Next Obligation.
-    intros. intros x H0.
+    intros. ltac1:(rename H0 into Hx).
     destruct b; unfold vars_of in *; simpl in *.
     { inversion H. }
     {
         inversion H; subst; clear H.
         rewrite elem_of_singleton.
         unfold Valuation in *.
-        rewrite elem_of_dom in H0.
-        destruct H0 as [y Hy].
+        rewrite elem_of_dom in Hx.
+        destruct Hx as [y Hy].
         destruct (decide (x = x0)).
         {
             subst.
@@ -1515,9 +1515,6 @@ Program Instance TryMatch__builtin__AO'sB
 := {|
     try_match := fun _ _ => None ;
 |}.
-Next Obligation. intros. simpl in H. inversion H. Qed.
-Next Obligation. intros. simpl in H. inversion H. Qed.
-Next Obligation. intros. simpl in H. inversion H. Qed.
 Fail Next Obligation.
 
 #[export]
