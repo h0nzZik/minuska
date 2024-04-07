@@ -1704,6 +1704,36 @@ Proof.
     }
 Qed.
 
+
+#[export]
+Instance Subseteq_Valuation2 {Σ : StaticModel}
+    : SubsetEq Valuation2
+.
+Proof.
+    unfold Valuation2.
+    apply _.
+Defined.
+
+#[export]
+Instance VarsOf_Valuation2_
+    {Σ : StaticModel}
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
+
+#[export]
+Instance VarsOf_Valuation2
+    {Σ : StaticModel}
+    : VarsOf (Valuation2) variable
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
+
+
 #[export]
 Instance Satisfies_TermOverBuiltin_TermOverBoV
     {Σ : StaticModel}
@@ -1715,6 +1745,20 @@ Instance Satisfies_TermOverBuiltin_TermOverBoV
 := {|
     satisfies := fun ρ tg ts => satisfies ρ (uglify' tg) (uglify' ts) ;
 |}.
+
+#[export]
+Instance Satisfies_Valuation2_TermOverBuiltin_TermOverBoV
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation2
+        (TermOver builtin_value)
+        (TermOver BuiltinOrVar)
+        variable
+:= {|
+    satisfies := fun ρ tg ts => sat2B ρ tg ts
+|}.
+
+
 
 #[export]
 Instance Satisfies_TermOverBuiltin_TermOverExpression
