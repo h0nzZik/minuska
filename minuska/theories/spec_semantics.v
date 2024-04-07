@@ -846,30 +846,82 @@ Definition Valuation2
     gmap variable (TermOver builtin_value)
 .
 
-Equations? sat2B 
+
+#[export]
+Instance Subseteq_Valuation2 {Σ : StaticModel}
+    : SubsetEq Valuation2
+.
+Proof.
+    unfold Valuation2.
+    apply _.
+Defined.
+
+#[export]
+Instance VarsOf_Valuation2_
     {Σ : StaticModel}
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
+
+#[export]
+Instance VarsOf_Valuation2
+    {Σ : StaticModel}
+    : VarsOf (Valuation2) variable
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
+
+#[export]
+Instance Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation2
+        (TermOver builtin_value)
+        (BuiltinOrVar)
+        variable
+:= {|
+    satisfies := fun ρ t bv =>
+    match bv with
+    | bov_builtin b => t = t_over b
+    | bov_variable x => ρ !! x = Some t
+    end
+|}.
+
+#[local]
+Obligation Tactic := idtac.
+
+Equations? sat2
+    {Σ : StaticModel}
+    {T : Type}
+    {_ST : Satisfies Valuation2 (TermOver builtin_value) T variable }
     (ρ : Valuation2)
     (t : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
-    : Prop
+    (φ : TermOver T)
+    : Type
     by wf (TermOver_size φ) lt
 :=
-    sat2B ρ t (t_over (bov_builtin b)) := t = t_over b ;
-    sat2B ρ t (t_over (bov_variable x)) := ρ !! x = Some t ;
-    sat2B ρ (t_over _) (t_term s l) := False ;
-    sat2B ρ (t_term s' l') (t_term s l) :=
-        s' = s /\
-        length l' = length l /\
+    sat2 ρ t (t_over bv) := satisfies ρ t bv ;
+    sat2 ρ (t_over _) (t_term s l) := False ;
+    sat2 ρ (t_term s' l') (t_term s l) :=
+        ((s' = s) *
+        (length l' = length l) *
         forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
-            sat2B ρ t' φ'
+            sat2 ρ t' φ'
+        )%type
     ;
 .
 Proof.
-    simpl.
-    apply take_drop_middle in pf1.
-    rewrite <- pf1.
-    rewrite sum_list_with_app. simpl.
-    ltac1:(lia).
+    abstract(
+    unfold satisfies in *; simpl in *;
+    simpl;
+    apply take_drop_middle in pf1;
+    rewrite <- pf1;
+    rewrite sum_list_with_app; simpl;
+    ltac1:(lia)).
 Defined.
 
 Lemma sat2B_uglify
@@ -1703,35 +1755,6 @@ Proof.
         }
     }
 Qed.
-
-
-#[export]
-Instance Subseteq_Valuation2 {Σ : StaticModel}
-    : SubsetEq Valuation2
-.
-Proof.
-    unfold Valuation2.
-    apply _.
-Defined.
-
-#[export]
-Instance VarsOf_Valuation2_
-    {Σ : StaticModel}
-    {var : Type}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
-:= {|
-    vars_of := fun ρ => dom ρ ; 
-|}.
-
-#[export]
-Instance VarsOf_Valuation2
-    {Σ : StaticModel}
-    : VarsOf (Valuation2) variable
-:= {|
-    vars_of := fun ρ => dom ρ ; 
-|}.
 
 
 #[export]

@@ -85,22 +85,6 @@ Instance VarsOf_BoV
     vars_of := vars_of_BoV ; 
 |}.
 
-Definition vars_of_SymbolicTerm
-    {Σ : StaticModel}
-    (φ : SymbolicTerm)
-    : gset variable :=
-match φ with
-| term_preterm o => vars_of o
-| term_operand bov => vars_of bov
-end.
-
-#[export]
-Instance VarsOf_SymbolicTerm 
-    {Σ : StaticModel}
-    : VarsOf SymbolicTerm variable
-:= {|
-    vars_of := vars_of_SymbolicTerm ; 
-|}.
 
 Definition vars_of_SideCondition
     {Σ : StaticModel}
@@ -151,13 +135,37 @@ Instance VarsOf_Term'
     vars_of := vars_of_Term'B ; 
 |}.
 
+Fixpoint vars_of_Expression2
+    {Σ : StaticModel}
+    (t : Expression2)
+    : gset variable :=
+match t with
+| e_ground _ => ∅
+| e_variable x => {[x]}
+| e_nullary _ => ∅
+| e_unary _ t' => vars_of_Expression2 t'
+| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
+| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
+end.
+
 #[export]
+Instance VarsOf_Expression2
+    {Σ : StaticModel}
+    : VarsOf Expression2 variable
+:= {|
+    vars_of := vars_of_Expression2 ; 
+|}.
+
+
+#[local]
 Instance VarsOf_TermOver
     {Σ : StaticModel}
-    {T : Type}
-    {_VT : VarsOf T variable}
+    {T var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VT : VarsOf T var}
     :
-    VarsOf (TermOver T) variable
+    VarsOf (TermOver T) var
 :=
 {|
     vars_of := (fix go (t : TermOver T) := 
@@ -168,11 +176,43 @@ Instance VarsOf_TermOver
     ) ; 
 |}.
 
+#[export]
+Instance VarsOf_TermOver_BuiltinOrVar
+    {Σ : StaticModel}
+    :
+    VarsOf (TermOver BuiltinOrVar) variable
+.
+Proof.
+    apply VarsOf_TermOver.
+Defined.
 
+#[export]
+Instance VarsOf_TermOver_Expression2
+    {Σ : StaticModel}
+    :
+    VarsOf (TermOver Expression2) variable
+.
+Proof.
+    apply VarsOf_TermOver.
+Defined.
+
+#[export]
+Instance VarsOf_TermOver_Expression
+    {Σ : StaticModel}
+    :
+    VarsOf (TermOver Expression) variable
+.
+Proof.
+    apply VarsOf_TermOver.
+Defined.
+
+Set Typeclasses Debug.
 Lemma vars_of_uglify'
     {Σ : StaticModel}
-    {T : Type}
-    {_VT : VarsOf T variable}
+    {T var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VT : VarsOf T var}
     (t : TermOver T)
     :
     vars_of (uglify' t) = vars_of t
@@ -223,45 +263,6 @@ Proof.
         }
     }
 Qed.
-(*
-#[export]
-Instance VarsOf_TermOverBoV
-    {Σ : StaticModel}
-    : VarsOf (TermOver BuiltinOrVar) variable
-:= {|
-    vars_of := fun t => vars_of (uglify' t)
-|}.
-
-#[export]
-Instance VarsOf_TermOverExpression
-    {Σ : StaticModel}
-    : VarsOf (TermOver Expression) variable
-:= {|
-    vars_of := fun t => vars_of (uglify' t)
-|}.
-
-*)
-
-Fixpoint vars_of_Expression2
-    {Σ : StaticModel}
-    (t : Expression2)
-    : gset variable :=
-match t with
-| e_ground _ => ∅
-| e_variable x => {[x]}
-| e_nullary _ => ∅
-| e_unary _ t' => vars_of_Expression2 t'
-| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
-| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
-end.
-
-#[export]
-Instance VarsOf_Expression2
-    {Σ : StaticModel}
-    : VarsOf Expression2 variable
-:= {|
-    vars_of := vars_of_Expression2 ; 
-|}.
 
 #[export]
 Instance VarsOf_SideCondition2

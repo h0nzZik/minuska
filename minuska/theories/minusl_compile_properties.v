@@ -23,6 +23,8 @@ From Equations Require Export Equations.
 #[global]
 Set Equations Transparent.
 
+Set Typeclasses Debug.
+
 Lemma satisfies_top_bov_cons_1
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -9304,12 +9306,12 @@ Proof.
                                             reflexivity.
                                         }
                                         {
-                                            rewrite vars_of_uglify' in Hx.
-                                            unfold vars_of; simpl.
-                                            unfold vars_of; simpl.
-                                            (*rewrite <- vars_of_uglify in Hx. *)
-                                            simpl in Hx.
                                             clear -Hx.
+                                            unfold Valuation in *.
+                                            unfold Valuation2 in *.
+                                            Set Printing All.
+                                            rewrite vars_of_uglify' in Hx.
+                                            simpl in Hx.
                                             ltac1:(set_solver).
                                         }
                                     }
