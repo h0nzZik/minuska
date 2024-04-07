@@ -846,33 +846,6 @@ Definition Valuation2
     gmap variable (TermOver builtin_value)
 .
 
-(*
-Fixpoint Satisfies_V2_TermOverBuiltin_TermOverBoV
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
-    :=
-match φ with
-| t_over (bov_builtin b) => t = t_over b
-| t_over (bov_variable x) => ρ !! x = Some t
-| t_term s l =>
-    match t with
-    | t_over _ => False
-    | t_term s' l' =>
-        s' = s /\
-        length l' = length l /\
-        Forall2 (Satisfies_V2_TermOverBuiltin_TermOverBoV ρ) l' l /\
-        forall i t' φ',
-            l !! i = Some φ' ->
-            l' !! i = Some t' ->
-            Satisfies_V2_TermOverBuiltin_TermOverBoV ρ t' φ'
-    end
-end
-.
-*)
-
-
 Equations? sat2B 
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -1193,6 +1166,419 @@ Proof.
         }
     }
 Qed.
+
+Lemma uglify_sat2B
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (t : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    : satisfies (fmap uglify' ρ) (uglify' t) (uglify' φ)
+    -> sat2B ρ t φ
+.
+Proof.
+    remember (TermOver_size φ) as sz.
+    assert (Hsz: (TermOver_size φ) <= sz) by ltac1:(lia).
+    clear Heqsz.
+    revert t φ Hsz.
+    induction sz; simpl; intros t φ Hsz.
+    {
+        destruct φ; simpl in Hsz; ltac1:(lia).
+    }
+    destruct φ; simpl in *; intros HH.
+    {
+        destruct t;
+            simpl in HH;
+            inversion HH; subst; clear HH.
+        {
+            inversion pf; subst; clear pf;
+            ltac1:(simp sat2B);
+            try reflexivity.
+            unfold Valuation in *.
+            unfold Valuation2 in *.
+            rewrite lookup_fmap in H.
+            destruct (ρ !! x) eqn:Hρx;
+                simpl in *.
+            {
+                inversion H; subst; clear H.
+                apply (f_equal prettify) in H1.
+                rewrite (cancel prettify uglify') in H1.
+                subst t.
+                reflexivity.
+            }
+            { inversion H. }
+        }
+        {
+            destruct a; simpl in *.
+            {
+                inversion X.
+            }
+            inversion X; subst; clear X.
+            ltac1:(simp sat2B).
+            unfold Valuation in *.
+            unfold Valuation2 in *.
+            rewrite lookup_fmap in H0.
+            destruct (ρ!!x) eqn:Hρx; simpl in *.
+            {
+                inversion H0; subst; clear H0.
+                apply (f_equal prettify) in H1.
+                rewrite (cancel prettify uglify') in H1.
+                subst t.
+                simpl.
+                apply f_equal.
+                rewrite <- (cancel prettify uglify' (t_term s l)).
+                unfold prettify.
+                simpl. reflexivity.
+            }
+            { inversion H0. }
+        }
+    }
+    {
+        destruct t; simpl in *; ltac1:(simp sat2B).
+        {
+            inversion HH.
+        }
+        unfold satisfies in HH; simpl in HH.
+        inversion HH; subst; clear HH.
+        unfold satisfies in pf; simpl in pf.
+        revert l0 Hsz pf;
+        ltac1:(induction l using rev_ind_T); simpl in *;
+            intros l0 Hsz pf.
+        {
+            destruct (analyze_list_from_end l0); subst; simpl in *.
+            {
+                inversion pf; subst; clear pf.
+                (repeat split).
+                intros.
+                rewrite lookup_nil in pf1. inversion pf1.
+            }
+            {
+                inversion pf; subst; clear pf.
+                destruct s1 as [l' [x HH]].
+                subst.
+                rewrite map_app in H1.
+                rewrite to_PreTerm'_app in H1.
+                simpl in H1.
+                unfold helper in H1.
+                destruct (uglify' x) eqn:Hux.
+                { inversion H1. }
+                { inversion H1. }
+            }
+        }
+        {
+            destruct (analyze_list_from_end l0) as [Hnil|Hcons]; subst; simpl in *.
+            {
+                inversion pf; subst; clear pf.
+                unfold to_PreTerm' in H2.
+                rewrite map_app in H2.
+                rewrite fold_left_app in H2.
+                simpl in H2.
+                unfold helper in H2.
+                destruct (uglify' x) eqn:Hux; simpl in *.
+                {
+                    inversion H2.
+                }
+                {
+                    inversion H2.
+                }
+            }
+            {
+                rewrite sum_list_with_app in Hsz. simpl in Hsz.
+                rewrite map_app in pf.
+                rewrite to_PreTerm'_app in pf.
+                simpl in pf.
+                unfold helper in pf.
+                destruct Hcons as [l' [x0 Hcons]].
+                subst l0.
+                destruct (uglify' x) eqn:Hux; simpl in *.
+                {
+                    apply (f_equal prettify) in Hux.
+                    rewrite (cancel prettify uglify') in Hux.
+                    subst x.
+                    simpl in *.
+                    inversion pf; subst; clear pf.
+                    {
+                        subst. simpl in *.
+                        unfold to_PreTerm' in H1.
+                        rewrite map_app in H1.
+                        rewrite fold_left_app in H1.
+                        simpl in H1.
+                        unfold helper in H1.
+                        destruct (uglify' x0) eqn:Hux0; simpl in *.
+                        {
+                            inversion H1.
+                        }
+                        {
+                            inversion H1; subst; clear H1.
+                            apply (f_equal prettify) in Hux0.
+                            rewrite (cancel prettify uglify') in Hux0.
+                            subst x0.
+                            simpl in *.
+                            specialize (IHl _ ltac:(lia) X).
+                            destruct IHl as [IHl1 [IHl2 IHl3]].
+                            subst s0.
+                            split>[reflexivity|].
+                            do 2 (rewrite app_length).
+                            simpl.
+                            split>[ltac1:(lia)|].
+                            intros i t' φ' H1i H2i.
+                            destruct (decide (i = length l)).
+                            {
+                                subst i.
+                                rewrite lookup_app_r in H1i>[|ltac1:(lia)].
+                                rewrite lookup_app_r in H2i>[|ltac1:(lia)].
+                                rewrite IHl2 in H2i.
+                                rewrite Nat.sub_diag in H1i.
+                                rewrite Nat.sub_diag in H2i.
+                                simpl in *.
+                                inversion H1i; subst; clear H1i.
+                                inversion H2i; subst; clear H2i.
+                                apply IHsz.
+                                { simpl. ltac1:(lia). }
+                                {
+                                    inversion X0.
+                                }
+                            }
+                            {
+                                rewrite lookup_app_l in H1i.
+                                {
+                                    rewrite lookup_app_l in H2i.
+                                    {
+                                        eapply IHl3.
+                                        { apply H1i. }
+                                        { apply H2i. }
+                                    }
+                                    {
+                                        apply lookup_lt_Some in H2i.
+                                        rewrite app_length in H2i.
+                                        simpl in *.
+                                        ltac1:(lia).
+                                    }
+                                }
+                                {
+                                    apply lookup_lt_Some in H1i.
+                                    rewrite app_length in H1i.
+                                    simpl in *.
+                                    ltac1:(lia).
+                                }
+                            }
+                        }
+                    }
+                    {
+                        rewrite map_app in H1.
+                        unfold to_PreTerm' in H1.
+                        rewrite fold_left_app in H1.
+                        simpl in H1.
+                        unfold helper in H1.
+                        destruct (uglify' x0) eqn:Hux0; simpl in *.
+                        {
+                            inversion H1; subst; clear H1.
+                            apply (f_equal prettify) in Hux0.
+                            rewrite (cancel prettify uglify') in Hux0.
+                            subst x0; simpl in *.
+                            specialize (IHl _ ltac:(lia) X).
+                            destruct IHl as [IH1l [IH2l IH3l]].
+                            subst s0.
+                            split>[reflexivity|].
+                            do 2 (rewrite app_length).
+                            simpl.
+                            split>[ltac1:(lia)|].
+                            intros i t' φ' H1i H2i.
+                            destruct (decide (length l = i)).
+                            {
+                                subst i.
+                                rewrite lookup_app_r in H1i>[|ltac1:(lia)].
+                                rewrite lookup_app_r in H2i>[|ltac1:(lia)].
+                                rewrite IH2l in H2i.
+                                rewrite Nat.sub_diag in H1i.
+                                rewrite Nat.sub_diag in H2i.
+                                simpl in *.
+                                inversion H1i; subst; clear H1i.
+                                inversion H2i; subst; clear H2i.
+                                apply IHsz.
+                                { simpl. ltac1:(lia). }
+                                {
+                                    do 2 (rewrite uglify'_prettify' ).
+                                    constructor.
+                                    apply X0.
+                                }
+                            }
+                            {
+                                rewrite lookup_app_l in H1i.
+                                {
+                                    rewrite lookup_app_l in H2i.
+                                    {
+                                        eapply IH3l.
+                                        { apply H1i. }
+                                        { apply H2i. }
+                                    }
+                                    {
+                                        apply lookup_lt_Some in H2i.
+                                        rewrite app_length in H2i.
+                                        simpl in H2i.
+                                        ltac1:(lia).                                        
+                                    }
+                                }
+                                {
+                                    apply lookup_lt_Some in H1i.
+                                    rewrite app_length in H1i.
+                                    simpl in H1i.
+                                    ltac1:(lia).
+                                }
+                            }
+                        }
+                        {
+                            inversion H1.
+                        }
+                    }
+                }
+                {
+                    inversion pf; subst; clear pf.
+                    {
+                        apply (f_equal prettify) in Hux.
+                        rewrite (cancel prettify uglify') in Hux.
+                        subst x. simpl in *.
+                        rewrite map_app in H1.
+                        unfold to_PreTerm' in H1.
+                        rewrite fold_left_app in H1.
+                        simpl in H1.
+                        unfold helper in H1.
+                        destruct (uglify' x0) eqn:Hux0; simpl in *.
+                        {
+                            inversion H1.
+                        }
+                        {
+                            inversion H1; subst; clear H1.
+                            apply (f_equal prettify) in Hux0.
+                            rewrite (cancel prettify uglify') in Hux0.
+                            subst x0. simpl in *.
+                            specialize (IHl _ ltac:(lia) X).
+                            destruct IHl as [IH1l [IH2l IH3l]].
+                            subst s0.
+                            split>[reflexivity|].
+                            do 2 (rewrite app_length); simpl.
+                            split>[ltac1:(lia)|].
+                            intros i t' φ' H1i H2i.
+                            destruct (decide (length l = i)).
+                            {
+                                subst i.
+                                rewrite lookup_app_r in H1i>[|ltac1:(lia)].
+                                rewrite lookup_app_r in H2i>[|ltac1:(lia)].
+                                rewrite IH2l in H2i.
+                                rewrite Nat.sub_diag in H1i.
+                                rewrite Nat.sub_diag in H2i.
+                                simpl in *.
+                                inversion H1i; subst; clear H1i.
+                                inversion H2i; subst; clear H2i.
+                                apply IHsz.
+                                { simpl. ltac1:(lia). }
+                                {
+                                    simpl.
+                                    constructor.
+                                    apply X0.
+                                }
+                            }
+                            {
+                                rewrite lookup_app_l in H1i.
+                                {
+                                    rewrite lookup_app_l in H2i.
+                                    {
+                                        eapply IH3l.
+                                        { apply H1i. }
+                                        { apply H2i. }
+                                    }
+                                    {
+                                        apply lookup_lt_Some in H2i.
+                                        rewrite app_length in H2i.
+                                        simpl in H2i.
+                                        ltac1:(lia).                                        
+                                    }
+                                }
+                                {
+                                    apply lookup_lt_Some in H1i.
+                                    rewrite app_length in H1i.
+                                    simpl in H1i.
+                                    ltac1:(lia).
+                                }
+                            }
+                        }
+                    }
+                    {
+                        unfold to_PreTerm' in H1.
+                        rewrite map_app in H1.
+                        rewrite fold_left_app in H1.
+                        simpl in H1.
+                        unfold helper in H1.
+                        destruct (uglify' x0) eqn:Hux0; simpl in *.
+                        {
+                            inversion H1; subst; clear H1.
+                            apply (f_equal prettify) in Hux0.
+                            rewrite (cancel prettify uglify') in Hux0.
+                            subst x0.
+                            apply (f_equal prettify) in Hux.
+                            rewrite (cancel prettify uglify') in Hux.
+                            subst x.
+                            specialize (IHl _ ltac:(lia) X).
+                            destruct IHl as [IH1l [IH2l IH3l]].
+                            subst s0.
+                            split>[reflexivity|].
+                            do 2 (rewrite app_length); simpl.
+                            split>[ltac1:(lia)|].
+                            intros i t' φ' H1i H2i.
+                            destruct (decide (length l = i)).
+                            {
+                                subst i.
+                                rewrite lookup_app_r in H1i>[|ltac1:(lia)].
+                                rewrite lookup_app_r in H2i>[|ltac1:(lia)].
+                                rewrite IH2l in H2i.
+                                rewrite Nat.sub_diag in H1i.
+                                rewrite Nat.sub_diag in H2i.
+                                simpl in *.
+                                inversion H1i; subst; clear H1i.
+                                inversion H2i; subst; clear H2i.
+                                apply IHsz.
+                                { simpl. ltac1:(lia). }
+                                {
+                                    simpl.
+                                    rewrite uglify'_prettify'.
+                                    constructor.
+                                    apply X0.
+                                }
+                            }
+                            {
+                                rewrite lookup_app_l in H1i.
+                                {
+                                    rewrite lookup_app_l in H2i.
+                                    {
+                                        eapply IH3l.
+                                        { apply H1i. }
+                                        { apply H2i. }
+                                    }
+                                    {
+                                        apply lookup_lt_Some in H2i.
+                                        rewrite app_length in H2i.
+                                        simpl in H2i.
+                                        ltac1:(lia).                                        
+                                    }
+                                }
+                                {
+                                    apply lookup_lt_Some in H1i.
+                                    rewrite app_length in H1i.
+                                    simpl in H1i.
+                                    ltac1:(lia).
+                                }
+                            }
+                        }
+                        {
+                            inversion H1.
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+Qed.
+
 (*
 Lemma uglify_sat2B
     {Σ : StaticModel}
