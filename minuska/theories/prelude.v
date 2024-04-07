@@ -28,6 +28,9 @@ From stdpp Require Export
 Set Transparent Obligations.
 
 (*
+Require Import Equations.Type.All.
+Set Equations Transparent.*)
+(*
 From Equations Require Export Equations.
 
 

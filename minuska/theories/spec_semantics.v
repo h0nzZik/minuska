@@ -891,8 +891,6 @@ Instance Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     end
 |}.
 
-#[local]
-Obligation Tactic := idtac.
 
 Equations? sat2
     {Σ : StaticModel}
@@ -904,7 +902,7 @@ Equations? sat2
     : Type
     by wf (TermOver_size φ) lt
 :=
-    sat2 ρ t (t_over bv) := satisfies ρ t bv ;
+    sat2 ρ t (t_over bv) := False (*satisfies ρ t bv*) ;
     sat2 ρ (t_over _) (t_term s l) := False ;
     sat2 ρ (t_term s' l') (t_term s l) :=
         ((s' = s) *
