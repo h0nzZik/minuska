@@ -711,3 +711,47 @@ match e with
 end
 .
 
+Inductive Expression2
+    {Σ : StaticModel}
+    :=
+| e_ground (e : TermOver builtin_value)
+| e_variable (x : variable)
+| e_nullary (f : builtin_nullary_function)
+| e_unary (f : builtin_unary_function) (t : Expression2)
+| e_binary (f : builtin_binary_function) (t1 : Expression2) (t2 : Expression2)
+| e_ternary (f : builtin_ternary_function) (t1 : Expression2) (t2 : Expression2) (t3 : Expression2)
+.
+
+
+Fixpoint Expression2_subst
+    {Σ : StaticModel}
+    (e : Expression2)
+    (x : variable)
+    (e' : Expression2)
+    : Expression2
+:=    
+match e with
+| e_ground g => e_ground g
+| e_variable y =>
+    if (decide (y = x)) then e' else (e_variable y)
+| e_nullary f => e_nullary f
+| e_unary f e1 => e_unary f (Expression2_subst e1 x e')
+| e_binary f e1 e2 => e_binary f (Expression2_subst e1 x e') (Expression2_subst e2 x e')
+| e_ternary f e1 e2 e3 => e_ternary f (Expression2_subst e1 x e') (Expression2_subst e2 x e') (Expression2_subst e3 x e')
+end
+.
+
+Fixpoint Expression2_to_Expression
+    {Σ : StaticModel}
+    (e : Expression2)
+    : Expression
+:=
+match e with
+| e_ground g => ft_element (uglify' g)
+| e_variable x => ft_variable x
+| e_nullary f => ft_nullary f
+| e_unary f e1 => ft_unary f (Expression2_to_Expression e1)
+| e_binary f e1 e2 => ft_binary f (Expression2_to_Expression e1) (Expression2_to_Expression e2)
+| e_ternary f e1 e2 e3 => ft_ternary f (Expression2_to_Expression e1) (Expression2_to_Expression e2) (Expression2_to_Expression e3)
+end
+.

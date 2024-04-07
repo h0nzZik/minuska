@@ -1579,19 +1579,130 @@ Proof.
     }
 Qed.
 
-(*
-Lemma uglify_sat2B
+
+Fixpoint Expression2_evaluate
     {Σ : StaticModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
-    : satisfies (fmap uglify' ρ) (uglify' t) (uglify' φ)
-    -> sat2B ρ t φ
+    (t : Expression2)
+    : option (TermOver builtin_value) :=
+match t with
+| e_ground e => Some e
+| e_variable x => ρ !! x
+| e_nullary f =>
+    Some (prettify (builtin_nullary_function_interp f))
+| e_unary f t =>
+    e ← Expression2_evaluate ρ t;
+    Some (prettify (builtin_unary_function_interp f (uglify' e)))
+| e_binary f t1 t2 =>
+    e1 ← Expression2_evaluate ρ t1;
+    e2 ← Expression2_evaluate ρ t2;
+    Some (prettify (builtin_binary_function_interp f (uglify' e1) (uglify' e2)))
+| e_ternary f t1 t2 t3 =>
+    e1 ← Expression2_evaluate ρ t1;
+    e2 ← Expression2_evaluate ρ t2;
+    e3 ← Expression2_evaluate ρ t3;
+    Some (prettify (builtin_ternary_function_interp f (uglify' e1) (uglify' e2) (uglify' e3)))
+end.
+
+Lemma Expression2_Expression_evaluate
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (e : Expression2)
+    :
+    Expression2_evaluate ρ e =
+    prettify <$> (Expression_evaluate (fmap uglify' ρ) (Expression2_to_Expression e))
 .
 Proof.
+    induction e; simpl.
+    {
+        rewrite (cancel prettify uglify').
+        reflexivity.
+    }
+    {
+        rewrite lookup_fmap.
+        unfold Valuation in *. unfold Valuation2 in *.
+        destruct (ρ !! x) eqn:Hρx; simpl.
+        {
+            simpl.
+            rewrite (cancel prettify uglify').
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        reflexivity.
+    }
+    {
+        rewrite IHe. clear IHe.
+        rewrite option_fmap_bind.
+        unfold compose.
+        destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e))
+            eqn:Heq; simpl.
+        {
+            rewrite (cancel uglify' prettify).
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        rewrite IHe1.
+        rewrite IHe2.
+        rewrite option_fmap_bind.
+        destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e1)) eqn:Heq1;
+            simpl.
+        {
+            rewrite option_fmap_bind.
+            destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e2)) eqn:Heq2;
+                simpl.
+            {
+                do 2 (rewrite (cancel uglify' prettify)).
+                reflexivity.
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        rewrite IHe1.
+        rewrite IHe2.
+        rewrite IHe3.
 
+        rewrite option_fmap_bind.
+        destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e1)) eqn:Heq1;
+            simpl.
+        {
+            rewrite option_fmap_bind.
+            destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e2)) eqn:Heq2;
+                simpl.
+            {
+                rewrite option_fmap_bind.
+                destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e3)) eqn:Heq3;
+                    simpl.
+                {
+                    do 3 (rewrite (cancel uglify' prettify)).
+                    reflexivity.
+                }
+                {
+                    reflexivity.
+                }
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+            reflexivity.
+        }
+    }
 Qed.
-*)
 
 #[export]
 Instance Satisfies_TermOverBuiltin_TermOverBoV
