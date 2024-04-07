@@ -2482,3 +2482,70 @@ Proof.
         }
     }
 Qed.
+
+#[export]
+Instance Satisfies_TermOverBuiltin_TermOverExpression2
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation2
+        (TermOver builtin_value)
+        (TermOver Expression2)
+        variable
+:= {|
+    satisfies := fun ρ tg ts => sat2E ρ tg ts ;
+|}.
+
+#[export]
+Instance Satisfies_SideCondition2
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation2
+        unit
+        SideCondition2
+        variable
+:= {|
+    satisfies := fun ρ _ sc =>
+        Expression2_evaluate ρ (sc_left sc) = 
+        Expression2_evaluate ρ (sc_right sc) ;
+|}.
+
+
+#[export]
+Instance Satisfies_Valuation2_scs2
+    {Σ : StaticModel}
+    : Satisfies
+        Valuation2
+        unit
+        (list SideCondition2)
+        variable
+:= {|
+    satisfies := fun ρ _ l => forall x, x ∈ l -> satisfies ρ () x;
+|}.
+
+Definition rewrites_in_valuation_under_to
+    {Σ : StaticModel}
+    {Act : Set}
+    (ρ : Valuation2)
+    (r : RewritingRule2 Act)
+    (from : TermOver builtin_value)
+    (under : Act)
+    (to : TermOver builtin_value)
+    : Type
+:= ((satisfies ρ from (r_from r))
+* (satisfies ρ to (r_to r))
+* (@satisfies Σ Valuation2 unit (list SideCondition2) _ _ _ _ _ _ ρ tt (r_scs r))
+* (under = r_act r)
+)%type
+.
+Definition rewrites_to
+    {Σ : StaticModel}
+    {Act : Set}
+    (r : RewritingRule2 Act)
+    (from : TermOver builtin_value)
+    (under : Act)
+    (to : TermOver builtin_value)
+    : Type
+:= { ρ : Valuation2 &
+    rewrites_in_valuation_under_to ρ r from under to
+   }
+.

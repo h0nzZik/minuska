@@ -152,6 +152,79 @@ Instance VarsOf_Term'
 |}.
 
 #[export]
+Instance VarsOf_TermOver
+    {Σ : StaticModel}
+    {T : Type}
+    {_VT : VarsOf T variable}
+    :
+    VarsOf (TermOver T) variable
+:=
+{|
+    vars_of := (fix go (t : TermOver T) := 
+        match t with
+        | t_over x => vars_of x
+        | t_term _ l => ⋃ (go <$> l)
+        end
+    ) ; 
+|}.
+
+
+Lemma vars_of_uglify'
+    {Σ : StaticModel}
+    {T : Type}
+    {_VT : VarsOf T variable}
+    (t : TermOver T)
+    :
+    vars_of (uglify' t) = vars_of t
+.
+Proof.
+    induction t; simpl.
+    { reflexivity. }
+    {
+        rewrite Forall_forall in H.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        induction l using rev_ind; simpl.
+        { reflexivity. }
+        {
+            specialize (IHl ltac:(set_solver)).
+            rewrite map_app.
+            rewrite to_PreTerm'_app.
+            simpl.
+            unfold helper.
+            destruct (uglify' x) eqn:Hux.
+            {
+                simpl.
+                apply (f_equal prettify) in Hux.
+                rewrite (cancel prettify uglify') in Hux.
+                subst x.
+                rewrite IHl.
+                simpl.
+                rewrite fmap_app.
+                simpl.
+                rewrite union_list_app_L.
+                specialize (H (prettify (term_preterm ao)) ltac:(set_solver)).
+                simpl in H.
+                repeat (unfold vars_of in H; simpl in H).
+                rewrite <- H.
+                rewrite (uglify'_prettify').
+                simpl.
+                ltac1:(set_solver).
+            }
+            {
+                apply (f_equal prettify) in Hux.
+                rewrite (cancel prettify uglify') in Hux.
+                subst x.
+                rewrite fmap_app.
+                simpl.
+                rewrite union_list_app_L.
+                ltac1:(set_solver).
+            }
+        }
+    }
+Qed.
+(*
+#[export]
 Instance VarsOf_TermOverBoV
     {Σ : StaticModel}
     : VarsOf (TermOver BuiltinOrVar) variable
@@ -166,3 +239,43 @@ Instance VarsOf_TermOverExpression
 := {|
     vars_of := fun t => vars_of (uglify' t)
 |}.
+
+*)
+
+Fixpoint vars_of_Expression2
+    {Σ : StaticModel}
+    (t : Expression2)
+    : gset variable :=
+match t with
+| e_ground _ => ∅
+| e_variable x => {[x]}
+| e_nullary _ => ∅
+| e_unary _ t' => vars_of_Expression2 t'
+| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
+| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
+end.
+
+#[export]
+Instance VarsOf_Expression2
+    {Σ : StaticModel}
+    : VarsOf Expression2 variable
+:= {|
+    vars_of := vars_of_Expression2 ; 
+|}.
+
+#[export]
+Instance VarsOf_SideCondition2
+    {Σ : StaticModel}
+    : VarsOf SideCondition2 variable
+:= {|
+    vars_of := fun c => vars_of (sc_left c) ∪ vars_of (sc_right c) ; 
+|}.
+
+#[export]
+Program Instance VarsOf_list_SideCondition2
+    {Σ : StaticModel}
+    : VarsOf (list SideCondition2) variable
+:= {|
+    vars_of := fun scs => ⋃ (vars_of <$> scs)
+|}.
+

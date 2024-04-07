@@ -7490,7 +7490,16 @@ Proof.
     }
 Qed.
 
+Lemma vars_of_t_term
+    {Σ : StaticModel}
+    (s : symbol)
+    (l : list (TermOver BuiltinOrVar))
+    :
+    vars_of (t_term s l) = union_list ( vars_of <$> l)
+.
+Proof. reflexivity. Qed.
 
+(*
 Lemma vars_of_t_term
     {Σ : StaticModel}
     (s : symbol)
@@ -7533,7 +7542,7 @@ Proof.
         }
     }
 Qed.
-
+*)
 
 Equations? TermOverBoV_eval
     {Σ : StaticModel}
@@ -7743,7 +7752,6 @@ Proof.
             unfold vars_of at 2; simpl.
             destruct (decide (x = x0)).
             {
-                unfold vars_of at 2; simpl.
                 subst.
                 ltac1:(set_solver).
             }
@@ -9296,6 +9304,7 @@ Proof.
                                             reflexivity.
                                         }
                                         {
+                                            rewrite vars_of_uglify' in Hx.
                                             unfold vars_of; simpl.
                                             unfold vars_of; simpl.
                                             (*rewrite <- vars_of_uglify in Hx. *)
@@ -9359,9 +9368,7 @@ Proof.
                                             reflexivity.
                                         }
                                         {
-                                            unfold vars_of; simpl.
-                                            unfold vars_of; simpl.
-                                            (*rewrite <- vars_of_uglify in Hx. *)
+                                            rewrite vars_of_uglify' in Hx.
                                             simpl in Hx.
                                             clear -Hx.
                                             ltac1:(set_solver).
@@ -9432,8 +9439,7 @@ Proof.
                                             reflexivity.
                                         }
                                         {
-                                            unfold vars_of; simpl.
-                                            unfold vars_of; simpl.
+                                            rewrite vars_of_uglify' in Hx.
                                             clear -Hx.
                                             ltac1:(set_solver).
                                         }

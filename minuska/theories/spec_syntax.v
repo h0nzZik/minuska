@@ -755,3 +755,27 @@ match e with
 | e_ternary f e1 e2 e3 => ft_ternary f (Expression2_to_Expression e1) (Expression2_to_Expression e2) (Expression2_to_Expression e3)
 end
 .
+
+Record SideCondition2
+    {Σ : StaticModel}
+    :=
+mkSideCondition2 {
+    sc_left: Expression2 ;
+    sc_right: Expression2 ;
+}.
+
+Record RewritingRule2
+    {Σ : StaticModel}
+    (Act : Set)
+:= mkRewritingRule2
+{
+    r_from : TermOver BuiltinOrVar ;
+    r_to : TermOver Expression2 ;
+    r_scs : list SideCondition2 ;
+    r_act : Act ;
+}.
+
+Arguments r_from {Σ} {Act%_type_scope} r.
+Arguments r_to {Σ} {Act%_type_scope} r.
+Arguments r_scs {Σ} {Act%_type_scope} r.
+Arguments r_act {Σ} {Act%_type_scope} r.
