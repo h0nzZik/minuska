@@ -166,8 +166,8 @@ Module two_counters.
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
-                cfg [ state [ s [ $M ], $N ] ]
-            ~>{default_act} cfg [ state [ $M, s [ $N ]  ] ]
+                cfg [ state [ s [ t_over ($M) ], t_over ($N) ] ]
+            ~>{default_act} cfg [ state [ t_over ($M), s [ t_over ($N) ]  ] ]
         )
     ]))).
     
@@ -234,7 +234,7 @@ Module two_counters_Z.
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
-               state [ $M ; $N ]
+               state [ t_over ($M) ; t_over ($N) ]
             ~>{default_act} state [
                 t_over ((($M)) -Z 1%Z);
                 t_over (($N) +Z (($M)))
@@ -262,10 +262,10 @@ Module two_counters_Z.
     end
     .
 
-    Definition interp_loop_number fuel := 
+    Definition interp_loop_number (fuel : nat) := 
         fun (m n : Z) =>
-        let fg' := ((interp_loop (interp_in_from Γ) fuel) ∘ pair_to_state) (m,n) in
-        state_to_pair fg'.2
+        let fg' := (((interp_in_from Γ fuel)) ∘ pair_to_state) (m,n) in
+        state_to_pair fg'.1.2
     .
 
 End two_counters_Z.
@@ -340,8 +340,8 @@ Module arith.
         (* plus *)
         decl_rule (
             rule ["plus-nat-nat"]:
-                cfg [ u_cseq [ ($X + $Y), $REST_SEQ ] ]
-            ~>{default_act} cfg [ u_cseq [ ($X +Nat $Y) , $REST_SEQ ] ]
+                cfg [ u_cseq [ (t_over ($X) + t_over ($Y) ), t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X +Nat $Y) , t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -352,8 +352,8 @@ Module arith.
         (* minus *)
         decl_rule (
             rule ["minus-nat-nat"]:
-                cfg [ u_cseq [ ($X - $Y), $REST_SEQ ] ]
-            ~>{default_act} cfg [ u_cseq [ ($X -Nat $Y) , $REST_SEQ ] ]
+                cfg [ u_cseq [ (t_over ($X) - t_over ($Y)), t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X -Nat $Y) , t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -364,8 +364,8 @@ Module arith.
         (* times *)
         decl_rule (
             rule ["times-nat-nat"]:
-                cfg [ u_cseq [ (($X) * ($Y)), $REST_SEQ ] ]
-            ~>{default_act} cfg [ u_cseq [ ($X *Nat $Y) , $REST_SEQ ] ]
+                cfg [ u_cseq [ (t_over ($X) * t_over ($Y)), t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X *Nat $Y) , t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -376,8 +376,8 @@ Module arith.
         (* div *)
         decl_rule (
             rule ["div-nat-nat"]:
-                cfg [ u_cseq [ (($X) / ($Y)), $REST_SEQ ] ]
-            ~>{default_act} cfg [ u_cseq [ ($X /Nat $Y) , $REST_SEQ ] ]
+                cfg [ u_cseq [ (t_over ($X) / t_over ($Y)), t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X /Nat $Y) , t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -396,11 +396,11 @@ Module arith.
         (ground (cfg [ u_cseq [ ((@term_operand symbol _ (bv_nat x)) + (@term_operand symbol _ (bv_nat y))), u_emptyCseq [] ] ]))
     .*)
 
-    Definition initial0 (x : Term' symbol builtin_value) :=
+    Definition initial0 (x : TermOver builtin_value) :=
         (ground (
             cfg [
                 u_cseq [ 
-                    x,
+                    x;
                     u_emptyCseq []
                     ]
                 ]
@@ -410,10 +410,10 @@ Module arith.
 
     Definition initial (x: nat) (ly : list nat) :=
         (ground (initial0 ((foldr 
-            (fun a (b : Term' symbol builtin_value) =>
-                plus [((bv_nat a)) , b]
+            (fun a (b : TermOver builtin_value) =>
+                plus [(t_over (bv_nat a)) , b]
             )
-            (@term_operand symbol builtin_value (bv_nat x))
+            (t_over (bv_nat x))
             ly
         ))))
     .
@@ -443,18 +443,18 @@ Module arith.
 
     Eval vm_compute in (interp_from 10 (ground (initial0
     (
-        ((bv_nat 3) + (bv_nat 4)) + ((bv_nat 5) + (bv_nat 6))
+        (t_over (bv_nat 3) + t_over (bv_nat 4)) + (t_over (bv_nat 5) + t_over (bv_nat 6))
     )))).
 
     Lemma interp_test_2:
         exists rem log,
             (interp_from 10 (ground (initial0
                 (
-                    ((bv_nat 3) + (bv_nat 4))
+                    (t_over (bv_nat 3) + t_over (bv_nat 4))
                     +
-                    ((bv_nat 5) + (bv_nat 6))
+                    (t_over (bv_nat 5) + t_over (bv_nat 6))
                 ))))
-            = (rem, (ground (initial0 (term_operand (bv_nat 18)))), log)
+            = (rem, (ground (initial0 ((t_over  (bv_nat 18))))), log)
     .
     Proof.
         eexists. eexists. reflexivity.
@@ -465,12 +465,12 @@ Module arith.
         exists rem log,
             (interp_from 10 (ground (initial0
                 (
-                    ((bv_nat 5) * (bv_nat 6))
+                    (t_over (bv_nat 5) * t_over (bv_nat 6))
                     /
-                    ((bv_nat 3) + (bv_nat 4))
+                    (t_over (bv_nat 3) + t_over (bv_nat 4))
                     
                 ))))
-            = (rem, (ground (initial0 (term_operand (bv_nat 4)))), log)
+            = (rem, (ground (initial0 (t_over (bv_nat 4)))), log)
     .
     Proof.
         eexists. eexists. reflexivity.
@@ -505,36 +505,36 @@ Module fib_native.
     Definition Decls : list Declaration := [
         decl_rule (
             rule ["just-0"]:
-               initialState [ (bov_builtin (bv_Z 0)) ]
-            ~>{default_act} resultState [ (ft_element (term_operand (bv_Z 0))) ]
+               initialState [ t_over  (bov_builtin (bv_Z 0)) ]
+            ~>{default_act} resultState [ t_over  (e_ground (t_over (bv_Z 0))) ]
         );
         decl_rule (
             rule ["just-1"]:
-               initialState [ (bov_builtin (bv_Z 1)) ]
-            ~>{default_act} resultState [ (ft_element (term_operand (bv_Z 1))) ]
+               initialState [ t_over (bov_builtin (bv_Z 1)) ]
+            ~>{default_act} resultState [ t_over  (e_ground (t_over  (bv_Z 1))) ]
         );
         decl_rule (
             rule ["two-or-more"]:
-               initialState [ $Tgt ]
+               initialState [ t_over  ($Tgt) ]
             ~>{default_act} state [
-                $Tgt,
-                (ft_element (term_operand (bv_Z 2))),
-                (ft_element (term_operand (bv_Z 1))),
-                (ft_element (term_operand (bv_Z 1))) 
+                t_over ($Tgt),
+                t_over (e_ground (t_over  (bv_Z 2))),
+                t_over (e_ground (t_over  (bv_Z 1))),
+                t_over (e_ground (t_over  (bv_Z 1))) 
                ]
-            where ((~~ ($Tgt ==Z (ft_element (term_operand (bv_Z 0)))))
-                && (~~ ($Tgt ==Z (ft_element (term_operand (bv_Z 1))))))
+            where ((~~ ($Tgt ==Z (e_ground (t_over (bv_Z 0)))))
+                && (~~ ($Tgt ==Z (e_ground (t_over (bv_Z 1))))))
         );
         decl_rule (
             rule ["step"]:
-               state [ $Tgt, $Curr, $X, $Y ]
-            ~>{default_act} state [ $Tgt, ($Curr +Z (ft_element (term_operand (bv_Z 1)))), ($X +Z $Y), $X ]
+               state [ t_over ($Tgt); t_over  ($Curr); t_over ($X); t_over ($Y) ]
+            ~>{default_act} state [ t_over ($Tgt); t_over (($Curr) +Z (e_ground (t_over  (bv_Z 1)))); t_over ($X +Z $Y); t_over ($X) ]
             where (~~ ($Curr ==Z $Tgt))
         );
         decl_rule (
             rule ["result"]:
-               state [ $Tgt, $Curr, $X, $Y ]
-            ~>{default_act} resultState [ $X ]
+               state [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
+            ~>{default_act} resultState [ t_over ($X) ]
                 where (($Curr ==Z $Tgt))
         )
     ].
@@ -547,7 +547,7 @@ Module fib_native.
         := interp_in_from Γ fuel from
     .
 
-    Definition initial0 (x : Term' symbol builtin_value) :=
+    Definition initial0 (x : TermOver builtin_value) :=
         (ground (
             initialState [ x ]
         ))
@@ -555,7 +555,7 @@ Module fib_native.
 
     Definition fib_interp_from (fuel : nat) (from : Z)
         := interp_in_from Γ fuel (ground (initial0
-                (term_operand (bv_Z from))))
+                (t_over (bv_Z from))))
     .
 
     Definition fib_interp_from_toint
@@ -563,7 +563,7 @@ Module fib_native.
     :=
         let r := fib_interp_from fuel from in
         let n : Z := (match r.1.2 with
-        | term_preterm (pt_app_operand (pt_operator "resultState") ((bv_Z val)))
+          t_term "resultState" [t_over (bv_Z val)]
           => val
         | _ => Z0
         end) in
@@ -573,34 +573,34 @@ Module fib_native.
     
     Eval vm_compute in (interp_from 50 (ground (initial0
     (
-        (term_operand (bv_Z 7))
+        (t_over (bv_Z 7))
     )))).
 
     Lemma interp_test_fib_0:
         exists rem log,
             (fib_interp_from 10 0)
-            = (rem, (ground (resultState [(term_operand (bv_Z 0))])), log)
+            = (rem, (ground (resultState [(t_over (bv_Z 0))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_1:
         exists rem log,
             (fib_interp_from 10 1)
-            = (rem, (ground (resultState [(term_operand (bv_Z 1))])), log)
+            = (rem, (ground (resultState [(t_over  (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_2:
         exists rem log,
             (fib_interp_from 10 2)
-            = (rem, (ground (resultState [(term_operand (bv_Z 1))])), log)
+            = (rem, (ground (resultState [(t_over  (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
     Lemma interp_test_fib_3:
         exists rem log,
             (fib_interp_from 10 3)
-            = (rem, (ground (resultState [(term_operand (bv_Z 2))])), log)
+            = (rem, (ground (resultState [(t_over  (bv_Z 2))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
@@ -608,7 +608,7 @@ Module fib_native.
     Lemma interp_test_fib_11:
         exists rem log,
             (fib_interp_from 20 11)
-            = (rem, (ground (resultState [(term_operand (bv_Z 89))])), log)
+            = (rem, (ground (resultState [(t_over (bv_Z 89))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
@@ -722,8 +722,9 @@ Module imp.
         : LangImpScope
     .
 
-    Definition isValue :=  fun x =>
-         ((isNat x) || (isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs.
+    Definition isValue (x : Expression2) : Expression2 :=
+         ((isNat x) || (isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs
+    .
 
     #[local]
     Instance ImpDefaults : Defaults := {|

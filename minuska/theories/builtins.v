@@ -550,10 +550,10 @@ Module default_builtin.
         .
 
         Notation "b1 '||' b2" :=
-            (ft_binary default_builtin.b_or
+            (Expression_to_Expression2 (ft_binary default_builtin.b_or
                 (Expression2_to_Expression b1)
                 (Expression2_to_Expression b2)
-            )
+            ))
             : RuleScope
         .
 
