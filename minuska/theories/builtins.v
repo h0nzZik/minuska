@@ -676,8 +676,8 @@ End default_builtin.
 
     Section ws.
 
-        Definition isAppliedSymbol (s:string) (e : @Expression (default_model (default_builtin.β))) :=
-            (@ft_binary ( default_model (default_builtin.β))
+        Definition isAppliedSymbol (s:string) (e : @Expression2 (default_model (default_builtin.β))) :=
+            (Expression_to_Expression2 (@ft_binary ( default_model (default_builtin.β))
                 default_builtin.b_is_applied_symbol
                 (@ft_element
                     ( default_model (default_builtin.β))
@@ -689,8 +689,8 @@ End default_builtin.
                         (bv_sym s)
                     )
                 )
-                e
-            )
+                (Expression2_to_Expression e)
+            ))
         .
 
     End ws.
