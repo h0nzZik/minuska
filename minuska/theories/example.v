@@ -34,7 +34,7 @@ Module example_1.
     Definition cfg {_br : BasicResolver} := (@t_term _ operand_type "cfg").
     Arguments cfg {_br} _%_rs.
 
-    Definition s {_br : BasicResolver} := (@t_term _ operand_type "s").
+    Definition s {_br : BasicResolver} := (@t_term _ operand_type "S").
     Arguments s {_br} _%_rs.
 
     Definition Decls : list Declaration := [
@@ -114,5 +114,17 @@ Module example_1.
         let fg' := (((interp_in_from Γ) fuel) ∘ my_number) n in
         my_number_inv fg'.1.2
     .
+
+    Example ex_1: interp_loop_number 1 2 = Some 0.
+    Proof. reflexivity. Qed.
+
+    Example ex_2: interp_loop_number 1 5 = Some 3.
+    Proof. reflexivity. Qed.
+
+    Example ex_3: interp_loop_number 1 6 = Some 4.
+    Proof. reflexivity. Qed.
+
+    Example ex_4: interp_loop_number 1 20 = Some 18.
+    Proof. reflexivity. Qed.
 
 End example_1.
