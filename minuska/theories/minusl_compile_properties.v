@@ -10212,9 +10212,9 @@ Proof.
                                         clear -Htmp HeqV1.
                                         assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                         {
-                                            rewrite <- HeqV1.
                                             assert (Htmp3 := vars_of_uglify V1 c).
                                             rewrite vars_of_uglify' in Htmp3.
+                                            rewrite <- HeqV1.
                                             ltac1:(set_solver).
                                         }
                                         eapply infinite_is_fresh.
