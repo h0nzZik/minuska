@@ -812,7 +812,49 @@ Proof.
     { exact (Expression2_to_Expression (sc_right c)). }
 Defined.
 
+Definition sc_to_sc2
+    {Σ : StaticModel}
+    (c : SideCondition)
+    : SideCondition2
+.
+Proof.
+    destruct c.
+    destruct c.
+    constructor.
+    {
+        apply Expression_to_Expression2. exact e1.
+    }
+    {
+        apply Expression_to_Expression2. exact e2.
+    }
+Defined.
 
+#[export]
+Instance cancel_sc_sc2
+    {Σ : StaticModel}
+    :
+    Cancel eq (sc_to_sc2) (sc2_to_sc)
+.
+Proof.
+    intros c; destruct c; simpl.
+    rewrite (cancel Expression_to_Expression2 Expression2_to_Expression).
+    rewrite (cancel Expression_to_Expression2 Expression2_to_Expression).
+    reflexivity.
+Qed.
+
+#[export]
+Instance cancel_sc2_sc
+    {Σ : StaticModel}
+    :
+    Cancel eq (sc2_to_sc) (sc_to_sc2)
+.
+Proof.
+    intros c. destruct c; destruct c; simpl.
+    unfold sc2_to_sc. simpl.
+    rewrite (cancel Expression2_to_Expression Expression_to_Expression2).
+    rewrite (cancel Expression2_to_Expression Expression_to_Expression2).
+    reflexivity.
+Qed.
 
 Record RewritingRule2
     {Σ : StaticModel}
@@ -855,14 +897,46 @@ Proof.
     destruct r.
     constructor.
     { exact (prettify fr_from0). }
-    { apply prettify in fr_to0. exact (uglify' fr_to0). }
+    { 
+        apply prettify in fr_to0.
+        apply (TermOver_map Expression_to_Expression2).
+        exact fr_to0.
+    }
+    {
+        apply (fmap sc_to_sc2).
+        exact fr_scs0.
+    }
+    {
+        exact fr_act0.
+    }
 Defined.
-:=
-    mkRewritingRule
-        Σ
-        Act
-        (uglify' (r_from r))
-        (uglify' (TermOver_map Expression2_to_Expression (r_to r)))
-        (fmap sc2_to_sc (r_scs r))
-        (r_act r)
+
+
+#[export]
+Instance cancel_TermOver_map
+    {Σ : StaticModel}
+    (A B : Type)
+    (f : A -> B)
+    (g : B -> A)
+    :
+    Cancel eq f g ->
+    Cancel eq (TermOver_map f) (TermOver_map g)
 .
+Proof.
+    intros Hcancel.
+    intros t.
+    induction t; simpl.
+    { rewrite (cancel f g). reflexivity. }
+    {
+        f_equal.
+        induction l; simpl.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2).
+            rewrite H1. rewrite IHl.
+            reflexivity.
+        }
+    }
+Qed.

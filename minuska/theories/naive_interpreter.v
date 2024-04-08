@@ -1246,6 +1246,31 @@ Proof.
     reflexivity.
 Qed.
 
+
+#[export]
+Instance cancel_fr_r
+    {Σ : StaticModel}
+    {Act : Set}
+    : Cancel eq (@fr_to_r _ Act) r_to_fr
+.
+Proof.
+    intros r. destruct r. simpl.
+    rewrite (cancel prettify uglify').
+    rewrite (cancel prettify uglify').
+    rewrite (cancel (TermOver_map Expression_to_Expression2) (TermOver_map Expression2_to_Expression)).
+    f_equal.
+    induction r_scs; simpl.
+    { reflexivity. }
+    {
+        do 2 (rewrite (cancel Expression_to_Expression2 Expression2_to_Expression)).
+        f_equal.
+        {
+            destruct a; reflexivity.
+        }
+        apply IHr_scs.
+    }
+Qed.
+
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
     {Act : Set}
@@ -1345,8 +1370,54 @@ Proof.
         unfold rewriting_relation_flat in Hsound1.
         destruct Hsound1 as [r [a [HH2 HH3]]].
         unfold rewriting_relation.
-        exists (mkRewritingRule2 (prettify))
-        apply Hsound1.
+        exists (fr_to_r r).
+        exists a.
+        split.
+        {
+            rewrite elem_of_list_fmap in HH2.
+            destruct HH2 as [y [HH2 HH2']].
+            subst r.
+            rewrite (cancel fr_to_r r_to_fr).
+            exact HH2'.
+        }
+        unfold rewrites_to.
+        unfold flattened_rewrites_to in HH3.
+        destruct HH3 as [ρ Hρ].
+        exists (fmap prettify ρ).
+        unfold rewrites_in_valuation_under_to.
+        unfold flattened_rewrites_in_valuation_under_to in Hρ.
+        destruct Hρ as [[[HH4 HH5] HH6] HH7].
+        unfold satisfies; simpl.
+        (repeat split).
+        {
+            apply uglify_sat2B.
+            rewrite fmap_uglify_prettify_val.
+            destruct r;  simpl in *.
+            rewrite (cancel uglify' prettify).
+            exact HH4.
+        }
+        {
+            apply uglify_sat2E.
+            rewrite fmap_uglify_prettify_val.
+            destruct r;  simpl in *.
+            rewrite (cancel (TermOver_map Expression2_to_Expression) (TermOver_map Expression_to_Expression2)).
+            unfold satisfies; simpl.
+            do 2 (rewrite (cancel uglify' prettify)).
+            exact HH5.
+        }
+        {
+            intros x Hx.
+            unfold satisfies in HH6; simpl in HH6.
+            specialize (HH6 (sc2_to_sc x)).
+            ltac1:(ospecialize (HH6 _)).
+            {
+                destruct r; simpl in *.
+                rewrite elem_of_list_fmap in Hx.
+                destruct Hx as [y [H1y H2y]].
+                subst x.
+                rewrite (cancel sc2_to_sc sc_to_sc2).
+            }
+        }
     }
     {
 
