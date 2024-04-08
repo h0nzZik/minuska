@@ -940,3 +940,9 @@ Proof.
         }
     }
 Qed.
+
+Definition RewritingTheory2
+    {Σ : StaticModel}
+    (Act : Set)
+    := list (RewritingRule2 Act)
+.

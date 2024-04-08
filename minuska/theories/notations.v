@@ -29,7 +29,7 @@ Class BasicResolver {Σ : StaticModel} := {
 }.
 
 Class Resolver {Σ : StaticModel} {_BR : BasicResolver} := {
-    inject_variable : variable -> operand_type ;
+    inject_variable : variable -> TermOver operand_type ;
 }.
 
 #[export]
@@ -58,25 +58,26 @@ Instance BasicResolver_ground {Σ : StaticModel}
 
 #[export]
 Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {    
-    inject_variable := bov_variable;
+    inject_variable := t_over ∘ bov_variable;
 }.
 
 #[export]
 Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
-    inject_variable := e_variable;
+    inject_variable := t_over ∘ e_variable;
 }.
 
+(*
 
 Class ToAOO {Σ : StaticModel} {_basic_resolver : BasicResolver}
     (to_aoo_F : Type)
 := {
-    to_aoo_opt : to_aoo_F -> (Term' symbol operand_type) ;
+    to_aoo_opt : to_aoo_F -> (TermOver operand_type) ;
 }.
 
 #[export]
 Instance ToAOO_id {Σ : StaticModel} {_basic_resolver : BasicResolver}
     {T : Type}
-    {_eq: TCEq T (Term' symbol operand_type)}
+    {_eq: TCEq T (TermOver operand_type)}
     : ToAOO T
 .
 Proof. inversion _eq. subst. constructor. intros x. exact x. Defined.
@@ -101,6 +102,8 @@ Proof. inversion _eq. subst. constructor. apply term_operand. Defined.
 
 Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%_type_scope {ToAOO} _.
 
+*)
+
 Notation "'$' x" :=
     (inject_variable x)
     (at level 40)
@@ -108,7 +111,7 @@ Notation "'$' x" :=
 
 
 
-
+(*
 Definition apply_symbol
     {Σ : StaticModel}
     {_br : BasicResolver}
@@ -120,6 +123,7 @@ Definition apply_symbol
     fun l =>
     (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
 .
+*)
 
 Notation "[]" := ([]%list) : RuleScope.
 
@@ -128,41 +132,42 @@ Notation "[]" := ([]%list) : RuleScope.
 *)
 Definition myap (A B : Type) (x : A) (f : A -> B) : B := f x.
 Definition myap2 (A B : Type) (f : A -> B) (x : A)  : B := f x.
-(*
+
 Notation "'[' x ']'"
 :=
     (@cons
-        ((Term' symbol operand_type))
-        (myap _ (Term' symbol operand_type) x to_aoo_opt)
-        (*myap2 _ (Term' symbol operand_type) to_aoo_opt x*)
-        (*(@to_aoo_opt _ _ _ _ (x))*)
-        (@nil ((Term' symbol operand_type)))
+        ((TermOver operand_type))
+        x
+        (*(myap _ (TermOver operand_type) x to_aoo_opt)*)
+        (@nil ((TermOver operand_type)))
     )
     : RuleScope
 .
-*)
-(*
+
 Notation "'[' x , y , .. , z ']'"
 :=
-    (@cons ((Term' symbol operand_type))
-        (myap _ (Term' symbol operand_type) x to_aoo_opt)
+    (@cons ((TermOver operand_type))
+        x
+        (*(myap _ (TermOver operand_type) x to_aoo_opt)*)
     (@cons 
-        ((Term' symbol operand_type))
+        ((TermOver operand_type))
         (*(to_aoo_opt y)*)
-        (myap _ (Term' symbol operand_type) y to_aoo_opt)
+        y
+        (*(myap _ (TermOver operand_type) y to_aoo_opt)*)
         (*myap2 _ (Term' symbol operand_type) to_aoo_opt y*)
         .. 
         (
-            @cons ((Term' symbol operand_type))
+            @cons ((TermOver operand_type))
             (* (to_aoo_opt z) *)
-            (myap _ (Term' symbol operand_type) z to_aoo_opt)
+            z
+            (*(myap _ (TermOver operand_type) z to_aoo_opt)*)
             (*myap2 _ (Term' symbol operand_type) to_aoo_opt z*)
-            (@nil ((Term' symbol operand_type)))
+            (@nil ((TermOver operand_type)))
         )
         ..))
     : RuleScope
 .
-*)
+
 Notation "'llrule' l '~>{' a '}' r 'requires' s"
     := (@mkRewritingRule2
         _

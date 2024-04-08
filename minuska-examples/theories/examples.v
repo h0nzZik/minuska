@@ -24,6 +24,8 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+(* moved to main library*)
+(*
 Module example_1.
 
     #[local]
@@ -33,16 +35,16 @@ Module example_1.
     
     Definition X : variable := "X".
 
-    Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
-    Arguments cfg {_br} _%rs.
+    Definition cfg {_br : BasicResolver} := (@t_term _ operand_type "cfg").
+    Arguments cfg {_br} _%_rs.
 
-    Definition s {_br : BasicResolver} := (apply_symbol "s").
-    Arguments s {_br} _%rs.
+    Definition s {_br : BasicResolver} := (@t_term _ operand_type "s").
+    Arguments s {_br} _%_rs.
 
     Definition Decls : list Declaration := [
         decl_rule (
             rule ["my_rule"]:
-                cfg [ s [ s [ ($X) ] ] ]
+                cfg [ s [ s [ (inject_variable X) ] ] ]
                 ~>{default_act} cfg [ $X ]
         )
     ].
@@ -138,6 +140,7 @@ Module example_1.
     .
 
 End example_1.
+*)
 
 
 Module two_counters.
