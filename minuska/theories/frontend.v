@@ -11,37 +11,20 @@ Import default_builtin.
 Export default_builtin.Notations.
 
 
-Arguments ft_unary {Σ} f (t).
-Arguments ft_binary {Σ} f (t1) (t2).
-Arguments ft_ternary {Σ} f (t1) (t2) (t3).
-
-
-Fixpoint SymbolicTerm_to_ExprTerm'
-    {Σ : StaticModel}
-    (t : PreTerm' symbol BuiltinOrVar)
-    : PreTerm' symbol Expression
-:=
-match t with
-| pt_operator s => pt_operator s
-| pt_app_operand ao (bov_variable x)
-    => pt_app_operand (SymbolicTerm_to_ExprTerm' ao) (ft_variable x)
-| pt_app_operand ao (bov_builtin b)
-    => pt_app_operand (SymbolicTerm_to_ExprTerm' ao) (ft_element (term_operand b))
-| pt_app_ao ao1 ao2
-    => pt_app_ao (SymbolicTerm_to_ExprTerm' ao1) (SymbolicTerm_to_ExprTerm' ao2)
-end
-.
+Arguments e_unary {Σ} f (t).
+Arguments e_binary {Σ} f (t1) (t2).
+Arguments e_ternary {Σ} f (t1) (t2) (t3).
 
 Definition SymbolicTerm_to_ExprTerm
     {Σ : StaticModel}
-    (t : Term' symbol BuiltinOrVar)
-    : Term' symbol Expression
+    (t : TermOver BuiltinOrVar)
+    : TermOver Expression2
 :=
-match t with
-| term_operand (bov_variable x) => term_operand (ft_variable x)
-| term_operand (bov_builtin b) => term_operand (ft_element (term_operand b))
-| term_preterm t' => term_preterm (SymbolicTerm_to_ExprTerm' t')
-end
+    TermOver_map (fun x:BuiltinOrVar =>
+        match x with
+        | bov_builtin b => e_ground (t_over b)
+        | bov_variable x => e_variable x
+        end ) t
 .
 
 Definition label {Σ : StaticModel} :=
@@ -53,15 +36,15 @@ Definition ContextTemplate
     {Σ : StaticModel}
 :=
     forall (br:BasicResolver) (r:Resolver),
-    Term' symbol operand_type ->
-    Term' symbol operand_type
+    TermOver operand_type ->
+    TermOver operand_type
 .
 
 
 Notation
     "( 'context-template' x 'with' h )"
     :=
-    (fun (_:BasicResolver) (_:Resolver) (h : Term' symbol operand_type) => x)
+    (fun (_:BasicResolver) (_:Resolver) (h : TermOver operand_type) => x)
 .
 
 
@@ -73,7 +56,7 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_arity : nat ;
     cd_position : nat ;
     cd_positions_to_wait_for : list nat ;
-    cd_isValue : Expression -> Expression ;
+    cd_isValue : Expression2 -> Expression2 ;
     cd_cseq_context : ContextTemplate;
 }.
 
@@ -82,7 +65,7 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_sym : symbol ;
     sd_arity : nat ;
     sd_positions : list nat ;
-    sd_isValue : Expression -> Expression ;
+    sd_isValue : Expression2 -> Expression2 ;
     sd_cseq_context : ContextTemplate ;
 }.
 
@@ -107,7 +90,7 @@ Class Defaults {Σ : StaticModel} := {
     default_cseq_name : string ;
     default_empty_cseq_name : string ;
     default_context_template : ContextTemplate ;
-    default_isValue : Expression -> Expression ;
+    default_isValue : Expression2 -> Expression2 ;
 }.
 
 Notation
@@ -149,12 +132,12 @@ Definition strictness_to_contexts
 Record RuleDeclaration {Σ : StaticModel} (Act : Set)
 := mkRuleDeclaration {
     rd_label : label ;
-    rd_rule : RewritingRule Act ;
+    rd_rule : RewritingRule2 Act ;
 }.
 
 Arguments mkRuleDeclaration {Σ} {Act} rd_label rd_rule.
-Arguments rd_label {Σ} {Act}%type_scope r.
-Arguments rd_rule {Σ} {Act}%type_scope r.
+Arguments rd_label {Σ} {Act}%_type_scope r.
+Arguments rd_rule {Σ} {Act}%_type_scope r.
 
 Inductive Declaration {Σ : StaticModel} {Act : Set} :=
 | decl_rule (r : @RuleDeclaration Σ Act)
@@ -173,7 +156,7 @@ Notation "'rule' '[' n ']:' l '~>{' a '}' r"
 
 Notation "'rule' '[' n ']:' l '~>{' a '}' r 'where' s"
     := ((mkRuleDeclaration
-        n (rule (l) ~>{a} (r) requires (cons (sc_constraint (apeq ((ft_nullary b_true)) (s))) nil))
+        n (rule (l) ~>{a} (r) requires (cons ((mkSideCondition2 _ ((e_nullary b_true)) (s))) nil))
     ))
     (at level 200)
 .
@@ -205,11 +188,11 @@ Definition NamedRewritingRule
 
 Record State {Σ : StaticModel} {Act : Set}
 := mkState {
-    st_rules : gmap label (RewritingRule Act) ;
+    st_rules : gmap label (RewritingRule2 Act) ;
     st_log : string ;
 }.
 
-Arguments mkState {Σ} {Act} st_rules st_log%string_scope.
+Arguments mkState {Σ} {Act} st_rules st_log%_string_scope.
 
 Definition process_rule_declaration
     {Σ : StaticModel}
@@ -252,12 +235,12 @@ Section wsm.
 
     Definition cseq {defaults : Defaults} {T : Type}
     :=
-        (@apply_symbol' Σ T (to_sym default_cseq_name))
+        @t_term _ T (to_sym default_cseq_name)
     .
 
     Definition emptyCseq {defaults : Defaults} {T : Type}
     :=
-        (@apply_symbol' Σ T (to_sym default_empty_cseq_name))
+        @t_term _ T (to_sym default_empty_cseq_name)
     .
 
     Definition freezer
@@ -265,7 +248,7 @@ Section wsm.
         (sym : string)
         (position : nat)
     :=
-        (@apply_symbol' Σ T (to_sym ("freezer_" +:+ sym +:+ "_" +:+ (pretty position))))
+        @t_term _ T (to_sym ("freezer_" +:+ sym +:+ "_" +:+ (pretty position)))
     .
 
     Definition heating_rule_seq
@@ -276,38 +259,38 @@ Section wsm.
         (arity : nat)
         (positions_to_wait_for : list nat)
         (position : nat)
-        (isValue : Expression -> Expression)
+        (isValue : Expression2 -> Expression2)
         (cseq_context : ContextTemplate)
         : RuleDeclaration Act
     :=
         let vars : list variable
             := argument_sequence to_var arity in
-        let lhs_vars : list (Term' symbol BuiltinOrVar)
-            := (term_operand <$> (bov_variable <$> vars)) in
-        let rhs_vars : list (Term' symbol Expression)
-            := (term_operand <$> (ft_variable <$> vars)) in
+        let lhs_vars : list (TermOver BuiltinOrVar)
+            := (t_over <$> (bov_variable <$> vars)) in
+        let rhs_vars : list (TermOver Expression2)
+            := (t_over <$> (e_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
-        let lhs_selected_var : (Term' symbol BuiltinOrVar)
-            := term_operand (bov_variable selected_var) in
+        let lhs_selected_var : (TermOver BuiltinOrVar)
+            := t_over (bov_variable selected_var) in
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
-        let side_condition : Expression
-            := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> ((ft_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
+        let side_condition : Expression2
+            := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
         rule [lbl]:
             cseq_context _ _ (cseq ([
-                (apply_symbol' sym lhs_vars);
-                (term_operand (bov_variable REST_SEQ))
+                (t_term sym lhs_vars);
+                (t_over (bov_variable REST_SEQ))
             ])%list)
          ~>{default_act} SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq ([
                 lhs_selected_var;
                 cseq ([
                     (freezer freezerLbl position (delete position lhs_vars));
-                    (term_operand (bov_variable REST_SEQ))
+                    (t_over (bov_variable REST_SEQ))
                 ])%list
             ])%list)))
-            where (( ~~ (isValue (ft_variable selected_var)) ) && side_condition )
+            where (( ~~ (isValue (e_variable selected_var)) ) && side_condition )
     .
 
 
@@ -318,20 +301,20 @@ Section wsm.
         (sym : symbol)
         (arity : nat)
         (position : nat)
-        (isValue : Expression -> Expression)
+        (isValue : Expression2 -> Expression2)
         (cseq_context : ContextTemplate)
         : RuleDeclaration Act
     :=
         let vars : list variable
             := argument_sequence to_var arity in
-        let lhs_vars : list (Term' symbol BuiltinOrVar)
-            := (term_operand <$> (bov_variable <$> vars)) in
-        let rhs_vars : list (Term' symbol Expression)
-            := (term_operand <$> (ft_variable <$> vars)) in
+        let lhs_vars : list (TermOver BuiltinOrVar)
+            := (t_over <$> (bov_variable <$> vars)) in
+        let rhs_vars : list (TermOver Expression2)
+            := (t_over <$> (e_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
-        let lhs_selected_var : (Term' symbol BuiltinOrVar)
-            := term_operand (bov_variable selected_var) in
+        let lhs_selected_var : (TermOver BuiltinOrVar)
+            := t_over (bov_variable selected_var) in
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         rule [lbl]:
@@ -340,15 +323,15 @@ Section wsm.
                 lhs_selected_var;
                 cseq ([
                     (freezer freezerLbl position (delete position lhs_vars));
-                    (term_operand (bov_variable REST_SEQ))
+                    (t_over (bov_variable REST_SEQ))
                 ])%list
             ])%list
            ))
          ~>{default_act} SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq [
-                (apply_symbol' sym lhs_vars);
-                (term_operand (bov_variable REST_SEQ))
+                (t_term sym lhs_vars);
+                (t_over (bov_variable REST_SEQ))
             ])%list))
-            where (isValue (ft_variable selected_var))
+            where (isValue (e_variable selected_var))
     .
 
     Definition process_context_declaration
@@ -429,7 +412,7 @@ Section wsm.
     Definition to_theory
         {Σ : StaticModel}
         (s : State)
-        : (RewritingTheory Act)*(list string)
+        : (list (RewritingRule2 Act))*(list string)
     :=
         let l := (map_to_list (st_rules s)) in
         (l.*2,l.*1)

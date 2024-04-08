@@ -14,7 +14,7 @@ Delimit Scope ConcreteScope with concrete.
 
 
 Record ExprAndBoV {Σ : StaticModel} : Type := mkExprAndBoV {
-    eab_expr : Expression ;
+    eab_expr : Expression2 ;
     eab_bov : BuiltinOrVar ;
 }.
 
@@ -45,7 +45,7 @@ Instance BasicResolver_rhs {Σ : StaticModel}
     {_T2 : TagRHS}
     : BasicResolver
 := {
-    operand_type := Expression ;
+    operand_type := Expression2 ;
 }.
 
 #[export]
@@ -63,7 +63,7 @@ Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {
 
 #[export]
 Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
-    inject_variable := ft_variable;
+    inject_variable := e_variable;
 }.
 
 
@@ -99,7 +99,7 @@ Proof. inversion _eq. subst. constructor. apply term_operand. Defined.
 |}.
 *)
 
-Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%type_scope {ToAOO} _.
+Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%_type_scope {ToAOO} _.
 
 Notation "'$' x" :=
     (inject_variable x)
@@ -128,7 +128,7 @@ Notation "[]" := ([]%list) : RuleScope.
 *)
 Definition myap (A B : Type) (x : A) (f : A -> B) : B := f x.
 Definition myap2 (A B : Type) (f : A -> B) (x : A)  : B := f x.
-
+(*
 Notation "'[' x ']'"
 :=
     (@cons
@@ -140,7 +140,8 @@ Notation "'[' x ']'"
     )
     : RuleScope
 .
-
+*)
+(*
 Notation "'[' x , y , .. , z ']'"
 :=
     (@cons ((Term' symbol operand_type))
@@ -161,9 +162,9 @@ Notation "'[' x , y , .. , z ']'"
         ..))
     : RuleScope
 .
-
+*)
 Notation "'llrule' l '~>{' a '}' r 'requires' s"
-    := (@mkRewritingRule
+    := (@mkRewritingRule2
         _
         _
         ((fun (_:TagLHS) => l) mkTagLHS)%rs

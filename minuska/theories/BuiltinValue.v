@@ -7,7 +7,7 @@ From Minuska Require Import
 Section sec.
 
     Context
-        {symbol : Set}
+        {symbol : Type}
         {symbols : Symbols symbol}
     .
 
