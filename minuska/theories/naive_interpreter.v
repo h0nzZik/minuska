@@ -1247,6 +1247,66 @@ Proof.
 Qed.
 
 
+Lemma fmap_prettify_uglify_list
+    {Σ : StaticModel}
+    {T : Type}
+    (l : list (TermOver T))
+    :
+    (prettify <$> (uglify' <$> l)) = l
+.
+Proof.
+    rewrite <- list_fmap_compose.
+    rewrite compose_prettify_uglify.
+    rewrite list_fmap_id.
+    reflexivity.
+Qed.
+
+Lemma fmap_uglify_prettify_list
+    {Σ : StaticModel}
+    {T : Type}
+    (l : list (Term' symbol T))
+    :
+    uglify' <$> (prettify <$> l) = l
+.
+Proof.
+    unfold Valuation2 in *.
+    rewrite <- list_fmap_compose.
+    rewrite compose_uglify_prettify.
+    rewrite list_fmap_id.
+    reflexivity.
+Qed.
+
+
+Lemma fmap_prettify_uglify_option
+    {Σ : StaticModel}
+    {T : Type}
+    (o : option (TermOver T))
+    :
+    (prettify <$> (uglify' <$> o)) = o
+.
+Proof.
+    rewrite <- option_fmap_compose.
+    rewrite compose_prettify_uglify.
+    rewrite option_fmap_id.
+    reflexivity.
+Qed.
+
+Lemma fmap_uglify_prettify_option
+    {Σ : StaticModel}
+    {T : Type}
+    (o : option (Term' symbol T))
+    :
+    uglify' <$> (prettify <$> o) = o
+.
+Proof.
+    unfold Valuation2 in *.
+    rewrite <- option_fmap_compose.
+    rewrite compose_uglify_prettify.
+    rewrite option_fmap_id.
+    reflexivity.
+Qed.
+
+
 #[export]
 Instance cancel_fr_r
     {Σ : StaticModel}
@@ -1334,7 +1394,13 @@ Proof.
                 do 2 (rewrite Expression2_Expression_evaluate).
                 rewrite (fmap_uglify_prettify_val).
                 destruct H2 as [H21 H22].
-                rewrite H21. reflexivity.
+                rewrite H21.
+                simpl.
+                split>[reflexivity|].
+                unfold isSome in H22.
+                destruct (Expression_evaluate ρ (Expression2_to_Expression (sc_left x)))>
+                    [|inversion H22].
+                rewrite <- H21. simpl. reflexivity.
             }
             destruct Hwf2 as [g' H3].
             exists (uglify' g').
@@ -1388,7 +1454,9 @@ Proof.
         unfold flattened_rewrites_in_valuation_under_to in Hρ.
         destruct Hρ as [[[HH4 HH5] HH6] HH7].
         unfold satisfies; simpl.
-        (repeat split).
+        split.
+        split.
+        split.
         {
             apply uglify_sat2B.
             rewrite fmap_uglify_prettify_val.
@@ -1420,11 +1488,22 @@ Proof.
             }
             unfold satisfies; simpl.
             unfold satisfies in HH6; simpl in HH6.
+            unfold satisfies in HH6; simpl in HH6.
             rewrite Expression2_Expression_evaluate.
             rewrite Expression2_Expression_evaluate.
             rewrite (fmap_uglify_prettify_val).
-            apply f_equal.
-            apply HH6.
+            split.
+            {
+                apply f_equal.
+                apply HH6.
+            }
+            {
+                destruct HH6 as [HH61 HH62].
+                unfold isSome in HH62.
+                destruct (Expression_evaluate ρ (Expression2_to_Expression (sc_left x)))>
+                    [|inversion HH62].
+                reflexivity.
+            }
         }
         {
             destruct r; simpl in *.
@@ -1467,7 +1546,7 @@ Proof.
                 (* TODO this is a duplication *)
                 destruct Hρ as [[[HH4 HH5] HH6] HH7].
                 unfold satisfies; simpl.
-                (repeat split).
+                split. split. split.
                 {
                     apply uglify_sat2B.
                     rewrite fmap_uglify_prettify_val.
@@ -1502,8 +1581,19 @@ Proof.
                     rewrite Expression2_Expression_evaluate.
                     rewrite Expression2_Expression_evaluate.
                     rewrite (fmap_uglify_prettify_val).
-                    apply f_equal.
-                    apply HH6.
+                    unfold satisfies in HH6; simpl in HH6.
+                    destruct HH6 as [HH61 HH62].
+                    split.
+                    {
+                        apply f_equal.
+                        apply HH61.
+                    }
+                    {
+                        unfold isSome in HH62.
+                        destruct (Expression_evaluate ρ (Expression2_to_Expression (sc_left x)))>
+                            [|inversion HH62].
+                        reflexivity.
+                    }
                 }
                 {
                     destruct r; simpl in *.
@@ -1582,13 +1672,45 @@ Proof.
                     destruct x; simpl in *.
                     destruct c; simpl in *.
                     unfold satisfies; simpl.
-                    (* FIXME the definition of constraint - when it holds. *)
+                    destruct HH3 as [HH31 HH32].
+                    rewrite Expression2_Expression_evaluate in HH31.
+                    rewrite Expression2_Expression_evaluate in HH31.
+                    rewrite Expression2_Expression_evaluate in HH32.
+                    unfold isSome in HH32.
+                    destruct (prettify <$>
+                        Expression_evaluate (uglify' <$> ρ)
+                        (Expression2_to_Expression (Expression_to_Expression2 e1)))
+                        eqn:Heq>[|inversion HH32].
+                    apply (f_equal (fmap uglify')) in Heq.
+                    apply (f_equal (fmap uglify')) in HH31.
+                    clear HH32.
+                    simpl in HH31.
+                    rewrite fmap_uglify_prettify_option in Heq.
+                    rewrite fmap_uglify_prettify_option in HH31.
+                    rewrite (cancel Expression2_to_Expression Expression_to_Expression2) in HH31.
+                    rewrite (cancel Expression2_to_Expression Expression_to_Expression2) in Heq.
+                    rewrite Heq.
+                    rewrite <- HH31.
+                    simpl.
+                    repeat split.
                 }
                 {
                     subst a.
-                    destruct r; simpl in *. exact HH4.
+                    destruct r; simpl in *. reflexivity.
                 }
             }
         }
+        destruct Hsound3 as [e' He'].
+        exists (prettify e').
+        unfold naive_interpreter.
+        unfold flat_naive_interpreter in He'.
+        rewrite bind_Some in He'.
+        rewrite bind_Some.
+        destruct He' as [[g n] [H1 H2]].
+        simpl in *.
+        inversion H2; subst; clear H2.
+        exists (e',n).
+        repeat split.
+        apply H1.
     }
 Qed.

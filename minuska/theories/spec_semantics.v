@@ -2520,7 +2520,8 @@ Instance Satisfies_SideCondition2
 := {|
     satisfies := fun ρ _ sc =>
         Expression2_evaluate ρ (sc_left sc) = 
-        Expression2_evaluate ρ (sc_right sc) ;
+        Expression2_evaluate ρ (sc_right sc) /\
+        isSome (Expression2_evaluate ρ (sc_left sc));
 |}.
 
 
