@@ -14,6 +14,7 @@ From Minuska Require Import
     notations
     frontend
     interp_loop
+    example
 .
 
 Variant Act := default_act | invisible_act.
@@ -50,7 +51,7 @@ Module example_1.
     ].
 
     About process_declarations.
-    Definition Γ : (RewritingTheory Act)*(list string)
+    Definition Γ : (RewritingTheory2 Act)*(list string)
         := Eval vm_compute in (to_theory Act (process_declarations Act default_act (Decls))).
 
     Definition interp :=
@@ -60,8 +61,8 @@ Module example_1.
     (* TODO remove *)
     Fixpoint interp_loop
         (fuel : nat)
-        (g : GroundTerm)
-        : (nat*GroundTerm)
+        (g : (TermOver builtin_value))
+        : (nat*(TermOver builtin_value))
     :=
     match fuel with
     | 0 => (0,g)
@@ -98,11 +99,11 @@ Module example_1.
     end
     .
 
-    Definition my_number (n : nat) : GroundTerm :=
+    Definition my_number (n : nat) : (TermOver builtin_value) :=
         term_preterm (pt_app_ao (pt_operator "cfg") (my_number' n))
     .
 
-    Definition my_number_inv (g : GroundTerm) : option nat
+    Definition my_number_inv (g : (TermOver builtin_value)) : option nat
     :=
     match g with
     | term_preterm (pt_app_ao (pt_operator "cfg") g') => my_number'_inv g'
@@ -152,16 +153,16 @@ Module two_counters.
     Definition M : variable := "M".
     Definition N : variable := "N".
     
-    Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
-    Arguments cfg {_br} _%rs.
+    Definition cfg {_br : BasicResolver} := (@t_term _ operand_type "cfg").
+    Arguments cfg {_br} _%_rs.
 
-    Definition state {_br : BasicResolver} := (apply_symbol "state").
-    Arguments state {_br} _%rs.
+    Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
+    Arguments state {_br} _%_rs.
 
-    Definition s {_br : BasicResolver} := (apply_symbol "s").
-    Arguments s {_br} _%rs.
+    Definition s {_br : BasicResolver} := (@t_term _ operand_type "s").
+    Arguments s {_br} _%_rs.
 
-    Definition Γ : (RewritingTheory Act)*(list string) :=
+    Definition Γ : (RewritingTheory2 Act)*(list string) :=
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
@@ -175,24 +176,13 @@ Module two_counters.
         naive_interpreter Γ.1
     .
 
-    Definition pair_to_state (mn : nat*nat) : GroundTerm :=
-        term_preterm (pt_app_ao (pt_operator "cfg")
-        (
-            pt_app_ao
-                (
-                pt_app_ao (pt_operator "state")
-                    (example_1.my_number' mn.1)
-                )
-                (example_1.my_number' mn.2)
-        )
-        )
+    Definition pair_to_state (mn : nat*nat) : (TermOver builtin_value) :=
+        t_term "cfg" [(t_term "state" [(example.example_1.my_number' mn.1);(example.example_1.my_number' mn.2)])]
     .
 
-    Definition state_to_pair (g : GroundTerm) : option (nat*nat) :=
+    Definition state_to_pair (g : (TermOver builtin_value)) : option (nat*nat) :=
     match g with
-    | term_preterm (pt_app_ao (pt_operator "cfg")
-        (pt_app_ao (pt_app_ao (pt_operator "state") (m')) n'))
-        => 
+    | t_term "cfg" [(t_term "state" [(m');(n')])] =>
             m ← example_1.my_number'_inv m';
             n ← example_1.my_number'_inv n';
             Some (m, n)
@@ -235,19 +225,19 @@ Module two_counters_Z.
     Definition M : variable := "M".
     Definition N : variable := "N".
     
-    Definition state {_br : BasicResolver} := (apply_symbol "state").
-    Arguments state {_br} _%rs.
+    Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
+    Arguments state {_br} _%_rs.
 
-    Coercion Z_to_builtin (x : Z) := (ft_element (term_operand (bv_Z x))).
+    Coercion Z_to_builtin (x : Z) := (e_ground (t_over (bv_Z x))).
 
-    Definition Γ : (RewritingTheory Act)*(list string) :=
+    Definition Γ : (RewritingTheory2 Act)*(list string) :=
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
-               state [ $M , $N ]
+               state [ $M ; $N ]
             ~>{default_act} state [
-                ($M -Z 1%Z),
-                ($N +Z $M)
+                t_over ((($M)) -Z 1%Z);
+                t_over (($N) +Z (($M)))
                 ]
             where ($M >Z 0%Z)
         )
@@ -258,23 +248,15 @@ Module two_counters_Z.
         naive_interpreter Γ.1
     .
 
-    Definition pair_to_state (mn : (Z * Z)%type) : GroundTerm :=
+    Definition pair_to_state (mn : (Z * Z)%type) : (TermOver builtin_value) :=
         (ground(
-        term_preterm (
-            pt_app_operand
-                (
-                pt_app_operand (pt_operator "state")
-                    ((bv_Z mn.1))
-                )
-                ((bv_Z mn.2))
-        )))
+            t_term "state" [t_over (bv_Z mn.1); t_over (bv_Z mn.2)]
+        ))
     .
 
-    Definition state_to_pair (g : GroundTerm) : option (Z * Z) :=
+    Definition state_to_pair (g : (TermOver builtin_value)) : option (Z * Z) :=
     match g with
-    | term_preterm (
-        (pt_app_operand (pt_app_operand (pt_operator "state") ((bv_Z m))) (bv_Z n)))
-        => 
+    | t_term "state" [t_over (bv_Z m); t_over (bv_Z n)] =>
             Some (m, n)
     | _ => None
     end
@@ -282,7 +264,7 @@ Module two_counters_Z.
 
     Definition interp_loop_number fuel := 
         fun (m n : Z) =>
-        let fg' := ((interp_loop interp fuel) ∘ pair_to_state) (m,n) in
+        let fg' := ((interp_loop (interp_in_from Γ) fuel) ∘ pair_to_state) (m,n) in
         state_to_pair fg'.2
     .
 
@@ -300,38 +282,38 @@ Module arith.
     Definition Y : variable := "Y".
     Definition REST_SEQ : variable := "$REST_SEQ".
     
-    Definition u_cseq {_br : BasicResolver} := (apply_symbol "cseq").
-    Arguments u_cseq {_br} _%rs.
+    Definition u_cseq {_br : BasicResolver} := (@t_term _ operand_type "cseq").
+    Arguments u_cseq {_br} _%_rs.
 
-    Definition u_emptyCseq {_br : BasicResolver} := (apply_symbol "emptyCseq").
-    Arguments u_emptyCseq {_br} _%rs.
+    Definition u_emptyCseq {_br : BasicResolver} := (@t_term _ operand_type "emptyCseq").
+    Arguments u_emptyCseq {_br} _%_rs.
 
-    Definition plus {_br : BasicResolver} := (apply_symbol "plus").
-    Arguments plus {_br} _%rs.
+    Definition plus {_br : BasicResolver} := (@t_term _ operand_type "plus").
+    Arguments plus {_br} _%_rs.
 
-    Definition minus {_br : BasicResolver} := (apply_symbol "minus").
-    Arguments minus {_br} _%rs.
+    Definition minus {_br : BasicResolver} := (@t_term _ operand_type "minus").
+    Arguments minus {_br} _%_rs.
 
-    Definition times {_br : BasicResolver} := (apply_symbol "times").
-    Arguments times {_br} _%rs.
+    Definition times {_br : BasicResolver} := (@t_term _ operand_type "times").
+    Arguments times {_br} _%_rs.
 
-    Definition div {_br : BasicResolver} := (apply_symbol "div").
-    Arguments div {_br} _%rs.
+    Definition div {_br : BasicResolver} := (@t_term _ operand_type "div").
+    Arguments div {_br} _%_rs.
 
-    Definition cfg {_br : BasicResolver} := (apply_symbol "cfg").
-    Arguments cfg {_br} _%rs.
+    Definition cfg {_br : BasicResolver} := (@t_term _ operand_type "cfg").
+    Arguments cfg {_br} _%_rs.
 
-    Definition state {_br : BasicResolver} := (apply_symbol "state").
-    Arguments state {_br} _%rs.
+    Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
+    Arguments state {_br} _%_rs.
 
-    Definition s {_br : BasicResolver} := (apply_symbol "s").
-    Arguments s {_br} _%rs.
+    Definition s {_br : BasicResolver} := (@t_term _ operand_type "s").
+    Arguments s {_br} _%_rs.
 
     Definition freezer {_br : BasicResolver} (sym : symbol) (position : nat)
     :=
-        (apply_symbol ("freezer_" +:+ sym +:+ "_" +:+ (pretty position)))
+        (@t_term _ operand_type ("freezer_" +:+ sym +:+ "_" +:+ (pretty position)))
     .
-    Arguments freezer {_br} _%rs.
+    Arguments freezer {_br} _%_rs.
 
 
     Declare Scope LangArithScope.
@@ -405,7 +387,7 @@ Module arith.
         decl_strict (symbol "div" of arity 2 strict in [0;1])
     ].
 
-    Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
     (to_theory Act (process_declarations Act default_act (Decls))).
 
 
@@ -511,14 +493,14 @@ Module fib_native.
     Definition Tgt : variable := "Tgt".
     Definition REST_SEQ : variable := "$REST_SEQ".
     
-    Definition initialState {_br : BasicResolver} := (apply_symbol "initialState").
-    Arguments initialState {_br} _%rs.
+    Definition initialState {_br : BasicResolver} := (@t_term _ operand_type "initialState").
+    Arguments initialState {_br} _%_rs.
 
-    Definition resultState {_br : BasicResolver} := (apply_symbol "resultState").
-    Arguments resultState {_br} _%rs.
+    Definition resultState {_br : BasicResolver} := (@t_term _ operand_type "resultState").
+    Arguments resultState {_br} _%_rs.
 
-    Definition state {_br : BasicResolver} := (apply_symbol "state").
-    Arguments state {_br} _%rs.
+    Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
+    Arguments state {_br} _%_rs.
 
     Definition Decls : list Declaration := [
         decl_rule (
@@ -557,7 +539,7 @@ Module fib_native.
         )
     ].
 
-    Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
     (to_theory Act (process_declarations Act default_act (Decls))).
 
 
@@ -650,69 +632,69 @@ Module imp.
     Definition VALUES : variable := "$VALUES".
     Definition REST_SEQ : variable := "$REST_SEQ".
 
-    Definition var {_br : BasicResolver} := (apply_symbol "var").
-    Arguments var {_br} _%rs.
+    Definition var {_br : BasicResolver} := (@t_term _ operand_type "var").
+    Arguments var {_br} _%_rs.
 
     (* Utilities *)
     Definition u_cseq_name : string := "u_cseq".
     Definition u_empty_cseq_name : string := "u_empty_cseq".
 
-    Definition u_cseq {_br : BasicResolver} := (apply_symbol u_cseq_name).
-    Arguments u_cseq {_br} _%rs.
+    Definition u_cseq {_br : BasicResolver} := (@t_term _ operand_type u_cseq_name).
+    Arguments u_cseq {_br} _%_rs.
 
-    Definition u_emptyCseq {_br : BasicResolver} := (apply_symbol u_empty_cseq_name).
-    Arguments u_emptyCseq {_br} _%rs.
+    Definition u_emptyCseq {_br : BasicResolver} := (@t_term _ operand_type u_empty_cseq_name).
+    Arguments u_emptyCseq {_br} _%_rs.
 
-    Definition u_cfg {_br : BasicResolver} := (apply_symbol "u_cfg").
-    Arguments u_cfg {_br} _%rs.
+    Definition u_cfg {_br : BasicResolver} := (@t_term _ operand_type "u_cfg").
+    Arguments u_cfg {_br} _%_rs.
 
-    Definition u_state {_br : BasicResolver} := (apply_symbol "u_state").
-    Arguments u_state {_br} _%rs.
+    Definition u_state {_br : BasicResolver} := (@t_term _ operand_type "u_state").
+    Arguments u_state {_br} _%_rs.
 
     (* Data *)
-    Definition unitValue {_br : BasicResolver} := (apply_symbol "unitValue").
-    Arguments unitValue {_br} _%rs.
+    Definition unitValue {_br : BasicResolver} := (@t_term _ operand_type "unitValue").
+    Arguments unitValue {_br} _%_rs.
 
 
     (* Arithmetics *)
-    Definition arith_plus {_br : BasicResolver} := (apply_symbol "arith_plus").
-    Arguments arith_plus {_br} _%rs.
+    Definition arith_plus {_br : BasicResolver} := (@t_term _ operand_type "arith_plus").
+    Arguments arith_plus {_br} _%_rs.
 
-    Definition arith_minus {_br : BasicResolver} := (apply_symbol "arith_minus").
-    Arguments arith_minus {_br} _%rs.
+    Definition arith_minus {_br : BasicResolver} := (@t_term _ operand_type "arith_minus").
+    Arguments arith_minus {_br} _%_rs.
 
-    Definition arith_times {_br : BasicResolver} := (apply_symbol "arith_times").
-    Arguments arith_times {_br} _%rs.
+    Definition arith_times {_br : BasicResolver} := (@t_term _ operand_type "arith_times").
+    Arguments arith_times {_br} _%_rs.
 
-    Definition arith_div {_br : BasicResolver} := (apply_symbol "arith_div").
-    Arguments arith_div {_br} _%rs.
+    Definition arith_div {_br : BasicResolver} := (@t_term _ operand_type "arith_div").
+    Arguments arith_div {_br} _%_rs.
 
     (* Boolean expressions *)
 
-    Definition bexpr_lt {_br : BasicResolver} := (apply_symbol "bexpr_lt").
-    Arguments bexpr_lt {_br} _%rs.
+    Definition bexpr_lt {_br : BasicResolver} := (@t_term _ operand_type "bexpr_lt").
+    Arguments bexpr_lt {_br} _%_rs.
 
-    Definition bexpr_le {_br : BasicResolver} := (apply_symbol "bexpr_le").
-    Arguments bexpr_le {_br} _%rs.
+    Definition bexpr_le {_br : BasicResolver} := (@t_term _ operand_type "bexpr_le").
+    Arguments bexpr_le {_br} _%_rs.
 
-    Definition bexpr_eq {_br : BasicResolver} := (apply_symbol "bexpr_eq").
-    Arguments bexpr_eq {_br} _%rs.
+    Definition bexpr_eq {_br : BasicResolver} := (@t_term _ operand_type "bexpr_eq").
+    Arguments bexpr_eq {_br} _%_rs.
 
-    Definition bexpr_negb {_br : BasicResolver} := (apply_symbol "bexpr_negb").
-    Arguments bexpr_negb {_br} _%rs.
+    Definition bexpr_negb {_br : BasicResolver} := (@t_term _ operand_type "bexpr_negb").
+    Arguments bexpr_negb {_br} _%_rs.
 
     (* Statements *)
-    Definition stmt_assign {_br : BasicResolver} := (apply_symbol "stmt_assign").
-    Arguments stmt_assign {_br} _%rs.
+    Definition stmt_assign {_br : BasicResolver} := (@t_term _ operand_type "stmt_assign").
+    Arguments stmt_assign {_br} _%_rs.
 
-    Definition stmt_seq {_br : BasicResolver} := (apply_symbol "stmt_seq").
-    Arguments stmt_seq {_br} _%rs.
+    Definition stmt_seq {_br : BasicResolver} := (@t_term _ operand_type "stmt_seq").
+    Arguments stmt_seq {_br} _%_rs.
 
-    Definition stmt_ite {_br : BasicResolver} := (apply_symbol "stmt_ite").
-    Arguments stmt_ite {_br} _%rs.
+    Definition stmt_ite {_br : BasicResolver} := (@t_term _ operand_type "stmt_ite").
+    Arguments stmt_ite {_br} _%_rs.
 
-    Definition stmt_while {_br : BasicResolver} := (apply_symbol "stmt_while").
-    Arguments stmt_while {_br} _%rs.
+    Definition stmt_while {_br : BasicResolver} := (@t_term _ operand_type "stmt_while").
+    Arguments stmt_while {_br} _%_rs.
 
     Declare Scope LangImpScope.
     Delimit Scope LangImpScope with limp.
@@ -877,7 +859,7 @@ Module imp.
             where (true)
     ]%limp.
 
-    Definition Γ : (RewritingTheory Act)*(list string) := Eval vm_compute in 
+    Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
     (to_theory Act (process_declarations Act default_act (Decls))).
 
     (* Compute (length (Γ.1)). *)
@@ -905,7 +887,7 @@ Module imp.
         assumption.
     Qed.
 
-    Definition imp_interp_from (fuel : nat) (from : GroundTerm)
+    Definition imp_interp_from (fuel : nat) (from : (TermOver builtin_value))
         := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))
     .
 

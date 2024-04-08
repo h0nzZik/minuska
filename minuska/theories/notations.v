@@ -29,7 +29,7 @@ Class BasicResolver {Σ : StaticModel} := {
 }.
 
 Class Resolver {Σ : StaticModel} {_BR : BasicResolver} := {
-    inject_variable : variable -> TermOver operand_type ;
+    inject_variable : variable -> operand_type ;
 }.
 
 #[export]
@@ -58,12 +58,12 @@ Instance BasicResolver_ground {Σ : StaticModel}
 
 #[export]
 Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {    
-    inject_variable := t_over ∘ bov_variable;
+    inject_variable := (*t_over ∘*) bov_variable;
 }.
 
 #[export]
 Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
-    inject_variable := t_over ∘ e_variable;
+    inject_variable := (*t_over ∘ *) e_variable;
 }.
 
 (*

@@ -40,8 +40,8 @@ Module example_1.
     Definition Decls : list Declaration := [
         decl_rule (
             rule ["my_rule"]:
-                cfg [ s [ s [ (inject_variable X) ] ] ]
-                ~>{default_act} cfg [ $X ]
+                cfg [ s [ s [ t_over ($X) ] ] ]
+                ~>{default_act} cfg [ t_over ($X) ]
         )
     ].
 
