@@ -9712,7 +9712,8 @@ Proof.
                 apply e0.
                 {
                     rewrite vars_of_uglify.
-                    unfold vars_of in Hx; simpl in Hx.
+                    rewrite vars_of_uglify'.
+                    clear -Hx.
                     ltac1:(set_solver).
                 }
                 {
@@ -9946,6 +9947,7 @@ Proof.
                                                 subst x.
                                                 subst substituted.
                                                 clear -Hx Hvars.
+                                                rewrite vars_of_uglify' in Hx.
                                                 ltac1:(set_solver).
                                             }
                                             unfold Valuation in *.
@@ -9955,13 +9957,16 @@ Proof.
                                                 ltac1:(exfalso).
                                                 subst x.
                                                 subst substituted.
+                                                rewrite vars_of_uglify' in Hx.
+                                                (*rewrite <- vars_of_uglify in Hx.*)
                                                 assert (Htmp: V2 ∈ vars_of c) by ltac1:(set_solver).
-                                                unfold vars_of in Htmp; simpl in Htmp.
-                                                rewrite <- vars_of_uglify in Htmp.
                                                 clear -Htmp HeqV2.
-                                                subst V2.
+                                                (*subst V2.*)
                                                 assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                                 {
+                                                    rewrite <- HeqV2.
+                                                    assert(Htmp3 := vars_of_uglify V2 c).
+                                                    rewrite vars_of_uglify' in Htmp3.
                                                     ltac1:(set_solver).
                                                 }
                                                 eapply infinite_is_fresh.
@@ -9973,13 +9978,17 @@ Proof.
                                                 ltac1:(exfalso).
                                                 subst x.
                                                 subst substituted.
+                                                rewrite vars_of_uglify' in Hx.
                                                 assert (Htmp: V1 ∈ vars_of c) by ltac1:(set_solver).
                                                 unfold vars_of in Htmp; simpl in Htmp.
-                                                rewrite <- vars_of_uglify in Htmp.
+                                                
                                                 clear -Htmp HeqV1.
-                                                subst V1.
+                                                (*subst V1. *)
                                                 assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                                 {
+                                                    rewrite <- HeqV1.
+                                                    assert(Htmp3 := vars_of_uglify V1 c).
+                                                    rewrite vars_of_uglify' in Htmp3.
                                                     ltac1:(set_solver).
                                                 }
                                                 eapply infinite_is_fresh.
@@ -10168,6 +10177,7 @@ Proof.
                                         subst x.
                                         subst substituted.
                                         clear -Hx Hvars.
+                                        rewrite vars_of_uglify' in Hx.
                                         ltac1:(set_solver).
                                     }
                                     unfold Valuation in *.
@@ -10177,13 +10187,15 @@ Proof.
                                         ltac1:(exfalso).
                                         subst x.
                                         subst substituted.
+                                        rewrite vars_of_uglify' in Hx.
                                         assert (Htmp: V2 ∈ vars_of c) by ltac1:(set_solver).
-                                        unfold vars_of in Htmp; simpl in Htmp.
-                                        rewrite <- vars_of_uglify in Htmp.
                                         clear -Htmp HeqV2.
-                                        subst V2.
+                                        
                                         assert (Htmp2: fresh (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: V1 :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                         {
+                                            rewrite <- HeqV2.
+                                            assert (Htmp3 := vars_of_uglify V2 c).
+                                            rewrite vars_of_uglify' in Htmp3.
                                             ltac1:(set_solver).
                                         }
                                         eapply infinite_is_fresh.
@@ -10195,13 +10207,14 @@ Proof.
                                         ltac1:(exfalso).
                                         subst x.
                                         subst substituted.
+                                        rewrite vars_of_uglify' in Hx.
                                         assert (Htmp: V1 ∈ vars_of c) by ltac1:(set_solver).
-                                        unfold vars_of in Htmp; simpl in Htmp.
-                                        rewrite <- vars_of_uglify in Htmp.
                                         clear -Htmp HeqV1.
-                                        subst V1.
                                         assert (Htmp2: fresh (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs))) ∈ (h :: vars_of_to_l2r c ++ elements (vars_of scs) ++ (elements (vars_of iV_scs)))).
                                         {
+                                            rewrite <- HeqV1.
+                                            assert (Htmp3 := vars_of_uglify V1 c).
+                                            rewrite vars_of_uglify' in Htmp3.
                                             ltac1:(set_solver).
                                         }
                                         eapply infinite_is_fresh.
