@@ -1416,15 +1416,179 @@ Proof.
                 destruct Hx as [y [H1y H2y]].
                 subst x.
                 rewrite (cancel sc2_to_sc sc_to_sc2).
+                exact H2y.
             }
+            unfold satisfies; simpl.
+            unfold satisfies in HH6; simpl in HH6.
+            rewrite Expression2_Expression_evaluate.
+            rewrite Expression2_Expression_evaluate.
+            rewrite (fmap_uglify_prettify_val).
+            apply f_equal.
+            apply HH6.
+        }
+        {
+            destruct r; simpl in *.
+            apply HH7.
         }
     }
     {
+        intros e Hstuck.
+        specialize (Hsound2 (uglify' e)).
+        ltac1:(ospecialize (Hsound2 _)).
+        {
+            unfold stuck in Hstuck.
+            unfold flat_stuck.
+            intros HContra. apply Hstuck. clear Hstuck.
+            unfold not_stuck. unfold not_stuck_flat in HContra.
+            destruct HContra as [e' He'].
+            exists (prettify e').
+            unfold rewriting_relation.
+            unfold rewriting_relation_flat in He'.
+            destruct He' as [r [a [Hrewr1 Hrewr2]]].
+            exists (fr_to_r r).
+            exists a.
+            split.
+            {
+                rewrite elem_of_list_fmap in Hrewr1.
+                destruct Hrewr1 as [y [H1y H2y]].
+                subst r.
+                rewrite (cancel fr_to_r r_to_fr).
+                exact H2y.
+            }
+            {
+                unfold rewrites_to.
+                unfold flattened_rewrites_to in Hrewr2.
+                destruct Hrewr2 as [ρ Hρ].
+                exists (fmap prettify ρ).
+                unfold flattened_rewrites_in_valuation_under_to in Hρ.
+                unfold rewrites_in_valuation_under_to.
 
+
+                (* TODO this is a duplication *)
+                destruct Hρ as [[[HH4 HH5] HH6] HH7].
+                unfold satisfies; simpl.
+                (repeat split).
+                {
+                    apply uglify_sat2B.
+                    rewrite fmap_uglify_prettify_val.
+                    destruct r;  simpl in *.
+                    rewrite (cancel uglify' prettify).
+                    exact HH4.
+                }
+                {
+                    apply uglify_sat2E.
+                    rewrite fmap_uglify_prettify_val.
+                    destruct r;  simpl in *.
+                    rewrite (cancel (TermOver_map Expression2_to_Expression) (TermOver_map Expression_to_Expression2)).
+                    unfold satisfies; simpl.
+                    do 2 (rewrite (cancel uglify' prettify)).
+                    exact HH5.
+                }
+                {
+                    intros x Hx.
+                    unfold satisfies in HH6; simpl in HH6.
+                    specialize (HH6 (sc2_to_sc x)).
+                    ltac1:(ospecialize (HH6 _)).
+                    {
+                        destruct r; simpl in *.
+                        rewrite elem_of_list_fmap in Hx.
+                        destruct Hx as [y [H1y H2y]].
+                        subst x.
+                        rewrite (cancel sc2_to_sc sc_to_sc2).
+                        exact H2y.
+                    }
+                    unfold satisfies; simpl.
+                    unfold satisfies in HH6; simpl in HH6.
+                    rewrite Expression2_Expression_evaluate.
+                    rewrite Expression2_Expression_evaluate.
+                    rewrite (fmap_uglify_prettify_val).
+                    apply f_equal.
+                    apply HH6.
+                }
+                {
+                    destruct r; simpl in *.
+                    apply HH7.
+                }
+            }
+        }
+        unfold naive_interpreter.
+        unfold flat_naive_interpreter in Hsound2.
+        rewrite bind_None in Hsound2.
+        rewrite bind_None.
+        destruct Hsound2 as [Hsound2|Hsound2].
+        {
+            left. exact Hsound2.
+        }
+        {
+            right.
+            destruct Hsound2 as [[g n] [HH1 HH2]].
+            inversion HH2.
+        }
     }
     {
-
+        intros e Hns.
+        specialize (Hsound3 (uglify' e)).
+        ltac1:(ospecialize (Hsound3 _)).
+        {
+            unfold not_stuck in Hns.
+            unfold not_stuck_flat.
+            destruct Hns as [e' He'].
+            exists (uglify' e').
+            unfold rewriting_relation in He'.
+            unfold rewriting_relation_flat.
+            destruct He' as [r [a [HH1 HH2]]].
+            exists (r_to_fr r).
+            exists a.
+            repeat split.
+            {
+                rewrite elem_of_list_fmap.
+                exists r.
+                split>[reflexivity|exact HH1].
+            }
+            {
+                unfold flattened_rewrites_to.
+                unfold rewrites_to in HH2.
+                destruct HH2 as [ρ Hρ].
+                exists (fmap uglify' ρ).
+                unfold rewrites_in_valuation_under_to in Hρ.
+                destruct Hρ as [[[HH1' HH2] HH3] HH4].
+                repeat split.
+                {
+                    unfold satisfies in *|-; simpl in *|-.
+                    apply sat2B_uglify in HH1'.
+                    destruct r; simpl in *. apply HH1'.
+                }
+                {
+                    unfold satisfies in *|-; simpl in *|-.
+                    apply sat2E_uglify in HH2.
+                    destruct r; simpl in *. apply HH2.
+                }
+                {
+                    unfold satisfies in *|-; simpl in *|-.
+                    intros x.
+                    specialize (HH3 (sc_to_sc2 x)).
+                    intros Hx.
+                    ltac1:(ospecialize (HH3 _)).
+                    {
+                        destruct r; simpl in *.
+                        rewrite elem_of_list_fmap in Hx.
+                        destruct Hx as [y [H1y H2y]].
+                        subst x.
+                        rewrite (cancel sc_to_sc2 sc2_to_sc).
+                        exact H2y.
+                    }
+                    unfold satisfies in HH3; simpl in HH3.
+                    unfold satisfies; simpl.
+                    destruct x; simpl in *.
+                    destruct c; simpl in *.
+                    unfold satisfies; simpl.
+                    (* FIXME the definition of constraint - when it holds. *)
+                }
+                {
+                    subst a.
+                    destruct r; simpl in *. exact HH4.
+                }
+            }
+        }
     }
-
-
 Qed.
