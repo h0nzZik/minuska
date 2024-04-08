@@ -6,6 +6,7 @@ Require Import
 .
 From Coq Require Import Bool Arith ZArith List.
 
+From Minuska Require Import example.
 From MinuskaExamples Require Import examples.
 
 

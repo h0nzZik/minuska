@@ -705,7 +705,7 @@ Module imp.
     Notation "x '*' y" := (arith_times [ x, y ]) : LangImpScope.
     Notation "x '/' y" := (arith_div [ x, y ]) : LangImpScope.
 
-    Definition builtin_string (s : string) := ((@term_operand symbol builtin_value (bv_str s))).
+    Definition builtin_string (s : string) := ((@t_over _ builtin_value (bv_str s))).
 
     Notation "x '<=' y" := (bexpr_le [x, y]) (at level 70) : LangImpScope.
 
@@ -731,7 +731,7 @@ Module imp.
         default_cseq_name := u_cseq_name ;
         default_empty_cseq_name := u_empty_cseq_name ;
         default_context_template
-            := (context-template u_cfg ([ u_state [HOLE; (term_operand ($X)) ] ]) with HOLE) ;
+            := (context-template u_cfg ([ u_state [HOLE; (t_over ($X)) ] ]) with HOLE) ;
 
         default_isValue := isValue ;
     |}.
@@ -740,8 +740,8 @@ Module imp.
     Notation "'decl_simple_rule' '[' s ']:' l '~>' r 'where' c" := (
         decl_rule (
         rule [ s ]:
-            u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
-         ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+            u_cfg [ u_state [ u_cseq [ l; t_over ($REST_SEQ) ]; t_over ($VALUES) ] ]
+         ~>{default_act} u_cfg [ u_state [ u_cseq [ r; t_over ($REST_SEQ) ]; t_over ($VALUES) ] ]
          where (c)
         )
     ) (at level 90).
@@ -749,8 +749,8 @@ Module imp.
     Notation "'decl_simple_rule' '[' s ']:' l '~>' r 'always'" := (
         decl_rule (
         rule [ s ]:
-            u_cfg [ u_state [ u_cseq [ l, $REST_SEQ ], $VALUES ] ]
-         ~>{default_act} u_cfg [ u_state [ u_cseq [ r, $REST_SEQ ], $VALUES ] ]
+            u_cfg [ u_state [ u_cseq [ l, t_over ($REST_SEQ) ], $VALUES ] ]
+         ~>{default_act} u_cfg [ u_state [ u_cseq [ r; t_over ($REST_SEQ) ], t_over ($VALUES) ] ]
         )
     ) (at level 90).
 
@@ -760,11 +760,11 @@ Module imp.
         decl_strict (symbol "arith_times" of arity 2 strict in [0;1]);
         decl_strict (symbol "arith_div" of arity 2 strict in [0;1]);
         (* plus *)
-        decl_simple_rule ["plus-Z-Z"]: ($X + $Y) ~> ($X +Z $Y) where ((isZ ($X)) && (isZ ($Y)));
+        decl_simple_rule ["plus-Z-Z"]: (t_over ($X) + t_over ($Y)) ~> t_over ($X +Z $Y) where ((isZ ($X)) && (isZ ($Y)));
         (* minus *)
         decl_simple_rule ["minus-Z-Z"]:
-               ($X - $Y)
-            ~> ($X -Z $Y)
+               (t_over ($X) - t_over ($Y))
+            ~> t_over ($X -Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -773,8 +773,8 @@ Module imp.
         ;
         (* times *)
         decl_simple_rule ["times-Z-Z"]:
-               (($X) * ($Y))
-            ~> ($X *Z $Y)
+               (t_over ($X) * t_over ($Y))
+            ~> t_over ($X *Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -783,8 +783,8 @@ Module imp.
         ;
         (* div *)
         decl_simple_rule ["div-Z-Z"]:
-                (($X) / ($Y))
-            ~> ($X /Z $Y)
+                (t_over($X) / t_over($Y))
+            ~> t_over($X /Z $Y)
                 where (
                     (isZ ($X))
                     &&
@@ -797,25 +797,25 @@ Module imp.
 
         decl_rule (
             rule ["assign-value"]:
-                u_cfg [ u_state [ u_cseq [ (var [$X]) <:= $Y, $REST_SEQ], $VALUES ] ]
+                u_cfg [ u_state [ u_cseq [ (var [t_over ($X)]) <:= t_over ($Y), t_over ($REST_SEQ)], t_over ($VALUES) ] ]
             ~>{default_act} u_cfg [ u_state [
-                    u_cseq [unitValue[], $REST_SEQ],
-                    (ft_ternary b_map_update ($VALUES) ($X) ($Y))
+                    u_cseq [unitValue[], t_over ($REST_SEQ)],
+                    t_over (e_ternary b_map_update ($VALUES) ($X) ($Y))
                 ] ]
                 where ((isString ($X)) && (isValue ($Y)))
         );
         decl_rule (
             rule ["var-lookup"]:
-                u_cfg [ u_state [ u_cseq [ var [$X], $REST_SEQ], $VALUES]]
+                u_cfg [ u_state [ u_cseq [ var [t_over ($X) ]; t_over ($REST_SEQ)]; t_over ($VALUES)]]
             ~>{default_act} u_cfg [ u_state [
-                u_cseq [(ft_binary b_map_lookup ($VALUES) ($X)), $REST_SEQ],
-                $VALUES
+                u_cseq [t_over (e_binary b_map_lookup ($VALUES) ($X)); t_over ($REST_SEQ)],
+                t_over ($VALUES)
             ]]
         );
         (* TODO stmt_seq does not have to be strict in the second argument, and the following rule does not need to check the value-ness of the second argument*)
         decl_simple_rule ["seq-unit-value"]:
-                stmt_seq [unitValue [], $X ]
-            ~> $X
+                stmt_seq [unitValue [], t_over ($X) ]
+            ~> t_over ($X)
             where ((isValue ($X)))
         ;
         decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
@@ -826,28 +826,28 @@ Module imp.
         decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]);
 
         decl_simple_rule ["bexpr-eq-Z-Z"]:
-                bexpr_eq [ $X, $Y ]
-            ~> ((ft_binary b_eq ($X) ($Y)))
+                bexpr_eq [ t_over ($X), t_over ($Y) ]
+            ~> (t_over (e_binary b_eq ($X) ($Y)))
             where ((isValue ($X)) && (isValue ($Y)))
         ;
         decl_simple_rule ["bexpr-le-Z-Z"]:
-                bexpr_le [ $X, $Y ]
-            ~> ((ft_binary b_Z_isLe ($X) ($Y)))
+                bexpr_le [ t_over ($X), t_over ($Y) ]
+            ~> (t_over (e_binary b_Z_isLe ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         ;
         decl_simple_rule ["bexpr-lt-Z-Z"]:
-               bexpr_lt [ $X, $Y ]
-            ~> ((ft_binary b_Z_isLt ($X) ($Y)))
+               bexpr_lt [ t_over ($X), t_over ($Y) ]
+            ~> (t_over (e_binary b_Z_isLt ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         ;
         decl_simple_rule ["bexpr-negb-bool"]:
-               bexpr_negb [$X]
-            ~> (ft_unary b_bool_neg ($X))
+               bexpr_negb [t_over ($X) ]
+            ~> t_over (e_unary b_bool_neg ($X))
             where ((isBool ($X)))
         ;
         decl_strict (symbol "stmt_ite" of arity 3 strict in [0]) ;
-        decl_simple_rule ["stmt-ite-true"]: stmt_ite [$B, $X, $Y] ~> $X where ($B) ;
-        decl_simple_rule ["stmt-ite-false"]: stmt_ite [$B, $X, $Y] ~> $Y where ($B ==Bool false) ;
+        decl_simple_rule ["stmt-ite-true"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($X) where ($B) ;
+        decl_simple_rule ["stmt-ite-false"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($Y) where ($B ==Bool false) ;
         (* (* sugared *)
         decl_simple_rule ["while-unfold"]:
             stmt_while [$B, $X]
@@ -855,8 +855,8 @@ Module imp.
             always
         *)
         decl_simple_rule ["while-unfold"]:
-            stmt_while [$B, $X]
-            ~> stmt_ite [$B, stmt_seq [$X, stmt_while [$B, $X]], unitValue [] ]
+            stmt_while [t_over ($B) ; t_over ($X)]
+            ~> stmt_ite [t_over ($B) ; stmt_seq [t_over ($X); stmt_while [t_over ($B), t_over ($X)]]; unitValue [] ]
             where (true)
     ]%limp.
 
@@ -866,12 +866,13 @@ Module imp.
     (* Compute (length (Γ.1)). *)
 
 
-    Definition initial0 (x : Term' symbol builtin_value) :=
+    Definition initial0 (x : TermOver builtin_value) :=
         (ground (
-            u_cfg [ u_state [ u_cseq [x, u_emptyCseq [] ] , (builtin_nullary_function_interp b_map_empty) ] ]
+            u_cfg [ u_state [ u_cseq [x, u_emptyCseq [] ] , prettify (builtin_nullary_function_interp b_map_empty) ] ]
         ))
     .
 
+    (*
     Lemma interp_sound:
         FlatInterpreter_sound'
         (Γ.1)
@@ -887,6 +888,7 @@ Module imp.
         destruct (RewritingTheory_wf_heuristics Γ.1) eqn:Heq>[|inversion Htmp].
         assumption.
     Qed.
+    *)
 
     Definition imp_interp_from (fuel : nat) (from : (TermOver builtin_value))
         := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))
@@ -909,13 +911,13 @@ Module imp.
     Lemma test_imp_interp_1:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 12 (ground (
-        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 89))) ; then
-        ((term_operand (bv_Z 3)) + (var [builtin_string "x"]))
+        (var [builtin_string "x"]) <:= ((t_over (bv_Z 89))) ; then
+        ((t_over (bv_Z 3)) + (var [builtin_string "x"]))
         )%limp))
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 92)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(t_over (bv_Z 92)); u_emptyCseq [] ] ; t_over m ] ]
             )%limp)
         )
     .
@@ -924,10 +926,10 @@ Module imp.
     Qed.
     
     Definition program_2 := (ground (
-        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 89))) ; then
+        (var [builtin_string "x"]) <:= ((t_over (bv_Z 89))) ; then
         (if(
-            ( (var [builtin_string "x"]) <= (term_operand (bv_Z 90))) )
-         then (term_operand (bv_Z 10)) else (term_operand (bv_Z 20))
+            ( (var [builtin_string "x"]) <= (t_over (bv_Z 90))) )
+         then (t_over (bv_Z 10)) else (t_over (bv_Z 20))
         )
         )%limp).
 
@@ -938,7 +940,7 @@ Module imp.
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 10)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(t_over (bv_Z 10)); u_emptyCseq [] ] , t_over m ] ]
             )%limp)
         )
     .
@@ -947,10 +949,10 @@ Module imp.
     Qed.
 
     Definition program_3 := (ground (
-        (var [builtin_string "x"]) <:= ((term_operand (bv_Z 91))) ; then
+        (var [builtin_string "x"]) <:= ((t_over (bv_Z 91))) ; then
         (if(
-            ( (var [builtin_string "x"]) <= (term_operand (bv_Z 90))) )
-         then (term_operand (bv_Z 10)) else (term_operand (bv_Z 20))
+            ( (var [builtin_string "x"]) <= (t_over (bv_Z 90))) )
+         then (t_over (bv_Z 10)) else (t_over (bv_Z 20))
         )
         )%limp).
 
@@ -961,7 +963,7 @@ Module imp.
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 20)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(t_over (bv_Z 20)); u_emptyCseq [] ] ; t_over m ] ]
             )%limp)
         )
     .
@@ -974,28 +976,33 @@ Module imp.
     (* Definition n {_br : BasicResolver} := (ground(v("n"))). *)
 
     Definition program_count_to (n : Z) := (ground (
-        (v("n")) <:= ((term_operand (bv_Z n))) ; then
-        (v("sum")) <:= ((term_operand (bv_Z 0))) ; then
-        (while(((term_operand (bv_Z 1)) <= (v("n")))) do (
+        (v("n")) <:= ((t_over (bv_Z n))) ; then
+        (v("sum")) <:= ((t_over (bv_Z 0))) ; then
+        (while(((t_over (bv_Z 1)) <= (v("n")))) do (
             (v("sum")) <:= ((v("sum")) + ((v("n")))); then
-            (v("n")) <:= ((v("n")) + (term_operand (bv_Z (-1))))
+            (v("n")) <:= ((v("n")) + (t_over (bv_Z (-1))))
         ) done
         );then (v("sum"))
         )%limp).
 
+    Time Compute ((imp_interp_from 1000 (program_count_to 3))).
+    (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
+    (*
     Lemma test_imp_interp_program_count_to_3:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 1000 (program_count_to 3))
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(term_operand (bv_Z 6)), u_emptyCseq [] ] , m ] ]
+                u_cfg [ u_state [ u_cseq [(t_over (bv_Z 6)); u_emptyCseq nil ] ; t_over m ] ]
             )%limp)
         )
     .
     Proof.
+        ltac1:(vm_compute).
         eexists. eexists. reflexivity.
     Qed.
+    *)
 
     (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
     (*
@@ -1022,20 +1029,7 @@ Module imp.
     :=
         let r := imp_interp_from fuel (program_count_to n) in
         let n : Z := (match r.2 with
-        | term_preterm
-          (pt_app_ao (pt_operator "u_cfg")
-          (pt_app_operand (
-            pt_app_ao 
-                (pt_operator "u_state")
-                (pt_app_ao
-                    ( pt_app_operand
-                        (pt_operator "u_cseq")
-                        (bv_Z val)
-                    )
-                    (pt_operator "u_empty_cseq")
-                )
-        )
-           (_) ))
+        | t_term "u_cfg" [t_term "u_state" [t_term "u_cseq" [t_over (bv_Z val)]; t_term "u_empty_cseq" nil]]
           => val
         | _ => Z0
         end) in
