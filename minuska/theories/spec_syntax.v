@@ -756,6 +756,42 @@ match e with
 end
 .
 
+
+Fixpoint Expression_to_Expression2
+    {Σ : StaticModel}
+    (e : Expression)
+    : Expression2
+:=
+match e with
+| ft_element g => e_ground (prettify g)
+| ft_variable x => e_variable x
+| ft_nullary f => e_nullary f
+| ft_unary f e1 => e_unary f (Expression_to_Expression2 e1)
+| ft_binary f e1 e2 => e_binary f (Expression_to_Expression2 e1) (Expression_to_Expression2 e2)
+| ft_ternary f e1 e2 e3 => e_ternary f (Expression_to_Expression2 e1) (Expression_to_Expression2 e2) (Expression_to_Expression2 e3)
+end
+.
+
+#[export]
+Instance cancel_expression_expression2
+    {Σ : StaticModel}
+    : Cancel eq Expression2_to_Expression Expression_to_Expression2
+.
+Proof.
+    intros e.
+    induction e; simpl; (repeat (rewrite (cancel uglify' prettify))); ltac1:(congruence).
+Qed.
+
+#[export]
+Instance cancel_expression2_expression
+    {Σ : StaticModel}
+    : Cancel eq Expression_to_Expression2 Expression2_to_Expression
+.
+Proof.
+    intros e.
+    induction e; simpl; (repeat (rewrite (cancel prettify uglify'))); ltac1:(congruence).
+Qed.
+
 Record SideCondition2
     {Σ : StaticModel}
     :=
@@ -799,6 +835,28 @@ Definition r_to_fr
     {Act : Set}
     (r : RewritingRule2 Act)
     : RewritingRule Act
+:=
+    mkRewritingRule
+        Σ
+        Act
+        (uglify' (r_from r))
+        (uglify' (TermOver_map Expression2_to_Expression (r_to r)))
+        (fmap sc2_to_sc (r_scs r))
+        (r_act r)
+.
+
+Definition fr_to_r
+    {Σ : StaticModel}
+    {Act : Set}
+    (r : RewritingRule Act)
+    : RewritingRule2 Act
+.
+Proof.
+    destruct r.
+    constructor.
+    { exact (prettify fr_from0). }
+    { apply prettify in fr_to0. exact (uglify' fr_to0). }
+Defined.
 :=
     mkRewritingRule
         Σ

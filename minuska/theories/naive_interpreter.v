@@ -1324,13 +1324,35 @@ Proof.
     destruct Hsound as [[Hsound1 Hsound2] Hsound3].
     repeat split.
     {
-
+        intros e1 e2 HH.
+        specialize (Hsound1 (uglify' e1) (uglify' e2)).
+        unfold naive_interpreter in HH.
+        apply bind_Some_T_1 in HH.
+        destruct HH as [[t n] [HH1 HH2]].
+        simpl in *.
+        injection HH2 as HH2. subst e2.
+        ltac1:(ospecialize (Hsound1 _)).
+        {
+            apply bind_Some_T_2.
+            exists (t, n).
+            rewrite HH1.
+            split>[reflexivity|].
+            simpl.
+            rewrite (cancel uglify' prettify).
+            reflexivity.
+        }
+        rewrite (cancel uglify' prettify) in Hsound1.
+        unfold rewriting_relation_flat in Hsound1.
+        destruct Hsound1 as [r [a [HH2 HH3]]].
+        unfold rewriting_relation.
+        exists (mkRewritingRule2 (prettify))
+        apply Hsound1.
     }
     {
 
     }
     {
-        
+
     }
 
 
