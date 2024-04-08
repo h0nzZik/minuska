@@ -23,8 +23,6 @@ From Equations Require Export Equations.
 #[global]
 Set Equations Transparent.
 
-Set Typeclasses Debug.
-
 Lemma satisfies_top_bov_cons_1
     {Σ : StaticModel}
     (ρ : Valuation)
@@ -3393,7 +3391,10 @@ Qed.
 Lemma double_satisfies_contradiction
     {Σ : StaticModel}
     (ρ : Valuation)
-    ay cz lz cx lx
+    (ay : BuiltinOrVar)
+    (cz cx : symbol)
+    (lx : list (TermOver builtin_value))
+    (lz : list (TermOver BuiltinOrVar))
     :
     vars_of (uglify' (t_over ay)) = vars_of (uglify' (t_term cz lz)) ->
     satisfies ρ (t_term cx lx) (t_over ay) ->
@@ -3547,7 +3548,10 @@ Qed.
 Lemma double_satisfies_contradiction_weaker
     {Σ : StaticModel}
     (ρ : Valuation)
-    ay cz lz cx lx
+    (ay : BuiltinOrVar)
+    (cz cx : symbol)
+    (lx : list (TermOver builtin_value))
+    (lz : list (TermOver BuiltinOrVar))
     :
     vars_of_to_l2r ((t_over ay)) = vars_of_to_l2r ((t_term cz lz)) ->
     satisfies ρ (t_term cx lx) (t_over ay) ->
@@ -9309,7 +9313,6 @@ Proof.
                                             clear -Hx.
                                             unfold Valuation in *.
                                             unfold Valuation2 in *.
-                                            Set Printing All.
                                             rewrite vars_of_uglify' in Hx.
                                             simpl in Hx.
                                             ltac1:(set_solver).
@@ -9494,9 +9497,9 @@ Proof.
                                             reflexivity.
                                         }
                                         {
-                                            unfold vars_of; simpl.
-                                            unfold vars_of; simpl.
+                                            rewrite vars_of_uglify' in Hx.
                                             clear -Hx.
+                                            unfold vars_of; simpl.
                                             ltac1:(set_solver).
                                         }
                                     }
@@ -9666,7 +9669,7 @@ Proof.
                 clear -H01'.
                 unfold vars_of in H01'. simpl in H01'.
                 unfold vars_of; simpl.
-                assert (Htmp: (vars_of (uglify' c)) ∖ {[h]} ⊆ (dom (<[h:=uglify' r]> ρ1)) ∖ {[h]}).
+                assert (Htmp: (vars_of (c)) ∖ {[h]} ⊆ (dom (<[h:=uglify' r]> ρ1)) ∖ {[h]}).
                 {
                     ltac1:(set_solver).
                 }
@@ -9684,7 +9687,7 @@ Proof.
                 clear -H11'.
                 unfold vars_of in H11'. simpl in H11'.
                 unfold vars_of; simpl.
-                assert (Htmp: (vars_of (uglify' c)) ∖ {[h]} ⊆ (dom (<[h:=uglify' v]> ρ2)) ∖ {[h]}).
+                assert (Htmp: (vars_of (c)) ∖ {[h]} ⊆ (dom (<[h:=uglify' v]> ρ2)) ∖ {[h]}).
                 {
                     ltac1:(set_solver).
                 }

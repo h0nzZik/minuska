@@ -875,41 +875,35 @@ Instance VarsOf_Valuation2
     vars_of := fun ρ => dom ρ ; 
 |}.
 
-#[export]
-Instance Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
+Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (BuiltinOrVar)
-        variable
-:= {|
-    satisfies := fun ρ t bv =>
-    match bv with
+    (ρ : Valuation2)
+    (t : TermOver builtin_value)
+    (bv : BuiltinOrVar)
+    : Prop
+:= match bv with
     | bov_builtin b => t = t_over b
     | bov_variable x => ρ !! x = Some t
     end
-|}.
+.
 
 
-Equations? sat2
+Equations? sat2B
     {Σ : StaticModel}
-    {T : Type}
-    {_ST : Satisfies Valuation2 (TermOver builtin_value) T variable }
     (ρ : Valuation2)
     (t : TermOver builtin_value)
-    (φ : TermOver T)
-    : Type
+    (φ : TermOver BuiltinOrVar)
+    : Prop
     by wf (TermOver_size φ) lt
 :=
-    sat2 ρ t (t_over bv) := False (*satisfies ρ t bv*) ;
-    sat2 ρ (t_over _) (t_term s l) := False ;
-    sat2 ρ (t_term s' l') (t_term s l) :=
-        ((s' = s) *
-        (length l' = length l) *
+    sat2B ρ t (t_over bv) := Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ t bv ;
+    sat2B ρ (t_over _) (t_term s l) := False ;
+    sat2B ρ (t_term s' l') (t_term s l) :=
+        ((s' = s) /\
+        (length l' = length l) /\
         forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
-            sat2 ρ t' φ'
-        )%type
+            sat2B ρ t' φ'
+        )
     ;
 .
 Proof.
@@ -941,7 +935,7 @@ Proof.
     destruct φ; simpl in *; intros HH.
     {
         destruct a;
-        ltac1:(simp sat2B in HH); subst; simpl.
+        ltac1:(simp sat2B in HH; unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar in HH); subst; simpl.
         {
             constructor. constructor.
         }
@@ -1253,7 +1247,7 @@ Proof.
                 apply (f_equal prettify) in H1.
                 rewrite (cancel prettify uglify') in H1.
                 subst t.
-                reflexivity.
+                apply Hρx.
             }
             { inversion H. }
         }
@@ -1274,10 +1268,9 @@ Proof.
                 rewrite (cancel prettify uglify') in H1.
                 subst t.
                 simpl.
-                apply f_equal.
+                simpl in Hρx.
                 rewrite <- (cancel prettify uglify' (t_term s l)).
-                unfold prettify.
-                simpl. reflexivity.
+                apply Hρx.
             }
             { inversion H0. }
         }
