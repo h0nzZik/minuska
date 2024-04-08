@@ -7,10 +7,10 @@ From Minuska Require Import
 
 Fixpoint interp_loop
     {Σ : StaticModel}
-    (interp : GroundTerm -> option GroundTerm)
+    (interp : TermOver builtin_value -> option (TermOver builtin_value))
     (fuel : nat)
-    (g : GroundTerm)
-    : (nat*GroundTerm)
+    (g : TermOver builtin_value)
+    : (nat*(TermOver builtin_value))
 :=
 match fuel with
 | 0 => (0,g)
@@ -24,11 +24,11 @@ end
 
 Fixpoint interp_loop_ext
     {Σ : StaticModel}
-    (interp : GroundTerm -> option (GroundTerm*nat))
+    (interp : (TermOver builtin_value) -> option ((TermOver builtin_value)*nat))
     (fuel : nat)
-    (g : GroundTerm)
+    (g : (TermOver builtin_value))
     (log : list nat)
-    : (nat*GroundTerm*(list nat))
+    : (nat*(TermOver builtin_value)*(list nat))
 :=
 match fuel with
 | 0 => (0,g,log)
@@ -43,10 +43,10 @@ end
 Definition interp_in_from'
         {Σ : StaticModel}
         {Act : Set}
-        (Γ : (RewritingTheory Act)*(list string))
+        (Γ : (list (RewritingRule2 Act))*(list string))
         (fuel : nat)
-        (from : GroundTerm)
-        :  nat * GroundTerm * list (option string)
+        (from : (TermOver builtin_value))
+        :  nat * (TermOver builtin_value) * list (option string)
     :=
         let res := interp_loop_ext (naive_interpreter_ext Γ.1)
             fuel
@@ -72,10 +72,10 @@ Definition concat_list_option_str
 Definition interp_in_from
         {Σ : StaticModel}
         {Act : Set}
-        (Γ : (RewritingTheory Act)*(list string))
+        (Γ : (list (RewritingRule2 Act))*(list string))
         (fuel : nat)
-        (from : GroundTerm)
-        :  nat * GroundTerm * string
+        (from : (TermOver builtin_value))
+        :  nat * (TermOver builtin_value) * string
 :=
     let r := interp_in_from' Γ fuel from in
     (r.1, concat_list_option_str r.2)

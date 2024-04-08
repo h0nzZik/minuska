@@ -970,6 +970,17 @@ Definition flat_naive_interpreter_ext
     end
 .
 
+Definition naive_interpreter_ext
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : list (RewritingRule2 Act))
+    (e : TermOver builtin_value)
+    : option ((TermOver builtin_value)*nat)
+:=
+    ab ← (@flat_naive_interpreter_ext Σ Act (fmap r_to_fr Γ) (uglify' e));
+    Some (prettify ab.1, ab.2)
+.
+
 Definition flat_naive_interpreter
     {Σ : StaticModel}
     {Act : Set}
