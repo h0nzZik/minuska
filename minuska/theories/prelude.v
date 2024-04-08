@@ -208,3 +208,32 @@ Proof.
     }
 Qed.
 
+
+Lemma elem_of_list_fmap_T_1
+    {A B : Type}
+    {_eB : EqDecision B}
+    (f : A → B) (l : list A) (x : B)
+    :
+    x ∈ f <$> l ->
+    { y : A & x = f y ∧ y ∈ l }
+.
+Proof.
+    induction l; simpl; intros HH.
+    { rewrite elem_of_nil in HH. inversion HH. }
+    {
+        destruct (decide (x = f a)).
+        {
+            subst x.
+            exists a.
+            split>[reflexivity|].
+            left.
+        }
+        {
+            specialize(IHl ltac:(set_solver)).
+            destruct IHl as [y [H1y H2y]].
+            exists y.
+            split>[exact H1y|].
+            right. exact H2y.
+        }
+    }
+Qed.

@@ -598,3 +598,28 @@ Proof.
         }
     }
 Qed.
+
+
+#[export]
+Instance Expression2_eqdec
+    {Σ : StaticModel}
+    : EqDecision (Expression2)
+.
+Proof. ltac1:(solve_decision). Defined.
+
+#[export]
+Instance SideCondition2_eqdec
+    {Σ : StaticModel}
+    : EqDecision (SideCondition2)
+.
+Proof. ltac1:(solve_decision). Defined.
+
+#[export]
+Instance RewritingRule2_eqdec
+    {Σ : StaticModel}
+    {Act : Set}
+    {_EA : EqDecision Act}
+    : EqDecision (RewritingRule2 Act)
+.
+Proof. ltac1:(solve_decision). Defined.
+

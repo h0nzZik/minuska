@@ -764,6 +764,20 @@ mkSideCondition2 {
     sc_right: Expression2 ;
 }.
 
+Definition sc2_to_sc
+    {Σ : StaticModel}
+    (c : SideCondition2)
+    : SideCondition
+.
+Proof.
+    constructor.
+    constructor.
+    { exact (Expression2_to_Expression (sc_left c)). }
+    { exact (Expression2_to_Expression (sc_right c)). }
+Defined.
+
+
+
 Record RewritingRule2
     {Σ : StaticModel}
     (Act : Set)
@@ -779,3 +793,18 @@ Arguments r_from {Σ} {Act%_type_scope} r.
 Arguments r_to {Σ} {Act%_type_scope} r.
 Arguments r_scs {Σ} {Act%_type_scope} r.
 Arguments r_act {Σ} {Act%_type_scope} r.
+
+Definition r_to_fr
+    {Σ : StaticModel}
+    {Act : Set}
+    (r : RewritingRule2 Act)
+    : RewritingRule Act
+:=
+    mkRewritingRule
+        Σ
+        Act
+        (uglify' (r_from r))
+        (uglify' (TermOver_map Expression2_to_Expression (r_to r)))
+        (fmap sc2_to_sc (r_scs r))
+        (r_act r)
+.

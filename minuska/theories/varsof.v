@@ -206,7 +206,6 @@ Proof.
     apply VarsOf_TermOver.
 Defined.
 
-Set Typeclasses Debug.
 Lemma vars_of_uglify'
     {Σ : StaticModel}
     {T var : Type}

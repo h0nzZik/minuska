@@ -953,7 +953,7 @@ Proof.
 Qed.
 
 
-Definition naive_interpreter_ext
+Definition flat_naive_interpreter_ext
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule Act))
@@ -970,32 +970,32 @@ Definition naive_interpreter_ext
     end
 .
 
-Definition naive_interpreter
+Definition flat_naive_interpreter
     {Σ : StaticModel}
     {Act : Set}
     (Γ : RewritingTheory Act)
     (e : GroundTerm)
     : option (GroundTerm)
 :=
-    ei ← naive_interpreter_ext Γ e;
+    ei ← flat_naive_interpreter_ext Γ e;
     Some ei.1
 .
 
 
 
 
-Lemma naive_interpreter_sound
+Lemma flat_naive_interpreter_sound
     {Σ : StaticModel}
     {Act : Set}
     (Γ : RewritingTheory Act)
-    : FlatInterpreter_sound Γ (naive_interpreter Γ).
+    : FlatInterpreter_sound Γ (flat_naive_interpreter Γ).
 Proof.
     unfold FlatInterpreter_sound.
     intros wfΓ.
-    unfold naive_interpreter.
+    unfold flat_naive_interpreter.
     unfold FlatInterpreter_sound.
     unfold flat_stuck,not_stuck_flat.
-    unfold naive_interpreter_ext.
+    unfold flat_naive_interpreter_ext.
     repeat split.
     {
         intros e1 e2.
@@ -1069,7 +1069,7 @@ Proof.
     }
     {
         intros e Hnotstuck.
-        unfold naive_interpreter.
+        unfold flat_naive_interpreter.
 
         destruct Hnotstuck as [e' He'].
         unfold rewriting_relation_flat in He'.
@@ -1126,4 +1126,212 @@ Proof.
             assumption.
         }
     }
+Qed.
+
+
+Definition naive_interpreter
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : list (RewritingRule2 Act))
+    (e : TermOver builtin_value)
+    : option (TermOver builtin_value)
+:=
+    ei ← flat_naive_interpreter_ext (fmap r_to_fr Γ) (uglify' e);
+    Some (prettify ei.1)
+.
+
+Lemma vars_of_E2conv
+    {Σ : StaticModel}
+    (e : Expression2)
+    :
+    vars_of (Expression2_to_Expression e) = vars_of e
+.
+Proof.
+    induction e; unfold vars_of in *; simpl in *;
+        (ltac1:(set_solver)).
+Qed.
+
+Lemma vars_of_sc2_to_sc
+    {Σ : StaticModel}
+    {Act : Set}
+    (r2 : RewritingRule2 Act)
+    :
+    vars_of (sc2_to_sc <$> r_scs r2) ⊆ vars_of (r_scs r2)
+.
+Proof.
+    clear Hwf1.
+    unfold vars_of in *; simpl in *.
+    unfold vars_of in *; simpl in *.
+    unfold vars_of_SideCondition.
+    rewrite elem_of_subseteq.
+    intros x Hx.
+    rewrite elem_of_union_list in Hx.
+    rewrite elem_of_union_list.
+    destruct Hx as [X [H1X H2x]].
+    rewrite elem_of_list_fmap in H1X.
+    destruct H1X as [y [H1y H2y]].
+    subst X.
+    destruct y; simpl in *.
+    rewrite elem_of_list_fmap in H2y.
+    destruct H2y as [y [H1'y H2'y]].
+    destruct c; simpl in *.
+    destruct y; simpl in *.
+    inversion H1'y; subst; clear H1'y.
+    ltac1:(exists (vars_of
+        (apeq (Expression2_to_Expression sc_left)
+        (Expression2_to_Expression sc_right)))).
+    split>[|assumption].
+    destruct r2; simpl in *.
+    rewrite elem_of_list_fmap.
+    eexists;split>[|exact H2'y].
+    unfold vars_of; simpl.
+    rewrite vars_of_E2conv.
+    rewrite vars_of_E2conv.
+    reflexivity.
+Qed.
+
+Lemma compose_prettify_uglify
+    {Σ : StaticModel}
+    (A : Type)
+    :
+    (@prettify Σ A) ∘ uglify' = id
+.
+Proof.
+    apply functional_extensionality.
+    intros x.
+    unfold compose.
+    rewrite (cancel prettify uglify').
+    reflexivity.
+Qed.
+
+Lemma compose_uglify_prettify
+    {Σ : StaticModel}
+    (A : Type)
+    :
+    uglify' ∘ (@prettify Σ A) = id
+.
+Proof.
+    apply functional_extensionality.
+    intros x.
+    unfold compose.
+    rewrite (cancel uglify' prettify).
+    reflexivity.
+Qed.
+
+Lemma fmap_prettify_uglify_val
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    :
+    (prettify <$> (uglify' <$> ρ)) = ρ
+.
+Proof.
+    unfold Valuation2 in *.
+    rewrite <- map_fmap_compose.
+    rewrite compose_prettify_uglify.
+    rewrite map_fmap_id.
+    reflexivity.
+Qed.
+
+Lemma fmap_uglify_prettify_val
+    {Σ : StaticModel}
+    (ρ : Valuation)
+    :
+    uglify' <$> (prettify <$> (ρ)) = ρ
+.
+Proof.
+    unfold Valuation2 in *.
+    rewrite <- map_fmap_compose.
+    rewrite compose_uglify_prettify.
+    rewrite map_fmap_id.
+    reflexivity.
+Qed.
+
+Lemma naive_interpreter_sound
+    {Σ : StaticModel}
+    {Act : Set}
+    {_eA : EqDecision Act}
+    (Γ : list (RewritingRule2 Act))
+    : Interpreter_sound Γ (naive_interpreter Γ).
+Proof.
+    intros Hwf.
+    assert(Hsound := flat_naive_interpreter_sound (fmap r_to_fr Γ)).
+    ltac1:(ospecialize (Hsound _)).
+    {
+        clear -Hwf _eA.
+        unfold RewritingTheory_wf.
+        unfold RewritingTheory2_wf in Hwf.
+        intros r Hr.
+        apply elem_of_list_fmap_T_1 in Hr.
+        destruct Hr as [r2 [H1r2 H2r2]].
+        subst r.
+        specialize (Hwf _ H2r2). clear H2r2.
+        unfold RewritingRule_wf.
+        unfold RewritingRule2_wf in Hwf.
+        destruct Hwf as [Hwf1 Hwf2].
+        split.
+        {
+            unfold RewritingRule_wf1.
+            unfold RewritingRule2_wf1 in Hwf1.
+            simpl.
+            ltac1:(rewrite vars_of_uglify').
+            eapply transitivity>[|apply Hwf1].
+            apply vars_of_sc2_to_sc.
+        }
+        {
+            unfold RewritingRule_wf2.
+            unfold RewritingRule2_wf2 in Hwf2.
+            intros g ρ.
+            specialize (Hwf2 (prettify g) (fmap prettify ρ)).
+            intros H1 H2.
+            ltac1:(ospecialize (Hwf2 _ _)).
+            {
+                unfold satisfies; simpl.
+                apply uglify_sat2B.
+                rewrite fmap_uglify_prettify_val.
+                rewrite (cancel uglify' prettify).
+                apply H1.
+            }
+            {
+                unfold satisfies; simpl.
+                unfold satisfies in H2; simpl in H2.
+                intros x Hx.
+                specialize (H2 (sc2_to_sc x)).
+                ltac1:(ospecialize (H2 _)).
+                {
+                    clear H2.
+                    rewrite elem_of_list_fmap.
+                    exists x.
+                    split>[reflexivity|exact Hx].
+                }
+                unfold satisfies; simpl.
+                unfold satisfies in H2; simpl in H2.
+                unfold satisfies in H2; simpl in H2.
+                do 2 (rewrite Expression2_Expression_evaluate).
+                rewrite (fmap_uglify_prettify_val).
+                destruct H2 as [H21 H22].
+                rewrite H21. reflexivity.
+            }
+            destruct Hwf2 as [g' H3].
+            exists (uglify' g').
+            unfold satisfies in H3; simpl in H3.
+            apply sat2E_uglify in H3.
+            rewrite fmap_uglify_prettify_val in H3.
+            apply H3.
+        }
+    }
+    unfold Interpreter_sound'.
+    unfold FlatInterpreter_sound' in Hsound.
+    destruct Hsound as [[Hsound1 Hsound2] Hsound3].
+    repeat split.
+    {
+
+    }
+    {
+
+    }
+    {
+        
+    }
+
+
 Qed.
