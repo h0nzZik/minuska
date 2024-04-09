@@ -52,6 +52,8 @@ Module example_1.
         naive_interpreter Γ.1
     .
 
+    Compute (naive_interpreter Γ.1 (t_term "S" [t_term "S" [t_term "0" nil]])).
+
     Fixpoint my_number' (n : nat) : TermOver builtin_value  :=
     match n with
     | 0 => t_term "0" nil
