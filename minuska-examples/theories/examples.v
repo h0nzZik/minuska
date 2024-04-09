@@ -40,7 +40,7 @@ Module two_counters.
     Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
     Arguments state {_br} _%_rs.
 
-    Definition s {_br : BasicResolver} := (@t_term _ operand_type "s").
+    Definition s {_br : BasicResolver} := (@t_term _ operand_type "S").
     Arguments s {_br} _%_rs.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
@@ -93,7 +93,7 @@ Module two_counters.
         let fg' := ((interp_loop interp fuel) ∘ pair_to_state) (m,n) in
         state_to_pair fg'.2
     .
-
+    Compute (interp_loop_number 100 10 10).
     (* Time Compute (interp_loop_number 10000000 10000 10000). *)
 
 End two_counters.
