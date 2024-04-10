@@ -43,11 +43,11 @@ Instance VarsOf_AP
 
 Fixpoint vars_of_aosB
     {Σ : StaticModel}
-    {B var : Type}
+    {T0 B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VB: VarsOf B var}
-    (o : PreTerm' symbol B)
+    (o : PreTerm' T0 B)
     : gset var :=
 match o with
 | pt_operator _ => ∅
@@ -58,11 +58,11 @@ end.
 #[export]
 Instance VarsOf_aosB
     {Σ : StaticModel}
-    {B var : Type}
+    {T0 B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
     {_VB: VarsOf B var}
-    : VarsOf (PreTerm' symbol B) var
+    : VarsOf (PreTerm' T0 B) var
 := {|
     vars_of := vars_of_aosB ; 
 |}.
@@ -112,11 +112,12 @@ Program Instance VarsOf_list_SideCondition
 
 Definition vars_of_Term'B
     {Σ : StaticModel}
+    {T0 : Type}
     {B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
     {_VB : VarsOf B var}
-    (φ : Term' symbol B)
+    (φ : Term' T0 B)
     : gset var :=
 match φ with
 | term_preterm aop => vars_of aop
@@ -126,11 +127,11 @@ end.
 #[export]
 Instance VarsOf_Term'
     {Σ : StaticModel}
-    {B var : Type}
+    {T0 B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
     {_VB : VarsOf B var}
-    : VarsOf (Term' symbol B) var
+    : VarsOf (Term' T0 B) var
 := {|
     vars_of := vars_of_Term'B ; 
 |}.

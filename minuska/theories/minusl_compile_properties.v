@@ -968,7 +968,7 @@ Proof.
                     by reflexivity
                 ).
                 rewrite (cancel uglify' prettify) in IH1.
-                simpl in IH1. unfold apply_symbol' in IH1.
+                simpl in IH1. unfold apply_symbol'' in IH1.
                 simpl in IH1. injection IH1 as IH1.
                 subst xy. rewrite app_length.
                 repeat split.
@@ -1163,7 +1163,7 @@ Proof.
                         apply (f_equal uglify') in Hlγ1.
                         rewrite (cancel uglify' prettify) in Hlγ1.
                         simpl in Hlγ1.
-                        unfold apply_symbol' in Hlγ1.
+                        unfold apply_symbol'' in Hlγ1.
                         simpl in Hlγ1.
                         injection Hlγ1 as Hlγ1.
                         subst xy1.
@@ -1273,7 +1273,7 @@ Proof.
                     by reflexivity
                 ).
                 rewrite (cancel uglify' prettify) in IH1.
-                simpl in IH1. unfold apply_symbol' in IH1.
+                simpl in IH1. unfold apply_symbol'' in IH1.
                 simpl in IH1. injection IH1 as IH1.
                 subst xy. rewrite app_length.
                 repeat split.
@@ -1535,7 +1535,7 @@ Proof.
                         apply (f_equal uglify') in Hlγ1.
                         rewrite (cancel uglify' prettify) in Hlγ1.
                         simpl in Hlγ1.
-                        unfold apply_symbol' in Hlγ1.
+                        unfold apply_symbol'' in Hlγ1.
                         simpl in Hlγ1.
                         injection Hlγ1 as Hlγ1.
                         subst xy1.
@@ -1666,7 +1666,7 @@ Proof.
                     by reflexivity
                 ).
                 rewrite (cancel uglify' prettify) in IH1.
-                simpl in IH1. unfold apply_symbol' in IH1.
+                simpl in IH1. unfold apply_symbol'' in IH1.
                 simpl in IH1. injection IH1 as IH1.
                 subst xy. rewrite app_length.
                 repeat split.
@@ -1861,7 +1861,7 @@ Proof.
                         apply (f_equal uglify') in Hlγ1.
                         rewrite (cancel uglify' prettify) in Hlγ1.
                         simpl in Hlγ1.
-                        unfold apply_symbol' in Hlγ1.
+                        unfold apply_symbol'' in Hlγ1.
                         simpl in Hlγ1.
                         injection Hlγ1 as Hlγ1.
                         subst xy1.
@@ -1971,7 +1971,7 @@ Proof.
                     by reflexivity
                 ).
                 rewrite (cancel uglify' prettify) in IH1.
-                simpl in IH1. unfold apply_symbol' in IH1.
+                simpl in IH1. unfold apply_symbol'' in IH1.
                 simpl in IH1. injection IH1 as IH1.
                 subst xy. rewrite app_length.
                 repeat split.
@@ -2233,7 +2233,7 @@ Proof.
                         apply (f_equal uglify') in Hlγ1.
                         rewrite (cancel uglify' prettify) in Hlγ1.
                         simpl in Hlγ1.
-                        unfold apply_symbol' in Hlγ1.
+                        unfold apply_symbol'' in Hlγ1.
                         simpl in Hlγ1.
                         injection Hlγ1 as Hlγ1.
                         subst xy1.
@@ -3405,7 +3405,7 @@ Lemma double_satisfies_contradiction
     (lx : list (TermOver builtin_value))
     (lz : list (TermOver BuiltinOrVar))
     :
-    vars_of (uglify' (t_over ay)) = vars_of (uglify' (t_term cz lz)) ->
+    vars_of (@uglify' (@symbol Σ) BuiltinOrVar (t_over ay)) = vars_of (uglify' (t_term cz lz)) ->
     satisfies ρ (t_term cx lx) (t_over ay) ->
     satisfies ρ (t_term cx lx) (t_term cz lz) ->
     False
@@ -3580,6 +3580,7 @@ Proof.
 Qed.
 
 Lemma vars_of_apply_symbol
+    {Σ : StaticModel}
     {T0 : Type}
     (s : T0)
     (l : list (Term' T0 BuiltinOrVar))
@@ -3594,13 +3595,13 @@ Proof.
     {
         rewrite fmap_app.
         rewrite union_list_app_L.
-        unfold apply_symbol' in *; simpl in *.
+        unfold apply_symbol'' in *; simpl in *.
         unfold vars_of in *; simpl in *.
         unfold to_PreTerm'' in *.
         rewrite fold_left_app.
         simpl.
         rewrite <- IHl. clear IHl.
-        unfold helper.
+        unfold helper''.
         ltac1:(repeat case_match); subst; simpl in *.
         {
             unfold vars_of; simpl.
@@ -3685,8 +3686,9 @@ Proof.
                 unfold delta_in_val. simpl.
                 unfold size_of_var_in_val.
                 rewrite H1. simpl.
+                unfold TermOver in *.
                 apply f_equal.
-                ltac1:(replace ((prettify' (to_PreTerm' s (map uglify' l))))
+                ltac1:(replace ((prettify' (to_PreTerm'' s (map uglify' l))))
                 with ((t_term s l))).
                 {
                     simpl. ltac1:(lia).
@@ -4063,7 +4065,7 @@ Proof.
     }
     {
         intros HContra. apply HH. clear HH.
-        unfold apply_symbol' in HContra; simpl in HContra.
+        unfold apply_symbol'' in HContra; simpl in HContra.
         unfold to_PreTerm'' in HContra; simpl in HContra.
         unfold vars_of in HContra; simpl in HContra.
         revert s ψ  H HContra.
@@ -5371,6 +5373,7 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite app_length in Hexactlyonce.
             simpl in Hexactlyonce.
+            unfold TermOver in *.
             ltac1:(lia).
         }
 
@@ -5412,6 +5415,7 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite app_length in Hexactlyonce.
             simpl in Hexactlyonce.
+            unfold TermOver in *.
             ltac1:(lia).
         }
 
@@ -5429,6 +5433,7 @@ Proof.
                 intros i0 x1 x2 Hx1 Hx2.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
+                unfold TermOver in *.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
                 rewrite subst_notin.
                 {
@@ -5459,6 +5464,7 @@ Proof.
             }
             {
                 intros i0 x1 x2 Hx1 Hx2.
+                unfold TermOver in *.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
@@ -5479,7 +5485,7 @@ Proof.
                 }
             }
         }
-
+        unfold TermOver in *.
         rewrite HH1. clear HH1.
         rewrite HH2. clear HH2.
         remember (sum_list_with TermOver_size (take j l) ) as N1.
@@ -5527,9 +5533,15 @@ Proof.
             specialize (Hnotindrop _ H2x1).
             apply Hnotindrop. apply H2x.
         }
+        unfold TermOver in *.
         specialize (H ltac:(lia)).
         rewrite H.
         assert (Htmp1 := TermOver_size_not_zero x0).
+        unfold TermOver in *.
+        rewrite app_length.
+        simpl.
+        rewrite drop_length.
+        rewrite take_length.
         ltac1:(lia).
     }
 Qed.
@@ -7530,7 +7542,7 @@ Proof.
     }
     {
         unfold vars_of in *; simpl in *.
-        unfold apply_symbol' in *.
+        unfold apply_symbol'' in *.
         unfold to_Term' in *.
         unfold vars_of in *; simpl in *.
         unfold to_PreTerm'' in *.
@@ -7600,6 +7612,7 @@ Proof.
         apply pf).
     }
     {
+        unfold TermOver in *.
         intros. subst.
         apply elem_of_list_split in pf'.
         destruct pf' as [l1 [l2 Hl1l2]].
@@ -7685,6 +7698,7 @@ Proof.
         }
     }
     {
+        unfold TermOver in *.
         rewrite vars_of_t_term.
         rewrite elem_of_subseteq.
         intros x Hx.
@@ -7780,6 +7794,7 @@ Proof.
         }
     }
     {
+        unfold TermOver in *.
         rewrite vars_of_t_term.
         rewrite vars_of_t_term.
         apply set_eq.
@@ -7881,10 +7896,12 @@ Lemma TermOverBoV_eval__varsofindependent
     TermOverBoV_eval ρ1 φ pf1 = TermOverBoV_eval ρ2 φ pf2
 .
 Proof.
+    unfold TermOver in *.
     ltac1:(funelim (TermOverBoV_eval ρ1 φ pf1)).
     {
+        unfold TermOver in *.
         intros HH.
-        rewrite <- Heqcall.
+        (* rewrite <- Heqcall. *)
         ltac1:(simp TermOverBoV_eval).
         reflexivity.
     }
@@ -7962,6 +7979,7 @@ Proof.
             rewrite Htmp2.
             reflexivity.
         }
+        unfold TermOver in *.
         intros x0 Hx0.
         apply HH.
         clear -pf3 Hx0.
@@ -8560,6 +8578,7 @@ Proof.
                                             destruct Hfind2 as [j2 Hfind2].
                                             apply take_drop_middle in Hfind2.
                                             rewrite <- Hfind2 in Hlf.
+                                            unfold TermOver in *.
                                             rewrite <- HContra in Hlf.
                                             clear -Hlf.
                                             rewrite filter_app in Hlf.
@@ -8695,6 +8714,7 @@ Proof.
                                                         rewrite app_length in Hlf; simpl in Hlf.
                                                         rewrite <- Hfind1 in Hlf.
                                                         rewrite drop_app in Hlf.
+                                                        unfold TermOver in *.
                                                         destruct (((S i - length (take n l0)))) eqn:Htmp1; simpl in *.
                                                         {
                                                             rewrite map_app in Hlf; simpl in Hlf.
@@ -8780,6 +8800,7 @@ Proof.
                                                             rewrite take_app in Hlf.
                                                             rewrite drop_app in Hlf.
                                                             rewrite take_length in Hlf.
+                                                            unfold TermOver in *.
                                                             destruct ((i - n `min` length l0)) eqn:Heq1.
                                                             {
                                                                 simpl in Hlf.
@@ -8845,6 +8866,7 @@ Proof.
                                             destruct ((i - length (take n lγ))) eqn:Htmp1>[ltac1:(lia)|].
                                             rewrite lookup_app_r in H2i.
                                             {
+                                                unfold TermOver in *.
                                                 destruct ((i - length (take n l0))) eqn:Htmp2>
                                                 [
                                                     rewrite take_length in Hlt';
@@ -9689,6 +9711,7 @@ Proof.
                 specialize (Htmp1 x Hx).
                 specialize (Htmp2 x Hx).
                 subst substituted.
+                unfold TermOver in *.
                 rewrite vars_of__TermOverBoV_subst__varless in Hx>[|reflexivity].
                 apply e0.
                 {
@@ -9717,15 +9740,16 @@ Proof.
                     constructor.
                     unfold to_PreTerm''.
                     ltac1:(
-                        replace ([apply_symbol' cseqSymbol [uglify' ctrl1; uglify' cont]; uglify' state1])
+                        replace ([apply_symbol'' cseqSymbol [uglify' ctrl1; uglify' cont]; uglify' state1])
                         with (map uglify' [(t_term cseqSymbol [ctrl1; cont]);state1])
                         by reflexivity
                     ).
                     ltac1:(
-                        replace ([apply_symbol' cseqSymbol [uglify' c; term_operand (bov_variable V1)]; term_operand (bov_variable V2)])
+                        replace ([apply_symbol'' cseqSymbol [uglify' c; term_operand (bov_variable V1)]; term_operand (bov_variable V2)])
                         with (map uglify' [t_term cseqSymbol [c; (t_over (bov_variable V1))]; (t_over (bov_variable V2))])
                         by reflexivity
                     ).
+                    unfold TermOver in *.
                     apply satisfies_top_bov_cons_1.
                     { reflexivity. }
                     { reflexivity. }
@@ -9866,15 +9890,16 @@ Proof.
                     constructor.
                     unfold to_PreTerm''.
                     ltac1:(
-                        replace ([apply_symbol' cseqSymbol [uglify' r; apply_symbol' cseqSymbol [uglify' ceval; uglify' cont]]; uglify' state1])
+                        replace ([apply_symbol'' cseqSymbol [uglify' r; apply_symbol'' cseqSymbol [uglify' ceval; uglify' cont]]; uglify' state1])
                         with (map uglify' [(t_term cseqSymbol [r; (t_term cseqSymbol [ceval; cont])]); state1])
                         by reflexivity
                     ).
                     ltac1:(
-                        replace ([apply_symbol' cseqSymbol [term_operand (ft_variable h); apply_symbol' cseqSymbol [uglify' (TermOverBoV_to_TermOverExpr (TermOverBoV_subst c h (t_term holeSymbol []))); term_operand (ft_variable V1)]]; term_operand (ft_variable V2)])
+                        replace ([apply_symbol'' cseqSymbol [term_operand (ft_variable h); apply_symbol'' cseqSymbol [uglify' (TermOverBoV_to_TermOverExpr (TermOverBoV_subst c h (t_term holeSymbol []))); term_operand (ft_variable V1)]]; term_operand (ft_variable V2)])
                         with (map uglify' [(t_term cseqSymbol [t_over (ft_variable h); (t_term cseqSymbol [(TermOverBoV_to_TermOverExpr (TermOverBoV_subst c h (t_term holeSymbol []))); (t_over (ft_variable V1))])]); (t_over (ft_variable V2))])
                         by reflexivity
                     ).
+                    unfold TermOver in *.
                     apply satisfies_top_bov_cons_expr_1.
                     { reflexivity. }
                     { reflexivity. }
@@ -10995,6 +11020,7 @@ Proof.
     intros H1 Γ ctrl1 data1 ctrl2 data2 w H2.
     destruct H2 as [w' [H1w' (*[H2w'*) H3w' (*]*)]].
     unfold downC in H3w'.
+    unfold TermOver in *.
     specialize (H3w' (t_term cseqSymbol [])).
     remember ((t_term topSymbol [t_term cseqSymbol [ctrl1; t_term cseqSymbol []]; data1])) as from.
     remember ((t_term topSymbol [t_term cseqSymbol [ctrl2; t_term cseqSymbol []]; data2])) as to.
@@ -11161,7 +11187,7 @@ Proof.
             inversion Hd1; subst; clear Hd1.
             inversion Hc1; subst; clear Hc1.
             subst.
-
+            unfold TermOver in *.
             (*
             rewrite HH6 in HH26. inversion HH26; subst; clear HH26.
             apply (f_equal prettify) in H0.
