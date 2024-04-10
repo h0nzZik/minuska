@@ -1258,9 +1258,10 @@ Proof.
         rewrite bind_Some in H.
         destruct H as [x0 [H1x0 H2x0]].
         inversion H2x0; subst; clear H2x0.
-        rewrite H1x0 in IHe. simpl in IHe.
-        specialize (IHe x0 eq_refl).
-        apply IHe.
+        rewrite fmap_Some in H1x0.
+        destruct H1x0 as [x1 [H1x1 H2x1]].
+        subst x0.
+        ltac1:(naive_solver).
     }
     {
         rewrite bind_Some in H.
@@ -1270,10 +1271,12 @@ Proof.
         rewrite bind_Some in H0.
         destruct H0 as [x1 [H1x1 H2x1]].
         inversion H2x1; subst; clear H2x1.
-        specialize (IHe1 _ H1x0).
-        specialize (IHe2 _ H1x1).
-        rewrite union_subseteq.
-        split; assumption.
+        rewrite fmap_Some in H1x0.
+        rewrite fmap_Some in H1x1.
+        destruct H1x0 as [y [H1y H2y]].
+        destruct H1x1 as [z [H1z H2z]].
+        subst.
+        ltac1:(set_solver).
     }
     {
         rewrite bind_Some in H.
@@ -1283,17 +1286,19 @@ Proof.
         rewrite bind_Some in H0.
         destruct H0 as [x1 [H1x1 H2x1]].
         inversion H2x1; subst; clear H2x1.
-
 
         rewrite bind_Some in H0.
         destruct H0 as [x2 [H1x2 H2x2]].
         inversion H2x2; subst; clear H2x2.
 
-        specialize (IHe1 _ H1x0).
-        specialize (IHe2 _ H1x1).
-        specialize (IHe3 _ H1x2).
-        repeat (rewrite union_subseteq).
-        (repeat split); assumption.
+        rewrite fmap_Some in H1x0.
+        rewrite fmap_Some in H1x1.
+        rewrite fmap_Some in H1x2.
+        destruct H1x0 as [y [H1y H2y]].
+        destruct H1x1 as [z [H1z H2z]].
+        destruct H1x2 as [t [H1t H2t]].
+        subst.
+        ltac1:(set_solver).
     }
 Qed.
 

@@ -8085,9 +8085,15 @@ Proof.
         rewrite bind_Some in HH.
         destruct HH as [x [H1 H2]].
         rewrite bind_Some.
-        specialize (IHe _ _ _ H1).
-        exists x.
-        split; assumption.
+        injection H2 as H2.
+        subst g'.
+        rewrite fmap_Some in H1.
+        destruct H1 as [y [H1y H2y]].
+        subst x.
+        specialize (IHe _ _ _ H1y).
+        exists (prettify y).
+        split>[|reflexivity].
+        rewrite IHe. reflexivity.
     }
     {
         rewrite bind_Some in HH.
@@ -8095,14 +8101,23 @@ Proof.
         rewrite bind_Some in HH.
         destruct HH as [x2 [Hx2 HH]].
         inversion HH; subst; clear HH.
-        specialize (IHe1 _ _ _ Hx1).
-        specialize (IHe2 _ _ _ Hx2).
+        
+        rewrite fmap_Some in Hx1.
+        destruct Hx1 as [y [H1y H2y]].
+
+        rewrite fmap_Some in Hx2.
+        destruct Hx2 as [z [H1z H2z]].
+        subst x1 x2.
+        specialize (IHe1 _ _ _ H1y).
+        specialize (IHe2 _ _ _ H1z).
         rewrite bind_Some.
-        exists x1.
-        split>[assumption|].
-                rewrite bind_Some.
-        exists x2.
-        split>[assumption|].
+        exists (prettify y).
+        rewrite IHe1.
+        split>[reflexivity|].
+        rewrite bind_Some.
+        exists (prettify z).
+        rewrite IHe2.
+        split>[reflexivity|].
         reflexivity.
     }
     {
@@ -8113,18 +8128,30 @@ Proof.
         rewrite bind_Some in HH.
         destruct HH as [x3 [Hx3 HH]].
         inversion HH; subst; clear HH.
-        specialize (IHe1 _ _ _ Hx1).
-        specialize (IHe2 _ _ _ Hx2).
-        specialize (IHe3 _ _ _ Hx3).
+
+
+        rewrite fmap_Some in Hx1.
+        destruct Hx1 as [y [H1y H2y]].
+        rewrite fmap_Some in Hx2.
+        destruct Hx2 as [z [H1z H2z]].
+        rewrite fmap_Some in Hx3.
+        destruct Hx3 as [t [H1t H2t]].
+        subst x1 x2 x3.
+        specialize (IHe1 _ _ _ H1y).
+        specialize (IHe2 _ _ _ H1z).
+        specialize (IHe3 _ _ _ H1t).
         rewrite bind_Some.
-        exists x1.
-        split>[assumption|].
+        exists (prettify y).
+        rewrite IHe1.
+        split>[reflexivity|].
         rewrite bind_Some.
-        exists x2.
-        split>[assumption|].
+        exists (prettify z).
+        rewrite IHe2.
+        split>[reflexivity|].
         rewrite bind_Some.
-        exists x3.
-        split>[assumption|].
+        exists (prettify t).
+        rewrite IHe3.
+        split>[reflexivity|].
         reflexivity.
     }
 Qed.
