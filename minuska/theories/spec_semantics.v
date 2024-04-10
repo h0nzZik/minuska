@@ -53,19 +53,19 @@ match t with
 | ft_element e => Some e
 | ft_variable x => ρ !! x
 | ft_nullary f =>
-    Some (builtin_nullary_function_interp f)
+    Some (uglify' (builtin_nullary_function_interp f))
 | ft_unary f t =>
-    e ← Expression_evaluate ρ t;
-    Some (builtin_unary_function_interp f e)
+    e ← prettify <$> Expression_evaluate ρ t;
+    Some (uglify' (builtin_unary_function_interp f e))
 | ft_binary f t1 t2 =>
-    e1 ← Expression_evaluate ρ t1;
-    e2 ← Expression_evaluate ρ t2;
-    Some (builtin_binary_function_interp f e1 e2)
+    e1 ← prettify <$> Expression_evaluate ρ t1;
+    e2 ← prettify <$> Expression_evaluate ρ t2;
+    Some (uglify' (builtin_binary_function_interp f e1 e2))
 | ft_ternary f t1 t2 t3 =>
-    e1 ← Expression_evaluate ρ t1;
-    e2 ← Expression_evaluate ρ t2;
-    e3 ← Expression_evaluate ρ t3;
-    Some (builtin_ternary_function_interp f e1 e2 e3)
+    e1 ← prettify <$> Expression_evaluate ρ t1;
+    e2 ← prettify <$> Expression_evaluate ρ t2;
+    e3 ← prettify <$> Expression_evaluate ρ t3;
+    Some (uglify' (builtin_ternary_function_interp f e1 e2 e3))
 end.
 
 
@@ -1657,19 +1657,19 @@ match t with
 | e_ground e => Some e
 | e_variable x => ρ !! x
 | e_nullary f =>
-    Some (prettify (builtin_nullary_function_interp f))
+    Some ((builtin_nullary_function_interp f))
 | e_unary f t =>
     e ← Expression2_evaluate ρ t;
-    Some (prettify (builtin_unary_function_interp f (uglify' e)))
+    Some ((builtin_unary_function_interp f (e)))
 | e_binary f t1 t2 =>
     e1 ← Expression2_evaluate ρ t1;
     e2 ← Expression2_evaluate ρ t2;
-    Some (prettify (builtin_binary_function_interp f (uglify' e1) (uglify' e2)))
+    Some ((builtin_binary_function_interp f (e1) (e2)))
 | e_ternary f t1 t2 t3 =>
     e1 ← Expression2_evaluate ρ t1;
     e2 ← Expression2_evaluate ρ t2;
     e3 ← Expression2_evaluate ρ t3;
-    Some (prettify (builtin_ternary_function_interp f (uglify' e1) (uglify' e2) (uglify' e3)))
+    Some ((builtin_ternary_function_interp f (e1) (e2) (e3)))
 end.
 
 Lemma Expression2_Expression_evaluate
@@ -1701,6 +1701,7 @@ Proof.
         }
     }
     {
+        rewrite (cancel prettify uglify').
         reflexivity.
     }
     {
@@ -1710,7 +1711,7 @@ Proof.
         destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e))
             eqn:Heq; simpl.
         {
-            rewrite (cancel uglify' prettify).
+            rewrite (cancel prettify uglify').
             reflexivity.
         }
         {
@@ -1728,7 +1729,8 @@ Proof.
             destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e2)) eqn:Heq2;
                 simpl.
             {
-                do 2 (rewrite (cancel uglify' prettify)).
+
+                rewrite (cancel prettify uglify').
                 reflexivity.
             }
             {
@@ -1756,7 +1758,7 @@ Proof.
                 destruct (Expression_evaluate (uglify' <$> ρ) (Expression2_to_Expression e3)) eqn:Heq3;
                     simpl.
                 {
-                    do 3 (rewrite (cancel uglify' prettify)).
+                    rewrite (cancel prettify uglify').
                     reflexivity.
                 }
                 {

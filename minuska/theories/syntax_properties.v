@@ -3,17 +3,19 @@ From Minuska Require Import
     spec_syntax
 .
 
+Require Import Coq.Logic.FunctionalExtensionality.
+
 Require Export Minuska.varsof.
 
 Section eqdec.
 
     #[export]
     Instance PreTerm'_eqdec
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {T0 : Type}
+        {_T0ED : EqDecision T0}
         (builtin : Type)
         {builtin_dec : EqDecision builtin}
-        : EqDecision (PreTerm' symbol builtin)
+        : EqDecision (PreTerm' T0 builtin)
     .
     Proof.
         ltac1:(solve_decision).
@@ -22,7 +24,7 @@ Section eqdec.
     #[export]
     Instance Term'_eqdec
         {A : Type}
-        {symbols : Symbols A}
+        {A_dec : EqDecision A}
         (T : Type)
         {T_dec : EqDecision T}
         : EqDecision (Term' A T)
@@ -130,7 +132,8 @@ Section countable.
 
     Fixpoint PreTerm'_to_gen_tree
         (symbol : Type)
-        {symbols : Symbols symbol}
+        {symbol_eqdec : EqDecision symbol}
+        {symbol_countable : Countable symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
@@ -154,7 +157,8 @@ Section countable.
 
     Fixpoint PreTerm'_of_gen_tree
         (symbol : Type)
-        {symbols : Symbols symbol}
+        {symbol_eqdec : EqDecision symbol}
+        {symbol_countable : Countable symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
@@ -193,7 +197,8 @@ Section countable.
 
     Lemma PreTerm'_of_to_gen_tree
         (symbol : Type)
-        {symbols : Symbols symbol}
+        {symbol_eqdec : EqDecision symbol}
+        {symbol_countable : Countable symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
@@ -217,9 +222,10 @@ Section countable.
     Qed.
 
     #[export]
-    Instance appliedOperator_countable
+    Instance PreTerm'_countable
         (symbol_set : Type)
-        {symbols : Symbols symbol_set}
+        {symbols_eqdec : EqDecision symbol_set}
+        {symbols_countable : Countable symbol_set}
         (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
@@ -237,7 +243,8 @@ Section countable.
 
     Definition Term'_to_gen_tree
         (symbol : Type)
-        {symbols : Symbols symbol}
+        {symbol_eqd : EqDecision symbol}
+        {symbol_cnt : Countable symbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
@@ -252,7 +259,8 @@ Section countable.
 
     Definition Term'_from_gen_tree
         (symbol : Type)
-        {symbols : Symbols symbol}
+        {symbol_eqd : EqDecision symbol}
+        {symbol_cnt : Countable symbol}
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
@@ -268,7 +276,8 @@ Section countable.
 
     Lemma Term'_to_from_gen_tree
         (symbol : Type)
-        {symbols : Symbols symbol}
+        {symbol_eqd : EqDecision symbol}
+        {symbol_cnt : Countable symbol}
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
@@ -282,7 +291,8 @@ Section countable.
     #[export]
     Instance Term'_countable
         (symbol_set : Type)
-        {symbols : Symbols symbol_set}
+        {symbol_eqd : EqDecision symbol_set}
+        {symbol_cnt : Countable symbol_set}
         (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
@@ -433,15 +443,18 @@ end.
 
 #[global]
 Instance TermOver_eqdec
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
+    {_edT : EqDecision T}
     {_edA : EqDecision A}
     :
-    EqDecision (TermOver A)
+    EqDecision (@TermOver' T A)
 .
 Proof.
     intros t1 t2.
-    destruct (decide (uglify' t1 = uglify' t2)) as [Heq|Hneq].
+    remember (uglify' t1) as ut1.
+    remember (uglify' t2) as ut2.
+    destruct (decide (ut1 = ut2)) as [Heq|Hneq]; subst.
     {
         apply (f_equal prettify) in Heq.
         rewrite (cancel prettify uglify') in Heq.
@@ -451,6 +464,34 @@ Proof.
     }
     {
         right. intros HContra. subst. apply Hneq.
+        reflexivity.
+    }
+Defined.
+
+
+#[global]
+Instance TermOver_count
+    {T : Type}
+    {A : Type}
+    {_edT : EqDecision T}
+    {_edA : EqDecision A}
+    {_cT : Countable T}
+    {_cA : Countable A}
+    :
+    Countable (@TermOver' T A)
+.
+Proof.
+    ltac1:(unshelve(eapply inj_countable)).
+    { apply (Term' T A). }
+    { apply uglify'. }
+    {
+        intros t. apply prettify in t.
+        apply Some. exact t.
+    }
+    { apply _. }
+    {
+        intros x. simpl.
+        rewrite (cancel prettify uglify').
         reflexivity.
     }
 Defined.
@@ -620,3 +661,88 @@ Instance RewritingRule2_eqdec
 .
 Proof. ltac1:(solve_decision). Defined.
 
+
+Lemma compose_prettify_uglify
+    {T : Type}
+    (A : Type)
+    :
+    (@prettify T A) ∘ uglify' = id
+.
+Proof.
+    apply functional_extensionality.
+    intros x.
+    unfold compose.
+    rewrite (cancel prettify uglify').
+    reflexivity.
+Qed.
+
+Lemma compose_uglify_prettify
+    (T A : Type)
+    :
+    uglify' ∘ (@prettify T A) = id
+.
+Proof.
+    apply functional_extensionality.
+    intros x.
+    unfold compose.
+    rewrite (cancel uglify' prettify).
+    reflexivity.
+Qed.
+
+
+Lemma fmap_prettify_uglify_list
+    {Σ : StaticModel}
+    {T : Type}
+    (l : list (TermOver T))
+    :
+    (prettify <$> (uglify' <$> l)) = l
+.
+Proof.
+    rewrite <- list_fmap_compose.
+    rewrite compose_prettify_uglify.
+    rewrite list_fmap_id.
+    reflexivity.
+Qed.
+
+Lemma fmap_uglify_prettify_list
+    {Σ : StaticModel}
+    {T : Type}
+    (l : list (Term' symbol T))
+    :
+    uglify' <$> (prettify <$> l) = l
+.
+Proof.
+    rewrite <- list_fmap_compose.
+    rewrite compose_uglify_prettify.
+    rewrite list_fmap_id.
+    reflexivity.
+Qed.
+
+
+Lemma fmap_prettify_uglify_option
+    {Σ : StaticModel}
+    {T : Type}
+    (o : option (TermOver T))
+    :
+    (prettify <$> (uglify' <$> o)) = o
+.
+Proof.
+    rewrite <- option_fmap_compose.
+    rewrite compose_prettify_uglify.
+    rewrite option_fmap_id.
+    reflexivity.
+Qed.
+
+Lemma fmap_uglify_prettify_option
+    {Σ : StaticModel}
+    {T : Type}
+    (o : option (Term' symbol T))
+    :
+    uglify' <$> (prettify <$> o) = o
+.
+Proof.
+    rewrite <- option_fmap_compose.
+    rewrite compose_uglify_prettify.
+    rewrite option_fmap_id.
+    reflexivity.
+Qed.

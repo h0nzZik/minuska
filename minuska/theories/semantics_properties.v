@@ -35,7 +35,11 @@ Proof.
         do 2 (rewrite bind_Some).
         intros [x [Hx1 Hx2]].
         exists x.
+        apply (f_equal (fmap uglify')) in Hx1.
+        rewrite fmap_uglify_prettify_option in Hx1.
         rewrite (IHt _ Hx1).
+        simpl.
+        rewrite (cancel prettify uglify').
         split>[reflexivity|].
         assumption.
     }
@@ -43,14 +47,22 @@ Proof.
         do 2 (rewrite bind_Some).
         intros [x [Hx1 Hx2]].
         exists x.
+        apply (f_equal (fmap uglify')) in Hx1.
+        rewrite fmap_uglify_prettify_option in Hx1.
         rewrite (IHt1 _ Hx1).
+        simpl.
+        rewrite (cancel prettify uglify').
         split>[reflexivity|].
 
         rewrite bind_Some in Hx2.
         destruct Hx2 as [x' [Hx'1 Hx'2]].
         rewrite bind_Some.
         exists x'.
+        apply (f_equal (fmap uglify')) in Hx'1.
+        rewrite fmap_uglify_prettify_option in Hx'1.
         rewrite (IHt2 _ Hx'1).
+        simpl.
+        rewrite (cancel prettify uglify').
         split>[reflexivity|].
         assumption.
     }
@@ -58,7 +70,11 @@ Proof.
         do 2 (rewrite bind_Some).
         intros [x [Hx1 Hx2]].
         exists x.
+        apply (f_equal (fmap uglify')) in Hx1.
+        rewrite fmap_uglify_prettify_option in Hx1.
         rewrite (IHt1 _ Hx1).
+        simpl.
+        rewrite (cancel prettify uglify').
         split>[reflexivity|].
 
         rewrite bind_Some in Hx2.
@@ -68,12 +84,20 @@ Proof.
         rewrite bind_Some in Hx'2.
         destruct Hx'2 as [x'' [Hx''1 Hx''2]].
         exists x'.
+        apply (f_equal (fmap uglify')) in Hx'1.
+        rewrite fmap_uglify_prettify_option in Hx'1.
         rewrite (IHt2 _ Hx'1).
+        simpl.
+        rewrite (cancel prettify uglify').
         split>[reflexivity|].
 
         rewrite bind_Some.
         exists x''.
+        apply (f_equal (fmap uglify')) in Hx''1.
+        rewrite fmap_uglify_prettify_option in Hx''1.
         rewrite (IHt3 _ Hx''1).
+        simpl.
+        rewrite (cancel prettify uglify').
         split>[reflexivity|].
         assumption.
     }
@@ -106,6 +130,7 @@ Proof.
         do 2 (rewrite bind_None).
         intros [HNone|Hrest].
         {
+            rewrite fmap_None in HNone.
             specialize (IHt HNone).
             rewrite IHt.
             left. reflexivity.
@@ -117,6 +142,7 @@ Proof.
         do 2 (rewrite bind_None).
         intros [HNone|Hrest].
         {
+            rewrite fmap_None in HNone.
             specialize (IHt1 HNone).
             rewrite IHt1.
             left. reflexivity.
@@ -125,14 +151,18 @@ Proof.
         rewrite bind_None in Hx2.
         destruct Hx2 as [HNone|Hx2].
         {
+            rewrite fmap_None in HNone.
             specialize (IHt2 HNone).
             destruct (Expression_evaluate ρ1 t1).
             {
                 right.
-                exists g.
+                simpl.
+                exists (prettify g).
                 split>[reflexivity|].
                 rewrite bind_None.
-                left. exact IHt2.
+                left.
+                rewrite fmap_None.
+                exact IHt2.
             }
             {
                 left. reflexivity.
@@ -147,6 +177,7 @@ Proof.
         do 2 (rewrite bind_None).
         intros [HNone|Hrest].
         {
+            rewrite fmap_None in HNone.
             specialize (IHt1 HNone).
             rewrite IHt1.
             left. reflexivity.
@@ -155,14 +186,15 @@ Proof.
         rewrite bind_None in Hx2.
         destruct Hx2 as [HNone|Hx2].
         {
+            rewrite fmap_None in HNone.
             specialize (IHt2 HNone).
             destruct (Expression_evaluate ρ1 t1).
             {
                 right.
-                exists g.
+                exists (prettify g).
                 split>[reflexivity|].
                 rewrite bind_None.
-                left. exact IHt2.
+                left. rewrite fmap_None. exact IHt2.
             }
             {
                 left. reflexivity.
@@ -172,21 +204,22 @@ Proof.
         rewrite bind_None in Hx'2.
         destruct Hx'2 as [HNone|Hx'2].
         {
+            rewrite fmap_None in HNone.
             specialize (IHt3 HNone).
             destruct (Expression_evaluate ρ1 t1).
             {
                 right.
-                exists g.
+                exists (prettify g).
                 split>[reflexivity|].
                 rewrite bind_None.
 
                 destruct (Expression_evaluate ρ1 t2).
                 {
                     right.
-                    exists g0.
+                    exists (prettify g0).
                     split>[reflexivity|].
                     rewrite bind_None.
-                    left. exact IHt3.
+                    left. rewrite fmap_None. exact IHt3.
                 }
                 {
                     left. reflexivity.
@@ -288,9 +321,12 @@ Proof.
             unfold mbind,option_bind in H; cbn.
             ltac1:(case_match).
             {
-                ltac1:(rewrite <- H0).
-                eexists.
-                exact H0.
+                rewrite fmap_Some in H0.
+                destruct H0 as [x [H1x H2x]].
+                subst t0.
+                injection H as H.
+                exists x.
+                apply H1x.
             }
             {
                 inversion H.
@@ -308,9 +344,16 @@ Proof.
         split; intros H.
         {
             destruct H as [e H].
-            unfold mbind,option_bind in H.
-            (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
-                split; eexists; reflexivity.
+            rewrite bind_Some in H.
+            destruct H as [x [H1x H2x]].
+            rewrite bind_Some in H2x.
+            destruct H2x as [y [H1y H2y]].
+            rewrite fmap_Some in H1x.
+            destruct H1x as [a [H1a H2a]].
+            rewrite fmap_Some in H1y.
+            destruct H1y as [b [H1b H2b]].
+            subst x y.
+            split; eexists; ltac1:(eassumption).
         }
         {
             destruct H as [[e1 H1] [e2 H2]].
@@ -330,9 +373,20 @@ Proof.
         split; intros H.
         {
             destruct H as [e H].
-            unfold mbind,option_bind in H.
-            (repeat ltac1:(case_match)); ltac1:(simplify_eq /=);
-                (repeat split); eexists; reflexivity.
+            rewrite bind_Some in H.
+            destruct H as [x [H1x H2x]].
+            rewrite bind_Some in H2x.
+            destruct H2x as [y [H1y H2y]].
+            rewrite fmap_Some in H1x.
+            rewrite bind_Some in H2y.
+            destruct H2y as [z [H1z H2z]].
+            destruct H1x as [a [H1a H2a]].
+            rewrite fmap_Some in H1y.
+            destruct H1y as [b [H1b H2b]].
+            rewrite fmap_Some in H1z.
+            destruct H1z as [c [H1c H2c]].
+            subst x y.
+            (repeat split); eexists; ltac1:(eassumption).
         }
         {
             destruct H as [[[e1 H1] [e2 H2]] [e3 H3]].

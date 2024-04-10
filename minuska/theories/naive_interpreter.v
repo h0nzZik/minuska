@@ -1201,33 +1201,6 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma compose_prettify_uglify
-    {T : Type}
-    (A : Type)
-    :
-    (@prettify T A) ∘ uglify' = id
-.
-Proof.
-    apply functional_extensionality.
-    intros x.
-    unfold compose.
-    rewrite (cancel prettify uglify').
-    reflexivity.
-Qed.
-
-Lemma compose_uglify_prettify
-    (T A : Type)
-    :
-    uglify' ∘ (@prettify T A) = id
-.
-Proof.
-    apply functional_extensionality.
-    intros x.
-    unfold compose.
-    rewrite (cancel uglify' prettify).
-    reflexivity.
-Qed.
-
 Lemma fmap_prettify_uglify_val
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -1253,66 +1226,6 @@ Proof.
     rewrite <- map_fmap_compose.
     rewrite compose_uglify_prettify.
     rewrite map_fmap_id.
-    reflexivity.
-Qed.
-
-
-Lemma fmap_prettify_uglify_list
-    {Σ : StaticModel}
-    {T : Type}
-    (l : list (TermOver T))
-    :
-    (prettify <$> (uglify' <$> l)) = l
-.
-Proof.
-    rewrite <- list_fmap_compose.
-    rewrite compose_prettify_uglify.
-    rewrite list_fmap_id.
-    reflexivity.
-Qed.
-
-Lemma fmap_uglify_prettify_list
-    {Σ : StaticModel}
-    {T : Type}
-    (l : list (Term' symbol T))
-    :
-    uglify' <$> (prettify <$> l) = l
-.
-Proof.
-    unfold Valuation2 in *.
-    rewrite <- list_fmap_compose.
-    rewrite compose_uglify_prettify.
-    rewrite list_fmap_id.
-    reflexivity.
-Qed.
-
-
-Lemma fmap_prettify_uglify_option
-    {Σ : StaticModel}
-    {T : Type}
-    (o : option (TermOver T))
-    :
-    (prettify <$> (uglify' <$> o)) = o
-.
-Proof.
-    rewrite <- option_fmap_compose.
-    rewrite compose_prettify_uglify.
-    rewrite option_fmap_id.
-    reflexivity.
-Qed.
-
-Lemma fmap_uglify_prettify_option
-    {Σ : StaticModel}
-    {T : Type}
-    (o : option (Term' symbol T))
-    :
-    uglify' <$> (prettify <$> o) = o
-.
-Proof.
-    unfold Valuation2 in *.
-    rewrite <- option_fmap_compose.
-    rewrite compose_uglify_prettify.
-    rewrite option_fmap_id.
     reflexivity.
 Qed.
 

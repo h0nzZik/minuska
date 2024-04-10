@@ -4,6 +4,47 @@ From Minuska Require Import
     prelude
 .
 
+
+
+(*
+    Here we define an alternative, more user-friendly term structure.
+*)
+
+Unset Elimination Schemes.
+#[universes(polymorphic=yes, cumulative=yes)]
+Inductive TermOver' {T : Type} (A : Type) : Type :=
+| t_over (a : A)
+| t_term (s : T) (l : list (@TermOver' T A))
+.
+Set Elimination Schemes.
+
+Arguments t_over {T} {A}%_type_scope a.
+Arguments t_term {T} {A}%_type_scope s l%_list_scope.
+
+Section custom_induction_principle.
+
+    Context
+        {T : Type}
+        {A : Type}
+        (P : @TermOver' T A -> Prop)
+        (true_for_over : forall a, P (t_over a) )
+        (preserved_by_term :
+            forall
+                (s : T)
+                (l : list (@TermOver' T A)),
+                Forall P l ->
+                P (t_term s l)
+        )
+    .
+
+    Fixpoint TermOver'_ind (p : @TermOver' T A) : P p :=
+    match p with
+    | t_over a => true_for_over a
+    | t_term s l => preserved_by_term s l (Forall_true P l TermOver'_ind)
+    end.
+
+End custom_induction_principle.
+
 #[universes(polymorphic=yes, cumulative=yes)]
 Inductive PreTerm' (operator : Type) (operand : Type)
 : Type
@@ -28,12 +69,12 @@ Variant Term'
 .
 
 
-Arguments term_operand {Operator Operand}%type_scope operand.
-Arguments term_preterm {Operator Operand}%type_scope ao.
+Arguments term_operand {Operator Operand}%_type_scope operand.
+Arguments term_preterm {Operator Operand}%_type_scope ao.
 
-Arguments pt_operator {operator operand}%type_scope s.
-Arguments pt_app_operand {operator operand}%type_scope aps b.
-Arguments pt_app_ao {operator operand}%type_scope aps x.
+Arguments pt_operator {operator operand}%_type_scope s.
+Arguments pt_app_operand {operator operand}%_type_scope aps b.
+Arguments pt_app_ao {operator operand}%_type_scope aps x.
 
 Class MVariables (variable : Type) := {
     variable_eqdec :: EqDecision variable ;
@@ -74,25 +115,25 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
 
     builtin_nullary_function_interp
         : builtin_nullary_function
-        -> (Term' symbol builtin_value) ;
+        -> (@TermOver' symbol builtin_value) ;
 
     builtin_unary_function_interp
         : builtin_unary_function
-        -> (Term' symbol builtin_value)
-        -> (Term' symbol builtin_value) ;
+        -> (@TermOver' symbol builtin_value)
+        -> (@TermOver' symbol builtin_value) ;
 
     builtin_binary_function_interp
         : builtin_binary_function
-        -> (Term' symbol builtin_value)
-        -> (Term' symbol builtin_value)
-        -> (Term' symbol builtin_value) ;
+        -> (@TermOver' symbol builtin_value)
+        -> (@TermOver' symbol builtin_value)
+        -> (@TermOver' symbol builtin_value) ;
 
     builtin_ternary_function_interp
         : builtin_ternary_function
-        -> (Term' symbol builtin_value)
-        -> (Term' symbol builtin_value)
-        -> (Term' symbol builtin_value)
-        -> (Term' symbol builtin_value) ;
+        -> (@TermOver' symbol builtin_value)
+        -> (@TermOver' symbol builtin_value)
+        -> (@TermOver' symbol builtin_value)
+        -> (@TermOver' symbol builtin_value) ;
 }.
 
 Class StaticModel := {
@@ -130,6 +171,17 @@ Inductive Expression
 | ft_ternary (f : builtin_ternary_function) (t1 : Expression) (t2 : Expression) (t3 : Expression)
 .
 
+Inductive Expression2
+    {Σ : StaticModel}
+    :=
+| e_ground (e : @TermOver' (symbol) builtin_value)
+| e_variable (x : variable)
+| e_nullary (f : builtin_nullary_function)
+| e_unary (f : builtin_unary_function) (t : Expression2)
+| e_binary (f : builtin_binary_function) (t1 : Expression2) (t2 : Expression2)
+| e_ternary (f : builtin_ternary_function) (t1 : Expression2) (t2 : Expression2) (t3 : Expression2)
+.
+
 Inductive AtomicProposition {Σ : StaticModel} :=
 | apeq (e1 : Expression) (e2 : Expression)
 .
@@ -165,10 +217,10 @@ Record RewritingRule
     fr_act : Act ;
 }.
 
-Arguments fr_from {Σ} {Act}%type_scope r.
-Arguments fr_to {Σ} {Act}%type_scope r.
-Arguments fr_scs {Σ} {Act}%type_scope r.
-Arguments fr_act {Σ} {Act}%type_scope r.
+Arguments fr_from {Σ} {Act}%_type_scope r.
+Arguments fr_to {Σ} {Act}%_type_scope r.
+Arguments fr_scs {Σ} {Act}%_type_scope r.
+Arguments fr_act {Σ} {Act}%_type_scope r.
 
 Definition RewritingTheory
     {Σ : StaticModel}
@@ -233,44 +285,6 @@ Definition apply_symbol'
 .
 
 
-(*
-    Here we define an alternative, more user-friendly term structure.
-*)
-
-Unset Elimination Schemes.
-#[universes(polymorphic=yes, cumulative=yes)]
-Inductive TermOver' {T : Type} (A : Type) : Type :=
-| t_over (a : A)
-| t_term (s : T) (l : list (@TermOver' T A))
-.
-Set Elimination Schemes.
-
-Arguments t_over {T} {A}%_type_scope a.
-Arguments t_term {T} {A}%_type_scope s l%_list_scope.
-
-Section custom_induction_principle.
-
-    Context
-        {T : Type}
-        {A : Type}
-        (P : @TermOver' T A -> Prop)
-        (true_for_over : forall a, P (t_over a) )
-        (preserved_by_term :
-            forall
-                (s : T)
-                (l : list (@TermOver' T A)),
-                Forall P l ->
-                P (t_term s l)
-        )
-    .
-
-    Fixpoint TermOver'_ind (p : @TermOver' T A) : P p :=
-    match p with
-    | t_over a => true_for_over a
-    | t_term s l => preserved_by_term s l (Forall_true P l TermOver'_ind)
-    end.
-
-End custom_induction_principle.
 
 Definition TermOver {Σ : StaticModel} (A : Type) : Type := @TermOver' symbol A.
 
@@ -758,18 +772,6 @@ match e with
 | ft_ternary f e1 e2 e3 => ft_ternary f (Expression_subst e1 x e') (Expression_subst e2 x e') (Expression_subst e3 x e')
 end
 .
-
-Inductive Expression2
-    {Σ : StaticModel}
-    :=
-| e_ground (e : TermOver builtin_value)
-| e_variable (x : variable)
-| e_nullary (f : builtin_nullary_function)
-| e_unary (f : builtin_unary_function) (t : Expression2)
-| e_binary (f : builtin_binary_function) (t1 : Expression2) (t2 : Expression2)
-| e_ternary (f : builtin_ternary_function) (t1 : Expression2) (t2 : Expression2) (t3 : Expression2)
-.
-
 
 Fixpoint Expression2_subst
     {Σ : StaticModel}
