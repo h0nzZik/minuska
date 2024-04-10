@@ -946,13 +946,13 @@ Proof.
                 constructor.
                 unfold Valuation2 in *. unfold Valuation in *.
                 rewrite lookup_fmap.
-                rewrite HH. simpl. reflexivity.
+                ltac1:(rewrite HH). simpl. reflexivity.
             }
             {
                 unfold satisfies; simpl.
                 unfold Valuation2 in *. unfold Valuation in *.
                 rewrite lookup_fmap.
-                rewrite HH. simpl. reflexivity.
+                ltac1:(rewrite HH). simpl. reflexivity.
             }
         }
     }
@@ -963,7 +963,7 @@ Proof.
         {
             destruct HH as [H1 [H2 H3]].
             constructor.
-            fold (@uglify' Σ).
+            fold (@uglify' (@symbol Σ)).
             subst s0.
 
             revert l0 H2 H3.
@@ -990,7 +990,7 @@ Proof.
                     destruct Hana as [l'0 [x0 Hana]].
                     subst l'.
                     rewrite app_length in H2. simpl in *.
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     do 2 (rewrite map_app).
                     do 2 (rewrite fold_left_app).
                     simpl.
@@ -1035,12 +1035,14 @@ Proof.
                         }
                         {
                             specialize (H3 (length l) (prettify' ao) (prettify' ao0)).
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
+                            rewrite lookup_app_r in H3>[|ltac1:(apply reflexivity)].
                             rewrite Nat.sub_diag in H3. simpl in H3.
                             specialize (H3 eq_refl).
                             rewrite app_length in H2. simpl in H2.
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
-                            ltac1:(replace ((length l - length l'0)) with (0) in H3 by lia).
+                            apply Nat.add_cancel_r in H2.
+                            rewrite lookup_app_r in H3>[|ltac1:(rewrite H2; apply reflexivity)].
+                            ltac1:(rewrite H2 in H3).
+                            rewrite Nat.sub_diag in H3.
                             specialize (H3 eq_refl).
                             specialize (IHsz (prettify' ao) (prettify' ao0)).
                             rewrite sum_list_with_app in Hsz. simpl in Hsz.
@@ -1088,12 +1090,14 @@ Proof.
                         }
                         {
                             specialize (H3 (length l) (prettify' ao) (t_over operand)).
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
+                            rewrite app_length in H2. simpl in H2.
+                            apply Nat.add_cancel_r in H2.
+                            rewrite lookup_app_r in H3>[|ltac1:(apply reflexivity)].
                             rewrite Nat.sub_diag in H3. simpl in H3.
                             specialize (H3 eq_refl).
-                            rewrite app_length in H2. simpl in H2.
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
-                            ltac1:(replace ((length l - length l'0)) with (0) in H3 by lia).
+                            rewrite lookup_app_r in H3>[|ltac1:(rewrite H2; apply reflexivity)].
+                            ltac1:(rewrite H2 in H3).
+                            rewrite Nat.sub_diag in H3. simpl in H3.
                             specialize (H3 eq_refl).
                             specialize (IHsz (prettify' ao) (t_over operand)).
                             rewrite sum_list_with_app in Hsz. simpl in Hsz.
@@ -1139,13 +1143,16 @@ Proof.
                             }
                         }
                         {
+                            rewrite app_length in H2. simpl in H2.
+                            rewrite Nat.add_cancel_r in H2.
                             specialize (H3 (length l) (t_over operand) (prettify' ao) ).
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
+                            rewrite lookup_app_r in H3>[|ltac1:(apply reflexivity)].
                             rewrite Nat.sub_diag in H3. simpl in H3.
                             specialize (H3 eq_refl).
-                            rewrite app_length in H2. simpl in H2.
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
-                            ltac1:(replace ((length l - length l'0)) with (0) in H3 by lia).
+                            
+                            rewrite lookup_app_r in H3>[|ltac1:(rewrite H2; apply reflexivity)].
+                            ltac1:(rewrite H2 in H3).
+                            rewrite Nat.sub_diag in H3.
                             specialize (H3 eq_refl).
                             specialize (IHsz (t_over operand) (prettify' ao)).
                             rewrite sum_list_with_app in Hsz. simpl in Hsz.
@@ -1190,13 +1197,16 @@ Proof.
                             }
                         }
                         {
+                            rewrite app_length in H2. simpl in H2.
+                            rewrite Nat.add_cancel_r in H2.
                             specialize (H3 (length l) (t_over operand) (t_over operand0)).
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
+                            rewrite lookup_app_r in H3>[|ltac1:(apply reflexivity)].
                             rewrite Nat.sub_diag in H3. simpl in H3.
                             specialize (H3 eq_refl).
-                            rewrite app_length in H2. simpl in H2.
-                            rewrite lookup_app_r in H3>[|ltac1:(lia)].
-                            ltac1:(replace ((length l - length l'0)) with (0) in H3 by lia).
+                            
+                            rewrite lookup_app_r in H3>[|ltac1:(rewrite H2; lia)].
+                            ltac1:(rewrite H2 in H3).
+                            rewrite Nat.sub_diag in H3.
                             specialize (H3 eq_refl).
                             specialize (IHsz (t_over operand) (t_over operand0)).
                             rewrite sum_list_with_app in Hsz. simpl in Hsz.
@@ -1243,13 +1253,16 @@ Proof.
             destruct (ρ !! x) eqn:Hρx;
                 simpl in *.
             {
+                ltac1:(rewrite Hρx).
+                ltac1:(rewrite Hρx in H).
+                simpl in H.
                 inversion H; subst; clear H.
                 apply (f_equal prettify) in H1.
                 rewrite (cancel prettify uglify') in H1.
                 subst t.
-                apply Hρx.
+                reflexivity.
             }
-            { inversion H. }
+            { ltac1:(rewrite Hρx in H). inversion H. }
         }
         {
             destruct a; simpl in *.
@@ -1261,6 +1274,7 @@ Proof.
             unfold Valuation in *.
             unfold Valuation2 in *.
             rewrite lookup_fmap in H0.
+            unfold TermOver in *.
             destruct (ρ!!x) eqn:Hρx; simpl in *.
             {
                 inversion H0; subst; clear H0.
@@ -1299,7 +1313,7 @@ Proof.
                 destruct s1 as [l' [x HH]].
                 subst.
                 rewrite map_app in H1.
-                rewrite to_PreTerm'_app in H1.
+                rewrite to_PreTerm''_app in H1.
                 simpl in H1.
                 unfold helper in H1.
                 destruct (uglify' x) eqn:Hux.
@@ -1311,7 +1325,7 @@ Proof.
             destruct (analyze_list_from_end l0) as [Hnil|Hcons]; subst; simpl in *.
             {
                 inversion pf; subst; clear pf.
-                unfold to_PreTerm' in H2.
+                unfold to_PreTerm'' in H2.
                 rewrite map_app in H2.
                 rewrite fold_left_app in H2.
                 simpl in H2.
@@ -1327,7 +1341,7 @@ Proof.
             {
                 rewrite sum_list_with_app in Hsz. simpl in Hsz.
                 rewrite map_app in pf.
-                rewrite to_PreTerm'_app in pf.
+                rewrite to_PreTerm''_app in pf.
                 simpl in pf.
                 unfold helper in pf.
                 destruct Hcons as [l' [x0 Hcons]].
@@ -1341,7 +1355,7 @@ Proof.
                     inversion pf; subst; clear pf.
                     {
                         subst. simpl in *.
-                        unfold to_PreTerm' in H1.
+                        unfold to_PreTerm'' in H1.
                         rewrite map_app in H1.
                         rewrite fold_left_app in H1.
                         simpl in H1.
@@ -1367,9 +1381,9 @@ Proof.
                             destruct (decide (i = length l)).
                             {
                                 subst i.
-                                rewrite lookup_app_r in H1i>[|ltac1:(lia)].
-                                rewrite lookup_app_r in H2i>[|ltac1:(lia)].
-                                rewrite IHl2 in H2i.
+                                rewrite lookup_app_r in H1i>[|ltac1:(apply reflexivity)].
+                                rewrite lookup_app_r in H2i>[|ltac1:(rewrite IHl2; apply reflexivity)].
+                                ltac1:(rewrite IHl2 in H2i).
                                 rewrite Nat.sub_diag in H1i.
                                 rewrite Nat.sub_diag in H2i.
                                 simpl in *.
@@ -1394,6 +1408,7 @@ Proof.
                                         apply lookup_lt_Some in H2i.
                                         rewrite app_length in H2i.
                                         simpl in *.
+                                        unfold TermOver in *.
                                         ltac1:(lia).
                                     }
                                 }
@@ -1401,6 +1416,7 @@ Proof.
                                     apply lookup_lt_Some in H1i.
                                     rewrite app_length in H1i.
                                     simpl in *.
+                                    unfold TermOver in *.
                                     ltac1:(lia).
                                 }
                             }
@@ -1408,7 +1424,7 @@ Proof.
                     }
                     {
                         rewrite map_app in H1.
-                        unfold to_PreTerm' in H1.
+                        unfold to_PreTerm'' in H1.
                         rewrite fold_left_app in H1.
                         simpl in H1.
                         unfold helper in H1.
@@ -1429,6 +1445,7 @@ Proof.
                             destruct (decide (length l = i)).
                             {
                                 subst i.
+                                unfold TermOver in *.
                                 rewrite lookup_app_r in H1i>[|ltac1:(lia)].
                                 rewrite lookup_app_r in H2i>[|ltac1:(lia)].
                                 rewrite IH2l in H2i.
@@ -1458,6 +1475,7 @@ Proof.
                                         apply lookup_lt_Some in H2i.
                                         rewrite app_length in H2i.
                                         simpl in H2i.
+                                        unfold TermOver in *.
                                         ltac1:(lia).                                        
                                     }
                                 }
@@ -1465,6 +1483,7 @@ Proof.
                                     apply lookup_lt_Some in H1i.
                                     rewrite app_length in H1i.
                                     simpl in H1i.
+                                    unfold TermOver in *.
                                     ltac1:(lia).
                                 }
                             }
@@ -1481,7 +1500,7 @@ Proof.
                         rewrite (cancel prettify uglify') in Hux.
                         subst x. simpl in *.
                         rewrite map_app in H1.
-                        unfold to_PreTerm' in H1.
+                        unfold to_PreTerm'' in H1.
                         rewrite fold_left_app in H1.
                         simpl in H1.
                         unfold helper in H1.
@@ -1504,6 +1523,7 @@ Proof.
                             destruct (decide (length l = i)).
                             {
                                 subst i.
+                                unfold TermOver in *.
                                 rewrite lookup_app_r in H1i>[|ltac1:(lia)].
                                 rewrite lookup_app_r in H2i>[|ltac1:(lia)].
                                 rewrite IH2l in H2i.
@@ -1533,6 +1553,7 @@ Proof.
                                         apply lookup_lt_Some in H2i.
                                         rewrite app_length in H2i.
                                         simpl in H2i.
+                                        unfold TermOver in *.
                                         ltac1:(lia).                                        
                                     }
                                 }
@@ -1540,13 +1561,14 @@ Proof.
                                     apply lookup_lt_Some in H1i.
                                     rewrite app_length in H1i.
                                     simpl in H1i.
+                                    unfold TermOver in *.
                                     ltac1:(lia).
                                 }
                             }
                         }
                     }
                     {
-                        unfold to_PreTerm' in H1.
+                        unfold to_PreTerm'' in H1.
                         rewrite map_app in H1.
                         rewrite fold_left_app in H1.
                         simpl in H1.
@@ -1570,6 +1592,7 @@ Proof.
                             destruct (decide (length l = i)).
                             {
                                 subst i.
+                                unfold TermOver in *.
                                 rewrite lookup_app_r in H1i>[|ltac1:(lia)].
                                 rewrite lookup_app_r in H2i>[|ltac1:(lia)].
                                 rewrite IH2l in H2i.
@@ -1600,6 +1623,7 @@ Proof.
                                         apply lookup_lt_Some in H2i.
                                         rewrite app_length in H2i.
                                         simpl in H2i.
+                                        unfold TermOver in *.
                                         ltac1:(lia).                                        
                                     }
                                 }
@@ -1607,6 +1631,7 @@ Proof.
                                     apply lookup_lt_Some in H1i.
                                     rewrite app_length in H1i.
                                     simpl in H1i.
+                                    unfold TermOver in *.
                                     ltac1:(lia).
                                 }
                             }
@@ -1664,6 +1689,7 @@ Proof.
     {
         rewrite lookup_fmap.
         unfold Valuation in *. unfold Valuation2 in *.
+        unfold TermOver in *.
         destruct (ρ !! x) eqn:Hρx; simpl.
         {
             simpl.
@@ -1914,8 +1940,8 @@ Proof.
             destruct HH as [H1 [H2 H3]].
             subst s0.
             constructor.
-            fold (@uglify' Σ).
-            unfold to_PreTerm'.
+            fold (@uglify' (@symbol Σ)).
+            unfold to_PreTerm''.
             revert l0 H2 H3.
             ltac1:(induction l using rev_ind_T); intros l0 H2 H3.
             {
@@ -1944,16 +1970,18 @@ Proof.
                     subst l0.
                     rewrite app_length in H2.
                     simpl in H2.
+                    
                     do 3 (rewrite map_app).
                     do 2 (rewrite fold_left_app).
                     simpl.
-                    unfold helper at 1.
+                    unfold helper'' at 1.
                     destruct (uglify' x0) eqn:Hux0.
                     {
                         apply (f_equal prettify) in Hux0.
                         rewrite (cancel prettify uglify') in Hux0.
                         subst x0.
-                        unfold helper at 2.
+                        unfold helper'' at 2.
+                        unfold TermOver in *.
                         destruct (uglify' (TermOver_map Expression2_to_Expression x)) eqn:Hux.
                         {
                             apply (f_equal prettify) in Hux.
@@ -2064,7 +2092,8 @@ Proof.
                         apply (f_equal prettify) in Hux0.
                         rewrite (cancel prettify uglify') in Hux0.
                         subst x0.
-                        unfold helper at 2.
+                        unfold TermOver in *.
+                        unfold helper'' at 2.
                         destruct (uglify' (TermOver_map Expression2_to_Expression x)) eqn:Hux.
                         {
                             apply (f_equal prettify) in Hux.
@@ -2232,7 +2261,7 @@ Proof.
                     simpl in *.
                     inversion pf; subst; clear pf.
                     rewrite map_app in H1.
-                    rewrite to_PreTerm'_app in H1.
+                    rewrite to_PreTerm''_app in H1.
                     simpl in H1.
                     unfold helper in H1.
                     destruct (uglify' x); inversion H1.
@@ -2244,7 +2273,7 @@ Proof.
                 {
                     subst. inversion pf; subst; clear pf.
                     do 2 (rewrite map_app in H2).
-                    rewrite to_PreTerm'_app in H2.
+                    rewrite to_PreTerm''_app in H2.
                     simpl in H2.
                     unfold helper in H2.
                     destruct (uglify' ((TermOver_map Expression2_to_Expression x))); inversion H2.
@@ -2254,15 +2283,15 @@ Proof.
                     subst l0.
                     unfold satisfies in pf; simpl in pf.
                     do 3 (rewrite map_app in pf).
-                    do 2 (rewrite to_PreTerm'_app in pf).
+                    do 2 (rewrite to_PreTerm''_app in pf).
                     simpl in pf.
-                    unfold helper in pf at 1.
+                    unfold helper'' in pf at 1.
                     destruct (uglify' x0) eqn:Hux0.
                     {
                         apply (f_equal prettify) in Hux0.
                         rewrite (cancel prettify uglify') in Hux0.
                         subst x0.
-                        unfold helper in pf at 1.
+                        unfold helper'' in pf at 1.
                         destruct (uglify' (TermOver_map Expression2_to_Expression x)) eqn:Hux.
                         {
                             inversion pf; subst; clear pf.
@@ -2274,6 +2303,7 @@ Proof.
                             simpl.
                             split>[ltac1:(lia)|].
                             intros i t' φ' H1i H2i.
+                            unfold TermOver in *.
                             destruct (decide (i = length l)).
                             {
                                 subst i.
@@ -2330,6 +2360,7 @@ Proof.
                             simpl.
                             split>[ltac1:(lia)|].
                             intros i t' φ' H1i H2i.
+                            unfold TermOver in *.
                             destruct (decide (i = length l)).
                             {
                                 subst i.
@@ -2381,7 +2412,7 @@ Proof.
                         apply (f_equal prettify) in Hux0.
                         rewrite (cancel prettify uglify') in Hux0.
                         subst x0.
-                        unfold helper in pf at 1.
+                        unfold helper'' in pf at 1.
                         destruct (uglify' (TermOver_map Expression2_to_Expression x)) eqn:Hux.
                         {
                             inversion pf; subst; clear pf.
@@ -2393,6 +2424,7 @@ Proof.
                             simpl.
                             split>[ltac1:(lia)|].
                             intros i t' φ' H1i H2i.
+                            unfold TermOver in *.
                             destruct (decide (i = length l)).
                             {
                                 subst i.
@@ -2445,6 +2477,7 @@ Proof.
                             simpl.
                             split>[ltac1:(lia)|].
                             intros i t' φ' H1i H2i.
+                            unfold TermOver in *.
                             destruct (decide (i = length l)).
                             {
                                 subst i.

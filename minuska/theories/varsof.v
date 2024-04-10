@@ -159,16 +159,16 @@ Instance VarsOf_Expression2
 
 #[local]
 Instance VarsOf_TermOver
-    {Σ : StaticModel}
+    {T0 : Type}
     {T var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
     {_VT : VarsOf T var}
     :
-    VarsOf (TermOver T) var
+    VarsOf (@TermOver' T0 T) var
 :=
 {|
-    vars_of := (fix go (t : TermOver T) := 
+    vars_of := (fix go (t : @TermOver' T0 T) := 
         match t with
         | t_over x => vars_of x
         | t_term _ l => ⋃ (go <$> l)
@@ -228,7 +228,7 @@ Proof.
         {
             specialize (IHl ltac:(set_solver)).
             rewrite map_app.
-            rewrite to_PreTerm'_app.
+            rewrite to_PreTerm''_app.
             simpl.
             unfold helper.
             destruct (uglify' x) eqn:Hux.

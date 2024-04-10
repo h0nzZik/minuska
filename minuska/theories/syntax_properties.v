@@ -571,31 +571,28 @@ Proof.
     revert p.
     induction q; simpl; intros p HH.
     {
-        destruct (decide (t_over a = p)); simpl in *; subst; simpl; ltac1:(lia).
+        unfold is_left in *.
+        ltac1:(repeat case_match; subst; simpl in *; lia).
     }
     {
-        destruct (decide (t_term s l = p)); subst; simpl in *.
-        {
-            ltac1:(lia).
-        }
-        {
-            rewrite existsb_exists in HH.
-            destruct HH as [x [H1x H2x]].
+        unfold is_left in *.
+        ltac1:(repeat case_match; subst; simpl in *; try lia).
+        rewrite existsb_exists in HH.
+        destruct HH as [x [H1x H2x]].
 
-            rewrite <- elem_of_list_In in H1x.
-            rewrite elem_of_list_lookup in H1x.
-            destruct H1x as [i Hi].
-            apply take_drop_middle in Hi.
-            rewrite <- Hi in H.
-            rewrite Forall_app in H.
-            rewrite Forall_cons in H.
-            destruct H as [IH1 [IH2 IH3]].
-            specialize (IH2 p H2x).
-            rewrite <- Hi.
-            rewrite sum_list_with_app.
-            simpl.
-            ltac1:(lia).
-        }
+        rewrite <- elem_of_list_In in H1x.
+        rewrite elem_of_list_lookup in H1x.
+        destruct H1x as [i Hi].
+        apply take_drop_middle in Hi.
+        rewrite <- Hi in H.
+        rewrite Forall_app in H.
+        rewrite Forall_cons in H.
+        destruct H as [IH1 [IH2 IH3]].
+        specialize (IH2 p H2x).
+        rewrite <- Hi.
+        rewrite sum_list_with_app.
+        simpl.
+        ltac1:(lia).
     }
 Qed.
 

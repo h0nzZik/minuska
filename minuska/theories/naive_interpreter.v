@@ -1202,10 +1202,10 @@ Proof.
 Qed.
 
 Lemma compose_prettify_uglify
-    {Σ : StaticModel}
+    {T : Type}
     (A : Type)
     :
-    (@prettify Σ A) ∘ uglify' = id
+    (@prettify T A) ∘ uglify' = id
 .
 Proof.
     apply functional_extensionality.
@@ -1216,10 +1216,9 @@ Proof.
 Qed.
 
 Lemma compose_uglify_prettify
-    {Σ : StaticModel}
-    (A : Type)
+    (T A : Type)
     :
-    uglify' ∘ (@prettify Σ A) = id
+    uglify' ∘ (@prettify T A) = id
 .
 Proof.
     apply functional_extensionality.

@@ -822,16 +822,16 @@ Qed.
 
 
 Lemma weird_lemma
-    {Σ : StaticModel}
+    {T1 T2 : Type}
     l s:
-(fix go (pt : PreTerm' symbol builtin_value) :
-    list (TermOver builtin_value) :=
+(fix go (pt : PreTerm' T1 T2) :
+    list (@TermOver' T1 T2) :=
   match pt with
 | pt_operator _ => []
 | pt_app_operand x y => go x ++ [t_over y]
 | pt_app_ao x y => go x ++ [prettify' y]
 end)
-  (fold_left helper (map uglify' l) (pt_operator s)) =
+  (fold_left helper'' (map uglify' l) (pt_operator s)) =
 l
 .
 Proof.
@@ -906,7 +906,7 @@ Proof.
     induction l using rev_ind_T; intros γ.
     {
         intros H. exists []. inversion H; subst; clear H.
-        unfold to_PreTerm' in pf. simpl in pf.
+        unfold to_PreTerm'' in pf. simpl in pf.
         inversion pf. subst; clear pf.
         (repeat split).
         {
@@ -924,7 +924,7 @@ Proof.
     {
         intros H.
         inversion H; subst; clear H.
-        unfold to_PreTerm' in pf. simpl in pf.
+        unfold to_PreTerm'' in pf. simpl in pf.
         rewrite map_app in pf. rewrite fold_left_app in pf.
         simpl in pf.
         unfold helper in pf. simpl in pf.
@@ -973,7 +973,7 @@ Proof.
                 subst xy. rewrite app_length.
                 repeat split.
                 {
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     simpl.
                     f_equal.
                     {
@@ -1145,7 +1145,7 @@ Proof.
                         ltac1:(ospecialize (IHl _)).
                         {
                             unfold satisfies.
-                            fold (@uglify' Σ).
+                            fold (@uglify' (@symbol Σ)).
                             simpl.
                             ltac1:(
                                 replace (prettify' xy1)
@@ -1153,7 +1153,7 @@ Proof.
                                 by reflexivity
                             ).
                             rewrite (cancel uglify' prettify).
-                            unfold to_PreTerm'. simpl.
+                            unfold to_PreTerm''. simpl.
                             unfold satisfies. simpl.
                             unfold apply_symbol'. simpl.
                             constructor.
@@ -1180,7 +1180,7 @@ Proof.
                                     {
                                         rewrite <- x.
                                         clear.
-                                        unfold to_PreTerm'.
+                                        unfold to_PreTerm''.
                                         rewrite weird_lemma.
                                         reflexivity.
                                     }
@@ -1193,10 +1193,12 @@ Proof.
                                 }
                             }
                             {
+                                unfold TermOver in *.
                                 ltac1:(lia).
                             }
                         }
                         {
+                            unfold TermOver in *.
                             assert (i = length l).
                             {
                                 apply lookup_lt_Some in Hin.
@@ -1276,7 +1278,7 @@ Proof.
                 subst xy. rewrite app_length.
                 repeat split.
                 {
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     simpl.
                     f_equal.
                     {
@@ -1506,6 +1508,7 @@ Proof.
                         }
                     }
                     intros i γ e HH1 HH2.
+                    unfold TermOver in *.
                     destruct (decide (i < length l)).
                     {
                         rewrite lookup_app_l in HH1>[|ltac1:(lia)].
@@ -1514,7 +1517,7 @@ Proof.
                         ltac1:(ospecialize (IHl _)).
                         {
                             unfold satisfies.
-                            fold (@uglify' Σ).
+                            fold (@uglify' (@symbol Σ)).
                             simpl.
                             ltac1:(
                                 replace (prettify' xy1)
@@ -1522,7 +1525,7 @@ Proof.
                                 by reflexivity
                             ).
                             rewrite (cancel uglify' prettify).
-                            unfold to_PreTerm'. simpl.
+                            unfold to_PreTerm''. simpl.
                             unfold satisfies. simpl.
                             unfold apply_symbol'. simpl.
                             constructor.
@@ -1536,11 +1539,12 @@ Proof.
                         simpl in Hlγ1.
                         injection Hlγ1 as Hlγ1.
                         subst xy1.
+                        unfold TermOver in *.
                         eapply Hlγ3 with (i := i) (γ := γ).
                         {
                             rewrite <- HH1.
                             clear.
-                            unfold to_PreTerm'.
+                            unfold to_PreTerm''.
                             rewrite weird_lemma.
                             reflexivity.
                         }
@@ -1599,7 +1603,7 @@ Proof.
     induction l using rev_ind_T; intros γ.
     {
         intros H. exists []. inversion H; subst; clear H.
-        unfold to_PreTerm' in pf. simpl in pf.
+        unfold to_PreTerm'' in pf. simpl in pf.
         inversion pf. subst; clear pf.
         (repeat split).
         {
@@ -1614,10 +1618,11 @@ Proof.
             inversion HH1.
         }
     }
-    {
+    {   
+        unfold TermOver in *.
         intros H.
         inversion H; subst; clear H.
-        unfold to_PreTerm' in pf. simpl in pf.
+        unfold to_PreTerm'' in pf. simpl in pf.
         rewrite map_app in pf. rewrite fold_left_app in pf.
         simpl in pf.
         unfold helper in pf. simpl in pf.
@@ -1666,7 +1671,7 @@ Proof.
                 subst xy. rewrite app_length.
                 repeat split.
                 {
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     simpl.
                     f_equal.
                     {
@@ -1838,7 +1843,7 @@ Proof.
                         ltac1:(ospecialize (IHl _)).
                         {
                             unfold satisfies.
-                            fold (@uglify' Σ).
+                            fold (@uglify' (@symbol Σ)).
                             simpl.
                             ltac1:(
                                 replace (prettify' xy1)
@@ -1846,7 +1851,7 @@ Proof.
                                 by reflexivity
                             ).
                             rewrite (cancel uglify' prettify).
-                            unfold to_PreTerm'. simpl.
+                            unfold to_PreTerm''. simpl.
                             unfold satisfies. simpl.
                             unfold apply_symbol'. simpl.
                             constructor.
@@ -1873,7 +1878,7 @@ Proof.
                                     {
                                         rewrite <- x.
                                         clear.
-                                        unfold to_PreTerm'.
+                                        unfold to_PreTerm''.
                                         rewrite weird_lemma.
                                         reflexivity.
                                     }
@@ -1886,6 +1891,7 @@ Proof.
                                 }
                             }
                             {
+                                unfold TermOver in *.
                                 ltac1:(lia).
                             }
                         }
@@ -1898,6 +1904,7 @@ Proof.
                                 ltac1:(lia).
                             }
                             subst i.
+                            unfold TermOver in *.
                             rewrite lookup_app_r in x.
                             {
                                 rewrite lookup_app_r in Hin.
@@ -1969,7 +1976,7 @@ Proof.
                 subst xy. rewrite app_length.
                 repeat split.
                 {
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     simpl.
                     f_equal.
                     {
@@ -2198,6 +2205,7 @@ Proof.
                             }
                         }
                     }
+                    unfold TermOver in *.
                     intros i γ e HH1 HH2.
                     destruct (decide (i < length l)).
                     {
@@ -2207,7 +2215,7 @@ Proof.
                         ltac1:(ospecialize (IHl _)).
                         {
                             unfold satisfies.
-                            fold (@uglify' Σ).
+                            fold (@uglify' (@symbol Σ)).
                             simpl.
                             ltac1:(
                                 replace (prettify' xy1)
@@ -2215,7 +2223,7 @@ Proof.
                                 by reflexivity
                             ).
                             rewrite (cancel uglify' prettify).
-                            unfold to_PreTerm'. simpl.
+                            unfold to_PreTerm''. simpl.
                             unfold satisfies. simpl.
                             unfold apply_symbol'. simpl.
                             constructor.
@@ -2233,7 +2241,7 @@ Proof.
                         {
                             rewrite <- HH1.
                             clear.
-                            unfold to_PreTerm'.
+                            unfold to_PreTerm''.
                             rewrite weird_lemma.
                             reflexivity.
                         }
@@ -2432,7 +2440,8 @@ Proof.
         { ltac1:(set_solver). }
     }
     {
-        unfold to_PreTerm'; simpl.
+        unfold TermOver in *.
+        unfold to_PreTerm''; simpl.
         revert s h H.
         induction l using rev_ind; intros s h H.
         {
@@ -2604,7 +2613,7 @@ Proof.
     }
 Qed.
 
-Arguments pfmap_lookup_Some_lt {A B}%type_scope {l}%list_scope {f}%function_scope {i}%nat_scope {y} _.
+Arguments pfmap_lookup_Some_lt {A B}%_type_scope {l}%_list_scope {f}%_function_scope {i}%_nat_scope {y} _.
 
 Lemma pfmap_lookup_Some_1
     {A B : Type}
@@ -2867,11 +2876,10 @@ Proof.
 Qed.
 
 Lemma to_preterm_is_pt_operator_inv
-    {Σ : StaticModel}
-    {T : Type}
-    (s s' : symbol)
-    (l : list (Term' symbol T)):
-    pt_operator s' = to_PreTerm' s l ->
+    {T0 T : Type}
+    (s s' : T0)
+    (l : list (Term' T0 T)):
+    pt_operator s' = to_PreTerm'' s l ->
     s' = s /\ l = []
 .
 Proof.
@@ -2881,7 +2889,8 @@ Proof.
         inversion H1. subst. split; reflexivity.
     }
     {
-        unfold to_PreTerm' in H1.
+        unfold to_PreTerm'' in H1.
+        
         rewrite fold_left_app in H1. simpl in H1.
         unfold helper in H1; simpl in H1.
         destruct x.
@@ -2908,9 +2917,9 @@ Proof.
         constructor.
     }
     {
-        fold (@uglify' Σ).
+        fold (@uglify' (@symbol Σ)).
         fold (@TermOver_map Σ).
-        unfold to_PreTerm'.
+        unfold to_PreTerm''.
         apply satisfies_top_bov_cons_1.
         {
             rewrite map_length. reflexivity.
@@ -2952,12 +2961,11 @@ Proof.
 Qed.
 
 Lemma to_preterm_eq_inv
-    {Σ : StaticModel}
-    {T : Type}
-    (s1 s2 : symbol)
-    (l1 l2 : list (Term' symbol T))
+    {T0 T : Type}
+    (s1 s2 : T0)
+    (l1 l2 : list (Term' T0 T))
     :
-    to_PreTerm' s1 l1 = to_PreTerm' s2 l2
+    to_PreTerm'' s1 l1 = to_PreTerm'' s2 l2
     -> s1 = s2 /\ l1 = l2
 .
 Proof.
@@ -2967,7 +2975,7 @@ Proof.
         inversion HH. subst. repeat split.
     }
     {
-        unfold to_PreTerm' in *.
+        unfold to_PreTerm'' in *.
         rewrite fold_left_app in HH. simpl in HH.
         destruct l2 using rev_ind.
         {
@@ -2987,7 +2995,7 @@ Proof.
         }
     }
     {
-        unfold to_PreTerm' in *.
+        unfold to_PreTerm'' in *.
         rewrite fold_left_app in HH. simpl in HH.
         destruct l1 using rev_ind.
         {
@@ -3007,7 +3015,7 @@ Proof.
         }
     }
     {
-        unfold to_PreTerm' in *.
+        unfold to_PreTerm'' in *.
         rewrite fold_left_app in HH.
         rewrite fold_left_app in HH.
         simpl in HH.
@@ -3154,7 +3162,7 @@ Proof.
             destruct az.
             {
                 inversion pf; subst; clear pf.
-                unfold to_PreTerm' in H3.
+                unfold to_PreTerm'' in H3.
                 apply satisfies_builtin_inv in X.
                 inversion X.
             }
@@ -3173,7 +3181,7 @@ Proof.
             destruct az.
             {
                 inversion pf; subst; clear pf.
-                unfold to_PreTerm' in X.
+                unfold to_PreTerm'' in X.
                 apply satisfies_builtin_inv in X.
                 inversion X.
             }
@@ -3209,8 +3217,8 @@ Proof.
         {
             inversion H1; subst; clear H1.
             inversion H2; subst; clear H2.
-            unfold to_PreTerm' in pf.
-            unfold to_PreTerm' in pf0.
+            unfold to_PreTerm'' in pf.
+            unfold to_PreTerm'' in pf0.
             apply satisfies_top_bov_cons_2 in pf.
             apply satisfies_top_bov_cons_2 in pf0.
             destruct pf as [H1 H2].
@@ -3354,6 +3362,7 @@ Proof.
         ltac1:(rewrite elem_of_list_lookup in H1x0).
         destruct H1x0 as [i Hi].
         rewrite list_lookup_fmap in Hi.
+        unfold TermOver in *.
         destruct (l !! i) eqn:Hli.
         {
             simpl in Hi. inversion Hi; subst; clear Hi.
@@ -3405,7 +3414,7 @@ Proof.
     intros Hvars H1 H2.
         inversion H1; subst; clear H1.
         inversion H2; subst; clear H2.
-        unfold to_PreTerm' in pf.
+        unfold to_PreTerm'' in pf.
         apply satisfies_top_bov_cons_2 in pf.
         destruct pf as [[pf1 pf2] pf3].
         subst cz.
@@ -3432,7 +3441,7 @@ Proof.
                 }
                 {
                     rewrite map_app in Hvars.
-                    unfold to_PreTerm' in Hvars.
+                    unfold to_PreTerm'' in Hvars.
                     rewrite fold_left_app in Hvars.
                     simpl in Hvars.
                     unfold helper in Hvars.
@@ -3515,6 +3524,7 @@ Proof.
             rewrite elem_of_list_lookup in H1z.
             destruct H1z as [i Hi].
             rewrite list_lookup_fmap in Hi.
+            unfold TermOver in *.
             destruct (lz !! i) eqn:Hlzi.
             {
                 inversion Hi; subst; clear Hi.
@@ -3570,11 +3580,11 @@ Proof.
 Qed.
 
 Lemma vars_of_apply_symbol
-    {Σ : StaticModel}
-    (s : symbol)
-    (l : list (Term' symbol BuiltinOrVar))
+    {T0 : Type}
+    (s : T0)
+    (l : list (Term' T0 BuiltinOrVar))
     :
-    vars_of (apply_symbol' s l) = union_list (fmap vars_of l)
+    vars_of (apply_symbol'' s l) = union_list (fmap vars_of l)
 .
 Proof.
     induction l using rev_ind.
@@ -3586,7 +3596,7 @@ Proof.
         rewrite union_list_app_L.
         unfold apply_symbol' in *; simpl in *.
         unfold vars_of in *; simpl in *.
-        unfold to_PreTerm' in *.
+        unfold to_PreTerm'' in *.
         rewrite fold_left_app.
         simpl.
         rewrite <- IHl. clear IHl.
@@ -4054,7 +4064,7 @@ Proof.
     {
         intros HContra. apply HH. clear HH.
         unfold apply_symbol' in HContra; simpl in HContra.
-        unfold to_PreTerm' in HContra; simpl in HContra.
+        unfold to_PreTerm'' in HContra; simpl in HContra.
         unfold vars_of in HContra; simpl in HContra.
         revert s ψ  H HContra.
         induction l using rev_ind; intros s ψ HH HContra.
@@ -6288,7 +6298,7 @@ Proof.
                             split>[apply IH1|].
                             unfold satisfies; simpl.
                             unfold apply_symbol'.
-                            unfold to_PreTerm'.
+                            unfold to_PreTerm''.
                             unfold to_Term'.
                             constructor.
                             apply satisfies_top_bov_cons.
@@ -7468,9 +7478,9 @@ Proof.
             destruct HH as [lγ [[HH1 HH2] HH3]].
             subst.
             constructor.
-            fold (@uglify' Σ).
+            fold (@uglify' (@symbol Σ)).
             fold (@TermOver_map Σ).
-            unfold to_PreTerm'.
+            unfold to_PreTerm''.
             eapply satisfies_top_bov_cons_expr_1.
             {
                 rewrite map_length. ltac1:(lia).
@@ -7523,7 +7533,7 @@ Proof.
         unfold apply_symbol' in *.
         unfold to_Term' in *.
         unfold vars_of in *; simpl in *.
-        unfold to_PreTerm' in *.
+        unfold to_PreTerm'' in *.
         rewrite map_app.
         rewrite fold_left_app.
         simpl. unfold helper at 1.
@@ -7807,8 +7817,8 @@ Proof.
     {
         rewrite <- Heqcall.
         constructor.
-        fold (@uglify' Σ).
-        unfold to_PreTerm'.
+        fold (@uglify' (@symbol Σ)).
+        unfold to_PreTerm''.
         apply satisfies_top_bov_cons_1.
         {
             rewrite length_pfmap. reflexivity.
@@ -8625,7 +8635,7 @@ Proof.
                             split>[apply IH1|].
                             unfold satisfies; simpl.
                             unfold apply_symbol'.
-                            unfold to_PreTerm'.
+                            unfold to_PreTerm''.
                             unfold to_Term'.
                             constructor.
                             apply satisfies_top_bov_cons_1.
@@ -9705,7 +9715,7 @@ Proof.
                 (repeat split).
                 {
                     constructor.
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     ltac1:(
                         replace ([apply_symbol' cseqSymbol [uglify' ctrl1; uglify' cont]; uglify' state1])
                         with (map uglify' [(t_term cseqSymbol [ctrl1; cont]);state1])
@@ -9854,7 +9864,7 @@ Proof.
                 }
                 {
                     constructor.
-                    unfold to_PreTerm'.
+                    unfold to_PreTerm''.
                     ltac1:(
                         replace ([apply_symbol' cseqSymbol [uglify' r; apply_symbol' cseqSymbol [uglify' ceval; uglify' cont]]; uglify' state1])
                         with (map uglify' [(t_term cseqSymbol [r; (t_term cseqSymbol [ceval; cont])]); state1])
@@ -10093,8 +10103,8 @@ Proof.
             (repeat split).
             {
                 constructor.
-                fold (@uglify' Σ).
-                unfold to_PreTerm'.
+                fold (@uglify' (@symbol Σ)).
+                unfold to_PreTerm''.
                 apply satisfies_top_bov_cons_1.
                 { reflexivity. }
                 { reflexivity. }
@@ -10104,8 +10114,8 @@ Proof.
                     injection HH1 as HH1; subst s3.
                     injection HH2 as HH2; subst l.
                     constructor.
-                    fold (@uglify' Σ).
-                    unfold to_PreTerm'.
+                    fold (@uglify' (@symbol Σ)).
+                    unfold to_PreTerm''.
                     apply satisfies_top_bov_cons_1.
                     { reflexivity. }
                     { reflexivity. }
@@ -10125,8 +10135,8 @@ Proof.
                             injection HH1 as HH1; subst s3.
                             injection HH2 as HH2; subst l.
                             constructor.
-                            fold (@uglify' Σ).
-                            unfold to_PreTerm'.
+                            fold (@uglify' (@symbol Σ)).
+                            unfold to_PreTerm''.
                             apply satisfies_top_bov_cons_1.
                             { reflexivity. }
                             { reflexivity. }
@@ -10275,8 +10285,8 @@ Proof.
             }
             {
                 constructor.
-                fold (@uglify' Σ).
-                unfold to_PreTerm'.
+                fold (@uglify' (@symbol Σ)).
+                unfold to_PreTerm''.
                 apply satisfies_top_bov_cons_expr_1.
                 { reflexivity. }
                 { reflexivity. }
@@ -10287,8 +10297,8 @@ Proof.
                     injection HH2 as HH2; subst l.
 
                     constructor.
-                    fold (@uglify' Σ).
-                    unfold to_PreTerm'.
+                    fold (@uglify' (@symbol Σ)).
+                    unfold to_PreTerm''.
                     apply satisfies_top_bov_cons_expr_1.
                     { reflexivity. }
                     { reflexivity. }

@@ -239,44 +239,45 @@ Definition apply_symbol'
 
 Unset Elimination Schemes.
 #[universes(polymorphic=yes, cumulative=yes)]
-Inductive TermOver {Σ : StaticModel} (A : Type) : Type :=
+Inductive TermOver' {T : Type} (A : Type) : Type :=
 | t_over (a : A)
-| t_term (s : symbol) (l : list (TermOver A))
+| t_term (s : T) (l : list (@TermOver' T A))
 .
 Set Elimination Schemes.
 
-Arguments t_over {Σ} {A}%type_scope a.
-Arguments t_term {Σ} {A}%type_scope s l%list_scope.
+Arguments t_over {T} {A}%_type_scope a.
+Arguments t_term {T} {A}%_type_scope s l%_list_scope.
 
 Section custom_induction_principle.
 
     Context
-        {Σ : StaticModel}
+        {T : Type}
         {A : Type}
-        (P : TermOver A -> Prop)
+        (P : @TermOver' T A -> Prop)
         (true_for_over : forall a, P (t_over a) )
         (preserved_by_term :
             forall
-                (s : symbol)
-                (l : list (TermOver A)),
+                (s : T)
+                (l : list (@TermOver' T A)),
                 Forall P l ->
                 P (t_term s l)
         )
     .
 
-    Fixpoint TermOver_ind (p : TermOver A) : P p :=
+    Fixpoint TermOver'_ind (p : @TermOver' T A) : P p :=
     match p with
     | t_over a => true_for_over a
-    | t_term s l => preserved_by_term s l (Forall_true P l TermOver_ind)
+    | t_term s l => preserved_by_term s l (Forall_true P l TermOver'_ind)
     end.
 
 End custom_induction_principle.
 
+Definition TermOver {Σ : StaticModel} (A : Type) : Type := @TermOver' symbol A.
 
 Fixpoint TermOver_size
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    (t : TermOver A)
+    (t : @TermOver' T A)
     : nat
 :=
 match t with
@@ -284,37 +285,71 @@ match t with
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size) l)
 end.
 
+Definition to_Term''
+    {T0 : Type}
+    {T : Type}
+    (x : ((T)+(PreTerm' T0 T)))
+    : Term' T0 T
+:=
+match x with
+| inl x' => term_operand x'
+| inr x' => term_preterm x'
+end
+.
+
+Definition helper'' {T0 : Type} {T : Type} a b : PreTerm' T0 T
+    :=match b with
+            | term_operand b' => pt_app_operand a b'
+            | term_preterm b' => pt_app_ao a b'
+            end.
+
+
+Definition to_PreTerm''
+    {T0 : Type}
+    {T : Type}
+    (s : T0)
+    (l : list ((Term' T0 T)))
+    : PreTerm' T0 T
+:=
+    fold_left
+        helper''
+        l
+        (pt_operator s)
+.
+
+
+Definition apply_symbol''
+    {T0 : Type}
+    {T : Type}
+    (s : T0)
+: 
+    list ((Term' T0 T)) ->
+    Term' T0 T
+:=
+    fun l =>
+    (to_Term'' (inr (to_PreTerm'' ((s):T0) l)))
+.
+
+
+
 Fixpoint uglify'
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    (t : TermOver A)
+    (t : @TermOver' T A)
     {struct t}
-    : Term' symbol A
+    : Term' T A
 :=
     match t with
     | t_over a => term_operand a
-    | t_term s l => apply_symbol' s (map uglify' l)
+    | t_term s l => apply_symbol'' s (map uglify' l)
     end
 .
-
-(*
-Definition uglify
-    {Σ : StaticModel}
-    {A : Type}
-    (t : (A+(TermOver A)))
-:=
-    match t with
-    | inl a => term_operand a
-    | inr t => uglify' t
-    end
-.
-*)
 
 Fixpoint PreTerm'_get_symbol
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    (pt : PreTerm' symbol A)
-    : symbol
+    (pt : PreTerm' T A)
+    : T
 :=
     match pt with
     | pt_operator s => s
@@ -324,14 +359,14 @@ Fixpoint PreTerm'_get_symbol
 .
 
 Fixpoint prettify'
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    (pt : PreTerm' symbol A)
-    : TermOver A
+    (pt : PreTerm' T A)
+    : @TermOver' T A
 :=
     t_term
         (PreTerm'_get_symbol pt) (
-        ((fix go (pt : PreTerm' symbol A) : list (TermOver A) :=
+        ((fix go (pt : PreTerm' T A) : list (@TermOver' T A) :=
             match pt with
             | pt_operator _ => []
             | pt_app_operand x y => (go x)++[(t_over y)]
@@ -341,10 +376,10 @@ Fixpoint prettify'
 .
 
 Definition prettify
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    (t : Term' symbol A)
-    : ((TermOver A))
+    (t : Term' T A)
+    : ((@TermOver' T A))
 :=
     match t with
     | term_preterm pt => (prettify' pt)
@@ -352,12 +387,25 @@ Definition prettify
     end
 .
 
+Lemma to_PreTerm''_app
+    {T0 : Type}
+    {T : Type}
+    (s : T0)
+    (l1 l2 : list ((Term' T0 T)))
+    : to_PreTerm'' s (l1 ++ l2) = fold_left helper'' l2 (to_PreTerm'' s l1)
+.
+Proof.
+    unfold to_PreTerm''.
+    rewrite fold_left_app.
+    reflexivity.
+Qed.
+
 
 #[global]
 Instance cancel_prettify_uglify
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    : Cancel eq (@prettify Σ A) (@uglify' Σ A)
+    : Cancel eq (@prettify T A) (@uglify' T A)
 .
 Proof.
     intros x.
@@ -374,13 +422,13 @@ Proof.
             reflexivity.
         }
         {
-            assert (Hs: (PreTerm'_get_symbol (to_PreTerm' s (map uglify' l))) = s).
+            assert (Hs: (PreTerm'_get_symbol (to_PreTerm'' s (map uglify' l))) = s).
             {
                 clear.
                 induction l using rev_ind; simpl.
                 { reflexivity. }
                 {
-                    unfold to_PreTerm'. simpl.
+                    unfold to_PreTerm''. simpl.
                     rewrite map_app. simpl.
                     rewrite fold_left_app. simpl.
                     destruct (uglify' x); apply IHl.
@@ -394,13 +442,13 @@ Proof.
             simpl.
             unfold helper.
             rewrite map_app.
-            rewrite to_PreTerm'_app.
+            rewrite to_PreTerm''_app.
             simpl.
             unfold helper.
             destruct (uglify' x) eqn:Hux.
             {
                 simpl.
-                remember ((to_PreTerm' s (map uglify' l)) ) as tpt.
+                remember ((to_PreTerm'' s (map uglify' l)) ) as tpt.
                 destruct tpt; simpl in *.
                 {
                     inversion IHl; subst; clear IHl.
@@ -442,7 +490,7 @@ Proof.
             }
             {
                 simpl.
-                remember ((to_PreTerm' s (map uglify' l)) ) as tpt.
+                remember ((to_PreTerm'' s (map uglify' l)) ) as tpt.
                 destruct tpt; simpl in *.
                 {
                     inversion IHl; subst; clear IHl.
@@ -488,9 +536,9 @@ Qed.
 
 #[global]
 Instance cancel_uglify_prettify
-    {Σ : StaticModel}
+    {T : Type}
     {A : Type}
-    : Cancel eq (@uglify' Σ A) (@prettify Σ A)
+    : Cancel eq (@uglify' T A) (@prettify T A)
 .
 Proof.
     intros x.
@@ -501,8 +549,8 @@ Proof.
             reflexivity.
         }
         {
-            unfold apply_symbol'. simpl. f_equal.
-            unfold to_PreTerm'.
+            unfold apply_symbol''. simpl. f_equal.
+            unfold to_PreTerm''.
             rewrite map_app.
             rewrite fold_left_app.
             simpl.
@@ -514,9 +562,9 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol' in *. simpl in *.
+                unfold apply_symbol'' in *. simpl in *.
                 inversion IHao'; subst; clear IHao'.
-                unfold to_PreTerm' in *.
+                unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
                 rewrite fold_left_app in H0.
                 simpl in H0.
@@ -527,9 +575,9 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol' in *. simpl in *.
+                unfold apply_symbol'' in *. simpl in *.
                 inversion IHao'; subst; clear IHao'.
-                unfold to_PreTerm' in *.
+                unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
                 rewrite fold_left_app in H0.
                 simpl in H0.
@@ -539,8 +587,8 @@ Proof.
             }
         }
         {
-            unfold apply_symbol'. simpl. f_equal.
-            unfold to_PreTerm'.
+            unfold apply_symbol''. simpl. f_equal.
+            unfold to_PreTerm''.
             rewrite map_app.
             rewrite fold_left_app.
             simpl.
@@ -556,9 +604,9 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol' in *. simpl in *.
+                unfold apply_symbol'' in *. simpl in *.
                 inversion IHao1'; subst; clear IHao1'.
-                unfold to_PreTerm' in *.
+                unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
                 rewrite fold_left_app in H0.
                 simpl in H0.
@@ -569,9 +617,9 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol' in *. simpl in *.
+                unfold apply_symbol'' in *. simpl in *.
                 inversion IHao1'; subst; clear IHao1'.
-                unfold to_PreTerm' in *.
+                unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
                 rewrite fold_left_app in H0.
                 simpl in H0.
