@@ -7,8 +7,9 @@ From Minuska Require Import
 From Equations Require Export Equations.
              
              
+(*
 #[local]       
-Set Equations Transparent. 
+Set Equations Transparent. *)
 
 Definition Valuation {Σ : StaticModel}
         := gmap variable GroundTerm
@@ -1855,11 +1856,13 @@ Equations? sat2E
     ;
 .
 Proof.
-    simpl.
-    apply take_drop_middle in pf1.
-    rewrite <- pf1.
-    rewrite sum_list_with_app. simpl.
-    ltac1:(lia).
+    abstract(
+        simpl;
+        apply take_drop_middle in pf1;
+        rewrite <- pf1;
+        rewrite sum_list_with_app; simpl;
+        ltac1:(lia)
+    ).
 Defined.
 
 

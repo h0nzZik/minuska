@@ -342,13 +342,13 @@ match aoo with
 end.
 
 
-#[global]
+#[export]
 Instance Term'_A_B_fmap (A : Type)
     : FMap (Term' A)
     := @Term'_fmap A
 .
 
-#[global]
+#[export]
 Instance Term_symbol_fmap
     {Σ : StaticModel}
     : FMap (Term' symbol)
@@ -441,7 +441,7 @@ match ao with
 | pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
-#[global]
+#[export]
 Instance TermOver_eqdec
     {T : Type}
     {A : Type}
@@ -469,7 +469,7 @@ Proof.
 Defined.
 
 
-#[global]
+#[export]
 Instance TermOver_count
     {T : Type}
     {A : Type}

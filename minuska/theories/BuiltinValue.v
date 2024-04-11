@@ -4,6 +4,7 @@ From Minuska Require Import
     syntax_properties
 .
 
+(* Compute (decide ((1%Z) = (2%Z))). *)
 Section sec.
 
     Context
@@ -120,7 +121,7 @@ Section sec.
                 try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (b = b0)).
                 {
-                    subst; left. reflexivity.
+                    left. abstract(subst; reflexivity).
                 }
                 {
                     right; ltac1:(congruence).
@@ -132,7 +133,7 @@ Section sec.
                 try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (n = n0)).
                 {
-                    subst; left. reflexivity.
+                    left. abstract(subst; reflexivity).
                 }
                 {
                     right; ltac1:(congruence).
@@ -144,7 +145,7 @@ Section sec.
                 try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (z = z0)).
                 {
-                    subst; left. reflexivity.
+                    left. abstract(subst; reflexivity).
                 }
                 {
                     right; ltac1:(congruence).
@@ -156,7 +157,7 @@ Section sec.
                 try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (s = s0)).
                 {
-                    subst; left. reflexivity.
+                    left. abstract(subst; reflexivity).
                 }
                 {
                     right; ltac1:(congruence).
@@ -168,7 +169,7 @@ Section sec.
                 try (solve [right;ltac1:(discriminate)]).
                 destruct (decide (s = s0)).
                 {
-                    subst; left. reflexivity.
+                    left. abstract(subst; reflexivity).
                 }
                 {
                     right; ltac1:(congruence).
@@ -208,7 +209,7 @@ Section sec.
                                     {
                                         destruct (decide (s = s0)).
                                         {
-                                            subst; left. reflexivity.
+                                            left. abstract(subst; reflexivity).
                                         }
                                         {
                                             right; ltac1:(congruence).
@@ -353,7 +354,7 @@ Section sec.
                                 {
                                     destruct (decide (s = s0)).
                                     {
-                                        subst; left. reflexivity.
+                                        left. abstract(subst; reflexivity).
                                     }
                                     {
                                         right; ltac1:(congruence).
@@ -459,7 +460,7 @@ Section sec.
                                     {
                                         destruct (decide (s = s0)).
                                         {
-                                            subst; left. reflexivity.
+                                            left. abstract(subst; reflexivity).
                                         }
                                         {
                                             right; ltac1:(congruence).
@@ -621,7 +622,7 @@ Section sec.
                                     {
                                         destruct (decide (s = s0)).
                                         {
-                                            subst; left. reflexivity.
+                                            left. abstract(subst; reflexivity).
                                         }
                                         {
                                             right; ltac1:(congruence).
@@ -739,7 +740,7 @@ Section sec.
                                     {
                                         destruct (decide (s = s0)).
                                         {
-                                            subst; left. reflexivity.
+                                            left. abstract(subst; reflexivity).
                                         }
                                         {
                                             right; ltac1:(congruence).
