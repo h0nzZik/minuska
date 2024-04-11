@@ -24,8 +24,13 @@ From stdpp Require Export
 
 (* This is unset by stdpp. We need to set it again.*)
 
+(*
 #[global]
 Set Transparent Obligations.
+*)
+
+#[export]
+Obligation Tactic := idtac.
 
 (*
 Require Import Equations.Type.All.

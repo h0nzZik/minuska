@@ -13,6 +13,9 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 
 
+#[local]
+Unset Transparent Obligations.
+
 Definition valuation_restrict
     {Σ : StaticModel}
     {var : Type}
