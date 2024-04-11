@@ -533,137 +533,137 @@ Module default_builtin.
     Module Notations.
         
         
-        Notation "'true'" := (Expression_to_Expression2 (ft_nullary b_true))
+        Notation "'true'" := ( (e_nullary b_true))
             : RuleScope
         .
 
-        Notation "'false'" := (Expression_to_Expression2 (ft_nullary b_false))
+        Notation "'false'" := ( (e_nullary b_false))
             : RuleScope
         .
     
         Notation "b1 '&&' b2" :=
-            (Expression_to_Expression2 (ft_binary default_builtin.b_and
-                (Expression2_to_Expression b1)
-                (Expression2_to_Expression b2)
+            ( (e_binary default_builtin.b_and
+                ( b1)
+                ( b2)
             ))
             : RuleScope
         .
 
         Notation "b1 '||' b2" :=
-            (Expression_to_Expression2 (ft_binary default_builtin.b_or
-                (Expression2_to_Expression b1)
-                (Expression2_to_Expression b2)
+            ( (e_binary default_builtin.b_or
+                ( b1)
+                ( b2)
             ))
             : RuleScope
         .
 
         Notation "~~ b" :=
-            (Expression_to_Expression2 (ft_unary default_builtin.b_bool_neg (Expression2_to_Expression b)))
+            ( (e_unary default_builtin.b_bool_neg ( b)))
         .
 
         Notation "'isBool' t" :=
-            (Expression_to_Expression2 (ft_unary
+            ( (e_unary
                 b_isBool
-                (Expression2_to_Expression t)
+                ( t)
             ))
             (at level 90)
         .        
 
         Notation "'isNat' t" :=
-            (Expression_to_Expression2 (ft_unary
+            ((e_unary
                 b_isNat
-                (Expression2_to_Expression t)
+                (t)
             ))
             (at level 90)
         .
 
         Notation "'isZ' t" :=
-            (Expression_to_Expression2 (ft_unary
+            ((e_unary
                 b_isZ
-                (Expression2_to_Expression t)
+                (t)
             ))
             (at level 90)
         .
 
         Notation "'isString' t" :=
-            (Expression_to_Expression2 (ft_unary
+            ((e_unary
                 b_isString
-                (Expression2_to_Expression t)
+                (t)
             ))
             (at level 90)
         .
 
         Notation "'isList' t" :=
-            (Expression_to_Expression2 (ft_unary
+            ((e_unary
                 b_isList
-                (Expression2_to_Expression t)
+                (t)
             ))
             (at level 90)
         .
 
         Notation "'isMap' t" :=
-            (Expression_to_Expression2 (ft_unary
+            ((e_unary
                 b_isMap
-                (Expression2_to_Expression t)
+                (t)
             ))
             (at level 90)
         .
 
         Notation "'(' x '+Nat' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_nat_plus (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_nat_plus (x) (y)))
         .
 
         Notation "'(' x '-Nat' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_nat_minus (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_nat_minus (x) (y)))
         .
 
         Notation "'(' x '*Nat' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_nat_times (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_nat_times (x) (y)))
         .
 
         Notation "'(' x '/Nat' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_nat_div (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_nat_div (x) (y)))
         .
 
         Notation "'(' x '==Nat' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_eq (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_eq (x) (y)))
         .
 
 
         Notation "'(' x '+Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_Z_plus (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_Z_plus (x) (y)))
         .
 
         Notation "'(' x '-Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_Z_minus (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_Z_minus (x) (y)))
         .
 
         Notation "'(' x '*Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_Z_times (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_Z_times (x) (y)))
         .
 
         Notation "'(' x '/Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_Z_div (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_Z_div (x) (y)))
         .
 
         Notation "'(' x '<Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_Z_isLt (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_Z_isLt (x) (y)))
         .
 
         Notation "'(' x '>Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_Z_isLt (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_Z_isLt (x) (y)))
         .
 
         Notation "'(' x '==Z' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_eq (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_eq (x) (y)))
         .
 
         Notation "'(' x '==Bool' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_eq (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_eq (x) (y)))
         .
 
         Notation "'(' x '==Gen' y ')'" :=
-            (Expression_to_Expression2 (ft_binary b_eq (Expression2_to_Expression x) (Expression2_to_Expression y)))
+            ((e_binary b_eq (x) (y)))
         .
 
 
@@ -674,23 +674,12 @@ Module default_builtin.
 End default_builtin.
 
 
-    Section ws.
-
-        Definition isAppliedSymbol (s:string) (e : @Expression2 (default_model (default_builtin.β))) :=
-            (Expression_to_Expression2 (@ft_binary ( default_model (default_builtin.β))
-                default_builtin.b_is_applied_symbol
-                (@ft_element
-                    ( default_model (default_builtin.β))
-                    (@term_operand
-                        (@spec_syntax.symbol
-                            ( default_model (default_builtin.β))
-                        )
-                        (@builtin_value _ _ default_builtin.β )
-                        (bv_sym s)
-                    )
-                )
-                (Expression2_to_Expression e)
-            ))
-        .
-
-    End ws.
+Definition isAppliedSymbol (s:string) (e : @Expression2 (default_model (default_builtin.β))) :=
+    let M := ( default_model (default_builtin.β)) in
+    ((@e_binary M
+        default_builtin.b_is_applied_symbol
+        (@e_ground (M) (t_over (bv_sym s)))
+        )
+        (e)
+    )
+.

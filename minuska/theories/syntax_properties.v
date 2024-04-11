@@ -239,7 +239,7 @@ Section countable.
         .
         intros x.
         apply PreTerm'_of_to_gen_tree.
-    Qed.
+    Defined.
 
     Definition Term'_to_gen_tree
         (symbol : Type)
