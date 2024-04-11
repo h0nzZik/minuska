@@ -28,7 +28,7 @@ Definition merge_valuations
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
     : option Valuation :=
-if decide (valuations_compatible ρ1 ρ2)
+if (valuations_compatible ρ1 ρ2)
 then
     Some (merge use_left ρ1 ρ2)
 else
@@ -46,7 +46,7 @@ Proof.
     unfold Valuation in *.
     unfold merge_valuations.
     unfold is_left.
-    destruct (decide (valuations_compatible ρ1 ρ2)) as [Hcompat|Hnocompat]; intros H.
+    destruct ((valuations_compatible ρ1 ρ2)) eqn:Hcompat; intros H.
     {
         inversion H; subst; clear H.
         unfold valuations_compatible in Hcompat.
@@ -120,16 +120,21 @@ Proof.
     }
     {
         unfold is_left in H.
-        ltac1:(case_match).
-        { inversion H. }
+        unfold Valuation in *.
+        unfold valuations_compatible in H.
+        rewrite <- not_true_iff_false in H.
+        ltac1:(exfalso). apply H. clear H.
+        rewrite forallb_forall.
+        intros x0 Hx0.
+        rewrite bool_decide_eq_true.
+        rewrite <- elem_of_list_In in Hx0.
+        rewrite elem_of_elements in Hx0.
+        rewrite elem_of_intersection in Hx0.
+        destruct Hx0 as [H1 H2].
         ltac1:(exfalso).
-        apply n.
-        unfold Valuation.
-        unfold valuations_compatible.
-        ltac1:(rewrite dom_empty_L).
-        rewrite intersection_empty_r_L.
-        rewrite elements_empty.
-        reflexivity.
+        ltac1:(rewrite dom_empty in H2).
+        rewrite elem_of_empty in H2.
+        inversion H2.
     }
 Qed.
 
@@ -160,16 +165,21 @@ Proof.
     }
     {
         unfold is_left in H.
-        ltac1:(case_match).
-        { inversion H. }
+        unfold Valuation in *.
+        unfold valuations_compatible in H.
+        rewrite <- not_true_iff_false in H.
+        ltac1:(exfalso). apply H. clear H.
+        rewrite forallb_forall.
+        intros x0 Hx0.
+        rewrite bool_decide_eq_true.
+        rewrite <- elem_of_list_In in Hx0.
+        rewrite elem_of_elements in Hx0.
+        rewrite elem_of_intersection in Hx0.
+        destruct Hx0 as [H1 H2].
         ltac1:(exfalso).
-        apply n.
-        unfold Valuation.
-        unfold valuations_compatible.
-        ltac1:(rewrite dom_empty_L).
-        rewrite intersection_empty_l_L.
-        rewrite elements_empty.
-        reflexivity.
+        ltac1:(rewrite dom_empty in H1).
+        rewrite elem_of_empty in H1.
+        inversion H1.
     }
 Qed.
 
@@ -238,7 +248,7 @@ Lemma merge_valuations_dom
 Proof.
     assert (Hm := merge_valuations_correct ρ1 ρ2 ρ).
     unfold merge_valuations in *.
-    destruct (decide (valuations_compatible ρ1 ρ2)); simpl in *;
+    destruct ((valuations_compatible ρ1 ρ2)); simpl in *;
         intros H; inversion H; subst; clear H.
     apply leibniz_equiv.
     rewrite set_equiv_subseteq.
@@ -738,7 +748,7 @@ Proof.
                 }
                 {
                     ltac1:(exfalso).
-                    apply bool_decide_eq_false in H.
+                    rewrite <- not_true_iff_false in H.
                     apply H. clear H.
                     unfold valuations_compatible.
                     unfold is_true.
@@ -804,7 +814,7 @@ Proof.
                 }
                 {
                     ltac1:(exfalso).
-                    apply bool_decide_eq_false in H.
+                    rewrite <- not_true_iff_false in H.
                     apply H. clear H.
                     unfold valuations_compatible.
                     unfold is_true.
@@ -878,7 +888,7 @@ Proof.
                 }
                 {
                     ltac1:(exfalso).
-                    apply bool_decide_eq_false in H.
+                    rewrite <- not_true_iff_false in H.
                     apply H. clear H.
                     unfold valuations_compatible.
                     unfold is_true.
@@ -946,7 +956,7 @@ Proof.
                 }
                 {
                     ltac1:(exfalso).
-                    apply bool_decide_eq_false in H.
+                    rewrite <- not_true_iff_false in H.
                     apply H. clear H.
                     unfold valuations_compatible.
                     unfold is_true.
