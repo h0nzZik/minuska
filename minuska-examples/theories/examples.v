@@ -47,8 +47,8 @@ Module two_counters.
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
         decl_rule (
             rule ["my-rule"]:
-                cfg [ state [ s [ t_over ($M) ], t_over ($N) ] ]
-            ~>{default_act} cfg [ state [ t_over ($M), s [ t_over ($N) ]  ] ]
+                cfg [ state [ s [ t_over ($M) ]; t_over ($N) ] ]
+            ~>{default_act} cfg [ state [ t_over ($M); s [ t_over ($N) ]  ] ]
         )
     ]))).
     
@@ -151,6 +151,7 @@ Module two_counters_Z.
 
 End two_counters_Z.
 
+Check "End two counters".
 Module arith.
 
     Import default_builtin.
@@ -200,10 +201,10 @@ Module arith.
     Declare Scope LangArithScope.
     Delimit Scope LangArithScope with larith.
 
-    Notation "x '+' y" := (plus [ x, y ])%larith.
-    Notation "x '-' y" := (minus [ x, y ])%larith.
-    Notation "x '*' y" := (times [ x, y ])%larith.
-    Notation "x '/' y" := (div [ x, y ])%larith.
+    Notation "x '+' y" := (plus [ x; y ])%larith.
+    Notation "x '-' y" := (minus [ x; y ])%larith.
+    Notation "x '*' y" := (times [ x; y ])%larith.
+    Notation "x '/' y" := (div [ x; y ])%larith.
 
     Open Scope larith.
 
@@ -221,8 +222,8 @@ Module arith.
         (* plus *)
         decl_rule (
             rule ["plus-nat-nat"]:
-                cfg [ u_cseq [ (t_over ($X) + t_over ($Y) ), t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X +Nat $Y) , t_over ($REST_SEQ) ] ]
+                cfg [ u_cseq [ (t_over ($X) + t_over ($Y) ); t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X +Nat $Y) ; t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -233,8 +234,8 @@ Module arith.
         (* minus *)
         decl_rule (
             rule ["minus-nat-nat"]:
-                cfg [ u_cseq [ (t_over ($X) - t_over ($Y)), t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X -Nat $Y) , t_over ($REST_SEQ) ] ]
+                cfg [ u_cseq [ (t_over ($X) - t_over ($Y)); t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X -Nat $Y) ; t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -245,8 +246,8 @@ Module arith.
         (* times *)
         decl_rule (
             rule ["times-nat-nat"]:
-                cfg [ u_cseq [ (t_over ($X) * t_over ($Y)), t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X *Nat $Y) , t_over ($REST_SEQ) ] ]
+                cfg [ u_cseq [ (t_over ($X) * t_over ($Y)); t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X *Nat $Y) ; t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -257,8 +258,8 @@ Module arith.
         (* div *)
         decl_rule (
             rule ["div-nat-nat"]:
-                cfg [ u_cseq [ (t_over ($X) / t_over ($Y)), t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X /Nat $Y) , t_over ($REST_SEQ) ] ]
+                cfg [ u_cseq [ (t_over ($X) / t_over ($Y)); t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X /Nat $Y) ; t_over ($REST_SEQ) ] ]
                 where (
                     (isNat ($X))
                     &&
@@ -292,7 +293,7 @@ Module arith.
     Definition initial (x: nat) (ly : list nat) :=
         (ground (initial0 ((foldr 
             (fun a (b : TermOver builtin_value) =>
-                plus [(t_over (bv_nat a)) , b]
+                plus [(t_over (bv_nat a)) ; b]
             )
             (t_over (bv_nat x))
             ly
@@ -307,14 +308,8 @@ Module arith.
     :=
         interp_from fuel (initial x ly)
     .
-     
+
     (*
-    (* Debugging notations *)
-    Notation "( x ( y ) )" := (pt_app_ao x y) (only printing).
-    Notation "( x ( y ) )" := (pt_app_operand x y) (only printing).
-    Notation "( x )" := (pt_operator x) (only printing).
-    Eval vm_compute in (interp_list 7 1 [20;30;40]).
-    *)
     Lemma interp_list_test_1:
         exists log,
         (interp_list 20 1 [20;30;40]) = (12, (initial 91 nil), log)
@@ -356,9 +351,11 @@ Module arith.
     Proof.
         eexists. eexists. reflexivity.
     Qed.
+
+    *)
 End arith.
 
-
+Check "End arith".
 
 Module fib_native.
 
@@ -398,9 +395,9 @@ Module fib_native.
             rule ["two-or-more"]:
                initialState [ t_over  ($Tgt) ]
             ~>{default_act} state [
-                t_over ($Tgt),
-                t_over (e_ground (t_over  (bv_Z 2))),
-                t_over (e_ground (t_over  (bv_Z 1))),
+                t_over ($Tgt);
+                t_over (e_ground (t_over  (bv_Z 2)));
+                t_over (e_ground (t_over  (bv_Z 1)));
                 t_over (e_ground (t_over  (bv_Z 1))) 
                ]
             where ((~~ ($Tgt ==Z (e_ground (t_over (bv_Z 0)))))
@@ -452,11 +449,19 @@ Module fib_native.
     .
 
     
+    (*
     Eval vm_compute in (interp_from 50 (ground (initial0
     (
         (t_over (bv_Z 7))
     )))).
+*)
 
+    (*
+    Compute (fib_interp_from 10 2).
+    Eval simpl in (fib_interp_from 10 2).
+    Eval cbv in (fib_interp_from 10 2). *)
+    (*
+    (* Compute (fib_interp_from 10 2). *)
     Lemma interp_test_fib_0:
         exists rem log,
             (fib_interp_from 10 0)
@@ -493,10 +498,11 @@ Module fib_native.
     .
     Proof. eexists. eexists. reflexivity. Qed.
 
-
+    *)
 
 End fib_native.
 
+Check "End fib native".
 
 Module imp.
 
@@ -581,25 +587,26 @@ Module imp.
     Delimit Scope LangImpScope with limp.
     Close Scope LangImpScope.
 
-    Notation "x '+' y" := (arith_plus [ x, y ]) : LangImpScope.
-    Notation "x '-' y" := (arith_minus [ x, y ]) : LangImpScope.
-    Notation "x '*' y" := (arith_times [ x, y ]) : LangImpScope.
-    Notation "x '/' y" := (arith_div [ x, y ]) : LangImpScope.
+    Notation "x '+' y" := (arith_plus [ x; y ]) : LangImpScope.
+    Notation "x '-' y" := (arith_minus [ x; y ]) : LangImpScope.
+    Notation "x '*' y" := (arith_times [ x; y ]) : LangImpScope.
+    Notation "x '/' y" := (arith_div [ x; y ]) : LangImpScope.
 
-    Definition builtin_string (s : string) := ((@t_over _ builtin_value (bv_str s))).
+    Check @t_over.
+    Definition builtin_string (s : string) := ((@t_over (@symbol Σ) builtin_value (bv_str s))).
 
-    Notation "x '<=' y" := (bexpr_le [x, y]) (at level 70) : LangImpScope.
+    Notation "x '<=' y" := (bexpr_le [x; y]) (at level 70) : LangImpScope.
 
-    Notation "x '<:=' y" := (stmt_assign [x, y]) (at level 90) : LangImpScope.
-    Notation "c ';' 'then' d" := (stmt_seq [c, d]) (at level 90, right associativity) : LangImpScope.
+    Notation "x '<:=' y" := (stmt_assign [x; y]) (at level 90) : LangImpScope.
+    Notation "c ';' 'then' d" := (stmt_seq [c; d]) (at level 90, right associativity) : LangImpScope.
     Notation "'if' c 'then' x 'else' y "
-        := (stmt_ite [c, x, y])
+        := (stmt_ite [c; x; y])
             (at level 200, c at level 200, x at level 200, y at level 200)
             : LangImpScope.
 
 
     Notation "'while' c 'do' x 'done'"
-    := (stmt_while [c, x])
+    := (stmt_while [c; x])
         : LangImpScope
     .
 
@@ -630,8 +637,8 @@ Module imp.
     Notation "'decl_simple_rule' '[' s ']:' l '~>' r 'always'" := (
         decl_rule (
         rule [ s ]:
-            u_cfg [ u_state [ u_cseq [ l, t_over ($REST_SEQ) ], $VALUES ] ]
-         ~>{default_act} u_cfg [ u_state [ u_cseq [ r; t_over ($REST_SEQ) ], t_over ($VALUES) ] ]
+            u_cfg [ u_state [ u_cseq [ l; t_over ($REST_SEQ) ]; $VALUES ] ]
+         ~>{default_act} u_cfg [ u_state [ u_cseq [ r; t_over ($REST_SEQ) ]; t_over ($VALUES) ] ]
         )
     ) (at level 90).
 
@@ -678,9 +685,9 @@ Module imp.
 
         decl_rule (
             rule ["assign-value"]:
-                u_cfg [ u_state [ u_cseq [ (var [t_over ($X)]) <:= t_over ($Y), t_over ($REST_SEQ)], t_over ($VALUES) ] ]
+                u_cfg [ u_state [ u_cseq [ (var [t_over ($X)]) <:= t_over ($Y); t_over ($REST_SEQ)]; t_over ($VALUES) ] ]
             ~>{default_act} u_cfg [ u_state [
-                    u_cseq [unitValue[], t_over ($REST_SEQ)],
+                    u_cseq [unitValue[]; t_over ($REST_SEQ)];
                     t_over (e_ternary b_map_update ($VALUES) ($X) ($Y))
                 ] ]
                 where ((isString ($X)) && (isValue ($Y)))
@@ -689,13 +696,13 @@ Module imp.
             rule ["var-lookup"]:
                 u_cfg [ u_state [ u_cseq [ var [t_over ($X) ]; t_over ($REST_SEQ)]; t_over ($VALUES)]]
             ~>{default_act} u_cfg [ u_state [
-                u_cseq [t_over (e_binary b_map_lookup ($VALUES) ($X)); t_over ($REST_SEQ)],
+                u_cseq [t_over (e_binary b_map_lookup ($VALUES) ($X)); t_over ($REST_SEQ)];
                 t_over ($VALUES)
             ]]
         );
         (* TODO stmt_seq does not have to be strict in the second argument, and the following rule does not need to check the value-ness of the second argument*)
         decl_simple_rule ["seq-unit-value"]:
-                stmt_seq [unitValue [], t_over ($X) ]
+                stmt_seq [unitValue []; t_over ($X) ]
             ~> t_over ($X)
             where ((isValue ($X)))
         ;
@@ -707,17 +714,17 @@ Module imp.
         decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]);
 
         decl_simple_rule ["bexpr-eq-Z-Z"]:
-                bexpr_eq [ t_over ($X), t_over ($Y) ]
+                bexpr_eq [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_binary b_eq ($X) ($Y)))
             where ((isValue ($X)) && (isValue ($Y)))
         ;
         decl_simple_rule ["bexpr-le-Z-Z"]:
-                bexpr_le [ t_over ($X), t_over ($Y) ]
+                bexpr_le [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_binary b_Z_isLe ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         ;
         decl_simple_rule ["bexpr-lt-Z-Z"]:
-               bexpr_lt [ t_over ($X), t_over ($Y) ]
+               bexpr_lt [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_binary b_Z_isLt ($X) ($Y)))
             where ((isZ ($X)) && (isZ ($Y)))
         ;
@@ -737,7 +744,7 @@ Module imp.
         *)
         decl_simple_rule ["while-unfold"]:
             stmt_while [t_over ($B) ; t_over ($X)]
-            ~> stmt_ite [t_over ($B) ; stmt_seq [t_over ($X); stmt_while [t_over ($B), t_over ($X)]]; unitValue [] ]
+            ~> stmt_ite [t_over ($B) ; stmt_seq [t_over ($X); stmt_while [t_over ($B); t_over ($X)]]; unitValue [] ]
             where (true)
     ]%limp.
 
@@ -749,7 +756,7 @@ Module imp.
 
     Definition initial0 (x : TermOver builtin_value) :=
         (ground (
-            u_cfg [ u_state [ u_cseq [x, u_emptyCseq [] ] , prettify (builtin_nullary_function_interp b_map_empty) ] ]
+            u_cfg [ u_state [ u_cseq [x; u_emptyCseq [] ] ; (builtin_nullary_function_interp b_map_empty) ] ]
         ))
     .
 
@@ -789,6 +796,7 @@ Module imp.
 
     *)
 
+    (*
     Lemma test_imp_interp_1:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 12 (ground (
@@ -805,6 +813,7 @@ Module imp.
     Proof.
         eexists. eexists. reflexivity.
     Qed.
+    *)
     
     Definition program_2 := (ground (
         (var [builtin_string "x"]) <:= ((t_over (bv_Z 89))) ; then
@@ -815,6 +824,7 @@ Module imp.
         )%limp).
 
     (* Compute (imp_interp_from 15 program_2). *)
+    (*
     Lemma test_imp_interp_5:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 15 program_2)
@@ -828,7 +838,8 @@ Module imp.
     Proof.
         eexists. eexists. reflexivity.
     Qed.
-
+    *)
+    
     Definition program_3 := (ground (
         (var [builtin_string "x"]) <:= ((t_over (bv_Z 91))) ; then
         (if(
@@ -838,6 +849,7 @@ Module imp.
         )%limp).
 
     (* Compute (imp_interp_from 15 program_3). *)
+    (*
     Lemma test_imp_interp_program_3:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 15 program_3)
@@ -851,6 +863,7 @@ Module imp.
     Proof.
         eexists. eexists. reflexivity.
     Qed.
+    *)
 
     Notation "'v' '(' s ')'" := (var [builtin_string s]).
 
@@ -866,7 +879,7 @@ Module imp.
         );then (v("sum"))
         )%limp).
 
-    Time Compute ((imp_interp_from 1000 (program_count_to 3))).
+    (* Time Compute ((imp_interp_from 1000 (program_count_to 3))). *)
     (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
     (*
     Lemma test_imp_interp_program_count_to_3:

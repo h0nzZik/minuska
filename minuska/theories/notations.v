@@ -109,65 +109,6 @@ Notation "'$' x" :=
     (at level 40)
 .
 
-
-
-(*
-Definition apply_symbol
-    {Σ : StaticModel}
-    {_br : BasicResolver}
-    (s : symbol)
-: 
-    list ((Term' symbol operand_type)) ->
-    Term' symbol operand_type
-:=
-    fun l =>
-    (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
-.
-*)
-
-Notation "[]" := ([]%list) : RuleScope.
-
-(*
-    We need to infer the type of 'A' before choosing the function.
-*)
-Definition myap (A B : Type) (x : A) (f : A -> B) : B := f x.
-Definition myap2 (A B : Type) (f : A -> B) (x : A)  : B := f x.
-
-Notation "'[' x ']'"
-:=
-    (@cons
-        ((TermOver operand_type))
-        x
-        (*(myap _ (TermOver operand_type) x to_aoo_opt)*)
-        (@nil ((TermOver operand_type)))
-    )
-    : RuleScope
-.
-
-Notation "'[' x , y , .. , z ']'"
-:=
-    (@cons ((TermOver operand_type))
-        x
-        (*(myap _ (TermOver operand_type) x to_aoo_opt)*)
-    (@cons 
-        ((TermOver operand_type))
-        (*(to_aoo_opt y)*)
-        y
-        (*(myap _ (TermOver operand_type) y to_aoo_opt)*)
-        (*myap2 _ (Term' symbol operand_type) to_aoo_opt y*)
-        .. 
-        (
-            @cons ((TermOver operand_type))
-            (* (to_aoo_opt z) *)
-            z
-            (*(myap _ (TermOver operand_type) z to_aoo_opt)*)
-            (*myap2 _ (Term' symbol operand_type) to_aoo_opt z*)
-            (@nil ((TermOver operand_type)))
-        )
-        ..))
-    : RuleScope
-.
-
 Notation "'llrule' l '~>{' a '}' r 'requires' s"
     := (@mkRewritingRule2
         _

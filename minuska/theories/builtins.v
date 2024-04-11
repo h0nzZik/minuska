@@ -339,7 +339,6 @@ Module default_builtin.
             x y
         .
 
-        Set Typeclasses Debug.
         #[local]
         Instance β
             : Builtin
