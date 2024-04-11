@@ -8,7 +8,8 @@ Section sec.
 
     Context
         {symbol : Type}
-        {symbols : Symbols symbol}
+        {_se : EqDecision symbol}
+        {_sc : Countable symbol}
     .
 
     (* TODO make parametric in a user type *)
@@ -103,8 +104,8 @@ Section sec.
         revert x Hsz y.
         induction sz; intros x Hsz y.
         {
-            destruct x; simpl in Hsz; try ltac1:(lia).
-            destruct m; simpl in Hsz; try ltac1:(lia).
+            abstract(destruct x; simpl in Hsz; try ltac1:(lia);
+            destruct m; simpl in Hsz; try ltac1:(lia)).
         }
         {
             destruct x.
@@ -196,7 +197,7 @@ Section sec.
                     {
                         destruct a, a0.
                         {
-                            assert (IH1 := IHm ltac:(simpl in *; lia) m0).
+                            assert (IH1 := IHm ltac:(abstract(simpl in *; lia)) m0).
                             destruct IH1 as [IH1|IH1].
                             {
                                 inversion IH1; subst; clear IH1.
@@ -226,11 +227,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 subst.
@@ -257,11 +258,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 inversion IH2; subst; clear IH2.
@@ -288,8 +289,8 @@ Section sec.
                             right; ltac1:(congruence).
                         }
                         {
-                            specialize (IHsz operand ltac:(simpl in *; lia) operand0).
-                            specialize (IHm ltac:(simpl in *; lia) m0).
+                            specialize (IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
+                            specialize (IHm ltac:(abstract(simpl in *; lia)) m0).
 
                             destruct IHsz as [IHsz|IHsz], IHm as [IHm|IHm].
                             {
@@ -329,7 +330,7 @@ Section sec.
                         destruct p0;
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(discriminate)]).
-                        assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                        assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                         destruct IH1 as [IH1|IH1].
                         {
                             inversion IH1; subst; left; reflexivity.
@@ -371,11 +372,11 @@ Section sec.
                                     right; ltac1:(congruence).
                                 }
                                 {
-                                    assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                    assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                     destruct IH1 as [IH1|IH1].
                                     {
                                         inversion IH1; subst; clear IH1.
-                                        assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                        assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                         destruct IH2 as [IH2|IH2].
                                         {
                                             subst.
@@ -402,11 +403,11 @@ Section sec.
                                     right; ltac1:(congruence).
                                 }
                                 {
-                                    assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                    assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                     destruct IH1 as [IH1|IH1].
                                     {
                                         inversion IH1; subst; clear IH1.
-                                        assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                        assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                         destruct IH2 as [IH2|IH2].
                                         {
                                             inversion IH2; subst; clear IH2.
@@ -429,7 +430,7 @@ Section sec.
                             right; ltac1:(congruence).
                         }
                         {
-                            assert (IH1 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            assert (IH1 := IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
                             destruct IH1 as [IH1|IH1].
                             {
                                 subst; left; reflexivity.
@@ -447,7 +448,7 @@ Section sec.
                         destruct a,t.
                         {
 
-                            assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                            assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                             destruct IH1 as [IH1|IH1].
                             {
                                 inversion IH1; subst; clear IH1.
@@ -477,11 +478,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 subst.
@@ -508,11 +509,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 inversion IH2; subst; clear IH2.
@@ -540,12 +541,12 @@ Section sec.
                             right; ltac1:(congruence).
                         }
                         {
-                            assert (IH1 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            assert (IH1 := IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
                             destruct IH1 as [IH1|IH1].
                             {
                                 subst.
 
-                                assert (IH2 := IHp ltac:(simpl in *; lia) p0).
+                                assert (IH2 := IHp ltac:(abstract(simpl in *; lia)) p0).
                                 destruct IH2 as [IH2|IH2].
                                 {
                                     inversion IH2; subst; clear IH2; left; reflexivity.
@@ -564,7 +565,7 @@ Section sec.
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(discriminate)]).
 
-                        assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                        assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                         destruct IH1 as [IH1|IH1].
                         {
                             inversion IH1; subst; clear IH1.
@@ -579,8 +580,8 @@ Section sec.
                         try (solve [left; reflexivity]);
                         try (solve [right;ltac1:(discriminate)]).
 
-                        assert (IH1 := IHp1 ltac:(simpl in *; lia) p0_1).
-                        assert (IH2 := IHp2 ltac:(simpl in *; lia) p0_2).
+                        assert (IH1 := IHp1 ltac:(abstract(simpl in *; lia)) p0_1).
+                        assert (IH2 := IHp2 ltac:(abstract(simpl in *; lia)) p0_2).
                         destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
                         {
                             inversion IH1; subst; clear IH1.
@@ -607,7 +608,7 @@ Section sec.
                         try (solve [right;ltac1:(congruence)]).
 
                         {
-                            assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                            assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                             destruct IH1 as [IH1|IH1].
                             {
                                 inversion IH1; subst; clear IH1.
@@ -639,11 +640,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 subst.
@@ -670,11 +671,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 inversion IH2; subst; clear IH2.
@@ -695,11 +696,11 @@ Section sec.
                             }
                         }
                         {
-                            assert (IH1 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            assert (IH1 := IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
                             destruct IH1 as [IH1|IH1].
                             {
                                 subst.
-                                assert (IH1 := IHp ltac:(simpl in *; lia) p0).
+                                assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                                 destruct IH1 as [IH1|IH1].
                                 {
                                     inversion IH1; subst; clear IH1.
@@ -724,8 +725,8 @@ Section sec.
                         try (solve [right;ltac1:(congruence)]).
 
                         {
-                            assert (IH1 := IHp1 ltac:(simpl in *; lia) p0_1).
-                            assert (IH2 := IHp2 ltac:(simpl in *; lia) p0_2).
+                            assert (IH1 := IHp1 ltac:(abstract(simpl in *; lia)) p0_1).
+                            assert (IH2 := IHp2 ltac:(abstract(simpl in *; lia)) p0_2).
                             destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
                             {
                                 inversion IH1; subst; clear IH1.
@@ -757,11 +758,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao ltac:(simpl in *; lia) ao0).
+                                        assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHsz b ltac:(simpl in *; lia) b0).
+                                            assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 subst.
@@ -788,11 +789,11 @@ Section sec.
                                         right; ltac1:(congruence).
                                     }
                                     {
-                                        assert (IH1 := IHao1 ltac:(simpl in *; lia) ao0_1).
+                                        assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
                                             inversion IH1; subst; clear IH1.
-                                            assert(IH2 := IHao2 ltac:(simpl in *; lia) ao0_2).
+                                            assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
                                                 inversion IH2; subst; clear IH2.
@@ -820,9 +821,9 @@ Section sec.
                             }
                         }
                         {
-                            assert (IH1 := IHp1 ltac:(simpl in *; lia) p0_1).
-                            assert (IH2 := IHp2 ltac:(simpl in *; lia) p0_2).
-                            assert (IH3 := IHsz operand ltac:(simpl in *; lia) operand0).
+                            assert (IH1 := IHp1 ltac:(abstract(simpl in *; lia)) p0_1).
+                            assert (IH2 := IHp2 ltac:(abstract(simpl in *; lia)) p0_2).
+                            assert (IH3 := IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
 
                             destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
                             {
@@ -1185,7 +1186,7 @@ Section sec.
             {
                 destruct a; unfold bv_to_tree; fold bv_to_tree.
                 {
-                    ltac1:(specialize (IHm ltac:(simpl in *; lia))).
+                    ltac1:(specialize (IHm ltac:(abstract(simpl in *; lia)))).
                     simpl in IHm.
                     rewrite bind_Some in IHm.
                     destruct IHm as [x [IHm1 IHm2]].

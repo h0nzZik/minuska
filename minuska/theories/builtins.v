@@ -487,7 +487,7 @@ Module default_builtin.
                 | b_map_hasKey =>
                     match v1 with
                     | t_over (bv_pmap m) =>
-                        let p := encode v2 in
+                        let p := encode (uglify' v2) in
                         match m !! p with
                         | Some _ => (t_over (bv_bool true))
                         | None => (t_over (bv_bool false))
