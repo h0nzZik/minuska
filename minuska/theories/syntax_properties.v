@@ -452,19 +452,28 @@ Instance TermOver_eqdec
 .
 Proof.
     intros t1 t2.
-    remember (uglify' t1) as ut1.
-    remember (uglify' t2) as ut2.
-    destruct (decide (ut1 = ut2)) as [Heq|Hneq]; subst.
+    remember (uglify' t1) as ut1 in |-.
+    remember (uglify' t2) as ut2 in |-.
+    destruct (decide (ut1 = ut2)) as [Heq|Hneq].
     {
-        apply (f_equal prettify) in Heq.
-        rewrite (cancel prettify uglify') in Heq.
-        rewrite (cancel prettify uglify') in Heq.
-        subst.
-        left. reflexivity.
+        left.
+        abstract(
+            subst;
+            apply (f_equal prettify) in Heq;
+            rewrite (cancel prettify uglify') in Heq;
+            rewrite (cancel prettify uglify') in Heq;
+            subst;
+            reflexivity
+        ).
     }
     {
-        right. intros HContra. subst. apply Hneq.
-        reflexivity.
+        right.
+        abstract(
+            intros HContra;
+            subst;
+            apply Hneq;
+            reflexivity
+        ).
     }
 Defined.
 
@@ -490,9 +499,12 @@ Proof.
     }
     { apply _. }
     {
-        intros x. simpl.
-        rewrite (cancel prettify uglify').
-        reflexivity.
+        abstract(
+            intros x;
+            simpl;
+            rewrite (cancel prettify uglify');
+            reflexivity
+        ).
     }
 Defined.
 
