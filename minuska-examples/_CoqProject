@@ -3,5 +3,6 @@
 theories/examples.v
 theories/extraction.v
 theories/examples_unary_nat.v
+theories/dep.v
 
 

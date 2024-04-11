@@ -96,6 +96,7 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
+            pkgs.coqPackages_8_19.dpdgraph
             coq.ocamlPackages.menhir
           ];
           enableParallelBuilding = true;

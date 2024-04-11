@@ -4,6 +4,7 @@ From Coq.Logic Require Import ProofIrrelevance.
 From Minuska Require Import
     prelude
     spec_syntax
+    syntax_properties
     spec_semantics
     string_variables
     builtins
@@ -63,10 +64,12 @@ Module two_counters.
 
     Definition state_to_pair (g : (TermOver builtin_value)) : option (nat*nat) :=
     match g with
-    | t_term "cfg" [(t_term "state" [(m');(n')])] =>
-            m ← example_1.my_number'_inv m';
-            n ← example_1.my_number'_inv n';
-            Some (m, n)
+    | t_term s1 [(t_term s2 [(m');(n')])] =>
+            if (decide (s1 = "cfg" /\ s2 = "state")) then
+                m ← example_1.my_number'_inv m';
+                n ← example_1.my_number'_inv n';
+                Some (m, n)
+            else None
     | _ => None
     end
     .
@@ -94,6 +97,15 @@ Module two_counters.
         state_to_pair fg'.2
     .
     Compute (interp_loop_number 100 10 10).
+    (*Print Transparent Dependencies interp_loop_number.*)
+    (* Print Opaque Dependencies interp_loop_number. *)
+    
+    Lemma iln_100_10_10:
+        (interp_loop_number 100 10 10) = Some (0, 20)
+    .
+    Proof.
+        reflexivity.
+    Qed.
     (* Time Compute (interp_loop_number 10000000 10000 10000). *)
 
 End two_counters.
@@ -109,7 +121,7 @@ Module two_counters_Z.
     Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
     Arguments state {_br} _%_rs.
 
-    Coercion Z_to_builtin (x : Z) := (e_ground (t_over (bv_Z x))).
+    (* Coercion Z_to_builtin (x : Z) := (e_ground (t_over (bv_Z x))). *)
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
     Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
@@ -117,10 +129,10 @@ Module two_counters_Z.
             rule ["my-rule"]:
                state [ t_over ($M) ; t_over ($N) ]
             ~>{default_act} state [
-                t_over ((($M)) -Z 1%Z);
+                t_over ((($M)) -Z (e_ground (t_over (bv_Z 1%Z))));
                 t_over (($N) +Z (($M)))
                 ]
-            where ($M >Z 0%Z)
+            where ($M >Z (e_ground (t_over (bv_Z 0%Z))))
         )
     ]))).
     
@@ -151,7 +163,7 @@ Module two_counters_Z.
 
 End two_counters_Z.
 
-Check "End two counters".
+(* Check "End two counters". *)
 Module arith.
 
     Import default_builtin.
@@ -188,7 +200,7 @@ Module arith.
     Definition state {_br : BasicResolver} := (@t_term _ operand_type "state").
     Arguments state {_br} _%_rs.
 
-    Definition s {_br : BasicResolver} := (@t_term _ operand_type "s").
+    Definition s {_br : BasicResolver} := (@t_term _ operand_type "S").
     Arguments s {_br} _%_rs.
 
     Definition freezer {_br : BasicResolver} (sym : symbol) (position : nat)
@@ -309,19 +321,19 @@ Module arith.
         interp_from fuel (initial x ly)
     .
 
-    (*
+    
     Lemma interp_list_test_1:
         exists log,
         (interp_list 20 1 [20;30;40]) = (12, (initial 91 nil), log)
     .
     Proof. eexists. reflexivity. Qed.
 
-
+    (*
     Eval vm_compute in (interp_from 10 (ground (initial0
     (
         (t_over (bv_nat 3) + t_over (bv_nat 4)) + (t_over (bv_nat 5) + t_over (bv_nat 6))
     )))).
-
+    *)
     Lemma interp_test_2:
         exists rem log,
             (interp_from 10 (ground (initial0
@@ -352,7 +364,6 @@ Module arith.
         eexists. eexists. reflexivity.
     Qed.
 
-    *)
 End arith.
 
 Check "End arith".
@@ -364,6 +375,8 @@ Module fib_native.
 
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).
+
+    Check builtin_value.
 
     Definition X : variable := "X".
     Definition Y : variable := "Y".
@@ -407,7 +420,7 @@ Module fib_native.
             rule ["step"]:
                state [ t_over ($Tgt); t_over  ($Curr); t_over ($X); t_over ($Y) ]
             ~>{default_act} state [ t_over ($Tgt); t_over (($Curr) +Z (e_ground (t_over  (bv_Z 1)))); t_over ($X +Z $Y); t_over ($X) ]
-            where (~~ ($Curr ==Z $Tgt))
+            where (~~ ((($Curr)) ==Z (($Tgt))))
         );
         decl_rule (
             rule ["result"]:
@@ -454,14 +467,14 @@ Module fib_native.
     (
         (t_over (bv_Z 7))
     )))).
-*)
+    *)
 
     (*
     Compute (fib_interp_from 10 2).
     Eval simpl in (fib_interp_from 10 2).
     Eval cbv in (fib_interp_from 10 2). *)
-    (*
-    (* Compute (fib_interp_from 10 2). *)
+
+    
     Lemma interp_test_fib_0:
         exists rem log,
             (fib_interp_from 10 0)
@@ -475,6 +488,28 @@ Module fib_native.
             = (rem, (ground (resultState [(t_over  (bv_Z 1))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
+
+   
+    (* This is just a test that equality of terms is reducible *)
+    Definition my_flag : bool := Eval vm_compute in
+        bool_decide (
+            (@t_term symbol builtin_value "state" [t_over (bv_Z 2); t_over (bv_Z 2); t_over (bv_Z 1); t_over (bv_Z 1)])
+            = (@t_term symbol builtin_value "state" [t_over (bv_Z 2); t_over (bv_Z 2); t_over (bv_Z 1); t_over (bv_Z 2)])
+        )
+    .
+
+    About false.
+    Lemma test_of_computational_behavior:
+        my_flag = Coq.Init.Datatypes.false
+    .
+    Proof. reflexivity. Qed.
+
+    Compute (interp_from 1 (t_term "state"
+          [t_over (bv_Z 2); t_over (bv_Z 2); t_over (bv_Z 1); t_over (bv_Z 1)])).
+    
+    Compute (fib_interp_from 2 2).
+
+    Compute (fib_interp_from 10 2).
 
     Lemma interp_test_fib_2:
         exists rem log,
@@ -497,12 +532,8 @@ Module fib_native.
             = (rem, (ground (resultState [(t_over (bv_Z 89))])), log)
     .
     Proof. eexists. eexists. reflexivity. Qed.
-
-    *)
-
+    
 End fib_native.
-
-Check "End fib native".
 
 Module imp.
 
@@ -782,12 +813,6 @@ Module imp.
         := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))
     .
 
-    (*
-    (* Debugging notations *)
-    Notation "( x ( y ) )" := (pt_app_ao x y) (only printing).
-    Notation "( x ( y ) )" := (pt_app_operand x y) (only printing).
-    Notation "( x )" := (pt_operator x) (only printing).
-    *)
     (*  
     Compute (imp_interp_from 12 (ground (
         (var [builtin_string "x"]) <:= ((term_operand (bv_Z 89))) ; then
@@ -796,7 +821,6 @@ Module imp.
 
     *)
 
-    (*
     Lemma test_imp_interp_1:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 12 (ground (
@@ -813,7 +837,6 @@ Module imp.
     Proof.
         eexists. eexists. reflexivity.
     Qed.
-    *)
     
     Definition program_2 := (ground (
         (var [builtin_string "x"]) <:= ((t_over (bv_Z 89))) ; then
@@ -824,21 +847,19 @@ Module imp.
         )%limp).
 
     (* Compute (imp_interp_from 15 program_2). *)
-    (*
     Lemma test_imp_interp_5:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 15 program_2)
         = (
             rem,
             (ground (
-                u_cfg [ u_state [ u_cseq [(t_over (bv_Z 10)); u_emptyCseq [] ] , t_over m ] ]
+                u_cfg [ u_state [ u_cseq [(t_over (bv_Z 10)); u_emptyCseq [] ] ; t_over m ] ]
             )%limp)
         )
     .
     Proof.
         eexists. eexists. reflexivity.
     Qed.
-    *)
     
     Definition program_3 := (ground (
         (var [builtin_string "x"]) <:= ((t_over (bv_Z 91))) ; then
@@ -849,7 +870,6 @@ Module imp.
         )%limp).
 
     (* Compute (imp_interp_from 15 program_3). *)
-    (*
     Lemma test_imp_interp_program_3:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 15 program_3)
@@ -863,7 +883,6 @@ Module imp.
     Proof.
         eexists. eexists. reflexivity.
     Qed.
-    *)
 
     Notation "'v' '(' s ')'" := (var [builtin_string s]).
 
@@ -880,8 +899,6 @@ Module imp.
         )%limp).
 
     (* Time Compute ((imp_interp_from 1000 (program_count_to 3))). *)
-    (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
-    (*
     Lemma test_imp_interp_program_count_to_3:
         exists (rem : nat) (m : BuiltinValue),
         (imp_interp_from 1000 (program_count_to 3))
@@ -896,7 +913,6 @@ Module imp.
         ltac1:(vm_compute).
         eexists. eexists. reflexivity.
     Qed.
-    *)
 
     (* The proof and QED time of this lemma are too high, so I do not want to run them every time I compile this file.*)
     (*
@@ -917,8 +933,6 @@ Module imp.
     *)
 
     
-
-
     Definition interp_program_count_to (fuel : nat) (n : Z)
     :=
         let r := imp_interp_from fuel (program_count_to n) in
