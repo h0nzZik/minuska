@@ -124,7 +124,7 @@ Section sec.
                     left. abstract(subst; reflexivity).
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
             }
             {
@@ -136,7 +136,7 @@ Section sec.
                     left. abstract(subst; reflexivity).
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
             }
             {
@@ -148,7 +148,7 @@ Section sec.
                     left. abstract(subst; reflexivity).
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
             }
             {
@@ -160,7 +160,7 @@ Section sec.
                     left. abstract(subst; reflexivity).
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
             }
             {
@@ -172,7 +172,7 @@ Section sec.
                     left. abstract(subst; reflexivity).
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
             }
             {
@@ -187,13 +187,13 @@ Section sec.
                         left. reflexivity.
                     }
                     {
-                        right. ltac1:(congruence).
+                        right. ltac1:(abstract congruence).
                     }
                 }
                 {
                     destruct m0 as [|a0].
                     {
-                        right; ltac1:(congruence).
+                        right; ltac1:(abstract congruence).
                     }
                     {
                         destruct a, a0.
@@ -201,7 +201,7 @@ Section sec.
                             assert (IH1 := IHm ltac:(abstract(simpl in *; lia)) m0).
                             destruct IH1 as [IH1|IH1].
                             {
-                                inversion IH1; subst; clear IH1.
+                                injection IH1 as IH1'. clear IH1.
                                 revert ao0.
                                 induction ao; intros ao0.
                                 {
@@ -212,26 +212,26 @@ Section sec.
                                             left. abstract(subst; reflexivity).
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1''. clear IH1.
                                             assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
@@ -239,55 +239,54 @@ Section sec.
                                                 left; reflexivity.
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1''. clear IH1.
                                             assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                inversion IH2; subst; clear IH2.
-                                                left; reflexivity.
+                                                left; abstract(inversion IH2; subst; clear IH2; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                 }
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                         {
                             specialize (IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
@@ -295,16 +294,16 @@ Section sec.
 
                             destruct IHsz as [IHsz|IHsz], IHm as [IHm|IHm].
                             {
-                                inversion IHm; subst; left. reflexivity.
+                                left. abstract(inversion IHm; subst; reflexivity).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                     }
@@ -319,10 +318,10 @@ Section sec.
                     left. reflexivity.
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
                 {
-                    right; ltac1:(congruence).
+                    right; ltac1:(abstract congruence).
                 }
                 {
                     revert p0.
@@ -334,10 +333,10 @@ Section sec.
                         assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                         destruct IH1 as [IH1|IH1].
                         {
-                            inversion IH1; subst; left; reflexivity.
+                            left; abstract(inversion IH1; subst; reflexivity).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                     }
                     {
@@ -357,26 +356,26 @@ Section sec.
                                         left. abstract(subst; reflexivity).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                             }
                             {
                                 destruct ao0.
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                                 {
                                     assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                     destruct IH1 as [IH1|IH1].
                                     {
-                                        inversion IH1; subst; clear IH1.
+                                        injection IH1 as IH1''. clear IH1.
                                         assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                         destruct IH2 as [IH2|IH2].
                                         {
@@ -384,67 +383,66 @@ Section sec.
                                             left; reflexivity.
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                             }
                             {
                                 destruct ao0.
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                                 {
                                     assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                     destruct IH1 as [IH1|IH1].
                                     {
-                                        inversion IH1; subst; clear IH1.
+                                        injection IH1 as IH1''. clear IH1.
                                         assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                         destruct IH2 as [IH2|IH2].
                                         {
-                                            inversion IH2; subst; clear IH2.
-                                            left; reflexivity.
+                                            left; abstract(inversion IH2; subst; clear IH2; reflexivity).
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                             }
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                         {
                             assert (IH1 := IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
                             destruct IH1 as [IH1|IH1].
                             {
-                                subst; left; reflexivity.
+                                left; abstract(subst; reflexivity).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                     }
                     {
                         destruct p0;
                         try (solve [left; reflexivity]);
-                        try (solve [right;ltac1:(congruence)]).
+                        try (solve [right;ltac1:(abstract congruence)]).
 
                         destruct a,t.
                         {
@@ -452,7 +450,7 @@ Section sec.
                             assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                             destruct IH1 as [IH1|IH1].
                             {
-                                inversion IH1; subst; clear IH1.
+                                injection IH1 as IH1''. clear IH1.
                                 revert ao0.
                                 induction ao; intros ao0.
                                 {
@@ -463,83 +461,81 @@ Section sec.
                                             left. abstract(subst; reflexivity).
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1'''. clear IH1.
                                             assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                subst.
-                                                left; reflexivity.
+                                                left; abstract(subst; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1'''. clear IH1.
                                             assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                inversion IH2; subst; clear IH2.
-                                                left; reflexivity.
+                                                left; abstract(inversion IH2; subst; clear IH2; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                 }
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                         {
                             assert (IH1 := IHsz operand ltac:(abstract(simpl in *; lia)) operand0).
@@ -550,14 +546,14 @@ Section sec.
                                 assert (IH2 := IHp ltac:(abstract(simpl in *; lia)) p0).
                                 destruct IH2 as [IH2|IH2].
                                 {
-                                    inversion IH2; subst; clear IH2; left; reflexivity.
+                                    left; abstract(inversion IH2; subst; clear IH2; reflexivity).
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                     }
@@ -569,11 +565,11 @@ Section sec.
                         assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                         destruct IH1 as [IH1|IH1].
                         {
-                            inversion IH1; subst; clear IH1.
-                            left. reflexivity.
+                            
+                            left. abstract(inversion IH1; subst; clear IH1; reflexivity).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract congruence).
                         }
                     }
                     {
@@ -585,18 +581,16 @@ Section sec.
                         assert (IH2 := IHp2 ltac:(abstract(simpl in *; lia)) p0_2).
                         destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
                         {
-                            inversion IH1; subst; clear IH1.
-                            inversion IH2; subst; clear IH2.
-                            left. reflexivity.
+                            left. abstract (inversion IH1; subst; clear IH1; inversion IH2; subst; clear IH2; reflexivity).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract(congruence)).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract(congruence)).
                         }
                         {
-                            right; ltac1:(congruence).
+                            right; ltac1:(abstract(congruence)).
                         }
                     }
                     {
@@ -606,14 +600,13 @@ Section sec.
 
                         destruct a,t;
                         try (solve [left; reflexivity]);
-                        try (solve [right;ltac1:(congruence)]).
+                        try (solve [right;ltac1:(abstract congruence)]).
 
                         {
                             assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                             destruct IH1 as [IH1|IH1].
                             {
-                                inversion IH1; subst; clear IH1.
-
+                                injection IH1 as IH1'''. clear IH1.
 
                                 revert ao0.
                                 induction ao; intros ao0.
@@ -625,75 +618,73 @@ Section sec.
                                             left. abstract(subst; reflexivity).
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1''. clear IH1.
                                             assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                subst.
-                                                left; reflexivity.
+                                                left; abstract(subst; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1''''. clear IH1.
                                             assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                inversion IH2; subst; clear IH2.
-                                                left; reflexivity.
+                                                left; abstract(inversion IH2; subst; clear IH2; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                 }
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                         {
@@ -704,15 +695,14 @@ Section sec.
                                 assert (IH1 := IHp ltac:(abstract(simpl in *; lia)) p0).
                                 destruct IH1 as [IH1|IH1].
                                 {
-                                    inversion IH1; subst; clear IH1.
-                                    left. reflexivity.
+                                    left. abstract(inversion IH1; subst; clear IH1; reflexivity).
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                     }
@@ -723,15 +713,15 @@ Section sec.
 
                         destruct a,t;
                         try (solve [left; reflexivity]);
-                        try (solve [right;ltac1:(congruence)]).
+                        try (solve [right;ltac1:(abstract congruence)]).
 
                         {
                             assert (IH1 := IHp1 ltac:(abstract(simpl in *; lia)) p0_1).
                             assert (IH2 := IHp2 ltac:(abstract(simpl in *; lia)) p0_2).
                             destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
                             {
-                                inversion IH1; subst; clear IH1.
-                                inversion IH2; subst; clear IH2.
+                                injection IH1 as IH1'''. clear IH1.
+                                injection IH2 as IH2'''. clear IH2.
                                 
                                 revert ao0.
                                 induction ao; intros ao0.
@@ -743,82 +733,80 @@ Section sec.
                                             left. abstract(subst; reflexivity).
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao ltac:(abstract(simpl in *; lia)) ao0).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1''''. clear IH1.
                                             assert(IH2 := IHsz b ltac:(abstract(simpl in *; lia)) b0).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                subst.
-                                                left; reflexivity.
+                                                left; abstract(subst; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                 }
                                 {
                                     destruct ao0.
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
-                                        right; ltac1:(congruence).
+                                        right; ltac1:(abstract congruence).
                                     }
                                     {
                                         assert (IH1 := IHao1 ltac:(abstract(simpl in *; lia)) ao0_1).
                                         destruct IH1 as [IH1|IH1].
                                         {
-                                            inversion IH1; subst; clear IH1.
+                                            injection IH1 as IH1''''. clear IH1.
                                             assert(IH2 := IHao2 ltac:(abstract(simpl in *; lia)) ao0_2).
                                             destruct IH2 as [IH2|IH2].
                                             {
-                                                inversion IH2; subst; clear IH2.
-                                                left; reflexivity.
+                                                left; abstract(inversion IH2; subst; clear IH2; reflexivity).
                                             }
                                             {
-                                                right; ltac1:(congruence).
+                                                right; ltac1:(abstract congruence).
                                             }
                                         }
                                         {
-                                            right; ltac1:(congruence).
+                                            right; ltac1:(abstract congruence).
                                         }
                                     }
                                 }
 
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                         {
@@ -828,24 +816,24 @@ Section sec.
 
                             destruct IH1 as [IH1|IH1], IH2 as [IH2|IH2].
                             {
-                                inversion IH1; subst; clear IH1.
-                                inversion IH2; subst; clear IH2.
+                                injection IH1 as IH1'''. clear IH1.
+                                injection IH2 as IH2'''. clear IH2.
                                 destruct IH3 as [IH3|IH3].
                                 {
-                                    subst. left. reflexivity.
+                                    left. abstract(subst; reflexivity).
                                 }
                                 {
-                                    right; ltac1:(congruence).
+                                    right; ltac1:(abstract congruence).
                                 }
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                             {
-                                right; ltac1:(congruence).
+                                right; ltac1:(abstract congruence).
                             }
                         }
                     }
@@ -855,13 +843,15 @@ Section sec.
         }
     Defined.
 
+    (* Print BuiltinValue0_eqdec_helper_0. *)
+
     #[export]
     Instance BuiltinValue0_eqdec : EqDecision BuiltinValue0.
     Proof.
         intros x y.
         unfold Decision.
         eapply BuiltinValue0_eqdec_helper_0.
-        apply reflexivity.
+        abstract(apply reflexivity).
     Defined.
 
     Inductive BVLeaf :=
@@ -1191,7 +1181,7 @@ Section sec.
                     simpl in IHm.
                     rewrite bind_Some in IHm.
                     destruct IHm as [x [IHm1 IHm2]].
-                    inversion IHm2; subst; clear IHm2.    
+                    injection IHm2 as IHm2'. clear IHm2.  
                     induction ao.
                     {
                         simpl.
@@ -1201,6 +1191,7 @@ Section sec.
                         rewrite bind_Some.
                         exists m.
                         split>[|reflexivity].
+                        subst.
                         apply IHm1.
                     }
                     {
@@ -1212,6 +1203,7 @@ Section sec.
                             simpl in Hr.
                             ltac1:(lia).
                         }
+                        subst.
                         destruct IHao as [x [IHao1 IHao2]].
                         inversion IHao2; subst; clear IHao2.
                         rewrite bind_Some in IHao1.
@@ -1273,6 +1265,7 @@ Section sec.
                             simpl in Hr. ltac1:(lia).
                         }
                         rewrite bind_Some in IHao1.
+                        subst.
                         destruct IHao1 as [x [IHao11 IHao12]].
                         inversion IHao12; subst; clear IHao12.
                         rewrite bind_Some in IHao11.
