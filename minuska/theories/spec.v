@@ -5,10 +5,6 @@ From Minuska Require Import
 From Equations Require Export Equations.
 
 
-(*
-    Here we define an alternative, more user-friendly term structure.
-*)
-
 Unset Elimination Schemes.
 #[universes(polymorphic=yes, cumulative=yes)]
 Inductive TermOver' {T : Type} (A : Type) : Type :=
@@ -330,6 +326,12 @@ Class Satisfies
     {_VV: VarsOf V var}
     :=
 mkSatisfies {
+    (*
+        `satisfies` lives in `Type`, because (1) the lowlevel language
+         uses `Inductive`s to give meaning to `satisfies`,
+         and in the translation from MinusL we need to do case analysis on these
+         whose result is not in Prop.
+    *)
     satisfies :
         V -> A -> B -> Type ;
 }.
@@ -371,6 +373,65 @@ Instance VarsOf_Valuation2
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
+
+
+#[export]
+Instance VarsOf_TermOver
+    {T0 : Type}
+    {T var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VT : VarsOf T var}
+    :
+    VarsOf (@TermOver' T0 T) var
+:=
+{|
+    vars_of := (fix go (t : @TermOver' T0 T) := 
+        match t with
+        | t_over x => vars_of x
+        | t_term _ l => ⋃ (go <$> l)
+        end
+    ) ; 
+|}.
+
+Definition vars_of_BoV
+    {Σ : StaticModel}
+    (bov : BuiltinOrVar)
+    : gset variable
+:=
+match bov with
+| bov_variable x => {[x]}
+| bov_builtin _ => ∅
+end.
+
+#[export]
+Instance VarsOf_BoV
+    {Σ : StaticModel}
+    : VarsOf BuiltinOrVar variable
+:= {|
+    vars_of := vars_of_BoV ; 
+|}.
+
+
+#[export]
+Instance VarsOf_TermOver_BuiltinOrVar
+    {Σ : StaticModel}
+    :
+    VarsOf (TermOver BuiltinOrVar) variable
+.
+Proof.
+    apply VarsOf_TermOver.
+Defined.
+
+#[export]
+Instance VarsOf_TermOver_Expression2
+    {Σ : StaticModel}
+    :
+    VarsOf (TermOver Expression2) variable
+.
+Proof.
+    apply VarsOf_TermOver.
+Defined.
 
 
 
@@ -525,63 +586,6 @@ Instance Satisfies_Valuation2_scs2
 
 
 
-#[export]
-Instance VarsOf_TermOver
-    {T0 : Type}
-    {T var : Type}
-    {_EDv : EqDecision var}
-    {_Cv : Countable var}
-    {_VT : VarsOf T var}
-    :
-    VarsOf (@TermOver' T0 T) var
-:=
-{|
-    vars_of := (fix go (t : @TermOver' T0 T) := 
-        match t with
-        | t_over x => vars_of x
-        | t_term _ l => ⋃ (go <$> l)
-        end
-    ) ; 
-|}.
-
-Definition vars_of_BoV
-    {Σ : StaticModel}
-    (bov : BuiltinOrVar)
-    : gset variable
-:=
-match bov with
-| bov_variable x => {[x]}
-| bov_builtin _ => ∅
-end.
-
-#[export]
-Instance VarsOf_BoV
-    {Σ : StaticModel}
-    : VarsOf BuiltinOrVar variable
-:= {|
-    vars_of := vars_of_BoV ; 
-|}.
-
-
-#[export]
-Instance VarsOf_TermOver_BuiltinOrVar
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver BuiltinOrVar) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
-
-#[export]
-Instance VarsOf_TermOver_Expression2
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver Expression2) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
 
 
 #[export]
@@ -605,9 +609,9 @@ Definition rewrites_in_valuation_under_to
     (under : Act)
     (to : TermOver builtin_value)
     : Type
-:= ((@satisfies Σ Valuation2 (TermOver builtin_value) (TermOver BuiltinOrVar) (@variable Σ) _ _ _ _ _ ρ from (r_from r))
-* (@satisfies Σ Valuation2 (TermOver builtin_value) (TermOver Expression2) (@variable Σ) _ _ _ _ _ ρ to (r_to r))
-* (@satisfies Σ Valuation2 unit (list SideCondition2) (@variable Σ) _ _ _ _ _ ρ tt (r_scs r))
+:= ((satisfies ρ from (r_from r))
+* (satisfies ρ to (r_to r))
+* (satisfies ρ tt (r_scs r))
 * (under = r_act r)
 )%type
 .
