@@ -4,6 +4,18 @@ From Minuska Require Import
     lowlang
 .
 
+Fixpoint vars_of_to_l2r
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    : list variable
+:= 
+    match t with
+    | t_over (bov_builtin _) => []
+    | t_over (bov_variable x) => [x]
+    | t_term s l => concat (map vars_of_to_l2r l)
+    end
+.
+
 Lemma vars_of_to_l2r_of_tob
     {Σ : StaticModel}
     (r : TermOver builtin_value)

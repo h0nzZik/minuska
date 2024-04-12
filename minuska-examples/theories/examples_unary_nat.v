@@ -1,8 +1,7 @@
 
 From Minuska Require Import
     prelude
-    spec_syntax
-    spec_semantics
+    spec
     string_variables
     builtins
     naive_interpreter

@@ -3,9 +3,8 @@ From Coq.Logic Require Import ProofIrrelevance.
 
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
     syntax_properties
-    spec_semantics
     string_variables
     builtins
     spec_interpreter

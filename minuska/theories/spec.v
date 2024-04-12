@@ -4,7 +4,11 @@ From Minuska Require Import
 
 From Equations Require Export Equations.
 
-
+(*
+    TermOver' is the main structure for representing
+    both concrete and symbolic configurations,
+    as well as expression terms
+*)
 Unset Elimination Schemes.
 #[universes(polymorphic=yes, cumulative=yes)]
 Inductive TermOver' {T : Type} (A : Type) : Type :=
@@ -154,17 +158,6 @@ match t with
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size) l)
 end.
 
-Fixpoint vars_of_to_l2r
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    : list variable
-:= 
-    match t with
-    | t_over (bov_builtin _) => []
-    | t_over (bov_variable x) => [x]
-    | t_term s l => concat (map vars_of_to_l2r l)
-    end
-.
 
 
 Fixpoint TermOverBoV_subst
