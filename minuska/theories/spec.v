@@ -7,7 +7,9 @@ From Equations Require Export Equations.
 (*
     TermOver' is the main structure for representing
     both concrete and symbolic configurations,
-    as well as expression terms
+    as well as expression terms.
+    Since Coq will not generate strong enough induction principle.
+    we need to define our own.
 *)
 Unset Elimination Schemes.
 #[universes(polymorphic=yes, cumulative=yes)]
@@ -55,6 +57,12 @@ Class Symbols (symbol : Type) := {
     symbol_countable :: Countable symbol ;
 }.
 
+(*
+    Interface for builtin data types.
+    We differentiate between nulary, unary, binary, and ternary
+    function symbols in order not to have to dependently encode arity.
+    Functions of higher arity are rare (and usually they are a sign of a poor design of the type).
+*)
 Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
     builtin_value
         : Type ;
@@ -112,6 +120,7 @@ Class StaticModel := {
     variables :: MVariables variable ;
 }.
 
+(* A class for querying variables of syntactic constructs. *)
 Class VarsOf
     (A : Type)
     (var: Type)
@@ -124,6 +133,41 @@ Class VarsOf
 
 Arguments vars_of : simpl never.
 
+#[export]
+Instance VarsOf_symbol
+    {Σ : StaticModel}
+    : VarsOf symbol variable
+:= {|
+    vars_of := fun _ => ∅ ; 
+|}.
+
+#[export]
+Instance VarsOf_builtin
+    {Σ : StaticModel}
+    : VarsOf builtin_value variable
+:= {|
+    vars_of := fun _ => ∅ ; 
+|}.
+
+
+#[export]
+Instance VarsOf_TermOver
+    {T0 : Type}
+    {T var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VT : VarsOf T var}
+    :
+    VarsOf (@TermOver' T0 T) var
+:=
+{|
+    vars_of := (fix go (t : @TermOver' T0 T) := 
+        match t with
+        | t_over x => vars_of x
+        | t_term _ l => ⋃ (go <$> l)
+        end
+    ) ; 
+|}.
 
 Inductive Expression2
     {Σ : StaticModel}
@@ -135,6 +179,29 @@ Inductive Expression2
 | e_binary (f : builtin_binary_function) (t1 : Expression2) (t2 : Expression2)
 | e_ternary (f : builtin_ternary_function) (t1 : Expression2) (t2 : Expression2) (t3 : Expression2)
 .
+
+
+Fixpoint vars_of_Expression2
+    {Σ : StaticModel}
+    (t : Expression2)
+    : gset variable :=
+match t with
+| e_ground _ => ∅
+| e_variable x => {[x]}
+| e_nullary _ => ∅
+| e_unary _ t' => vars_of_Expression2 t'
+| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
+| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
+end.
+
+
+#[export]
+Instance VarsOf_Expression2
+    {Σ : StaticModel}
+    : VarsOf Expression2 variable
+:= {|
+    vars_of := vars_of_Expression2 ; 
+|}.
 
 
 Inductive BuiltinOrVar {Σ : StaticModel} :=
@@ -159,23 +226,6 @@ match t with
 end.
 
 
-
-Fixpoint TermOverBoV_subst
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    (x : variable)
-    (t' : TermOver BuiltinOrVar)
-:=
-match t with
-| t_over (bov_builtin b) => t_over (bov_builtin b)
-| t_over (bov_variable y) =>
-    match (decide (x = y)) with
-    | left _ => t'
-    | right _ => t_over (bov_variable y)
-    end
-| t_term s l => t_term s (map (fun t'' => TermOverBoV_subst t'' x t') l)
-end.
-
 Fixpoint TermOver_map
     {Σ : StaticModel}
     {A B : Type}
@@ -197,27 +247,6 @@ Definition TermOverBuiltin_to_TermOverBoV
     TermOver_map bov_builtin t
 .
 
-
-
-
-Fixpoint Expression2_subst
-    {Σ : StaticModel}
-    (e : Expression2)
-    (x : variable)
-    (e' : Expression2)
-    : Expression2
-:=    
-match e with
-| e_ground g => e_ground g
-| e_variable y =>
-    if (decide (y = x)) then e' else (e_variable y)
-| e_nullary f => e_nullary f
-| e_unary f e1 => e_unary f (Expression2_subst e1 x e')
-| e_binary f e1 e2 => e_binary f (Expression2_subst e1 x e') (Expression2_subst e2 x e')
-| e_ternary f e1 e2 e3 => e_ternary f (Expression2_subst e1 x e') (Expression2_subst e2 x e') (Expression2_subst e3 x e')
-end
-.
-
 Record SideCondition2
     {Σ : StaticModel}
     :=
@@ -225,72 +254,6 @@ mkSideCondition2 {
     sc_left: Expression2 ;
     sc_right: Expression2 ;
 }.
-
-
-Record RewritingRule2
-    {Σ : StaticModel}
-    (Act : Set)
-:= mkRewritingRule2
-{
-    r_from : TermOver BuiltinOrVar ;
-    r_to : TermOver Expression2 ;
-    r_scs : list SideCondition2 ;
-    r_act : Act ;
-}.
-
-Arguments r_from {Σ} {Act%_type_scope} r.
-Arguments r_to {Σ} {Act%_type_scope} r.
-Arguments r_scs {Σ} {Act%_type_scope} r.
-Arguments r_act {Σ} {Act%_type_scope} r.
-
-
-
-Definition RewritingTheory2
-    {Σ : StaticModel}
-    (Act : Set)
-    := list (RewritingRule2 Act)
-.
-
-
-Fixpoint vars_of_Expression2
-    {Σ : StaticModel}
-    (t : Expression2)
-    : gset variable :=
-match t with
-| e_ground _ => ∅
-| e_variable x => {[x]}
-| e_nullary _ => ∅
-| e_unary _ t' => vars_of_Expression2 t'
-| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
-| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
-end.
-
-#[export]
-Instance VarsOf_Expression2
-    {Σ : StaticModel}
-    : VarsOf Expression2 variable
-:= {|
-    vars_of := vars_of_Expression2 ; 
-|}.
-
-
-
-#[export]
-Instance VarsOf_symbol
-    {Σ : StaticModel}
-    : VarsOf symbol variable
-:= {|
-    vars_of := fun _ => ∅ ; 
-|}.
-
-#[export]
-Instance VarsOf_builtin
-    {Σ : StaticModel}
-    : VarsOf builtin_value variable
-:= {|
-    vars_of := fun _ => ∅ ; 
-|}.
-
 
 #[export]
 Instance VarsOf_SideCondition2
@@ -308,84 +271,22 @@ Program Instance VarsOf_list_SideCondition2
     vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.
 
-
-
-Class Satisfies
+Record RewritingRule2
     {Σ : StaticModel}
-    (V A B var : Type)
-    {_SV : SubsetEq V}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_VV: VarsOf V var}
-    :=
-mkSatisfies {
-    (*
-        `satisfies` lives in `Type`, because (1) the lowlevel language
-         uses `Inductive`s to give meaning to `satisfies`,
-         and in the translation from MinusL we need to do case analysis on these
-         whose result is not in Prop.
-    *)
-    satisfies :
-        V -> A -> B -> Type ;
+    (Act : Set)
+:= mkRewritingRule2
+{
+    r_from : TermOver BuiltinOrVar ;
+    r_to : TermOver Expression2 ;
+    r_scs : list SideCondition2 ;
+    r_act : Act ;
 }.
 
-Arguments satisfies : simpl never.
+Arguments r_from {Σ} {Act%_type_scope} r.
+Arguments r_to {Σ} {Act%_type_scope} r.
+Arguments r_scs {Σ} {Act%_type_scope} r.
+Arguments r_act {Σ} {Act%_type_scope} r.
 
-
-Definition Valuation2
-    {Σ : StaticModel}
-:=
-    gmap variable (TermOver builtin_value)
-.
-
-
-#[export]
-Instance Subseteq_Valuation2 {Σ : StaticModel}
-    : SubsetEq Valuation2
-.
-Proof.
-    unfold Valuation2.
-    apply _.
-Defined.
-
-#[export]
-Instance VarsOf_Valuation2_
-    {Σ : StaticModel}
-    {var : Type}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
-:= {|
-    vars_of := fun ρ => dom ρ ; 
-|}.
-
-#[export]
-Instance VarsOf_Valuation2
-    {Σ : StaticModel}
-    : VarsOf (Valuation2) variable
-:= {|
-    vars_of := fun ρ => dom ρ ; 
-|}.
-
-
-#[export]
-Instance VarsOf_TermOver
-    {T0 : Type}
-    {T var : Type}
-    {_EDv : EqDecision var}
-    {_Cv : Countable var}
-    {_VT : VarsOf T var}
-    :
-    VarsOf (@TermOver' T0 T) var
-:=
-{|
-    vars_of := (fix go (t : @TermOver' T0 T) := 
-        match t with
-        | t_over x => vars_of x
-        | t_term _ l => ⋃ (go <$> l)
-        end
-    ) ; 
-|}.
 
 Definition vars_of_BoV
     {Σ : StaticModel}
@@ -426,7 +327,73 @@ Proof.
     apply VarsOf_TermOver.
 Defined.
 
+(* A rewriting theory is a list of rewriting rules. *)
+Definition RewritingTheory2
+    {Σ : StaticModel}
+    (Act : Set)
+    := list (RewritingRule2 Act)
+.
 
+(*
+    Interface representing the satisfaction relation (⊨)
+    between various things.
+*)
+Class Satisfies
+    {Σ : StaticModel}
+    (V A B var : Type)
+    {_SV : SubsetEq V}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    {_VV: VarsOf V var}
+    :=
+mkSatisfies {
+    (*
+        `satisfies` lives in `Type`, because (1) the lowlevel language
+         uses `Inductive`s to give meaning to `satisfies`,
+         and in the translation from MinusL we need to do case analysis on these
+         whose result is not in Prop.
+    *)
+    satisfies :
+        V -> A -> B -> Type ;
+}.
+
+Arguments satisfies : simpl never.
+
+(* A valuation is a mapping from variables to groun terms. *)
+Definition Valuation2
+    {Σ : StaticModel}
+:=
+    gmap variable (TermOver builtin_value)
+.
+
+
+#[export]
+Instance Subseteq_Valuation2 {Σ : StaticModel}
+    : SubsetEq Valuation2
+.
+Proof.
+    unfold Valuation2.
+    apply _.
+Defined.
+
+#[export]
+Instance VarsOf_Valuation2_
+    {Σ : StaticModel}
+    {var : Type}
+    {_varED : EqDecision var}
+    {_varCnt : Countable var}
+    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
+
+#[export]
+Instance VarsOf_Valuation2
+    {Σ : StaticModel}
+    : VarsOf (Valuation2) variable
+:= {|
+    vars_of := fun ρ => dom ρ ; 
+|}.
 
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     {Σ : StaticModel}
@@ -480,8 +447,6 @@ Proof.
     ltac1:(lia)).
 Defined.
 
-
-
 Fixpoint Expression2_evaluate
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -505,8 +470,6 @@ match t with
     e3 ← Expression2_evaluate ρ t3;
     Some ((builtin_ternary_function_interp f (e1) (e2) (e3)))
 end.
-
-
 
 
 Equations? sat2E
@@ -576,10 +539,6 @@ Instance Satisfies_Valuation2_scs2
 := {|
     satisfies := fun ρ _ l => forall x, x ∈ l -> satisfies ρ () x;
 |}.
-
-
-
-
 
 #[export]
 Instance Satisfies_Valuation2_TermOverBuiltin_TermOverBoV

@@ -2,6 +2,7 @@ From Minuska Require Import
     prelude
     spec
     lowlang
+    properties
     semantics_properties
     basic_matching
     varsof

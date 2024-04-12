@@ -4,6 +4,40 @@ From Minuska Require Import
     lowlang
 .
 
+Fixpoint TermOverBoV_subst
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    (x : variable)
+    (t' : TermOver BuiltinOrVar)
+:=
+match t with
+| t_over (bov_builtin b) => t_over (bov_builtin b)
+| t_over (bov_variable y) =>
+    match (decide (x = y)) with
+    | left _ => t'
+    | right _ => t_over (bov_variable y)
+    end
+| t_term s l => t_term s (map (fun t'' => TermOverBoV_subst t'' x t') l)
+end.
+
+Fixpoint Expression2_subst
+    {Σ : StaticModel}
+    (e : Expression2)
+    (x : variable)
+    (e' : Expression2)
+    : Expression2
+:=    
+match e with
+| e_ground g => e_ground g
+| e_variable y =>
+    if (decide (y = x)) then e' else (e_variable y)
+| e_nullary f => e_nullary f
+| e_unary f e1 => e_unary f (Expression2_subst e1 x e')
+| e_binary f e1 e2 => e_binary f (Expression2_subst e1 x e') (Expression2_subst e2 x e')
+| e_ternary f e1 e2 e3 => e_ternary f (Expression2_subst e1 x e') (Expression2_subst e2 x e') (Expression2_subst e3 x e')
+end
+.
+
 Fixpoint vars_of_to_l2r
     {Σ : StaticModel}
     (t : TermOver BuiltinOrVar)

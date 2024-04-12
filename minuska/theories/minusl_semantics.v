@@ -4,6 +4,7 @@ From Minuska Require Import
     minusl_syntax
     spec
     lowlang
+    properties
 .
 
 

@@ -5,6 +5,7 @@ From Minuska Require Import
     spec
     lowlang
     syntax_properties
+    properties
     varsof
 .
 
