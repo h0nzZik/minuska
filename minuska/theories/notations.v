@@ -1,9 +1,7 @@
 
 From Minuska Require Import
     prelude
-    spec_syntax
-    spec_semantics
-    string_variables
+    spec
 .
 
 Declare Scope RuleScope.

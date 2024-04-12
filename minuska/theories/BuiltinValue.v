@@ -1,7 +1,7 @@
 From Minuska Require Import
     prelude
-    spec_syntax
-    syntax_properties
+    spec
+    lowlang (* TODO get rid of this dependency *)
 .
 
 (* Compute (decide ((1%Z) = (2%Z))). *)

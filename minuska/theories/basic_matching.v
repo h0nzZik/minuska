@@ -1,10 +1,11 @@
 
 From Minuska Require Import
     prelude
-    spec_syntax
-    spec_semantics
+    spec
+    lowlang
     syntax_properties
     semantics_properties
+    properties
 .
 
 Require Import Logic.PropExtensionality.

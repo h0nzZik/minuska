@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
+    lowlang
     syntax_properties
     notations
     default_static_model

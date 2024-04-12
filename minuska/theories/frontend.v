@@ -1,6 +1,6 @@
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
     notations
     default_static_model
     builtins
@@ -176,15 +176,6 @@ Definition argument_sequence
 :=
     to_var <$> (argument_name <$> (seq 0 arity))
 .
-
-Definition NamedRewritingRule
-    {Σ : StaticModel}
-    {Act : Set}
-    : Type
-:=
-    prod label (RewritingRule Act)
-.
-
 
 Record State {Σ : StaticModel} {Act : Set}
 := mkState {

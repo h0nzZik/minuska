@@ -1,10 +1,12 @@
 
 From Minuska Require Import
     prelude
-    spec_syntax
-    spec_semantics
+    spec
+    lowlang
+    varsof
     syntax_properties
-    semantics_properties
+    properties
+    spec_lowlang_interpreter
     spec_interpreter
     basic_matching
     try_match

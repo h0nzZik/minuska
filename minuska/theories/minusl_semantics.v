@@ -1,8 +1,9 @@
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
     minusl_syntax
-    spec_semantics
+    spec
+    lowlang
 .
 
 

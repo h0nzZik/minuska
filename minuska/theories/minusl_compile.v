@@ -1,8 +1,8 @@
 From Minuska Require Import
     prelude
-    spec_syntax
-    spec_semantics
-    semantics_properties
+    spec
+    lowlang
+    properties
     basic_matching
     varsof
     syntax_properties

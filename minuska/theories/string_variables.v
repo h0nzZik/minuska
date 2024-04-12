@@ -1,6 +1,6 @@
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
 .
 
 Definition StringVariables : MVariables string

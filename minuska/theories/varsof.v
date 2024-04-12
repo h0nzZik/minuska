@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
+    lowlang
 .
 
 Fixpoint vars_of_Expression
@@ -67,23 +68,6 @@ Instance VarsOf_aosB
     vars_of := vars_of_aosB ; 
 |}.
 
-Definition vars_of_BoV
-    {Σ : StaticModel}
-    (bov : BuiltinOrVar)
-    : gset variable
-:=
-match bov with
-| bov_variable x => {[x]}
-| bov_builtin _ => ∅
-end.
-
-#[export]
-Instance VarsOf_BoV
-    {Σ : StaticModel}
-    : VarsOf BuiltinOrVar variable
-:= {|
-    vars_of := vars_of_BoV ; 
-|}.
 
 
 Definition vars_of_SideCondition
@@ -136,66 +120,6 @@ Instance VarsOf_Term'
     vars_of := vars_of_Term'B ; 
 |}.
 
-Fixpoint vars_of_Expression2
-    {Σ : StaticModel}
-    (t : Expression2)
-    : gset variable :=
-match t with
-| e_ground _ => ∅
-| e_variable x => {[x]}
-| e_nullary _ => ∅
-| e_unary _ t' => vars_of_Expression2 t'
-| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
-| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
-end.
-
-#[export]
-Instance VarsOf_Expression2
-    {Σ : StaticModel}
-    : VarsOf Expression2 variable
-:= {|
-    vars_of := vars_of_Expression2 ; 
-|}.
-
-
-#[local]
-Instance VarsOf_TermOver
-    {T0 : Type}
-    {T var : Type}
-    {_EDv : EqDecision var}
-    {_Cv : Countable var}
-    {_VT : VarsOf T var}
-    :
-    VarsOf (@TermOver' T0 T) var
-:=
-{|
-    vars_of := (fix go (t : @TermOver' T0 T) := 
-        match t with
-        | t_over x => vars_of x
-        | t_term _ l => ⋃ (go <$> l)
-        end
-    ) ; 
-|}.
-
-#[export]
-Instance VarsOf_TermOver_BuiltinOrVar
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver BuiltinOrVar) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
-
-#[export]
-Instance VarsOf_TermOver_Expression2
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver Expression2) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
 
 #[export]
 Instance VarsOf_TermOver_Expression
@@ -263,20 +187,3 @@ Proof.
         }
     }
 Qed.
-
-#[export]
-Instance VarsOf_SideCondition2
-    {Σ : StaticModel}
-    : VarsOf SideCondition2 variable
-:= {|
-    vars_of := fun c => vars_of (sc_left c) ∪ vars_of (sc_right c) ; 
-|}.
-
-#[export]
-Program Instance VarsOf_list_SideCondition2
-    {Σ : StaticModel}
-    : VarsOf (list SideCondition2) variable
-:= {|
-    vars_of := fun scs => ⋃ (vars_of <$> scs)
-|}.
-

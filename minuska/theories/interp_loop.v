@@ -1,7 +1,7 @@
 
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
     naive_interpreter
 .
 

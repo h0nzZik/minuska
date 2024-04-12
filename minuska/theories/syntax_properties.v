@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
-    spec_syntax
+    spec
+    lowlang
 .
 
 Require Import Coq.Logic.FunctionalExtensionality.

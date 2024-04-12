@@ -1,17 +1,5 @@
 
 From Minuska Require Import
     prelude
-    spec_syntax
-    spec_semantics
+    spec
 .
-
-
-Module Semantics.
-    Import Syntax.
-
-
-
-End Semantics.
-
-
-
