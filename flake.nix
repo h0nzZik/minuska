@@ -74,6 +74,8 @@
               coq.ocaml
               coq.ocamlPackages.zarith
               coq.ocamlPackages.menhir
+              coq.ocamlPackages.core
+              coq.ocamlPackages.core_unix
               pkgs.dune_3
             ];
             enableParallelBuilding = true;

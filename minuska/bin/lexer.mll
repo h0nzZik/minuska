@@ -1,5 +1,4 @@
 {
-open Lexing
 open Parser
 
 exception SyntaxError of string
@@ -21,7 +20,6 @@ let var = ['A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 rule read =
   parse
   | white        { read lexbuf }
-  | newline      { next_line lexbuf; read lexbuf }
   | int          { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | id           { ID (Lexing.lexeme lexbuf)  }
   | var           { VAR (Lexing.lexeme lexbuf)  }
@@ -42,7 +40,6 @@ rule read =
   | "=>"         { ARROW }
   | ";"          { SEMICOLON }
   | ":"          { COLON }
-  | '"'          { read_string (Buffer.create 17) lexbuf }
   | ':'          { COLON }
   | ','          { COMMA }
   | _            { raise (SyntaxError ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }
