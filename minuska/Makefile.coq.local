@@ -1,5 +1,12 @@
 COQDOCEXTRAFLAGS := --gallina
 
+src/minuska_lexer.ml: src/minuska_lexer.mll
+	ocamllex $< -o $@
+ 
+src/minuska_parser.ml: src/minuska_parser.mly
+	menhir $< -o $@
+
+
 number_example.bin: src/example_lang_driver.ml all
 	ocamlc -w -20 -w -26 -o $@  ExampleLang.mli ExampleLang.ml $<
 

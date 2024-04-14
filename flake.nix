@@ -73,6 +73,7 @@
               (stdppFun {lib = coqPackages.lib; mkCoqDerivation = coqPackages.mkCoqDerivation; inherit coq; })
               coq.ocaml
               coq.ocamlPackages.zarith
+              coq.ocamlPackages.menhir
             ];
             enableParallelBuilding = true;
             installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
