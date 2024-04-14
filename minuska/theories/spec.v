@@ -62,6 +62,8 @@ Class Symbols (symbol : Type) := {
     We differentiate between nulary, unary, binary, and ternary
     function symbols in order not to have to dependently encode arity.
     Functions of higher arity are rare (and usually they are a sign of a poor design of the type).
+    TODO: explore having them as functions from lists to option type
+    - we evaluate expressions into option type anyway.
 *)
 Class Builtin {symbol : Type} {symbols : Symbols symbol} := {
     builtin_value
