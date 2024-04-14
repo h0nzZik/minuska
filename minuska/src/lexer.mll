@@ -37,8 +37,9 @@ rule read =
   | "of"         { KEYWORD_OF }
   | "arity"      { KEYWORD_ARITY }
   | "in"         { KEYWORD_IN }
-  | "/"          { KEYWORD_SLASH }
-  | "=>"         { KEYWORD_ARROW }
+  | "where"      { KEYWORD_WHERE }
+  | "/"          { SLASH }
+  | "=>"         { ARROW }
   | ";"          { SEMICOLON }
   | ":"          { COLON }
   | '"'          { read_string (Buffer.create 17) lexbuf }

@@ -52,10 +52,17 @@ type rule =
     cond : expr ;
   }
 
+type strictdecl =
+  {
+    symbol : id ;
+    arity : int ;
+    strict_places : int list ;
+  }
+
 type definition =
   {
     symbols    : (id list);
-    value      : expression ;
+    value      : (var*expression) ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;
   }

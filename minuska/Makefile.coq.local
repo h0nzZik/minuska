@@ -4,7 +4,7 @@ src/minuska_lexer.ml: src/minuska_lexer.mll
 	ocamllex $< -o $@
  
 src/minuska_parser.ml: src/minuska_parser.mly
-	menhir $< -o $@
+	menhir -la 2 $<
 
 
 number_example.bin: src/example_lang_driver.ml all
