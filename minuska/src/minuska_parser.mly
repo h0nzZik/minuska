@@ -1,5 +1,6 @@
 %token <int> INT
 %token <string> ID
+%token <string> VAR
 %token KEYWORD_SYMBOLS
 %token KEYWORD_VALUE
 %token KEYWORD_STRICTNESS
@@ -20,52 +21,23 @@
 
 
 
-%start <imp.ast option> main
+%start <imp.ast option> definition
 
 %type <aexpr> aexpr 
 %type <bexpr> bexpr 
 %type <stmt> stmt
 %%
 
+decl:
+  | KEYWORD_SYMBOLS;
+    COLON;
+    v = separated_list(COMMA, ID);
+    SEMICOLON
+    { SymbolsDecl v }
 
-aexpr:
-  | n = INT               { Some (IntConstant n) }
-  | x = ID                { Some (IntVariable x) }
-  | e1 = aexpr;
-    PLUS;
-    e2 = aexpr            { Some (IntPlus e1 e2) }
-  ;
+  | 
 
-bexpr:
-  | TRUE                  { Some (BoolConstant true) }
-  | FALSE                 { Some (BoolConstant false) }
-  | e1 = bexpr;
-    AND;
-    e2 = bexpr            { Some (BoolAnd e1 e2) }
-  | NOT;
-    e = bexpr             { Some (BoolNot e) }
-  | e1 = aexpr;
-    LEQ;
-    e2 = aexpr            { Some (Leq e1 e2) }
-  ;
-
-stmt:
-  | EOF                   { None }
-  | e = aexpr             { Some e }
-  | x = ID;
-    COLONEQ;
-    e = aexpr             { Some (AssignStmt x e) }
-  | WHILE;
-    LEFT_ROUND_BRACK;
-    b = bexpr;
-    RIGHT_ROUND_BRACK;
-    LEFT_CURLY_BRACK;
-    s = stmt;
-    RIGHT_CURLY_BRACK;
-    SEMICOLON             { Some (WhileStmt b s) }
-  | s1 = stmt; s2 = stmt  { Some (SeqStmt s1 s2) }
-  ;
-
-main:
-  | s = stmt; EOF { s }
+definition:
+  | EOF            { None }
+  | v = list(decl) { Some v }
   ;

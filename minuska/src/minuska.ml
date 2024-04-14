@@ -1,36 +1,61 @@
 type token =
-  | TRUE
-  | FALSE
   | ID of string
+  | VAR of string
   | INT of int
-  | LEFT_CURLY_BRACK
-  | RIGHT_CURLY_BRACK
-  | LEFT_ROUND_BRACK
-  | RIGHT_ROUND_BRACK
+  | KEYWORD_SYMBOLS
+  | KEYWORD_VALUE
+  | KEYWORD_STRICTNESS
+  | KEYWORD_RULE
+  | KEYWORD_OF
+  | KEYWORD_ARITY
+  | KEYWORD_IN
+  | BRACKET_ROUND_LEFT
+  | BRACKET_ROUND_RIGHT
+  | BRACKET_SQUARE_LEFT
+  | BRACKET_SQUARE_RIGHT
+  | SLASH
+  | ARROW
+  | SEMICOLON
+  | COLON
   | COMMA
-  | COLONEQ
   | EOF
 
-type id =
-  [ `Id of string
+
+
+
+type id = [ `Id of string ]
+
+type var = [ `Var of string ]
+
+type pattern = 
+  [ `PVar of var
+  | `PTerm of (id*(pattern list))
   ]
 
-type aexpr =
-  [ `IntConstant of int
-  | `IntVariable of id
-  | `IntPlus of (aexpr * aexpr)
+type groundterm = [ `GTerm of (id*(groundterm list)) ]
+
+type expr =
+  [ `EVar of var
+  | `EGround of groundterm
+  | `ECall of (id*(exprterm list)) 
   ]
 
-type bexpr =
-  [ `BoolConstant of bool
-  | `BoolAnd of (bexpr * bexpr)
-  | `BoolNot of bexpr
-  | `Leq of (aexpr * aexpr)
+type exprterm =
+  [ `EExpr of expr
+  | `ETerm of (id*(exprterm list))
   ]
 
-type stmt =
-  [ `AssignStmt of (string * expr)
-  | `AExprStmt of aexpr
-  | `SeqStmt of (stmt * stmt)
-  | `WhileStmt of (bexpr * stmt)
-  ]
+type rule = 
+  {
+    lhs : pattern ;
+    rhs : exprterm ;
+    cond : expr ;
+  }
+
+type definition =
+  {
+    symbols    : (id list);
+    value      : expression ;
+    strictness : (strictdecl list) ;
+    rules      : (rule list) ;
+  }
