@@ -22,19 +22,8 @@
 
 
 
-%start <minuska.definition option> definition
+%start <(Syntax.definition option)> definition
 %{ open Syntax %}
-
-
-%type <(id list)> symbolsdecl
-%type <expr> expr
-%type <pattern> pattern
-%type <exprterm> exprterm
-%type <groundterm> groundterm
-%type <rule> rule
-%type <strictdecl> strictnessone
-%type <(strictdecl list)> strictnessall
-%type <rule list> list(rule)
 %%
 
 symbolsdecl:
@@ -46,53 +35,50 @@ symbolsdecl:
   ;
 
 strictnessone:
-  | s = ID
-    KEYWORD_OF
-    KEYWORD_ARITY
-    n = INT
-    KEYWORD_IN
-    BRACKET_SQUARE_LEFT
-    pos = separated_list(COMMA, INT)
-    BRACKET_SQUARE_RIGHT
-    SEMICOLON
-    {  }
+  | s = ID;
+    KEYWORD_OF;
+    KEYWORD_ARITY;
+    n = INT;
+    KEYWORD_IN;
+    BRACKET_SQUARE_LEFT;
+    pos = separated_list(COMMA, INT);
+    BRACKET_SQUARE_RIGHT;
+    SEMICOLON;
+    { { symbol = (`Id s); arity = n; strict_places = pos } }
   ;
 
 strictnessall:
-  | KEYWORD_STRICTNESS
-    COLON
-    ss = separated_list(COMMA, strictnessone)
+  | KEYWORD_STRICTNESS;
+    COLON;
+    ss = separated_list(COMMA, strictnessone);
     { ss }
   ;
 
 
 pattern:
-  | x = VAR
-    { `PVar x }
-  | s = ID
-    BRACKET_SQUARE_LEFT
-    es = separated_list(COMMA, pattern)
-    BRACKET_SQUARE_RIGHT
-    { PTerm s es }
+  | x= VAR
+    { `PVar (`Var x) }
+  | s= ID BRACKET_SQUARE_LEFT es= separated_list(COMMA, pattern) BRACKET_SQUARE_RIGHT
+    { `PTerm ((`Id s), es) }
   ;
 
 groundterm:
-  | s = ID
+  | s = ID;
     ts = separated_list(COMMA, groundterm)
-    { (GTerm s ts) }
+    { `GTerm ((`Id s),ts)}
   ;  
 
 
 expr:
   | x = VAR
-    { `EVar x }
+    { `EVar (`Var x) }
   | g = groundterm
     { `EGround g }
   | s = ID
     BRACKET_ROUND_LEFT
     es = separated_list(COMMA, expr)
     BRACKET_ROUND_RIGHT
-    { `ETCall s es }
+    { `ECall ((`Id s),es) }
   ;
 
 exprterm:
@@ -102,7 +88,7 @@ exprterm:
     BRACKET_SQUARE_LEFT
     ts = separated_list(COMMA, exprterm)
     BRACKET_SQUARE_RIGHT
-    { `ETerm s ts }
+    { `ETerm ((`Id s), ts) }
   ;
 
 valuedecl:
@@ -113,13 +99,13 @@ valuedecl:
     COLON 
     e = expr
     SEMICOLON
-    { (x,expr) }
+    { (x,e) }
   ;
 
 rule:
   | KEYWORD_RULE
     BRACKET_SQUARE_LEFT
-    name = ID
+    n = ID
     BRACKET_SQUARE_RIGHT
     COLON
     l = pattern
@@ -128,7 +114,7 @@ rule:
     KEYWORD_WHERE
     c = expr
     SEMICOLON
-    { {lhs = l rhs = r cond = c }  }
+    { {name = n; lhs = l; rhs = r; cond = c }  }
   ;
 
 definition:
@@ -138,5 +124,5 @@ definition:
     sall = strictnessall
     rs = list(rule)
     EOF
-    { { symbols = syms value = v strictness = sall rules = rs } }
+    { Some { symbols = (List.map (fun x -> `Id x) syms); value = (`Var (fst v), (snd v)); strictness = sall; rules = rs } }
   ;

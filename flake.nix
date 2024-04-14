@@ -74,6 +74,7 @@
               coq.ocaml
               coq.ocamlPackages.zarith
               coq.ocamlPackages.menhir
+              pkgs.dune_3
             ];
             enableParallelBuilding = true;
             installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];

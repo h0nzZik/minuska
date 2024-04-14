@@ -25,19 +25,19 @@ type token =
 
 type id = [ `Id of string ]
 
-type var = [ `Var of string ]
+type vari = [ `Var of string ]
 
 type pattern = 
-  [ `PVar of var
+  [ `PVar of vari
   | `PTerm of (id*(pattern list))
   ]
 
 type groundterm = [ `GTerm of (id*(groundterm list)) ]
 
 type expr =
-  [ `EVar of var
+  [ `EVar of vari
   | `EGround of groundterm
-  | `ECall of (id*(exprterm list)) 
+  | `ECall of (id*(expr list)) 
   ]
 
 type exprterm =
@@ -47,6 +47,7 @@ type exprterm =
 
 type rule = 
   {
+    name : string ;
     lhs : pattern ;
     rhs : exprterm ;
     cond : expr ;
@@ -62,7 +63,7 @@ type strictdecl =
 type definition =
   {
     symbols    : (id list);
-    value      : (var*expression) ;
+    value      : (vari*expr) ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;
   }
