@@ -8,6 +8,7 @@ let builtins_alist =
     "bool.and", "b_and";
     "bool.or", "b_or";
     "bool.false", "b_false";
+    "bool.true", "b_true";
     "term.same_symbol", "b_have_same_symbol";
   ]
 
@@ -84,12 +85,12 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option
   match e with
   | `EVar (`Var s) -> (
         match hole with
-        | None -> fprintf oux "(e_variable %s)" s
+        | None -> fprintf oux "(e_variable \"%s\")" s
         | Some s2 ->
             if String.(s = s2) then
                 fprintf oux "(%s)" s2
             else
-                fprintf oux "(e_variable %s)" s
+                fprintf oux "(e_variable \"%s\")" s
         )
   | `EGround g ->
     fprintf oux "(e_ground ";
@@ -129,13 +130,24 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option
 let print_expr (oux : Out_channel.t) (e : expr) : unit =
   print_expr_w_hole oux e None
 
-let _ = print_expr
+let rec print_exprterm (oux : Out_channel.t) (p : exprterm) : unit =
+  match p with
+  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; print_expr oux e; fprintf oux ")";
+  | `ETerm (`Id s, ps) ->
+    fprintf oux "(@t_term symbol Expression2 \"%s\" [" s;
+    myiter (fun x -> print_exprterm oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
+    fprintf oux "])"
+
 
 
 let print_rule (oux : Out_channel.t) (r : rule) : unit =
     fprintf oux "(decl_rule (@mkRuleDeclaration Σ Act \"%s\" (@mkRewritingRule2 Σ Act " (r.name);
     print_pattern oux (r.lhs);
-    print_exprterm oux (r.lhs);
+    fprintf oux " ";
+    print_exprterm oux (r.rhs);
+    fprintf oux " [(mkSideCondition2 _ ((e_nullary default_builtin.b_true)) ";
+    print_expr oux (r.cond);
+    fprintf oux ")] default_act";
     fprintf oux ")))\n";
     ()
 
