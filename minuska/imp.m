@@ -1,10 +1,10 @@
-symbols: plus, minus, ite, while, unitValue ;
+symbols : plus, minus, ite, while, unitValue ;
 
-value(X): bool.or(Z.is(X), Bool.or(Bool.is(X), Symbol.is(unitValue, X))) ;
+value(X): bool.or(z.is(X), bool.or(bool.is(X), symbol.is(unitValue, X))) ;
 
 
 strictness: plus of arity 3 in [0,1] ;
-rule/simple plus-Z-Z: plus[X,Y] =>{a} Z.plus(X, Y) where bool.and(Z.is(X), Z.is(Y)) ;
+rule/simple plus-z-z: plus[X,Y] =>{a} z.plus(X, Y) where bool.and(z.is(X), z.is(Y)) ;
 
 rule/simple [stmt-ite-true]:
 	ite[B,X,Y] => X where B ;

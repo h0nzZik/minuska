@@ -29,7 +29,9 @@
 symbolsdecl:
   | KEYWORD_SYMBOLS
     COLON
+    BRACKET_SQUARE_LEFT
     v = separated_list(COMMA, ID)
+    BRACKET_SQUARE_RIGHT
     SEMICOLON
     { v }
   ;
@@ -50,7 +52,10 @@ strictnessone:
 strictnessall:
   | KEYWORD_STRICTNESS;
     COLON;
+    BRACKET_SQUARE_LEFT;
     ss = separated_list(COMMA, strictnessone);
+    BRACKET_SQUARE_RIGHT;
+    SEMICOLON;
     { ss }
   ;
 
@@ -58,13 +63,18 @@ strictnessall:
 pattern:
   | x= VAR
     { `PVar (`Var x) }
-  | s= ID BRACKET_SQUARE_LEFT es= separated_list(COMMA, pattern) BRACKET_SQUARE_RIGHT
+  | s = ID
+    BRACKET_SQUARE_LEFT 
+    es = separated_list(COMMA, pattern)
+    BRACKET_SQUARE_RIGHT
     { `PTerm ((`Id s), es) }
   ;
 
 groundterm:
   | s = ID;
+    BRACKET_SQUARE_LEFT
     ts = separated_list(COMMA, groundterm)
+    BRACKET_SQUARE_RIGHT
     { `GTerm ((`Id s),ts)}
   ;  
 
@@ -72,7 +82,10 @@ groundterm:
 expr:
   | x = VAR
     { `EVar (`Var x) }
-  | g = groundterm
+  | 
+    BRACKET_SQUARE_LEFT
+    g = groundterm
+    BRACKET_SQUARE_RIGHT
     { `EGround g }
   | s = ID
     BRACKET_ROUND_LEFT
@@ -97,7 +110,9 @@ valuedecl:
     x = VAR 
     BRACKET_ROUND_RIGHT
     COLON 
+    BRACKET_ROUND_LEFT
     e = expr
+    BRACKET_ROUND_RIGHT
     SEMICOLON
     { (x,e) }
   ;
