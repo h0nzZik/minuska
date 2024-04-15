@@ -12,5 +12,6 @@
  (public_name minuska)
  (name main)
  (modules syntax parser lexer main)
- (libraries core core_unix.command_unix)
+ (libraries core core_unix.command_unix core_unix.filename_unix)
+ (preprocess (pps ppx_jane))
  )
