@@ -36,12 +36,19 @@ let parse_with_error lexbuf =
 
 
 let output_part_1 = {|
+Require Extraction.
+Extraction Language OCaml.
+Require Import
+  Coq.extraction.ExtrOcamlString
+  Coq.extraction.ExtrOcamlZBigInt
+.
 From Minuska Require Import
     prelude
     spec
     string_variables
     builtins
     default_static_model
+    naive_interpreter
     frontend
 .
 
@@ -174,21 +181,42 @@ let parse_and_print lexbuf oux =
   | None -> ()
 
 
-
-
-let transform input_filename output_filename () =
+let append_definition input_filename output_channel =
   let inx = In_channel.create input_filename in
-  let oux = Out_channel.create output_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print lexbuf oux;
-  Out_channel.close oux;
-  In_channel.close inx
+  parse_and_print lexbuf output_channel;
+  In_channel.close inx;
+  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act Lang_Decls)). |};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter := naive_interpreter (fst T).|};
+  ()
 
-let compile input_filename output_filename () =
+let transform input_filename output_filename () =
+  let oux = Out_channel.create output_filename in
+  append_definition input_filename oux;
+  Out_channel.close oux;
+  ()
+
+let compile input_filename interpreter_name () =
+  let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
+  let coqfile = Filename.concat mldir "interpreter.v" in
+  let mlfile = Filename.concat mldir "interpreter.ml" in
+  transform input_filename coqfile ();
+  let oux_coqfile = Out_channel.create coqfile in
+  append_definition input_filename oux_coqfile;
+  fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
+  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
+  Out_channel.close oux_coqfile;
+  let _ = Sys_unix.command (String.append "cat " coqfile) in
+  let _ = Sys_unix.command (String.concat ["cd "; mldir; "; coqc "; coqfile]) in
+  let _ = Sys_unix.command (String.concat [
+          "cd "; mldir; "; ";
+          "ocamlfind ocamlc -package zarith -linkpkg -g -w -20 -w -26 -o ";
+          "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile]) in
+  let _ = Sys_unix.command (String.concat ["cp "; mldir; "/interpreter.exe"; " "; interpreter_name]) in
   let _ = input_filename in
-  let _ = output_filename in
-  fprintf stdout "Hello, compiler!\n";
+  let _ = interpreter_name in
+  fprintf stdout "Hello, interpreter!\n";
   ()
 
 let command_generate =
