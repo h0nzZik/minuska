@@ -143,6 +143,7 @@ Module default_builtin.
     | b_map_lookup  (* map -> 'a -> 'b *)
 
     | b_is_applied_symbol (* string -> 'a -> bool*)
+    | b_have_same_symbol (* term -> term -> bool*)
     .
 
     #[export]
@@ -502,6 +503,15 @@ Module default_builtin.
                         match m !! p with
                         | Some v => (prettify v)
                         | None => err
+                        end
+                    | _ => err
+                    end
+                | b_have_same_symbol =>
+                    match v1 with
+                    | t_term s1 _ =>
+                        match v2 with
+                        | t_term s2 _ => (t_over (bv_bool (bool_decide (s1 = s2))))
+                        | _ => err
                         end
                     | _ => err
                     end

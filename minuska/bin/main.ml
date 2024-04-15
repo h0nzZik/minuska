@@ -7,7 +7,8 @@ let builtins_alist =
   [ "bool.neg", "b_bool_neg";
     "bool.and", "b_and";
     "bool.or", "b_or";
-    "bool.false", "b_false"
+    "bool.false", "b_false";
+    "term.same_symbol", "b_have_same_symbol";
   ]
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
@@ -46,10 +47,22 @@ Instance Σ : StaticModel :=
 .
 |}
 
+let output_part_2 = {delimiter|
+#[local]
+Instance ImpDefaults : Defaults := {|
+    default_cseq_name := u_cseq_name ;
+    default_empty_cseq_name := u_empty_cseq_name ;
+    default_context_template
+        := (context-template u_cfg ([ HOLE ]) with HOLE) ;
+
+    default_isValue := isValue ;
+|}.
+|delimiter}
+
 let rec print_groundterm (oux : Out_channel.t) (g : groundterm) : unit =
   match g with
   | `GTerm (`Id s, gs) ->
-    fprintf oux "(@t_term symbol builtin_value %s [" s;
+    fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
     List.iter ~f:(fun x -> print_groundterm oux x; fprintf oux "; ";) gs;
     fprintf oux "])"
 
@@ -83,27 +96,28 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option
     let name0 = Map.find builtins_map s in
     match name0 with
     | None -> failwith (String.append "Unknown builtin: " s)
-    | Some name ->
+    | Some name1 ->
+        let name = (String.append "default_builtin." name1) in
         match List.length es with
         | 0 -> fprintf oux "(e_nullary %s)" name
         | 1 ->
-            fprintf oux "(e_unary %s [" name;
+            fprintf oux "(e_unary %s " name;
             print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux "])"
+            fprintf oux ")"
         | 2 ->
-            fprintf oux "(e_binary %s [" name;
+            fprintf oux "(e_binary %s " name;
             print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux "; ";
+            fprintf oux " ";
             print_expr_w_hole oux (List.nth_exn es 1) hole;
-            fprintf oux "])"
+            fprintf oux ")"
         | 3 ->
-            fprintf oux "(e_ternary %s [" name;
+            fprintf oux "(e_ternary %s " name;
             print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux "; ";
+            fprintf oux " ";
             print_expr_w_hole oux (List.nth_exn es 1) hole;
-            fprintf oux "; ";
+            fprintf oux " ";
             print_expr_w_hole oux (List.nth_exn es 2) hole;
-            fprintf oux "])"
+            fprintf oux ")"
         | _ -> failwith "Bad length"
 
 
@@ -121,6 +135,7 @@ let print_definition def oux =
     fprintf oux " : Expression2) := ";
     print_expr_w_hole oux (snd (def.value)) (Some (match (fst (def.value)) with `Var s -> s));
     fprintf oux ".\n";
+    fprintf oux "%s" output_part_2;
     ()
 
 let parse_and_print lexbuf oux =
