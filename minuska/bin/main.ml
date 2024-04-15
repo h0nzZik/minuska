@@ -4,7 +4,10 @@ open Lexing
 open Syntax
 
 let builtins_alist =
-  [ "bool.neg", "b_bool_neg"; "bool.and", "b_and" ]
+  [ "bool.neg", "b_bool_neg";
+    "bool.and", "b_and";
+    "bool.false", "b_false"
+  ]
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
 
@@ -59,7 +62,7 @@ let rec print_pattern (oux : Out_channel.t) (p : pattern) : unit =
 
 let _ = print_pattern
 
-let print_expr (oux : Out_channel.t) (e : expr) : unit =
+let rec print_expr (oux : Out_channel.t) (e : expr) : unit =
   match e with
   | `EVar (`Var s) -> fprintf oux "(e_variable %s)" s
   | `EGround g ->
@@ -70,10 +73,28 @@ let print_expr (oux : Out_channel.t) (e : expr) : unit =
   | `ECall (`Id s, es) ->
     let name0 = Map.find builtins_map s in
     match name0 with
-    | None -> failwith "Unknown builtin"    
+    | None -> failwith (String.append "Unknown builtin: " s)
     | Some name ->
         match List.length es with
         | 0 -> fprintf oux "(e_nullary %s)" name
+        | 1 ->
+            fprintf oux "(e_unary %s" name;
+            print_expr oux (List.nth_exn es 0);
+            fprintf oux ")"
+        | 2 ->
+            fprintf oux "(e_binary %s" name;
+            print_expr oux (List.nth_exn es 0);
+            fprintf oux ", ";
+            print_expr oux (List.nth_exn es 1);
+            fprintf oux ")"
+        | 3 ->
+            fprintf oux "(e_ternary %s" name;
+            print_expr oux (List.nth_exn es 0);
+            fprintf oux ", ";
+            print_expr oux (List.nth_exn es 1);
+            fprintf oux ", ";
+            print_expr oux (List.nth_exn es 2);
+            fprintf oux ")"
         | _ -> failwith "Bad length"
 
 
