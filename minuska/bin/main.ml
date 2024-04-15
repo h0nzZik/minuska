@@ -62,9 +62,17 @@ let rec print_pattern (oux : Out_channel.t) (p : pattern) : unit =
 
 let _ = print_pattern
 
-let rec print_expr (oux : Out_channel.t) (e : expr) : unit =
+let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option) : unit =
   match e with
-  | `EVar (`Var s) -> fprintf oux "(e_variable %s)" s
+  | `EVar (`Var s) -> (
+        match hole with
+        | None -> fprintf oux "(e_variable %s)" s
+        | Some s2 ->
+            if String.(s = s2) then
+                fprintf oux "(%s)" s2
+            else
+                fprintf oux "(e_variable %s)" s
+        )
   | `EGround g ->
     fprintf oux "(e_ground ";
     print_groundterm oux g;
@@ -79,24 +87,28 @@ let rec print_expr (oux : Out_channel.t) (e : expr) : unit =
         | 0 -> fprintf oux "(e_nullary %s)" name
         | 1 ->
             fprintf oux "(e_unary %s" name;
-            print_expr oux (List.nth_exn es 0);
+            print_expr_w_hole oux (List.nth_exn es 0) hole;
             fprintf oux ")"
         | 2 ->
             fprintf oux "(e_binary %s" name;
-            print_expr oux (List.nth_exn es 0);
+            print_expr_w_hole oux (List.nth_exn es 0) hole;
             fprintf oux ", ";
-            print_expr oux (List.nth_exn es 1);
+            print_expr_w_hole oux (List.nth_exn es 1) hole;
             fprintf oux ")"
         | 3 ->
             fprintf oux "(e_ternary %s" name;
-            print_expr oux (List.nth_exn es 0);
+            print_expr_w_hole oux (List.nth_exn es 0) hole;
             fprintf oux ", ";
-            print_expr oux (List.nth_exn es 1);
+            print_expr_w_hole oux (List.nth_exn es 1) hole;
             fprintf oux ", ";
-            print_expr oux (List.nth_exn es 2);
+            print_expr_w_hole oux (List.nth_exn es 2) hole;
             fprintf oux ")"
         | _ -> failwith "Bad length"
 
+
+
+let print_expr (oux : Out_channel.t) (e : expr) : unit =
+  print_expr_w_hole oux e None
 
 let print_definition def oux =
     let _ = def in
