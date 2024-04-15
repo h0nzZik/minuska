@@ -17,23 +17,45 @@ let parse_with_error lexbuf =
     exit (-1)
 
 
-let print_definition def =
+let output_part_1 = {|
+From Minuska Require Import
+    prelude
+    spec
+    string_variables
+    builtins
+    default_static_model
+    frontend
+.
+
+Variant Act := default_act | invisible_act.
+
+#[local]
+Instance Σ : StaticModel :=
+    default_model (default_builtin.β)
+.
+|}
+
+let print_definition def oux =
     let _ = def in
-    printf("Hello, world\n");
+    fprintf oux "Hello, world\n";
+    fprintf oux "%s" output_part_1;
     ()
 
-let parse_and_print lexbuf =
+let parse_and_print lexbuf oux =
   match parse_with_error lexbuf with
   | Some value ->
-    print_definition value
+    print_definition value oux
   | None -> ()
+
+
+
 
 let transform input_filename output_filename () =
   let inx = In_channel.create input_filename in
   let oux = Out_channel.create output_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print lexbuf;
+  parse_and_print lexbuf oux;
   Out_channel.close oux;
   In_channel.close inx
 
