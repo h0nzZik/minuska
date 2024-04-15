@@ -13,6 +13,10 @@ let builtins_alist =
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
 
+let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
+    let ln = List.length l in
+    List.iteri ~f:(fun idx x -> if (idx + 1 = ln) then (f x) else (f x; g ())) l;
+    ()
 
 let print_position outx lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -49,11 +53,11 @@ Instance Σ : StaticModel :=
 
 let output_part_2 = {delimiter|
 #[local]
-Instance ImpDefaults : Defaults := {|
-    default_cseq_name := u_cseq_name ;
-    default_empty_cseq_name := u_empty_cseq_name ;
+Instance LangDefaults : Defaults := {|
+    default_cseq_name := "__builtin_cseq" ;
+    default_empty_cseq_name := "__builtin_empty_cseq" ;
     default_context_template
-        := (context-template u_cfg ([ HOLE ]) with HOLE) ;
+        := (context-template (@t_term _ _ "u_cfg") ([ HOLE ]) with HOLE) ;
 
     default_isValue := isValue ;
 |}.
@@ -63,15 +67,15 @@ let rec print_groundterm (oux : Out_channel.t) (g : groundterm) : unit =
   match g with
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
-    List.iter ~f:(fun x -> print_groundterm oux x; fprintf oux "; ";) gs;
+    myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;
     fprintf oux "])"
 
 let rec print_pattern (oux : Out_channel.t) (p : pattern) : unit =
   match p with
-  | `PVar (`Var s) -> fprintf oux "(bov_variable %s)" s
+  | `PVar (`Var s) -> fprintf oux "(t_over (bov_variable \"%s\"))" s
   | `PTerm (`Id s, ps) ->
-    fprintf oux "(@t_term symbol BuiltinOrVar %s [" s;
-    List.iter ~f:(fun x -> print_pattern oux x; fprintf oux "; ";) ps;
+    fprintf oux "(@t_term symbol BuiltinOrVar \"%s\" [" s;
+    myiter (fun x -> print_pattern oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 let _ = print_pattern
@@ -127,6 +131,15 @@ let print_expr (oux : Out_channel.t) (e : expr) : unit =
 
 let _ = print_expr
 
+
+let print_rule (oux : Out_channel.t) (r : rule) : unit =
+    fprintf oux "(decl_rule (@mkRuleDeclaration Σ Act \"%s\" (@mkRewritingRule2 Σ Act " (r.name);
+    print_pattern oux (r.lhs);
+    print_exprterm oux (r.lhs);
+    fprintf oux ")))\n";
+    ()
+
+
 let print_definition def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
@@ -135,7 +148,10 @@ let print_definition def oux =
     fprintf oux " : Expression2) := ";
     print_expr_w_hole oux (snd (def.value)) (Some (match (fst (def.value)) with `Var s -> s));
     fprintf oux ".\n";
-    fprintf oux "%s" output_part_2;
+    fprintf oux "%s\n" output_part_2;
+    fprintf oux "Definition Lang_Decls : list Declaration := [\n";
+    myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.rules);
+    fprintf oux "\n].\n";
     ()
 
 let parse_and_print lexbuf oux =
