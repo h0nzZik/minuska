@@ -1,6 +1,6 @@
 symbols : [s] ;
 
-value(X): (bool.false() ) ;
+value(X): (bool.or(bool.false(), bool.false(X))) ;
 
 strictness: [] ;
 

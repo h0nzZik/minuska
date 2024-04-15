@@ -1,6 +1,6 @@
 symbols : plus, minus, ite, while, unitValue ;
 
-value(X): bool.or(z.is(X), bool.or(bool.is(X), symbol.is(unitValue, X))) ;
+value(X): bool.or(z.is(X), bool.or(bool.is(X), symbol.is(unitValue[], X))) ;
 
 
 strictness: plus of arity 3 in [0,1] ;

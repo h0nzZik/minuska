@@ -6,6 +6,7 @@ open Syntax
 let builtins_alist =
   [ "bool.neg", "b_bool_neg";
     "bool.and", "b_and";
+    "bool.or", "b_or";
     "bool.false", "b_false"
   ]
 
@@ -86,23 +87,23 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option
         match List.length es with
         | 0 -> fprintf oux "(e_nullary %s)" name
         | 1 ->
-            fprintf oux "(e_unary %s" name;
+            fprintf oux "(e_unary %s [" name;
             print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux ")"
+            fprintf oux "])"
         | 2 ->
-            fprintf oux "(e_binary %s" name;
+            fprintf oux "(e_binary %s [" name;
             print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux ", ";
+            fprintf oux "; ";
             print_expr_w_hole oux (List.nth_exn es 1) hole;
-            fprintf oux ")"
+            fprintf oux "])"
         | 3 ->
-            fprintf oux "(e_ternary %s" name;
+            fprintf oux "(e_ternary %s [" name;
             print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux ", ";
+            fprintf oux "; ";
             print_expr_w_hole oux (List.nth_exn es 1) hole;
-            fprintf oux ", ";
+            fprintf oux "; ";
             print_expr_w_hole oux (List.nth_exn es 2) hole;
-            fprintf oux ")"
+            fprintf oux "])"
         | _ -> failwith "Bad length"
 
 
@@ -110,10 +111,16 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option
 let print_expr (oux : Out_channel.t) (e : expr) : unit =
   print_expr_w_hole oux e None
 
+let _ = print_expr
+
 let print_definition def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
-    print_expr oux (snd (def.value));
+    fprintf oux "Definition isValue (";
+    fprintf oux "%s" (match (fst (def.value)) with `Var s -> s);
+    fprintf oux " : Expression2) := ";
+    print_expr_w_hole oux (snd (def.value)) (Some (match (fst (def.value)) with `Var s -> s));
+    fprintf oux ".\n";
     ()
 
 let parse_and_print lexbuf oux =
