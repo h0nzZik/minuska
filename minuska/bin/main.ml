@@ -7,6 +7,7 @@ let builtins_alist =
   [ "bool.neg", "b_bool_neg";
     "bool.and", "b_and";
     "bool.or", "b_or";
+    "bool.eq", "b_eq";
     "bool.false", "b_false";
     "bool.true", "b_true";
     "term.same_symbol", "b_have_same_symbol";
