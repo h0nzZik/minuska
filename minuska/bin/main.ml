@@ -185,8 +185,13 @@ let transform input_filename output_filename () =
   Out_channel.close oux;
   In_channel.close inx
 
+let compile input_filename output_filename () =
+  let _ = input_filename in
+  let _ = output_filename in
+  fprintf stdout "Hello, compiler!\n";
+  ()
 
-let command =
+let command_generate =
   Command.basic
     ~summary:"Generate a Coq (*.v) file from a Minuska (*.m) file"
     ~readme:(fun () -> "TODO")
@@ -196,6 +201,21 @@ let command =
 
      in
      fun () -> transform input_filename output_filename ())
+
+let command_compile =
+  Command.basic
+    ~summary:"Generate an interpreter from a Minuska (*.m) file"
+    ~readme:(fun () -> "TODO")
+    (let%map_open.Command
+        input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
+        output_filename = anon (("interpreter" %: Filename_unix.arg_type))
+     in
+     fun () -> compile input_filename output_filename ())
+
+let command =
+  Command.group
+    ~summary:"A verified semantic framework"
+    ["compile", command_compile; "def2coq", command_generate]
 
 let () = Command_unix.run ~version:"1.0" ~build_info:"RWO" command
 
