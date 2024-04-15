@@ -1,6 +1,13 @@
 open Core
 open Printf
 open Lexing
+open Syntax
+
+let builtins_alist =
+  [ "bool.neg", "b_bool_neg"; "bool.and", "b_and" ]
+
+let builtins_map = Map.of_alist_exn (module String) builtins_alist
+
 
 let print_position outx lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -35,10 +42,45 @@ Instance Σ : StaticModel :=
 .
 |}
 
+let rec print_groundterm (oux : Out_channel.t) (g : groundterm) : unit =
+  match g with
+  | `GTerm (`Id s, gs) ->
+    fprintf oux "(@t_term symbol builtin_value %s [" s;
+    List.iter ~f:(fun x -> print_groundterm oux x; fprintf oux "; ";) gs;
+    fprintf oux "])"
+
+let rec print_pattern (oux : Out_channel.t) (p : pattern) : unit =
+  match p with
+  | `PVar (`Var s) -> fprintf oux "(bov_variable %s)" s
+  | `PTerm (`Id s, ps) ->
+    fprintf oux "(@t_term symbol BuiltinOrVar %s [" s;
+    List.iter ~f:(fun x -> print_pattern oux x; fprintf oux "; ";) ps;
+    fprintf oux "])"
+
+let _ = print_pattern
+
+let print_expr (oux : Out_channel.t) (e : expr) : unit =
+  match e with
+  | `EVar (`Var s) -> fprintf oux "(e_variable %s)" s
+  | `EGround g ->
+    fprintf oux "(e_ground ";
+    print_groundterm oux g;
+    fprintf oux ")"
+
+  | `ECall (`Id s, es) ->
+    let name0 = Map.find builtins_map s in
+    match name0 with
+    | None -> failwith "Unknown builtin"    
+    | Some name ->
+        match List.length es with
+        | 0 -> fprintf oux "(e_nullary %s)" name
+        | _ -> failwith "Bad length"
+
+
 let print_definition def oux =
     let _ = def in
-    fprintf oux "Hello, world\n";
     fprintf oux "%s" output_part_1;
+    print_expr oux (snd (def.value));
     ()
 
 let parse_and_print lexbuf oux =
