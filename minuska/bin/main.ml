@@ -29,7 +29,7 @@ let transform input_filename output_filename () =
   ()
 
 let run l =
-  let _ = fprintf stdout "> %s\n" (String.concat l) in
+  let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
 let compile input_filename interpreter_name () =
@@ -42,10 +42,17 @@ let compile input_filename interpreter_name () =
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
-  (*let _ = Sys_unix.command (String.append "cat " coqfile) in*)
-  let _ = run ["cd "; mldir; "; coqc "; coqfile] in
+  let libdir = Filename.dirname (Sys_unix.executable_name) ^ "/../lib" in
+  let minuska_dir = libdir ^ "/coq/user-contrib/Minuska" in
+  let coq_minuska_dir = libdir ^ "/coq-minuska" in
+  let _ = coq_minuska_dir in
+  fprintf stdout "libdir: %s" libdir;
+  let _ = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile] in
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.command_run lang_interpreter)") in
+  let _ = run ["cat "; mlfile] in
   let _ = run [
           "cd "; mldir; "; ";
+          "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
           "ocamlfind ocamlc -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   let _ = run ["cp "; mldir; "/interpreter.exe"; " "; interpreter_name] in
