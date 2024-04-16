@@ -34,15 +34,10 @@ From Minuska Require Import
     default_static_model
     naive_interpreter
     frontend
-.
-
-Variant Act := default_act | invisible_act.
-
-#[local]
-Instance Σ : StaticModel :=
-    default_model (default_builtin.β)
+    default_everything
 .
 |}
+
 
 let output_part_2 = {delimiter|
 #[local]
@@ -133,7 +128,7 @@ let rec print_exprterm (oux : Out_channel.t) (p : Syntax.exprterm) : unit =
 
 
 let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
-    fprintf oux "(decl_rule (@mkRuleDeclaration Σ Act \"%s\" (@mkRewritingRule2 Σ Act " (r.name);
+    fprintf oux "(decl_rule (@mkRuleDeclaration DSM Act \"%s\" (@mkRewritingRule2 DSM Act " (r.name);
     print_pattern oux (r.lhs);
     fprintf oux " ";
     print_exprterm oux (r.rhs);

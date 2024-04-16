@@ -7,9 +7,15 @@
   (flags -la 2)
 )
 
+(coq.extraction
+ (prelude minuska_extraction)
+ (extracted_modules Dsm)
+ (theories Minuska stdpp Ltac2 Equations)
+ (plugins coq-equations)
+)
 
 (library
  (name libminuska)
- (modules syntax parser lexer miparse miprint libminuska)
+ (modules syntax parser lexer miparse miprint libminuska dsm)
  (libraries core)
 )
