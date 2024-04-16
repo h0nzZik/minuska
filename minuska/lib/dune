@@ -1,0 +1,15 @@
+(ocamllex
+  (modules lexer)
+)
+
+(menhir
+  (modules parser)
+  (flags -la 2)
+)
+
+
+(library
+ (name miparse)
+ (modules syntax parser lexer miparse)
+ (libraries core)
+)

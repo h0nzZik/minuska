@@ -1,7 +1,9 @@
 open Core
 open Printf
-open Lexing
-open Syntax
+
+open Miparse
+
+module Syntax = Miparse.Syntax
 
 let builtins_alist =
   [ "bool.neg", "b_bool_neg";
@@ -19,20 +21,6 @@ let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
     let ln = List.length l in
     List.iteri ~f:(fun idx x -> if (idx + 1 = ln) then (f x) else (f x; g ())) l;
     ()
-
-let print_position outx lexbuf =
-  let pos = lexbuf.lex_curr_p in
-  fprintf outx "%s:%d:%d" pos.pos_fname
-    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
-
-let parse_with_error lexbuf =
-  try Parser.definition Lexer.read lexbuf with
-  | Lexer.SyntaxError msg ->
-    fprintf stderr "%a: %s\n" print_position lexbuf msg;
-    None
-  | Parser.Error ->
-    fprintf stderr "%a: syntax error\n" print_position lexbuf;
-    exit (-1)
 
 
 let output_part_1 = {|
@@ -72,14 +60,14 @@ Instance LangDefaults : Defaults := {|
 |}.
 |delimiter}
 
-let rec print_groundterm (oux : Out_channel.t) (g : groundterm) : unit =
+let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
   match g with
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
     myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;
     fprintf oux "])"
 
-let rec print_pattern (oux : Out_channel.t) (p : pattern) : unit =
+let rec print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
   match p with
   | `PVar (`Var s) -> fprintf oux "(t_over (bov_variable \"%s\"))" s
   | `PTerm (`Id s, ps) ->
@@ -89,7 +77,7 @@ let rec print_pattern (oux : Out_channel.t) (p : pattern) : unit =
 
 let _ = print_pattern
 
-let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option) : unit =
+let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string option) : unit =
   match e with
   | `EVar (`Var s) -> (
         match hole with
@@ -135,10 +123,10 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : expr) (hole : string option
 
 
 
-let print_expr (oux : Out_channel.t) (e : expr) : unit =
+let print_expr (oux : Out_channel.t) (e : Syntax.expr) : unit =
   print_expr_w_hole oux e None
 
-let rec print_exprterm (oux : Out_channel.t) (p : exprterm) : unit =
+let rec print_exprterm (oux : Out_channel.t) (p : Syntax.exprterm) : unit =
   match p with
   | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; print_expr oux e; fprintf oux ")";
   | `ETerm (`Id s, ps) ->
@@ -148,7 +136,7 @@ let rec print_exprterm (oux : Out_channel.t) (p : exprterm) : unit =
 
 
 
-let print_rule (oux : Out_channel.t) (r : rule) : unit =
+let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
     fprintf oux "(decl_rule (@mkRuleDeclaration Σ Act \"%s\" (@mkRewritingRule2 Σ Act " (r.name);
     print_pattern oux (r.lhs);
     fprintf oux " ";
@@ -164,13 +152,13 @@ let print_definition def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
     fprintf oux "Definition isValue (";
-    fprintf oux "%s" (match (fst (def.value)) with `Var s -> s);
+    fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_expr_w_hole oux (snd (def.value)) (Some (match (fst (def.value)) with `Var s -> s));
+    print_expr_w_hole oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     fprintf oux "%s\n" output_part_2;
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
-    myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.rules);
+    myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
 

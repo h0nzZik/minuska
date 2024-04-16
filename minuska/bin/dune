@@ -1,17 +1,7 @@
-(ocamllex
-  (modules lexer)
-)
-
-(menhir
-  (modules parser)
-  (flags -la 2)
-)
-
-
 (executable
  (public_name minuska)
  (name main)
- (modules syntax parser lexer main)
- (libraries core core_unix.command_unix core_unix.filename_unix)
+ (modules main)
+ (libraries core core_unix.command_unix core_unix.filename_unix miparse)
  (preprocess (pps ppx_jane))
  )
