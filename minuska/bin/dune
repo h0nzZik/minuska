@@ -2,6 +2,6 @@
  (public_name minuska)
  (name main)
  (modules main)
- (libraries core core_unix.command_unix core_unix.filename_unix miparse)
+ (libraries core core_unix.command_unix core_unix.filename_unix libminuska)
  (preprocess (pps ppx_jane))
  )
