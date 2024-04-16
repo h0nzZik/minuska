@@ -16,3 +16,8 @@ Instance DSM : StaticModel :=
 Definition GT := @TermOver' symbol builtin_value.
 
 Definition StepT := GT -> option GT.
+
+Definition gt_term s l := @t_term (@symbol DSM) builtin_value s l.
+(*
+Definition gt_over b := term_over b.
+*)

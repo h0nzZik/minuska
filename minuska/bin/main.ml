@@ -48,7 +48,7 @@ let compile input_filename interpreter_name () =
   let _ = coq_minuska_dir in
   fprintf stdout "libdir: %s" libdir;
   let _ = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile] in
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.command_run lang_interpreter)") in
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.Miskeleton.main lang_interpreter)") in
   let _ = run ["cat "; mlfile] in
   let _ = run [
           "cd "; mldir; "; ";

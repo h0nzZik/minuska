@@ -17,6 +17,12 @@
 (library
  (name libminuska)
  (public_name coq-minuska)
- (modules syntax parser lexer miparse miprint libminuska dsm)
- (libraries core)
+ (modules syntax parser lexer miparse miprint miskeleton libminuska dsm)
+ (libraries
+    core
+    core_unix
+    core_unix.command_unix
+    core_unix.filename_unix
+ )
+ (preprocess (pps ppx_jane))
 )
