@@ -16,6 +16,7 @@
 
 (library
  (name libminuska)
+ (public_name coq-minuska)
  (modules syntax parser lexer miparse miprint libminuska dsm)
  (libraries core)
 )

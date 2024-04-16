@@ -94,6 +94,12 @@
             installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
             passthru = { inherit coqPackages; };
+
+
+            setupHook = pkgs.writeText "setupHook.sh" ''
+                export OCAMLPATH="''${OCAMLPATH-}''${OCAMLPATH:+:}''$1/lib/"
+            '';
+
           } ) { } 
         );
 

@@ -29,7 +29,7 @@ let transform input_filename output_filename () =
   ()
 
 let run l =
-  let _ = fprintf stdout "> %s" (String.concat l) in
+  let _ = fprintf stdout "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
 let compile input_filename interpreter_name () =
@@ -46,7 +46,7 @@ let compile input_filename interpreter_name () =
   let _ = run ["cd "; mldir; "; coqc "; coqfile] in
   let _ = run [
           "cd "; mldir; "; ";
-          "ocamlfind ocamlc -package libminuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
+          "ocamlfind ocamlc -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   let _ = run ["cp "; mldir; "/interpreter.exe"; " "; interpreter_name] in
   let _ = input_filename in
