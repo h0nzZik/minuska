@@ -22,7 +22,8 @@
 
 
 
-%start <(Syntax.definition option)> definition
+%start <(Syntax.definition option)> option_definition
+%start <(Syntax.groundterm option)> option_groundterm
 %{ open Syntax %}
 %%
 
@@ -133,11 +134,21 @@ rule:
   ;
 
 definition:
-  | EOF            { None }
   | syms = symbolsdecl
     v = valuedecl
     sall = strictnessall
     rs = list(rule)
-    EOF
-    { Some { symbols = (List.map (fun x -> `Id x) syms); value = (`Var (fst v), (snd v)); strictness = sall; rules = rs } }
+    { { symbols = (List.map (fun x -> `Id x) syms); value = (`Var (fst v), (snd v)); strictness = sall; rules = rs } }
   ;
+
+option_definition:
+  | EOF { None }
+  | d = definition
+    EOF
+    { Some d }
+
+option_groundterm:
+  | EOF { None }
+  | g = groundterm
+    EOF
+    { Some g }
