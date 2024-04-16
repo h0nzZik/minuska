@@ -2,28 +2,33 @@
 (using coq 0.8)
 
 
-(name minuska)
+(name coq-minuska)
 
 (using menhir 3.0)
 
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github h0nzZik/minuska))
 
-(authors "Author Name")
+(authors "Jan Tušil")
 
-(maintainers "Maintainer Name")
+(maintainers "Jan Tušil")
 
 (license LICENSE)
 
 (documentation https://url/to/documentation)
 
 (package
- (name minuska)
- (synopsis "A short synopsis")
+ (name coq-minuska)
+ (synopsis "A formally verified semantic framework")
  (description "A longer description")
- (depends ocaml dune core)
+ (depends
+  ocaml
+  dune
+  core
+  core_unix
+ )
  (tags
   (topics "to describe" your project)))
 

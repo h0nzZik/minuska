@@ -1,5 +1,6 @@
 (coq.theory
  (name Minuska)
+ (package coq-minuska)
  (theories stdpp Ltac2 Equations)
  (plugins coq-equations coq-core.plugins.ltac2 coq-core.plugins.extraction)
 )

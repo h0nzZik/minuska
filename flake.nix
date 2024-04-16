@@ -55,14 +55,28 @@
         );
 
         minuskaFun = { coqPackages }: (
-          coqPackages.callPackage 
-          ( { coq, stdenv }:
-          stdenv.mkDerivation {
-            name = "minuska";
+           coqPackages.callPackage 
+           ( { coq, stdenv }:
+        coqPackages.mkCoqDerivation {
+
+#           coqPackages.coq.ocamlPackages.buildDunePackage {
+
+            useDune = true; 
+            pname = "minuska";
+            version = "0.1";
             src = ./minuska;
+            duneVersion = "3";
+ 
+            nativeBuildInputs = [
+              pkgs.dune_3
+              coqPackages.coq
+              coqPackages.coq.ocaml
+              coqPackages.coq.ocamlPackages.menhir
+            ];
 
             propagatedBuildInputs = [
-              coq
+              coqPackages.coq
+              coqPackages.coq.ocamlPackages.findlib
               coqPackages.equations
               # (
               #   coqPackages.lib.overrideCoqDerivation {
@@ -70,16 +84,14 @@
               #     defaultVersion = "1.9.0"; 
               #   } pkgs.coqPackages_8_18.stdpp
               # )
-              (stdppFun {lib = coqPackages.lib; mkCoqDerivation = coqPackages.mkCoqDerivation; inherit coq; })
-              coq.ocaml
-              coq.ocamlPackages.zarith
-              coq.ocamlPackages.menhir
-              coq.ocamlPackages.core
-              coq.ocamlPackages.core_unix
-              pkgs.dune_3
+              (stdppFun {lib = coqPackages.lib; mkCoqDerivation = coqPackages.mkCoqDerivation; coq = coqPackages.coq; })
+              coqPackages.coq.ocaml
+              coqPackages.coq.ocamlPackages.zarith
+              coqPackages.coq.ocamlPackages.core
+              coqPackages.coq.ocamlPackages.core_unix
+              coqPackages.coq.ocamlPackages.ppx_jane
             ];
-            enableParallelBuilding = true;
-            installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+            installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
             passthru = { inherit coqPackages; };
           } ) { } 
