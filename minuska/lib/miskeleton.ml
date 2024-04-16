@@ -2,17 +2,17 @@ open Core
 open Printf
 
 
-let rec convert_groundterm (g : Syntax.groundterm) : Dsm.GT =
+let rec convert_groundterm (g : Syntax.groundterm) : Dsm.gT =
   match g with
   | `GTerm (`Id s, gs) ->
-    Dsm.T_term (s, (List.map convert_groundterm gs))
+    Dsm.T_term (s,(List.map ~f:convert_groundterm gs))
 
 let parse_gt_and_print lexbuf oux step depth =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gterm ->
     let _ = depth in
-    let _ = Miprint.print_groundterm oux (convert_groundterm gterm) in
-    let _ = step gterm in
+    let _ = Miprint.print_groundterm oux gterm in
+    let _ = step (convert_groundterm gterm) in
     ()
   | None ->
     fprintf stderr "%s\n" "Cannot parse";

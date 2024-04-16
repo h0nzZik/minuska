@@ -7,6 +7,10 @@
   (flags -la 2)
 )
 
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
+
 (coq.extraction
  (prelude minuska_extraction)
  (extracted_modules Dsm)
@@ -20,6 +24,7 @@
  (modules syntax parser lexer miparse miprint miskeleton libminuska dsm)
  (libraries
     core
+    zarith
     core_unix
     core_unix.command_unix
     core_unix.filename_unix
