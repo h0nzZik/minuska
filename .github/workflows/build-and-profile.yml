@@ -33,7 +33,7 @@ jobs:
       uses: DeterminateSystems/nix-installer-action@v9     
 
     - name: 'Build with Coq 8.19'
-      run: nix build -L '.#minuska-coq_8_19'
+      run: nix build -L '.#minuska-coq_8_19' --out-link ./result-minuska
 
     - name: 'Build examples (with Coq 8.19)'
       run: nix build -L '.#minuska-examples'
@@ -50,7 +50,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path:  '_build/default/theories/Minuska.html/'
+        path:  'result-minuska/share/coq-minuska/Minuska.html/'
         #path: 'minuska/html'
 
     #- name: 'Build with Coq 8.17'

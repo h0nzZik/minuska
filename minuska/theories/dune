@@ -9,3 +9,7 @@
  (modules :standard)
 )
 
+(install
+ (files (glob_files Minuska.html/*))
+ (section share)
+ (package coq-minuska))
