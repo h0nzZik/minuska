@@ -42,6 +42,28 @@ To typecheck the Coq development, one needs:
 - [stdpp](https://gitlab.mpi-sws.org/iris/stdpp) > 1.9.0
 - [equations](https://mattam82.github.io/Coq-Equations/) 1.3
 
-# Documentation
+# Missing features
+
+In principle, many features could be implemented in Minuska that would make the framework more useful.
+
+## Concrete syntax of programming languages
+
+Minuska operates on an abstract representation of programming language syntax. There is currently no support for specifying, parsing of, and unparsing into concrete syntax of programming languages.
+
+## Symbolic execution
+
+In principle, it should be possible to generate symbolic execution engines for languages defined in Minuska, simply by using unification instead of pattern matching in the interpreter.
+An option would be to use the [Coq Color library](https://github.com/fblanqui/color) which already contains a provably correct implementation of an unification algorithm.
+However, this has not been implemented yet.
+Even if this gets implemented, we would need to have a simplification engine to prune infeasible branches; this would be best done using some LTac scripting inside Coq, using tactics like `lia`,
+[`itauto`](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITP.2021.9), and possibly [`smt`](https://smtcoq.github.io/).
+
+## Deductive verification
+
+[K Framework](https://kframework.org/) a implements coinduction-based logic (reachability logic [1](https://ieeexplore.ieee.org/document/6571568) [2](https://link.springer.com/chapter/10.1007/978-3-319-44802-2_8))
+that can be used to prove partial correctness properties of programs with loops, recursion, or other source of circular behavior. This would be nice to have, but it depends on the symbolic execution being implemented.
+
+
+# Developer documentation
 [CoqDoc](https://h0nzzik.github.io/minuska/toc.html)
 
