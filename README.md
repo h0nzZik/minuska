@@ -24,6 +24,7 @@ As for the generated interpreters: these can also be used either from inside the
 minuska compile language.m language-interpreter.exe
 ```
 Note that the `minuska` command is still under an active development: it is not feature complete and may contain bugs.
+More generally, the command-line interface is NOT formally verified, as it is written in OCaml rather than Coq.
 
 # Geting Minuska up and running
 
