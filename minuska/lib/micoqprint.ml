@@ -59,15 +59,26 @@ let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
     myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;
     fprintf oux "])"
 
-let rec print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
+let rec print_pattern_w_hole (oux : Out_channel.t) (p : Syntax.pattern) (hole : string option) : unit =
   match p with
-  | `PVar (`Var s) -> fprintf oux "(t_over (bov_variable \"%s\"))" s
+  | `PVar (`Var s) -> (
+      match hole with
+      | None ->
+          fprintf oux "(t_over (bov_variable \"%s\"))" s
+      | Some s2 ->
+          if String.(s = s2) then
+              fprintf oux "(%s)" s2
+          else
+              fprintf oux "(t_over (bov_variable \"%s\"))" s
+    )
   | `PTerm (`Id s, ps) ->
     fprintf oux "(@t_term symbol BuiltinOrVar \"%s\" [" s;
-    myiter (fun x -> print_pattern oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
+    myiter (fun x -> print_pattern_w_hole oux x hole; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
-let _ = print_pattern
+let print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
+  print_pattern_w_hole oux p None
+
 
 let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string option) : unit =
   match e with
@@ -129,14 +140,13 @@ let rec print_exprterm (oux : Out_channel.t) (p : Syntax.exprterm) : unit =
 
 
 let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
-    fprintf oux "(decl_rule (@mkRuleDeclaration DSM Act \"%s\" (@mkRewritingRule2 DSM Act " (r.name);
+    fprintf oux "(basic_rule \"%s\" " (r.name);
     print_pattern oux (r.lhs);
     fprintf oux " ";
     print_exprterm oux (r.rhs);
-    fprintf oux " [(mkSideCondition2 _ ((e_nullary default_builtin.b_true)) ";
+    fprintf oux " ";
     print_expr oux (r.cond);
-    fprintf oux ")] default_act";
-    fprintf oux ")))\n";
+    fprintf oux ")\n";
     ()
 
 
@@ -149,7 +159,13 @@ let print_definition def oux =
     print_expr_w_hole oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     fprintf oux "%s\n" output_part_2;
+    fprintf oux "%s\n" {|
+    Definition basic_rule (name : string) (l : TermOver BuiltinOrVar) (r : TermOver Expression2) (cond : Expression2) : Declaration :=
+      (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary default_builtin.b_true) cond)] default_act)))
+    .
+    |};
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
+    

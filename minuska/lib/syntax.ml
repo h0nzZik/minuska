@@ -48,6 +48,7 @@ type exprterm =
 
 type rule = 
   {
+    alias : id option ;
     name : string ;
     lhs : pattern ;
     rhs : exprterm ;

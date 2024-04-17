@@ -118,8 +118,15 @@ valuedecl:
     { (x,e) }
   ;
 
+slashid:
+  | SLASH
+    x = ID
+    { `Id x }
+  ;
+
 rule:
   | KEYWORD_RULE
+    a = option(slashid)
     BRACKET_SQUARE_LEFT
     n = ID
     BRACKET_SQUARE_RIGHT
@@ -130,7 +137,7 @@ rule:
     KEYWORD_WHERE
     c = expr
     SEMICOLON
-    { {name = n; lhs = l; rhs = r; cond = c }  }
+    { {alias = a; name = n; lhs = l; rhs = r; cond = c }  }
   ;
 
 definition:
