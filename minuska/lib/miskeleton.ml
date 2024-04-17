@@ -7,12 +7,27 @@ let rec convert_groundterm (g : Syntax.groundterm) : Dsm.gT =
   | `GTerm (`Id s, gs) ->
     Dsm.T_term (s,(List.map ~f:convert_groundterm gs))
 
+
+let rec convert_groundterm_back (g : Dsm.gT) : Syntax.groundterm =
+  match g with
+  | Dsm.T_over _ ->
+    failwith "Unsupported builtin value"
+  | Dsm.T_term ( s, gs) ->
+    `GTerm (`Id s,(List.map ~f:convert_groundterm_back gs))
+
+
 let parse_gt_and_print lexbuf oux step depth =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gterm ->
     let _ = depth in
     let _ = Miprint.print_groundterm oux gterm in
-    let _ = step (convert_groundterm gterm) in
+    let ogt = step (convert_groundterm gterm) in (
+        match ogt with
+        | None -> fprintf oux "\nStuck.\n"    
+        | Some gt2 ->
+             fprintf oux "\nStep.\n";
+             Miprint.print_groundterm oux (convert_groundterm_back gt2)
+    );
     ()
   | None ->
     fprintf stderr "%s\n" "Cannot parse";

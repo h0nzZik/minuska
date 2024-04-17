@@ -46,14 +46,14 @@ let compile input_filename interpreter_name () =
   let minuska_dir = libdir ^ "/coq/user-contrib/Minuska" in
   let coq_minuska_dir = libdir ^ "/coq-minuska" in
   let _ = coq_minuska_dir in
-  fprintf stdout "libdir: %s" libdir;
+  (* fprintf stdout "libdir: %s" libdir; *)
   let _ = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile] in
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.Miskeleton.main lang_interpreter)") in
-  let _ = run ["cat "; mlfile] in
+  (*let _ = run ["cat "; mlfile] in*)
   let _ = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
-          "ocamlfind ocamlc -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
+          "ocamlfind ocamlc -thread -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   let _ = run ["cp "; mldir; "/interpreter.exe"; " "; interpreter_name] in
   let _ = input_filename in

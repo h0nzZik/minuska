@@ -23,8 +23,9 @@ let output_part_1 = {|
 Require Extraction.
 Extraction Language OCaml.
 Require Import
-  Coq.extraction.ExtrOcamlString
-  Coq.extraction.ExtrOcamlZBigInt
+  Coq.extraction.Extraction
+  Coq.extraction.ExtrOcamlBasic
+  Coq.extraction.ExtrOcamlNativeString
 .
 From Minuska Require Import
     prelude
