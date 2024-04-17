@@ -1,7 +1,5 @@
 (include_subdirs qualified)
 
-(copy_files %{project_root}/coqdocjs-extra/header.html)
-
 (coq.theory
  (name Minuska)
  (package coq-minuska)
@@ -10,8 +8,8 @@
  (coqdoc_flags 
    --toc --toc-depth 2 --html --interpolate
   --index indexpage --no-lib-name --parse-comments
-  --with-header %{dep:../../coqdocjs-extra/header.html}
-  --with-footer %{dep:../../coqdocjs-extra/footer.html}
+  --with-header %{dep:../coqdocjs-extra/header.html}
+  --with-footer %{dep:../coqdocjs-extra/footer.html}
  )
  (modules :standard)
 )
@@ -23,4 +21,5 @@
 
 (install
  (section share)
- (source_trees (coqdocjs-extra/resource as Minuska.html)))
+ (source_trees (%{project_root}/coqdocjs-extra/resources/ as Minuska.html/resources))
+)
