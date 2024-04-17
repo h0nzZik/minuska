@@ -1,11 +1,18 @@
 (include_subdirs qualified)
 
+(copy_files %{project_root}/coqdocjs-extra/header.html)
+
 (coq.theory
  (name Minuska)
  (package coq-minuska)
  (theories stdpp Ltac2 Equations)
  (plugins coq-equations)
- (coqdoc_flags :standard)
+ (coqdoc_flags 
+   --toc --toc-depth 2 --html --interpolate
+  --index indexpage --no-lib-name --parse-comments
+  --with-header %{dep:../../coqdocjs-extra/header.html}
+  --with-footer %{dep:../../coqdocjs-extra/footer.html}
+ )
  (modules :standard)
 )
 
@@ -13,3 +20,7 @@
  (files (glob_files Minuska.html/*))
  (section share)
  (package coq-minuska))
+
+(install
+ (section share)
+ (source_trees (coqdocjs-extra/resource as Minuska.html)))
