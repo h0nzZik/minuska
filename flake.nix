@@ -72,6 +72,7 @@
               coqPackages.coq
               coqPackages.coq.ocaml
               coqPackages.coq.ocamlPackages.menhir
+              coqPackages.coq.ocamlPackages.odoc
             ];
 
             propagatedBuildInputs = [
@@ -91,10 +92,14 @@
               coqPackages.coq.ocamlPackages.core_unix
               coqPackages.coq.ocamlPackages.ppx_jane
             ];
+            # Not sure if we need this anymore
             installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
             passthru = { inherit coqPackages; };
 
+            buildPhase = ''
+              dune build @all theories/Minuska.html
+            '';
 
             setupHook = pkgs.writeText "setupHook.sh" ''
                 export OCAMLPATH="''${OCAMLPATH-}''${OCAMLPATH:+:}''$1/lib/"

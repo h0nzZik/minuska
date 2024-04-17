@@ -23,12 +23,6 @@
  (name coq-minuska)
  (synopsis "A formally verified semantic framework")
  (description "A longer description")
- (depends
-  ocaml
-  dune
-  core
-  core_unix
- )
  (tags
   (topics "to describe" your project)))
 
