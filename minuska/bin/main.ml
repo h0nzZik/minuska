@@ -8,7 +8,7 @@ module Syntax = Libminuska.Syntax
 let parse_and_print lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Miprint.print_definition value oux
+    Micoqprint.print_definition value oux
   | None -> ()
 
 

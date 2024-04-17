@@ -21,7 +21,7 @@
 (library
  (name libminuska)
  (public_name coq-minuska)
- (modules syntax parser lexer miparse miprint miskeleton libminuska dsm)
+ (modules syntax parser lexer miparse micoqprint miunparse miskeleton libminuska dsm)
  (libraries
     core
     zarith

@@ -20,13 +20,14 @@ let parse_gt_and_print lexbuf oux step depth =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gterm ->
     let _ = depth in
-    let _ = Miprint.print_groundterm oux gterm in
+    fprintf oux "%s\n" (Miunparse.groundterm_to_string gterm);
     let ogt = step (convert_groundterm gterm) in (
         match ogt with
         | None -> fprintf oux "\nStuck.\n"    
         | Some gt2 ->
              fprintf oux "\nStep.\n";
-             Miprint.print_groundterm oux (convert_groundterm_back gt2)
+             fprintf oux "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back gt2));
+             ()
     );
     ()
   | None ->

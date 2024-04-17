@@ -1,4 +1,4 @@
 module Syntax = Syntax
-module Miprint = Miprint
+module Micoqprint = Micoqprint
 module Miparse = Miparse
 module Miskeleton = Miskeleton
