@@ -16,7 +16,7 @@ This comes with the usual costs and benefits:
 a semantic engineer using K can benefit from an early error detection
 at the cost of lower flexibility,
 and knowing sorts statically could in principle be exploited by optimizations,
-although we do not know whether ${K$ actually uses the knowledge
+although we do not know whether K actually uses the knowledge
 for that purpose.
 Another difference is that in K, proofs of domain reasoning
 are omitted from the resulting proof certificate, while in Minuska,
@@ -56,7 +56,7 @@ in the underlying logic (that is, matching logic); these equalities are then int
 by the K-based tools. Therefore, it is very easy for an user
 to silently introduce
 a logical inconsistency into the language: for example, by defining
-a function symbol $mathit{f$ and two rules, one of which rewrites f
+a function symbol `f` and two rules, one of which rewrites `f`
 to 0 and the other to $1$.
 Any non-confluence in function rules gets translated to a logical inconsistency,
 from which anything follows, rendering any generated proof certificates useless.
