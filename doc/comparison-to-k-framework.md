@@ -40,7 +40,7 @@ First, since function rules are applied in-between computational steps,
 they are hard to debug in practice: as far as we know, K does not have
 any debugging facilities for showing what happens inside one computational step.
 Second, function rules do not play nice with K's formal verification facilities.
-The K framework implements a logic known as ``reachability logic'' (RL)
+The K framework implements a logic known as "reachability logic" (RL)
 for reasoning about circular and repetetive behavior of programs.
 In RL, one can pose the claim to be proven as a so-called circularity
 and use it to discharge proof obligations after prograss has been made using a computational step;
@@ -68,10 +68,10 @@ but provide it directly.)
 
 ### Languages
 In the referenced paper, the authors use a definition of a simple imperative language
-(named ``IMP'') featuring
+(named IMP) featuring
 integer variables and basic arithmetic (addition, subtraction)
 and control-flow (sequencing, conditionals, loops) constructs.
-There, ``IMP'' is used only for illustrative purposes,
+There, IMP is used only for illustrative purposes,
 to explain the basic concepts of the K framework:
 that language definition is not supported in their work.
 However, in our work we define a similar language, and our verified interpreter
