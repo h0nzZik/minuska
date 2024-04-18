@@ -41,12 +41,13 @@ From Minuska Require Import
 
 
 let output_part_2 = {delimiter|
+Definition myContext := (context-template (@t_term _ _ "u_cfg") ([ HOLE ]) with HOLE) .
+
 #[local]
 Instance LangDefaults : Defaults := {|
     default_cseq_name := "__builtin_cseq" ;
     default_empty_cseq_name := "__builtin_empty_cseq" ;
-    default_context_template
-        := (context-template (@t_term _ _ "u_cfg") ([ HOLE ]) with HOLE) ;
+    default_context_template := myContext ;
 
     default_isValue := isValue ;
 |}.
@@ -165,6 +166,13 @@ let print_frame oux fr =
   fprintf oux ").\n";
   ()
 
+let print_strict oux str =
+  fprintf oux "(decl_strict (mkStrictnessDeclaration DSM \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
+  fprintf oux "[";
+  myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux ", "; ()) (str.strict_places);
+  fprintf oux "] isValue myContext";
+  fprintf oux "))\n";
+  ()
 
 let print_definition def oux =
     let _ = def in
@@ -182,6 +190,8 @@ let print_definition def oux =
     .
     |}; *)
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
+    myiter (fun x -> print_strict oux x; ()) (fun () -> fprintf oux ";" ; ()) (def.Syntax.strictness) ;
+    fprintf oux "%s" "] ++ [\n";
     myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()

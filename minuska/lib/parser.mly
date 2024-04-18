@@ -5,8 +5,7 @@
 %token KEYWORD_STRICTNESS
 %token KEYWORD_RULE
 %token KEYWORD_FRAMES
-%token KEYWORD_OF
-%token KEYWORD_ARITY
+%token KEYWORD_OF_ARITY
 %token KEYWORD_IN
 %token KEYWORD_WHERE
 %token BRACKET_ROUND_LEFT
@@ -29,14 +28,12 @@
 
 strictnessone:
   | s = ID;
-    KEYWORD_OF;
-    KEYWORD_ARITY;
+    KEYWORD_OF_ARITY;
     n = INT;
     KEYWORD_IN;
     BRACKET_SQUARE_LEFT;
     pos = separated_list(COMMA, INT);
     BRACKET_SQUARE_RIGHT;
-    SEMICOLON;
     { { symbol = (`Id s); arity = n; strict_places = pos } }
   ;
 
@@ -151,9 +148,9 @@ rule:
   ;
 
 definition:
-  | v = valuedecl
+  | fs = framesdecl
+    v = valuedecl
     sall = strictnessall
-    fs = framesdecl
     rs = list(rule)
     { { value = (`Var (fst v), (snd v)); frames = fs; strictness = sall; rules = rs } }
   ;

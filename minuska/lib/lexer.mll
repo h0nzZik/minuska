@@ -30,8 +30,7 @@ rule read =
   | "@strictness" { KEYWORD_STRICTNESS }
   | "@frames"       { KEYWORD_FRAMES }
   | "@rule"       { KEYWORD_RULE }
-  | "of"         { KEYWORD_OF }
-  | "arity"      { KEYWORD_ARITY }
+  | "of_arity"         { KEYWORD_OF_ARITY }
   | "in"         { KEYWORD_IN }
   | "where"      { KEYWORD_WHERE }
   | "/"          { SLASH }
