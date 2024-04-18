@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "benchexec-nixpkgs": {
-      "locked": {
-        "lastModified": 1701706784,
-        "narHash": "sha256-wxHvnsnKIipwtHvw7BF5FnSOKvnKvA15pYdgzPAVtCw=",
-        "owner": "lorenzleutgeb",
-        "repo": "nixpkgs",
-        "rev": "7718fde0871fd28a0fb2c11f5c0fb9876f67f9aa",
-        "type": "github"
-      },
-      "original": {
-        "owner": "lorenzleutgeb",
-        "ref": "benchexec",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -36,11 +20,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1713259704,
-        "narHash": "sha256-/1IrfPxZp82oW4Y/KKkLbYFcL0M8sPzpw2mnftCco4s=",
+        "lastModified": 1713462892,
+        "narHash": "sha256-BunC1cPPADcjeyEySPABPolnU1lLEnKgfMDrllu0Iso=",
         "owner": "NixOs",
         "repo": "nixpkgs",
-        "rev": "30b424fd784f4f88d61e99fca924792f4e49dde1",
+        "rev": "1f3ac32a1e19bae2d99aa382504501a8adb94266",
         "type": "github"
       },
       "original": {
@@ -51,7 +35,6 @@
     },
     "root": {
       "inputs": {
-        "benchexec-nixpkgs": "benchexec-nixpkgs",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
       }
