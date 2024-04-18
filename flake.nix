@@ -92,9 +92,10 @@
             postPatch = ''
               substituteInPlace bin/main.ml \
                 --replace "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
-                --replace "coqc" "${coqPackages.coq}/bin/coqc -R ${stdpp}/lib/coq/${coqVersion}/user-contrib/stdpp stdpp -R ${coqPackages.equations}/lib/coq/${coqVersion}/user-contrib/Equations Equations -I ${coqPackages.equations}/lib/ocaml/${coqPackages.coq.ocaml.version}/site-lib/coq-equations" \
                 --replace "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
+                --replace "coqc" "${coqPackages.coq}/bin/coqc"
             '';
+	    # --replace "coqc" "${coqPackages.coq}/bin/coqc -R ${stdpp}/lib/coq/${coqVersion}/user-contrib/stdpp stdpp -R ${coqPackages.equations}/lib/coq/${coqVersion}/user-contrib/Equations Equations -I ${coqPackages.equations}/lib/ocaml/${coqPackages.coq.ocaml.version}/site-lib/coq-equations" \
              #                --replace "env OCAMLPATH=" "env OCAMLPATH=${coqPackages.coq.ocamlPackages.zarith}/lib/ocaml/${coqPackages.coq.ocaml.version}/site-lib:"
 
 
@@ -103,7 +104,11 @@
             '';
 
             postInstall = ''
-              wrapProgram $out/bin/minuska --prefix OCAMLPATH : $OCAMLPATH
+              wrapProgram $out/bin/minuska \
+                --prefix OCAMLPATH : $OCAMLPATH \
+                --prefix COQPATH : $COQPATH \
+                --prefix PATH : $PATH \
+                --prefix CAML_LD_LIBRARY_PATH : $CAML_LD_LIBRARY_PATH
             '';
 
 
