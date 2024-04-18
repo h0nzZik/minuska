@@ -82,7 +82,7 @@
 
             buildInputs = [] ++ bothNativeAndOtherInputs;
 
-            propagatedBuildInputs = [];
+            propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
 
             passthru = { inherit coqPackages; };
 
