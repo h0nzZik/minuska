@@ -55,11 +55,23 @@
         );
 
         minuskaFun = { coqPackages }: (
-           coqPackages.callPackage 
-           ( { coq, stdenv }:
-        coqPackages.mkCoqDerivation {
+           let coqVersion = coqPackages.coq.coq-version; in
+           let stdpp = (stdppFun {lib = coqPackages.lib; mkCoqDerivation = coqPackages.mkCoqDerivation; coq = coqPackages.coq; }); in
+           let coqLibraries = [
+              coqPackages.equations
+              stdpp
+           ]; in
+           let bothNativeAndOtherInputs = [
+              coqPackages.coq
 
-#           coqPackages.coq.ocamlPackages.buildDunePackage {
+              coqPackages.coq.ocaml
+              coqPackages.coq.ocamlPackages.findlib
+              coqPackages.coq.ocamlPackages.zarith
+              coqPackages.coq.ocamlPackages.core
+              coqPackages.coq.ocamlPackages.core_unix
+              coqPackages.coq.ocamlPackages.ppx_jane
+           ] ++ coqLibraries ; in
+           let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
             useDune = true; 
             pname = "minuska";
@@ -68,44 +80,55 @@
             duneVersion = "3";
  
             nativeBuildInputs = [
+              pkgs.makeWrapper
               pkgs.dune_3
-              coqPackages.coq
-              coqPackages.coq.ocaml
               coqPackages.coq.ocamlPackages.menhir
               coqPackages.coq.ocamlPackages.odoc
-            ];
+            ] ++ bothNativeAndOtherInputs;
 
-            propagatedBuildInputs = [
-              coqPackages.coq
-              coqPackages.coq.ocamlPackages.findlib
-              coqPackages.equations
-              # (
-              #   coqPackages.lib.overrideCoqDerivation {
-              #     inherit coq;
-              #     defaultVersion = "1.9.0"; 
-              #   } pkgs.coqPackages_8_18.stdpp
-              # )
-              (stdppFun {lib = coqPackages.lib; mkCoqDerivation = coqPackages.mkCoqDerivation; coq = coqPackages.coq; })
-              coqPackages.coq.ocaml
-              coqPackages.coq.ocamlPackages.zarith
-              coqPackages.coq.ocamlPackages.core
-              coqPackages.coq.ocamlPackages.core_unix
-              coqPackages.coq.ocamlPackages.ppx_jane
-            ];
-            # Not sure if we need this anymore
-            installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
+            buildInputs = [] ++ bothNativeAndOtherInputs;
+
+            propagatedBuildInputs = [];
 
             passthru = { inherit coqPackages; };
+
+            # I do not know how to populate the environment variables (OCAMLPATH, COQPATH) with the stuff coming out of Equations and stdpp.
+            # It should be possible to do it with setuphooks, but I do not know how.
+            # Therefore, I just hard-code the paths to the libraries into all invocations of `coqc` done inside the `minuska` binary.
+            postPatch = ''
+              substituteInPlace bin/main.ml \
+                --replace "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
+                --replace "coqc" "${coqPackages.coq}/bin/coqc -R ${stdpp}/lib/coq/${coqVersion}/user-contrib/stdpp stdpp -R ${coqPackages.equations}/lib/coq/${coqVersion}/user-contrib/Equations Equations -I ${coqPackages.equations}/lib/ocaml/${coqPackages.coq.ocaml.version}/site-lib/coq-equations" \
+                --replace "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
+            '';
+             #                --replace "env OCAMLPATH=" "env OCAMLPATH=${coqPackages.coq.ocamlPackages.zarith}/lib/ocaml/${coqPackages.coq.ocaml.version}/site-lib:"
+
 
             buildPhase = ''
               dune build @all theories/Minuska.html
             '';
 
-            setupHook = pkgs.writeText "setupHook.sh" ''
-                export OCAMLPATH="''${OCAMLPATH-}''${OCAMLPATH:+:}''$1/lib/"
+            postInstall = ''
+              wrapProgram $out/bin/minuska --prefix OCAMLPATH : $OCAMLPATH
             '';
 
-          } ) { } 
+
+
+            #setupHook = pkgs.writeText "setupHook.sh" ''
+            #  source ${coqPackages.coq}/nix-support/setup-hook
+            #'';
+
+          } ) { };  in
+          wrapped
+          #pkgs.symlinkJoin {
+          #  name = wrapped.name;
+          #  paths = [
+          #    wrapped
+          #    coqPackages.coq
+          #    coqPackages.coq.ocamlPackages.findlib
+          #    coqPackages.coq.ocamlPackages.zarith
+          #  ] ++ bothNativeAndOtherInputs;
+          #}
         );
 
       in {

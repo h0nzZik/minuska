@@ -33,15 +33,23 @@ The simplest way is to use the provided Nix Flake:
 nix shell '.#minuska'
 ```
 
+## Building using Dune
 One can also build and install it using [Dune](https://dune.readthedocs.io/en/stable/):
 ```sh
 dune build @all
 ```
 but this requires one to install all the dependencies manually.
+
+### Build dependencies
 To typecheck the Coq development, one needs:
 - [Coq](https://coq.inria.fr/) 8.19
 - [stdpp](https://gitlab.mpi-sws.org/iris/stdpp) > 1.9.0
 - [equations](https://mattam82.github.io/Coq-Equations/) 1.3
+
+### Runtime dependencies
+
+coq, ocamlc, zarith
+
 
 # Missing features
 

@@ -33,6 +33,8 @@ let run l =
   Sys_unix.command (String.concat l)
 
 let compile input_filename interpreter_name () =
+  (* let real_interpreter_name = Filename_unix.realpath interpreter_name in *)
+  let real_interpreter_name = interpreter_name in
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
@@ -42,7 +44,7 @@ let compile input_filename interpreter_name () =
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
-  let libdir = Filename.dirname (Sys_unix.executable_name) ^ "/../lib" in
+  let libdir = Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib" in
   let minuska_dir = libdir ^ "/coq/user-contrib/Minuska" in
   let coq_minuska_dir = libdir ^ "/coq-minuska" in
   let _ = coq_minuska_dir in
@@ -50,14 +52,16 @@ let compile input_filename interpreter_name () =
   let _ = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile] in
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.Miskeleton.main lang_interpreter)") in
   (*let _ = run ["cat "; mlfile] in*)
+  let _ = run ["ocamlfind --version"] in
+  let _ = run ["ocamlfind ocamlopt --version"] in
+  let _ = run ["ocamopt --version"] in
   let _ = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
-          "ocamlfind ocamlc -thread -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
+          "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
-  let _ = run ["cp "; mldir; "/interpreter.exe"; " "; interpreter_name] in
+  let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in
   let _ = input_filename in
-  let _ = interpreter_name in
   fprintf stdout "Hello, interpreter!\n";
   ()
 
