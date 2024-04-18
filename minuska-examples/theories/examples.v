@@ -11,6 +11,7 @@ From Minuska Require Import
     naive_interpreter
     interpreter_results
     default_static_model
+    lowlang
     notations
     frontend
     interp_loop
@@ -535,6 +536,9 @@ Module fib_native.
 End fib_native.
 
 Module imp.
+
+    Search "subst" Expression2.
+    Search Expression BuiltinOrVar.
 
     Import default_builtin.
     Import default_builtin.Notations.

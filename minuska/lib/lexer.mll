@@ -26,10 +26,10 @@ rule read =
   | ')'          { BRACKET_ROUND_RIGHT }
   | '['          { BRACKET_SQUARE_LEFT }
   | ']'          { BRACKET_SQUARE_RIGHT }
-  | "symbols"    { KEYWORD_SYMBOLS }
-  | "value"      { KEYWORD_VALUE }
-  | "strictness" { KEYWORD_STRICTNESS }
-  | "rule"       { KEYWORD_RULE }
+  | "@value"      { KEYWORD_VALUE }
+  | "@strictness" { KEYWORD_STRICTNESS }
+  | "@frames"       { KEYWORD_FRAMES }
+  | "@rule"       { KEYWORD_RULE }
   | "of"         { KEYWORD_OF }
   | "arity"      { KEYWORD_ARITY }
   | "in"         { KEYWORD_IN }

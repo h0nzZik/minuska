@@ -140,7 +140,15 @@ let rec print_exprterm (oux : Out_channel.t) (p : Syntax.exprterm) : unit =
 
 
 let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
-    fprintf oux "(basic_rule \"%s\" " (r.name);
+    fprintf oux "(";
+    (
+      match (r.frame) with
+      | None -> 
+        fprintf oux "basic_rule \"%s\" " (r.name)
+      | Some (`Id s) ->
+        fprintf oux "framed_rule frame_%s \"%s\" " s (r.name)
+    );
+    
     print_pattern oux (r.lhs);
     fprintf oux " ";
     print_exprterm oux (r.rhs);
@@ -148,6 +156,14 @@ let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
     print_expr oux (r.cond);
     fprintf oux ")\n";
     ()
+
+let print_frame oux fr =
+  fprintf oux "Definition frame_%s : (variable*(TermOver BuiltinOrVar)) := (" (match fr.name with `Id s -> s);
+  fprintf oux "\"%s\"" (match fr.var with `Var s -> s);
+  fprintf oux ",";
+  print_pattern oux (fr.pat);
+  fprintf oux ").\n";
+  ()
 
 
 let print_definition def oux =
@@ -159,11 +175,12 @@ let print_definition def oux =
     print_expr_w_hole oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     fprintf oux "%s\n" output_part_2;
-    fprintf oux "%s\n" {|
+    List.iter ~f:(fun fr -> print_frame oux fr) (def.frames);
+    (* fprintf oux "%s\n" {|
     Definition basic_rule (name : string) (l : TermOver BuiltinOrVar) (r : TermOver Expression2) (cond : Expression2) : Declaration :=
       (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary default_builtin.b_true) cond)] default_act)))
     .
-    |};
+    |}; *)
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";

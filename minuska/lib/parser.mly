@@ -1,10 +1,10 @@
 %token <int> INT
 %token <string> ID
 %token <string> VAR
-%token KEYWORD_SYMBOLS
 %token KEYWORD_VALUE
 %token KEYWORD_STRICTNESS
 %token KEYWORD_RULE
+%token KEYWORD_FRAMES
 %token KEYWORD_OF
 %token KEYWORD_ARITY
 %token KEYWORD_IN
@@ -26,16 +26,6 @@
 %start <(Syntax.groundterm option)> option_groundterm
 %{ open Syntax %}
 %%
-
-symbolsdecl:
-  | KEYWORD_SYMBOLS
-    COLON
-    BRACKET_SQUARE_LEFT
-    v = separated_list(COMMA, ID)
-    BRACKET_SQUARE_RIGHT
-    SEMICOLON
-    { v }
-  ;
 
 strictnessone:
   | s = ID;
@@ -118,6 +108,26 @@ valuedecl:
     { (x,e) }
   ;
 
+framedecl:
+  | n = ID
+    BRACKET_ROUND_LEFT
+    x = VAR
+    BRACKET_ROUND_RIGHT
+    COLON
+    p = pattern
+    { { name=(`Id n); var=(`Var x); pat=p } }
+  ;
+
+framesdecl:
+  | KEYWORD_FRAMES
+    COLON
+    BRACKET_SQUARE_LEFT
+    fs = separated_list(SEMICOLON, framedecl);
+    BRACKET_SQUARE_RIGHT
+    SEMICOLON
+    { fs }
+  ;
+
 slashid:
   | SLASH
     x = ID
@@ -137,15 +147,15 @@ rule:
     KEYWORD_WHERE
     c = expr
     SEMICOLON
-    { {alias = a; name = n; lhs = l; rhs = r; cond = c }  }
+    { {frame = a; name = n; lhs = l; rhs = r; cond = c }  }
   ;
 
 definition:
-  | syms = symbolsdecl
-    v = valuedecl
+  | v = valuedecl
     sall = strictnessall
+    fs = framesdecl
     rs = list(rule)
-    { { symbols = (List.map (fun x -> `Id x) syms); value = (`Var (fst v), (snd v)); strictness = sall; rules = rs } }
+    { { value = (`Var (fst v), (snd v)); frames = fs; strictness = sall; rules = rs } }
   ;
 
 option_definition:

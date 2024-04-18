@@ -2,10 +2,10 @@ type token =
   | ID of string
   | VAR of string
   | INT of int
-  | KEYWORD_SYMBOLS
   | KEYWORD_VALUE
   | KEYWORD_STRICTNESS
   | KEYWORD_RULE
+  | KEYWORD_FRAMES
   | KEYWORD_OF
   | KEYWORD_ARITY
   | KEYWORD_IN
@@ -48,11 +48,18 @@ type exprterm =
 
 type rule = 
   {
-    alias : id option ;
+    frame : id option ;
     name : string ;
     lhs : pattern ;
     rhs : exprterm ;
     cond : expr ;
+  }
+
+type framedecl =
+  {
+    name : id ;
+    var : vari ;
+    pat : pattern ;
   }
 
 type strictdecl =
@@ -64,8 +71,8 @@ type strictdecl =
 
 type definition =
   {
-    symbols    : (id list);
     value      : (vari*expr) ;
+    frames     : (framedecl list) ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;
   }
