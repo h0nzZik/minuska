@@ -10,6 +10,8 @@ let builtins_alist =
     "bool.true", "b_true";
     "term.same_symbol", "b_have_same_symbol";
     "z.minus", "b_Z_minus";
+    "z.plus", "b_Z_plus";
+    "z.is", "b_isZ";
   ]
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
@@ -46,8 +48,8 @@ let output_part_2 = {delimiter|
 
 #[local]
 Instance LangDefaults : Defaults := {|
-    default_cseq_name := "__builtin_cseq" ;
-    default_empty_cseq_name := "__builtin_empty_cseq" ;
+    default_cseq_name := "builtin.cseq" ;
+    default_empty_cseq_name := "builtin.empty_cseq" ;
     default_context_template := myContext ;
 
     default_isValue := isValue ;
@@ -197,7 +199,7 @@ let print_frame oux fr =
 let print_strict oux str =
   fprintf oux "(decl_strict (mkStrictnessDeclaration DSM \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
   fprintf oux "[";
-  myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux ", "; ()) (str.strict_places);
+  myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux "; "; ()) (str.strict_places);
   fprintf oux "] isValue myContext";
   fprintf oux "))\n";
   ()

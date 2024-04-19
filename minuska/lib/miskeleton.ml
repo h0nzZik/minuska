@@ -13,6 +13,9 @@ let rec convert_groundterm (g : Syntax.groundterm) : Dsm.gT =
   | `GTerm (`Id s, gs) ->
     Dsm.T_term (s,(List.map ~f:convert_groundterm gs))
 
+let wrap_init (g : Dsm.gT) : Dsm.gT =
+  Dsm.T_term ("builtin.init", [g])
+
 let convert_builtin_back (b : Dsm.myBuiltinType) : Syntax.builtin =
   match b with
   | Dsm.Bv_Z n -> `BuiltinInt n
@@ -40,7 +43,7 @@ let parse_gt_and_print lexbuf oux step depth output_file =
   | Some gterm ->
     (* fprintf oux "%s\n" (Miunparse.groundterm_to_string gterm); *)
     let cg = (convert_groundterm gterm) in
-    let res = run_n_steps step depth 0 cg in (
+    let res = run_n_steps step depth 0 (wrap_init cg) in (
     match res with
     | (actual_depth,result) ->
       fprintf oux "Taken %d steps\n" actual_depth;
