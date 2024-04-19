@@ -4,6 +4,8 @@
 
 @value(X): (bool.false()) ;
 
+@context(HOLE): u_cfg [ HOLE ];
+
 @strictness: [
 	if of_arity 3 in [0]
 ];

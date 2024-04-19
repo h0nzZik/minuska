@@ -3,11 +3,13 @@
 %token <string> VAR
 %token KEYWORD_VALUE
 %token KEYWORD_STRICTNESS
+%token KEYWORD_BUILTIN
 %token KEYWORD_RULE
 %token KEYWORD_FRAMES
 %token KEYWORD_OF_ARITY
 %token KEYWORD_IN
 %token KEYWORD_WHERE
+%token KEYWORD_CONTEXT
 %token BRACKET_ROUND_LEFT
 %token BRACKET_ROUND_RIGHT
 %token BRACKET_SQUARE_LEFT
@@ -25,6 +27,16 @@
 %start <(Syntax.groundterm option)> option_groundterm
 %{ open Syntax %}
 %%
+
+contextdecl:
+  | KEYWORD_CONTEXT
+    BRACKET_ROUND_LEFT
+    x = VAR
+    BRACKET_ROUND_RIGHT
+    COLON
+    p = pattern
+    SEMICOLON
+    { { var = (`Var x); pat = p } }
 
 strictnessone:
   | s = ID;
@@ -58,7 +70,17 @@ pattern:
     { `PTerm ((`Id s), es) }
   ;
 
+builtin:
+  | BRACKET_ROUND_LEFT
+    KEYWORD_BUILTIN
+    n = INT
+    BRACKET_ROUND_RIGHT
+    { `BuiltinInt n }
+  ;
+
 groundterm:
+  | b = builtin
+    { `GTb b }
   | s = ID;
     BRACKET_SQUARE_LEFT
     ts = separated_list(COMMA, groundterm)
@@ -150,9 +172,10 @@ rule:
 definition:
   | fs = framesdecl
     v = valuedecl
+    c = contextdecl
     sall = strictnessall
     rs = list(rule)
-    { { value = (`Var (fst v), (snd v)); frames = fs; strictness = sall; rules = rs } }
+    { { context = c; value = (`Var (fst v), (snd v)); frames = fs; strictness = sall; rules = rs } }
   ;
 
 option_definition:

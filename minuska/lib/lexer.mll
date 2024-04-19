@@ -21,7 +21,7 @@ rule read =
   parse
   | white        { read lexbuf }
   | newline  { Lexing.new_line lexbuf; read lexbuf }
-  
+  | int      { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | '('          { BRACKET_ROUND_LEFT }
   | ')'          { BRACKET_ROUND_RIGHT }
   | '['          { BRACKET_SQUARE_LEFT }
@@ -30,6 +30,8 @@ rule read =
   | "@strictness" { KEYWORD_STRICTNESS }
   | "@frames"       { KEYWORD_FRAMES }
   | "@rule"       { KEYWORD_RULE }
+  | "@context"       { KEYWORD_CONTEXT }
+  | "@builtin"       { KEYWORD_BUILTIN }
   | "of_arity"         { KEYWORD_OF_ARITY }
   | "in"         { KEYWORD_IN }
   | "where"      { KEYWORD_WHERE }

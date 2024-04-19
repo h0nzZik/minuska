@@ -2,24 +2,29 @@ From Minuska Require Import
     prelude
     spec
     string_variables
-    builtins
     default_static_model
     frontend
-    properties
+    properties    
 .
+
+Require Minuska.BuiltinValue Minuska.builtins.
 
 Variant Act := default_act | invisible_act.
 
+Definition myBuiltinType : Type := @BuiltinValue.BuiltinValue0 string.
+Definition myBuiltin := builtins.default_builtin.β.
+
 #[export]
 Instance DSM : StaticModel :=
-    default_model (default_builtin.β)
+    default_model (myBuiltin)
 .
 
-Definition GT := @TermOver' string builtin_value.
+Definition GT := @TermOver' string myBuiltinType.
 
 Definition StepT := GT -> option GT.
 
-Definition gt_term (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
+Definition gt_over (b : myBuiltinType) : GT := @t_over string myBuiltinType b.
+Definition gt_term (s : string) (l : list GT) : GT := @t_term string myBuiltinType s l.
 (*
 Definition gt_over b := term_over b.
 *)
@@ -30,7 +35,7 @@ Definition basic_rule
     (r : TermOver Expression2)
     (cond : Expression2) : Declaration
 :=
-    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary default_builtin.b_true) cond)] default_act)))
+    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary builtins.default_builtin.b_true) cond)] default_act)))
 .
 
 
@@ -45,8 +50,6 @@ Definition BoV_to_Expr2
     end
 .
 
-About TermOverBoV_subst_expr2.
-
 Definition framed_rule
     (frame : (variable*(TermOver BuiltinOrVar)))
     (name : string)
@@ -57,6 +60,6 @@ Definition framed_rule
     (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act
         (TermOverBoV_subst frame.2 frame.1 l)
         (TermOverBoV_subst_expr2 frame.2 frame.1 r)
-        [(mkSideCondition2 _ (e_nullary default_builtin.b_true) cond)] default_act)))
+        [(mkSideCondition2 _ (e_nullary builtins.default_builtin.b_true) cond)] default_act)))
 .
 

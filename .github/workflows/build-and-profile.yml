@@ -3,8 +3,8 @@ name: Build and profile and CoqDoc
 on:
   push:
     branches: [ "main" ]
-  #pull_request:
-  #  branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -35,8 +35,11 @@ jobs:
     - name: 'Build with Coq 8.19'
       run: nix build -L '.#minuska-coq_8_19' --out-link ./result-minuska
 
-    - name: 'Build examples (with Coq 8.19)'
+    - name: 'Build Coq examples (with Coq 8.19)'
       run: nix build -L '.#minuska-examples'
+
+    - name: 'Run standalone examples'
+      run: nix shell -L '.#minuska' --command ./minuska-examples/test.sh
 
       
     #- name: Build
@@ -58,6 +61,7 @@ jobs:
 
   # Deployment job
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

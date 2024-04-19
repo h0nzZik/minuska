@@ -9,6 +9,9 @@ let builtins_alist =
     "bool.false", "b_false";
     "bool.true", "b_true";
     "term.same_symbol", "b_have_same_symbol";
+    "z.minus", "b_Z_minus";
+    "z.plus", "b_Z_plus";
+    "z.is", "b_isZ";
   ]
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
@@ -26,11 +29,13 @@ Require Import
   Coq.extraction.Extraction
   Coq.extraction.ExtrOcamlBasic
   Coq.extraction.ExtrOcamlNativeString
+  Coq.extraction.ExtrOcamlZInt
 .
 From Minuska Require Import
     prelude
     spec
     string_variables
+    BuiltinValue
     builtins
     default_static_model
     naive_interpreter
@@ -39,25 +44,50 @@ From Minuska Require Import
 .
 |}
 
-
 let output_part_2 = {delimiter|
-Definition myContext := (context-template (@t_term _ _ "u_cfg") ([ HOLE ]) with HOLE) .
 
 #[local]
 Instance LangDefaults : Defaults := {|
-    default_cseq_name := "__builtin_cseq" ;
-    default_empty_cseq_name := "__builtin_empty_cseq" ;
+    default_cseq_name := "builtin.cseq" ;
+    default_empty_cseq_name := "builtin.empty_cseq" ;
     default_context_template := myContext ;
 
     default_isValue := isValue ;
 |}.
 |delimiter}
 
+let builtin2str b =
+  match b with
+  | `BuiltinInt n -> "(bv_Z " ^ (string_of_int n) ^ ")"
+  | _ -> failwith "Unsupported builtin value"
+
 let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
   match g with
+  | `GTb b ->
+      fprintf oux "(@t_over symbol builtin_value ";
+      fprintf oux "%s" (builtin2str b);
+      fprintf oux ")";
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
     myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;
+    fprintf oux "])"
+
+
+let rec print_resolved_w_hole (oux : Out_channel.t) (p : Syntax.pattern) (hole : string option) : unit =
+  match p with
+  | `PVar (`Var s) -> (
+      match hole with
+      | None ->
+          fprintf oux "((\"%s\"))" s
+      | Some s2 ->
+          if String.(s = s2) then
+              fprintf oux "(%s)" s2
+          else
+              fprintf oux "((\"%s\"))" s
+    )
+  | `PTerm (`Id s, ps) ->
+    fprintf oux "(@t_term _ _ \"%s\" [" s;
+    myiter (fun x -> print_resolved_w_hole oux x hole; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 let rec print_pattern_w_hole (oux : Out_channel.t) (p : Syntax.pattern) (hole : string option) : unit =
@@ -169,14 +199,23 @@ let print_frame oux fr =
 let print_strict oux str =
   fprintf oux "(decl_strict (mkStrictnessDeclaration DSM \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
   fprintf oux "[";
-  myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux ", "; ()) (str.strict_places);
+  myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux "; "; ()) (str.strict_places);
   fprintf oux "] isValue myContext";
   fprintf oux "))\n";
   ()
 
+
+let print_mycontext oux ctx =
+  fprintf oux "Definition myContext := (context-template ";
+  print_resolved_w_hole oux (ctx.pat) (Some (match (ctx.var) with `Var s -> s));
+  fprintf oux " with %s).\n" (match ctx.var with `Var s -> s);
+  ()  
+
+
 let print_definition def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
+    print_mycontext oux (def.context);
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";

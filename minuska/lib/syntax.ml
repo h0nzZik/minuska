@@ -3,9 +3,11 @@ type token =
   | VAR of string
   | INT of int
   | KEYWORD_VALUE
+  | KEYWORD_BUILTIN
   | KEYWORD_STRICTNESS
   | KEYWORD_RULE
   | KEYWORD_FRAMES
+  | KEYWORD_CONTEXT
   | KEYWORD_OF_ARITY
   | KEYWORD_IN
   | KEYWORD_WHERE
@@ -32,7 +34,14 @@ type pattern =
   | `PTerm of (id*(pattern list))
   ]
 
-type groundterm = [ `GTerm of (id*(groundterm list)) ]
+type builtin =
+  [ `BuiltinInt of int
+  ]
+
+type groundterm =
+  [ `GTb of builtin
+  | `GTerm of (id*(groundterm list))
+  ]
 
 type expr =
   [ `EVar of vari
@@ -61,6 +70,12 @@ type framedecl =
     pat : pattern ;
   }
 
+type contextdecl =
+  {
+    var : vari ;
+    pat : pattern ;
+  }
+
 type strictdecl =
   {
     symbol : id ;
@@ -70,8 +85,9 @@ type strictdecl =
 
 type definition =
   {
-    value      : (vari*expr) ;
     frames     : (framedecl list) ;
+    value      : (vari*expr) ;
+    context    : contextdecl ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;
   }
