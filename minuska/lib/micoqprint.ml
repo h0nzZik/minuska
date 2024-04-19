@@ -39,9 +39,7 @@ From Minuska Require Import
 .
 |}
 
-
 let output_part_2 = {delimiter|
-Definition myContext := (context-template (@t_term _ _ "u_cfg") ([ HOLE ]) with HOLE) .
 
 #[local]
 Instance LangDefaults : Defaults := {|
@@ -58,6 +56,24 @@ let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
     myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;
+    fprintf oux "])"
+
+
+let rec print_resolved_w_hole (oux : Out_channel.t) (p : Syntax.pattern) (hole : string option) : unit =
+  match p with
+  | `PVar (`Var s) -> (
+      match hole with
+      | None ->
+          fprintf oux "((\"%s\"))" s
+      | Some s2 ->
+          if String.(s = s2) then
+              fprintf oux "(%s)" s2
+          else
+              fprintf oux "((\"%s\"))" s
+    )
+  | `PTerm (`Id s, ps) ->
+    fprintf oux "(@t_term _ _ \"%s\" [" s;
+    myiter (fun x -> print_resolved_w_hole oux x hole; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 let rec print_pattern_w_hole (oux : Out_channel.t) (p : Syntax.pattern) (hole : string option) : unit =
@@ -174,9 +190,18 @@ let print_strict oux str =
   fprintf oux "))\n";
   ()
 
+
+let print_mycontext oux ctx =
+  fprintf oux "Definition myContext := (context-template ";
+  print_resolved_w_hole oux (ctx.pat) (Some (match (ctx.var) with `Var s -> s));
+  fprintf oux " with %s).\n" (match ctx.var with `Var s -> s);
+  ()  
+
+
 let print_definition def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
+    print_mycontext oux (def.context);
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
