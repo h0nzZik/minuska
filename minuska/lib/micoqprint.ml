@@ -9,6 +9,7 @@ let builtins_alist =
     "bool.false", "b_false";
     "bool.true", "b_true";
     "term.same_symbol", "b_have_same_symbol";
+    "z.minus", "b_Z_minus";
   ]
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
@@ -26,11 +27,13 @@ Require Import
   Coq.extraction.Extraction
   Coq.extraction.ExtrOcamlBasic
   Coq.extraction.ExtrOcamlNativeString
+  Coq.extraction.ExtrOcamlZInt
 .
 From Minuska Require Import
     prelude
     spec
     string_variables
+    BuiltinValue
     builtins
     default_static_model
     naive_interpreter
@@ -51,8 +54,17 @@ Instance LangDefaults : Defaults := {|
 |}.
 |delimiter}
 
+let builtin2str b =
+  match b with
+  | `BuiltinInt n -> "(bv_Z " ^ (string_of_int n) ^ ")"
+  | _ -> failwith "Unsupported builtin value"
+
 let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
   match g with
+  | `GTb b ->
+      fprintf oux "(@t_over symbol builtin_value ";
+      fprintf oux "%s" (builtin2str b);
+      fprintf oux ")";
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
     myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;

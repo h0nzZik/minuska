@@ -12,8 +12,7 @@ Section default_model.
         (β : Builtin)
     .
 
-    #[export]
-    Instance default_model : StaticModel := {|
+    Definition default_model : StaticModel := {|
         symbol := string ;
         variable := string ;
         symbols :=  MySymbols;

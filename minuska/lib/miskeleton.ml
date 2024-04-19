@@ -2,16 +2,26 @@ open Core
 open Printf
 
 
+let convert_builtin (b : Syntax.builtin) : (Dsm.myBuiltinType) =
+  match b with
+  | `BuiltinInt n -> (Dsm.Bv_Z n)
+
 let rec convert_groundterm (g : Syntax.groundterm) : Dsm.gT =
   match g with
+  | `GTb b ->
+    Dsm.gt_over (convert_builtin b)
   | `GTerm (`Id s, gs) ->
     Dsm.T_term (s,(List.map ~f:convert_groundterm gs))
 
+let convert_builtin_back (b : Dsm.myBuiltinType) : Syntax.builtin =
+  match b with
+  | Dsm.Bv_Z n -> `BuiltinInt n
+  | _ -> failwith "Unsupported builtin value"
 
 let rec convert_groundterm_back (g : Dsm.gT) : Syntax.groundterm =
   match g with
-  | Dsm.T_over _ ->
-    failwith "Unsupported builtin value"
+  | Dsm.T_over b ->
+    `GTb (convert_builtin_back b)
   | Dsm.T_term ( s, gs) ->
     `GTerm (`Id s,(List.map ~f:convert_groundterm_back gs))
 

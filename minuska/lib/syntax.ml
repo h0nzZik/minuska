@@ -3,6 +3,7 @@ type token =
   | VAR of string
   | INT of int
   | KEYWORD_VALUE
+  | KEYWORD_BUILTIN
   | KEYWORD_STRICTNESS
   | KEYWORD_RULE
   | KEYWORD_FRAMES
@@ -33,7 +34,14 @@ type pattern =
   | `PTerm of (id*(pattern list))
   ]
 
-type groundterm = [ `GTerm of (id*(groundterm list)) ]
+type builtin =
+  [ `BuiltinInt of int
+  ]
+
+type groundterm =
+  [ `GTb of builtin
+  | `GTerm of (id*(groundterm list))
+  ]
 
 type expr =
   [ `EVar of vari

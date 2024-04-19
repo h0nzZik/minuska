@@ -3,6 +3,7 @@
 %token <string> VAR
 %token KEYWORD_VALUE
 %token KEYWORD_STRICTNESS
+%token KEYWORD_BUILTIN
 %token KEYWORD_RULE
 %token KEYWORD_FRAMES
 %token KEYWORD_OF_ARITY
@@ -69,7 +70,17 @@ pattern:
     { `PTerm ((`Id s), es) }
   ;
 
+builtin:
+  | BRACKET_ROUND_LEFT
+    KEYWORD_BUILTIN
+    n = INT
+    BRACKET_ROUND_RIGHT
+    { `BuiltinInt n }
+  ;
+
 groundterm:
+  | b = builtin
+    { `GTb b }
   | s = ID;
     BRACKET_SQUARE_LEFT
     ts = separated_list(COMMA, groundterm)
