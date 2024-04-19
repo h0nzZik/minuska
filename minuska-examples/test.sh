@@ -2,6 +2,11 @@
 
 set -e
 
+# https://stackoverflow.com/a/246128/6209703
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+pushd "$SCRIPT_DIR"
+
 TEMPDIR="$(pwd)/_temp"
 
 rm -rf "$TEMPDIR"

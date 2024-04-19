@@ -35,8 +35,11 @@ jobs:
     - name: 'Build with Coq 8.19'
       run: nix build -L '.#minuska-coq_8_19' --out-link ./result-minuska
 
-    - name: 'Build examples (with Coq 8.19)'
+    - name: 'Build Coq examples (with Coq 8.19)'
       run: nix build -L '.#minuska-examples'
+
+    - name: 'Run standalone examples'
+      run: nix shell -L '.#minuska' --command ./minuska-examples/test.sh
 
       
     #- name: Build
