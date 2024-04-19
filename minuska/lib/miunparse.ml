@@ -8,7 +8,7 @@ let mymap (f : 'a -> 'b) (g : 'b -> 'b) (l : 'a list)  : 'b list =
 
 let builtin_to_string (b : Syntax.builtin) : string =
   match b with
-  | `BuiltinInt n -> (string_of_int n)
+  | `BuiltinInt n -> "(@builtin " ^ (string_of_int n) ^ ")"
 
 let rec groundterm_to_string (g : Syntax.groundterm) : string =
   match g with
