@@ -36,6 +36,7 @@ type pattern =
 
 type builtin =
   [ `BuiltinInt of int
+  | `OpaqueBuiltin
   ]
 
 type groundterm =

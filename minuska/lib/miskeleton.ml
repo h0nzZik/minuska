@@ -5,6 +5,7 @@ open Printf
 let convert_builtin (b : Syntax.builtin) : (Dsm.myBuiltinType) =
   match b with
   | `BuiltinInt n -> (Dsm.Bv_Z n)
+  | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"
 
 let rec convert_groundterm (g : Syntax.groundterm) : Dsm.gT =
   match g with
@@ -19,7 +20,7 @@ let wrap_init (g : Dsm.gT) : Dsm.gT =
 let convert_builtin_back (b : Dsm.myBuiltinType) : Syntax.builtin =
   match b with
   | Dsm.Bv_Z n -> `BuiltinInt n
-  | _ -> failwith "Unsupported builtin value"
+  | _ -> `OpaqueBuiltin
 
 let rec convert_groundterm_back (g : Dsm.gT) : Syntax.groundterm =
   match g with

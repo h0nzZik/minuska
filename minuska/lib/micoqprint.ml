@@ -12,6 +12,11 @@ let builtins_alist =
     "z.minus", "b_Z_minus";
     "z.plus", "b_Z_plus";
     "z.is", "b_isZ";
+    "map.hasKey", "b_map_hasKey";
+    "map.lookup", "b_map_lookup";
+    "map.size", "b_map_size";
+    "map.empty", "b_map_empty";
+    "map.update", "b_map_update";
   ]
 
 let builtins_map = Map.of_alist_exn (module String) builtins_alist
@@ -61,7 +66,7 @@ Instance LangDefaults : Defaults := {|
 let builtin2str b =
   match b with
   | `BuiltinInt n -> "(bv_Z " ^ (string_of_int n) ^ ")"
-  | _ -> failwith "Unsupported builtin value"
+  | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
   match g with

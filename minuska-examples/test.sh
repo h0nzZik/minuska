@@ -47,3 +47,6 @@ runCase "dec builtin into -1" ./interpreters/decrement-builtin ./m/decrement-bui
 minuska compile ./m/arith.m ./interpreters/arith
 runCase "arith-01" ./interpreters/arith ./m/arith.d/01 20 ./m/arith.d/01.result
 
+minuska compile ./m/imp.m ./interpreters/imp
+runCase "imp-01" ./interpreters/imp ./m/imp.d/01 20 ./m/imp.d/01.result
+
