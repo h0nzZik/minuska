@@ -82,7 +82,7 @@ let compile input_filename interpreter_name () =
   let _ = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
-          "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -w -20 -w -26 -o ";
+          "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in
   let _ = input_filename in

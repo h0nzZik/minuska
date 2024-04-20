@@ -1,5 +1,5 @@
 From Coq.Logic Require Import ProofIrrelevance.
-
+From stdpp Require Import countable.
 
 From Minuska Require Import
     prelude
@@ -31,6 +31,10 @@ Module two_counters.
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).
 
+    Set Printing Implicit.
+    Check @encode.
+    Compute (@encode (Term' (@symbol Σ) BuiltinValue.BuiltinValue0) _ (@Term'_countable (@symbol Σ) string_eq_dec string_countable BuiltinValue.BuiltinValue0 _ (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)) (uglify' (t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)]))).
+    Compute (@encode (@TermOver' (@symbol Σ) BuiltinValue.BuiltinValue0)) _ (@TermOver_count (@symbol Σ) BuiltinValue.BuiltinValue0 string_eq_dec _ string_countable (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)) ((t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)])).
 
     Definition M : variable := "M".
     Definition N : variable := "N".

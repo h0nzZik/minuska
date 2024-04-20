@@ -276,6 +276,8 @@ Module default_builtin.
             x y
         .
 
+        Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue.BuiltinValue0)) _ (@TermOver_count (symbol) BuiltinValue.BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue.BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
+
         #[local]
         Instance β
             : Builtin
@@ -382,7 +384,7 @@ Module default_builtin.
                 | b_map_hasKey =>
                     match v1 with
                     | t_over (bv_pmap m) =>
-                        let p := encode (uglify' v2) in
+                        let p := my_encode (v2) in
                         match m !! p with
                         | Some _ => (t_over (bv_bool true))
                         | None => (t_over (bv_bool false))
@@ -392,7 +394,7 @@ Module default_builtin.
                 | b_map_lookup =>
                     match v1 with
                     | t_over (bv_pmap m) =>
-                        let p := encode (uglify' v2) in
+                        let p := my_encode (v2) in
                         match m !! p with
                         | Some v => (prettify v)
                         | None => err
@@ -423,7 +425,7 @@ Module default_builtin.
                 | b_map_update =>
                     match v1 with
                     | t_over (bv_pmap m) =>
-                        let p := encode (uglify' v2) in
+                        let p := my_encode (v2) in
                         let m' := <[ p := (uglify' v3) ]>m in
                         t_over (bv_pmap m')
                     | _ => err
