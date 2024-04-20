@@ -130,6 +130,7 @@ End eqdec.
 
 
 Section countable.
+    Check @encode.
     Fixpoint PreTerm'_to_gen_tree
         (symbol : Type)
         {symbol_eqdec : EqDecision symbol}
@@ -144,7 +145,7 @@ Section countable.
     | (pt_operator s) => GenLeaf (inr s)
     | (pt_app_operand aps b) =>
         (
-            GenNode 0 ([GenLeaf (inl (encode b)); (PreTerm'_to_gen_tree symbol builtin aps)])
+            GenNode 0 ([GenLeaf (inl (@encode builtin T_eqdec T_countable b)); (PreTerm'_to_gen_tree symbol builtin aps)])
         )
     | (pt_app_ao aps1 aps2)
         => (
@@ -166,7 +167,7 @@ Section countable.
     | (GenLeaf (inr s))
         => Some (pt_operator s)
     | (GenNode 0 [(GenLeaf (inl xb));gt]) =>
-        b ← @decode builtin _ _ xb;
+        b ← @decode builtin T_eqdec T_countable xb;
         aps ← PreTerm'_of_gen_tree symbol builtin gt;
         Some (pt_app_operand aps b)
     | (GenNode 1 [gt1;gt2]) =>
