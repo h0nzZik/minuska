@@ -9,6 +9,16 @@ From Minuska Require Export
     interpreter_results
 .
 
+Require Extraction.
+Extraction Language OCaml.
+Require Export
+  Coq.extraction.Extraction
+  Coq.extraction.ExtrOcamlBasic
+  Coq.extraction.ExtrOcamlZBigInt
+  Coq.extraction.ExtrOcamlNatBigInt
+.
+From Coq Require Import String Bool Arith ZArith List.
+
 Require Minuska.BuiltinValue Minuska.builtins.
 
 Variant Act := default_act | invisible_act.

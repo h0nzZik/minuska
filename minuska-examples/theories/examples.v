@@ -31,11 +31,6 @@ Module two_counters.
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).
 
-    Set Printing Implicit.
-    Check @encode.
-    Compute (@encode (Term' (@symbol Σ) BuiltinValue.BuiltinValue0) _ (@Term'_countable (@symbol Σ) string_eq_dec string_countable BuiltinValue.BuiltinValue0 _ (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)) (uglify' (t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)]))).
-    Compute (@encode (@TermOver' (@symbol Σ) BuiltinValue.BuiltinValue0)) _ (@TermOver_count (@symbol Σ) BuiltinValue.BuiltinValue0 string_eq_dec _ string_countable (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)) ((t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)])).
-
     Definition M : variable := "M".
     Definition N : variable := "N".
     
@@ -172,6 +167,16 @@ Module arith.
 
     Import default_builtin.
     Import default_builtin.Notations.
+
+
+    Definition my_encode := @encode (@TermOver' (@symbol Σ) BuiltinValue.BuiltinValue0)) _ (@TermOver_count (@symbol Σ) BuiltinValue.BuiltinValue0 string_eq_dec _ string_countable (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)).
+    Definition my_decode := @decode (@TermOver' (@symbol Σ) BuiltinValue.BuiltinValue0)) _ (@TermOver_count (@symbol Σ) BuiltinValue.BuiltinValue0 string_eq_dec _ string_countable (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)).
+    Compute (my_encode (t_term "t" [t_over (BuiltinValue.bv_str "t")])).
+    Compute (my_encode (t_term "z" [t_over (BuiltinValue.bv_str "t")])).
+    Compute (encode (t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)])).
+    Compute (@encode (Term' (@symbol Σ) BuiltinValue.BuiltinValue0) _ (@Term'_countable (@symbol Σ) string_eq_dec string_countable BuiltinValue.BuiltinValue0 _ (@BuiltinValue.BuiltinValue0_countable (@symbol Σ) string_eq_dec string_countable)) (uglify' (t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)]))).
+    Compute (my_encode ((t_term "ahoj" [t_over (BuiltinValue.bv_Z 3)])).
+
 
     #[local]
     Instance Σ : StaticModel := default_model (default_builtin.β).

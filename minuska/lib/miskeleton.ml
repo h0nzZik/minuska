@@ -49,7 +49,7 @@ let implode (s : Dsm.string) : string =
 
 let convert_builtin (b : Syntax.builtin) : (Dsm.myBuiltinType) =
   match b with
-  | `BuiltinInt n -> (Dsm.Bv_Z n)
+  | `BuiltinInt n -> (Dsm.Bv_Z (Z.of_int n))
   | `BuiltinString s -> (Dsm.Bv_str (explode s))
   | `BuiltinBool b -> (Dsm.Bv_bool b)
   | `BuiltinError -> (Dsm.Bv_error)
@@ -67,7 +67,7 @@ let wrap_init (g : Dsm.gT) : Dsm.gT =
 
 let convert_builtin_back (b : Dsm.myBuiltinType) : Syntax.builtin =
   match b with
-  | Dsm.Bv_Z n -> `BuiltinInt n
+  | Dsm.Bv_Z n -> `BuiltinInt (Z.to_int n)
   | Dsm.Bv_str s -> `BuiltinString (implode s)
   | Dsm.Bv_bool b -> `BuiltinBool b
   | Dsm.Bv_error -> `BuiltinError

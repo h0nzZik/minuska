@@ -1,12 +1,3 @@
-Require Extraction.
-Extraction Language OCaml.
-Require Export
-  Coq.extraction.Extraction
-  Coq.extraction.ExtrOcamlBasic
-  Coq.extraction.ExtrOcamlZInt
-  Coq.extraction.ExtrOcamlNatInt
-.
-From Coq Require Import String Bool Arith ZArith List.
 
 From Minuska Require Export
     prelude

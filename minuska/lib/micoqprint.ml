@@ -33,28 +33,6 @@ let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
 
 
 let output_part_1 = {|
-Require Extraction.
-Extraction Language OCaml.
-Require Import
-  Coq.extraction.Extraction
-  Coq.extraction.ExtrOcamlBasic
-  Coq.extraction.ExtrOcamlZInt
-  Coq.extraction.ExtrOcamlNatInt
-.
-(*
-From Minuska Require Import
-    prelude
-    spec
-    (*string_variables
-    BuiltinValue
-    builtins*)
-    (*default_static_model*)
-    (*naive_interpreter*)
-    frontend
-    spec_interpreter
-    interpreter_results
-.
-*)
 Require Import Minuska.default_everything.
 Existing Instance default_everything.DSM.
 |}
