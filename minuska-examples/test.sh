@@ -30,6 +30,12 @@ runCase() {
 rm -rf ./interpreters
 mkdir -p ./interpreters
 
+if minuska compile ./m/fail-invalid-semantics.m interpreters/invalid.exe ; then
+  echo "ERROR: an invalid language definition compiles!"
+  exit 1
+fi
+
+
 minuska compile ./m/decrement.m ./interpreters/decrement
 runCase "dec into 2" ./interpreters/decrement ./m/decrement.d/three 2 ./m/decrement.d/two
 runCase "dec into 1" ./interpreters/decrement ./m/decrement.d/three 3 ./m/decrement.d/one

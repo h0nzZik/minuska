@@ -20,6 +20,26 @@ let append_definition input_filename output_channel =
   In_channel.close inx;
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := naive_interpreter (fst T).|};
+  fprintf output_channel "%s\n" {|
+  
+    (* This lemma asserts soundness of the generated interpreter. *)
+    Lemma interp_sound:
+        Interpreter_sound'
+        (fst T)
+        lang_interpreter
+    .
+    Proof.
+        apply @naive_interpreter_sound.
+        { apply _. }
+        ltac1:(assert(Htmp: isSome(RewritingTheory2_wf_heuristics (fst T)))).
+        {
+            (* This is the main syntactic check. If this fails, the semantics contain a bad rule. *) ltac1:(compute_done).
+        }
+        unfold is_true, isSome in Htmp.
+        destruct (RewritingTheory2_wf_heuristics (fst T)) eqn:Heq>[|inversion Htmp].
+        assumption.
+    Qed.
+  |} ;
   ()
 
 let transform input_filename output_filename () =
@@ -49,7 +69,8 @@ let compile input_filename interpreter_name () =
   let coq_minuska_dir = libdir ^ "/coq-minuska" in
   let _ = coq_minuska_dir in
   (* fprintf stdout "libdir: %s" libdir; *)
-  let _ = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
+  let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
+  (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.Miskeleton.main lang_interpreter)") in
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [

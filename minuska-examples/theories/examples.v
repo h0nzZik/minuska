@@ -794,23 +794,24 @@ Module imp.
         ))
     .
 
-    (*
+    About RewritingTheory2_wf_heuristics.
     Lemma interp_sound:
-        FlatInterpreter_sound'
+        Interpreter_sound'
         (Γ.1)
         (naive_interpreter Γ.1) 
     .
     Proof.
-        apply naive_interpreter_sound.
-        ltac1:(assert(Htmp: isSome(RewritingTheory_wf_heuristics (Γ.1)))).
+        Check @naive_interpreter_sound.
+        apply @naive_interpreter_sound.
+        { apply _. }
+        ltac1:(assert(Htmp: isSome(RewritingTheory2_wf_heuristics (Γ.1)))).
         {
             ltac1:(compute_done).
         }
         unfold is_true, isSome in Htmp.
-        destruct (RewritingTheory_wf_heuristics Γ.1) eqn:Heq>[|inversion Htmp].
+        destruct (RewritingTheory2_wf_heuristics Γ.1) eqn:Heq>[|inversion Htmp].
         assumption.
     Qed.
-    *)
 
     Definition imp_interp_from (fuel : nat) (from : (TermOver builtin_value))
         := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))

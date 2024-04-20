@@ -11,6 +11,13 @@ Require Minuska.BuiltinValue Minuska.builtins.
 
 Variant Act := default_act | invisible_act.
 
+
+#[export]
+Instance Act_eqDec : EqDecision Act.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
 Definition myBuiltinType : Type := @BuiltinValue.BuiltinValue0 string.
 Definition myBuiltin := builtins.default_builtin.β.
 

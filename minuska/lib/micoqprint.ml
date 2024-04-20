@@ -41,6 +41,8 @@ From Minuska Require Import
     naive_interpreter
     frontend
     default_everything
+    spec_interpreter
+    interpreter_results
 .
 |}
 
