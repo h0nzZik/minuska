@@ -19,26 +19,32 @@ let append_definition input_filename output_channel =
   parse_and_print lexbuf output_channel;
   In_channel.close inx;
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act Lang_Decls)). |};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := naive_interpreter (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := global_naive_interpreter (fst T).|};
   fprintf output_channel "%s\n" {|
-  
+    (* This lemma asserts well-formedness of the definition *)
+    Lemma language_well_formed: isSome(RewritingTheory2_wf_heuristics (fst T)).
+    Proof.
+      (* This is the main syntactic check. If this fails, the semantics contain a bad rule. *) ltac1:(compute_done).
+    Qed.
     (* This lemma asserts soundness of the generated interpreter. *)
+    (* Unfortunately, we cannot rely on the extraction here.
     Lemma interp_sound:
         Interpreter_sound'
         (fst T)
         lang_interpreter
     .
     Proof.
-        apply @naive_interpreter_sound.
+        apply @global_naive_interpreter_sound.
         { apply _. }
         ltac1:(assert(Htmp: isSome(RewritingTheory2_wf_heuristics (fst T)))).
         {
-            (* This is the main syntactic check. If this fails, the semantics contain a bad rule. *) ltac1:(compute_done).
+            apply language_well_formed.
         }
         unfold is_true, isSome in Htmp.
         destruct (RewritingTheory2_wf_heuristics (fst T)) eqn:Heq>[|inversion Htmp].
         assumption.
     Qed.
+    *)
   |} ;
   ()
 

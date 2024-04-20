@@ -1,10 +1,12 @@
-From Minuska Require Import
+From Minuska Require Export
     prelude
     spec
     string_variables
     default_static_model
     frontend
-    properties    
+    properties
+    naive_interpreter
+    interpreter_results
 .
 
 Require Minuska.BuiltinValue Minuska.builtins.
@@ -19,7 +21,9 @@ Proof.
 Defined.
 
 Definition myBuiltinType : Type := @BuiltinValue.BuiltinValue0 string.
-Definition myBuiltin := builtins.default_builtin.β.
+Module dmyBuiltin := builtins.default_builtin.
+Export dmyBuiltin.
+Definition myBuiltin := dmyBuiltin.β.
 
 #[export]
 Instance DSM : StaticModel :=
@@ -70,3 +74,5 @@ Definition framed_rule
         [(mkSideCondition2 _ (e_nullary builtins.default_builtin.b_true) cond)] default_act)))
 .
 
+Definition global_naive_interpreter := @naive_interpreter DSM Act.
+Definition global_naive_interpreter_sound := @naive_interpreter_sound DSM Act.

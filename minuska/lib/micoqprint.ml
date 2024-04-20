@@ -16,6 +16,7 @@ let builtins_alist =
     "z.eq", "b_eq";
     "z.le", "b_Z_isLe";
     "z.lt", "b_Z_isLt";
+    "string.is", "b_isString";
     "map.hasKey", "b_map_hasKey";
     "map.lookup", "b_map_lookup";
     "map.size", "b_map_size";
@@ -40,19 +41,22 @@ Require Import
   Coq.extraction.ExtrOcamlZInt
   Coq.extraction.ExtrOcamlNatInt
 .
+(*
 From Minuska Require Import
     prelude
     spec
-    string_variables
+    (*string_variables
     BuiltinValue
-    builtins
-    default_static_model
-    naive_interpreter
+    builtins*)
+    (*default_static_model*)
+    (*naive_interpreter*)
     frontend
-    default_everything
     spec_interpreter
     interpreter_results
 .
+*)
+Require Import Minuska.default_everything.
+Existing Instance default_everything.DSM.
 |}
 
 let output_part_2 = {delimiter|
@@ -69,7 +73,8 @@ Instance LangDefaults : Defaults := {|
 
 let builtin2str b =
   match b with
-  | `BuiltinInt n -> "(bv_Z " ^ (string_of_int n) ^ ")"
+  | `BuiltinInt n -> "((*default_everything.*)bv_Z " ^ (string_of_int n) ^ ")"
+  | `BuiltinString s -> "((*default_everything.*)bv_str \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
@@ -143,7 +148,7 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string
     match name0 with
     | None -> failwith (String.append "Unknown builtin: " s)
     | Some name1 ->
-        let name = (String.append "default_builtin." name1) in
+        let name = (String.append "(*default_everything.*)" name1) in
         match List.length es with
         | 0 -> fprintf oux "(e_nullary %s)" name
         | 1 ->
@@ -186,9 +191,9 @@ let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
     (
       match (r.frame) with
       | None -> 
-        fprintf oux "basic_rule \"%s\" " (r.name)
+        fprintf oux "(*default_everything.*)basic_rule \"%s\" " (r.name)
       | Some (`Id s) ->
-        fprintf oux "framed_rule frame_%s \"%s\" " s (r.name)
+        fprintf oux "(*default_everything.*)framed_rule frame_%s \"%s\" " s (r.name)
     );
     
     print_pattern oux (r.lhs);
@@ -236,7 +241,7 @@ let print_definition def oux =
     List.iter ~f:(fun fr -> print_frame oux fr) (def.frames);
     (* fprintf oux "%s\n" {|
     Definition basic_rule (name : string) (l : TermOver BuiltinOrVar) (r : TermOver Expression2) (cond : Expression2) : Declaration :=
-      (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary default_builtin.b_true) cond)] default_act)))
+      (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary b_true) cond)] default_act)))
     .
     |}; *)
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";

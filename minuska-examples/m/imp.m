@@ -5,7 +5,7 @@
    z.is(X),                            bool.or(
    bool.is(X),                         bool.or(
    term.same_symbol(X, [unitValue[]]), 
-   bool.false()
+   string.is(X)
 )))) ;
 @context(HOLE): c[HOLE, STATE];
 @strictness: [
@@ -26,7 +26,9 @@
 @rule/simple [aexpr.plus]: plus[X,Y] => z.plus(X, Y) where bool.and(z.is(X), z.is(Y)) ;
 @rule/simple [aexpr.minus]: minus[X,Y] => z.minus(X, Y) where bool.and(z.is(X), z.is(Y)) ;
 
-@rule [var.assign]: c[builtin.cseq[assign[X,V],REST], STATE] => c[builtin.cseq[unitValue[], REST], map.update(STATE, X, V)] where bool.and(term.same_symbol(X, [var[]]), z.is(V)) ;
+@rule [var.assign]: c[builtin.cseq[assign[X,V],REST], STATE]
+  => c[builtin.cseq[unitValue[], REST], map.update(STATE, X, V)]
+   where bool.and(term.same_symbol(X, [var[]]), bool.or(z.is(V), string.is(V))) ;
 @rule [var.lookup]: c[builtin.cseq[X, REST], STATE] => c[builtin.cseq[map.lookup(STATE, X), REST], STATE] where term.same_symbol(X, [var[]]) ;
 
 @rule/simple [stmt.seq]: seq[unitValue[], X] => X where bool.true() ;
