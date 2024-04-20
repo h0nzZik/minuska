@@ -130,7 +130,6 @@ End eqdec.
 
 
 Section countable.
-
     Fixpoint PreTerm'_to_gen_tree
         (symbol : Type)
         {symbol_eqdec : EqDecision symbol}
@@ -139,20 +138,17 @@ Section countable.
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
         (a : PreTerm' symbol builtin)
-        : gen_tree symbol
+        : gen_tree (positive+symbol)
     :=
     match a with
-    | (pt_operator s) => GenLeaf s
+    | (pt_operator s) => GenLeaf (inr s)
     | (pt_app_operand aps b) =>
         (
-            let x := (encode (0, encode b)) in
-            GenNode (Pos.to_nat x) ([PreTerm'_to_gen_tree symbol builtin aps;PreTerm'_to_gen_tree symbol builtin aps(* we duplicate it to make the reverse simpler*)])
+            GenNode 0 ([GenLeaf (inl (encode b)); (PreTerm'_to_gen_tree symbol builtin aps)])
         )
     | (pt_app_ao aps1 aps2)
         => (
-            let xd := (1, encode 0) in
-            let x := (encode xd) in
-            GenNode (Pos.to_nat x) ([PreTerm'_to_gen_tree _ _ aps1; PreTerm'_to_gen_tree _ _ aps2])
+            GenNode 1 ([(PreTerm'_to_gen_tree _ _ aps1); (PreTerm'_to_gen_tree _ _ aps2)])
         )
     end.
 
@@ -163,35 +159,20 @@ Section countable.
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (t : gen_tree symbol)
+        (t : gen_tree (positive+symbol))
         : option (PreTerm' symbol builtin)
     :=
     match t with
-    | (GenLeaf s)
+    | (GenLeaf (inr s))
         => Some (pt_operator s)
-    | (GenNode n [gt1;gt2]) =>
-        let d := (@decode (nat*positive) _ _ (Pos.of_nat n)) in
-        match d with
-            | Some (0, pb) =>
-                let d' := (@decode builtin _ _ pb) in
-                match d' with
-                | Some b =>
-                    let d'' := (PreTerm'_of_gen_tree symbol builtin gt1) in
-                    match d'' with 
-                    | Some as1 => Some (pt_app_operand as1 b)
-                    | _ => None
-                    end
-                | _ => None
-                end
-            | Some (1, _) =>
-                let d'1 := PreTerm'_of_gen_tree symbol builtin gt1 in
-                let d'2 := PreTerm'_of_gen_tree symbol builtin gt2 in
-                match d'1, d'2 with
-                | Some aps1, Some aps2 => Some (pt_app_ao aps1 aps2)
-                | _, _ => None
-                end
-            | _ => None
-            end
+    | (GenNode 0 [(GenLeaf (inl xb));gt]) =>
+        b ← @decode builtin _ _ xb;
+        aps ← PreTerm'_of_gen_tree symbol builtin gt;
+        Some (pt_app_operand aps b)
+    | (GenNode 1 [gt1;gt2]) =>
+        aps1 ← PreTerm'_of_gen_tree symbol builtin gt1;
+        aps2 ← PreTerm'_of_gen_tree symbol builtin gt2;
+        Some (pt_app_ao aps1 aps2)
     | _ => None
     end
     .
@@ -210,7 +191,6 @@ Section countable.
         induction a; simpl.
         { reflexivity. }
         {
-            ltac1:(rewrite ! Pos2Nat.id decode_encode).
             rewrite decode_encode.
             rewrite IHa.
             reflexivity.

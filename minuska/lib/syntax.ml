@@ -3,7 +3,8 @@ type token =
   | VAR of string
   | INT of int
   | KEYWORD_VALUE
-  | KEYWORD_BUILTIN
+  | KEYWORD_BUILTIN_INT
+  | KEYWORD_BUILTIN_STRING
   | KEYWORD_STRICTNESS
   | KEYWORD_RULE
   | KEYWORD_FRAMES
@@ -18,6 +19,7 @@ type token =
   | SLASH
   | ARROW
   | SEMICOLON
+  | QUOTE
   | COLON
   | COMMA
   | EOF
@@ -36,6 +38,9 @@ type pattern =
 
 type builtin =
   [ `BuiltinInt of int
+  | `BuiltinString of string
+  | `BuiltinBool of bool
+  | `BuiltinError
   | `OpaqueBuiltin
   ]
 

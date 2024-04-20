@@ -17,7 +17,7 @@ Section sec.
     Inductive BuiltinValue0 :=
     | bv_error
     | bv_bool (b : bool)
-    | bv_nat (n : nat)
+    (* | bv_nat (n : nat) *)
     | bv_Z (z : Z)
     | bv_sym (s : symbol)
     | bv_str (s : string)
@@ -89,7 +89,7 @@ Section sec.
     | bv_pmap (PEmpty) => 1
     | bv_error => 1
     | bv_bool _ => 1
-    | bv_nat _ => 1
+    (* | bv_nat _ => 1 *)
     | bv_sym _ => 1
     | bv_str _ => 1
     | bv_Z _ => 1
@@ -127,6 +127,7 @@ Section sec.
                     right; ltac1:(abstract congruence).
                 }
             }
+            (*
             {
                 destruct y;
                 try (solve [left; reflexivity]);
@@ -139,6 +140,7 @@ Section sec.
                     right; ltac1:(abstract congruence).
                 }
             }
+            *)
             {
                 destruct y;
                 try (solve [left; reflexivity]);
@@ -857,7 +859,7 @@ Section sec.
     Inductive BVLeaf :=
     | bvl_error
     | bvl_bool (b : bool)
-    | bvl_nat (n : nat)
+    (* | bvl_nat (n : nat) *)
     | bvl_Z (z : Z)
     | bvl_str (s : string)
     | bvl_sym (sym : symbol)
@@ -875,7 +877,7 @@ Section sec.
     | ((GenNode 1 nil)) => Some (bv_pmap (PEmpty))
     | (GenLeaf bvl_error)      => Some (bv_error)  
     | (GenLeaf (bvl_bool b))   => Some (bv_bool b) 
-    | (GenLeaf (bvl_nat n))    => Some (bv_nat n) 
+    (* | (GenLeaf (bvl_nat n))    => Some (bv_nat n)  *)
     | (GenLeaf (bvl_Z z))      => Some (bv_Z z) 
     | (GenLeaf (bvl_str s))      => Some (bv_str s) 
     | (GenLeaf (bvl_sym s))      => Some (bv_sym s) 
@@ -1061,7 +1063,7 @@ Section sec.
     | (bv_pmap (PEmpty)) => (GenNode 1 nil)
     | (bv_error)         => (GenLeaf bvl_error)
     | (bv_bool b)        => (GenLeaf (bvl_bool b))
-    | (bv_nat n)         => (GenLeaf (bvl_nat n))
+    (* | (bv_nat n)         => (GenLeaf (bvl_nat n)) *)
     | (bv_Z z)           => (GenLeaf (bvl_Z z))
     | (bv_sym s)           => (GenLeaf (bvl_sym s))
     | (bv_str s)           => (GenLeaf (bvl_str s))
@@ -1494,7 +1496,7 @@ induction ao; try reflexivity.
     )).
     {
         ltac1:(unshelve(eapply gen_tree_countable)).
-        remember (unit+bool+nat+Z+string+symbol)%type as MyT.
+        remember (unit+bool+(*nat+*)Z+string+symbol)%type as MyT.
         ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
         {
             subst MyT. apply _.
@@ -1503,14 +1505,15 @@ induction ao; try reflexivity.
             subst.
             intros bvl. destruct bvl.
             {
-                left. left. left. left. left. exact ().
+                left. left. left. left. exact ().
             }
             {
-                left. left. left. left. right. exact b.
+                left. left. left. right. exact b.
             }
+            (*
             {
                 left. left. left. right. exact n.
-            }
+            }*)
             {
                 left. left. right. exact z.
             }
@@ -1530,8 +1533,9 @@ induction ao; try reflexivity.
                 {
                     destruct t1 as [t1|t2].
                     {
+                        (*
                         destruct t1 as [t1|t2].
-                        {
+                        {*)
                             destruct t1 as [t1|t2].
                             {
                                 apply Some.
@@ -1542,12 +1546,13 @@ induction ao; try reflexivity.
                                 apply bvl_bool.
                                 apply t2.
                             }
-                        }
+                        (*}*)
+                        (*
                         {
                             apply Some.
                             apply bvl_nat.
                             apply t2.                                
-                        }
+                        }*)
                     }
                     {
                         apply Some.

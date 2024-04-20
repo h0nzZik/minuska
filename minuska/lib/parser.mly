@@ -3,7 +3,8 @@
 %token <string> VAR
 %token KEYWORD_VALUE
 %token KEYWORD_STRICTNESS
-%token KEYWORD_BUILTIN
+%token KEYWORD_BUILTIN_INT
+%token KEYWORD_BUILTIN_STRING
 %token KEYWORD_RULE
 %token KEYWORD_FRAMES
 %token KEYWORD_OF_ARITY
@@ -14,6 +15,7 @@
 %token BRACKET_ROUND_RIGHT
 %token BRACKET_SQUARE_LEFT
 %token BRACKET_SQUARE_RIGHT
+%token QUOTE
 %token SLASH
 %token ARROW
 %token SEMICOLON
@@ -72,10 +74,18 @@ pattern:
 
 builtin:
   | BRACKET_ROUND_LEFT
-    KEYWORD_BUILTIN
+    KEYWORD_BUILTIN_INT
     n = INT
     BRACKET_ROUND_RIGHT
     { `BuiltinInt n }
+  | BRACKET_ROUND_LEFT
+    KEYWORD_BUILTIN_STRING
+    QUOTE
+    s = ID
+    QUOTE
+    BRACKET_ROUND_RIGHT
+    { `BuiltinString s }
+
   ;
 
 groundterm:

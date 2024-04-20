@@ -1,1 +1,1 @@
-builtin.result[((@builtin 3))]
+builtin.result[((@builtin-int 3))]

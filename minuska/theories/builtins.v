@@ -93,7 +93,6 @@ Module default_builtin.
     | b_isBuiltin (* 'a -> bool *)
     | b_isError   (* 'a -> bool *)
     | b_isBool    (* 'a -> bool *)
-    | b_isNat     (* 'a -> bool *)
     | b_isZ     (* 'a -> bool *)
     | b_isString  (* 'a -> bool *)
     | b_isList    (* 'a -> bool *)
@@ -101,14 +100,7 @@ Module default_builtin.
 
     | b_bool_neg (* bool -> bool *)
 
-    | b_nat_isZero  (* 'a -> bool *)
-    | b_nat_isSucc  (* 'a -> bool *)
-    | b_nat_succOf  (* nat -> nat *)
-    | b_nat_predOf  (* nat -> nat *)
-
-    | b_Z_of_nat    (* nat -> Z *)
-
-    | b_map_size    (* map -> nat *)
+    | b_map_size    (* map -> Z *)
     .
 
     #[export]
@@ -124,13 +116,6 @@ Module default_builtin.
     | b_or    (* bool -> bool -> bool *)
     | b_iff   (* bool -> bool -> bool *)
     | b_xor   (* bool -> bool -> bool *)
-
-    | b_nat_isLe  (* nat -> nat -> bool *)
-    | b_nat_isLt  (* nat -> nat -> bool *)
-    | b_nat_plus  (* nat -> nat -> nat *)
-    | b_nat_minus (* nat -> nat -> nat *)
-    | b_nat_times (* nat -> nat -> nat *)
-    | b_nat_div (* nat -> nat -> nat *)
 
     | b_Z_isLe  (* Z -> Z -> bool *)
     | b_Z_isLt  (* Z -> Z -> bool *)
@@ -189,11 +174,6 @@ Module default_builtin.
         Definition impl_isBool (bv : BuiltinValue) : bool
         :=
             match bv with bv_bool _ => true | _ => false end
-        .
-
-        Definition impl_isNat (bv : BuiltinValue) : bool
-        :=
-            match bv with bv_nat _ => true | _ => false end
         .
 
         Definition impl_isZ (bv : BuiltinValue) : bool
@@ -266,51 +246,6 @@ Module default_builtin.
             x y
         .
 
-        Definition bfmap_nat__nat
-            (f : nat -> nat)
-            (x : @TermOver' symbol BuiltinValue)
-            : @TermOver' symbol BuiltinValue
-        :=
-        bfmap1
-            (fun x' =>
-            match x' with
-            | bv_nat x'' => bv_nat (f x'')
-            | _ => bv_error
-            end
-            )
-            x
-        .
-
-        Definition bfmap_nat_nat__nat
-            (f : nat -> nat -> nat)
-            (x y : @TermOver' symbol BuiltinValue)
-            : @TermOver' symbol BuiltinValue
-        :=
-        bfmap2
-            (fun x' y' =>
-            match x', y' with
-            | bv_nat x'', bv_nat y'' => bv_nat (f x'' y'')
-            | _, _ => bv_error
-            end
-            )
-            x y
-        .
-
-        Definition bfmap_nat_nat__bool
-            (f : nat -> nat -> bool)
-            (x y : @TermOver' symbol BuiltinValue)
-            : @TermOver' symbol BuiltinValue
-        :=
-        bfmap2
-            (fun x' y' =>
-            match x', y' with
-            | bv_nat x'', bv_nat y'' => bv_bool (f x'' y'')
-            | _, _ => bv_error
-            end
-            )
-            x y
-        .
-
         Definition bfmap_Z_Z__Z
             (f : Z -> Z -> Z)
             (x y : @TermOver' symbol BuiltinValue)
@@ -365,7 +300,7 @@ Module default_builtin.
                 match p with
                 | b_false => t_over (bv_bool false)
                 | b_true => t_over (bv_bool true)
-                | b_zero => t_over (bv_nat 0)
+                | b_zero => t_over (bv_Z 0)
                 | b_list_empty => (t_over (bv_list nil))
                 | b_map_empty => (t_over (bv_pmap ∅))
                 end ;
@@ -403,44 +338,17 @@ Module default_builtin.
                 | b_bool_neg =>
                     bfmap_bool__bool negb v
                 
-                | b_isNat =>
-                    match v with
-                    | t_over x => t_over (bv_bool (impl_isNat x))
-                    | _ => t_over (bv_bool false)
-                    end
                 | b_isZ =>
                     match v with
                     | t_over x => t_over (bv_bool (impl_isZ x))
                     | _ => t_over (bv_bool false)
                     end
                 
-                | b_nat_isZero =>
-                    match v with
-                    | t_over (bv_nat 0) => t_over (bv_bool true)
-                    | _ => t_over (bv_bool false)
-                    end
-                | b_nat_isSucc =>
-                    match v with
-                    | t_over (bv_nat (S _)) => t_over (bv_bool true)
-                    | _ => t_over (bv_bool false)
-                    end
-                | b_nat_succOf =>
-                    bfmap_nat__nat S v
-                | b_nat_predOf =>
-                    match v with
-                    | t_over (bv_nat (S n)) => (t_over (bv_nat n))
-                    | _ => err
-                    end
                 | b_map_size =>
                     match v with
-                    | t_over (bv_pmap m) => (t_over (bv_nat (size m)))
+                    | t_over (bv_pmap m) => (t_over (bv_Z (Z.of_nat (size m))))
                     | _ => err
                     end
-                | b_Z_of_nat =>
-                  match v with
-                  | t_over (bv_nat n) => (t_over (bv_Z (Z.of_nat n)))
-                  | _ => err
-                  end
                 end;
 
             builtin_binary_function_interp
@@ -456,21 +364,6 @@ Module default_builtin.
                     bfmap_bool_bool__bool eqb v1 v2
                 | b_xor =>
                     bfmap_bool_bool__bool xorb v1 v2                    
-                | b_nat_isLe =>
-                    bfmap_nat_nat__bool Nat.leb v1 v2
-                | b_nat_isLt =>
-                    bfmap_nat_nat__bool Nat.ltb v1 v2
-                | b_nat_plus =>
-                    bfmap_nat_nat__nat plus v1 v2
-                | b_nat_minus =>
-                    bfmap_nat_nat__nat minus v1 v2
-                | b_nat_times =>
-                    bfmap_nat_nat__nat mult v1 v2
-                | b_nat_div =>
-                    match v2 with
-                    | t_over (bv_nat (0)) => err
-                    | _ => bfmap_nat_nat__nat Nat.div v1 v2
-                    end
                 | b_Z_isLe =>
                     bfmap_Z_Z__bool Z.leb v1 v2
                 | b_Z_isLt =>
@@ -511,9 +404,9 @@ Module default_builtin.
                     | t_term s1 _ =>
                         match v2 with
                         | t_term s2 _ => (t_over (bv_bool (bool_decide (s1 = s2))))
-                        | _ => err
+                        | _ => t_over (bv_bool false)
                         end
-                    | _ => err
+                    | _ => t_over (bv_bool false)
                     end
                 | b_is_applied_symbol =>
                     match v1 with
@@ -580,14 +473,6 @@ Module default_builtin.
             (at level 90)
         .        
 
-        Notation "'isNat' t" :=
-            ((e_unary
-                b_isNat
-                (t)
-            ))
-            (at level 90)
-        .
-
         Notation "'isZ' t" :=
             ((e_unary
                 b_isZ
@@ -619,27 +504,6 @@ Module default_builtin.
             ))
             (at level 90)
         .
-
-        Notation "'(' x '+Nat' y ')'" :=
-            ((e_binary b_nat_plus (x) (y)))
-        .
-
-        Notation "'(' x '-Nat' y ')'" :=
-            ((e_binary b_nat_minus (x) (y)))
-        .
-
-        Notation "'(' x '*Nat' y ')'" :=
-            ((e_binary b_nat_times (x) (y)))
-        .
-
-        Notation "'(' x '/Nat' y ')'" :=
-            ((e_binary b_nat_div (x) (y)))
-        .
-
-        Notation "'(' x '==Nat' y ')'" :=
-            ((e_binary b_eq (x) (y)))
-        .
-
 
         Notation "'(' x '+Z' y ')'" :=
             ((e_binary b_Z_plus (x) (y)))

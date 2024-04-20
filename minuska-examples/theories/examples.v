@@ -227,7 +227,7 @@ Module arith.
         default_context_template
             := (context-template cfg [ HOLE ] with HOLE) ;
 
-        default_isValue := fun x => (isNat x) ;
+        default_isValue := fun x => (isZ x) ;
     |}.
 
     Definition Decls : list Declaration := [
@@ -235,11 +235,11 @@ Module arith.
         decl_rule (
             rule ["plus-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) + t_over ($Y) ); t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X +Nat $Y) ; t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X +Z $Y) ; t_over ($REST_SEQ) ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "plus" of arity 2 strict in [0;1]);
@@ -247,11 +247,11 @@ Module arith.
         decl_rule (
             rule ["minus-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) - t_over ($Y)); t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X -Nat $Y) ; t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X -Z $Y) ; t_over ($REST_SEQ) ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "minus" of arity 2 strict in [0;1]);
@@ -259,11 +259,11 @@ Module arith.
         decl_rule (
             rule ["times-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) * t_over ($Y)); t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X *Nat $Y) ; t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X *Z $Y) ; t_over ($REST_SEQ) ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "times" of arity 2 strict in [0;1]);
@@ -271,11 +271,11 @@ Module arith.
         decl_rule (
             rule ["div-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) / t_over ($Y)); t_over ($REST_SEQ) ] ]
-            ~>{default_act} cfg [ u_cseq [ t_over ($X /Nat $Y) ; t_over ($REST_SEQ) ] ]
+            ~>{default_act} cfg [ u_cseq [ t_over ($X /Z $Y) ; t_over ($REST_SEQ) ] ]
                 where (
-                    (isNat ($X))
+                    (isZ ($X))
                     &&
-                    (isNat ($Y))
+                    (isZ ($Y))
                 )
         );
         decl_strict (symbol "div" of arity 2 strict in [0;1])
@@ -287,7 +287,7 @@ Module arith.
 
     (*
     Definition initial1 (x y : nat) :=
-        (ground (cfg [ u_cseq [ ((@term_operand symbol _ (bv_nat x)) + (@term_operand symbol _ (bv_nat y))), u_emptyCseq [] ] ]))
+        (ground (cfg [ u_cseq [ ((@term_operand symbol _ (bv_Z x)) + (@term_operand symbol _ (bv_Z y))), u_emptyCseq [] ] ]))
     .*)
 
     Definition initial0 (x : TermOver builtin_value) :=
@@ -302,12 +302,12 @@ Module arith.
         )
     .
 
-    Definition initial (x: nat) (ly : list nat) :=
+    Definition initial (x: Z) (ly : list Z) :=
         (ground (initial0 ((foldr 
             (fun a (b : TermOver builtin_value) =>
-                plus [(t_over (bv_nat a)) ; b]
+                plus [(t_over (bv_Z a)) ; b]
             )
-            (t_over (bv_nat x))
+            (t_over (bv_Z x))
             ly
         ))))
     .
@@ -316,7 +316,7 @@ Module arith.
         := interp_in_from Γ fuel from
     .
 
-    Definition interp_list (fuel : nat) (x : nat) (ly : list nat)
+    Definition interp_list (fuel : nat) (x : Z) (ly : list Z)
     :=
         interp_from fuel (initial x ly)
     .
@@ -324,25 +324,25 @@ Module arith.
     
     Lemma interp_list_test_1:
         exists log,
-        (interp_list 20 1 [20;30;40]) = (12, (initial 91 nil), log)
+        (interp_list 20 1 [20%Z;30%Z;40%Z]) = (12, (initial 91 nil), log)
     .
     Proof. eexists. reflexivity. Qed.
 
     (*
     Eval vm_compute in (interp_from 10 (ground (initial0
     (
-        (t_over (bv_nat 3) + t_over (bv_nat 4)) + (t_over (bv_nat 5) + t_over (bv_nat 6))
+        (t_over (bv_Z 3) + t_over (bv_Z 4)) + (t_over (bv_Z 5) + t_over (bv_Z 6))
     )))).
     *)
     Lemma interp_test_2:
         exists rem log,
             (interp_from 10 (ground (initial0
                 (
-                    (t_over (bv_nat 3) + t_over (bv_nat 4))
+                    (t_over (bv_Z 3) + t_over (bv_Z 4))
                     +
-                    (t_over (bv_nat 5) + t_over (bv_nat 6))
+                    (t_over (bv_Z 5) + t_over (bv_Z 6))
                 ))))
-            = (rem, (ground (initial0 ((t_over  (bv_nat 18))))), log)
+            = (rem, (ground (initial0 ((t_over  (bv_Z 18))))), log)
     .
     Proof.
         eexists. eexists. reflexivity.
@@ -353,12 +353,12 @@ Module arith.
         exists rem log,
             (interp_from 10 (ground (initial0
                 (
-                    (t_over (bv_nat 5) * t_over (bv_nat 6))
+                    (t_over (bv_Z 5) * t_over (bv_Z 6))
                     /
-                    (t_over (bv_nat 3) + t_over (bv_nat 4))
+                    (t_over (bv_Z 3) + t_over (bv_Z 4))
                     
                 ))))
-            = (rem, (ground (initial0 (t_over (bv_nat 4)))), log)
+            = (rem, (ground (initial0 (t_over (bv_Z 4)))), log)
     .
     Proof.
         eexists. eexists. reflexivity.
@@ -645,7 +645,7 @@ Module imp.
     .
 
     Definition isValue (x : Expression2) : Expression2 :=
-         ((isNat x) || (isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs
+         ((isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs
     .
 
     #[local]

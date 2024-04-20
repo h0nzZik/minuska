@@ -8,10 +8,14 @@ let builtins_alist =
     "bool.eq", "b_eq";
     "bool.false", "b_false";
     "bool.true", "b_true";
+    "bool.is", "b_isBool";
     "term.same_symbol", "b_have_same_symbol";
     "z.minus", "b_Z_minus";
     "z.plus", "b_Z_plus";
     "z.is", "b_isZ";
+    "z.eq", "b_eq";
+    "z.le", "b_Z_isLe";
+    "z.lt", "b_Z_isLt";
     "map.hasKey", "b_map_hasKey";
     "map.lookup", "b_map_lookup";
     "map.size", "b_map_size";
@@ -33,8 +37,8 @@ Extraction Language OCaml.
 Require Import
   Coq.extraction.Extraction
   Coq.extraction.ExtrOcamlBasic
-  Coq.extraction.ExtrOcamlNativeString
   Coq.extraction.ExtrOcamlZInt
+  Coq.extraction.ExtrOcamlNatInt
 .
 From Minuska Require Import
     prelude
@@ -85,12 +89,12 @@ let rec print_resolved_w_hole (oux : Out_channel.t) (p : Syntax.pattern) (hole :
   | `PVar (`Var s) -> (
       match hole with
       | None ->
-          fprintf oux "((\"%s\"))" s
+          fprintf oux "(t_over (notations.inject_variable \"%s\"))" s
       | Some s2 ->
           if String.(s = s2) then
               fprintf oux "(%s)" s2
           else
-              fprintf oux "((\"%s\"))" s
+              fprintf oux "(t_over (notations.inject_variable \"%s\"))" s
     )
   | `PTerm (`Id s, ps) ->
     fprintf oux "(@t_term _ _ \"%s\" [" s;

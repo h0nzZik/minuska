@@ -1,0 +1,9 @@
+seq[seq[
+   assign[var[(@builtin-string "sum")], plus[(@builtin-int 1),(@builtin-int 2)]],
+   assign[var[(@builtin-string "i")], (@builtin-int 4)]
+],
+seq[
+ assign[var[(@builtin-string "sum")], plus[var[(@builtin-string "sum")], var[(@builtin-string "i")]]],
+ var[(@builtin-string "sum")]
+]
+]

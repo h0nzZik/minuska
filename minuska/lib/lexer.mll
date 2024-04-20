@@ -31,12 +31,14 @@ rule read =
   | "@frames"       { KEYWORD_FRAMES }
   | "@rule"       { KEYWORD_RULE }
   | "@context"       { KEYWORD_CONTEXT }
-  | "@builtin"       { KEYWORD_BUILTIN }
+  | "@builtin-int"       { KEYWORD_BUILTIN_INT }
+  | "@builtin-string"       { KEYWORD_BUILTIN_STRING }
   | "of_arity"         { KEYWORD_OF_ARITY }
   | "in"         { KEYWORD_IN }
   | "where"      { KEYWORD_WHERE }
   | "/"          { SLASH }
   | "=>"         { ARROW }
+  | "\""         { QUOTE }
   | ";"          { SEMICOLON }
   | ":"          { COLON }
   | ':'          { COLON }
