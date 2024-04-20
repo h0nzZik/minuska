@@ -2,6 +2,7 @@ From Minuska Require Import
     prelude
     spec
     lowlang
+    properties
     syntax_properties
     semantics_properties
     spec_lowlang_interpreter
@@ -212,3 +213,167 @@ Proof.
     }
 Defined.
 
+
+Lemma vars_of_Expression2_to_Expression
+    {Σ : StaticModel}
+    (e : Expression2)
+    :
+    vars_of (Expression2_to_Expression e)
+    = vars_of e
+.
+Proof.
+    unfold vars_of; simpl.
+    induction e; simpl; ltac1:(set_solver).
+Qed.
+
+
+Definition RewritingTheory2_wf_heuristics
+    {Σ : StaticModel}
+    {Act : Set}
+    {_dAct : EqDecision Act}
+    (Γ : RewritingTheory2 Act)
+    : option (RewritingTheory2_wf Γ)
+.
+Proof.
+    unfold RewritingTheory2 in *.
+    remember (fmap r_to_fr Γ) as Γ'.
+    assert (Hdec := RewritingTheory_wf_heuristics Γ').
+    destruct Hdec eqn:Heq.
+    {
+        apply Some.
+        unfold RewritingTheory_wf in r.
+        assert (Hr': ∀ r0, r0 ∈ Γ -> RewritingRule2_wf r0).
+        {
+            intros r0 Hr0.
+            clear Heq.
+            specialize (r (r_to_fr r0)).
+            
+            ltac1:(ospecialize (r _)).
+            {
+                subst Γ'.
+                rewrite elem_of_list_fmap.
+                exists r0.
+                split>[reflexivity|exact Hr0].
+            }
+            unfold RewritingRule2_wf.
+            unfold RewritingRule_wf in r.
+            destruct r as [H1 H2].
+            split.
+            {
+                unfold RewritingRule_wf1 in H1.
+                unfold RewritingRule2_wf1.
+                clear -H1.
+                rewrite elem_of_subseteq in H1.
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                specialize (H1 x).
+                ltac1:(ospecialize (H1 _)).
+                {
+                    clear -Hx.
+                    unfold vars_of; simpl.
+                    destruct r0; simpl in *.
+                    unfold vars_of in *; simpl in *.
+                    unfold vars_of in *; simpl in *.
+                    rewrite elem_of_union_list in Hx.
+                    rewrite elem_of_union_list.
+                    destruct Hx as [X [H1X H2X]].
+                    exists X.
+                    split>[|exact H2X].
+                    rewrite elem_of_list_fmap in H1X.
+                    destruct H1X as [y [H1y H2y]].
+                    subst X.
+                    rewrite elem_of_list_fmap.
+                    exists (sc2_to_sc y).
+                    split.
+                    {
+                        unfold vars_of_SideCondition.
+                        destruct y; simpl in *.
+                        unfold vars_of; simpl.
+                        rewrite vars_of_Expression2_to_Expression.
+                        rewrite vars_of_Expression2_to_Expression.
+                        unfold vars_of; simpl.
+                        reflexivity.
+                    }
+                    {
+                        clear -H2y.
+                        rewrite elem_of_list_fmap.
+                        exists y.
+                        split>[reflexivity|].
+                        exact H2y.
+                    }
+                }
+                clear -H1.
+                destruct r0; simpl in *.
+                ltac1:(rewrite vars_of_uglify' in H1).
+                exact H1.
+            }
+            {
+                clear -H2.
+                destruct r0; simpl in *.
+                unfold RewritingRule_wf2 in H2.
+                unfold RewritingRule2_wf2.
+                simpl in *.
+                intros g ρ HH1 HH2.
+                specialize (H2 (uglify' g)).
+                specialize (H2 (uglify' <$> ρ)).
+                ltac1:(ospecialize (H2 _ _)).
+                {
+                    apply sat2B_uglify.
+                    exact HH1.
+                }
+                {
+                    unfold satisfies; simpl.
+                    intros x Hx.
+                    unfold satisfies in HH2; simpl in HH2.
+                    specialize (HH2 (sc_to_sc2 x)).
+                    ltac1:(ospecialize (HH2 _)).
+                    {
+                        rewrite elem_of_list_fmap in Hx.
+                        destruct Hx as [y [H1y H2y]].
+                        subst.
+                        rewrite (cancel sc_to_sc2 sc2_to_sc).
+                        exact H2y.
+                    }
+                    unfold satisfies; simpl.
+                    unfold satisfies in HH2; simpl in HH2.
+                    unfold valuation_satisfies_sc.
+                    destruct x; simpl in *.
+                    destruct c; simpl in *.
+                    unfold satisfies; simpl.
+                    repeat (rewrite Expression2_Expression_evaluate in HH2).
+                    rewrite (cancel Expression2_to_Expression Expression_to_Expression2) in HH2.
+                    rewrite (cancel Expression2_to_Expression Expression_to_Expression2) in HH2.
+                    destruct HH2 as [HH21 HH22].
+                    unfold isSome in HH22.
+                    destruct (prettify <$> Expression_evaluate (uglify' <$> ρ) e1) eqn:Heq.
+                    {
+                        apply (f_equal (fmap uglify')) in Heq.
+                        rewrite fmap_uglify_prettify_option in Heq.
+                        rewrite Heq.
+                        apply (f_equal (fmap uglify')) in HH21.
+                        rewrite fmap_uglify_prettify_option in HH21.
+                        rewrite <- HH21.
+                        split>[reflexivity|].
+                        reflexivity.
+                    }
+                    {
+                        inversion HH22.
+                    }
+                }
+                destruct H2 as [g' Hg'].
+                exists (prettify g').
+                unfold Valuation in *.
+                unfold Valuation2 in *.
+                rewrite <- (cancel uglify' prettify g') in Hg'.
+                apply uglify_sat2E in Hg'.
+                exact Hg'.
+            }
+        }
+        intros r'' Hr''.
+        specialize (Hr' r'' Hr'').
+        exact Hr'.
+    }
+    {
+        exact None.
+    }
+Defined.

@@ -1567,4 +1567,3 @@ Inductive flattened_rewrites_to_over
     flattened_rewrites_to_over Γ t2 w t3 ->
     flattened_rewrites_to_over Γ t1 (a::w) t3
 .
-
