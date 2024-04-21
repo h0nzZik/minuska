@@ -136,12 +136,12 @@
 
         packages.minuska = self.outputs.packages.${system}.minuska-coq_8_19;
 
-        packages.minuska-examples
+        packages.examples-coq
         = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
-          name = "minuska-examples";
-          src = ./minuska-examples;
+          name = "examples-coq";
+          src = ./examples-coq;
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
@@ -155,6 +155,17 @@
         } ) { } ;
 
 
+        packages.examples-standalone
+        = pkgs.stdenv.mkDerivation {
+          name = "examples-standalone";
+          src = ./examples-standalone;
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.minuska
+            pkgs.time
+          ];
+        };
+
+
 
         packages.minuska-bench
         = pkgs.coqPackages_8_19.callPackage 
@@ -166,8 +177,8 @@
           propagatedBuildInputs = [
             pkgs.time
             pkgs.python312
-            self.outputs.packages.${system}.minuska-examples
-            #self.outputs.packages.${system}.minuska-examples.coqPackages.coq
+            self.outputs.packages.${system}.examples-coq
+            #self.outputs.packages.${system}.examples-coq.coqPackages.coq
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
@@ -215,14 +226,14 @@
               };
 
 
-          minuska-examples =
+          examples-coq =
             let
-              minuska-examples = self.outputs.packages.${system}.minuska-examples;
+              examples-coq = self.outputs.packages.${system}.examples-coq;
             in
               pkgs.mkShell {
-                inputsFrom = [minuska-examples];
+                inputsFrom = [examples-coq];
                 packages = [
-                  minuska-examples.coqPackages.coq-lsp
+                  examples-coq.coqPackages.coq-lsp
                 ];
               };
 

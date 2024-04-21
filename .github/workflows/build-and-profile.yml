@@ -36,10 +36,10 @@ jobs:
       run: nix build -L '.#minuska-coq_8_19' --out-link ./result-minuska
 
     - name: 'Build Coq examples (with Coq 8.19)'
-      run: nix build -L '.#minuska-examples'
+      run: nix build -L '.#examples-coq'
 
     - name: 'Run standalone examples'
-      run: nix shell -L '.#minuska' --command ./minuska-examples/test.sh
+      run: nix develop -L '.#examples-standalone' --command ./examples-standalone/test.sh
 
       
     #- name: Build
