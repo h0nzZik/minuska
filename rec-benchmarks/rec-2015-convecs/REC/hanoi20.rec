@@ -1,7 +1,0 @@
-
-REC-SPEC Hanoi20
-#include "hanoi.rec"
-EVAL
-
-    solve(a, b, d20)  
-END-SPEC

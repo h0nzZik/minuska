@@ -1,7 +1,0 @@
-
-REC-SPEC Hanoi12
-#include "hanoi.rec"
-EVAL
-
-    solve(a, b, d12)  
-END-SPEC

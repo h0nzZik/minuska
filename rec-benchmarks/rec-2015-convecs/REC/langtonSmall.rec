@@ -1,6 +1,0 @@
-REC-SPEC LangtonSmall
-#include "langton.rec"
-EVAL
-
-   next(d0,d0,d0,d1,d1)
-END-SPEC

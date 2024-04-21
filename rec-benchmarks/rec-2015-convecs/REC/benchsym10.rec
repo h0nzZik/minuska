@@ -1,9 +1,0 @@
-REC-SPEC BenchSym10
-
-#include "asfsdfbenchmark.rec"
-
-EVAL
-
-     benchevalsym17(ten)
-
-END-SPEC

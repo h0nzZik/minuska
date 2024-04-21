@@ -25,61 +25,31 @@ As for the generated interpreters: these can also be used either from inside the
 minuska compile language.m language-interpreter.exe
 ```
 Note that the `minuska` command is still under an active development: it is not feature complete and may contain bugs.
-More generally, the command-line interface is NOT formally verified, as it is written in OCaml rather than Coq.
+More importantly, the command-line interface is NOT formally verified, as it is written in OCaml rather than Coq.
 
-# Geting Minuska up and running
+# Using Minuska
 
-The simplest way is to use the provided Nix Flake:
+The simplest way is to use the provided Nix Flake
 ```sh
 nix shell '.#minuska'
 ```
+which provides the `minuska` command.
+Consult the [user guide](./doc/user-guide.md) for more details.
 
-## Building using Dune
-One can also build and install it using [Dune](https://dune.readthedocs.io/en/stable/):
+# Working on Minuska
+
+The easiest way to start is using the Nix Flake:
 ```sh
-dune build @all
+nix develop '.#minuska'
+cd minuska/
 ```
-but this requires one to install all the dependencies manually.
-
-### Build dependencies
-To typecheck the Coq development, one needs:
-- [Coq](https://coq.inria.fr/) 8.19
-- [stdpp](https://gitlab.mpi-sws.org/iris/stdpp) > 1.9.0
-- [equations](https://mattam82.github.io/Coq-Equations/) 1.3
-
-### Runtime dependencies
-
-coq, ocamlc, zarith
-
+See the [developer guide](./doc/developer-guide.md) for more details.
+Also, see [CoqDoc](https://h0nzzik.github.io/minuska/toc.html)
 
 # Missing features
 
 In principle, many features could be implemented in Minuska that would make the framework more useful.
+These include support for concrete syntax of programming languages, formalization of the strictness declarations, symbolic execution, and deductive verification.
+See the [ideas document](./doc/ideas.md)
 
-## Concrete syntax of programming languages
-
-Minuska operates on an abstract representation of programming language syntax. There is currently no support for specifying, parsing of, and unparsing into concrete syntax of programming languages.
-
-## Semantics of contexts
-
-Currently, strictness declarations and contexts are implemented by desugaring them to rewriting rules by the [frontend](https://h0nzzik.github.io/minuska/Minuska.frontend.html).
-While this approach works, it does not equip the user with any means of high-level reasoning about the high-level constructs (that is, contexts and strictness).
-We are working on a precise [syntax](https://h0nzzik.github.io/minuska/Minuska.minusl_syntax.html) and [semantics](https://h0nzzik.github.io/minuska/Minuska.minusl_semantics.html) for contexts, with an explicit [translation](https://h0nzzik.github.io/minuska/Minuska.minusl_compile.html) to rewriting rules that should be formally [verified to preserve the semantics](https://h0nzzik.github.io/minuska/Minuska.minusl_compile_properties.html).
-
-## Symbolic execution
-
-In principle, it should be possible to generate symbolic execution engines for languages defined in Minuska, simply by using unification instead of pattern matching in the interpreter.
-An option would be to use the [Coq Color library](https://github.com/fblanqui/color) which already contains a provably correct implementation of an unification algorithm.
-However, this has not been implemented yet.
-Even if this gets implemented, we would need to have a simplification engine to prune infeasible branches; this would be best done using some LTac scripting inside Coq, using tactics like `lia`,
-[`itauto`](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITP.2021.9), and possibly [`smt`](https://smtcoq.github.io/).
-
-## Deductive verification
-
-[K Framework](https://kframework.org/) a implements coinduction-based logic (reachability logic [1](https://ieeexplore.ieee.org/document/6571568) [2](https://link.springer.com/chapter/10.1007/978-3-319-44802-2_8))
-that can be used to prove partial correctness properties of programs with loops, recursion, or other source of circular behavior. This would be nice to have, but it depends on the symbolic execution being implemented.
-
-
-# Developer documentation
-[CoqDoc](https://h0nzzik.github.io/minuska/toc.html)
 

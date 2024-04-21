@@ -1,7 +1,0 @@
-
-REC-SPEC Factorial7
-#include "factorial.rec"
-EVAL
-
-   fact(s(s(s(s(s(s(s(d0)))))))) % fact(7)
-END-SPEC
