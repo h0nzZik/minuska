@@ -16,3 +16,5 @@ However, to support building Minuska without Nix, we list the required dependenc
 - ocamlc
 - zarith
 
+
+[Here](../dist/vagrant) we provide a Vagrant configuration for a Ubuntu machine with all the dependencies installed.
