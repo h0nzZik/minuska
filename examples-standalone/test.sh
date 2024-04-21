@@ -68,7 +68,9 @@ runCase "imp-count-10" ./interpreters/imp ./m/imp.d/03-count-10.imp 1000 ./m/imp
 
 
 doCompile ./m/two-counters.m ./interpreters/two-counters
-runCase "two-counters.10" ./interpreters/two-counters ./m/two-counters.d/10 500000 ./m/two-counters.d/10.result
-runCase "two-counters.100" ./interpreters/two-counters ./m/two-counters.d/100 500000 ./m/two-counters.d/100.result
-runCase "two-counters.1000" ./interpreters/two-counters ./m/two-counters.d/1000 500000 ./m/two-counters.d/1000.result
-runCase "two-counters.10000" ./interpreters/two-counters ./m/two-counters.d/10000 500000 ./m/two-counters.d/10000.result
+runCase "two-counters.10" ./interpreters/two-counters ./m/two-counters.d/10         50000000 ./m/two-counters.d/10.result
+runCase "two-counters.100" ./interpreters/two-counters ./m/two-counters.d/100       50000000 ./m/two-counters.d/100.result
+runCase "two-counters.1'000" ./interpreters/two-counters ./m/two-counters.d/1000     50000000 ./m/two-counters.d/1000.result
+runCase "two-counters.10'000" ./interpreters/two-counters ./m/two-counters.d/10000   50000000 ./m/two-counters.d/10000.result
+runCase "two-counters.100'000" ./interpreters/two-counters ./m/two-counters.d/100000  50000000 ./m/two-counters.d/100000.result
+runCase "two-counters.1'000'000" ./interpreters/two-counters ./m/two-counters.d/1000000 50000000 ./m/two-counters.d/1000000.result
