@@ -6,7 +6,7 @@
 @rule [init]: builtin.init[X] => cfg[X] where bool.true() ;
 
 @rule [decrement]:
-	cfg[X] => cfg[z.minus(X, [(@builtin 1)])] where bool.true()
+	cfg[X] => cfg[z.minus(X, [(@builtin-int 1)])] where bool.true()
     ;
 
 

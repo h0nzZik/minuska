@@ -49,4 +49,5 @@ runCase "arith-01" ./interpreters/arith ./m/arith.d/01 20 ./m/arith.d/01.result
 
 minuska compile ./m/imp.m ./interpreters/imp
 runCase "imp-01" ./interpreters/imp ./m/imp.d/01 20 ./m/imp.d/01.result
+runCase "imp-lookup" ./interpreters/imp ./m/imp.d/00-assign-lookup-trivial.imp 20 ./m/imp.d/00-assign-lookup-trivial.result
 
