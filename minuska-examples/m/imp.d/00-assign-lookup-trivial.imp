@@ -1,0 +1,6 @@
+seq[
+   assign[var[(@builtin-string "kocka")], (@builtin-string "mleko")],
+seq[
+   assign[var[(@builtin-string "psik")], (@builtin-string "kost")],
+   var[(@builtin-string "kocka")]
+]]
