@@ -44,7 +44,7 @@ nix develop '.#minuska'
 cd minuska/
 ```
 See the [developer guide](./doc/developer-guide.md) for more details.
-
+Also, see [CoqDoc](https://h0nzzik.github.io/minuska/toc.html)
 
 # Missing features
 
@@ -52,6 +52,4 @@ In principle, many features could be implemented in Minuska that would make the 
 These include support for concrete syntax of programming languages, formalization of the strictness declarations, symbolic execution, and deductive verification.
 See the [ideas document](./doc/ideas.md)
 
-# Developer documentation
-[CoqDoc](https://h0nzzik.github.io/minuska/toc.html)
 
