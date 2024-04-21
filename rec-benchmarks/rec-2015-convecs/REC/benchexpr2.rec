@@ -1,9 +1,0 @@
-REC-SPEC BenchExpr2
-
-#include "asfsdfbenchmark.rec"
-
-EVAL
-
-     benchevalexp17(two)
-
-END-SPEC

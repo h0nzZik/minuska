@@ -1,8 +1,0 @@
-
-REC-SPEC BubbleSort100
-#include "bubblesort.rec"
-EVAL
-
-   rev(times(d10, d10))
-
-END-SPEC

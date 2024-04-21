@@ -1,8 +1,0 @@
-
-REC-SPEC RevNat10
-#include "revnat.rec"
-EVAL
-
-     rev(gen(d10))
-
-END-SPEC

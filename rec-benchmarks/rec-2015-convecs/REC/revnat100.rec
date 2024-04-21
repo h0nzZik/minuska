@@ -1,8 +1,0 @@
-
-REC-SPEC RevNat100
-#include "revnat.rec"
-EVAL
-
-     rev(gen(times(d10, d10)))
-
-END-SPEC

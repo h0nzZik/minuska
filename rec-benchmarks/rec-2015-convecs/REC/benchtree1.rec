@@ -1,9 +1,0 @@
-REC-SPEC BenchTree1
-
-#include "asfsdfbenchmark.rec"
-
-EVAL
-
-     benchevaltree17(one)
-
-END-SPEC

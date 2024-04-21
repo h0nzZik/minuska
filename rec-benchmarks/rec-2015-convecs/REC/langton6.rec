@@ -1,6 +1,0 @@
-REC-SPEC Langton6
-#include "langton.rec"
-EVAL
-
-   next(d6,d6,d6,d6,d6)
-END-SPEC

@@ -1,7 +1,0 @@
-
-REC-SPEC QuickSort1000
-#include "quicksort.rec"
-EVAL
-
-   qsort(rev(times(d10, times(d10, d10))))
-END-SPEC
