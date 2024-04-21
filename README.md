@@ -25,31 +25,18 @@ As for the generated interpreters: these can also be used either from inside the
 minuska compile language.m language-interpreter.exe
 ```
 Note that the `minuska` command is still under an active development: it is not feature complete and may contain bugs.
-More generally, the command-line interface is NOT formally verified, as it is written in OCaml rather than Coq.
+More importantly, the command-line interface is NOT formally verified, as it is written in OCaml rather than Coq.
 
-# Geting Minuska up and running
+# Using Minuska
 
-The simplest way is to use the provided Nix Flake:
+The simplest way is to use the provided Nix Flake
 ```sh
 nix shell '.#minuska'
 ```
+which provides the `minuska` command.
+Consult the [user guide](./doc/user-guide.md) for more details.
 
-## Building using Dune
-One can also build and install it using [Dune](https://dune.readthedocs.io/en/stable/):
-```sh
-dune build @all
-```
-but this requires one to install all the dependencies manually.
 
-### Build dependencies
-To typecheck the Coq development, one needs:
-- [Coq](https://coq.inria.fr/) 8.19
-- [stdpp](https://gitlab.mpi-sws.org/iris/stdpp) > 1.9.0
-- [equations](https://mattam82.github.io/Coq-Equations/) 1.3
-
-### Runtime dependencies
-
-coq, ocamlc, zarith
 
 
 # Missing features
