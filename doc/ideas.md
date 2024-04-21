@@ -23,3 +23,7 @@ Even if this gets implemented, we would need to have a simplification engine to 
 [K Framework](https://kframework.org/) a implements coinduction-based logic (reachability logic [1](https://ieeexplore.ieee.org/document/6571568) [2](https://link.springer.com/chapter/10.1007/978-3-319-44802-2_8))
 that can be used to prove partial correctness properties of programs with loops, recursion, or other source of circular behavior. This would be nice to have, but it depends on the symbolic execution being implemented.
 
+
+## Testing type soundness
+
+We could use the QuickChick framework to automatically test whether a given language definition behaves reasonably on well-typed programs. This includes the absence of calls to builtin functions that would return an error value.
