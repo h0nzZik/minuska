@@ -23,3 +23,15 @@ Even if this gets implemented, we would need to have a simplification engine to 
 [K Framework](https://kframework.org/) a implements coinduction-based logic (reachability logic [1](https://ieeexplore.ieee.org/document/6571568) [2](https://link.springer.com/chapter/10.1007/978-3-319-44802-2_8))
 that can be used to prove partial correctness properties of programs with loops, recursion, or other source of circular behavior. This would be nice to have, but it depends on the symbolic execution being implemented.
 
+
+## Testing type soundness
+
+We could use the QuickChick framework to automatically test whether a given language definition behaves reasonably on well-typed programs. This includes the absence of calls to builtin functions that would return an error value.
+
+## Fast rule selection
+
+We can do better than linear search for selecting a rewriting rule. There is the paper
+[Compiling pattern matching to good decision trees](https://dl.acm.org/doi/10.1145/1411304.1411311)
+which we should implement. The diffference here is that our rules have side conditions, and therefore we need to choose all suitable rules,
+not just a one - what if the side condition of the selected rule does not hold? There is a WIP implementation in [`dt.v`](../minuska/theories.dt.v).
+
