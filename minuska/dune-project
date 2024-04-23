@@ -3,6 +3,7 @@
 
 
 (name coq-minuska)
+(version 0.2)
 
 (using menhir 3.0)
 

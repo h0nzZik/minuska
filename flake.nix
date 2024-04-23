@@ -33,7 +33,7 @@
 
             useDune = true; 
             pname = "minuska";
-            version = "0.1";
+            version = "0.2";
             src = ./minuska;
             duneVersion = "3";
  

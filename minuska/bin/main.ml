@@ -115,5 +115,5 @@ let command =
     ~summary:"A verified semantic framework"
     ["compile", command_compile; "def2coq", command_generate]
 
-let () = Command_unix.run ~version:"1.0" ~build_info:"RWO" command
+let () = Command_unix.run ~version:"0.2" command
 
