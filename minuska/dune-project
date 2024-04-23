@@ -11,19 +11,18 @@
 (source
  (github h0nzZik/minuska))
 
-(authors "Jan Tušil")
+(authors "Jan Tušil <jenda.tusil@gmail.com>")
 
-(maintainers "Jan Tušil")
+(maintainers "Jan Tušil <jenda.tusil@gmail.com>")
 
-(license LICENSE)
-
-(documentation https://url/to/documentation)
+(license MIT)
 
 (package
  (name coq-minuska)
- (synopsis "A formally verified semantic framework")
- (description "A longer description")
+ (depends coq menhir)
+ (synopsis "A formally verified programming language framework")
+ (description "Minuska is a programming language framework capable of generating interpreters from operational semantics.")
  (tags
-  (topics "to describe" your project)))
+  ("operational semantics" interpreters)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
