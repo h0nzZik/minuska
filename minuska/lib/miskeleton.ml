@@ -130,6 +130,6 @@ let command_run step =
 
 let main step =
   Printexc.record_backtrace true;
-    try (Command_unix.run ~version:"1.0" ~build_info:"RWO" (command_run step)) with
+    try (Command_unix.run ~version:"0.2" (command_run step)) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
