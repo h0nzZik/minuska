@@ -17,6 +17,10 @@ However, to support building Minuska without Nix, we list the required dependenc
 - zarith
 
 
-[Here](../dist/vagrant) we WILL provide (TODO!) a Vagrant configuration for a [Ubuntu machine](../dist/vagrant/ubuntu2310)
-and [Fedora machine](../dist/vagrant/fedora39) with all the dependencies installed, once all the packages become available.
+[Here](../dist/vagrant) we provide a Vagrant configuration for:
+
+- a [Fedora machine](../dist/vagrant/fedora39)
+- a [Ubuntu machine](../dist/vagrant/ubuntu2310) (TODO)
+
+with all the dependencies installed.
 Inside the machines, the [`minuska` directory](../minuska) is mounted as `/minuska-src`.

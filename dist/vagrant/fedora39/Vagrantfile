@@ -81,7 +81,7 @@ Vagrant.configure("2") do |config|
     eval $(opam env)
     opam pin add coq 8.19.0
     opam repo add coq-released https://coq.inria.fr/opam/released
-    opam install coq-equations coq-stdpp
+    opam install coq-equations coq-stdpp core core_unix menhir
   SHELL
 
 end
