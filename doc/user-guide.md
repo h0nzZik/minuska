@@ -6,7 +6,7 @@ This file describes Minuska from the user's point of view.
 
 To build Minuska from source, you can either run
 ```sh
-nix shell '.#minuska'
+nix develop '.#with-minuska'
 ```
 which builds the project and populates the PATH environment variable with a `minuska` command,
 or you can first install [all the dependencies](./dependencies.md)
@@ -33,7 +33,7 @@ To see all the options `minuska` offers, run run:
 minuska --help
 ```
 
-#### Generating interpreters and running programs
+#### Generating interpreters and running programs natively
 
 To generate an interpreter from a language definition, use the `minuska compile` command. For example,
 ```sh
@@ -66,11 +66,46 @@ To see all the options provided by the interpreter, run:
 ./decrement.exe --help
 ```
 
-#### Generating a Coq definition
+#### Generating Coq definitions and running programs inside Coq
 
-To generate a `*.v` file containing a Coq definition, run:
-```
+To run a program inside Coq, we need to (1) generate a Coq definition
+from a language definition, (2) generate a Coq definition from the program,
+and (3) glue them together.
+
+To generate and compile a `*.v` file containing the language definition, run:
+```sh
 minuska def2coq ./examples-standalone/m/decrement.m decrement.v
+coqc -R . Test decrement.v
+```
+
+Then, to generate and compile a `*.v` file containing the input program, run:
+```sh
+minuska gt2coq ./examples-standalone/m/decrement.d/three three.v
+coqc -R . Test three.v
+```
+
+Now we can generate a Coq file that uses both the interpreter and the input.
+```coq
+(* test.v *)
+From Minuska Require
+  interp_loop
+.
+From Test Require
+  decrement
+  three
+.
+
+Compute (let steps := 3 in
+  @interp_loop.interp_loop
+    default_everything.DSM
+    decrement.lang_interpreter
+    steps
+    three.given_groundterm
+).
+```
+We can either open it in an IDE (e.g. ProofGeneral, or VSCode), or build it with `coqc`:
+```
+coqc -R . Test test.v
 ```
 
 

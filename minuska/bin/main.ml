@@ -54,6 +54,34 @@ let transform input_filename output_filename () =
   Out_channel.close oux;
   ()
 
+
+let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
+  `GTerm ((`Id "builtin.init"), [g])
+
+let write_gterm lexbuf outname =
+  match Miparse.parse_groundterm_with_error lexbuf with
+  | Some gt ->
+    let oux = Out_channel.create outname in
+    fprintf oux "%s" {|
+      From Minuska Require Export
+        prelude
+        default_everything
+      .
+      Definition given_groundterm := 
+    |};
+    Micoqprint.print_groundterm oux (wrap_init gt);
+    fprintf oux " .\n";
+    Out_channel.close oux;
+    ()
+  | None -> ()
+
+let transform_groundterm input_fname output_fname () =
+  let inx = In_channel.create input_fname in
+  let lexbuf = Lexing.from_channel inx in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
+  write_gterm lexbuf output_fname;
+  In_channel.close(inx)
+
 let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
@@ -100,6 +128,19 @@ let command_generate =
      in
      fun () -> transform input_filename output_filename ())
 
+
+let command_groundterm2coq =
+  Command.basic
+    ~summary:"Generate a Coq (*.v) file from a ground term (e.g., a program)"
+    ~readme:(fun () -> "TODO")
+    (let%map_open.Command
+        input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
+        output_filename = anon (("filename_out" %: Filename_unix.arg_type))
+
+     in
+     fun () -> transform_groundterm input_filename output_filename ())
+
+
 let command_compile =
   Command.basic
     ~summary:"Generate an interpreter from a Minuska (*.m) file"
@@ -113,7 +154,9 @@ let command_compile =
 let command =
   Command.group
     ~summary:"A verified semantic framework"
-    ["compile", command_compile; "def2coq", command_generate]
+    ["compile", command_compile;
+     "def2coq", command_generate;
+     "gt2coq", command_groundterm2coq]
 
 let () = Command_unix.run ~version:"0.2" command
 

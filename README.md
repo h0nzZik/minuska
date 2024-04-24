@@ -31,9 +31,9 @@ More importantly, the command-line interface is NOT formally verified, as it is 
 
 The simplest way is to use the provided Nix Flake
 ```sh
-nix shell '.#minuska'
+nix develop '.#with-minuska'
 ```
-which provides the `minuska` command.
+which provides the `minuska` command, as well as the required version of Coq and its libraries.
 Consult the [user guide](./doc/user-guide.md) for more details.
 
 # Working on Minuska

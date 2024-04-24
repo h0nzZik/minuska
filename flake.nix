@@ -50,9 +50,6 @@
 
             passthru = { inherit coqPackages; };
 
-            # I do not know how to populate the environment variables (OCAMLPATH, COQPATH) with the stuff coming out of Equations and stdpp.
-            # It should be possible to do it with setuphooks, but I do not know how.
-            # Therefore, I just hard-code the paths to the libraries into all invocations of `coqc` done inside the `minuska` binary.
             postPatch = ''
               substituteInPlace bin/main.ml \
                 --replace "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
@@ -62,7 +59,9 @@
 
 
             buildPhase = ''
-              dune build @all theories/Minuska.html
+              runHook preBuild
+              dune build @all theories/Minuska.html ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
+              runHook postBuild
             '';
 
             postInstall = ''
@@ -72,13 +71,6 @@
                 --prefix PATH : $PATH \
                 --prefix CAML_LD_LIBRARY_PATH : $CAML_LD_LIBRARY_PATH
             '';
-
-
-
-            #setupHook = pkgs.writeText "setupHook.sh" ''
-            #  source ${coqPackages.coq}/nix-support/setup-hook
-            #'';
-
           } ) { };  in
           wrapped
           #pkgs.symlinkJoin {
@@ -86,9 +78,10 @@
           #  paths = [
           #    wrapped
           #    coqPackages.coq
-          #    coqPackages.coq.ocamlPackages.findlib
-          #    coqPackages.coq.ocamlPackages.zarith
-          #  ] ++ bothNativeAndOtherInputs;
+          #  ];
+          #  postInstall = ''
+          #    wrapProgram $out/bin/coqc
+          #  '';
           #}
         );
 
@@ -168,6 +161,8 @@
         packages.default = self.outputs.packages.${system}.minuska;
         
         devShells = {
+          
+          # For developing Minuska
           minuska =
             let
               minuska = self.outputs.packages.${system}.minuska;
@@ -177,16 +172,14 @@
                 packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide];
               };
 
-
-          minuska-coq_8_19 =
+          # For using Minuska
+          with-minuska =
             let
-              minuska = self.outputs.packages.${system}.minuska-coq_8_19;
+              minuska = self.outputs.packages.${system}.minuska;
             in
               pkgs.mkShell {
-                inputsFrom = [minuska];
-                packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide ];
+                packages = [minuska minuska.coqPackages.coq-lsp minuska.coqPackages.coq];
               };
-
 
           examples-coq =
             let
