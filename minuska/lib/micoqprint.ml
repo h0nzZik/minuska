@@ -51,8 +51,8 @@ Instance LangDefaults : Defaults := {|
 
 let builtin2str b =
   match b with
-  | `BuiltinInt n -> "((*default_everything.*)bv_Z " ^ (string_of_int n) ^ ")"
-  | `BuiltinString s -> "((*default_everything.*)bv_str \"" ^ s ^ "\")"
+  | `BuiltinInt n -> "(bv_Z " ^ (string_of_int n) ^ ")"
+  | `BuiltinString s -> "(bv_str \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm (oux : Out_channel.t) (g : Syntax.groundterm) : unit =
@@ -126,7 +126,7 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string
     match name0 with
     | None -> failwith (String.append "Unknown builtin: " s)
     | Some name1 ->
-        let name = (String.append "(*default_everything.*)" name1) in
+        let name = (name1) in
         match List.length es with
         | 0 -> fprintf oux "(e_nullary %s)" name
         | 1 ->
@@ -169,9 +169,9 @@ let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
     (
       match (r.frame) with
       | None -> 
-        fprintf oux "(*default_everything.*)basic_rule \"%s\" " (r.name)
+        fprintf oux "basic_rule \"%s\" " (r.name)
       | Some (`Id s) ->
-        fprintf oux "(*default_everything.*)framed_rule frame_%s \"%s\" " s (r.name)
+        fprintf oux "framed_rule frame_%s \"%s\" " s (r.name)
     );
     
     print_pattern oux (r.lhs);
