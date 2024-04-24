@@ -51,7 +51,7 @@ Instance LangDefaults : Defaults := {|
 
 let builtin2str b =
   match b with
-  | `BuiltinInt n -> "(bv_Z " ^ (string_of_int n) ^ ")"
+  | `BuiltinInt n -> "(bv_Z (" ^ (string_of_int n) ^ ")%Z)"
   | `BuiltinString s -> "(bv_str \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 

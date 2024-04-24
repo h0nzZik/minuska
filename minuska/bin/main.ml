@@ -54,6 +54,10 @@ let transform input_filename output_filename () =
   Out_channel.close oux;
   ()
 
+
+let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
+  `GTerm ((`Id "builtin.init"), [g])
+
 let write_gterm lexbuf outname =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gt ->
@@ -65,7 +69,7 @@ let write_gterm lexbuf outname =
       .
       Definition given_groundterm := 
     |};
-    Micoqprint.print_groundterm oux gt;
+    Micoqprint.print_groundterm oux (wrap_init gt);
     fprintf oux " .\n";
     Out_channel.close oux;
     ()
