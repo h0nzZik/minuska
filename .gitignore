@@ -33,7 +33,7 @@ nia.cache
 nlia.cache
 nra.cache
 native_compute_profile_*.data
-
+.vagrant
 # generated timing files
 *.timing.diff
 *.v.after-timing
