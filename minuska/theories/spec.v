@@ -582,3 +582,12 @@ Definition rewrites_to
     rewrites_in_valuation_under_to ρ r from under to
    }
 .
+
+Definition rewriting_relation
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : list (RewritingRule2 Act))
+    : TermOver builtin_value -> TermOver builtin_value -> Type
+    := fun from to =>
+        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to r from a to)%type}}
+.
