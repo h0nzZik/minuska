@@ -30,3 +30,4 @@ theories/dt.v
 theories/interp_loop.v
 theories/example.v
 theories/default_everything.v
+theories/symex.v

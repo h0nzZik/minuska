@@ -17,6 +17,7 @@
            let stdpp = coqPackages.stdpp; in
            let coqLibraries = [
               coqPackages.equations
+              coqPackages.CoLoR
               stdpp
            ]; in
            let bothNativeAndOtherInputs = [
