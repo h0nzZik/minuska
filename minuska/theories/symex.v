@@ -3,9 +3,18 @@ From Minuska Require Import
     spec
 .
 
+From Coq Require Import Logic.Eqdep_dec.
+
+From Equations Require Export Equations.
+
 From CoLoR Require
     Term.WithArity.ASignature
     Term.WithArity.AUnif
+    Term.WithArity.ATerm
+.
+
+From CoLoR Require Import
+    Util.Vector.VecUtil
 .
 
 Definition Satisfies_variable_GroundTerm'
@@ -210,3 +219,74 @@ Proof.
  Qed.
 
 
+#[local]
+Obligation Tactic := idtac.
+Check @map_length.
+
+Program Definition term_to_color
+    (Σ : StaticModel)
+    (t : TermOver variable)
+    : Term.WithArity.ATerm.term (ColorSignatureOf Σ)
+:=
+    let sz := TermOver_size t in
+    (fix term_to_color' (sz : nat) (t : TermOver variable) (pf : sz = TermOver_size t) :=
+        match sz with
+        | 0 => _
+        | (S sz) =>
+            match t with
+            | t_over x => Term.WithArity.ATerm.Var (Pos.to_nat (encode x))
+            | t_term s l =>
+            let helper := fix helper (sz' : nat) (lt : list (TermOver variable)) (pf: sum_list_with (S ∘ TermOver_size) lt = sz') : list (Term.WithArity.ATerm.term (ColorSignatureOf Σ)) := (
+                match lt with
+                | [] => []
+                | t'::ts' => (term_to_color' (TermOver_size t') t' _)::(helper (sum_list_with (S ∘ TermOver_size) ts') ts' _)
+                end
+            ) in
+            let l' := helper (sum_list_with (S ∘ TermOver_size) l) l _ in
+            @Term.WithArity.ATerm.Fun
+                (ColorSignatureOf Σ)
+                ((length l),s)
+                (@Vcast (Term.WithArity.ATerm.term (ColorSignatureOf Σ))
+                _
+                (Vector.of_list l')
+                (length l)
+                _
+                )
+            
+            end
+        end
+    ) sz t _
+.
+Next Obligation.
+    intros; subst; destruct t; simpl in Heq_sz; inversion Heq_sz.
+Defined.
+Next Obligation.
+    intros. reflexivity.
+Defined.
+Next Obligation.
+    intros. reflexivity.
+Defined.
+Next Obligation.
+    intros. reflexivity.
+Defined.
+Next Obligation.
+    simpl. intros. subst. simpl in Heq_sz. simpl.
+    ltac1:(injection Heq_sz as Heq_sz).
+    subst sz.
+    induction l.
+    { reflexivity. }
+    {
+        simpl.
+        apply f_equal.
+        rewrite <- IHl. clear IHl.
+        ltac1:(move: (term_to_color_obligation_4 Σ l)).
+        ltac1:(move: (term_to_color_obligation_3 Σ l)).
+        intros e1 e2.
+        ltac1:(replace (e1) with (e2)).
+        { reflexivity. }
+        {
+            apply UIP_dec.
+            intros x y. apply nat_eqdec.
+        }
+    }
+Qed.
