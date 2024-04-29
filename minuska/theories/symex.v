@@ -3,6 +3,7 @@ From Minuska Require Import
     spec
 .
 
+Require Import Program.
 From Coq Require Import Logic.Eqdep_dec.
 
 From Equations Require Export Equations.
@@ -229,20 +230,25 @@ Program Definition term_to_color
     : Term.WithArity.ATerm.term (ColorSignatureOf Σ)
 :=
     let sz := TermOver_size t in
-    (fix term_to_color' (sz : nat) (t : TermOver variable) (pf : sz = TermOver_size t) :=
+    (fix term_to_color' (sz : nat) (t : TermOver variable) (pf : sz >= TermOver_size t) :=
         match sz with
         | 0 => _
-        | (S sz) =>
+        | (S sz') =>
             match t with
             | t_over x => Term.WithArity.ATerm.Var (Pos.to_nat (encode x))
             | t_term s l =>
-            let helper := fix helper (sz' : nat) (lt : list (TermOver variable)) (pf: sum_list_with (S ∘ TermOver_size) lt = sz') : list (Term.WithArity.ATerm.term (ColorSignatureOf Σ)) := (
+            let term_to_color'_sz' := term_to_color' sz' in
+            let helper := fix helper
+              (lt : list (TermOver variable))
+              (pf: sum_list_with (S ∘ TermOver_size) lt <= sz')
+              { struct lt }
+              : list (Term.WithArity.ATerm.term (ColorSignatureOf Σ)) := (
                 match lt with
                 | [] => []
-                | t'::ts' => (term_to_color' (TermOver_size t') t' _)::(helper (sum_list_with (S ∘ TermOver_size) ts') ts' _)
+                | t'::ts' => (term_to_color'_sz' t' _)::(helper ts' _)
                 end
             ) in
-            let l' := helper (sum_list_with (S ∘ TermOver_size) l) l _ in
+            let l' := helper l _ in
             @Term.WithArity.ATerm.Fun
                 (ColorSignatureOf Σ)
                 ((length l),s)
@@ -258,35 +264,54 @@ Program Definition term_to_color
     ) sz t _
 .
 Next Obligation.
-    intros; subst; destruct t; simpl in Heq_sz; inversion Heq_sz.
+    (*abstract*)(intros; subst; destruct t; simpl in *; ltac1:(lia)).
 Defined.
 Next Obligation.
-    intros. reflexivity.
+    abstract(intros; subst; simpl in *; ltac1:(lia)).
 Defined.
 Next Obligation.
-    intros. reflexivity.
+    abstract(intros; subst; simpl in *; ltac1:(lia)).
 Defined.
 Next Obligation.
-    intros. reflexivity.
+    abstract(intros; subst; simpl in *; ltac1:(lia)).
 Defined.
 Next Obligation.
-    simpl. intros. subst. simpl in Heq_sz. simpl.
-    ltac1:(injection Heq_sz as Heq_sz).
-    subst sz.
-    induction l.
-    { reflexivity. }
+    intros. ltac1:(unfold l'; clear l'). subst.
+    ltac1:(move: (term_to_color_obligation_4 _ _ _ _ _ _ _ _ _ _ _)).
+    simpl. intros e0.
+    remember (helper) as rhelper. ltac1:(unfold helper in Heqrhelper).
+    clear helper.
+    revert pf e0 Heqrhelper.
+    induction l; intros pf e0 Heqrhelper.
+    { subst; reflexivity. }
     {
-        simpl.
-        apply f_equal.
-        rewrite <- IHl. clear IHl.
-        ltac1:(move: (term_to_color_obligation_4 Σ l)).
-        ltac1:(move: (term_to_color_obligation_3 Σ l)).
-        intros e1 e2.
-        ltac1:(replace (e1) with (e2)).
-        { reflexivity. }
-        {
-            apply UIP_dec.
-            intros x y. apply nat_eqdec.
-        }
+      assert (Htmp: (S sz' ≥ TermOver_size (t_term s l))).
+      {
+        simpl in *. ltac1:(lia).
+      }
+      simpl. specialize (IHl Htmp).
+      simpl in e0.
+      assert (Htmp2: sum_list_with (S ∘ TermOver_size) l ≤ sz').
+      {
+        abstract(ltac1:(simpl in *; lia)).
+      }
+      specialize (IHl Htmp2 Heqrhelper).
+      rewrite <- IHl.
+      rewrite Heqrhelper. simpl length. rewrite <- Heqrhelper.
+      ltac1:(unfold length).
+      ltac1:(fold (@length (ATerm.term (ColorSignatureOf Σ)))).
+      ltac1:(move: (term_to_color_obligation_3 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)).
+      intros ee.
+      ltac1:(      replace ee with Htmp2).
+      {
+        reflexivity.
+      }
+      apply proof_irrelevance.
     }
-Qed.
+Defined.
+Next Obligation.
+    intros. ltac1:(unfold sz). reflexivity.
+Defined.
+Fail Next Obligation.
+
+
