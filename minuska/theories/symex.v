@@ -1,12 +1,19 @@
 From Minuska Require Import
     prelude
     spec
+    properties
+    syntax_properties
 .
+
+
+Require Import Wellfounded.
+From stdpp Require Import lexico well_founded.
 
 Require Import Program.
 From Coq Require Import Logic.Eqdep_dec.
 
 From Equations Require Export Equations.
+
 
 From CoLoR Require
     Term.WithArity.ASignature
@@ -225,9 +232,66 @@ Proof.
     }
 Defined.
 
+Definition eqn {Σ : StaticModel} : Type := ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type.
+
+Definition eqn_size {Σ : StaticModel} (e : eqn) : nat := TermOver_size (e.1) + TermOver_size (e.2).
+
+Definition eqns_size {Σ : StaticModel} (es : list eqn) := sum_list_with eqn_size es.
+
+Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list ((fun e => ((vars_of (e.1)) ∪ (vars_of (e.2))))<$> es)
+.
+
+
+Definition deg {Σ : StaticModel} (es : list eqn) : (nat*nat)%type :=
+  (size (eqns_vars es), eqns_size es)
+.
+
 
 #[local]
 Obligation Tactic := idtac.
+
+Definition sub
+  {Σ : StaticModel}
+  (t' : TermOver BuiltinOrVar)
+  (x : variable)
+  (es : list eqn)
+:= (fun e => (TermOverBoV_subst t' x e.1, TermOverBoV_subst t' x e.2)) <$> es
+.
+
+Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
+  by wf (deg l) (@lexico (nat*nat)%type prod_lexico ) :=
+
+unify [] := Some [] ;
+unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = y)) => {
+| left _ := unify es ;
+| right _ := None
+};
+unify ((t_over (bov_variable x), t)::es) := if (decide (x ∈ vars_of t)) then None
+  else (
+    tmp ← unify (sub t x es);
+    Some ((x,t)::tmp)
+  ) ;
+unify ((t, t_over (bov_variable x))::es) := if (decide (x ∈ vars_of t)) then None
+  else (
+    tmp ← unify (sub t x es);
+    Some ((x,t)::tmp)
+  ) ;
+unify ((t_term s1 l1, t_term s2 l2)::es) := if (decide ((s1 = s2) /\ (length l1 = length l2) )) then (
+    unify ((zip l1 l2) ++ es)
+  ) else None ;
+
+unify ((t1,t2)::es) := if (decide (t1 = t2)) then unify es else None
+.
+Proof.
+  {
+    simpl in *. ltac1:(lia).
+  }
+  {
+    ltac1:(unfold t). simpl in *. Search TermOverBoV_subst TermOver_size. ltac1:(lia).
+  }
+Defined.
+
+
 
 
 Program Definition term_to_color
