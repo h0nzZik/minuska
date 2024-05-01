@@ -322,9 +322,6 @@ Fail Next Obligation.
 
 
 
-Print ATerm.size.
-Print ATerm.term.
-Check Vector.to_list.
 Program Definition term_from_color
     (Σ : StaticModel)
     (ct : Term.WithArity.ATerm.term (ColorSignatureOf Σ))
@@ -343,23 +340,63 @@ Program Definition term_from_color
         let helper := (
           fix helper
             (lct : list (ATerm.term (ColorSignatureOf Σ)))
-            (pf : sum_list_with (@ATerm.size (ColorSignatureOf Σ)) lct <= sz)
+            (pf : sum_list_with (@ATerm.size (ColorSignatureOf Σ)) lct <= sum_list_with (@ATerm.size (ColorSignatureOf Σ)) l)
+            (pf2 : sum_list_with (@ATerm.size (ColorSignatureOf Σ)) l <= sz')
+            { struct lct }
             : option (list (TermOver variable))
           :=
             match lct with
             | [] => Some []
             | x::xs =>
               y ← term_from_color'_sz' x _;
-              ys ← helper xs _;
+              ys ← helper xs _ pf2;
               Some (y::ys)
             end
         ) in
-        ts ← helper l _;
+        ts ← helper l _ _;
         Some (t_term (s.2) ts)
       end
     end
   ) sz ct _
 .
+Next Obligation.
+  intros. subst. simpl in *. ltac1:(lia).
+Defined.
+Next Obligation.
+  abstract(intros; subst; simpl in *; ltac1:(lia)).
+Defined.
+Next Obligation.
+  intros. subst. simpl in *.
+  apply reflexivity.
+Defined.
+Next Obligation.
+  intros. subst. simpl in *.
+  
+  ltac1:(cut (sum_list_with (@ATerm.size (ColorSignatureOf Σ)) l 
+    = ((fix size_terms (n : nat) (ts : vector (ATerm.term (ColorSignatureOf Σ)) n) {struct ts} : nat :=
+      match ts with
+      | Vnil => 0
+      | @Vector.cons _ u n0 us => ATerm.size u + size_terms n0 us
+      end
+    ) s.1 v))).
+  {
+    intros HH. rewrite HH. clear HH. ltac1:(lia).
+  }
+  destruct s; simpl in *.
+  ltac1:(unfold l). clear.
+  induction v; simpl.
+  { reflexivity. }
+  {
+    unfold Vector.to_list in IHv.
+    ltac1:(lia).
+  }
+Defined.
+Next Obligation.
+  intros.
+  simpl in *.
+  apply reflexivity.
+Defined.
+Fail Next Obligation.
 
 Definition color_unify
   (Sig : ASignature.Signature)
