@@ -228,7 +228,7 @@ Defined.
 
 #[local]
 Obligation Tactic := idtac.
-Check @map_length.
+
 
 Program Definition term_to_color
     (Σ : StaticModel)
@@ -248,13 +248,15 @@ Program Definition term_to_color
               (lt : list (TermOver variable))
               (pf: sum_list_with (S ∘ TermOver_size) lt <= sz')
               { struct lt }
-              : list (Term.WithArity.ATerm.term (ColorSignatureOf Σ)) := (
+              : {r : list (Term.WithArity.ATerm.term (ColorSignatureOf Σ)) & length r = length lt } := (
                 match lt with
-                | [] => []
-                | t'::ts' => (term_to_color'_sz' t' _)::(helper ts' _)
+                | [] => @existT _ _ [] _
+                | t'::ts' => @existT _ _ ((term_to_color'_sz' t' _)::(projT1 (helper ts' _))) _
                 end
             ) in
-            let l' := helper l _ in
+            let l'pf := helper l _ in
+            let l' := projT1 l'pf in
+            let pf := projT2 l'pf in
             @Term.WithArity.ATerm.Fun
                 (ColorSignatureOf Σ)
                 ((length l),s)
@@ -282,41 +284,17 @@ Next Obligation.
     abstract(intros; subst; simpl in *; ltac1:(lia)).
 Defined.
 Next Obligation.
-    intros. ltac1:(unfold l'; clear l'). subst.
-    ltac1:(move: (term_to_color_obligation_4 _ _ _ _ _ _ _ _ _ _ _)).
-    simpl. intros e0.
-    remember (helper) as rhelper. ltac1:(unfold helper in Heqrhelper).
-    clear helper.
-    revert pf e0 Heqrhelper.
-    induction l; intros pf e0 Heqrhelper.
-    { subst; reflexivity. }
-    {
-      assert (Htmp: (S sz' ≥ TermOver_size (t_term s l))).
-      {
-        simpl in *. ltac1:(lia).
-      }
-      simpl. specialize (IHl Htmp).
-      simpl in e0.
-      assert (Htmp2: sum_list_with (S ∘ TermOver_size) l ≤ sz').
-      {
-        abstract(ltac1:(simpl in *; lia)).
-      }
-      specialize (IHl Htmp2 Heqrhelper).
-      rewrite <- IHl.
-      rewrite Heqrhelper. simpl length. rewrite <- Heqrhelper.
-      ltac1:(unfold length).
-      ltac1:(fold (@length (ATerm.term (ColorSignatureOf Σ)))).
-      ltac1:(move: (term_to_color_obligation_3 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _)).
-      intros ee.
-      ltac1:(      replace ee with Htmp2).
-      {
-        reflexivity.
-      }
-      apply proof_irrelevance.
-    }
+  simpl. intros. rewrite (projT2 (helper ts' _)). reflexivity.
 Defined.
 Next Obligation.
-    intros. ltac1:(unfold sz). reflexivity.
+  simpl. intros. subst. simpl in *. ltac1:(lia).
+Defined.
+Next Obligation.
+  intros. subst. simpl in *.
+  ltac1:(unfold l'). exact pf.
+Defined.
+Next Obligation.
+  simpl. intros. apply reflexivity.
 Defined.
 Fail Next Obligation.
 
@@ -398,6 +376,29 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
+Lemma term_to_from_color
+    (Σ : StaticModel)
+    (t : TermOver variable)
+    :
+    term_from_color Σ (term_to_color Σ t) = Some t
+.
+Proof.
+  unfold term_to_color, term_from_color.
+  remember (TermOver_size t) as sz in |-.
+  assert (Hsz: TermOver_size t <= sz) by ltac1:(lia).
+  clear Heqsz.
+  revert t Hsz.
+  induction sz; intros t Hsz.
+  {
+    destruct t; simpl in Hsz; ltac1:(lia).
+  }
+  destruct t; simpl in *.
+  {
+    
+  }
+
+Qed.
+
 Definition color_unify
   (Sig : ASignature.Signature)
   (x y : ATerm.term Sig)
@@ -448,4 +449,53 @@ Check AUnif.is_sol_eqn.
 
 
 
+(*
+Check @map_length.
+Print sigT.
+Equations? eq_term_to_color
+    (Σ : StaticModel)
+    (t : TermOver variable)
+    : Term.WithArity.ATerm.term (ColorSignatureOf Σ)
+    by wf (TermOver_size t) lt :=
+eq_term_to_color Σ (t_over x) := Term.WithArity.ATerm.Var (Pos.to_nat (encode x)) ;
+eq_term_to_color Σ (t_term s l) with (aux Σ l l [] _) => {
+  | @existT _ _ r pf =>
+            @Term.WithArity.ATerm.Fun
+                (ColorSignatureOf Σ)
+                ((length l),s)
+                (@Vcast (Term.WithArity.ATerm.term (ColorSignatureOf Σ))
+                _
+                (Vector.of_list r)
+                (length l)
+                _
+                )
+  }
+  where aux (Σ : StaticModel) (l l' l'' : list (TermOver variable)) (pf : l = l'' ++ l') : {nl : list (ATerm.term (ColorSignatureOf Σ)) & length nl = length l' } :=
+    aux Σ _ nil _ pf := @existT _ _ nil _ ;
+    aux Σ _ (x::xs) r pf := @existT _ _ ( (eq_term_to_color Σ x) :: (projT1 (aux xs (r ++ [x]) _)) ) _
+.
+Proof.
+  { reflexivity. }
+  {
+    subst l.
+    simpl. rewrite sum_list_with_app. simpl. ltac1:(lia).
+  }
+  {
+    subst. rewrite <- app_assoc. reflexivity.
+  }
+  {
+    simpl. subst. simpl.
+    remember (aux xs (r ++ [x]) _).
+    rewrite (projT2 s0). reflexivity.
+  }
+  {
+    simpl. reflexivity.
+  }
+  {
+    simpl. subst. simpl.
+    rewrite (projT2 (aux l [] erefl)).
+    reflexivity.
+  }
+Defined.
+*)
 
