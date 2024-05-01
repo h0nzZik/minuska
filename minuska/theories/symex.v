@@ -258,10 +258,47 @@ Definition sub
 := (fun e => (TermOverBoV_subst t' x e.1, TermOverBoV_subst t' x e.2)) <$> es
 .
 
-Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
-  by wf (deg l) (@lexico (nat*nat)%type prod_lexico ) :=
+Lemma subst_decreases_vars
 
-unify [] := Some [] ;
+Lemma sub_decreases_degree
+  {Σ : StaticModel}
+  x t es
+  :
+  (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_variable x), t)::es))
+.
+Proof.
+  unfold deg.
+  induction es.
+  {
+    unfold eqns_vars.
+    unfold vars_of at 1; simpl.
+    unfold vars_of at 1; simpl.
+    rewrite union_empty_r_L.
+    rewrite size_union_alt.
+    apply left_lex.
+    unfold set_size. simpl. unfold elements,gset_elements,mapset.mapset_elements.
+    rewrite map_to_list_empty. simpl. rewrite map_to_list_singleton. simpl. ltac1:(lia).
+  }
+  {
+    simpl.
+    unfold eqns_vars. simpl.
+    inversion IHes; subst; clear IHes.
+    {
+      
+    }
+    {
+    
+    }
+  }
+
+Qed.
+
+Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
+  by wf (deg l) (lexprod nat nat lt lt) :=
+
+unify []
+  := Some [] ;
+  
 unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = y)) => {
 | left _ := unify es ;
 | right _ := None
@@ -284,10 +321,17 @@ unify ((t1,t2)::es) := if (decide (t1 = t2)) then unify es else None
 .
 Proof.
   {
-    simpl in *. ltac1:(lia).
+    unfold deg. simpl.
+    Check right_lex.
+    unfold eqns_vars. simpl.
+    do 4 (unfold vars_of at 3; simpl).
+    rewrite union_empty_l_L.
+    rewrite union_empty_l_L.
+    apply right_lex.
+    ltac1:(lia).
   }
   {
-    ltac1:(unfold t). simpl in *. Search TermOverBoV_subst TermOver_size. ltac1:(lia).
+    unfold deg. simpl.
   }
 Defined.
 
