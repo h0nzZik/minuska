@@ -320,8 +320,47 @@ Next Obligation.
 Defined.
 Fail Next Obligation.
 
-Print AUnif.problem.
-Check AUnif.mk_problem.
+
+
+Print ATerm.size.
+Print ATerm.term.
+Check Vector.to_list.
+Program Definition term_from_color
+    (Σ : StaticModel)
+    (ct : Term.WithArity.ATerm.term (ColorSignatureOf Σ))
+    : option (TermOver variable)
+:=
+  let sz := ATerm.size ct in
+  ( fix term_from_color' (sz : nat) (ct : ATerm.term (ColorSignatureOf Σ)) (pf : ATerm.size ct <= sz) : option (TermOver variable) :=
+    match sz with
+    | 0 => None
+    | S sz' => 
+      match ct with
+      | ATerm.Var n => s ← @decode variable _ _ (Pos.of_nat n); Some (t_over s)
+      | ATerm.Fun s v => 
+        let l := Vector.to_list v in
+        let term_from_color'_sz' := term_from_color' sz' in
+        let helper := (
+          fix helper
+            (lct : list (ATerm.term (ColorSignatureOf Σ)))
+            (pf : sum_list_with (@ATerm.size (ColorSignatureOf Σ)) lct <= sz)
+            : option (list (TermOver variable))
+          :=
+            match lct with
+            | [] => Some []
+            | x::xs =>
+              y ← term_from_color'_sz' x _;
+              ys ← helper xs _;
+              Some (y::ys)
+            end
+        ) in
+        ts ← helper l _;
+        Some (t_term (s.2) ts)
+      end
+    end
+  ) sz ct _
+.
+
 Definition color_unify
   (Sig : ASignature.Signature)
   (x y : ATerm.term Sig)
