@@ -1401,7 +1401,6 @@ Proof.
         {
             unfold cmmatch in H.
             destruct H as [j [pv [H1 H2]]].
-            Search lookup nil.
             inversion H1.
         }
         {

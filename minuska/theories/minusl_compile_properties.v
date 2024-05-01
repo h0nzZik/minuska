@@ -4891,7 +4891,6 @@ Proof.
                         }
                         clear H0.
                         rewrite H0'.
-                        (* Search drop lγ. *)
                         clear Hlγi H0' H33.
 
                         assert(HeqB1': sum_list (TermOver_size <$> take i l) + sum_list_with (λ ψ0 : TermOver BuiltinOrVar, sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ0)) (take i l) = sum_list (map TermOver_size (take i lγ))).
@@ -4899,7 +4898,6 @@ Proof.
                             ltac1:(lia).
                         }
                         clear HeqB1. clear H31.
-                        (* Search TermOver_size t0. *)
                         clear H61 H62'.
                         ltac1:(
                             replace
@@ -11480,7 +11478,6 @@ Proof.
                 { reflexivity. }
                 {
                     simpl.
-                    Search ctrl1.
                 }
                 *)
             }

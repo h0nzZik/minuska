@@ -4,9 +4,11 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
+    vscoq.url = "github:coq-community/vscoq";
+    vscoq.inputs.nixpkgs.follows = "nixpkgs";
    };
 
-  outputs = { self, nixpkgs, flake-utils }: (
+  outputs = { self, nixpkgs, flake-utils, vscoq }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
 
@@ -170,7 +172,11 @@
             in
               pkgs.mkShell {
                 inputsFrom = [minuska];
-                packages = [minuska.coqPackages.coq-lsp minuska.coqPackages.coqide minuska.coqPackages.vscoq-language-server];
+                packages = [
+                  minuska.coqPackages.coq-lsp 
+                  minuska.coqPackages.coqide 
+                  vscoq.packages.${system}.vscoq-language-server-coq-8-19
+                ];
               };
 
           # For using Minuska

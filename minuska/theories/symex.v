@@ -133,30 +133,36 @@ Instance Satisfies_listSymCfg_GroundTerm
 
 Definition SymexStep {Σ : StaticModel}
 :=
-    SymCfg -> list SymCfg
+    list SymCfg -> list SymCfg
 .
 
-Definition SymexStep_correct
+Definition refines {Σ : StaticModel} (g : TermOver builtin_value) (φ : list SymCfg)
+:= { ρ : Valuation2 & satisfies ρ g φ}.
+
+Definition SymexStep_sound
     {Σ : StaticModel}
     (Act : Set)
     (Γ : RewritingTheory2 Act)
     (step : SymexStep)
 :=
-    ∀ (φ : SymCfg) (g : TermOver builtin_value),
-        ( { ρ : Valuation2 & satisfies ρ g φ} ) ->
-        ∀ (g' : TermOver builtin_value),
-        ((
-            ({ ρ : Valuation2 & satisfies ρ g' (step φ)} )
-            ->
-            (rewriting_relation Γ g g')
-        )
-        *
-        (
-            (rewriting_relation Γ g g') ->
-            ({ ρ : Valuation2 & satisfies ρ g' (step φ)} )
-        ))%type
-
+    ∀ (φ : list SymCfg) (g g' : TermOver builtin_value),
+        refines g φ ->
+        refines  g' (step φ) ->
+        rewriting_relation Γ g g'
 .
+
+Definition SymexStep_complete
+    {Σ : StaticModel}
+    (Act : Set)
+    (Γ : RewritingTheory2 Act)
+    (step : SymexStep)
+:=
+    ∀ (φ : list SymCfg) (g g' : TermOver builtin_value),
+        rewriting_relation Γ g g' ->
+        refines g φ ->
+        refines  g' (step φ)
+.
+
 
 Program Definition ColorSignatureOf (Σ : StaticModel)
     : Term.WithArity.ASignature.Signature
@@ -217,7 +223,7 @@ Proof.
             exists 0. reflexivity.
         }
     }
- Qed.
+Defined.
 
 
 #[local]
@@ -313,5 +319,57 @@ Next Obligation.
     intros. ltac1:(unfold sz). reflexivity.
 Defined.
 Fail Next Obligation.
+
+Print AUnif.problem.
+Check AUnif.mk_problem.
+Definition color_unify
+  (Sig : ASignature.Signature)
+  (x y : ATerm.term Sig)
+  :
+  option (AUnif.solved_eqns Sig)
+.
+Proof.
+  remember (AUnif.mk_problem x y) as p.
+  remember (wf_iter_step_constructive p) as Hwf.
+  destruct Hwf as [k Hsolved]. clear HeqHwf.
+  unfold AUnif.solved in Hsolved.
+  destruct (AUnif.iter_step k p) eqn:Heqiskp; simpl in *.
+  {
+    destruct p0; simpl in *.
+    destruct e; simpl in *.
+    {
+      exact (Some s).
+    }
+    {
+      inversion Hsolved.
+    }
+  }
+  {
+    exact None.
+  }
+Defined.
+
+Print color_unify.
+Term.WithArity.AUnif.iter_step
+
+Check Term.WithArity.AUnif.iter_step.
+
+Print AUnif.problem.
+Print AUnif.eqn. (* a pair of terms *)
+Print AUnif.solved_eqn. (* a pair of a variable and a term *)
+
+Check AUnif.sub_eq_is_sol.
+Print AUnif.unifiable.
+
+Check AUnif.iter_step.
+Print AUnif.solved.
+Print AUnif.successfull.
+Check AUnif.iter_step_complete.
+Check AUnif.iter_step_most_general.
+Check ASubstitution.sub.
+Check AUnif.subst_of_solved_eqns.
+Check AUnif.is_sol_eqn.
+
+
 
 
