@@ -771,57 +771,6 @@ Proof.
 Qed.
 
 
-Lemma subst_notin
-    {Σ : StaticModel}
-    (h : variable)
-    (φ ψ : TermOver BuiltinOrVar)
-    :
-    h ∉ vars_of_to_l2r φ ->
-    TermOverBoV_subst φ h ψ = φ
-.
-Proof.
-    induction φ; simpl.
-    {
-        destruct a; simpl.
-        {
-            intros _. reflexivity.
-        }
-        {
-            destruct (decide (h = x)); simpl.
-            {
-                subst. intros HContra. ltac1:(exfalso). apply HContra.
-                constructor.
-            }
-            {
-                intros _. reflexivity.
-            }
-        }
-    }
-    {
-        intros H2.
-        f_equal.
-        induction l; simpl.
-        {
-            reflexivity.
-        }
-        {
-            apply Forall_cons in H.
-            destruct H as [HH1 HH2].
-            simpl in *.
-            specialize (IHl HH2).
-            rewrite elem_of_app in H2.
-            apply Decidable.not_or in H2.
-            destruct H2 as [H21 H22].
-            specialize (IHl H22). clear H22.
-            specialize (HH1 H21).
-            rewrite HH1.
-            rewrite IHl.
-            reflexivity.
-        }
-    }
-Qed.
-
-
 Lemma weird_lemma
     {T1 T2 : Type}
     l s:
@@ -11489,3 +11438,6 @@ Proof.
         }
     }
 Abort.
+
+About subst_notin.
+Search TermOverBoV_subst.
