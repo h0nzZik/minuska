@@ -238,7 +238,9 @@ Definition eqn_size {Σ : StaticModel} (e : eqn) : nat := TermOver_size (e.1) + 
 
 Definition eqns_size {Σ : StaticModel} (es : list eqn) := sum_list_with eqn_size es.
 
-Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list ((fun e => ((vars_of (e.1)) ∪ (vars_of (e.2))))<$> es)
+
+Definition eqn_vars {Σ : StaticModel} (e : eqn) := ((vars_of (e.1)) ∪ (vars_of (e.2))).
+Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list (eqn_vars <$> es)
 .
 
 
@@ -463,17 +465,82 @@ Proof.
     }
   }
 Qed.
-  
+
+Lemma deg_cons_lt {Σ : StaticModel} (e : eqn) (es : list eqn)
+  :
+  lexprod nat nat lt lt (deg es) (deg (e::es))
+.
+Proof.
+  unfold deg at 2; simpl.
+  destruct (decide (eqn_vars e ⊆ eqns_vars es)).
+  {
+    assert (Htmp: size (eqns_vars (e :: es)) = size (eqns_vars es)).
+    {
+      rewrite eqns_vars_cons.
+      apply f_equal.
+      unfold eqn_vars in s.
+      ltac1:(set_solver).
+    }
+    rewrite Htmp. clear Htmp.
+    apply right_lex.
+    destruct e; simpl.
+    destruct t,t0; simpl in *; ltac1:(lia).
+  }
+  {
+    apply left_lex.
+    rewrite eqns_vars_cons.
+    apply subset_size.
+    unfold eqn_vars in *; simpl in *.
+    destruct e. destruct t,t0; simpl in *; ltac1:(set_solver).
+  }
+Qed.
 
 Lemma sub_decreases_degree
   {Σ : StaticModel}
+  (V : gset variable)
   x t es
   :
+  x ∈ V ->
+  wft V t ->
+  wfeqns V es ->
   (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_variable x), t)::es))
 .
 Proof.
+
+  intros Hx Ht Hes.
+  
+  assert (HL1: (lexprod nat nat lt lt) (deg (sub t x es)) (deg (es))).
+  {
+    unfold deg; simpl.
+    apply right_lex.
+  }
+  
+  
+  ltac1:(cut((lexprod nat nat lt lt) (deg (sub t x es)) (deg (es)))).
+  {
+    intros HH.
+    unfold deg; simpl.
+    apply left_lex.
+    inversion HH; subst; clear HH.
+    {
+      eapply transitivity. apply H0. clear H0.
+      ltac1:(rewrite eqns_vars_cons). simpl.
+      apply subset_size.
+      unfold vars_of at 1; simpl.
+      unfold vars_of at 1; simpl..
+      ltac1:(set_solver).
+      unfold eqns_vars at 2. simpl.
+    }
+    {
+    
+    }
+    
+    simpl.
+  }
+
   unfold deg.
-  induction es.
+  
+  induction es; intros Hwf0 Hwf1 Hwf2.
   {
     unfold eqns_vars.
     unfold vars_of at 1; simpl.
@@ -486,6 +553,9 @@ Proof.
   }
   {
     simpl.
+    unfold wfeqns in Hwf2. rewrite Forall_cons in Hwf2.
+    destruct Hwf2 as [Hwf2 Hwf3].
+    specialize (IHes Hwf0 Hwf1 Hwf3). clear Hwf3.
     destruct (decide (x ∈ (vars_of a.1 ∪ vars_of a.2))) as [Hin|Hnotin].
     {
       admit.
