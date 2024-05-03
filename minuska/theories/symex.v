@@ -345,6 +345,70 @@ Proof.
   }
 Qed.
 
+Definition sub_lt {Σ : StaticModel} (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type) :=
+  ∃ s3, s1 = s2 ++ s3
+.
+
+Fixpoint occurs {Σ : StaticModel} (x : variable) (t : TermOver BuiltinOrVar) :=
+  match t with
+  | t_over (bov_variable y) => x = y
+  | t_over (bov_builtin _) => False
+  | t_term _ l => (fix go' (l' : list (TermOver BuiltinOrVar)) : Prop :=
+    match l' with
+    | [] => False
+    | t'::ts' => occurs x t' \/ go' ts'
+    end
+  ) l
+  end
+.
+
+#[local]
+Instance occurs_dec {Σ : StaticModel} (x : variable) (t : TermOver BuiltinOrVar)
+  : Decision (occurs x t)
+.
+Proof.
+  unfold Decision.
+  ltac1:(induction t using TermOver_rect).
+  {
+    destruct a.
+    {
+      simpl. right. ltac1:(tauto).
+    }
+    {
+      simpl. apply variable_eqdec.
+    }
+  }
+  {
+    revert X.
+    induction l; intros IHouter.
+    {
+      simpl. right. ltac1:(tauto).
+    }
+    {
+      simpl. assert (IH := IHouter a ltac:(set_solver)).
+      destruct IH as [IH|IH].
+      {
+        left. left. exact IH.
+      }
+      {
+        ltac1:(ospecialize (IHl _)).
+        {
+          intros x0 Hx0. apply IHouter.
+          right. exact Hx0.
+        }
+        destruct IHl as [IHl|IHl].
+        {
+          left. right. exact IHl.
+        }
+        {
+          right.
+          intros HContra. ltac1:(tauto).
+        }
+      }
+    }
+  }
+Defined.
+
 Lemma sub_decreases_degree
   {Σ : StaticModel}
   x t es
