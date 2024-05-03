@@ -409,6 +409,62 @@ Proof.
   }
 Defined.
 
+Lemma on_distinct_vars {Σ : StaticModel} (a1 a2 : variable) (V : gset variable):
+  a1 ∈ V ->
+  a1 <> a2 ->
+  a1 ∈ (V ∖ {[a2]})
+.
+Proof.
+  intros HH1 HH2.
+  ltac1:(set_solver).
+Qed.
+
+Lemma wft_minus {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar) (a : variable) :
+  wft V t ->
+  ~ occurs a t ->
+  wft (V ∖ {[a]}) t
+.
+Proof.
+  ltac1:(induction t using TermOver_rect); intros HH1 HH2.
+  {
+    simpl in HH2.
+    destruct a0; simpl in *.
+    {
+      unfold wft. unfold vars_of; simpl. unfold vars_of; simpl.
+      apply empty_subseteq.
+    }
+    {
+      unfold wft. unfold vars_of; simpl. unfold vars_of; simpl.
+      unfold wft in HH1. unfold vars_of in HH1; simpl in HH1. unfold vars_of in HH1; simpl in HH1.
+      ltac1:(rewrite singleton_subseteq_l in HH1).
+      ltac1:(rewrite singleton_subseteq_l).
+      ltac1:(set_solver).
+    }
+  }
+  {
+    simpl in *. unfold wft in HH1; simpl in HH1.
+    unfold wft; simpl.
+    unfold vars_of in HH1; simpl in HH1.
+    unfold vars_of; simpl.
+    revert HH1 HH2 H.
+    induction l; intros HH1 HH2 H.
+    {
+      simpl. apply empty_subseteq.
+    }
+    {
+      simpl. rewrite union_subseteq.
+      split.
+      {
+        ltac1:(set_solver).
+      }
+      {
+        ltac1:(set_solver).
+      }
+    }
+  }
+Qed.
+  
+
 Lemma sub_decreases_degree
   {Σ : StaticModel}
   x t es
