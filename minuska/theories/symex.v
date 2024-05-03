@@ -495,6 +495,8 @@ Proof.
   }
 Qed.
 
+
+
 Lemma sub_decreases_degree
   {Σ : StaticModel}
   (V : gset variable)
@@ -507,7 +509,13 @@ Lemma sub_decreases_degree
 .
 Proof.
 
+  (*
   intros Hx Ht Hes.
+  
+  eapply transitivity>[|eapply deg_cons_lt].
+  unfold deg.
+  induction es; simpl.
+  { apply reflexivity. 
   
   assert (HL1: (lexprod nat nat lt lt) (deg (sub t x es)) (deg (es))).
   {
@@ -538,11 +546,12 @@ Proof.
     simpl.
   }
 
+  *)
   unfold deg.
   
   induction es; intros Hwf0 Hwf1 Hwf2.
   {
-    unfold eqns_vars.
+    unfold eqns_vars. unfold eqn_vars.
     unfold vars_of at 1; simpl.
     unfold vars_of at 1; simpl.
     rewrite union_empty_r_L.
@@ -556,6 +565,35 @@ Proof.
     unfold wfeqns in Hwf2. rewrite Forall_cons in Hwf2.
     destruct Hwf2 as [Hwf2 Hwf3].
     specialize (IHes Hwf0 Hwf1 Hwf3). clear Hwf3.
+    
+    inversion IHes; subst; clear IHes.
+    {
+      ltac1:(rewrite eqns_vars_cons). simpl.
+      ltac1:(rewrite eqns_vars_cons). simpl.
+      ltac1:(rewrite eqns_vars_cons). simpl.    
+      ltac1:(rewrite eqns_vars_cons in H0). simpl in H0.
+      apply left_lex.
+      rewrite union_comm_L.
+      rewrite size_union_alt.
+      unfold TermOver in *.
+      ltac1:(replace (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ (vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars es))
+      with (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es ∪ (vars_of a.1 ∪ vars_of a.2))
+      by set_solver).
+      ltac1:(rewrite size_union_alt).
+      
+      ltac1:(
+        cut(size ((vars_of (TermOverBoV_subst a.1 x t) ∪ vars_of (TermOverBoV_subst a.2 x t)) ∖ eqns_vars (sub t x es)) <= size ((vars_of a.1 ∪ vars_of a.2) ∖ (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es)))
+      ).
+      {
+        intros HH. unfold TermOver in *. ltac1:(lia).
+      }
+      apply subseteq_size. clear H0.
+      Search TermOverBoV_subst.
+    }
+    {
+    
+    }
+    
     destruct (decide (x ∈ (vars_of a.1 ∪ vars_of a.2))) as [Hin|Hnotin].
     {
       admit.
