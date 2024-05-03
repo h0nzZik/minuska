@@ -11439,5 +11439,5 @@ Proof.
     }
 Abort.
 
-About subst_notin.
-Search TermOverBoV_subst.
+Search vars_of_to_l2r.
+About vars_of_uglify.

@@ -250,15 +250,100 @@ Definition deg {Σ : StaticModel} (es : list eqn) : (nat*nat)%type :=
 #[local]
 Obligation Tactic := idtac.
 
+Print TermOverBoV_subst.
 Definition sub
   {Σ : StaticModel}
   (t' : TermOver BuiltinOrVar)
   (x : variable)
   (es : list eqn)
-:= (fun e => (TermOverBoV_subst t' x e.1, TermOverBoV_subst t' x e.2)) <$> es
+:= (fun e => (TermOverBoV_subst e.1 x t', TermOverBoV_subst e.2 x t')) <$> es
 .
 
-Lemma subst_decreases_vars
+(*
+Lemma vars_of_TermOverBoV_subst
+  {Σ : StaticModel}
+  (t t' : TermOver BuiltinOrVar)
+  (x : variable)
+:
+  vars_of (TermOverBoV_subst t' x t) = if (decide (x ∈ vars_of t)) then 
+*)
+
+Lemma eqns_vars_cons
+  {Σ : StaticModel}
+  (e : eqn)
+  (es : list eqn)
+: eqns_vars (e::es) = vars_of e.1 ∪ vars_of e.2 ∪ eqns_vars es
+.
+Proof.
+  unfold eqns_vars. simpl.
+  reflexivity.
+Qed.
+
+Definition wft {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar)
+: Prop
+  := vars_of t ⊆ V
+.
+
+Definition wfeqn {Σ : StaticModel} (V : gset variable) (e : eqn)
+  : Prop
+:=
+  wft V (e.1) /\ wft V (e.2)
+.
+
+Definition wfeqns {Σ : StaticModel} (V : gset variable) (es : list eqn) : Prop :=
+  Forall (wfeqn V) es
+.
+
+Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : list (variable*(TermOver BuiltinOrVar))%type)
+: Prop
+:=
+  match s with
+  | [] => True
+  | (x,t)::s' =>
+    x ∈ V /\ wft (V ∖ {[x]}) t  /\ wfsub (V ∖ {[x]}) (s')
+  end
+.
+
+Fixpoint vars_of_sub {Σ : StaticModel} (s : list (variable * (TermOver BuiltinOrVar))%type) : gset variable
+:=
+  match s with
+  | [] => ∅
+  | (x,_)::s' => {[x]} ∪ vars_of_sub s'
+  end
+.
+
+Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type)
+:
+  wfsub V s1 ->
+  wfsub (V ∖ (vars_of_sub s1)) s2 ->
+  wfsub V (s1 ++ s2)
+.
+Proof.
+  revert V.
+  induction s1; intros V HH1 HH2; simpl in *.
+  {
+    rewrite difference_empty_L in HH2.
+    exact HH2.
+  }
+  {
+    destruct a; simpl in *.
+    destruct HH1 as [HH11 [HH12 HH13]].
+    split.
+    { exact HH11. }
+    split.
+    {
+      exact HH12.
+    }
+    {
+      apply IHs1.
+      { exact HH13. }
+      { 
+        ltac1:(replace (V ∖ {[v]} ∖ vars_of_sub s1) with (V ∖ ({[v]} ∪ vars_of_sub s1)) by set_solver).
+        exact HH2.
+      }
+    }
+  }
+Qed.
 
 Lemma sub_decreases_degree
   {Σ : StaticModel}
@@ -281,6 +366,70 @@ Proof.
   }
   {
     simpl.
+    destruct (decide (x ∈ (vars_of a.1 ∪ vars_of a.2))) as [Hin|Hnotin].
+    {
+      admit.
+    }
+    {
+      rewrite subst_notin2.
+      {
+        rewrite subst_notin2.
+        {
+          (*
+          apply left_lex.
+          ltac1:(repeat rewrite eqns_vars_cons).
+          simpl.
+          *)
+
+          inversion IHes; subst; clear IHes.
+          {
+            ltac1:(rewrite eqns_vars_cons in H0). simpl in H0.
+            (* We probably need the equations to be well-formed, whatever it means,
+               to prevent the substitution to grow the number of variables *)
+            ltac1:(replace ((vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars (sub t x es)) )
+              with ((eqns_vars (sub t x es) ∪ (vars_of a.1 ∪ vars_of a.2)) ) by set_solver).
+            rewrite size_union_alt.
+            
+            ltac1:(
+              assert (Htmp: (size (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ (vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars es))
+)
+              = (size ((vars_of (t_over (bov_variable x)) ∪ (vars_of t)  ∪ (eqns_vars es)) ∪ (vars_of a.1 ∪ vars_of a.2))))
+              by (f_equal; set_solver)
+            ).
+            ltac1:(rewrite Htmp). clear Htmp.
+            
+            ltac1:(rewrite size_union_alt).
+            ltac1:(
+              cut (size ((vars_of a.1 ∪ vars_of a.2) ∖ eqns_vars (sub t x es)) <= size ((vars_of a.1 ∪ vars_of a.2) ∖ (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es)))
+            ).
+            {
+              intros HHH.
+              clear Htmp.
+              unfold TermOver in *.
+              ltac1:(lia).
+            }
+            
+            ltac1:(lia).
+          }
+          {
+          
+          }
+                    apply subset_size.
+          Search size subseteq.
+          ltac1:(repeat (rewrite size_union_alt)).
+          unfold eqns_vars.
+          simpl.
+           admit.
+        }
+        {
+          ltac1:(set_solver).
+        }
+
+      }
+      {
+        ltac1:(set_solver).
+      }
+    }
     unfold eqns_vars. simpl.
     inversion IHes; subst; clear IHes.
     {
