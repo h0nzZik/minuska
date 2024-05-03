@@ -261,14 +261,113 @@ Definition sub
 := (fun e => (TermOverBoV_subst e.1 x t', TermOverBoV_subst e.2 x t')) <$> es
 .
 
-(*
+
 Lemma vars_of_TermOverBoV_subst
   {Σ : StaticModel}
   (t t' : TermOver BuiltinOrVar)
   (x : variable)
 :
-  vars_of (TermOverBoV_subst t' x t) = if (decide (x ∈ vars_of t)) then 
-*)
+  x ∈ vars_of t ->
+  vars_of (TermOverBoV_subst t x t') =
+  vars_of t' ∪ (vars_of t ∖ {[x]})
+.
+Proof.
+  induction t; intros HH1; simpl in *.
+  {
+    unfold vars_of in HH1; simpl in HH1.
+    unfold vars_of in HH1; simpl in HH1.
+    unfold vars_of_BoV in HH1; simpl in HH1.
+    destruct a; simpl in *.
+    {
+      rewrite elem_of_empty in HH1. inversion HH1.
+    }
+    {
+      rewrite elem_of_singleton in HH1.
+      subst x0.
+      destruct (decide (x = x))>[|ltac1:(contradiction)].
+      unfold vars_of at 3; simpl.
+      unfold vars_of at 3; simpl.
+      ltac1:(set_solver).
+    }
+  }
+  {
+    revert HH1 H.
+    unfold vars_of at 1; simpl.
+    induction l; intros HH1 HH2.
+    {
+      simpl. unfold vars_of; simpl. ltac1:(set_solver).
+    }
+    {
+      rewrite Forall_cons in HH2. destruct HH2 as [HH2 HH3].
+      simpl in HH1. rewrite elem_of_union in HH1.
+      destruct (decide (x ∈ vars_of a)) as [Hin|Hnotin].
+      {
+        specialize (HH2 Hin). simpl.
+        unfold vars_of at 1; simpl.
+        unfold vars_of at 1 in HH2; simpl in HH2.
+        rewrite HH2. clear HH2.
+        destruct (decide (x ∈ (⋃ (vars_of <$> l)))) as [Hin2 |Hnotin2].
+        {
+          specialize (IHl Hin2 HH3).
+          unfold vars_of at 1 in IHl; simpl in IHl.
+          unfold fmap in IHl.
+          unfold fmap.
+          rewrite IHl.
+          unfold vars_of at 6; simpl.
+          unfold vars_of at 4; simpl.
+          ltac1:(set_solver).
+        }
+        {
+          assert(Htmp: ((fun t'' => TermOverBoV_subst t'' x t')<$> l = l)).
+          {
+            clear -Hnotin2. revert Hnotin2.
+            induction l; simpl; intros Hnotin2.
+            { reflexivity. }
+            {
+              rewrite elem_of_union in Hnotin2.
+              apply Decidable.not_or in Hnotin2.
+              destruct Hnotin2 as [HH1 HH2].
+              specialize (IHl HH2).
+              unfold fmap in IHl.
+              rewrite IHl.
+              rewrite subst_notin2.
+              { reflexivity. }
+              { exact HH1. }
+            }
+          }
+          unfold fmap in Htmp.
+          ltac1:(replace (list_fmap) with (map)  in Htmp by reflexivity).
+          rewrite Htmp.
+          unfold vars_of at 5. simpl.
+          ltac1:(set_solver).
+        }
+      }
+      {
+        clear HH2.
+        destruct HH1 as [HH1|HH1].
+        {
+          ltac1:(exfalso; apply Hnotin; apply HH1).
+        }
+        {
+          specialize (IHl HH1 HH3).        
+          unfold vars_of at 1; simpl.
+          unfold vars_of at 1 in IHl; simpl in IHl.
+          rewrite subst_notin2.
+          {
+            unfold fmap in IHl; simpl in IHl.
+            unfold vars_of at 4; simpl.
+            unfold fmap.
+            rewrite IHl.
+            ltac1:(set_solver).  
+          }
+          {
+            exact Hnotin.
+          }
+        }
+      }
+    }
+  }
+Qed.
 
 Lemma eqns_vars_cons
   {Σ : StaticModel}
@@ -279,6 +378,16 @@ Lemma eqns_vars_cons
 Proof.
   unfold eqns_vars. simpl.
   reflexivity.
+Qed.
+
+Lemma eqns_vars_hd_comm
+  {Σ : StaticModel}
+  (e1 e2 : eqn)
+  (es : list eqn)
+: eqns_vars (e1::e2::es) = eqns_vars (e2::e1::es)
+.
+Proof.
+  unfold eqns_vars. simpl. ltac1:(set_solver).
 Qed.
 
 Definition wft {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar)
@@ -508,6 +617,34 @@ Lemma sub_decreases_degree
   (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_variable x), t)::es))
 .
 Proof.
+
+  intros Hx Ht Hes.
+  apply left_lex.
+  revert x t Hx Ht Hes.
+  induction es; intros x t Hx Ht Hes.
+  {
+    simpl. unfold set_size. simpl. unfold elements. unfold gset_elements.
+    unfold mapset.mapset_elements. rewrite map_to_list_empty. simpl.
+    ltac1:(rewrite eqns_vars_cons). simpl. unfold vars_of; simpl.
+    ltac1:(rewrite size_union_alt).
+    ltac1:(rewrite size_union_alt).
+    unfold vars_of; simpl.
+    unfold set_size; simpl.
+    unfold elements; simpl.
+    rewrite map_to_list_singleton. simpl.
+    ltac1:(lia).
+  }
+  {
+    simpl. ltac1:(rewrite eqns_vars_cons). 
+    ltac1:(rewrite eqns_vars_hd_comm).
+    ltac1:(rewrite eqns_vars_cons).
+    destruct (decide (x ∈ a.1)).
+    {
+      
+    }
+    Check vars_of_TermOverBoV_subst.
+  }
+  
 
   (*
   intros Hx Ht Hes.
