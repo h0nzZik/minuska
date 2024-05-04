@@ -850,7 +850,33 @@ Proof.
           {
             Search vars_of TermOverBoV_subst.
             Search eqns_vars sub.
-            admit.
+            rewrite eqns_vars_sub in Hno>[|assumption].
+            rewrite eqns_vars_sub in HContra>[|assumption].
+            destruct (decide (x ∈ vars_of a.1)), (decide (x ∈ vars_of a.2)).
+            {
+              ltac1:(rewrite vars_of_TermOverBoV_subst in HContra).
+              { assumption. }
+              ltac1:(rewrite vars_of_TermOverBoV_subst in HContra).
+              { assumption. }
+              ltac1:(set_solver).
+            }
+            {
+              ltac1:(rewrite vars_of_TermOverBoV_subst in HContra).
+              { assumption. }
+              rewrite subst_notin2 in HContra>[|assumption].
+              ltac1:(set_solver).
+            }
+            {
+              rewrite subst_notin2 in HContra>[|assumption].
+              ltac1:(rewrite vars_of_TermOverBoV_subst in HContra).
+              { assumption. }
+              ltac1:(set_solver).
+            }
+            {
+              rewrite subst_notin2 in HContra>[|assumption].
+              rewrite subst_notin2 in HContra>[|assumption].
+              ltac1:(set_solver).
+            }
           }
           {
             rewrite sub_notin in Hno>[|assumption].
@@ -888,292 +914,17 @@ Proof.
         }
       }
     }
-    ltac1:(cut (x ∉ eqns_vars (sub t x es))).
-    {
-      intros HH. ltac1:(set_solver).
-    }
-   
-    Print deg.
   }
-  {
-  }
-  apply left_lex.
-  apply subset_size.
-  rewrite strict_spec.
-  split.
-  {
-    admit.
-  }
-  {
-    ltac1:(rewrite eqns_vars_cons).
-    simpl.
-    intros HContra.
-    unfold vars_of at 1 in HContra; simpl in HContra.
-    unfold vars_of at 1 in HContra; simpl in HContra.
-    rewrite elem_of_subseteq in HContra.
-    ltac1:(cut(x ∉ eqns_vars (sub t x es))).
-    {
-      intros HH. ltac1:(set_solver).
-    }
-    clear.
-    induction es; simpl.
-    {
-      unfold eqns_vars. simpl. ltac1:(set_solver).
-    }
-    {
-      intros HContra. apply IHes. clear IHes.
-      ltac1:(rewrite eqns_vars_cons in HContra). simpl in HContra.
-      Search TermOverBoV_subst vars_of.
-    }
-  }
-  revert x t Hx Ht Hes.
-  induction es; intros x t Hx Ht Hes.
-  {
-    unfold eqns_vars. simpl. unfold eqn_vars. simpl. unfold vars_of; simpl.
-    unfold vars_of; simpl. ltac1:(set_solver).
-  }
-  {
-    simpl. ltac1:(rewrite eqns_vars_cons). 
-    ltac1:(rewrite eqns_vars_hd_comm).
-    ltac1:(rewrite eqns_vars_cons).
-    unfold wfeqns in Hes. rewrite Forall_cons in Hes.
-    destruct Hes as [Hes1 Hes2]. simpl.
-    destruct (decide (x ∈ vars_of a.1)).
-    {
-      destruct (decide (x ∈ vars_of a.2)).
-      {
-        ltac1:(rewrite vars_of_TermOverBoV_subst).
-        { assumption. }
-        ltac1:(rewrite vars_of_TermOverBoV_subst).
-        { assumption. }
-        specialize (IHes x t Hx Ht Hes2).
-        rewrite eqns_vars_cons.
-        ltac1:(rewrite eqns_vars_cons in IHes).
-        simpl in *.
-        Search strict.
-        rewrite strict_spec in IHes.
-        rewrite strict_spec.
-        destruct IHes as [IHes1 IHes2].
-        split.
-        {
-          ltac1:(set_solver).
-        }
-        intros HContra.
-        apply IHes2. clear IHes2.
-        unfold vars_of at 1; simpl.
-        unfold vars_of at 1; simpl.
-        unfold vars_of at 3 in HContra; simpl in HContra.
-        unfold vars_of at 3 in HContra; simpl in HContra.
-        unfold vars_of at 1 in IHes1; simpl in IHes1.
-        unfold vars_of at 1 in IHes1; simpl in IHes1.
-        Print sub.
-        destruct (decide (x ∈ vars_of t)).
-        {
-          
-        }
-        {
-          ltac1:(set_solver).
-        }
-        
-        ltac1:(set_solver).
-        Search "⊂".
-        ltac1:(
-          cut(vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]}) ⊂ vars_of a.1 ∪ vars_of a.2 ∪ (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es))
-        ).
-        {
-          intros HH. ltac1:(set_solver).
-        }
-        ltac1:(set_solver). 
-        ltac1:(replace ((vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]}) ∪ eqns_vars (sub t x es)) )
-        with (eqns_vars (sub t x es) ∪ ((vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]}))) )
-        by set_solver
-        ).
-        rewrite size_union_alt.
-        ltac1:(
-          replace ((vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars ((t_over (bov_variable x), t) :: es)))
-          with (eqns_vars ((t_over (bov_variable x), t) :: es) ∪(vars_of a.1 ∪ vars_of a.2))
-          by set_solver
-        ).
-        ltac1:(rewrite size_union_alt).
-        ltac1:(
-          cut (size ((vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]})) ∖ eqns_vars (sub t x es)) <= size ((vars_of a.1 ∪ vars_of a.2) ∖ eqns_vars ((t_over (bov_variable x), t) :: es)))
-        ).
-        {
-          intros HH. ltac1:(lia).
-        }
-        Search size "∖".
-        apply subseteq_size.
-        ltac1:(set_solver).
-        Search lt le "trans".
-        eapply Nat.lt_le_trans.
-      }
-      {
-      
-      }
-    }
-    Check vars_of_TermOverBoV_subst.
-  }
-  
-
-  (*
-  intros Hx Ht Hes.
-  
-  eapply transitivity>[|eapply deg_cons_lt].
-  unfold deg.
-  induction es; simpl.
-  { apply reflexivity. 
-  
-  assert (HL1: (lexprod nat nat lt lt) (deg (sub t x es)) (deg (es))).
   {
     unfold deg; simpl.
-    apply right_lex.
-  }
-  
-  
-  ltac1:(cut((lexprod nat nat lt lt) (deg (sub t x es)) (deg (es)))).
-  {
-    intros HH.
-    unfold deg; simpl.
-    apply left_lex.
-    inversion HH; subst; clear HH.
-    {
-      eapply transitivity. apply H0. clear H0.
-      ltac1:(rewrite eqns_vars_cons). simpl.
-      apply subset_size.
-      unfold vars_of at 1; simpl.
-      unfold vars_of at 1; simpl..
-      ltac1:(set_solver).
-      unfold eqns_vars at 2. simpl.
-    }
-    {
-    
-    }
-    
-    simpl.
-  }
-
-  *)
-  unfold deg.
-  
-  induction es; intros Hwf0 Hwf1 Hwf2.
-  {
-    unfold eqns_vars. unfold eqn_vars.
+    ltac1:(rewrite eqns_vars_cons). simpl.
+    rewrite sub_notin>[|assumption].
     unfold vars_of at 1; simpl.
     unfold vars_of at 1; simpl.
-    rewrite union_empty_r_L.
-    rewrite size_union_alt.
     apply left_lex.
-    unfold set_size. simpl. unfold elements,gset_elements,mapset.mapset_elements.
-    rewrite map_to_list_empty. simpl. rewrite map_to_list_singleton. simpl. ltac1:(lia).
+    apply subset_size.
+    ltac1:(set_solver).
   }
-  {
-    simpl.
-    unfold wfeqns in Hwf2. rewrite Forall_cons in Hwf2.
-    destruct Hwf2 as [Hwf2 Hwf3].
-    specialize (IHes Hwf0 Hwf1 Hwf3). clear Hwf3.
-    
-    inversion IHes; subst; clear IHes.
-    {
-      ltac1:(rewrite eqns_vars_cons). simpl.
-      ltac1:(rewrite eqns_vars_cons). simpl.
-      ltac1:(rewrite eqns_vars_cons). simpl.    
-      ltac1:(rewrite eqns_vars_cons in H0). simpl in H0.
-      apply left_lex.
-      rewrite union_comm_L.
-      rewrite size_union_alt.
-      unfold TermOver in *.
-      ltac1:(replace (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ (vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars es))
-      with (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es ∪ (vars_of a.1 ∪ vars_of a.2))
-      by set_solver).
-      ltac1:(rewrite size_union_alt).
-      
-      ltac1:(
-        cut(size ((vars_of (TermOverBoV_subst a.1 x t) ∪ vars_of (TermOverBoV_subst a.2 x t)) ∖ eqns_vars (sub t x es)) <= size ((vars_of a.1 ∪ vars_of a.2) ∖ (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es)))
-      ).
-      {
-        intros HH. unfold TermOver in *. ltac1:(lia).
-      }
-      apply subseteq_size. clear H0.
-      Search TermOverBoV_subst.
-    }
-    {
-    
-    }
-    
-    destruct (decide (x ∈ (vars_of a.1 ∪ vars_of a.2))) as [Hin|Hnotin].
-    {
-      admit.
-    }
-    {
-      rewrite subst_notin2.
-      {
-        rewrite subst_notin2.
-        {
-          (*
-          apply left_lex.
-          ltac1:(repeat rewrite eqns_vars_cons).
-          simpl.
-          *)
-
-          inversion IHes; subst; clear IHes.
-          {
-            ltac1:(rewrite eqns_vars_cons in H0). simpl in H0.
-            (* We probably need the equations to be well-formed, whatever it means,
-               to prevent the substitution to grow the number of variables *)
-            ltac1:(replace ((vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars (sub t x es)) )
-              with ((eqns_vars (sub t x es) ∪ (vars_of a.1 ∪ vars_of a.2)) ) by set_solver).
-            rewrite size_union_alt.
-            
-            ltac1:(
-              assert (Htmp: (size (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ (vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars es))
-)
-              = (size ((vars_of (t_over (bov_variable x)) ∪ (vars_of t)  ∪ (eqns_vars es)) ∪ (vars_of a.1 ∪ vars_of a.2))))
-              by (f_equal; set_solver)
-            ).
-            ltac1:(rewrite Htmp). clear Htmp.
-            
-            ltac1:(rewrite size_union_alt).
-            ltac1:(
-              cut (size ((vars_of a.1 ∪ vars_of a.2) ∖ eqns_vars (sub t x es)) <= size ((vars_of a.1 ∪ vars_of a.2) ∖ (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es)))
-            ).
-            {
-              intros HHH.
-              clear Htmp.
-              unfold TermOver in *.
-              ltac1:(lia).
-            }
-            
-            ltac1:(lia).
-          }
-          {
-          
-          }
-                    apply subset_size.
-          Search size subseteq.
-          ltac1:(repeat (rewrite size_union_alt)).
-          unfold eqns_vars.
-          simpl.
-           admit.
-        }
-        {
-          ltac1:(set_solver).
-        }
-
-      }
-      {
-        ltac1:(set_solver).
-      }
-    }
-    unfold eqns_vars. simpl.
-    inversion IHes; subst; clear IHes.
-    {
-      
-    }
-    {
-    
-    }
-  }
-
 Qed.
 
 Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
