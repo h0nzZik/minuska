@@ -252,7 +252,7 @@ Definition deg {Σ : StaticModel} (es : list eqn) : (nat*nat)%type :=
 #[local]
 Obligation Tactic := idtac.
 
-Print TermOverBoV_subst.
+
 Definition sub
   {Σ : StaticModel}
   (t' : TermOver BuiltinOrVar)
@@ -405,7 +405,9 @@ Definition wfeqns {Σ : StaticModel} (V : gset variable) (es : list eqn) : Prop 
   Forall (wfeqn V) es
 .
 
-Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : list (variable*(TermOver BuiltinOrVar))%type)
+Definition SubT {Σ : StaticModel} : Type := list (variable*(TermOver BuiltinOrVar))%type.
+
+Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : SubT)
 : Prop
 :=
   match s with
@@ -415,7 +417,7 @@ Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : list (variable*(TermO
   end
 .
 
-Fixpoint vars_of_sub {Σ : StaticModel} (s : list (variable * (TermOver BuiltinOrVar))%type) : gset variable
+Fixpoint vars_of_sub {Σ : StaticModel} (s : SubT) : gset variable
 :=
   match s with
   | [] => ∅
@@ -423,7 +425,7 @@ Fixpoint vars_of_sub {Σ : StaticModel} (s : list (variable * (TermOver BuiltinO
   end
 .
 
-Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type)
+Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : SubT)
 :
   wfsub V s1 ->
   wfsub (V ∖ (vars_of_sub s1)) s2 ->
@@ -456,7 +458,7 @@ Proof.
   }
 Qed.
 
-Definition sub_lt {Σ : StaticModel} (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type) :=
+Definition sub_lt {Σ : StaticModel} (s1 s2 : SubT) :=
   ∃ s3, s1 = s2 ++ s3
 .
 
@@ -844,8 +846,6 @@ Proof.
           clear IHes.
           destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
           {
-            Search vars_of TermOverBoV_subst.
-            Search eqns_vars sub.
             rewrite eqns_vars_sub in Hno>[|assumption].
             rewrite eqns_vars_sub in HContra>[|assumption].
             destruct (decide (x ∈ vars_of a.1)), (decide (x ∈ vars_of a.2)).
@@ -932,7 +932,6 @@ Lemma eqns_vars_app
 Proof.
   unfold eqns_vars.
   rewrite fmap_app.
-  Search app "⋃".
   ltac1:(rewrite union_list_app_L).
   reflexivity.
 Qed.
@@ -1115,5 +1114,23 @@ Proof.
   }
 Defined.
 
+Check unify.
+Print TermOverBoV_subst.
+Fixpoint sub_app {Σ : StaticModel} (s : SubT) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
+match s with
+| [] => t
+| (x,t')::s' => sub_app s' (TermOverBoV_subst t x t')
+.
 
+
+Fixpoint is_unifier_of
+  {Σ : StaticModel}
+  (s : SubT)
+  (es : list eqn)
+:=
+  match es with
+  | [] => True
+  | (t1,t2)::es' =>  
+  end
+.
 
