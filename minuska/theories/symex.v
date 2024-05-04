@@ -604,7 +604,31 @@ Proof.
   }
 Qed.
 
-
+Lemma sub_notin
+  {Σ : StaticModel}
+  t x es:
+  x ∉ eqns_vars es ->
+  (sub t x es) = es
+.
+Proof.
+  induction es; simpl; intros Hnotin.
+  { reflexivity. }
+  {
+    rewrite eqns_vars_cons in Hnotin.
+    rewrite elem_of_union in Hnotin.
+    apply Decidable.not_or in Hnotin.
+    rewrite elem_of_union in Hnotin.
+    destruct Hnotin as [Hnotin HH3].
+    apply Decidable.not_or in Hnotin.
+    destruct Hnotin as [HH1 HH2].
+    rewrite subst_notin2>[|assumption].
+    rewrite subst_notin2>[|assumption].
+    destruct a; simpl.
+    rewrite (IHes HH3).
+    reflexivity.
+  }
+Qed.
+ 
 
 Lemma sub_decreases_degree
   {Σ : StaticModel}
@@ -614,33 +638,223 @@ Lemma sub_decreases_degree
   x ∈ V ->
   wft V t ->
   wfeqns V es ->
+  x ∉ vars_of t ->
   (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_variable x), t)::es))
 .
 Proof.
 
-  intros Hx Ht Hes.
+  intros Hx Ht Hes Hxt.
+  destruct (decide (x ∈ eqns_vars es)) as [Hxes | Hxes].
+  {
+    apply left_lex.
+    apply subset_size.
+    ltac1:(rewrite eqns_vars_cons).
+    simpl.
+    unfold vars_of at 1; simpl.
+    unfold vars_of at 1; simpl.
+    rewrite strict_spec.
+    split.
+    {
+      ltac1:(cut (eqns_vars (sub t x es) ⊆ vars_of t ∪ eqns_vars es)).
+      {
+        intros HH. ltac1:(set_solver).
+      }
+      clear.
+      induction es; simpl.
+      {
+        unfold eqns_vars; simpl. ltac1:(set_solver).
+      }
+      {
+        rewrite eqns_vars_cons. simpl.
+        ltac1:(rewrite eqns_vars_cons). simpl.
+        destruct (decide (x ∈ vars_of a.1)).
+        {
+          ltac1:(rewrite vars_of_TermOverBoV_subst).
+          { assumption. }
+          destruct (decide (x ∈ vars_of a.2)).
+          {
+            ltac1:(rewrite vars_of_TermOverBoV_subst).
+            { assumption. }
+            ltac1:(set_solver).
+          }
+          {
+            rewrite subst_notin2.
+            ltac1:(set_solver).
+            { assumption. }
+          }
+        }
+        {
+          rewrite subst_notin2.
+          {
+            destruct (decide (x ∈ vars_of a.2)).
+            {
+              ltac1:(rewrite vars_of_TermOverBoV_subst).
+              { assumption. }
+              ltac1:(set_solver).
+            }
+            {
+              rewrite subst_notin2.
+              { ltac1:(set_solver). }
+              { assumption. }
+            }
+          }
+          {
+            assumption.
+          }
+        }
+      }
+    }
+    {
+      clear Hx Ht Hes.
+      intros HContra. apply Hxt. clear Hxt.
+      revert HContra Hxes.
+      induction es; simpl; intros HContra Hxes.
+      {
+        unfold eqns_vars in Hxes. simpl in Hxes. ltac1:(set_solver).
+      }
+      {
+        
+        rewrite eqns_vars_cons in Hxes.
+        rewrite eqns_vars_cons in HContra.
+        ltac1:(rewrite eqns_vars_cons in HContra). simpl in *.
+        destruct (decide ({[x]} ∪ vars_of t ∪ eqns_vars es ⊆ eqns_vars (sub t x es) )) as [Hyes|Hno].
+        {
+          specialize (IHes Hyes).
+          destruct (decide (x ∈ eqns_vars es)).
+          {
+            auto with nocore.
+          }
+          {
+            clear IHes.
+          }
+        }
+        {
+        
+        }
+      }
+    }
+    ltac1:(cut (x ∉ eqns_vars (sub t x es))).
+    {
+      intros HH. ltac1:(set_solver).
+    }
+   
+    Print deg.
+  }
+  {
+  }
   apply left_lex.
+  apply subset_size.
+  rewrite strict_spec.
+  split.
+  {
+    admit.
+  }
+  {
+    ltac1:(rewrite eqns_vars_cons).
+    simpl.
+    intros HContra.
+    unfold vars_of at 1 in HContra; simpl in HContra.
+    unfold vars_of at 1 in HContra; simpl in HContra.
+    rewrite elem_of_subseteq in HContra.
+    ltac1:(cut(x ∉ eqns_vars (sub t x es))).
+    {
+      intros HH. ltac1:(set_solver).
+    }
+    clear.
+    induction es; simpl.
+    {
+      unfold eqns_vars. simpl. ltac1:(set_solver).
+    }
+    {
+      intros HContra. apply IHes. clear IHes.
+      ltac1:(rewrite eqns_vars_cons in HContra). simpl in HContra.
+      Search TermOverBoV_subst vars_of.
+    }
+  }
   revert x t Hx Ht Hes.
   induction es; intros x t Hx Ht Hes.
   {
-    simpl. unfold set_size. simpl. unfold elements. unfold gset_elements.
-    unfold mapset.mapset_elements. rewrite map_to_list_empty. simpl.
-    ltac1:(rewrite eqns_vars_cons). simpl. unfold vars_of; simpl.
-    ltac1:(rewrite size_union_alt).
-    ltac1:(rewrite size_union_alt).
-    unfold vars_of; simpl.
-    unfold set_size; simpl.
-    unfold elements; simpl.
-    rewrite map_to_list_singleton. simpl.
-    ltac1:(lia).
+    unfold eqns_vars. simpl. unfold eqn_vars. simpl. unfold vars_of; simpl.
+    unfold vars_of; simpl. ltac1:(set_solver).
   }
   {
     simpl. ltac1:(rewrite eqns_vars_cons). 
     ltac1:(rewrite eqns_vars_hd_comm).
     ltac1:(rewrite eqns_vars_cons).
-    destruct (decide (x ∈ a.1)).
+    unfold wfeqns in Hes. rewrite Forall_cons in Hes.
+    destruct Hes as [Hes1 Hes2]. simpl.
+    destruct (decide (x ∈ vars_of a.1)).
     {
+      destruct (decide (x ∈ vars_of a.2)).
+      {
+        ltac1:(rewrite vars_of_TermOverBoV_subst).
+        { assumption. }
+        ltac1:(rewrite vars_of_TermOverBoV_subst).
+        { assumption. }
+        specialize (IHes x t Hx Ht Hes2).
+        rewrite eqns_vars_cons.
+        ltac1:(rewrite eqns_vars_cons in IHes).
+        simpl in *.
+        Search strict.
+        rewrite strict_spec in IHes.
+        rewrite strict_spec.
+        destruct IHes as [IHes1 IHes2].
+        split.
+        {
+          ltac1:(set_solver).
+        }
+        intros HContra.
+        apply IHes2. clear IHes2.
+        unfold vars_of at 1; simpl.
+        unfold vars_of at 1; simpl.
+        unfold vars_of at 3 in HContra; simpl in HContra.
+        unfold vars_of at 3 in HContra; simpl in HContra.
+        unfold vars_of at 1 in IHes1; simpl in IHes1.
+        unfold vars_of at 1 in IHes1; simpl in IHes1.
+        Print sub.
+        destruct (decide (x ∈ vars_of t)).
+        {
+          
+        }
+        {
+          ltac1:(set_solver).
+        }
+        
+        ltac1:(set_solver).
+        Search "⊂".
+        ltac1:(
+          cut(vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]}) ⊂ vars_of a.1 ∪ vars_of a.2 ∪ (vars_of (t_over (bov_variable x)) ∪ vars_of t ∪ eqns_vars es))
+        ).
+        {
+          intros HH. ltac1:(set_solver).
+        }
+        ltac1:(set_solver). 
+        ltac1:(replace ((vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]}) ∪ eqns_vars (sub t x es)) )
+        with (eqns_vars (sub t x es) ∪ ((vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]}))) )
+        by set_solver
+        ).
+        rewrite size_union_alt.
+        ltac1:(
+          replace ((vars_of a.1 ∪ vars_of a.2 ∪ eqns_vars ((t_over (bov_variable x), t) :: es)))
+          with (eqns_vars ((t_over (bov_variable x), t) :: es) ∪(vars_of a.1 ∪ vars_of a.2))
+          by set_solver
+        ).
+        ltac1:(rewrite size_union_alt).
+        ltac1:(
+          cut (size ((vars_of t ∪ vars_of a.1 ∖ {[x]} ∪ (vars_of t ∪ vars_of a.2 ∖ {[x]})) ∖ eqns_vars (sub t x es)) <= size ((vars_of a.1 ∪ vars_of a.2) ∖ eqns_vars ((t_over (bov_variable x), t) :: es)))
+        ).
+        {
+          intros HH. ltac1:(lia).
+        }
+        Search size "∖".
+        apply subseteq_size.
+        ltac1:(set_solver).
+        Search lt le "trans".
+        eapply Nat.lt_le_trans.
+      }
+      {
       
+      }
     }
     Check vars_of_TermOverBoV_subst.
   }
