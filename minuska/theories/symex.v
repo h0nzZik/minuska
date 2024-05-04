@@ -924,6 +924,89 @@ Proof.
   }
 Qed.
 
+Lemma eqns_vars_app
+  {Σ : StaticModel}
+  (es1 es2 : list eqn)
+  :
+  eqns_vars (es1 ++ es2) = eqns_vars es1 ∪ eqns_vars es2
+.
+Proof.
+  unfold eqns_vars.
+  rewrite fmap_app.
+  Search app "⋃".
+  ltac1:(rewrite union_list_app_L).
+  reflexivity.
+Qed.
+
+Lemma eqns_vars_zip
+  {Σ : StaticModel}
+  (l1 l2 : list (TermOver BuiltinOrVar))
+:
+  length l1 = length l2 ->
+  eqns_vars (zip l1 l2) = union_list (vars_of <$> l1) ∪ union_list (vars_of <$> l2)
+.
+Proof.
+  revert l2.
+  induction l1; intros l2 Hlen; destruct l2; simpl.
+  {
+    unfold eqns_vars. simpl. ltac1:(set_solver).
+  }
+  {
+    simpl in *. ltac1:(lia).
+  }
+  {
+    simpl in *. ltac1:(lia).
+  }
+  {
+    simpl in Hlen.
+    specialize (IHl1 l2 ltac:(lia)).
+    ltac1:(rewrite eqns_vars_cons). simpl.
+    rewrite IHl1.
+    ltac1:(set_solver).
+  }
+Qed.
+
+Lemma fewer_arrows_lower_degree
+  {Σ : StaticModel}
+  (s : symbol)
+  (l1 l2 : list (TermOver BuiltinOrVar))
+  (es : list eqn)
+:
+  length l1 = length l2 ->
+  (lexprod nat nat lt lt) (deg ((zip l1 l2)++es)) (deg ((t_term s l1, t_term s l2)::es))
+.
+Proof.
+  intros Hlens.
+  unfold deg.
+  ltac1:(rewrite eqns_vars_app).
+  ltac1:(rewrite eqns_vars_cons).
+  simpl.
+  unfold eqns_size.
+  rewrite sum_list_with_app.
+  rewrite eqns_vars_zip>[|assumption]. simpl.
+  repeat (unfold vars_of; simpl).
+  apply right_lex.
+  unfold eqn_size. simpl.
+  ltac1:(cut(sum_list_with (λ e : eqn, TermOver_size e.1 + TermOver_size e.2) (zip l1 l2) = sum_list_with TermOver_size l1 + sum_list_with TermOver_size l2)).
+  {
+    intros HH. rewrite HH.
+    rewrite sum_list_with_compose.
+    unfold compose.
+    repeat (rewrite sum_list_with_S).
+    repeat (rewrite fmap_length).
+    repeat (rewrite sum_list_fmap).
+    ltac1:(lia).
+  }
+  revert l2 Hlens.
+  induction l1; intros l2 Hlens; destruct l2; simpl in *.
+  { reflexivity. }
+  { ltac1:(lia). }
+  { ltac1:(lia). }
+  specialize (IHl1 l2 ltac:(lia)).
+  rewrite IHl1.
+  ltac1:(lia).
+Qed.
+
 Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
   by wf (deg l) (lexprod nat nat lt lt) :=
 

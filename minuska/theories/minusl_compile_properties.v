@@ -4084,70 +4084,6 @@ Proof.
     }
 Qed.
 
-Lemma sum_list_with_compose {A B : Type} (g : A -> B) (f : B -> nat)
-    :
-    sum_list_with (f ∘ g) = (sum_list_with f) ∘ (fmap g)
-.
-Proof.
-    apply functional_extensionality.
-    intros l.
-    induction l; simpl.
-    {
-        reflexivity.
-    }
-    {
-        rewrite IHl. unfold compose. reflexivity.
-    }
-Qed.
-
-Lemma sum_list_with_S (l : list nat):
-    sum_list_with S l = sum_list l + length l
-.
-Proof.
-    induction l; simpl.
-    {
-        reflexivity.
-    }
-    {
-        rewrite IHl.
-        ltac1:(lia).
-    }
-Qed.
-
-Lemma sum_list_fmap
-    {T: Type}
-    (f : T -> nat)
-    (l : list T)
-    :
-    sum_list ( f <$> l) = sum_list_with f l
-.
-Proof.
-    induction l; simpl.
-    { reflexivity. }
-    {
-        unfold fmap in IHl.
-        rewrite IHl.
-        reflexivity.
-    }
-Qed.
-
-Lemma sum_list_with_sum_list_with
-    {T: Type}
-    (f : T -> nat)
-    (l : list (list T))
-    :
-    sum_list_with (sum_list_with f) l = sum_list_with f (concat l)
-.
-Proof.
-    induction l; simpl.
-    { reflexivity. }
-    {
-        rewrite IHl.
-        rewrite sum_list_with_app.
-        reflexivity.
-    }
-Qed.
-
 (*
 Lemma subst_preserves_or_increases_delta
     {Σ : StaticModel}
@@ -11441,3 +11377,6 @@ Abort.
 
 Search vars_of_to_l2r.
 About vars_of_uglify.
+
+
+Search sum_list_with compose.
