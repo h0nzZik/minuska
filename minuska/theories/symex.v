@@ -629,6 +629,120 @@ Proof.
   }
 Qed.
  
+Lemma eqns_vars_sub {Σ : StaticModel} (t : TermOver BuiltinOrVar) (x : variable)
+    (es : list eqn):
+    x ∈ eqns_vars es ->
+    eqns_vars (sub t x es) = vars_of t ∪ (eqns_vars es ∖ {[x]})
+.
+Proof.
+  induction es; intros HH1; simpl in *.
+  {
+    unfold eqns_vars in HH1. simpl in HH1. ltac1:(set_solver).
+  }
+  {
+    rewrite eqns_vars_cons in HH1.
+    rewrite elem_of_union in HH1.
+    destruct HH1 as [HH|HH].
+    {
+      rewrite elem_of_union in HH.
+      destruct HH as [HH|HH].
+      {
+        rewrite eqns_vars_cons. simpl.
+        ltac1:(rewrite eqns_vars_cons; simpl).
+        ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+        destruct (decide (x ∈ vars_of a.2)).
+        {
+          ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+          destruct (decide (x ∈ eqns_vars es)).
+          {
+            specialize(IHes ltac:(assumption)).
+            rewrite IHes.
+            ltac1:(set_solver).
+          }
+          {
+            rewrite sub_notin>[|assumption].
+            ltac1:(set_solver).
+          }
+        }
+        {
+          rewrite subst_notin2>[|assumption].
+          destruct (decide (x ∈ eqns_vars es)).
+          {
+            specialize(IHes ltac:(assumption)).
+            rewrite IHes.
+            ltac1:(set_solver).
+          }
+          {
+            rewrite sub_notin>[|assumption].
+            ltac1:(set_solver).
+          }
+        }
+      }
+      {
+        ltac1:(repeat rewrite eqns_vars_cons). simpl.
+        unfold TermOver in *.
+        destruct (decide (x ∈ vars_of a.1)).
+        {
+          ltac1:(rewrite -> vars_of_TermOverBoV_subst)>[|assumption].
+          ltac1:(rewrite -> vars_of_TermOverBoV_subst)>[|assumption].
+          destruct (decide (x ∈ eqns_vars es)).
+          {
+            specialize(IHes ltac:(assumption)).
+            rewrite IHes.
+            ltac1:(set_solver).
+          }
+          {
+            rewrite sub_notin>[|assumption].
+            ltac1:(set_solver).
+          }
+        }
+        {
+          rewrite subst_notin2>[|assumption].
+          ltac1:(rewrite -> vars_of_TermOverBoV_subst)>[|assumption].
+          destruct (decide (x ∈ eqns_vars es)).
+          {
+            specialize(IHes ltac:(assumption)).
+            rewrite IHes.
+            ltac1:(set_solver).
+          }
+          {
+            rewrite sub_notin>[|assumption].
+            ltac1:(set_solver).
+          }
+        }
+      }
+    }
+    {
+      specialize (IHes HH).
+      rewrite eqns_vars_cons.
+      ltac1:(rewrite eqns_vars_cons).
+      simpl.
+      rewrite IHes. clear IHes.
+      destruct (decide (x ∈ vars_of a.1)), (decide (x ∈ vars_of a.2)).
+      {
+        ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+        ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+        ltac1:(set_solver).
+      }
+      {
+        ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+        ltac1:(rewrite subst_notin2)>[assumption|].
+        ltac1:(set_solver).
+      }
+      {
+        ltac1:(rewrite subst_notin2)>[assumption|].
+        ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+        ltac1:(set_solver).
+      }
+      {
+        ltac1:(rewrite subst_notin2)>[assumption|].
+        ltac1:(rewrite subst_notin2)>[assumption|].
+        ltac1:(set_solver).
+      }
+    }
+  }
+Qed.
+ 
 
 Lemma sub_decreases_degree
   {Σ : StaticModel}
@@ -726,10 +840,51 @@ Proof.
           }
           {
             clear IHes.
+            rewrite sub_notin in Hyes>[|assumption].
+            ltac1:(set_solver).
           }
         }
         {
-        
+          clear IHes.
+          destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
+          {
+            Search vars_of TermOverBoV_subst.
+            Search eqns_vars sub.
+            admit.
+          }
+          {
+            rewrite sub_notin in Hno>[|assumption].
+            destruct (decide (x ∈ vars_of a.1)).
+            {
+              ltac1:(rewrite vars_of_TermOverBoV_subst in HContra).
+              { assumption. }
+              destruct (decide (x ∈ vars_of a.2)).
+              {
+                ltac1:(rewrite vars_of_TermOverBoV_subst in HContra).
+                { assumption. }
+                rewrite sub_notin in HContra>[|assumption].
+                ltac1:(set_solver).
+              }
+              {
+                rewrite sub_notin in HContra>[|assumption].
+                rewrite subst_notin2 in HContra>[|assumption].
+                ltac1:(set_solver).
+              }
+            }
+            {
+              ltac1:(rewrite subst_notin2 in HContra).
+              { assumption. }
+              destruct (decide (x ∈ vars_of a.2)).
+              {
+                ltac1:(rewrite vars_of_TermOverBoV_subst in HContra)>[assumption|].
+                rewrite sub_notin in HContra>[|assumption].
+                ltac1:(set_solver).
+              }
+              {
+                ltac1:(set_solver).
+              }
+            }
+          }
         }
       }
     }
