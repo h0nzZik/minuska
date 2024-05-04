@@ -749,15 +749,12 @@ Lemma sub_decreases_degree
   (V : gset variable)
   x t es
   :
-  x ∈ V ->
-  wft V t ->
-  wfeqns V es ->
   x ∉ vars_of t ->
   (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_variable x), t)::es))
 .
 Proof.
 
-  intros Hx Ht Hes Hxt.
+  intros Hxt.
   destruct (decide (x ∈ eqns_vars es)) as [Hxes | Hxes].
   {
     apply left_lex.
