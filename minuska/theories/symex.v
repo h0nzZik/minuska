@@ -1112,14 +1112,13 @@ Proof.
     apply fewer_arrows_lower_degree.
     assumption.
   }
-Defined.
+Qed.
 
-Check unify.
-Print TermOverBoV_subst.
 Fixpoint sub_app {Σ : StaticModel} (s : SubT) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
 match s with
 | [] => t
 | (x,t')::s' => sub_app s' (TermOverBoV_subst t x t')
+end
 .
 
 
@@ -1130,7 +1129,295 @@ Fixpoint is_unifier_of
 :=
   match es with
   | [] => True
-  | (t1,t2)::es' =>  
+  | (t1,t2)::es' => (sub_app s t1 = sub_app s t2) /\ is_unifier_of s es'
   end
 .
 
+Definition least_of
+  {Σ : StaticModel}
+  (s : SubT)
+  (es : list eqn)
+:=
+  ∀ s', is_unifier_of s' es ->
+  ∃ s1, ∀ x, sub_app s' (t_over (bov_variable x)) = sub_app (s ++ s1) (t_over (bov_variable x))
+.
+
+Lemma subst_id
+  {Σ : StaticModel}
+  a x:
+  TermOverBoV_subst a x (t_over (bov_variable x)) = a
+.
+Proof.
+  induction a; simpl.
+  {
+    ltac1:(repeat case_match); subst; reflexivity.
+  }
+  {
+    f_equal.
+    revert H.
+    induction l; intros HH.
+    {
+      simpl. reflexivity.
+    }
+    {
+      rewrite Forall_cons in HH. destruct HH as [HH1 HH2].
+      specialize (IHl HH2). clear HH2.
+      simpl. rewrite IHl. rewrite HH1. reflexivity.
+    }
+  }
+Qed.
+
+Lemma sub_app_term
+  {Σ : StaticModel}
+  (ss : SubT)
+  (sym : symbol)
+  (l : list (TermOver BuiltinOrVar))
+:
+  sub_app ss (t_term sym l) = t_term sym ((sub_app ss) <$> l)
+.
+Proof.
+  revert l sym.
+  induction ss; intros l sym; simpl.
+  { f_equal. induction l; simpl; try reflexivity. unfold fmap in IHl. rewrite <- IHl. reflexivity. }
+  {
+    destruct a; simpl.
+    rewrite IHss.
+    f_equal.
+    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+    rewrite <- list_fmap_compose. reflexivity.
+  }
+Qed.
+
+(* This does not work as x can occur in t' *)
+(*
+Lemma subst_twice
+  {Σ : StaticModel}
+  (x : variable)
+  (t t' t'' : TermOver BuiltinOrVar)
+:
+  TermOverBoV_subst (TermOverBoV_subst t x t') x t'' = TermOverBoV_subst t x t'
+.
+Proof.
+  destruct (decide (x ∈ vars_of t)).
+  {
+    rewrite subst_notin2 with (ψ := t'').
+    { reflexivity. }
+    Search vars_of TermOverBoV_subst.
+    ltac1:(rewrite vars_of_TermOverBoV_subst).
+    assumption.
+    ltac1:(set_solver).
+Qed.
+*)
+
+(* This does not hold either *) (*
+Lemma subst_comm
+  {Σ : StaticModel}
+  (x y : variable)
+  (t t' t'' : TermOver BuiltinOrVar)
+:
+  x <> y ->
+  TermOverBoV_subst (TermOverBoV_subst t x t') y t''
+  =
+  TermOverBoV_subst (TermOverBoV_subst t y t'') x t'
+.
+Proof.
+  induction t; intros Hne; simpl in *.
+  {
+    ltac1:(repeat (case_match; subst; simpl in *; try congruence)).
+  }
+Qed.
+*)
+
+Lemma helper_lemma_1
+  {Σ : StaticModel}
+  (s : SubT)
+  (x : variable)
+  (t t' : TermOver BuiltinOrVar)
+:
+  sub_app s (t_over (bov_variable x)) = sub_app s t' ->
+  sub_app s t = sub_app s  (TermOverBoV_subst t x t')
+.
+Proof.
+  revert t t' x.
+  induction s; simpl; intros t t' x HH1.
+  {
+    subst. rewrite subst_id. reflexivity.
+  }
+  {
+    destruct a; simpl in *.
+    repeat (ltac1:(case_match; simpl in *; idtac)).
+    {
+      subst. simpl in *.
+      erewrite IHs with (x := x)>[|reflexivity].
+      rewrite subst_id.
+      clear H.
+      induction t; simpl.
+      {
+        ltac1:(repeat (case_match; subst; simpl in *; auto)).
+        inversion H.
+      }
+      {
+        rewrite sub_app_term.
+        ltac1:(rewrite sub_app_term).
+        f_equal.
+        ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+        revert H.
+        induction l; intros Hmy; simpl in *.
+        { reflexivity. }
+        {
+          rewrite Forall_cons in Hmy.
+          destruct Hmy as [HH2 HH3].
+          rewrite HH2. clear HH2.
+          specialize (IHl HH3). clear HH3.
+          unfold fmap in IHl. rewrite IHl.
+          reflexivity.
+        }
+      }
+    }
+    {
+      ltac1:(cut((TermOverBoV_subst (TermOverBoV_subst t x t') v t0) = TermOverBoV_subst (TermOverBoV_subst t v t0) x t')).
+      {
+        intros HHX.
+        rewrite HHX.
+        specialize (IHs (TermOverBoV_subst (TermOverBoV_subst t v t0) x t') _ _ HH1).
+        Search TermOverBoV_subst.
+        rewrite notin_subst2 in IHs.
+        apply IHs.
+      }
+      erewrite <- IHs.
+      erewrite IHs with (x := v)>[|reflexivity].
+      rewrite subst_id.
+    }
+      
+      
+      
+             rewrite subst_id.
+      specialize (IHs _ _ _ HH1).
+      Check subst_notin2.
+      rewrite -> subst_notin2 with (ψ := t0)(φ := TermOverBoV_subst t x t').
+      {
+        admit.
+      }
+      {
+        Search TermOverBoV_subst.
+        simpl.
+      }
+      clear H. revert s t' t0 x HH1 IHs.
+      induction t; intros ss t' t0 x HH1 IHs.
+      {
+        simpl. ltac1:(repeat case_match); subst; try reflexivity.
+        {
+          assumption.
+        }
+        {
+          erewrite IHs. reflexivity. rewrite HH1.
+        }
+      }
+    }
+  }
+
+
+  revert s.
+  induction t; simpl; intros ss HH.
+  {
+    revert HH.
+    induction ss; intros HH; simpl in *.
+    {
+      subst t'.
+      destruct a; simpl.
+      { reflexivity. }
+      {
+        destruct (decide (x = x0)); simpl; subst; reflexivity.
+      }
+    }
+    {
+      destruct a0; simpl in *.
+      destruct a; simpl in *.
+      { reflexivity. }
+      destruct (decide (v = x0)); simpl in *.
+      {
+        subst.
+        destruct (decide (x = x0)); simpl in *.
+        {
+          subst.
+          destruct (decide (x0 = x0))>[|ltac1:(contradiction)].
+          inversion HH; subst; clear HH.
+          reflexivity.
+        }
+        {
+          destruct (decide (x0 = x))>[ltac1:(subst;contradiction)|].
+          destruct (decide (x0 = x0))>[|ltac1:(contradiction)].
+          reflexivity.
+        }
+      }
+      {
+        destruct (decide (x = x0)); simpl in *.
+        {
+          subst.
+          destruct (decide (v = x0)); simpl in *.
+          { subst.
+            ltac1:(contradiction n). reflexivity.
+          }
+          {
+            assumption.
+          }
+        }
+        {
+          destruct (decide (v = x0))>[subst; ltac1:(contradiction)|].
+          reflexivity.
+        }
+      }
+    }
+  }
+  {
+
+  revert t' l s H HH.
+  induction ss; intros t' l s HH1 HH2.
+  {
+    simpl in *. subst t'.
+    revert HH1.
+    induction l; intros HH1; simpl.
+    {
+      reflexivity.
+    }
+    {
+      rewrite Forall_cons in HH1. destruct HH1 as [HH0 HH1].
+      specialize (IHl HH1). inversion IHl; subst; clear IHl.
+      repeat (rewrite <- H0).
+      rewrite subst_id. reflexivity.
+    }
+  }
+  {
+    simpl. destruct a; simpl in *.
+    destruct (decide (v = x)); simpl in *.
+    {
+      subst.
+      specialize (IHss _ _ s HH1).
+    }
+    {
+    
+    }
+  }
+  
+  
+  
+    revert t' H HH.
+    induction l; intros t' HH1 HH2.
+    {
+      simpl. reflexivity.
+    } 
+    {
+      simpl. rewrite Forall_cons in HH1.
+      destruct HH1 as [HH0 HH1].
+      specialize (IHl t' HH1 HH2). clear HH1.
+      specialize (HH0 ss HH2).
+      inversion IHl; subst; clear IHl.
+      simpl.
+      rewrite <- H0. rewrite <- H0.
+    }
+  }
+Qed.
+  
+  
+  
+  
