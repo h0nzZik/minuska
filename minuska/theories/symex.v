@@ -746,7 +746,6 @@ Qed.
 
 Lemma sub_decreases_degree
   {Σ : StaticModel}
-  (V : gset variable)
   x t es
   :
   x ∉ vars_of t ->
@@ -1007,6 +1006,27 @@ Proof.
   ltac1:(lia).
 Qed.
 
+Lemma deg_swap_head
+  {Σ : StaticModel}
+  (es : list eqn)
+  (t1 t2 : TermOver BuiltinOrVar)
+:
+  deg ((t1,t2)::es) = deg ((t2,t1)::es)
+.
+Proof.
+   unfold deg; simpl.
+   ltac1:(repeat rewrite eqns_vars_cons). simpl.
+   f_equal.
+   {
+      f_equal.
+      ltac1:(set_solver).
+   }
+   {
+      unfold eqn_size. simpl.
+      ltac1:(lia).
+   }
+Qed.
+
 Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
   by wf (deg l) (lexprod nat nat lt lt) :=
 
@@ -1017,35 +1037,81 @@ unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = 
 | left _ := unify es ;
 | right _ := None
 };
-unify ((t_over (bov_variable x), t)::es) := if (decide (x ∈ vars_of t)) then None
-  else (
+unify ((t_over (bov_variable x), t)::es) with (decide (x ∈ vars_of t)) => {
+  | left _ => None
+  | right _ =>
     tmp ← unify (sub t x es);
     Some ((x,t)::tmp)
-  ) ;
-unify ((t, t_over (bov_variable x))::es) := if (decide (x ∈ vars_of t)) then None
-  else (
+  };
+unify ((t, t_over (bov_variable x))::es) with (decide (x ∈ vars_of t)) => {
+  | left _ => None
+  | right _ =>
     tmp ← unify (sub t x es);
     Some ((x,t)::tmp)
-  ) ;
-unify ((t_term s1 l1, t_term s2 l2)::es) := if (decide ((s1 = s2) /\ (length l1 = length l2) )) then (
-    unify ((zip l1 l2) ++ es)
-  ) else None ;
+  };
+unify ((t_term s1 l1, t_term s2 l2)::es) with (decide ((s1 = s2) /\ (length l1 = length l2) )) => {
+  | left _ =>
+      unify ((zip l1 l2) ++ es)
+  | right _ => None
+  } ;
 
-unify ((t1,t2)::es) := if (decide (t1 = t2)) then unify es else None
+unify ((t1,t2)::es) with (decide (t1 = t2)) => {
+  | left _ => unify es
+  | right _ => None
+  };
 .
 Proof.
   {
     unfold deg. simpl.
-    Check right_lex.
-    unfold eqns_vars. simpl.
-    do 4 (unfold vars_of at 3; simpl).
+    rewrite eqns_vars_cons. simpl.
+    do 4 (unfold vars_of at 1; simpl).
     rewrite union_empty_l_L.
     rewrite union_empty_l_L.
     apply right_lex.
     ltac1:(lia).
   }
   {
-    unfold deg. simpl.
+    ltac1:(unfold t). clear t.
+    ltac1:(rewrite deg_swap_head).
+    apply sub_decreases_degree.
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    ltac1:(set_solver).
+  }
+  {
+    ltac1:(unfold t1; unfold t2). clear t1 t2.
+    apply deg_cons_lt.
+  }
+  {
+    ltac1:(unfold t). clear t.
+    apply sub_decreases_degree.
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    ltac1:(set_solver).
+  }
+  {
+    apply deg_cons_lt.
+  }
+  {
+    ltac1:(unfold t). clear t.
+    apply sub_decreases_degree.
+    assumption.
+  }
+  {
+    ltac1:(unfold t1; unfold t2; clear t1; clear t2).
+    apply deg_cons_lt.
+  }
+  {
+    ltac1:(unfold t); clear t.
+    ltac1:(rewrite deg_swap_head).
+    apply sub_decreases_degree.
+    assumption.
+  }
+  {
+    destruct a as [H1 H2].
+    subst s2.
+    apply fewer_arrows_lower_degree.
+    assumption.
   }
 Defined.
 
