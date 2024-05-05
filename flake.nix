@@ -19,6 +19,8 @@
            let stdpp = coqPackages.stdpp; in
            let coqLibraries = [
               coqPackages.equations
+              coqPackages.QuickChick
+              # TODO remove, we will not use this
               coqPackages.CoLoR
               stdpp
            ]; in

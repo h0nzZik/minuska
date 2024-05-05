@@ -14,7 +14,13 @@ From Coq Require Import Logic.Eqdep_dec.
 
 From Equations Require Export Equations.
 
+(*
+From QuickChick Require Import QuickChick.
+Import QcDefaultNotation. Open Scope qc_scope.
 
+Sample (choose(0, 10)).*)
+
+(*
 From CoLoR Require
     Term.WithArity.ASignature
     Term.WithArity.AUnif
@@ -24,7 +30,7 @@ From CoLoR Require
 From CoLoR Require Import
     Util.Vector.VecUtil
 .
-
+*)
 Definition Satisfies_variable_GroundTerm'
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -171,66 +177,6 @@ Definition SymexStep_complete
 .
 
 
-Program Definition ColorSignatureOf (Σ : StaticModel)
-    : Term.WithArity.ASignature.Signature
-:= {|
-    Term.WithArity.ASignature.symbol := (nat*(@spec.symbol Σ)) ;
-    Term.WithArity.ASignature.arity := fun ns => ns.1 ;
-    Term.WithArity.ASignature.beq_symb :=
-        fun s1 s2 => bool_decide (s1 = s2) ;
-|}.
-Next Obligation.
-    abstract(
-        assert (H := bool_decide_spec ((n0,s0)=(n,s)));
-        unfold Is_true in H;
-        ltac1:(case_match; naive_solver)
-    ).
-Defined.
-Fail Next Obligation.
-
-
-Lemma wf_iter_step_constructive
-    {Σ' : Term.WithArity.ASignature.Signature}
-    (p : @Term.WithArity.AUnif.problem Σ')
- :
-    { k : nat & @Term.WithArity.AUnif.solved Σ' (Term.WithArity.AUnif.iter_step k p) = true }.
-Proof. 
-    assert (HH := (Term.WithArity.AUnif.wf_Lt' p)).
-    induction HH.
-    {
-        destruct x.
-        {
-            destruct p.
-            destruct e; simpl in *.
-            { exists 0. reflexivity. }
-            {
-                remember (Some (s, e::e0)) as p.
-                destruct (Term.WithArity.AUnif.solved (Term.WithArity.AUnif.step p)) eqn:Heqsolved.
-                {
-                    exists 1. simpl.
-                    ltac1:(repeat (case_match; simpl in *; simplify_eq/=; try reflexivity)).
-                }
-                {
-                    specialize (X (Term.WithArity.AUnif.step p)).
-                    
-                    ltac1:(ospecialize (X _)).
-                    {
-                        assert(Htmp := (Term.WithArity.AUnif.Lt_step _ (Term.WithArity.AUnif.solved_inv _ Heqsolved))).
-                        subst p. exact Htmp.
-                    }
-                    destruct X as [k Hk].
-                    exists (S k). simpl.
-                    rewrite <- Term.WithArity.AUnif.iter_step_commut.
-                    subst p.
-                    exact Hk.
-                }
-            }
-        }
-        {
-            exists 0. reflexivity.
-        }
-    }
-Defined.
 
 Definition eqn {Σ : StaticModel} : Type := ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type.
 
@@ -1238,85 +1184,6 @@ Lemma helper_lemma_1
   sub_app s t = sub_app s  (TermOverBoV_subst t x t')
 .
 Proof.
-  revert t t' x.
-  induction s; simpl; intros t t' x HH1.
-  {
-    subst. rewrite subst_id. reflexivity.
-  }
-  {
-    destruct a; simpl in *.
-    repeat (ltac1:(case_match; simpl in *; idtac)).
-    {
-      subst. simpl in *.
-      erewrite IHs with (x := x)>[|reflexivity].
-      rewrite subst_id.
-      clear H.
-      induction t; simpl.
-      {
-        ltac1:(repeat (case_match; subst; simpl in *; auto)).
-        inversion H.
-      }
-      {
-        rewrite sub_app_term.
-        ltac1:(rewrite sub_app_term).
-        f_equal.
-        ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
-        revert H.
-        induction l; intros Hmy; simpl in *.
-        { reflexivity. }
-        {
-          rewrite Forall_cons in Hmy.
-          destruct Hmy as [HH2 HH3].
-          rewrite HH2. clear HH2.
-          specialize (IHl HH3). clear HH3.
-          unfold fmap in IHl. rewrite IHl.
-          reflexivity.
-        }
-      }
-    }
-    {
-      ltac1:(cut((TermOverBoV_subst (TermOverBoV_subst t x t') v t0) = TermOverBoV_subst (TermOverBoV_subst t v t0) x t')).
-      {
-        intros HHX.
-        rewrite HHX.
-        specialize (IHs (TermOverBoV_subst (TermOverBoV_subst t v t0) x t') _ _ HH1).
-        Search TermOverBoV_subst.
-        rewrite notin_subst2 in IHs.
-        apply IHs.
-      }
-      erewrite <- IHs.
-      erewrite IHs with (x := v)>[|reflexivity].
-      rewrite subst_id.
-    }
-      
-      
-      
-             rewrite subst_id.
-      specialize (IHs _ _ _ HH1).
-      Check subst_notin2.
-      rewrite -> subst_notin2 with (ψ := t0)(φ := TermOverBoV_subst t x t').
-      {
-        admit.
-      }
-      {
-        Search TermOverBoV_subst.
-        simpl.
-      }
-      clear H. revert s t' t0 x HH1 IHs.
-      induction t; intros ss t' t0 x HH1 IHs.
-      {
-        simpl. ltac1:(repeat case_match); subst; try reflexivity.
-        {
-          assumption.
-        }
-        {
-          erewrite IHs. reflexivity. rewrite HH1.
-        }
-      }
-    }
-  }
-
-
   revert s.
   induction t; simpl; intros ss HH.
   {
@@ -1371,52 +1238,28 @@ Proof.
   }
   {
 
-  revert t' l s H HH.
-  induction ss; intros t' l s HH1 HH2.
+  rewrite sub_app_term.
+  rewrite sub_app_term.
+  apply f_equal.
+  revert ss HH H.
+  induction l; intros ss HH1 HH2.
+  { reflexivity. }
   {
-    simpl in *. subst t'.
-    revert HH1.
-    induction l; intros HH1; simpl.
-    {
-      reflexivity.
-    }
-    {
-      rewrite Forall_cons in HH1. destruct HH1 as [HH0 HH1].
-      specialize (IHl HH1). inversion IHl; subst; clear IHl.
-      repeat (rewrite <- H0).
-      rewrite subst_id. reflexivity.
-    }
-  }
-  {
-    simpl. destruct a; simpl in *.
-    destruct (decide (v = x)); simpl in *.
-    {
-      subst.
-      specialize (IHss _ _ s HH1).
-    }
-    {
-    
-    }
-  }
-  
-  
-  
-    revert t' H HH.
-    induction l; intros t' HH1 HH2.
-    {
-      simpl. reflexivity.
-    } 
-    {
-      simpl. rewrite Forall_cons in HH1.
-      destruct HH1 as [HH0 HH1].
-      specialize (IHl t' HH1 HH2). clear HH1.
-      specialize (HH0 ss HH2).
-      inversion IHl; subst; clear IHl.
-      simpl.
-      rewrite <- H0. rewrite <- H0.
-    }
+    rewrite Forall_cons in HH2.
+    destruct HH2 as [HH2 HH3].
+    specialize (IHl ss HH1 HH3).
+    rewrite fmap_cons.
+    rewrite fmap_cons.
+    rewrite fmap_cons.
+    rewrite IHl.
+    specialize (HH2 ss HH1).
+    rewrite HH2.
+    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+    reflexivity.
   }
 Qed.
+
+
   
   
   
