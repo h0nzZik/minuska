@@ -1534,8 +1534,14 @@ Proof.
       }
     }
     {
-      
+      apply H. intros HContra. apply HH. clear HH H.
+      eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
+      ltac1:(rewrite sub_ext_cons sub_ext_nil).
+      exact HContra.
     }
+  }
+  {
+    
   }
 
 Qed.
