@@ -1349,6 +1349,63 @@ Proof.
   intros x. reflexivity.
 Qed.
 
+Lemma is_unifier_of_cons
+  {Σ : StaticModel}
+  (ss : SubT)
+  (es : list eqn)
+  x t
+: 
+  is_unifier_of ss (sub t x es) ->
+  is_unifier_of ((x,t)::ss) es
+.
+Proof.
+  revert ss.
+  induction es; simpl; intros ss HH.
+  { exact I. }
+  {
+    destruct a; simpl in *.
+    destruct HH as [HH1 HH2].
+    specialize (IHes _ HH2).
+    rewrite HH1.
+    split>[reflexivity|].
+    exact IHes.
+  }
+Qed.
+  
+  
+Lemma sub_app_app
+  {Σ : StaticModel}
+  (s1 s2 : SubT)
+  (t : TermOver BuiltinOrVar)
+:
+  sub_app (s1 ++ s2) t = sub_app s2 (sub_app s1 t)
+.
+Proof.
+  revert t.
+  induction s1; intros t; simpl.
+  { reflexivity. }
+  {
+    destruct a; simpl in *.
+    rewrite IHs1. reflexivity.
+  }
+Qed.
+
+Lemma sub_app_builtin
+  {Σ : StaticModel}
+  (ss : SubT)
+  (b : builtin_value)
+:
+  sub_app ss (t_over (bov_builtin b)) = t_over (bov_builtin b)
+.
+Proof.
+  induction ss; simpl.
+  { reflexivity. }
+  {
+    destruct a; simpl in *.
+    apply IHss.
+  }
+Qed.
+
 Lemma unify_sound
   {Σ : StaticModel}
   (es : list eqn)
@@ -1428,14 +1485,56 @@ Proof.
           apply HH. clear HH.
           eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
           simpl.
+          ltac1:(rewrite sub_ext_cons).
+          ltac1:(rewrite sub_ext_nil).
+          exact HContra.
         }
+        destruct H as [H2 H3]. clear H1 e.
+        apply is_unifier_of_cons. exact H2.
       }
       {
-      
+        
+        ltac1:(ospecialize (H _)).
+        {
+          intros HContra. apply HH. clear HH.
+          eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
+          ltac1:(rewrite sub_ext_cons).
+          ltac1:(rewrite sub_ext_nil).
+          exact HContra.
+        }
+        destruct H as [H2 H3].
+        clear H1 e.
+        intros sss Hsss.
+        specialize (H3 sss).
+        ltac1:(ospecialize (H3 _)).
+        {
+          apply helper_lemma_2.
+          {
+            simpl in Hsss.
+            destruct Hsss as [Hsss1 Hsss2].
+            symmetry.
+            apply Hsss1.
+          }
+          {
+            simpl in Hsss. apply Hsss.
+          }
+        }
+        destruct H3 as [s1 Hs1]. simpl in *.
+        destruct Hsss as [Hsss1 Hsss2].
+        exists s1. intros x0.
+        specialize (Hs1 x0).
+        rewrite sub_app_app in Hs1.
+        rewrite sub_app_app.
+        destruct (decide (x = x0))>[|auto].
+        subst.
+        rewrite sub_app_builtin.
+        rewrite sub_app_builtin in Hsss1.
+        rewrite sub_app_builtin.
+        ltac1:(congruence).
       }
     }
     {
-    
+      
     }
   }
 
