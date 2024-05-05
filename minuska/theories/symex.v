@@ -408,6 +408,7 @@ Definition sub_lt {Σ : StaticModel} (s1 s2 : SubT) :=
   ∃ s3, s1 = s2 ++ s3
 .
 
+(*
 Fixpoint occurs {Σ : StaticModel} (x : variable) (t : TermOver BuiltinOrVar) :=
   match t with
   | t_over (bov_variable y) => x = y
@@ -467,7 +468,7 @@ Proof.
     }
   }
 Defined.
-
+*)
 Lemma on_distinct_vars {Σ : StaticModel} (a1 a2 : variable) (V : gset variable):
   a1 ∈ V ->
   a1 <> a2 ->
@@ -480,7 +481,7 @@ Qed.
 
 Lemma wft_minus {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar) (a : variable) :
   wft V t ->
-  ~ occurs a t ->
+  a ∉ vars_of t ->
   wft (V ∖ {[a]}) t
 .
 Proof.
@@ -497,6 +498,8 @@ Proof.
       unfold wft in HH1. unfold vars_of in HH1; simpl in HH1. unfold vars_of in HH1; simpl in HH1.
       ltac1:(rewrite singleton_subseteq_l in HH1).
       ltac1:(rewrite singleton_subseteq_l).
+      unfold vars_of in HH2; simpl in HH2.
+      unfold vars_of in HH2; simpl in HH2.
       ltac1:(set_solver).
     }
   }
@@ -1249,5 +1252,129 @@ Proof.
     }
   }
 Qed.
- 
-  
+
+Definition sub_ext
+  {Σ : StaticModel}
+  (ss : SubT)
+  (es : list eqn)
+:=
+  (fun e => (sub_app ss e.1, sub_app ss e.2)) <$> es
+.
+
+
+Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
+| uf_varin_fail_1  : forall x t es,
+  x ∈ vars_of t ->
+  unify_failure (((t_over (bov_variable x)), t) :: es)
+
+| uf_varin_fail_2  : forall x t es,
+  x ∈ vars_of t ->
+  unify_failure ((t, (t_over (bov_variable x))) :: es)
+
+| uf_diff_builtin : forall b1 b2 es,
+  b1 <> b2 ->
+  unify_failure (((t_over (bov_builtin b1)),(t_over (bov_builtin b2))) :: es)
+
+| uf_over_term : forall bv s l es,
+  unify_failure (((t_over bv),(t_term s l))::es)
+
+| uf_term_over : forall bv s l es,
+  unify_failure (((t_term s l), (t_over bv))::es)
+
+| uf_term_sym : forall s1 s2 l1 l2 es,
+  s1 <> s2 ->
+  unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
+
+| uf_term_len : forall s1 s2 l1 l2 es,
+  length l1 <> length l2 ->
+  unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
+
+| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat) (t1 t2 : TermOver BuiltinOrVar),
+  l1 !! idx = Some t1 ->
+  l2 !! idx = Some t2 ->
+  unify_failure ((t1,t2)::(drop (S idx) (zip l1 l2))++es) ->
+  unify_failure (((t_term s l1),(t_term s l2))::es)
+
+| uf_rec : forall es t1 t2,
+  unify_failure es ->
+  unify_failure ((t1,t2)::es)
+
+| uf_rec_sub : forall es t1 t2 ss,
+  unify_failure (sub_ext ss es) ->
+  unify_failure ((t1,t2)::es)
+.
+
+
+Lemma least_of_nil_nil
+  {Σ : StaticModel}
+  :
+  least_of [] []
+.
+Proof.
+  unfold least_of.
+  intros s' Hs'.
+  exists s'. simpl.
+  intros x. reflexivity.
+Qed.
+
+Lemma unify_sound
+  {Σ : StaticModel}
+  (es : list eqn)
+:
+  ~ unify_failure es ->
+  match unify es with
+  | None => False
+  | Some ss =>
+    (is_unifier_of ss es /\ least_of ss es )
+  end
+.
+Proof.
+  ltac1:(funelim(unify es)); intros HH.
+  {
+    simpl in *.
+    ltac1:(simp unify). repeat split.
+    apply least_of_nil_nil.
+  }
+  {
+    rewrite <- Heqcall.
+    (destruct (unify es) as [ss|]).
+    {
+      clear Heq. ltac1:(simplify_eq/=).
+      ltac1:(ospecialize (H _)).
+      {
+        intros HContra. apply HH. clear HH.
+        apply uf_rec. exact HContra.
+      }
+      repeat split.
+      {
+        
+        apply H.
+      }
+      {
+        unfold least_of.
+        intros s' Hs'.
+        simpl in Hs'.
+        destruct Hs' as [Hs'1 Hs'2].
+        destruct H as [H1 H2].
+        unfold least_of in H2.
+        specialize (H2 _ Hs'2).
+        destruct H2 as [s1 Hs1].
+        exists s1.
+        intros x.
+        specialize (Hs1 x).
+        rewrite Hs1.
+        reflexivity.
+      }
+    }
+    {
+      apply H. clear H. intros HContra. apply HH. clear HH.
+      apply uf_rec. exact HContra.
+    }
+  }
+  {
+    
+  }
+
+Qed.
+
+
