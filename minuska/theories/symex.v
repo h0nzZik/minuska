@@ -1134,45 +1134,6 @@ Proof.
   }
 Qed.
 
-(* This does not work as x can occur in t' *)
-(*
-Lemma subst_twice
-  {Σ : StaticModel}
-  (x : variable)
-  (t t' t'' : TermOver BuiltinOrVar)
-:
-  TermOverBoV_subst (TermOverBoV_subst t x t') x t'' = TermOverBoV_subst t x t'
-.
-Proof.
-  destruct (decide (x ∈ vars_of t)).
-  {
-    rewrite subst_notin2 with (ψ := t'').
-    { reflexivity. }
-    Search vars_of TermOverBoV_subst.
-    ltac1:(rewrite vars_of_TermOverBoV_subst).
-    assumption.
-    ltac1:(set_solver).
-Qed.
-*)
-
-(* This does not hold either *) (*
-Lemma subst_comm
-  {Σ : StaticModel}
-  (x y : variable)
-  (t t' t'' : TermOver BuiltinOrVar)
-:
-  x <> y ->
-  TermOverBoV_subst (TermOverBoV_subst t x t') y t''
-  =
-  TermOverBoV_subst (TermOverBoV_subst t y t'') x t'
-.
-Proof.
-  induction t; intros Hne; simpl in *.
-  {
-    ltac1:(repeat (case_match; subst; simpl in *; try congruence)).
-  }
-Qed.
-*)
 
 Lemma helper_lemma_1
   {Σ : StaticModel}
@@ -1259,8 +1220,34 @@ Proof.
   }
 Qed.
 
-
-  
-  
-  
+Lemma helper_lemma_2
+  {Σ : StaticModel}
+  (x : variable)
+  (t : TermOver BuiltinOrVar)
+  (es : list eqn)
+  (s : SubT)
+:
+  sub_app s (t_over (bov_variable x)) = sub_app s t ->
+  is_unifier_of s es ->
+  is_unifier_of s (sub t x es)
+.
+Proof.
+  revert x t s.
+  induction es; intros x t ss HH1 HH2; simpl in *.
+  { exact I. }
+  {
+    destruct a; simpl in *.
+    destruct HH2 as [HH2 HH3].
+    split.
+    {
+      rewrite <- helper_lemma_1>[|assumption].
+      rewrite <- helper_lemma_1>[|assumption].
+      exact HH2.
+    }
+    {
+      apply IHes; assumption.
+    }
+  }
+Qed.
+ 
   
