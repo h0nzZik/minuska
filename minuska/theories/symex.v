@@ -1262,6 +1262,38 @@ Definition sub_ext
 .
 
 
+Lemma sub_ext_nil
+  {Σ : StaticModel }
+  (es : list eqn)
+:
+  sub_ext nil es = es 
+.
+Proof.
+  induction es; simpl.
+  { reflexivity. }
+  {
+    rewrite IHes. destruct a. reflexivity.
+  }
+Qed.
+
+Lemma sub_ext_cons
+  {Σ : StaticModel}
+  (ss : SubT)
+  x t
+  (es : list eqn)
+:
+  sub_ext ((x, t)::ss) es = sub_ext ss (sub t x es)
+.
+Proof.
+  induction es; simpl.
+  { reflexivity. }
+  {
+    destruct a; simpl.
+    rewrite IHes. reflexivity.
+  }
+Qed.
+
+
 Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
 | uf_varin_fail_1  : forall x t es,
   x ∈ vars_of t ->
@@ -1372,7 +1404,39 @@ Proof.
     }
   }
   {
+    rewrite <- Heqcall.
+    apply HH. clear HH.
+    apply uf_diff_builtin.
+    intros HContra. subst. apply n. reflexivity.
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall.
+    apply HH. clear HH.
+    apply uf_varin_fail_2.
+    assumption.
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall.
+    simpl.
+    ltac1:( repeat (case_match; simpl in *; simplify_eq/=)).
+    {
+      repeat split.
+      {
+        ltac1:(ospecialize (H _)).
+        {
+          intros HContra.
+          apply HH. clear HH.
+          eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
+          simpl.
+        }
+      }
+      {
+      
+      }
+    }
+    {
     
+    }
   }
 
 Qed.
