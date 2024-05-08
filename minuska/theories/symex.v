@@ -981,6 +981,7 @@ Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (T
 unify []
   := Some [] ;
   
+  (* FIXME in the else branch we need to try all the other options *)
 unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = y)) => {
 | left _ := unify es ;
 | right _ := None
@@ -1619,6 +1620,35 @@ Proof.
     {
       exact H.
     }
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall.
+    ltac1:(ospecialize (H _)).
+    {
+      intros HContra. apply HH. clear HH.
+      apply uf_rec. exact HContra.
+    }
+    ltac1:(repeat (case_match; simplify_eq/=; try assumption)).
+    destruct H as [H1 H2].
+    repeat split.
+    { assumption. }
+    intros ss Hss.
+    specialize (H2 ss).
+    ltac1:(ospecialize (H2 _)).
+    {
+      simpl in Hss. apply Hss.
+    }
+    destruct H2 as [s1 Hs1].
+    exists s1.
+    intros x.
+    rewrite Hs1.
+    reflexivity.
+  }
+  {
+    rewrite <- Heqcall. ltac1:(simp unify in Heqcall).
+    unfold unify_unfold_clause_2 in Heqcall.
+     clear Heqcall.
+    apply HH. clear HH.
   }
 
 Qed.
