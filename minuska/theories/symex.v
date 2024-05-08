@@ -1541,7 +1541,84 @@ Proof.
     }
   }
   {
-    
+    ltac1:(simplify_eq/=).
+  }
+  {
+    ltac1:(case_match).
+    {
+        clear Heq.
+        ltac1:(exfalso; apply HH; clear HH).
+        apply uf_over_term.
+    } 
+    {
+      ltac1:(simp unify in H).
+      unfold unify_unfold_clause_6_1 in H.
+      ltac1:(case_match).
+      {
+        ltac1:(simplify_eq/=).
+      }
+      {
+          clear H Heq.
+          apply HH. clear HH.
+          apply uf_over_term.
+      }
+    }
+  }
+  {
+    ltac1:(case_match).
+    { ltac1:(simplify_eq/=). 
+    }
+    {
+      inversion e.
+    }
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall. simpl.
+    ltac1:(ospecialize (H _)).
+    {
+      intros HContra. apply HH. clear HH.
+      eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
+      ltac1:(rewrite sub_ext_cons sub_ext_nil).
+      exact HContra.
+    }
+    ltac1:(repeat (case_match; simplify_eq/=)).
+    {
+      clear e H1.
+      destruct H as [H1 H2].
+      repeat split.
+      {
+        simpl.
+        apply is_unifier_of_cons. assumption.
+      }
+      {
+        intros ss Hss. specialize (H2 ss).
+        ltac1:(ospecialize (H2 _)).
+        {
+          simpl in Hss.
+          destruct Hss as [Hss1 Hss2].
+          eapply helper_lemma_2; assumption.
+        }
+        {
+          destruct H2 as [s1 Hs1].
+          exists s1.
+          intros x0. rewrite Hs1. simpl.
+          destruct (decide (x = x0))>[|reflexivity].
+          subst. simpl in Hss.
+          destruct Hss as [Hss1 Hss2].
+          do 2 (rewrite sub_app_app).
+          assert (Hs1x0 := Hs1 x0).
+          (rewrite sub_app_app in Hs1x0).
+          rewrite <- Hs1x0.
+          rewrite sub_app_builtin.
+          rewrite sub_app_builtin.
+          rewrite sub_app_builtin in Hss1.
+          apply Hss1.
+        }
+      }
+    }
+    {
+      exact H.
+    }
   }
 
 Qed.
