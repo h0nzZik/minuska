@@ -740,3 +740,12 @@ Proof.
     rewrite option_fmap_id.
     reflexivity.
 Qed.
+
+Lemma vars_of_t_term
+    {Σ : StaticModel}
+    (s : symbol)
+    (l : list (TermOver BuiltinOrVar))
+    :
+    vars_of (t_term s l) = union_list ( vars_of <$> l)
+.
+Proof. reflexivity. Qed.

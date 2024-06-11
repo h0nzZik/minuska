@@ -2,6 +2,7 @@ From Minuska Require Import
     prelude
     spec
     properties
+    minusl_syntax
     syntax_properties
 .
 
@@ -20,17 +21,7 @@ Import QcDefaultNotation. Open Scope qc_scope.
 
 Sample (choose(0, 10)).*)
 
-(*
-From CoLoR Require
-    Term.WithArity.ASignature
-    Term.WithArity.AUnif
-    Term.WithArity.ATerm
-.
 
-From CoLoR Require Import
-    Util.Vector.VecUtil
-.
-*)
 Definition Satisfies_variable_GroundTerm'
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -975,16 +966,18 @@ Proof.
    }
 Qed.
 
-Equations? unify {Σ : StaticModel} (l : list eqn) : option (list (variable * (TermOver BuiltinOrVar)))
+Equations? unify {Σ : StaticModel} (l : list eqn)
+  : option (list (variable * (TermOver BuiltinOrVar)))
   by wf (deg l) (lexprod nat nat lt lt) :=
 
 unify []
   := Some [] ;
   
-  (* FIXME in the else branch we need to try all the other options *)
 unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = y)) => {
 | left _ := unify es ;
-| right _ := None
+| right _ := 
+  tmp ← unify (sub (t_over (bov_variable y)) x es);
+  Some ((x, (t_over (bov_variable y)))::tmp)
 };
 unify ((t_over (bov_variable x), t)::es) with (decide (x ∈ vars_of t)) => {
   | left _ => None
@@ -1040,6 +1033,12 @@ Proof.
   }
   {
     apply deg_cons_lt.
+  }
+  {
+    apply sub_decreases_degree.
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    ltac1:(set_solver).
   }
   {
     ltac1:(unfold t). clear t.
@@ -1203,24 +1202,25 @@ Proof.
   }
   {
 
-  rewrite sub_app_term.
-  rewrite sub_app_term.
-  apply f_equal.
-  revert ss HH H.
-  induction l; intros ss HH1 HH2.
-  { reflexivity. }
-  {
-    rewrite Forall_cons in HH2.
-    destruct HH2 as [HH2 HH3].
-    specialize (IHl ss HH1 HH3).
-    rewrite fmap_cons.
-    rewrite fmap_cons.
-    rewrite fmap_cons.
-    rewrite IHl.
-    specialize (HH2 ss HH1).
-    rewrite HH2.
-    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
-    reflexivity.
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    revert ss HH H.
+    induction l; intros ss HH1 HH2.
+    { reflexivity. }
+    {
+      rewrite Forall_cons in HH2.
+      destruct HH2 as [HH2 HH3].
+      specialize (IHl ss HH1 HH3).
+      rewrite fmap_cons.
+      rewrite fmap_cons.
+      rewrite fmap_cons.
+      rewrite IHl.
+      specialize (HH2 ss HH1).
+      rewrite HH2.
+      ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+      reflexivity.
+    }
   }
 Qed.
 
@@ -1404,6 +1404,61 @@ Proof.
   {
     destruct a; simpl in *.
     apply IHss.
+  }
+Qed.
+
+
+Lemma helper_lemma_3 {Σ : StaticModel}:
+  ∀ l s1,
+  (
+    ∀ x : variable,
+      sub_app l (t_over (bov_variable x)) =
+      sub_app (l ++ s1) (t_over (bov_variable x))
+  ) ->
+  ∀ t,
+    sub_app l t = sub_app (l ++ s1) t
+.
+Proof.
+  intros l s1 HNice t.
+  revert l s1 HNice.
+  induction t; intros ll s1 HNice.
+  {
+    destruct a.
+    {
+      rewrite sub_app_builtin.
+      rewrite sub_app_builtin.
+      reflexivity.
+    }
+    {
+      rewrite HNice.
+      reflexivity.
+    }
+  }
+  {
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    rewrite Forall_forall in H.
+    apply list_eq.
+    intros i.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    destruct (l !! i) eqn:Hli.
+    {
+      ltac1:(rewrite Hli).
+      simpl.
+      apply f_equal.
+      erewrite H.
+      reflexivity.
+      rewrite elem_of_list_lookup.
+      exists i. exact Hli.
+      apply HNice.
+    }
+    {
+      ltac1:(rewrite Hli).
+      simpl.
+      reflexivity.
+    }
   }
 Qed.
 
@@ -1647,8 +1702,179 @@ Proof.
   {
     rewrite <- Heqcall. ltac1:(simp unify in Heqcall).
     unfold unify_unfold_clause_2 in Heqcall.
-     clear Heqcall.
-    apply HH. clear HH.
+    clear Heqcall.
+    ltac1:(ospecialize (H _)).
+    {
+      intros HContra. apply HH. clear HH.
+      apply uf_rec_sub with (ss := [(x, t_over (bov_variable y))]).
+      eapply HContra.
+    }
+    clear HH.
+    ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
+    clear e H1 Heq n0 H2.
+    destruct H as [HH1 HH2].
+    (repeat split).
+    {
+      apply is_unifier_of_cons.
+      apply HH1.
+    }
+    {
+      intros ss Hss.
+      specialize (HH2 ss).
+      ltac1:(ospecialize (HH2 _)).
+      {
+        simpl in Hss.
+        destruct Hss as [Hss1 Hss2].
+        eapply helper_lemma_2.
+        { apply Hss1. }
+        exact Hss2.
+      }
+      destruct HH2 as [s1 Hs1].
+      exists s1.
+      intros x0.
+      simpl.
+      simpl in Hss.
+      destruct Hss as [Hss1 Hss2].
+      destruct (decide (x = x0)).
+      {
+        subst.
+        rewrite <- Hs1.
+        apply Hss1.
+      }
+      {
+        subst.
+        rewrite <- Hs1.
+        reflexivity.
+      }
+    }
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall. simpl.
+    apply HH. clear HH. clear Heq.
+    apply uf_varin_fail_1.
+    assumption.
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall. simpl.
+    clear Heq.
+    ltac1:(ospecialize (H _)).
+    {
+      intros HContra. apply HH. clear HH.
+      eapply uf_rec_sub with (ss := [(x, t_term s l0)]).
+      apply HContra.
+    }
+    clear HH.
+    ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
+    {
+      clear e H1.
+      destruct H as [HH1 HH2].
+      rewrite sub_app_term.
+      rewrite sub_app_term.
+      simpl.
+      (repeat split).
+      {
+        apply f_equal.
+        apply list_eq.
+        intros i.
+        rewrite list_lookup_fmap.
+        rewrite list_lookup_fmap.
+        ltac1:(replace (map) with (@fmap list list_fmap) by reflexivity).
+        rewrite list_lookup_fmap.
+        ltac1:(destruct (l0 !! i) eqn:Hl0i).
+        {
+          ltac1:(rewrite Hl0i).
+          simpl.
+          apply f_equal.
+          rewrite subst_notin2.
+          { reflexivity. }
+          {
+            intros HContra.
+            apply n. clear n.
+            apply take_drop_middle in Hl0i.            
+            rewrite <- Hl0i.
+            rewrite vars_of_t_term.
+            rewrite fmap_app.
+            rewrite union_list_app_L.
+            simpl.
+            rewrite elem_of_union.
+            clear -HContra.
+            ltac1:(set_solver).
+          }
+        }
+        {
+          ltac1:(rewrite Hl0i).
+          simpl.
+          reflexivity.
+        }
+      }
+      {
+        apply is_unifier_of_cons.
+        apply HH1.
+      }
+      {
+        intros ss Hss.
+        unfold least_of in HH2.
+        specialize (HH2 _ HH1).
+        simpl in Hss.
+        destruct Hss as [Hss1 Hss2].
+        destruct HH2 as [s1 Hs1].
+        simpl.
+        exists (s1 ++ ss).
+        intros x0.
+
+        simpl.
+        destruct (decide (x = x0)).
+        {
+          subst.
+          rewrite Hss1.
+          rewrite app_assoc.
+          rewrite sub_app_app.
+          Search sub_app.
+          
+          reflexivity.
+          (*
+          rewrite Hss1.
+          rewrite sub_app_app.
+          rewrite sub_app_term.
+          rewrite sub_app_term.
+          rewrite sub_app_term.
+          rewrite sub_app_app.
+          *)
+
+
+          rewrite Hss1.
+          rewrite sub_app_app.
+          rewrite sub_app_term.
+          rewrite sub_app_term.
+          rewrite sub_app_term.
+          apply f_equal.
+          apply list_eq.
+          intros i0.
+          rewrite list_lookup_fmap.
+          rewrite list_lookup_fmap.
+          rewrite list_lookup_fmap.
+          destruct (l0 !! i0) eqn:Heqi0.
+          {
+            ltac1:(rewrite Heqi0).
+            simpl.
+            apply f_equal.
+            apply take_drop_middle in Heqi0.
+            rewrite <- Heqi0.
+          }
+          {
+            ltac1:(rewrite Heqi0).
+            reflexivity.
+          }
+        }
+        {
+
+        }
+
+      }
+    }
+    {
+
+    }
   }
 
 Qed.

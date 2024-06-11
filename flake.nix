@@ -21,7 +21,7 @@
               coqPackages.equations
               coqPackages.QuickChick
               # TODO remove, we will not use this
-              coqPackages.CoLoR
+              #coqPackages.CoLoR
               stdpp
            ]; in
            let bothNativeAndOtherInputs = [
