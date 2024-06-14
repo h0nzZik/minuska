@@ -1091,6 +1091,7 @@ Definition least_of
   ∃ s1, ∀ x, sub_app s' (t_over (bov_variable x)) = sub_app (s ++ s1) (t_over (bov_variable x))
 .
 
+
 Lemma subst_id
   {Σ : StaticModel}
   a x:
@@ -1349,7 +1350,9 @@ Proof.
   exists s'. simpl.
   intros x. reflexivity.
 Qed.
-
+(* Maybe I can make the relation is_unifier_of such that
+the unifier may map only variables that occur somewhere in the relation?
+*)
 Lemma is_unifier_of_cons
   {Σ : StaticModel}
   (ss : SubT)
@@ -1461,6 +1464,66 @@ Proof.
     }
   }
 Qed.
+
+
+Lemma least_of_has_minimal_length
+  {Σ : StaticModel}
+  (s : SubT)
+  (es : list eqn)
+  :
+  is_unifier_of s es ->
+  least_of s es ->
+  ∀ s', is_unifier_of s' es -> length s <= length s'
+.
+Proof.
+  intros HH1 HH2 s' Hs'unif.
+  apply dec_stable.
+  intros HContra.
+  assert(HContra' : length s > length s') by ltac1:(lia).
+  clear HContra.
+
+
+  (*
+  specialize (HH _ Hs'unif).
+  destruct HH as [s1 Hs1].
+  *)
+Abort.
+
+
+
+Lemma least_unifier_nodup
+  {Σ : StaticModel}
+  (s : SubT)
+  (es : list eqn)
+:
+  is_unifier_of s es /\ least_of s es ->
+  NoDup (fst <$> s)
+.
+Proof.
+  intros Hlu.
+  rewrite NoDup_alt.
+  intros i j x Hi Hj.
+  destruct Hlu as [Hunif Hleast].
+  unfold least_of in Hleast.
+  ltac1:(wlog Hij: i j Hi Hj / i < j).
+  { 
+    destruct (decide (i < j)).
+    {
+      intros HH. specialize (HH i j Hi Hj ltac:(lia)). exact HH.
+    }
+    intros HH.
+    specialize (HH j i Hj Hi).
+    ltac1:(lia).
+  }
+  ltac1:(exfalso).
+  ltac1:(cut (is_unifier_of (delete i s) es)).
+  {
+    intros Hunif2.
+    specialize (Hleast _ Hunif2).
+    destruct Hleast as [s1 Hs1].
+    admit.
+  }
+Abort.
 
 Lemma unify_sound
   {Σ : StaticModel}
@@ -1812,23 +1875,50 @@ Proof.
         apply HH1.
       }
       {
+        Print least_of.
+        Search least_of.
+        Search is_unifier_of.
         intros ss Hss.
         unfold least_of in HH2.
-        specialize (HH2 _ HH1).
+
+        assert (HH20 := HH2 (l ++ s1)).
+
+
+        assert (HH21 := HH2 _ HH1).
         simpl in Hss.
         destruct Hss as [Hss1 Hss2].
-        destruct HH2 as [s1 Hs1].
+        destruct HH21 as [s1 Hs1].
         simpl.
-        exists (s1 ++ ss).
+
+        assert(HH2ss := HH2 ss).
+        ltac1:(ospecialize (HH2ss _)).
+        {
+          apply helper_lemma_2.
+          apply Hss1.
+          exact Hss2.
+        }
+        destruct HH2ss as [s3 Hs3].
+        (*        eapply helper_lemma_3 in Hs1 as Hs1'.*)
+        
+        
+
+        exists (s1).
         intros x0.
 
         simpl.
         destruct (decide (x = x0)).
         {
           subst.
+          eapply helper_lemma_3 in Hs1 as Hs1'.
+          rewrite <- Hs1'.
+          rewrite Hs3.
+          rewrite Hss1.
           rewrite Hss1.
           rewrite app_assoc.
           rewrite sub_app_app.
+          eapply helper_lemma_3 in Hs1 as Hs1'.
+          rewrite <- Hs1'.
+          eapply helper_lemma_3 in Hs1 as Hs1''.
           Search sub_app.
           
           reflexivity.
