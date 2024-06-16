@@ -1525,6 +1525,265 @@ Proof.
   }
 Abort.
 
+Lemma vars_of_builtin
+  {Σ : StaticModel}
+  b
+:
+  vars_of (t_over (bov_builtin b)) = ∅
+.
+Proof.
+  unfold vars_of; simpl.
+  unfold vars_of; simpl.
+  reflexivity.
+Qed.
+
+
+
+Lemma vars_of_variable
+  {Σ : StaticModel}
+  x
+:
+  vars_of (t_over (bov_variable x)) = {[x]}
+.
+Proof.
+  unfold vars_of; simpl.
+  unfold vars_of; simpl.
+  reflexivity.
+Qed.
+
+Lemma unify_no_variable_out_of_thin_air
+  {Σ : StaticModel}
+  (es : list eqn)
+  (ss : SubT)
+  :
+  unify es = Some ss ->
+  list_to_set (fmap fst ss) ⊆ eqns_vars es
+.
+Proof.
+  revert ss.
+  ltac1:(funelim (unify es)); intros ss HH.
+  {
+    ltac1:(simp unify in HH).
+    inversion HH; subst; clear HH.
+    simpl.
+    ltac1:(set_solver).
+  }
+  {
+    clear Heq. inversion e; subst; clear e.
+    eapply transitivity.
+    { eapply H. ltac1:(congruence). }
+    rewrite eqns_vars_cons.
+    ltac1:(set_solver).
+  }
+  {
+    ltac1:(congruence).
+  }
+  {
+    ltac1:(congruence).
+  }
+  {
+    rewrite HH in Heqcall.
+    rewrite bind_Some in Heqcall.
+    destruct Heqcall as [x0 [H1x0 H2x0]].
+    inversion H2x0; subst; clear H2x0.
+    clear Heq.
+    rewrite fmap_cons.
+    rewrite list_to_set_cons.
+    rewrite eqns_vars_cons.
+    ltac1:(rewrite [((_).*1)]/=).
+    ltac1:(rewrite ![((_).1)]/=).
+    ltac1:(rewrite [((_).2)]/=).
+    ltac1:(rewrite !vars_of_builtin).
+    ltac1:(rewrite vars_of_variable).
+    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es)).
+    {
+      clear. intros.
+      ltac1:(set_solver).
+    }
+    simpl.
+    eapply transitivity.
+    { eapply H. apply H1x0. }
+    destruct (decide (x ∈ eqns_vars es)).
+    {
+      rewrite eqns_vars_sub>[|assumption].
+      ltac1:(rewrite vars_of_builtin).
+      ltac1:(set_solver).
+    }
+    {
+      rewrite sub_notin>[|assumption].
+      ltac1:(set_solver).
+    }
+  }
+  {
+    ltac1:(simplify_eq/=).
+  }
+  {
+    ltac1:(simp unify in HH).
+    unfold unify_unfold_clause_6_1 in HH.
+    rewrite Heq in HH.
+    inversion HH.
+  }
+  {
+    ltac1:(congruence).
+  }
+  {
+    rewrite HH in Heqcall.
+    rewrite bind_Some in Heqcall.
+    destruct Heqcall as [x0 [H1x0 H2x0]].
+
+    inversion H2x0; subst; clear H2x0.
+    clear Heq.
+    rewrite fmap_cons.
+    rewrite list_to_set_cons.
+    rewrite eqns_vars_cons.
+    ltac1:(rewrite [((_).*1)]/=).
+    ltac1:(rewrite ![((_).1)]/=).
+    ltac1:(rewrite [((_).2)]/=).
+    ltac1:(rewrite !vars_of_builtin).
+    ltac1:(rewrite vars_of_variable).
+    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es)).
+    {
+      clear. intros.
+      ltac1:(set_solver).
+    }
+    simpl.
+    eapply transitivity.
+    { eapply H. apply H1x0. }
+    destruct (decide (x ∈ eqns_vars es)).
+    {
+      rewrite eqns_vars_sub>[|assumption].
+      ltac1:(rewrite vars_of_builtin).
+      ltac1:(set_solver).
+    }
+    {
+      rewrite sub_notin>[|assumption].
+      ltac1:(set_solver).
+    }
+  }
+  {
+    clear Heq. subst.
+    eapply transitivity.
+    { apply H. ltac1:(congruence). }
+    rewrite eqns_vars_cons.
+    ltac1:(set_solver).
+  }
+  {
+    rewrite HH in Heqcall.
+    rewrite bind_Some in Heqcall.
+    destruct Heqcall as [x0 [H1x0 H2x0]].
+
+    inversion H2x0; subst; clear H2x0.
+    clear Heq.
+    rewrite fmap_cons.
+    rewrite list_to_set_cons.
+    rewrite eqns_vars_cons.
+    ltac1:(rewrite [((_).*1)]/=).
+    ltac1:(rewrite ![((_).1)]/=).
+    ltac1:(rewrite [((_).2)]/=).
+    ltac1:(rewrite !vars_of_variable).
+    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es ∪ {[x;y]})).
+    {
+      clear. intros.
+      ltac1:(set_solver).
+    }
+    simpl.
+    eapply transitivity.
+    { eapply H. apply H1x0. }
+    destruct (decide (x ∈ eqns_vars es)).
+    {
+      rewrite eqns_vars_sub>[|assumption].
+      ltac1:(rewrite vars_of_variable).
+      ltac1:(set_solver).
+    }
+    {
+      rewrite sub_notin>[|assumption].
+      ltac1:(set_solver).
+    }
+  }
+  {
+    ltac1:(congruence).
+  }
+  {
+    rewrite HH in Heqcall.
+    rewrite bind_Some in Heqcall.
+    destruct Heqcall as [x0 [H1x0 H2x0]].
+    inversion H2x0; subst; clear H2x0.
+    rewrite fmap_cons.
+    rewrite list_to_set_cons.
+    rewrite eqns_vars_cons.
+    simpl.
+    ltac1:(rewrite vars_of_variable).
+    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es ∪ {[x]} ∪ vars_of (t_term s l0) )).
+    {
+      clear. intros.
+      ltac1:(set_solver).
+    }
+    simpl.
+    assert(H' := H _ H1x0).
+    eapply transitivity.
+    { apply H'. }
+
+    destruct (decide (x ∈ eqns_vars es)).
+    {
+      rewrite eqns_vars_sub>[|assumption].
+      ltac1:(set_solver).
+    }
+    {
+      rewrite sub_notin>[|assumption].
+      ltac1:(set_solver).
+    }
+  }
+  {
+    ltac1:(simplify_eq/=).
+  }
+  {
+    ltac1:(simp unify in HH). rewrite Heq in HH.
+    simpl in HH.
+    inversion HH.
+  }
+  {
+    ltac1:(congruence).
+  }
+  {
+    rewrite HH in Heqcall.
+    rewrite bind_Some in Heqcall.
+    destruct Heqcall as [x0 [H1x0 H2x0]].
+    inversion H2x0; subst; clear H2x0.
+    specialize (H _ H1x0).
+    rewrite fmap_cons.
+    rewrite list_to_set_cons.
+    rewrite eqns_vars_cons.
+    simpl.
+    ltac1:(rewrite vars_of_variable).
+        destruct (decide (x ∈ eqns_vars es)).
+    {
+      rewrite eqns_vars_sub in H>[|assumption].
+      ltac1:(set_solver).
+    }
+    {
+      rewrite sub_notin in H>[|assumption].
+      ltac1:(set_solver).
+    }
+  }
+  {
+    clear Heq.
+    destruct a as [HH1 HH2].
+    subst.
+    rewrite eqns_vars_cons.
+    simpl.
+    rewrite HH in Heqcall.
+    specialize (H _ Heqcall).
+    ltac1:(rewrite eqns_vars_app in H).
+    ltac1:(rewrite eqns_vars_zip in H)>[assumption|].
+    ltac1:(rewrite 2!vars_of_t_term).
+    exact H.
+  }
+  {
+    ltac1:(congruence).
+  }
+Qed.
+
+
 Lemma unify_sound
   {Σ : StaticModel}
   (es : list eqn)
