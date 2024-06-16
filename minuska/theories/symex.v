@@ -1416,10 +1416,10 @@ Lemma helper_lemma_3 {Σ : StaticModel}:
   (
     ∀ x : variable,
       sub_app l (t_over (bov_variable x)) =
-      sub_app (l ++ s1) (t_over (bov_variable x))
+      sub_app (s1) (t_over (bov_variable x))
   ) ->
   ∀ t,
-    sub_app l t = sub_app (l ++ s1) t
+    sub_app l t = sub_app (s1) t
 .
 Proof.
   intros l s1 HNice t.
@@ -1793,15 +1793,15 @@ Lemma sub_app_unbound_var_2
   {Σ : StaticModel}
   (ss : SubT)
   (x : variable)
-  (t : TermOver BuiltinOrVar)
   :
   x ∉ ⋃ (vars_of <$> ss.*2) ->
+  forall (t : TermOver BuiltinOrVar),
   x ∉ vars_of t ->
   x ∉ vars_of (sub_app ss t)
 .
 Proof.
-  revert x t.
-  induction ss; intros x t HH1 HH2.
+  revert x .
+  induction ss; intros x HH1 t HH2.
   {
     simpl. exact HH2.
   }
@@ -2177,117 +2177,82 @@ Proof.
         apply HH1.
       }
       {
-        Print least_of.
-        Search least_of.
-        Search is_unifier_of sub.
         assert (Hnoota := unify_no_variable_out_of_thin_air _ _ H0).
-        intros ss Hss.
+        intros u Hu.
         unfold least_of in HH2.
 
+        
         assert (HH21 := HH2 _ HH1).
-        simpl in Hss.
-        destruct Hss as [Hss1 Hss2].
-        destruct HH21 as [s1 Hs1].
-        simpl.
-        Check sub_app_unbound_var_2.
-        Search sub_app.
+        simpl in Hu.
+        destruct Hu as [Hu1 Hu2].
         (*
-        assert(HH2ss := HH2 ss).
-        ltac1:(ospecialize (HH2ss _)).
+        destruct HH21 as [s1 Hs1].
+        *)
+
+        assert(HH2u := HH2 u).
+        ltac1:(ospecialize (HH2u _)).
         {
           apply helper_lemma_2.
-          apply Hss1.
-          exact Hss2.
+          apply Hu1.
+          exact Hu2.
         }
-        destruct HH2ss as [s3 Hs3].*)
-        (*        eapply helper_lemma_3 in Hs1 as Hs1'.*)
+        destruct HH2u as [s1 Hs1].
         
-        
-
         exists (s1).
         intros x0.
+        ltac1:(rename s1 into r).
+        (*rewrite sub_app_app.*)
 
-        simpl.
-        destruct (decide (x = x0)).
+        assert (Hunb := sub_app_unbound_var_2 l x).
+        ltac1:(ospecialize (Hunb _)).
         {
-          subst.
+          rewrite list_fmap_compose in Hnoota.
+          destruct (decide (x ∈ eqns_vars es)).
+          {
+            rewrite eqns_vars_sub in Hnoota>[|assumption].
+            ltac1:(set_solver).
+          }
+          {
+            rewrite sub_notin in Hnoota>[|assumption].
+            ltac1:(set_solver).
+          }
+        }
+        assert (Hunb1 := Hunb _ n).
+        
+        simpl.
 
-          destruct (decide (x0 ∈ eqns_vars es)) as [Hin2|Hnotin2].
+        (* [l] does not contain [x] on its lhs *)
+        assert (Hnlx : x ∉ l.*1).
+        {
+          destruct (decide (x ∈ eqns_vars es)) as [Hin2|Hnotin2].
           {
             rewrite eqns_vars_sub in Hnoota>[|exact Hin2].
-            assert (Hnx0: x0 ∉ ((l.*1))).
-            {
-              ltac1:(set_solver).
-            }
-            apply sub_app_unbound_var in Hnx0 as Hnx0'.
-            rewrite <- Hnx0' in Hss1.
-            rewrite <- Hnx0'.
-            rewrite sub_app_app.
-            rewrite Hs1.
-            rewrite sub_app_app.
-            Search sub_app.
-            eapply helper_lemma_3 in Hs1 as Hs1'.
-            rewrite <- Hs1'. clear Hs1'.
-            rewrite Hss1.
-          }
-
-
-          eapply helper_lemma_3 in Hs1 as Hs1'.
-          rewrite <- Hs1'.
-          rewrite Hs3.
-          rewrite Hss1.
-          rewrite Hss1.
-          rewrite app_assoc.
-          rewrite sub_app_app.
-          eapply helper_lemma_3 in Hs1 as Hs1'.
-          rewrite <- Hs1'.
-          eapply helper_lemma_3 in Hs1 as Hs1''.
-          Search sub_app.
-          
-          reflexivity.
-          (*
-          rewrite Hss1.
-          rewrite sub_app_app.
-          rewrite sub_app_term.
-          rewrite sub_app_term.
-          rewrite sub_app_term.
-          rewrite sub_app_app.
-          *)
-
-
-          rewrite Hss1.
-          rewrite sub_app_app.
-          rewrite sub_app_term.
-          rewrite sub_app_term.
-          rewrite sub_app_term.
-          apply f_equal.
-          apply list_eq.
-          intros i0.
-          rewrite list_lookup_fmap.
-          rewrite list_lookup_fmap.
-          rewrite list_lookup_fmap.
-          destruct (l0 !! i0) eqn:Heqi0.
-          {
-            ltac1:(rewrite Heqi0).
-            simpl.
-            apply f_equal.
-            apply take_drop_middle in Heqi0.
-            rewrite <- Heqi0.
+            ltac1:(set_solver).
           }
           {
-            ltac1:(rewrite Heqi0).
-            reflexivity.
+            rewrite sub_notin in Hnoota>[|exact Hnotin2].
+            ltac1:(set_solver).
           }
+        }
+        destruct (decide (x = x0)).
+        {
+          subst. ltac1:(rename x0 into x).
+          apply sub_app_unbound_var_1 in Hnlx as Hnlx'.
+          eapply helper_lemma_3 in Hs1 as Hs1'.
+          rewrite <- Hs1'. clear Hs1'.
+          exact Hu1.
         }
         {
-
+          apply Hs1.
         }
-
-      }
     }
-    {
-
-    }
+  }
+  {
+    exact H.
+  }
+  }
+  {
+    
   }
 
 Qed.
