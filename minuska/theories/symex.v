@@ -1557,7 +1557,7 @@ Lemma unify_no_variable_out_of_thin_air
   (ss : SubT)
   :
   unify es = Some ss ->
-  list_to_set (fmap fst ss) ⊆ eqns_vars es
+  (list_to_set (fmap fst ss)) ∪ (⋃ (fmap (vars_of ∘ snd) ss)) ⊆ eqns_vars es
 .
 Proof.
   revert ss.
@@ -1587,30 +1587,27 @@ Proof.
     destruct Heqcall as [x0 [H1x0 H2x0]].
     inversion H2x0; subst; clear H2x0.
     clear Heq.
-    rewrite fmap_cons.
+    repeat (rewrite fmap_cons).
     rewrite list_to_set_cons.
     rewrite eqns_vars_cons.
-    ltac1:(rewrite [((_).*1)]/=).
+    ltac1:(rewrite ![((_).*1)]/=).
     ltac1:(rewrite ![((_).1)]/=).
-    ltac1:(rewrite [((_).2)]/=).
+    ltac1:(rewrite ![((_).2)]/=).
     ltac1:(rewrite !vars_of_builtin).
-    ltac1:(rewrite vars_of_variable).
-    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es)).
-    {
-      clear. intros.
-      ltac1:(set_solver).
-    }
-    simpl.
-    eapply transitivity.
-    { eapply H. apply H1x0. }
+    ltac1:(rewrite !vars_of_variable).
+    rewrite union_list_cons.
+    unfold compose at 1.
+    ltac1:(rewrite ![((_).2)]/=).
+    ltac1:(rewrite !vars_of_builtin).
+    specialize (H _ H1x0).
     destruct (decide (x ∈ eqns_vars es)).
     {
-      rewrite eqns_vars_sub>[|assumption].
-      ltac1:(rewrite vars_of_builtin).
+      rewrite eqns_vars_sub in H>[|assumption].
+      ltac1:(rewrite vars_of_builtin in H).
       ltac1:(set_solver).
     }
     {
-      rewrite sub_notin>[|assumption].
+      rewrite sub_notin in H>[|assumption].
       ltac1:(set_solver).
     }
   }
@@ -1633,30 +1630,25 @@ Proof.
 
     inversion H2x0; subst; clear H2x0.
     clear Heq.
-    rewrite fmap_cons.
-    rewrite list_to_set_cons.
-    rewrite eqns_vars_cons.
-    ltac1:(rewrite [((_).*1)]/=).
+    ltac1:(rewrite !fmap_cons).
+    ltac1:(rewrite !union_list_cons).
+    ltac1:(rewrite !list_to_set_cons).
+    ltac1:(rewrite !eqns_vars_cons).
+    unfold compose at 1.
+    ltac1:(rewrite ![((_).*1)]/=).
     ltac1:(rewrite ![((_).1)]/=).
-    ltac1:(rewrite [((_).2)]/=).
+    ltac1:(rewrite ![((_).2)]/=).
     ltac1:(rewrite !vars_of_builtin).
-    ltac1:(rewrite vars_of_variable).
-    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es)).
-    {
-      clear. intros.
-      ltac1:(set_solver).
-    }
-    simpl.
-    eapply transitivity.
-    { eapply H. apply H1x0. }
+    ltac1:(rewrite !vars_of_variable).
+    specialize (H _ H1x0).
     destruct (decide (x ∈ eqns_vars es)).
     {
-      rewrite eqns_vars_sub>[|assumption].
-      ltac1:(rewrite vars_of_builtin).
+      rewrite eqns_vars_sub in H>[|assumption].
+      ltac1:(rewrite vars_of_builtin in H).
       ltac1:(set_solver).
     }
     {
-      rewrite sub_notin>[|assumption].
+      rewrite sub_notin in H>[|assumption].
       ltac1:(set_solver).
     }
   }
@@ -1674,29 +1666,24 @@ Proof.
 
     inversion H2x0; subst; clear H2x0.
     clear Heq.
-    rewrite fmap_cons.
+    ltac1:(rewrite !fmap_cons).
     rewrite list_to_set_cons.
     rewrite eqns_vars_cons.
-    ltac1:(rewrite [((_).*1)]/=).
+    unfold compose at 1.
+    ltac1:(rewrite ![((_).*1)]/=).
     ltac1:(rewrite ![((_).1)]/=).
-    ltac1:(rewrite [((_).2)]/=).
+    ltac1:(rewrite ![((_).2)]/=).
     ltac1:(rewrite !vars_of_variable).
-    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es ∪ {[x;y]})).
-    {
-      clear. intros.
-      ltac1:(set_solver).
-    }
-    simpl.
-    eapply transitivity.
-    { eapply H. apply H1x0. }
+    rewrite union_list_cons.
+    specialize (H _ H1x0).
     destruct (decide (x ∈ eqns_vars es)).
     {
-      rewrite eqns_vars_sub>[|assumption].
-      ltac1:(rewrite vars_of_variable).
+      rewrite eqns_vars_sub in H>[|assumption].
+      ltac1:(rewrite vars_of_variable in H).
       ltac1:(set_solver).
     }
     {
-      rewrite sub_notin>[|assumption].
+      rewrite sub_notin in H>[|assumption].
       ltac1:(set_solver).
     }
   }
@@ -1713,23 +1700,15 @@ Proof.
     rewrite eqns_vars_cons.
     simpl.
     ltac1:(rewrite vars_of_variable).
-    ltac1:(cut(list_to_set x0.*1 ⊆ eqns_vars es ∪ {[x]} ∪ vars_of (t_term s l0) )).
-    {
-      clear. intros.
-      ltac1:(set_solver).
-    }
-    simpl.
-    assert(H' := H _ H1x0).
-    eapply transitivity.
-    { apply H'. }
+    specialize (H _ H1x0).
 
     destruct (decide (x ∈ eqns_vars es)).
     {
-      rewrite eqns_vars_sub>[|assumption].
+      rewrite eqns_vars_sub in H>[|assumption].
       ltac1:(set_solver).
     }
     {
-      rewrite sub_notin>[|assumption].
+      rewrite sub_notin in H>[|assumption].
       ltac1:(set_solver).
     }
   }
@@ -2210,6 +2189,7 @@ Proof.
         destruct Hss as [Hss1 Hss2].
         destruct HH21 as [s1 Hs1].
         simpl.
+        Check sub_app_unbound_var_2.
         Search sub_app.
         (*
         assert(HH2ss := HH2 ss).
