@@ -1323,10 +1323,16 @@ Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
   length l1 <> length l2 ->
   unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
 
+(*
 | uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat) (t1 t2 : TermOver BuiltinOrVar),
   l1 !! idx = Some t1 ->
   l2 !! idx = Some t2 ->
   unify_failure ((t1,t2)::(drop (S idx) (zip l1 l2))++es) ->
+  unify_failure (((t_term s l1),(t_term s l2))::es)
+  *)
+
+| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat),
+  unify_failure ((take idx (zip l1 l2))++es) ->
   unify_failure (((t_term s l1),(t_term s l2))::es)
 
 | uf_rec : forall es t1 t2,
@@ -1826,6 +1832,23 @@ Proof.
   }
 Qed.
 
+Lemma is_unifier_of_app
+  {Σ : StaticModel}
+  u es1 es2
+  :
+  is_unifier_of u (es1 ++ es2) <->
+  (is_unifier_of u es1 /\ is_unifier_of u es2)
+.
+Proof.
+  induction es1.
+  {
+    simpl. ltac1:(naive_solver).
+  }
+  {
+    simpl. destruct a. simpl in *.
+    ltac1:(naive_solver).
+  }
+Qed.
 
 Lemma unify_sound
   {Σ : StaticModel}
@@ -2245,16 +2268,267 @@ Proof.
         {
           apply Hs1.
         }
+      }
     }
-  }
   {
     exact H.
   }
   }
   {
-    
+    ltac1:(simplify_eq/=).
   }
-
+  {
+    ltac1:(simp unify).
+    unfold unify_unfold_clause_6_2.
+    rewrite Heq.
+    apply HH. clear HH.
+    constructor.
+  }
+  {
+    ltac1:(exfalso).
+    apply HH. constructor. assumption.
+  }
+  {
+    rewrite <- Heqcall. clear Heqcall.
+    ltac1:(ospecialize (H _)).
+    {
+      intros HContra. apply HH. clear HH.
+      apply uf_term_over.
+    }
+    clear HH.
+    destruct (unify (sub (t_term s l0) x es)) as [Hr |].
+    {
+      simpl.
+      destruct H as [HH1 HH2].
+      destruct (decide (x = x))>[|ltac1:(congruence)].
+      (repeat split).
+      {
+        f_equal.
+        f_equal.
+        apply list_eq.
+        intros i.
+        ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+        rewrite list_lookup_fmap.
+        destruct (l0 !! i) eqn:Heqt.
+        {
+          ltac1:(rewrite Heqt).
+          simpl.
+          apply f_equal.
+          rewrite subst_notin2.
+          { reflexivity. }
+          intros HContra.
+          apply n. clear n Heq.
+          rewrite vars_of_t_term.
+          apply take_drop_middle in Heqt.
+          rewrite <- Heqt.
+          rewrite fmap_app.
+          rewrite union_list_app.
+          rewrite fmap_cons.
+          simpl.
+          ltac1:(set_solver).
+        }
+        {
+          ltac1:(rewrite Heqt).
+          reflexivity.
+        }
+      }
+      {
+        clear e.
+        apply is_unifier_of_cons.
+        exact HH1.
+      }
+      {
+        clear e.
+        intros u Hu.
+        simpl in Hu.
+        destruct Hu as [Hu1 Hu2].
+        specialize (HH2 u).
+        ltac1:(ospecialize (HH2 _)).
+        {
+          apply helper_lemma_2.
+          symmetry. apply Hu1. apply Hu2.
+        }
+        destruct HH2 as [rest Hrest].
+        exists rest.
+        intros x0.
+        simpl.
+        destruct (decide (x = x0)).
+        {
+          subst.
+          ltac1:(rename x0 into x).
+          eapply helper_lemma_3 in Hrest as Hrest1.
+          rewrite <- Hrest1. clear Hrest1.
+          symmetry. apply Hu1.
+        }
+        {
+          eapply helper_lemma_3 in Hrest as Hrest1.
+          rewrite <- Hrest1. clear Hrest1.
+          reflexivity.
+        }
+      }
+    }
+    {
+      simpl. exact H.
+    }
+  }
+  {
+    destruct a as [HH1 HH2].
+    clear Heq.
+    rewrite <- Heqcall.
+    ltac1:(ospecialize (H _)).
+    {
+      intros HContra. apply HH. clear HH.
+      subst.
+      apply uf_subterm with (idx := (length (zip l1 l2))).
+      rewrite firstn_all.
+      exact HContra.
+    }
+    destruct (unify (zip l1 l2 ++ es)) eqn:Heq2.
+    {
+      subst.
+      destruct H as [HH3 HH4].
+      simpl.
+      repeat split.
+      {
+        rewrite is_unifier_of_app in HH3.
+        destruct HH3 as [HH31 HH32].
+        rewrite sub_app_term.
+        rewrite sub_app_term.
+        f_equal.
+        apply list_eq.
+        intros i.
+        rewrite list_lookup_fmap.
+        rewrite list_lookup_fmap.
+        destruct (l1!!i) eqn:Hl1i.
+        {
+          ltac1:(rewrite Hl1i).
+          destruct (l2!!i) eqn:Hl2i.
+          {
+            ltac1:(rewrite Hl2i).
+            simpl.
+            f_equal.
+            remember (zip l1 l2) as z.
+            destruct (z !! i) eqn:Hzi.
+            {
+              apply take_drop_middle in Hzi as Hzi'.
+              rewrite <- Hzi' in HH31.
+              rewrite is_unifier_of_app in HH31.
+              simpl in HH31.
+              destruct p; simpl in *.
+              destruct HH31 as [HH311 [WHATIWANT HH312]].
+              clear Hzi'.
+              subst z.
+              rewrite lookup_zip_with in Hzi.
+              rewrite Hl1i in Hzi. simpl in Hzi.
+              rewrite Hl2i in Hzi. simpl in Hzi.
+              ltac1:(simplify_eq/=).
+              exact WHATIWANT.
+            }
+            {
+              subst z.
+              rewrite lookup_zip_with in Hzi.
+              rewrite bind_None in Hzi.
+              destruct Hzi.
+              {
+                ltac1:(simplify_eq/=).
+              }
+              destruct H as [x [H1x H2x]].
+              rewrite bind_None in H2x.
+              destruct H2x.
+              { ltac1:(simplify_eq/=). }
+              destruct H as [x' [H1x' H2x']].
+              { ltac1:(simplify_eq/=). }
+            }
+          }
+          apply lookup_lt_Some in Hl1i.
+          apply lookup_ge_None in Hl2i.
+          ltac1:(lia).
+        }
+        {
+          ltac1:(rewrite Hl1i).
+          simpl.
+          destruct (l2 !! i) eqn:Hl2i.
+          {
+            apply lookup_lt_Some in Hl2i.
+            apply lookup_ge_None in Hl1i.
+            ltac1:(lia).
+          }
+          {
+            ltac1:(rewrite Hl2i).
+            reflexivity.
+          }
+        }
+      }
+      {
+        rewrite is_unifier_of_app in HH3.
+        apply HH3.
+      }
+      {
+        intros u Hu.
+        simpl in Hu.
+        destruct Hu as [H1u H2u].
+        specialize (HH4 u).
+        rewrite is_unifier_of_app in HH4.
+        rewrite sub_app_term in H1u.
+        rewrite sub_app_term in H1u.
+        inversion H1u; subst; clear H1u.
+        ltac1:(ospecialize (HH4 _)).
+        {
+          split; try assumption.
+          clear -HH2 H0.
+          revert l2 HH2 H0.
+          induction l1; intros l2 HH2 H0.
+          {
+            destruct l2; simpl in *.
+            { exact I. }
+            { ltac1:(lia). }
+          }
+          {
+            simpl in *.
+            destruct l2; simpl in *.
+            {
+              exact I.
+            }
+            {
+              inversion H0; subst; clear H0.
+              repeat split; try assumption.
+              apply IHl1.
+              { ltac1:(lia). }
+              { apply H2. }
+            }
+          }
+        }
+        destruct HH4 as [rest Hrest].
+        exists rest.
+        intros x.
+        specialize (Hrest x).
+        apply Hrest.
+      }
+    }
+    {
+      exact H.
+    }
+  }
+  {
+    rewrite <- Heqcall.
+    apply HH. clear HH.
+    clear Heq.
+    apply Decidable.not_and in n.
+    destruct n.
+    {
+      constructor. assumption.
+    }
+    {
+      apply uf_term_len. assumption.
+    }
+    destruct (decide (s1 = s2)).
+    {
+      subst. constructor. reflexivity.
+    }
+    {
+      right. assumption.
+    }
+  }
 Qed.
 
 
