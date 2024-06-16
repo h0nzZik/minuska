@@ -1783,6 +1783,70 @@ Proof.
   }
 Qed.
 
+Lemma sub_app_unbound_var_1
+  {Σ : StaticModel}
+  (ss : SubT)
+  (x : variable)
+  :
+  x ∉ ss.*1 ->
+  sub_app ss (t_over (bov_variable x)) = (t_over (bov_variable x))
+.
+Proof.
+  induction ss; intros HH.
+  {
+    simpl. reflexivity.
+  }
+  {
+    simpl in HH. specialize(IHss ltac:(set_solver)).
+    simpl.
+    destruct a; simpl in *.
+    destruct (decide (v = x)).
+    {
+      subst. ltac1:(exfalso). ltac1:(set_solver).
+    }
+    {
+      exact IHss.
+    }
+  }
+Qed.
+
+Lemma sub_app_unbound_var_2
+  {Σ : StaticModel}
+  (ss : SubT)
+  (x : variable)
+  (t : TermOver BuiltinOrVar)
+  :
+  x ∉ ⋃ (vars_of <$> ss.*2) ->
+  x ∉ vars_of t ->
+  x ∉ vars_of (sub_app ss t)
+.
+Proof.
+  revert x t.
+  induction ss; intros x t HH1 HH2.
+  {
+    simpl. exact HH2.
+  }
+  {
+    rewrite fmap_cons in HH1.
+    rewrite fmap_cons in HH1.
+    simpl.
+    destruct a; simpl in *.
+    apply IHss.
+    { ltac1:(set_solver). }
+    destruct (decide (v ∈ vars_of t)).
+    {
+      ltac1:(rewrite vars_of_TermOverBoV_subst).
+      { assumption. }
+      { ltac1:(set_solver). }
+    }
+    {
+      rewrite subst_notin2.
+      { assumption. }
+      { assumption. }
+    }
+  }
+Qed.
+
 
 Lemma unify_sound
   {Σ : StaticModel}
@@ -2136,19 +2200,18 @@ Proof.
       {
         Print least_of.
         Search least_of.
-        Search is_unifier_of.
+        Search is_unifier_of sub.
+        assert (Hnoota := unify_no_variable_out_of_thin_air _ _ H0).
         intros ss Hss.
         unfold least_of in HH2.
-
-        assert (HH20 := HH2 (l ++ s1)).
-
 
         assert (HH21 := HH2 _ HH1).
         simpl in Hss.
         destruct Hss as [Hss1 Hss2].
         destruct HH21 as [s1 Hs1].
         simpl.
-
+        Search sub_app.
+        (*
         assert(HH2ss := HH2 ss).
         ltac1:(ospecialize (HH2ss _)).
         {
@@ -2156,7 +2219,7 @@ Proof.
           apply Hss1.
           exact Hss2.
         }
-        destruct HH2ss as [s3 Hs3].
+        destruct HH2ss as [s3 Hs3].*)
         (*        eapply helper_lemma_3 in Hs1 as Hs1'.*)
         
         
@@ -2168,6 +2231,27 @@ Proof.
         destruct (decide (x = x0)).
         {
           subst.
+
+          destruct (decide (x0 ∈ eqns_vars es)) as [Hin2|Hnotin2].
+          {
+            rewrite eqns_vars_sub in Hnoota>[|exact Hin2].
+            assert (Hnx0: x0 ∉ ((l.*1))).
+            {
+              ltac1:(set_solver).
+            }
+            apply sub_app_unbound_var in Hnx0 as Hnx0'.
+            rewrite <- Hnx0' in Hss1.
+            rewrite <- Hnx0'.
+            rewrite sub_app_app.
+            rewrite Hs1.
+            rewrite sub_app_app.
+            Search sub_app.
+            eapply helper_lemma_3 in Hs1 as Hs1'.
+            rewrite <- Hs1'. clear Hs1'.
+            rewrite Hss1.
+          }
+
+
           eapply helper_lemma_3 in Hs1 as Hs1'.
           rewrite <- Hs1'.
           rewrite Hs3.
