@@ -1296,57 +1296,6 @@ Proof.
 Qed.
 
 
-Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
-| uf_varin_fail_1  : forall x t es,
-  x ∈ vars_of t ->
-  t <> (t_over (bov_variable x)) ->
-  unify_failure (((t_over (bov_variable x)), t) :: es)
-
-| uf_varin_fail_2  : forall x t es,
-  x ∈ vars_of t ->
-  t <> (t_over (bov_variable x)) ->
-  unify_failure ((t, (t_over (bov_variable x))) :: es)
-
-| uf_diff_builtin : forall b1 b2 es,
-  b1 <> b2 ->
-  unify_failure (((t_over (bov_builtin b1)),(t_over (bov_builtin b2))) :: es)
-
-| uf_over_term : forall b s l es,
-  unify_failure (((t_over (bov_builtin b)),(t_term s l))::es)
-
-| uf_term_over : forall b s l es,
-  unify_failure (((t_term s l), (t_over (bov_builtin b)))::es)
-
-| uf_term_sym : forall s1 s2 l1 l2 es,
-  s1 <> s2 ->
-  unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
-
-| uf_term_len : forall s1 s2 l1 l2 es,
-  length l1 <> length l2 ->
-  unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
-
-(*
-| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat) (t1 t2 : TermOver BuiltinOrVar),
-  l1 !! idx = Some t1 ->
-  l2 !! idx = Some t2 ->
-  unify_failure ((t1,t2)::(drop (S idx) (zip l1 l2))++es) ->
-  unify_failure (((t_term s l1),(t_term s l2))::es)
-  *)
-
-| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat),
-  unify_failure ((take idx (zip l1 l2))++es) ->
-  unify_failure (((t_term s l1),(t_term s l2))::es)
-
-| uf_rec : forall es t1 t2,
-  unify_failure es ->
-  unify_failure ((t1,t2)::es)
-
-| uf_rec_sub : forall es t1 t2 ss,
-  unify_failure (sub_ext ss es) ->
-  unify_failure ((t1,t2)::es)
-.
-
-
 Lemma least_of_nil_nil
   {Σ : StaticModel}
   :
@@ -1792,7 +1741,100 @@ Proof.
   }
 Qed.
 
-Search unify_failure.
+
+Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
+| uf_varin_fail_1  : forall x t es,
+  x ∈ vars_of t ->
+  t <> (t_over (bov_variable x)) ->
+  unify_failure (((t_over (bov_variable x)), t) :: es)
+
+| uf_varin_fail_2  : forall x t es,
+  x ∈ vars_of t ->
+  t <> (t_over (bov_variable x)) ->
+  unify_failure ((t, (t_over (bov_variable x))) :: es)
+
+| uf_diff_builtin : forall b1 b2 es,
+  b1 <> b2 ->
+  unify_failure (((t_over (bov_builtin b1)),(t_over (bov_builtin b2))) :: es)
+
+| uf_over_term : forall b s l es,
+  unify_failure (((t_over (bov_builtin b)),(t_term s l))::es)
+
+| uf_term_over : forall b s l es,
+  unify_failure (((t_term s l), (t_over (bov_builtin b)))::es)
+
+| uf_term_sym : forall s1 s2 l1 l2 es,
+  s1 <> s2 ->
+  unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
+
+| uf_term_len : forall s1 s2 l1 l2 es,
+  length l1 <> length l2 ->
+  unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
+
+(*
+| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat) (t1 t2 : TermOver BuiltinOrVar),
+  l1 !! idx = Some t1 ->
+  l2 !! idx = Some t2 ->
+  unify_failure ((t1,t2)::(drop (S idx) (zip l1 l2))++es) ->
+  unify_failure (((t_term s l1),(t_term s l2))::es)
+  *)
+
+| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat),
+  unify_failure ((take idx (zip l1 l2))++es) ->
+  unify_failure (((t_term s l1),(t_term s l2))::es)
+
+| uf_rec : forall es t1 t2,
+  unify_failure es ->
+  unify_failure ((t1,t2)::es)
+
+| uf_rec_sub2_l : forall es x t,
+  unify_failure (sub t x es) ->
+  unify_failure ((t_over (bov_variable x),t)::es)
+
+| uf_rec_sub2_r : forall es x t,
+  unify_failure (sub t x es) ->
+  unify_failure ((t, t_over (bov_variable x))::es)
+(*
+| uf_rec_sub : forall es t1 t2 ss,
+  unify_failure (sub_ext ss es) ->
+  unify_failure ((t1,t2)::es)
+  *)
+.
+
+(*
+Lemma unify_some_not_failure
+  {Σ : StaticModel}
+  (es : list eqn)
+  (u : SubT)
+:
+  unify es = Some u ->
+  ~ (unify_failure es)
+.
+Proof.
+  ltac1:(funelim (unify es)); intros HH HContra;
+    ltac1:(simplify_eq/=); try ltac1:(congruence).
+  {
+    inversion HContra.
+  }
+  {
+    rewrite <- Heqcall in HH.
+    specialize (H _ HH).
+    apply H. clear H HH Heqcall Heq.
+    inversion HContra; ltac1:(simplify_eq/=).
+    assumption.
+  }
+  {
+    rewrite <- Heqcall in HH. clear Heqcall.
+    rewrite bind_Some in HH.
+    destruct HH as [rest [H1rest H2rest]].
+    ltac1:(simplify_eq/=).
+    specialize (H _ H1rest).
+    apply H. clear H.
+    inversion HContra; ltac1:(simplify_eq/=).
+    assumption.
+  }
+Qed.*)
+
 
 Lemma unify_sound
   {Σ : StaticModel}
@@ -1872,10 +1914,7 @@ Proof.
         {
           intros HContra.
           apply HH. clear HH.
-          eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
-          simpl.
-          ltac1:(rewrite sub_ext_cons).
-          ltac1:(rewrite sub_ext_nil).
+          apply uf_rec_sub2_r.
           exact HContra.
         }
         destruct H as [H2 H3]. clear H1 e.
@@ -1886,9 +1925,7 @@ Proof.
         ltac1:(ospecialize (H _)).
         {
           intros HContra. apply HH. clear HH.
-          eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
-          ltac1:(rewrite sub_ext_cons).
-          ltac1:(rewrite sub_ext_nil).
+          apply uf_rec_sub2_r.
           exact HContra.
         }
         destruct H as [H2 H3].
@@ -1924,8 +1961,7 @@ Proof.
     }
     {
       apply H. intros HContra. apply HH. clear HH H.
-      eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
-      ltac1:(rewrite sub_ext_cons sub_ext_nil).
+      apply uf_rec_sub2_r.
       exact HContra.
     }
   }
@@ -1966,8 +2002,7 @@ Proof.
     ltac1:(ospecialize (H _)).
     {
       intros HContra. apply HH. clear HH.
-      eapply uf_rec_sub with (ss := [(x, t_over (bov_builtin b))]).
-      ltac1:(rewrite sub_ext_cons sub_ext_nil).
+      apply uf_rec_sub2_l.
       exact HContra.
     }
     ltac1:(repeat (case_match; simplify_eq/=)).
@@ -2039,8 +2074,8 @@ Proof.
     ltac1:(ospecialize (H _)).
     {
       intros HContra. apply HH. clear HH.
-      apply uf_rec_sub with (ss := [(x, t_over (bov_variable y))]).
-      eapply HContra.
+      apply uf_rec_sub2_l.
+      exact HContra.
     }
     clear HH.
     ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
@@ -2094,8 +2129,8 @@ Proof.
     ltac1:(ospecialize (H _)).
     {
       intros HContra. apply HH. clear HH.
-      eapply uf_rec_sub with (ss := [(x, t_term s l0)]).
-      apply HContra.
+      apply uf_rec_sub2_l.
+      exact HContra.
     }
     clear HH.
     ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
@@ -2240,9 +2275,8 @@ Proof.
     ltac1:(ospecialize (H _)).
     {
       intros HContra. apply HH. clear HH.
-      Print unify_failure.
-      eapply uf_rec_sub with (ss := [(x, (t_term s l0))]).
-      apply HContra.
+      apply uf_rec_sub2_r.
+      exact HContra.
     }
     clear HH.
     destruct (unify (sub (t_term s l0) x es)) as [Hr |].
@@ -2879,43 +2913,20 @@ Proof.
     exact H2s.
   }
   {
-    Check unify_failure.
     intros [s [H1s H2s]].
     apply IHHfail. clear IHHfail.
-    clear -H2s.
-    induction ss.
-    {
-      rewrite sub_ext_nil.
-      exists s. exact H2s.
-    }
-    {
-      destruct IHss as [s0 Hs0].
-      destruct a as [x t].
-      exists (s0).
-      simpl.
-      rewrite sub_ext_cons.
-      apply is_unifier_of_extensive with (rest := [(x, t)]) in Hs0.
-      rewrite <- sub_ext_cons.
-      simpl.
-      Search sub_ext.
-      Search is_unifier_of.
-      eapply (helper_lemma_2 x t) in Hs0.
-      apply is_unifier_of_cons.
-      Search is_unifier_of.
-      rewrite sub_ext_cons.
-    }
-    Check helper_lemma_2.
-    Print SubT.
-    Search SubT.
-    Search sub_ext.
+    apply helper_lemma_2 with (es := es) in H1s.
     exists s.
-    clear -H2s.
-    eapply helper_lemma_2 in H2s.
-    Check sub.
-    exists (s).
-    Search sub_ext.
-    Search is_unifier_of.
-    ltac1:(rewrite is_unifier_of_app).
-    Search is_unifier_of.
+    exact H1s.
+    exact H2s.
+  }
+    {
+    intros [s [H1s H2s]].
+    apply IHHfail. clear IHHfail.
+    symmetry in H1s.
+    apply helper_lemma_2 with (es := es) in H1s.
+    exists s.
+    exact H1s.
+    exact H2s.
   }
 Qed.
