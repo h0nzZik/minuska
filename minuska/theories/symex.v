@@ -1311,11 +1311,11 @@ Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
   b1 <> b2 ->
   unify_failure (((t_over (bov_builtin b1)),(t_over (bov_builtin b2))) :: es)
 
-| uf_over_term : forall bv s l es,
-  unify_failure (((t_over bv),(t_term s l))::es)
+| uf_over_term : forall b s l es,
+  unify_failure (((t_over (bov_builtin b)),(t_term s l))::es)
 
-| uf_term_over : forall bv s l es,
-  unify_failure (((t_term s l), (t_over bv))::es)
+| uf_term_over : forall b s l es,
+  unify_failure (((t_term s l), (t_over (bov_builtin b)))::es)
 
 | uf_term_sym : forall s1 s2 l1 l2 es,
   s1 <> s2 ->
@@ -1472,66 +1472,6 @@ Proof.
     }
   }
 Qed.
-
-
-Lemma least_of_has_minimal_length
-  {Σ : StaticModel}
-  (s : SubT)
-  (es : list eqn)
-  :
-  is_unifier_of s es ->
-  least_of s es ->
-  ∀ s', is_unifier_of s' es -> length s <= length s'
-.
-Proof.
-  intros HH1 HH2 s' Hs'unif.
-  apply dec_stable.
-  intros HContra.
-  assert(HContra' : length s > length s') by ltac1:(lia).
-  clear HContra.
-
-
-  (*
-  specialize (HH _ Hs'unif).
-  destruct HH as [s1 Hs1].
-  *)
-Abort.
-
-
-
-Lemma least_unifier_nodup
-  {Σ : StaticModel}
-  (s : SubT)
-  (es : list eqn)
-:
-  is_unifier_of s es /\ least_of s es ->
-  NoDup (fst <$> s)
-.
-Proof.
-  intros Hlu.
-  rewrite NoDup_alt.
-  intros i j x Hi Hj.
-  destruct Hlu as [Hunif Hleast].
-  unfold least_of in Hleast.
-  ltac1:(wlog Hij: i j Hi Hj / i < j).
-  { 
-    destruct (decide (i < j)).
-    {
-      intros HH. specialize (HH i j Hi Hj ltac:(lia)). exact HH.
-    }
-    intros HH.
-    specialize (HH j i Hj Hi).
-    ltac1:(lia).
-  }
-  ltac1:(exfalso).
-  ltac1:(cut (is_unifier_of (delete i s) es)).
-  {
-    intros Hunif2.
-    specialize (Hleast _ Hunif2).
-    destruct Hleast as [s1 Hs1].
-    admit.
-  }
-Abort.
 
 Lemma vars_of_builtin
   {Σ : StaticModel}
@@ -2300,7 +2240,9 @@ Proof.
     ltac1:(ospecialize (H _)).
     {
       intros HContra. apply HH. clear HH.
-      apply uf_term_over.
+      Print unify_failure.
+      eapply uf_rec_sub with (ss := [(x, (t_term s l0))]).
+      apply HContra.
     }
     clear HH.
     destruct (unify (sub (t_term s l0) x es)) as [Hr |].
@@ -2709,6 +2651,40 @@ Proof.
   ltac1:(lia).
 Qed.
 
+Lemma is_unifier_of_extensive
+  {Σ : StaticModel}
+  (u : SubT)
+  (es : list eqn)
+:
+  is_unifier_of u es ->
+  forall rest,
+    is_unifier_of (u++rest) es
+.
+Proof.
+  intros.
+  induction es.
+  {
+    simpl. exact I.
+  }
+  {
+    simpl. destruct a as [t1 t2].
+    simpl in *.
+    destruct H as [HH1 HH2].
+    specialize (IHes HH2).
+    split>[|apply IHes].
+    clear -HH1 HH2.
+    induction rest.
+    { rewrite app_nil_r. apply HH1.  }
+    rewrite sub_app_app in IHrest.
+    rewrite sub_app_app in IHrest.
+    rewrite sub_app_app.
+    rewrite sub_app_app.
+    simpl.
+    destruct a as [x t].
+    ltac1:(congruence).
+  }
+Qed.
+
 Lemma unify_failure_is_severe
   {Σ : StaticModel}
   (es : list eqn)
@@ -2823,7 +2799,123 @@ Proof.
     }
   }
   {
-    
+    intros [s Hs].
+    simpl in Hs.
+    destruct Hs as [Hs1 Hs2].
+    rewrite sub_app_builtin in Hs1.
+    rewrite sub_app_builtin in Hs1.
+    ltac1:(simplify_eq/=).
   }
-
+  {
+    intros HContra.
+    destruct HContra as [s0 [H1s0 H2s0]].
+    rewrite sub_app_term in H1s0.
+    rewrite sub_app_builtin in H1s0.
+    inversion H1s0.
+  }
+  {
+    intros [s0 [H1s0 H2s0]].
+    rewrite sub_app_term in H1s0.
+    rewrite sub_app_builtin in H1s0.
+    inversion H1s0.
+  }
+  {
+    intros [s0 [H1s0 H2s0]].
+    rewrite sub_app_term in H1s0.
+    rewrite sub_app_term in H1s0.
+    ltac1:(simplify_eq/=).
+  }
+  {
+    intros [s0 [H1s0 H2s0]].
+    rewrite sub_app_term in H1s0.
+    rewrite sub_app_term in H1s0.
+    ltac1:(simplify_eq/=).
+    apply (f_equal length) in H0.
+    rewrite fmap_length in H0.
+    rewrite fmap_length in H0.
+    ltac1:(simplify_eq/=).
+  }
+  {
+    intros [s0 [H1s0 H2s0]].
+    rewrite sub_app_term in H1s0.
+    rewrite sub_app_term in H1s0.
+    ltac1:(simplify_eq/=).
+    apply (f_equal length) in H1s0 as H1s0'.
+    rewrite fmap_length in H1s0'.
+    rewrite fmap_length in H1s0'.
+    apply IHHfail.
+    exists s0.
+    rewrite is_unifier_of_app.
+    split>[|apply H2s0].
+    ltac1:(cut(is_unifier_of s0 (zip l1 l2))).
+    {
+      intros HHH.
+      rewrite <- (take_drop idx (zip l1 l2)) in HHH.
+      rewrite is_unifier_of_app in HHH.
+      apply HHH.
+    }
+    clear - H1s0.
+    revert l2 H1s0.
+    induction l1; intros l2 H1s0.
+    {
+      simpl. exact I.
+    }
+    {
+      simpl.
+      destruct l2; simpl in *.
+      {
+        inversion H1s0.
+      }
+      inversion H1s0; subst; clear H1s0.
+      split>[reflexivity|].
+      apply IHl1.
+      apply H1.
+    }
+  }
+  {
+    intros [s [H1s H2s]].
+    apply IHHfail. clear IHHfail.
+    exists s.
+    exact H2s.
+  }
+  {
+    Check unify_failure.
+    intros [s [H1s H2s]].
+    apply IHHfail. clear IHHfail.
+    clear -H2s.
+    induction ss.
+    {
+      rewrite sub_ext_nil.
+      exists s. exact H2s.
+    }
+    {
+      destruct IHss as [s0 Hs0].
+      destruct a as [x t].
+      exists (s0).
+      simpl.
+      rewrite sub_ext_cons.
+      apply is_unifier_of_extensive with (rest := [(x, t)]) in Hs0.
+      rewrite <- sub_ext_cons.
+      simpl.
+      Search sub_ext.
+      Search is_unifier_of.
+      eapply (helper_lemma_2 x t) in Hs0.
+      apply is_unifier_of_cons.
+      Search is_unifier_of.
+      rewrite sub_ext_cons.
+    }
+    Check helper_lemma_2.
+    Print SubT.
+    Search SubT.
+    Search sub_ext.
+    exists s.
+    clear -H2s.
+    eapply helper_lemma_2 in H2s.
+    Check sub.
+    exists (s).
+    Search sub_ext.
+    Search is_unifier_of.
+    ltac1:(rewrite is_unifier_of_app).
+    Search is_unifier_of.
+  }
 Qed.
