@@ -31,7 +31,14 @@ Class UnificationAlgorithm
             (t1 t2 : TermOver BuiltinOrVar)
             (u : SubT),
         ua_unify t1 t2 = Some u ->
-        sub_app u t1 = sub_app u t2
+        (sub_app u t1 = sub_app u t2) /\
+        (
+            forall u',
+                sub_app u' t1 = sub_app u' t2 ->
+                exists rest,
+                forall (x : variable),
+                    sub_app (u ++ rest) (t_over (bov_variable x)) = sub_app u' (t_over (bov_variable x))
+        )
     ;
 
     ua_unify_complete :

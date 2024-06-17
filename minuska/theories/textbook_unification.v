@@ -2030,8 +2030,7 @@ Module Implementation.
         ltac1:(simp unify).
         unfold unify_unfold_clause_6_2.
         rewrite Heq.
-        apply HH. clear HH.
-        constructor.
+        exact I.
     }
     {
         rewrite <- Heqcall.
@@ -2669,6 +2668,148 @@ Module Implementation.
     }
     Qed.
 
+    Hint Constructors unify_failure : core.
+    Lemma unify_sound2
+        {Σ : StaticModel}
+        (es : list eqn)
+    :
+        unify es = None ->
+        unify_failure es
+    .
+    Proof.
+        ltac1:(funelim (unify es)); intros HNone.
+        {
+            ltac1:(simp unify in HNone).
+            inversion HNone.
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            specialize (H HNone).
+            solve [eauto].
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            constructor.
+            intros HContra.
+            ltac1:(simplify_eq/=).
+        }
+        {
+            clear -e.
+            rewrite vars_of_builtin in e.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            rewrite bind_None in HNone.
+            destruct HNone as [HNone|HNone].
+            {
+                specialize (H HNone).
+                solve [eauto].
+            }
+            {
+                destruct HNone as [x0 [H1x0 H2x0]].
+                inversion H2x0.
+            }
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            specialize (H HNone).
+            solve [eauto].
+        }
+        {
+            solve [eauto].
+        }
+        {
+            solve [eauto].
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            rewrite bind_None in HNone.
+            destruct HNone as [HNone|HNone].
+            {
+                specialize (H HNone).
+                solve [eauto].
+            }
+            {
+                destruct HNone as [x0 [H1x0 H2x0]].
+                inversion H2x0.
+            }
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            specialize (H HNone).
+            solve [eauto].
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            rewrite bind_None in HNone.
+            destruct HNone as [HNone|HNone].
+            {
+                specialize (H HNone).
+                solve [eauto].
+            }
+            {
+                destruct HNone as [x0 [H1x0 H2x0]].
+                inversion H2x0.
+            }
+        }
+        {
+            solve [eauto].
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            rewrite bind_None in HNone.
+            destruct HNone as [HNone|HNone].
+            {
+                specialize (H HNone).
+                solve [eauto].
+            }
+            {
+                destruct HNone as [x0 [H1x0 H2x0]].
+                inversion H2x0.
+            }
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            specialize (H HNone).
+            solve [eauto].
+        }
+        {
+            solve [eauto].
+        }
+        {
+            solve [eauto].
+        }
+        {
+            rewrite <- Heqcall in HNone.
+            rewrite bind_None in HNone.
+            destruct HNone as [HNone|HNone].
+            {
+                specialize (H HNone).
+                solve [eauto].
+            }
+            {
+                destruct HNone as [x0 [H1x0 H2x0]].
+                inversion H2x0.
+            }
+        }
+        {
+            destruct a as [HH1 HH2].
+            subst.
+            apply uf_subterm with (idx := length (zip l1 l2)).
+            rewrite firstn_all.
+            apply H.
+            ltac1:(congruence).
+        }
+        {
+            clear Heq.
+            apply Decidable.not_and in n.
+            destruct n; solve [eauto].
+            unfold Decidable.decidable.
+            destruct (decide (s1 = s2)); auto.
+        }
+    Qed.
+
 End Implementation.
 
 Program Definition
@@ -2682,20 +2823,31 @@ Program Definition
 Next Obligation.
     assert(Hsound := Implementation.unify_sound [(t1,t2)]).
     ltac1:(rewrite H in Hsound).
-    apply contra_not in Hsound.
-    Search ((?a -> ?b) -> (~ ?b -> ~ ?a)).
-    
-    ltac1:(ospecialize (Hsound _)).
+    simpl in Hsound.
+    destruct Hsound as [H1 H2].
+    split.
     {
-        intros HContra.
-        apply Implementation.unify_failure_is_severe in HContra.
-        apply HContra.
-        exists u.
-        exact H.
+        apply (proj1 H1).
     }
-    Check Implementation.unify_sound.
-Defined.
+    intros u'.
+    specialize (H2 u').
+    intros Hu'.
+    simpl in H2.
+    specialize (H2 (conj Hu' I)).
+    destruct H2 as [rest Hrest].
+    exists rest.
+    intros x.
+    specialize (Hrest x).
+    symmetry.
+    exact Hrest.
+Qed.
 Next Obligation.
-
-Defined.
+    assert(Hsound := Implementation.unify_sound2 [(t1,t2)] H).
+    apply Implementation.unify_failure_is_severe in Hsound.
+    apply Hsound.
+    exists s.
+    simpl.
+    repeat split.
+    assumption.
+Qed.
 
