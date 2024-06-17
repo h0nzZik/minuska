@@ -771,57 +771,6 @@ Proof.
 Qed.
 
 
-Lemma subst_notin
-    {Σ : StaticModel}
-    (h : variable)
-    (φ ψ : TermOver BuiltinOrVar)
-    :
-    h ∉ vars_of_to_l2r φ ->
-    TermOverBoV_subst φ h ψ = φ
-.
-Proof.
-    induction φ; simpl.
-    {
-        destruct a; simpl.
-        {
-            intros _. reflexivity.
-        }
-        {
-            destruct (decide (h = x)); simpl.
-            {
-                subst. intros HContra. ltac1:(exfalso). apply HContra.
-                constructor.
-            }
-            {
-                intros _. reflexivity.
-            }
-        }
-    }
-    {
-        intros H2.
-        f_equal.
-        induction l; simpl.
-        {
-            reflexivity.
-        }
-        {
-            apply Forall_cons in H.
-            destruct H as [HH1 HH2].
-            simpl in *.
-            specialize (IHl HH2).
-            rewrite elem_of_app in H2.
-            apply Decidable.not_or in H2.
-            destruct H2 as [H21 H22].
-            specialize (IHl H22). clear H22.
-            specialize (HH1 H21).
-            rewrite HH1.
-            rewrite IHl.
-            reflexivity.
-        }
-    }
-Qed.
-
-
 Lemma weird_lemma
     {T1 T2 : Type}
     l s:
@@ -4135,70 +4084,6 @@ Proof.
     }
 Qed.
 
-Lemma sum_list_with_compose {A B : Type} (g : A -> B) (f : B -> nat)
-    :
-    sum_list_with (f ∘ g) = (sum_list_with f) ∘ (fmap g)
-.
-Proof.
-    apply functional_extensionality.
-    intros l.
-    induction l; simpl.
-    {
-        reflexivity.
-    }
-    {
-        rewrite IHl. unfold compose. reflexivity.
-    }
-Qed.
-
-Lemma sum_list_with_S (l : list nat):
-    sum_list_with S l = sum_list l + length l
-.
-Proof.
-    induction l; simpl.
-    {
-        reflexivity.
-    }
-    {
-        rewrite IHl.
-        ltac1:(lia).
-    }
-Qed.
-
-Lemma sum_list_fmap
-    {T: Type}
-    (f : T -> nat)
-    (l : list T)
-    :
-    sum_list ( f <$> l) = sum_list_with f l
-.
-Proof.
-    induction l; simpl.
-    { reflexivity. }
-    {
-        unfold fmap in IHl.
-        rewrite IHl.
-        reflexivity.
-    }
-Qed.
-
-Lemma sum_list_with_sum_list_with
-    {T: Type}
-    (f : T -> nat)
-    (l : list (list T))
-    :
-    sum_list_with (sum_list_with f) l = sum_list_with f (concat l)
-.
-Proof.
-    induction l; simpl.
-    { reflexivity. }
-    {
-        rewrite IHl.
-        rewrite sum_list_with_app.
-        reflexivity.
-    }
-Qed.
-
 (*
 Lemma subst_preserves_or_increases_delta
     {Σ : StaticModel}
@@ -4891,7 +4776,6 @@ Proof.
                         }
                         clear H0.
                         rewrite H0'.
-                        (* Search drop lγ. *)
                         clear Hlγi H0' H33.
 
                         assert(HeqB1': sum_list (TermOver_size <$> take i l) + sum_list_with (λ ψ0 : TermOver BuiltinOrVar, sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ0)) (take i l) = sum_list (map TermOver_size (take i lγ))).
@@ -4899,7 +4783,6 @@ Proof.
                             ltac1:(lia).
                         }
                         clear HeqB1. clear H31.
-                        (* Search TermOver_size t0. *)
                         clear H61 H62'.
                         ltac1:(
                             replace
@@ -7519,14 +7402,6 @@ Proof.
     }
 Qed.
 
-Lemma vars_of_t_term
-    {Σ : StaticModel}
-    (s : symbol)
-    (l : list (TermOver BuiltinOrVar))
-    :
-    vars_of (t_term s l) = union_list ( vars_of <$> l)
-.
-Proof. reflexivity. Qed.
 
 (*
 Lemma vars_of_t_term
@@ -11480,7 +11355,6 @@ Proof.
                 { reflexivity. }
                 {
                     simpl.
-                    Search ctrl1.
                 }
                 *)
             }
@@ -11492,3 +11366,9 @@ Proof.
         }
     }
 Abort.
+
+Search vars_of_to_l2r.
+About vars_of_uglify.
+
+
+Search sum_list_with compose.
