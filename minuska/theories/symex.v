@@ -1304,6 +1304,7 @@ Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
 
 | uf_varin_fail_2  : forall x t es,
   x ∈ vars_of t ->
+  t <> (t_over (bov_variable x)) ->
   unify_failure ((t, (t_over (bov_variable x))) :: es)
 
 | uf_diff_builtin : forall b1 b2 es,
@@ -1918,6 +1919,7 @@ Proof.
     apply HH. clear HH.
     apply uf_varin_fail_2.
     assumption.
+    ltac1:(discriminate).
   }
   {
     rewrite <- Heqcall. clear Heqcall.
@@ -2291,6 +2293,7 @@ Proof.
   {
     ltac1:(exfalso).
     apply HH. constructor. assumption.
+    ltac1:(discriminate).
   }
   {
     rewrite <- Heqcall. clear Heqcall.
@@ -2601,12 +2604,110 @@ Proof.
     simpl.
     destruct a; simpl in *.
     apply IHs.
-    Search is_subterm_b.
+    apply subst_preserves_subterm.
+    exact HH1.
   }
-
 Qed.
 
 (*Require Import Coq.Logic.Classical_Prop. *)
+
+Lemma var_is_subterm
+  {Σ : StaticModel}
+  x t
+:
+  x ∈ vars_of t ->
+  is_subterm_b (t_over (bov_variable x)) t = true
+.
+Proof.
+  intros H2X.
+  induction t; simpl in *.
+  {
+    ltac1:(case_match); try reflexivity.
+    destruct a.
+    {
+      ltac1:(rewrite vars_of_builtin in H2X).
+      ltac1:(set_solver).
+    }
+    {
+      unfold is_left in H.
+      ltac1:((repeat case_match); try congruence).
+      ltac1:(rewrite vars_of_variable in H2X).
+      rewrite elem_of_singleton in H2X.
+      subst.
+      ltac1:(exfalso). apply n. reflexivity.
+    }
+  }
+  {
+    rewrite Forall_forall in H.
+    ltac1:(rewrite vars_of_t_term in H2X).
+    rewrite elem_of_union_list in H2X.
+    destruct H2X as [X [H1X H2X]].
+    rewrite elem_of_list_fmap in H1X.
+    destruct H1X as [y [H1y H2y]].
+    subst.
+    specialize (H _ H2y H2X).
+    rewrite existsb_exists.
+    exists y.
+    rewrite <- elem_of_list_In.
+    split; assumption.
+  }
+Qed.
+
+Lemma is_subterm_size
+  {Σ : StaticModel}
+  (t1 t2 : TermOver BuiltinOrVar)
+  :
+  is_subterm_b t1 t2 ->
+  TermOver_size t1 <= TermOver_size t2
+.
+Proof.
+  revert t1.
+  induction t2; intros t1 HH; simpl in *;
+      unfold is_left in *; ltac1:((repeat case_match); simplify_eq/=; try congruence; try lia).
+  {
+    clear H1.
+    rewrite Forall_forall in H.
+    unfold is_true in HH.
+    rewrite existsb_exists in HH.
+    destruct HH as [x [H1x H2x]].
+    rewrite <- elem_of_list_In in H1x.
+    specialize (H _ H1x _ H2x).
+    eapply transitivity>[apply H|]. clear H H2x.
+    rewrite elem_of_list_lookup in H1x.
+    destruct H1x as [i Hi].
+    apply take_drop_middle in Hi.
+    rewrite <- Hi.
+    rewrite sum_list_with_app.
+    simpl.
+    ltac1:(lia).
+}
+Qed.
+
+Lemma is_subterm_antisym
+  {Σ : StaticModel}
+  (t1 t2 : TermOver BuiltinOrVar)
+  :
+  is_subterm_b t1 t2 ->
+  is_subterm_b t2 t1 ->
+  t1 = t2
+.
+Proof.
+  destruct t2; simpl in *; unfold is_left in *; ltac1:((repeat case_match); simplify_eq/=; try congruence).
+  intros HH1 HH2.
+  apply existsb_exists in HH1.
+  destruct HH1 as [x [HH11 HH12]].
+  apply is_subterm_size in HH12.
+  apply is_subterm_size in HH2.
+  simpl in HH2.
+  rewrite <- elem_of_list_In in HH11.
+  rewrite elem_of_list_lookup in HH11.
+  destruct HH11 as [i Hi].
+  apply take_drop_middle in Hi.
+  rewrite <- Hi in HH2.
+  rewrite sum_list_with_app in HH2.
+  simpl in HH2.
+  ltac1:(lia).
+Qed.
 
 Lemma unify_failure_is_severe
   {Σ : StaticModel}
@@ -2640,79 +2741,89 @@ Proof.
     }
     {
       clear H0.
+      destruct Hs as [H1s H2s].
+      (*
+        From H1s it follows that (x,t') ∈ s (for some t')
+      *)
       rewrite vars_of_t_term in H.
       rewrite elem_of_union_list in H.
       destruct H as [X [H1X H2X]].
       rewrite elem_of_list_fmap in H1X.
       destruct H1X as [t [H1t H2t]].
       subst.
-      assert (Hsubt : is_subterm_b (t_over (bov_variable x)) (t_term s0 l) = true).
-      {
-        simpl.
-        rewrite existsb_exists.
-        exists t.
-        split.
-        {
-          rewrite elem_of_list_In in H2t.
-          exact H2t.
-        }
-        {
-          clear -H2X.
-          induction t; simpl in *.
-          {
-            ltac1:(case_match); try reflexivity.
-            destruct a.
-            {
-              ltac1:(rewrite vars_of_builtin in H2X).
-              ltac1:(set_solver).
-            }
-            {
-              unfold is_left in H.
-              ltac1:((repeat case_match); try congruence).
-              ltac1:(rewrite vars_of_variable in H2X).
-              rewrite elem_of_singleton in H2X.
-              subst.
-              ltac1:(exfalso). apply n. reflexivity.
-            }
-          }
-          {
-            rewrite Forall_forall in H.
-            ltac1:(rewrite vars_of_t_term in H2X).
-            rewrite elem_of_union_list in H2X.
-            destruct H2X as [X [H1X H2X]].
-            rewrite elem_of_list_fmap in H1X.
-            destruct H1X as [y [H1y H2y]].
-            subst.
-            specialize (H _ H2y H2X).
-            rewrite existsb_exists.
-            exists y.
-            rewrite <- elem_of_list_In.
-            split; assumption.
-          }
-        }
-      }
-      Check is_subterm_b.
+
+      apply var_is_subterm in H2X as H2X'.
+      apply sub_app_preserves_subterm with (s := s) in H2X'.
+      apply is_subterm_size in H2X'.
+      rewrite H1s in H2X'.
+      clear H1s H2s.
+      rewrite sub_app_term in H2X'.
+      simpl in H2X'.
+
+      rewrite elem_of_list_lookup in H2t.
+      destruct H2t as [it Hit].
+      apply take_drop_middle in Hit.
+      rewrite <- Hit in H2X'.
+      rewrite fmap_app in H2X'.
+      rewrite fmap_cons in H2X'.
+      rewrite sum_list_with_app in H2X'.
+      simpl in H2X'.
+      ltac1:(lia).
     }
   }
-  
-  ; simpl in *;
-    (apply or_not_and).
   {
-    apply or_comm.
-    apply imply_to_or.
-    intros Hunif Hsub.
-    Search 
+    intros HContra.
+    destruct HContra as [s Hs].
+    simpl in Hs.
+    destruct t; simpl in *.
+    {
+      destruct a; simpl in *.
+      {
+        rewrite vars_of_builtin in H.
+        ltac1:(set_solver).
+      }
+      {
+        rewrite vars_of_variable in H.
+        rewrite elem_of_singleton in H.
+        subst x0.
+        apply H0.
+        reflexivity.
+      }
+    }
+    {
+      clear H0.
+      destruct Hs as [H1s H2s].
+      (*
+        From H1s it follows that (x,t') ∈ s (for some t')
+      *)
+      rewrite vars_of_t_term in H.
+      rewrite elem_of_union_list in H.
+      destruct H as [X [H1X H2X]].
+      rewrite elem_of_list_fmap in H1X.
+      destruct H1X as [t [H1t H2t]].
+      subst.
 
+      apply var_is_subterm in H2X as H2X'.
+      apply sub_app_preserves_subterm with (s := s) in H2X'.
+      apply is_subterm_size in H2X'.
+      rewrite <- H1s in H2X'.
+      clear H1s H2s.
+      rewrite sub_app_term in H2X'.
+      simpl in H2X'.
+
+      rewrite elem_of_list_lookup in H2t.
+      destruct H2t as [it Hit].
+      apply take_drop_middle in Hit.
+      rewrite <- Hit in H2X'.
+      rewrite fmap_app in H2X'.
+      rewrite fmap_cons in H2X'.
+      rewrite sum_list_with_app in H2X'.
+      simpl in H2X'.
+      ltac1:(lia).
+    }
   }
-  
-  ; try (ltac1:(naive_solver)).
   {
-    apply or_not_and.
-  }
-
-  all: .
-  {
-
+    
   }
 
 Qed.
