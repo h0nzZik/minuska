@@ -1716,3 +1716,78 @@ Proof.
   }
 Qed.
 
+
+
+Lemma Expression2_evaluate_extensive_Some
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (t : Expression2)
+    (gt : TermOver builtin_value)
+    :
+    ρ1 ⊆ ρ2 ->
+    Expression2_evaluate ρ1 t = Some gt ->
+    Expression2_evaluate ρ2 t = Some gt.
+Proof.
+    intros Hρ1ρ2.
+    revert gt.
+    induction t; simpl; intros gt.
+    { ltac1:(tauto). }
+    {
+        unfold vars_of in Hρ1ρ2.
+        simpl in Hρ1ρ2.
+        intros H.
+        eapply (lookup_weaken ρ1 ρ2 x).
+        { apply H. }
+        { assumption. }
+    }
+    {
+        auto with nocore.
+    }
+    {
+        do 2 (rewrite bind_Some).
+        intros [x [Hx1 Hx2]].
+        exists x.
+        split>[|assumption].
+        apply (IHt _ Hx1).
+    }
+    {
+        do 2 (rewrite bind_Some).
+        intros [x [Hx1 Hx2]].
+        exists x.
+        rewrite (IHt1 _ Hx1).
+        split>[reflexivity|].
+        rewrite bind_Some in Hx2.
+        rewrite bind_Some.
+        destruct Hx2 as [x' [Hx'1 Hx'2]].
+        exists x'.
+        rewrite (IHt2 _ Hx'1).
+        split>[reflexivity|].
+        exact Hx'2.
+    }
+    {
+        do 2 (rewrite bind_Some).
+        intros [x [Hx1 Hx2]].
+        exists x.
+        rewrite (IHt1 _ Hx1).
+        simpl.
+        split>[reflexivity|].
+
+        rewrite bind_Some in Hx2.
+        destruct Hx2 as [x' [Hx'1 Hx'2]].
+        rewrite bind_Some.
+
+        rewrite bind_Some in Hx'2.
+        destruct Hx'2 as [x'' [Hx''1 Hx''2]].
+        exists x'.
+        rewrite (IHt2 _ Hx'1).
+        simpl.
+        split>[reflexivity|].
+
+        rewrite bind_Some.
+        exists x''.
+        rewrite (IHt3 _ Hx''1).
+        simpl.
+        split>[reflexivity|].
+        assumption.
+    }
+Qed.

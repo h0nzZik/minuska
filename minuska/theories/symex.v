@@ -91,6 +91,17 @@ Module Implementation.
         intros x Hx.
         apply elem_of_list_singleton_inv in Hx.
         subst x.
+        unfold satisfies; simpl.
+        split.
+        {
+          Search Expression2_evaluate.
+        }
+        {
+          unfold isSome.
+          unfold Valuation2 in *.
+          rewrite lookup_insert.
+          reflexivity.
+        }
         Search satisfies.
       }
       Print sat2B.
