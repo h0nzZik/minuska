@@ -5,6 +5,7 @@ From Minuska Require Import
     minusl_syntax
     syntax_properties
     unification_interface
+    textbook_unification_alg
 .
 
 Require Import Wellfounded.
@@ -17,34 +18,10 @@ From Equations Require Export Equations.
 
 Module Implementation.
 
-    Definition eqn {Σ : StaticModel} : Type := ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type.
-
-    Definition eqn_size {Σ : StaticModel} (e : eqn) : nat := TermOver_size (e.1) + TermOver_size (e.2).
-
-    Definition eqns_size {Σ : StaticModel} (es : list eqn) := sum_list_with eqn_size es.
-
-
-    Definition eqn_vars {Σ : StaticModel} (e : eqn) := ((vars_of (e.1)) ∪ (vars_of (e.2))).
-    Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list (eqn_vars <$> es)
-    .
-
-
-    Definition deg {Σ : StaticModel} (es : list eqn) : (nat*nat)%type :=
-    (size (eqns_vars es), eqns_size es)
-    .
-
 
     #[local]
     Obligation Tactic := idtac.
 
-
-    Definition sub
-    {Σ : StaticModel}
-    (t' : TermOver BuiltinOrVar)
-    (x : variable)
-    (es : list eqn)
-    := (fun e => (TermOverBoV_subst e.1 x t', TermOverBoV_subst e.2 x t')) <$> es
-    .
 
 
     Lemma vars_of_TermOverBoV_subst
@@ -245,67 +222,6 @@ Module Implementation.
     ∃ s3, s1 = s2 ++ s3
     .
 
-    (*
-    Fixpoint occurs {Σ : StaticModel} (x : variable) (t : TermOver BuiltinOrVar) :=
-    match t with
-    | t_over (bov_variable y) => x = y
-    | t_over (bov_builtin _) => False
-    | t_term _ l => (fix go' (l' : list (TermOver BuiltinOrVar)) : Prop :=
-        match l' with
-        | [] => False
-        | t'::ts' => occurs x t' \/ go' ts'
-        end
-    ) l
-    end
-    .
-
-    #[local]
-    Instance occurs_dec {Σ : StaticModel} (x : variable) (t : TermOver BuiltinOrVar)
-    : Decision (occurs x t)
-    .
-    Proof.
-    unfold Decision.
-    ltac1:(induction t using TermOver_rect).
-    {
-        destruct a.
-        {
-        simpl. right. ltac1:(tauto).
-        }
-        {
-        simpl. apply variable_eqdec.
-        }
-    }
-    {
-        revert X.
-        induction l; intros IHouter.
-        {
-        simpl. right. ltac1:(tauto).
-        }
-        {
-        simpl. assert (IH := IHouter a ltac:(set_solver)).
-        destruct IH as [IH|IH].
-        {
-            left. left. exact IH.
-        }
-        {
-            ltac1:(ospecialize (IHl _)).
-            {
-            intros x0 Hx0. apply IHouter.
-            right. exact Hx0.
-            }
-            destruct IHl as [IHl|IHl].
-            {
-            left. right. exact IHl.
-            }
-            {
-            right.
-            intros HContra. ltac1:(tauto).
-            }
-        }
-        }
-    }
-    Defined.
-    *)
     Lemma on_distinct_vars {Σ : StaticModel} (a1 a2 : variable) (V : gset variable):
     a1 ∈ V ->
     a1 <> a2 ->
@@ -812,102 +728,6 @@ Module Implementation.
     }
     Qed.
 
-    Equations? unify {Σ : StaticModel} (l : list eqn)
-    : option (list (variable * (TermOver BuiltinOrVar)))
-    by wf (deg l) (lexprod nat nat lt lt) :=
-
-    unify []
-    := Some [] ;
-    
-    unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = y)) => {
-    | left _ := unify es ;
-    | right _ := 
-    tmp ← unify (sub (t_over (bov_variable y)) x es);
-    Some ((x, (t_over (bov_variable y)))::tmp)
-    };
-    unify ((t_over (bov_variable x), t)::es) with (decide (x ∈ vars_of t)) => {
-    | left _ => None
-    | right _ =>
-        tmp ← unify (sub t x es);
-        Some ((x,t)::tmp)
-    };
-    unify ((t, t_over (bov_variable x))::es) with (decide (x ∈ vars_of t)) => {
-    | left _ => None
-    | right _ =>
-        tmp ← unify (sub t x es);
-        Some ((x,t)::tmp)
-    };
-    unify ((t_term s1 l1, t_term s2 l2)::es) with (decide ((s1 = s2) /\ (length l1 = length l2) )) => {
-    | left _ =>
-        unify ((zip l1 l2) ++ es)
-    | right _ => None
-    } ;
-
-    unify ((t1,t2)::es) with (decide (t1 = t2)) => {
-    | left _ => unify es
-    | right _ => None
-    };
-    .
-    Proof.
-    {
-        unfold deg. simpl.
-        rewrite eqns_vars_cons. simpl.
-        do 4 (unfold vars_of at 1; simpl).
-        rewrite union_empty_l_L.
-        rewrite union_empty_l_L.
-        apply right_lex.
-        ltac1:(lia).
-    }
-    {
-        ltac1:(unfold t). clear t.
-        ltac1:(rewrite deg_swap_head).
-        apply sub_decreases_degree.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        ltac1:(set_solver).
-    }
-    {
-        ltac1:(unfold t1; unfold t2). clear t1 t2.
-        apply deg_cons_lt.
-    }
-    {
-        ltac1:(unfold t). clear t.
-        apply sub_decreases_degree.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        ltac1:(set_solver).
-    }
-    {
-        apply deg_cons_lt.
-    }
-    {
-        apply sub_decreases_degree.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        ltac1:(set_solver).
-    }
-    {
-        ltac1:(unfold t). clear t.
-        apply sub_decreases_degree.
-        assumption.
-    }
-    {
-        ltac1:(unfold t1; unfold t2; clear t1; clear t2).
-        apply deg_cons_lt.
-    }
-    {
-        ltac1:(unfold t); clear t.
-        ltac1:(rewrite deg_swap_head).
-        apply sub_decreases_degree.
-        assumption.
-    }
-    {
-        destruct a as [H1 H2].
-        subst s2.
-        apply fewer_arrows_lower_degree.
-        assumption.
-    }
-    Qed.
 
     Fixpoint is_unifier_of
     {Σ : StaticModel}

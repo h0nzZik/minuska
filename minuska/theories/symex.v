@@ -109,6 +109,7 @@ Module Implementation.
               apply infinite_is_fresh.
             }
             apply not_elem_of_dom_1.
+            apply Expression2_evaluate_Some_enough in H0.
             unfold vars_of in Havoid; simpl in Havoid.
             unfold vars_of in Havoid; simpl in Havoid.
           }
