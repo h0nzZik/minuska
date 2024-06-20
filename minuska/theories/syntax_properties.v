@@ -1,10 +1,7 @@
-(*
-  TODO make TermOver_eqdec independent of lowlang
-*)
-
 From Minuska Require Import
     prelude
     spec
+    basic_properties
     lowlang
 .
 
@@ -72,14 +69,6 @@ Section eqdec.
     #[export]
     Instance atomicProposition_eqdec {Σ : StaticModel}
         : EqDecision AtomicProposition
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance BuiltinOrVar_eqdec {Σ : StaticModel}
-        : EqDecision BuiltinOrVar
     .
     Proof.
         ltac1:(solve_decision).
@@ -458,114 +447,6 @@ Proof.
     }
 Defined.
 
-Fixpoint TermOverBuiltin_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
-    : TermOver builtin_value
-:=
-    if (decide (t = m)) then v else
-    match t with
-    | t_over o => t_over o
-    | t_term s l => t_term s (map (fun t'' => TermOverBuiltin_subst t'' m v) l)
-    end
-.
-
-Fixpoint is_subterm_b
-    {Σ : StaticModel}
-    {A : Type}
-    {_edA : EqDecision A}
-    (m t : TermOver A)
-    : bool
-:=
-    if (decide (t = m)) then true else
-    match t with
-    | t_over _ => false
-    | t_term _ l => existsb (is_subterm_b m) l
-    end
-.
-
-Lemma not_subterm_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
-    :
-    is_subterm_b m t = false ->
-    TermOverBuiltin_subst t m v = t
-.
-Proof.
-    induction t; simpl; intros; ltac1:(case_match; try congruence).
-    f_equal.
-    clear H1. revert H0 H.
-    induction l; simpl; intros H0 H.
-    { reflexivity. }
-    rewrite Forall_cons in H.
-    destruct H as [H1 H2].
-    rewrite orb_false_iff in H0.
-    destruct H0 as [H01 H02].
-    specialize (IHl H02 H2). clear H0 H2.
-    rewrite IHl. rewrite (H1 H01). reflexivity.
-Qed.
-
-Lemma is_subterm_sizes
-    {Σ : StaticModel}
-    {A : Type}
-    {_edA : EqDecision A}
-    (p q : TermOver A)
-    :
-    is_subterm_b p q = true ->
-    TermOver_size p <= TermOver_size q
-.
-Proof.
-    revert p.
-    induction q; simpl; intros p HH.
-    {
-        unfold is_left in *.
-        ltac1:(repeat case_match; subst; simpl in *; lia).
-    }
-    {
-        unfold is_left in *.
-        ltac1:(repeat case_match; subst; simpl in *; try lia).
-        rewrite existsb_exists in HH.
-        destruct HH as [x [H1x H2x]].
-
-        rewrite <- elem_of_list_In in H1x.
-        rewrite elem_of_list_lookup in H1x.
-        destruct H1x as [i Hi].
-        apply take_drop_middle in Hi.
-        rewrite <- Hi in H.
-        rewrite Forall_app in H.
-        rewrite Forall_cons in H.
-        destruct H as [IH1 [IH2 IH3]].
-        specialize (IH2 p H2x).
-        rewrite <- Hi.
-        rewrite sum_list_with_app.
-        simpl.
-        ltac1:(lia).
-    }
-Qed.
-
-
-#[export]
-Instance Expression2_eqdec
-    {Σ : StaticModel}
-    : EqDecision (Expression2)
-.
-Proof. ltac1:(solve_decision). Defined.
-
-#[export]
-Instance SideCondition2_eqdec
-    {Σ : StaticModel}
-    : EqDecision (SideCondition2)
-.
-Proof. ltac1:(solve_decision). Defined.
-
-#[export]
-Instance RewritingRule2_eqdec
-    {Σ : StaticModel}
-    {Act : Set}
-    {_EA : EqDecision Act}
-    : EqDecision (RewritingRule2 Act)
-.
-Proof. ltac1:(solve_decision). Defined.
 
 
 Lemma compose_prettify_uglify
