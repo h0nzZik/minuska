@@ -1,7 +1,7 @@
 From Minuska Require Import
     prelude
     spec
-    syntax_properties
+    basic_properties
 .
 
 From Equations Require Export Equations.

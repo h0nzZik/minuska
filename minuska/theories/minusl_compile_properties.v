@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec
+    basic_properties
     lowlang
     properties
     semantics_properties
@@ -7386,9 +7387,11 @@ Proof.
             intros i s0 l0 HH'1 HH'2.
             ltac1:(replace (map) with (@fmap _ list_fmap) in HH'2 by reflexivity).
             rewrite list_lookup_fmap in HH'2.
-            destruct (l!!i) as [l0'|] eqn:Hli > [|inversion HH'2].
+            destruct (l!!i) as [l0'|] eqn:Hli > [|ltac1:(rewrite Hli in HH'2);inversion HH'2].
             specialize (X l0').
-            simpl in HH'2. injection HH'2 as HH'2.
+            simpl in HH'2.
+            ltac1:(rewrite Hli in HH'2).
+             injection HH'2 as HH'2.
             subst l0.
             specialize (HH3 _ _ _ HH'1 Hli).
             ltac1:(ospecialize (X _)).
