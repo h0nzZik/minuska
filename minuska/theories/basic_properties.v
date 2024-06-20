@@ -23,13 +23,15 @@ Section custom_induction_principle_2.
 
     Context
         {Σ : StaticModel}
+        {B : Type}
+        {_edB : EqDecision B}
         {A : Type}
         {_edA : EqDecision A}
     .
 
-    Lemma TermOver_eqdec : EqDecision (TermOver A).
+    Lemma TermOver_eqdec : EqDecision (@TermOver' B A).
     Proof.
-        ltac1:(unshelve(refine (fix go (t1 t2 : TermOver A) : {t1 = t2} + {t1 <> t2} :=
+        ltac1:(unshelve(refine (fix go (t1 t2 : (@TermOver' B A)) : {t1 = t2} + {t1 <> t2} :=
             match t1 with
             | t_over a1 =>
                 match t2 with
@@ -46,7 +48,7 @@ Section custom_induction_principle_2.
                 | t_term s2 l2 =>
                     match (decide (s1 = s2)) with
                     | left _ =>
-                    let tmp := (fix go' (l1' l2' : list (TermOver A)) : {l1' = l2'} + {l1' <> l2'} :=
+                    let tmp := (fix go' (l1' l2' : list (@TermOver' B A)) : {l1' = l2'} + {l1' <> l2'} :=
                         match l1' with
                         | [] =>
                             match l2' with
@@ -80,28 +82,28 @@ Section custom_induction_principle_2.
     Defined.
 
     Fixpoint TermOver_rect
-        (P : TermOver A -> Type)
+        (P : (@TermOver' B A) -> Type)
         (true_for_over : forall a, P (t_over a) )
         (preserved_by_term :
             forall
-                (s : symbol)
-                (l : list (TermOver A)),
+                (b : B)
+                (l : list (@TermOver' B A)),
                 (forall x, x ∈ l -> P x) ->
-                P (t_term s l)
+                P (t_term b l)
         )
-        (p : TermOver A)
+        (p : (@TermOver' B A))
     :
         P p :=
     match p with
     | t_over a => true_for_over a
     | t_term s l =>  preserved_by_term s l
         (fun x pf => 
-            (fix go (l' : list (TermOver A)) : x ∈ l' -> P x :=
+            (fix go (l' : list (@TermOver' B A)) : x ∈ l' -> P x :=
             match l' as l'0 return x ∈ l'0 -> P x with
             | nil => fun pf' => match not_elem_of_nil _ pf' with end
             | y::ys => 
                 match (TermOver_eqdec x y) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect (TermOver A) y P (TermOver_rect P true_for_over preserved_by_term y) x (eq_sym e)) 
+                | left e => fun pf' => (@eq_rect (@TermOver' B A) y P (TermOver_rect P true_for_over preserved_by_term y) x (eq_sym e)) 
                 | right n => fun pf' =>
                     let H := @elem_of_next _ _ _ _ n pf' in
                     go ys H

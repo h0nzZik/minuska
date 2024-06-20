@@ -427,42 +427,6 @@ match ao with
 | pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
-#[export]
-Instance TermOver_eqdec
-    {T : Type}
-    {A : Type}
-    {_edT : EqDecision T}
-    {_edA : EqDecision A}
-    :
-    EqDecision (@TermOver' T A)
-.
-Proof.
-    intros t1 t2.
-    remember (uglify' t1) as ut1 in |-.
-    remember (uglify' t2) as ut2 in |-.
-    destruct (decide (ut1 = ut2)) as [Heq|Hneq].
-    {
-        left.
-        abstract(
-            subst;
-            apply (f_equal prettify) in Heq;
-            rewrite (cancel prettify uglify') in Heq;
-            rewrite (cancel prettify uglify') in Heq;
-            subst;
-            reflexivity
-        ).
-    }
-    {
-        right.
-        abstract(
-            intros HContra;
-            subst;
-            apply Hneq;
-            reflexivity
-        ).
-    }
-Defined.
-
 
 #[export]
 Instance TermOver_count
