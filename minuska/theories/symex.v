@@ -5,6 +5,7 @@ From Minuska Require Import
     minusl_syntax
     syntax_properties
     unification_interface
+    symex_spec
 .
 
 
@@ -16,156 +17,109 @@ From Coq Require Import Logic.Eqdep_dec.
 
 From Equations Require Export Equations.
 
-(*
-From QuickChick Require Import QuickChick.
-Import QcDefaultNotation. Open Scope qc_scope.
+Module Implementation.
 
-Sample (choose(0, 10)).*)
-
-
-Definition Satisfies_variable_GroundTerm'
+  Fixpoint toe_to_cpat
     {Σ : StaticModel}
-    (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (x : variable)
-    := ρ !! x = Some t
-.
+    (avoid : list variable)
+    (t : TermOver Expression2)
+  :
+    ((TermOver BuiltinOrVar)*(list SideCondition2))%type
+  :=
+  match t with
+  | t_over e =>
+      let x : variable := fresh avoid in
+      (t_over (bov_variable x), [{|sc_left := (e_variable x); sc_right := e|}])
+  | t_term s l =>
+      let go' := (fix go' (avoid' : list variable) (ts : list (TermOver Expression2)) : ((list (TermOver BuiltinOrVar))*(list SideCondition2))%type :=
+        match ts with
+        | [] => ([], [])
+        | t'::ts' =>
+          let tmp := toe_to_cpat avoid' t' in
+          let rest := go' (avoid' ++ elements (vars_of (tmp.2))) ts' in
+          (tmp.1::rest.1, (tmp.2 ++ rest.2))
+        end
+      ) in
+      let l' := go' avoid l in
+      (t_term s (fst l'), snd l')
+  end
+  .
 
-#[export]
-Instance Satisfies_variable_GroundTerm
+  Lemma elem_of_list_singleton_inv
+    {A : Type}
+    (x y : A)
+    :
+    x ∈ [y] -> x = y
+  .
+  Proof.
+    intros H.
+    rewrite elem_of_list_singleton in H.
+    exact H.
+  Qed.
+
+  Lemma toe_to_cpat_correct_1
     {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        variable
-        variable
-:= {|
-    satisfies :=
-        fun
-            (ρ : Valuation2)
-            (t : TermOver builtin_value)
-            (x : variable) => Satisfies_variable_GroundTerm' ρ t x
-|}.
-
-
-Equations? sat2v
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver variable)
-    : Prop
-    by wf (TermOver_size φ) lt
-:=
-    sat2v ρ t (t_over x) := Satisfies_variable_GroundTerm' ρ t x ;
-    sat2v ρ (t_over _) (t_term s l) := False ;
-    sat2v ρ (t_term s' l') (t_term s l) :=
-        ((s' = s) /\
-        (length l' = length l) /\
-        forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
-            sat2v ρ t' φ'
-        )
-    ;
-.
-Proof.
-    abstract(
-    unfold satisfies in *; simpl in *;
-    simpl;
-    apply take_drop_middle in pf1;
-    rewrite <- pf1;
-    rewrite sum_list_with_app; simpl;
-    ltac1:(lia)).
-Defined.
-
-#[export]
-Instance Satisfies_TOV_GroundTerm
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (TermOver variable)
-        variable
-:= {|
-    satisfies := fun ρ g φ => sat2v ρ g φ
-|}.
-
-Record SymCfg {Σ : StaticModel} := {
-    scfg_pattern : TermOver variable ;
-    scfg_side_conditions : list SideCondition2 ;
-}.
-
-Definition Satisfies_SymCfg_GroundTerm'
-    {Σ : StaticModel}
-    (ρ : Valuation2)
+    (avoid : list variable)
+    (t : TermOver Expression2)
     (g : TermOver builtin_value)
-    (scfg : SymCfg)
-:=
-    ((satisfies ρ g scfg.(scfg_pattern))
-    * (satisfies ρ tt scfg.(scfg_side_conditions)))%type
-.
+  :
+    ({ ρ : Valuation2 & satisfies ρ g t }) ->
+    ({ ρ : Valuation2 &
+      (
+        (satisfies ρ g ((toe_to_cpat avoid t).1))
+        *
+        (satisfies ρ tt ((toe_to_cpat avoid t).2))
+      )%type
+    })
+  .
+  Proof.
+    revert g avoid.
+    ltac1:(induction t using TermOver_rect; intros g avoid [ρ Hρ]).
+    {
+      inversion Hρ; clear Hρ.
+      simpl.
+      unfold satisfies; simpl.
+      exists (<[(fresh avoid) := g]>ρ).
+      split.
+      {
+        ltac1:(simp sat2B).
+        unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar.
+        unfold Valuation2 in *.
+        apply lookup_insert.
+      }
+      {
+        intros x Hx.
+        apply elem_of_list_singleton_inv in Hx.
+        subst x.
+        Search satisfies.
+      }
+      Print sat2B.
+    }
 
-#[export]
-Instance Satisfies_SymCfg_GroundTerm
+  Qed.
+
+  Definition keep_data (A : Type) (l : list (option A)) : list A
+  :=
+    fold_right (fun b a => match b with Some b' => b'::a | None => a end) [] l
+  .
+
+  Search (TermOver Expression2).
+
+  Definition sym_step
     {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (SymCfg)
-        variable
-:= {|
-    satisfies := fun ρ g φ => Satisfies_SymCfg_GroundTerm' ρ g φ
-|}.
-
-Definition Satisfies_listSymCfg_GroundTerm'
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    (g : TermOver builtin_value)
-    (lφ : list SymCfg)
-:=
-    forall φ, φ ∈ lφ -> satisfies ρ g φ
-.
-
-#[export]
-Instance Satisfies_listSymCfg_GroundTerm
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (list SymCfg)
-        variable
-:= {|
-    satisfies := Satisfies_listSymCfg_GroundTerm'
-|}.
-
-Definition SymexStep {Σ : StaticModel}
-:=
-    list SymCfg -> list SymCfg
-.
-
-Definition refines {Σ : StaticModel} (g : TermOver builtin_value) (φ : list SymCfg)
-:= { ρ : Valuation2 & satisfies ρ g φ}.
-
-Definition SymexStep_sound
-    {Σ : StaticModel}
-    (Act : Set)
+    {UA : UnificationAlgorithm}
+    {Act : Set}
     (Γ : RewritingTheory2 Act)
-    (step : SymexStep)
-:=
-    ∀ (φ : list SymCfg) (g g' : TermOver builtin_value),
-        refines g φ ->
-        refines  g' (step φ) ->
-        rewriting_relation Γ g g'
-.
+    (s : TermOver BuiltinOrVar)
+    :
+    list (TermOver BuiltinOrVar)
+  :=
+    let l'' := (fun r => (ur ← ua_unify s (r.(r_from)); Some (ur, r))) <$> Γ in
+    let l' := filter (fun x => x <> None) l'' in
+    let l := keep_data l' in
+    (fun ur => sub_app_e ur.1 (ur.2.(r_to))) <$> l
+  .
 
-Definition SymexStep_complete
-    {Σ : StaticModel}
-    (Act : Set)
-    (Γ : RewritingTheory2 Act)
-    (step : SymexStep)
-:=
-    ∀ (φ : list SymCfg) (g g' : TermOver builtin_value),
-        rewriting_relation Γ g g' ->
-        refines g φ ->
-        refines  g' (step φ)
-.
 
+End Implementation.
 

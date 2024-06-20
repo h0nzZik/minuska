@@ -32,4 +32,5 @@ theories/example.v
 theories/default_everything.v
 theories/unification_interface.v
 theories/textbook_unification.v
+theories/symex_spec.v
 theories/symex.v
