@@ -63,6 +63,7 @@ Module Implementation.
     (t : TermOver Expression2)
     (g : TermOver builtin_value)
   :
+    elements (vars_of t) ⊆ avoid ->
     ({ ρ : Valuation2 & satisfies ρ g t }) ->
     ({ ρ : Valuation2 &
       (
@@ -74,7 +75,7 @@ Module Implementation.
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid [ρ Hρ]).
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid [ρ Hρ]).
     {
       inversion Hρ; clear Hρ.
       simpl.
@@ -94,7 +95,23 @@ Module Implementation.
         unfold satisfies; simpl.
         split.
         {
-          Search Expression2_evaluate.
+          apply Expression2_evaluate_extensive_Some with (ρ2 := <[fresh avoid := g]>ρ) in H0.
+          {
+            rewrite H0.
+            unfold Valuation2 in *.
+            apply lookup_insert.
+          }
+          {
+            unfold Valuation2 in *.
+            apply insert_subseteq.
+            assert (Hfr: fresh avoid ∉ avoid).
+            {
+              apply infinite_is_fresh.
+            }
+            apply not_elem_of_dom_1.
+            unfold vars_of in Havoid; simpl in Havoid.
+            unfold vars_of in Havoid; simpl in Havoid.
+          }
         }
         {
           unfold isSome.
@@ -102,11 +119,8 @@ Module Implementation.
           rewrite lookup_insert.
           reflexivity.
         }
-        Search satisfies.
       }
-      Print sat2B.
     }
-
   Qed.
 
   Definition keep_data (A : Type) (l : list (option A)) : list A
@@ -114,8 +128,7 @@ Module Implementation.
     fold_right (fun b a => match b with Some b' => b'::a | None => a end) [] l
   .
 
-  Search (TermOver Expression2).
-
+(*
   Definition sym_step
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -130,7 +143,7 @@ Module Implementation.
     let l := keep_data l' in
     (fun ur => sub_app_e ur.1 (ur.2.(r_to))) <$> l
   .
-
+*)
 
 End Implementation.
 

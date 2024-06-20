@@ -1791,3 +1791,25 @@ Proof.
         assumption.
     }
 Qed.
+
+Lemma Expression2_evaluate_Some_enough
+    {Σ : StaticModel}
+    (e : Expression2)
+    (ρ : Valuation2)
+    (g : TermOver builtin_value)
+:
+    Expression2_evaluate ρ e = Some g ->
+    vars_of e ⊆ vars_of ρ
+.
+Proof.
+    revert ρ g.
+    induction e; intros ρ g He; simpl in *;
+        repeat (unfold vars_of in *; simpl in *; ());
+        ltac1:(simplify_eq/=; simplify_option_eq; try set_solver).
+    {
+        unfold Valuation2 in *.
+        rewrite singleton_subseteq_l.
+        apply elem_of_dom_2 in He.
+        exact He.
+    }
+Qed.
