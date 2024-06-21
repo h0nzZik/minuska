@@ -1,7 +1,7 @@
 From Minuska Require Import
     prelude
     spec
-    properties
+    basic_properties
 .
 
 Definition SubT {Σ : StaticModel} : Type

@@ -1,6 +1,7 @@
 From Minuska Require Export
     prelude
     spec
+    basic_properties
     string_variables
     default_static_model
     frontend
