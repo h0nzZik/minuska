@@ -286,6 +286,7 @@ Module Implementation.
           clear IHl.
           intros.
           specialize (HH3 (S i) t' φ' pf1 pf2).
+          assert (Htot := Expression2_evalute_total_iff φ').
           Search sat2E.
           eapply HH3.
         }

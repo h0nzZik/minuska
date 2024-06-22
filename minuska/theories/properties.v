@@ -1841,3 +1841,100 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma TermOverExpression2_evalute_total_iff
+    {Σ : StaticModel}
+    (t : TermOver Expression2)
+    (ρ : Valuation2)
+    :
+    (∃ e : TermOver builtin_value, sat2E ρ e t)
+    <->
+    ( vars_of t ⊆ vars_of ρ )
+.
+Proof.
+    revert ρ.
+    induction t; intros ρ; simpl in *.
+    {
+        split.
+        {
+            intros HH.
+            apply Expression2_evalute_total_iff.
+            destruct HH as [e He].
+            ltac1:(simp sat2E in He).
+            exists e.
+            exact He.
+        }
+        {
+            intros HH.
+            apply Expression2_evalute_total_iff in HH.
+            destruct HH as [e He].
+            exists e.
+            ltac1:(simp sat2E).
+        }
+    }
+    {
+        rewrite Forall_forall in H.
+        unfold Valuation2 in *.
+        unfold TermOver in *.
+        rewrite elem_of_subseteq.
+        ltac1:(setoid_rewrite elem_of_union_list).
+        ltac1:(setoid_rewrite elem_of_list_fmap).
+        split; intros HH.
+        {
+            intros x Hx.
+            destruct HH as [e He].
+            destruct e;
+                ltac1:(simp sat2E in He).
+            { destruct He. }
+            destruct He as [H1 [H2 H3]].
+            subst.
+            destruct Hx as [X [H1X H2X]].
+            destruct H1X as [y [H1y H2y]].
+            subst.
+            ltac1:(setoid_rewrite elem_of_subseteq in H).
+            eapply H.
+            { apply H2y. }
+            {
+                rewrite elem_of_list_lookup in H2y.
+                destruct H2y as [i Hli].
+                remember (l0 !! i) as l0i.
+                symmetry in Heql0i.
+                destruct l0i.
+                {   
+                    specialize (H3 i t y Hli Heql0i).
+                    eexists. apply H3.
+                }
+                {
+                    apply lookup_ge_None in Heql0i.
+                    apply lookup_lt_Some in Hli.
+                    ltac1:(lia).
+                }
+            }
+            {
+                apply H2X.
+            }
+        }
+        {
+            ltac1:(setoid_rewrite elem_of_list_lookup in H).
+            ltac1:(cut(exists l', sat2E ρ (t_term s l') (t_term s l))).
+            {
+                intros [l' Hl'].
+                exists (t_term s l').
+                exact Hl'.                
+            }
+            ltac1:(cut(forall i φi, l !! i = Some φi -> { g : TermOver builtin_value & sat2E ρ g φi })).
+            {
+                intros Hgen.
+                Check imap.
+                exists (imap (fun i φi => Hgen i φi _) l).
+                assert ()
+                exists ( <$> l)
+            }
+            eexists.
+            ltac1:(simp sat2E).
+        }
+    }
+Qed.
+
+
