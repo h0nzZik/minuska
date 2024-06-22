@@ -1700,3 +1700,144 @@ Proof.
         }
     }
 Qed.
+
+
+
+Lemma Expression2_evalute_total_iff
+    {Σ : StaticModel}
+    (t : Expression2)
+    (ρ : Valuation2)
+    :
+    (∃ e : TermOver builtin_value, Expression2_evaluate ρ t = Some e)
+    <->
+    ( vars_of t ⊆ vars_of ρ )
+.
+Proof.
+    induction t; cbn.
+    {
+        split; intros H.
+        {
+            apply empty_subseteq.
+        }
+        {
+            exists e.
+            reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            rewrite elem_of_subseteq.
+            intros x0 Hx0.
+            unfold vars_of in Hx0; simpl in Hx0.
+            rewrite elem_of_singleton in Hx0.
+            subst x0.
+            destruct H as [e H].
+            ltac1:(rewrite elem_of_dom).
+            exists e. exact H.
+        }
+        {
+            rewrite elem_of_subseteq in H.
+            specialize (H x).
+            unfold vars_of in H; simpl in H.
+            rewrite elem_of_singleton in H.
+            specialize (H erefl).
+            ltac1:(rewrite elem_of_dom in H).
+            unfold is_Some in H.
+            destruct H as [e H].
+            exists e.
+            exact H.
+        }
+    }
+    {
+        split; intros H.
+        {
+            ltac1:(set_solver).
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        ltac1:(rewrite <- IHt).
+        split; intros [e H].
+        {
+            unfold mbind,option_bind in H; cbn.
+            ltac1:(case_match).
+            {
+                ltac1:(simplify_eq/=).
+                exists t0. reflexivity.
+            }
+            {
+                inversion H.
+            }
+        }
+        {
+            eexists. rewrite H. reflexivity.
+        }
+    }
+    {
+        unfold vars_of; simpl.
+        rewrite union_subseteq.
+        ltac1:(rewrite <- IHt1).
+        ltac1:(rewrite <- IHt2).
+        split; intros H.
+        {
+            destruct H as [e H].
+            rewrite bind_Some in H.
+            destruct H as [x [H1x H2x]].
+            rewrite bind_Some in H2x.
+            destruct H2x as [y [H1y H2y]].
+            ltac1:(simplify_eq/=).
+            split.
+            {
+                exists x. assumption.
+            }
+            {
+                exists y. assumption.
+            }
+        }
+        {
+            destruct H as [[e1 H1] [e2 H2]].
+            unfold mbind,option_bind.
+            rewrite H1.
+            rewrite H2.
+            eexists. reflexivity.
+        }
+    }
+    {
+        unfold vars_of; simpl.
+        rewrite union_subseteq.
+        rewrite union_subseteq.
+        ltac1:(rewrite <- IHt1).
+        ltac1:(rewrite <- IHt2).
+        ltac1:(rewrite <- IHt3).
+        split; intros H.
+        {
+            destruct H as [e H].
+            rewrite bind_Some in H.
+            destruct H as [x [H1x H2x]].
+            rewrite bind_Some in H2x.
+            destruct H2x as [y [H1y H2y]].
+            ltac1:(simplify_option_eq).
+            repeat split.
+            {
+                exists x. assumption.
+            }
+            {
+                exists y. assumption.
+            }
+            {
+                exists H. reflexivity.
+            }
+        }
+        {
+            destruct H as [[[e1 H1] [e2 H2]] [e3 H3]].
+            unfold mbind,option_bind.
+            rewrite H1.
+            rewrite H2.
+            rewrite H3.
+            eexists. reflexivity.
+        }
+    }
+Qed.

@@ -285,6 +285,8 @@ Module Implementation.
         {
           clear IHl.
           intros.
+          specialize (HH3 (S i) t' φ' pf1 pf2).
+          Search sat2E.
           eapply HH3.
         }
       }
