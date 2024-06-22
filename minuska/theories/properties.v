@@ -1926,13 +1926,60 @@ Proof.
             ltac1:(cut(forall i φi, l !! i = Some φi -> { g : TermOver builtin_value & sat2E ρ g φi })).
             {
                 intros Hgen.
-                Check imap.
-                exists (imap (fun i φi => Hgen i φi _) l).
-                assert ()
-                exists ( <$> l)
+                assert (helper : forall x, x ∈ l -> {i : nat & l !! i = Some x}).
+                {
+                    intros.
+                    remember(list_find (eq x) l) as found.
+                    destruct found.
+                    {
+                        destruct p as [i y].
+                        symmetry in Heqfound.
+                        rewrite  list_find_Some in Heqfound.
+                        destruct Heqfound as [Hf1 [Hf2 Hf3]].
+                        exists i.
+                        rewrite Hf2.
+                        exact Hf1.
+                    }
+                    {
+                        ltac1:(exfalso).
+                        symmetry in Heqfound.
+                        rewrite list_find_None in Heqfound.
+                        rewrite Forall_forall in Heqfound.
+                        apply (Heqfound _ H0).
+                        reflexivity.
+                    }
+                }
+                Check pfmap.
+                ltac1:(exists (pfmap l (fun x pfx =>
+                
+                    let h :=(helper x pfx) in
+                    let h2 := Hgen (projT1 h) x (projT2 h) in
+                    (projT1 h2)
+                    ))
+                ).
+                ltac1:(simp sat2E).
+                split>[reflexivity|].
+                split.
+                {
+                    rewrite length_pfmap. reflexivity.
+                }
+                intros i t' φ' Hli Hpfmap.
+                assert (Htmp := @pfmap_lookup_Some_1 (TermOver Expression2) (TermOver builtin_value) l _ _ _ Hpfmap).
+                simpl in Htmp.
+                rewrite Htmp.
+                lazy_match! Constr.type (Control.hyp (@Htmp)) with
+                | _ = projT1 ?pf => assert (mypf := projT2 $pf)
+                end
+                .
+                rewrite <- Htmp in mypf.
+                rewrite <- Htmp.
+                unfold TermOver in *.
+                rewrite <- pflookup_spec with (pflt := (pfmap_lookup_Some_lt Hpfmap)) in Hli.
+                injection Hli as Hli.
+                rewrite Hli in mypf.
+                exact mypf.
             }
-            eexists.
-            ltac1:(simp sat2E).
+            intros i φi Hli.
         }
     }
 Qed.
