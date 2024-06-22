@@ -1988,3 +1988,84 @@ Proof.
         apply HH3.
     }
 Qed.
+
+Lemma TermOverExpression2_satisfies_injective
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (t : TermOver Expression2)
+    (g1 g2 : TermOver builtin_value)
+:
+    satisfies ρ g1 t ->
+    satisfies ρ g2 t ->
+    g1 = g2
+.
+Proof.
+    revert g1 g2.
+    induction t; intros g1 g2 Hg1 Hg2; simpl in *.
+    {
+        unfold satisfies in *; simpl in *.
+        inversion Hg1; inversion Hg2.
+        rewrite H0 in H1.
+        inversion H1. subst. reflexivity.
+    }
+    {
+        unfold satisfies in *; simpl in *.
+        rewrite Forall_forall in H.
+        destruct g1,g2;
+            ltac1:(simp sat2E in Hg1);
+            ltac1:(simp sat2E in Hg2).
+        { inversion Hg1. }
+        { inversion Hg1. }
+        { inversion Hg2. }
+        ltac1:(destruct_and!; simplify_eq/=; f_equal).
+        apply list_eq.
+        intros i.
+        destruct (l0!!i) eqn:Heql0i,(l1!!i) eqn:Heql1i, (l!!i) eqn:Heqli.
+        {
+            specialize (H3 i t0 t1 Heqli Heql1i).
+            specialize (H6 i t t1 Heqli Heql0i).
+            apply f_equal.
+            eapply H.
+            {
+                rewrite elem_of_list_lookup. exists i. exact Heqli.
+            }
+            { assumption. }
+            { assumption. }
+        }
+        {
+            apply lookup_lt_Some in Heql0i.
+            apply lookup_lt_Some in Heql1i.
+            apply lookup_ge_None in Heqli.
+            ltac1:(lia).
+        }
+        {
+            apply lookup_lt_Some in Heql0i.
+            apply lookup_lt_Some in Heqli.
+            apply lookup_ge_None in Heql1i.
+            ltac1:(lia).
+        }
+        {
+            apply lookup_lt_Some in Heql0i.
+            apply lookup_ge_None in Heql1i.
+            apply lookup_ge_None in Heqli.
+            ltac1:(lia).
+        }
+        {
+            apply lookup_lt_Some in Heql1i.
+            apply lookup_ge_None in Heql0i.
+            ltac1:(lia).
+        }
+        {
+            apply lookup_ge_None in Heql0i.
+            apply lookup_lt_Some in Heql1i.
+            apply lookup_ge_None in Heqli.
+            ltac1:(lia).
+        }
+        {
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.

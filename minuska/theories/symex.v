@@ -332,7 +332,7 @@ Module Implementation.
           destruct Htot2 as [t'' Ht''].
           assert (Ht'2: sat2E ρ t'' φ').
           {
-            eapply Expression2_evaluate_extensive_Some.
+            eapply TermOverExpression2_satisfies_extensive.
             Search satisfies Expression2.
             Check sat2E.
           }
