@@ -5,6 +5,9 @@ From Minuska Require Import
     lowlang
 .
 
+
+From Coq Require Import Logic.PropExtensionality.
+
 Lemma vars_of_to_l2r_of_tob
     {Σ : StaticModel}
     (r : TermOver builtin_value)
@@ -1868,284 +1871,76 @@ Proof.
     ltac1:(induction t using TermOver_rect; intros ρ Hρ).
     {
         unfold vars_of in Hρ; simpl in Hρ.
-        eexists.
+        apply Expression2_evaluate_Some_enough_inv in Hρ.
+        destruct Hρ as [g Hg].
+        exists g.
         ltac1:(simp sat2E).
-        Search Expression2_evaluate.
     }
-    induction t; intros ρ; simpl in *.
     {
+        unfold Valuation2,TermOver in *.
+        rewrite vars_of_t_term_e in Hρ.
+        assert(X' : forall ρ0 x, x ∈ l -> vars_of x ⊆ vars_of ρ0 -> {e : TermOver' builtin_value & sat2E ρ0 e x}).
+        {
+            ltac1:(naive_solver).
+        }
+        clear X.
+        specialize (X' ρ).
+        assert(X'' : forall x, x ∈ l -> {e : TermOver' builtin_value & sat2E ρ e x}).
+        {
+            intros. apply X'. assumption.
+            rewrite elem_of_subseteq in Hρ.
+            rewrite elem_of_subseteq.
+            intros x0 Hx0.
+            specialize (Hρ x0).
+            apply Hρ.
+            rewrite elem_of_union_list.
+            exists (vars_of x).
+            rewrite elem_of_list_fmap.
+            split>[|assumption].
+            exists x.
+            split>[reflexivity|].
+            exact H.
+        }
+        clear X'.
+        Set Printing Coercions.
+        remember (pfmap l (fun x pf => projT1 (X'' x pf))) as l'.
+        exists (t_term b l').
+        ltac1:(simp sat2E).
+        split>[reflexivity|].
+        subst l'.
         split.
         {
-            intros HH.
-            apply Expression2_evalute_total_iff.
-            destruct HH as [e He].
-            ltac1:(simp sat2E in He).
-            exists e.
-            exact He.
+            rewrite length_pfmap. reflexivity.
         }
         {
-            intros HH.
-            apply Expression2_evalute_total_iff in HH.
-            destruct HH as [e He].
-            exists e.
-            ltac1:(simp sat2E).
-        }
-    }
-    {
-        rewrite Forall_forall in H.
-        unfold Valuation2 in *.
-        unfold TermOver in *.
-        rewrite elem_of_subseteq.
-        ltac1:(setoid_rewrite elem_of_union_list).
-        ltac1:(setoid_rewrite elem_of_list_fmap).
-        split; intros HH.
-        {
-            intros x Hx.
-            destruct HH as [e He].
-            destruct e;
-                ltac1:(simp sat2E in He).
-            { destruct He. }
-            destruct He as [H1 [H2 H3]].
-            subst.
-            destruct Hx as [X [H1X H2X]].
-            destruct H1X as [y [H1y H2y]].
-            subst.
-            ltac1:(setoid_rewrite elem_of_subseteq in H).
-            eapply H.
-            { apply H2y. }
+            intros i t' φ' Hli Hpf.
+            apply lookup_lt_Some in Hli as Hli'.
+            unfold TermOver in *.
+            rewrite <- (pflookup_spec l i Hli') in Hli.
+            injection Hli as Hli.
+            rewrite <- Hli.
+            lazy_match! goal with
+            | [|- sat2E _ _ (` ?p)] => pose(p := $p)
+            end.
+            assert (HH2 := pfmap_lookup_Some_1 l (λ (x : TermOver' Expression2) (pf : x ∈ l), projT1 (X'' x pf)) i  t' Hpf).
+            simpl in HH2.
+            pose (Hp := proj2_sig p).
+            pose (Xp := X'' (proj1_sig p) Hp).
+            ltac1:(unfold Hp in Xp). clear Hp.
+            ltac1:(fold p).
+            assert (HH := projT2 Xp). simpl in HH.
+            rewrite HH2.
+            ltac1:(unfold Xp in HH).
+            ltac1:(unfold p in HH).
+            ltac1:(unfold p).
+            ltac1:(replace (pfmap_lookup_Some_lt Hpf) with (Hli')).
             {
-                rewrite elem_of_list_lookup in H2y.
-                destruct H2y as [i Hli].
-                remember (l0 !! i) as l0i.
-                symmetry in Heql0i.
-                destruct l0i.
-                {   
-                    specialize (H3 i t y Hli Heql0i).
-                    eexists. apply H3.
-                }
-                {
-                    apply lookup_ge_None in Heql0i.
-                    apply lookup_lt_Some in Hli.
-                    ltac1:(lia).
-                }
+                exact HH.
             }
             {
-                apply H2X.
+                apply proof_irrelevance.
             }
-        }
-        {
-            ltac1:(setoid_rewrite elem_of_list_lookup in H).
-            ltac1:(cut(exists l', sat2E ρ (t_term s l') (t_term s l))).
-            {
-                intros [l' Hl'].
-                exists (t_term s l').
-                exact Hl'.                
-            }
-            ltac1:(cut(forall i φi, l !! i = Some φi -> { g : TermOver builtin_value & sat2E ρ g φi })).
-            {
-                intros Hgen.
-                assert (helper : forall x, x ∈ l -> {i : nat & l !! i = Some x}).
-                {
-                    intros.
-                    remember(list_find (eq x) l) as found.
-                    destruct found.
-                    {
-                        destruct p as [i y].
-                        symmetry in Heqfound.
-                        rewrite  list_find_Some in Heqfound.
-                        destruct Heqfound as [Hf1 [Hf2 Hf3]].
-                        exists i.
-                        rewrite Hf2.
-                        exact Hf1.
-                    }
-                    {
-                        ltac1:(exfalso).
-                        symmetry in Heqfound.
-                        rewrite list_find_None in Heqfound.
-                        rewrite Forall_forall in Heqfound.
-                        apply (Heqfound _ H0).
-                        reflexivity.
-                    }
-                }
-                Check pfmap.
-                ltac1:(exists (pfmap l (fun x pfx =>
-                
-                    let h :=(helper x pfx) in
-                    let h2 := Hgen (projT1 h) x (projT2 h) in
-                    (projT1 h2)
-                    ))
-                ).
-                ltac1:(simp sat2E).
-                split>[reflexivity|].
-                split.
-                {
-                    rewrite length_pfmap. reflexivity.
-                }
-                intros i t' φ' Hli Hpfmap.
-                assert (Htmp := @pfmap_lookup_Some_1 (TermOver Expression2) (TermOver builtin_value) l _ _ _ Hpfmap).
-                simpl in Htmp.
-                rewrite Htmp.
-                lazy_match! Constr.type (Control.hyp (@Htmp)) with
-                | _ = projT1 ?pf => assert (mypf := projT2 $pf)
-                end
-                .
-                rewrite <- Htmp in mypf.
-                rewrite <- Htmp.
-                unfold TermOver in *.
-                rewrite <- pflookup_spec with (pflt := (pfmap_lookup_Some_lt Hpfmap)) in Hli.
-                injection Hli as Hli.
-                rewrite Hli in mypf.
-                exact mypf.
-            }
-            intros i φi Hli.
-            
         }
     }
 Qed.
-
-
-
-(*
-Lemma TermOverExpression2_evalute_total_iff
-    {Σ : StaticModel}
-    (t : TermOver Expression2)
-    (ρ : Valuation2)
-    :
-    (∃ e : TermOver builtin_value, sat2E ρ e t)
-    <->
-    ( vars_of t ⊆ vars_of ρ )
-.
-Proof.
-    revert ρ.
-    induction t; intros ρ; simpl in *.
-    {
-        split.
-        {
-            intros HH.
-            apply Expression2_evalute_total_iff.
-            destruct HH as [e He].
-            ltac1:(simp sat2E in He).
-            exists e.
-            exact He.
-        }
-        {
-            intros HH.
-            apply Expression2_evalute_total_iff in HH.
-            destruct HH as [e He].
-            exists e.
-            ltac1:(simp sat2E).
-        }
-    }
-    {
-        rewrite Forall_forall in H.
-        unfold Valuation2 in *.
-        unfold TermOver in *.
-        rewrite elem_of_subseteq.
-        ltac1:(setoid_rewrite elem_of_union_list).
-        ltac1:(setoid_rewrite elem_of_list_fmap).
-        split; intros HH.
-        {
-            intros x Hx.
-            destruct HH as [e He].
-            destruct e;
-                ltac1:(simp sat2E in He).
-            { destruct He. }
-            destruct He as [H1 [H2 H3]].
-            subst.
-            destruct Hx as [X [H1X H2X]].
-            destruct H1X as [y [H1y H2y]].
-            subst.
-            ltac1:(setoid_rewrite elem_of_subseteq in H).
-            eapply H.
-            { apply H2y. }
-            {
-                rewrite elem_of_list_lookup in H2y.
-                destruct H2y as [i Hli].
-                remember (l0 !! i) as l0i.
-                symmetry in Heql0i.
-                destruct l0i.
-                {   
-                    specialize (H3 i t y Hli Heql0i).
-                    eexists. apply H3.
-                }
-                {
-                    apply lookup_ge_None in Heql0i.
-                    apply lookup_lt_Some in Hli.
-                    ltac1:(lia).
-                }
-            }
-            {
-                apply H2X.
-            }
-        }
-        {
-            ltac1:(setoid_rewrite elem_of_list_lookup in H).
-            ltac1:(cut(exists l', sat2E ρ (t_term s l') (t_term s l))).
-            {
-                intros [l' Hl'].
-                exists (t_term s l').
-                exact Hl'.                
-            }
-            ltac1:(cut(forall i φi, l !! i = Some φi -> { g : TermOver builtin_value & sat2E ρ g φi })).
-            {
-                intros Hgen.
-                assert (helper : forall x, x ∈ l -> {i : nat & l !! i = Some x}).
-                {
-                    intros.
-                    remember(list_find (eq x) l) as found.
-                    destruct found.
-                    {
-                        destruct p as [i y].
-                        symmetry in Heqfound.
-                        rewrite  list_find_Some in Heqfound.
-                        destruct Heqfound as [Hf1 [Hf2 Hf3]].
-                        exists i.
-                        rewrite Hf2.
-                        exact Hf1.
-                    }
-                    {
-                        ltac1:(exfalso).
-                        symmetry in Heqfound.
-                        rewrite list_find_None in Heqfound.
-                        rewrite Forall_forall in Heqfound.
-                        apply (Heqfound _ H0).
-                        reflexivity.
-                    }
-                }
-                Check pfmap.
-                ltac1:(exists (pfmap l (fun x pfx =>
-                
-                    let h :=(helper x pfx) in
-                    let h2 := Hgen (projT1 h) x (projT2 h) in
-                    (projT1 h2)
-                    ))
-                ).
-                ltac1:(simp sat2E).
-                split>[reflexivity|].
-                split.
-                {
-                    rewrite length_pfmap. reflexivity.
-                }
-                intros i t' φ' Hli Hpfmap.
-                assert (Htmp := @pfmap_lookup_Some_1 (TermOver Expression2) (TermOver builtin_value) l _ _ _ Hpfmap).
-                simpl in Htmp.
-                rewrite Htmp.
-                lazy_match! Constr.type (Control.hyp (@Htmp)) with
-                | _ = projT1 ?pf => assert (mypf := projT2 $pf)
-                end
-                .
-                rewrite <- Htmp in mypf.
-                rewrite <- Htmp.
-                unfold TermOver in *.
-                rewrite <- pflookup_spec with (pflt := (pfmap_lookup_Some_lt Hpfmap)) in Hli.
-                injection Hli as Hli.
-                rewrite Hli in mypf.
-                exact mypf.
-            }
-            intros i φi Hli.
-            
-        }
-    }
-Qed.
-*)
 

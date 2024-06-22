@@ -409,7 +409,7 @@ Proof.
 Qed.
 
 Lemma pfmap_lookup_Some_lt
-    {A B : Type}
+    {A B : Type}apply
     (l : list A)
     (f : forall (x : A), x ∈ l -> B)
     (i : nat)
