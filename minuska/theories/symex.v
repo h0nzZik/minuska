@@ -195,11 +195,84 @@ Module Implementation.
           ltac1:(set_solver).
         }
         unfold Valuation2 in *.
-        Print vars_of.
-        ltac1:(unshelve(eremember (map_filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) _ ρ) as ρ'));
-          try (apply _).
-        Set Typeclasses Debug.
-        apply _.
+        remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) ρ) as ρ'. 
+        ltac1:(ospecialize (IHl ρ' _)).
+        {
+          clear IHl.
+          unfold Valuation2 in *.
+          unfold TermOver in *.
+          subst ρ'.
+          ltac1:(cut(vars_of
+            (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ vars_of l) ρ)
+            = vars_of (t_term b l))).
+          {
+            intros HHH. rewrite HHH. apply reflexivity.
+          }
+          rewrite vars_of_t_term_e.
+          unfold vars_of at 1; simpl.
+          unfold Valuation2 in *.
+          apply dom_filter_L.
+          intros x.
+          split; intros Hx.
+          {
+            rewrite elem_of_union_list in Hx.
+            destruct Hx as [X0 [H1X0 H2X0]].
+            rewrite elem_of_list_fmap in H1X0.
+            destruct H1X0 as [t [H1t H2t]].
+            subst X0.
+            simpl.
+            apply Expression2Term_matches_enough in Hρ2.
+            unfold TermOver,Valuation2 in *.
+            rewrite vars_of_t_term_e in Hρ2.
+            rewrite fmap_cons in Hρ2.
+            rewrite union_list_cons in Hρ2.
+            ltac1:(cut (x ∈ dom ρ)).
+            {
+              intros Hxρ.
+              rewrite elem_of_dom in Hxρ.
+              unfold is_Some in Hxρ.
+              destruct Hxρ as [x0 Hx0].
+              exists x0.
+              split>[apply Hx0|].
+              unfold vars_of; simpl.
+              rewrite elem_of_union_list.
+              exists (vars_of t).
+              split.
+              {
+                rewrite elem_of_list_fmap.
+                exists t.
+                split>[reflexivity|exact H2t].
+              }
+              {
+                exact H2X0.
+              }
+            }
+            clear -Hρ2 H2t H2X0.
+            unfold vars_of in Hρ2 at 3; simpl in Hρ2.
+            rewrite elem_of_subseteq in Hρ2.
+            specialize (Hρ2 x).
+            apply Hρ2. clear Hρ2.
+            rewrite elem_of_union. right.
+            rewrite elem_of_union_list.
+            exists (vars_of t).
+            split.
+            {
+              rewrite elem_of_list_fmap.
+              exists t.
+              split>[reflexivity|exact H2t].
+            }
+            {
+              exact H2X0.
+            }
+          }
+          {
+            destruct Hx as [x0 [H1x0 H2x0]].
+            simpl in *.
+            unfold vars_of in H2x0; simpl in H2x0.
+            exact H2x0.
+          }
+        }
+        
         {
           clear IHl.
           unfold TermOver in *.
