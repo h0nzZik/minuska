@@ -332,17 +332,81 @@ Module Implementation.
           destruct Htot2 as [t'' Ht''].
           assert (Ht'2: sat2E ρ t'' φ').
           {
-            eapply TermOverExpression2_satisfies_extensive.
-            Search satisfies Expression2.
-            Check sat2E.
+            eapply TermOverExpression2_satisfies_extensive>[|apply Ht''].
+            subst ρ'.
+            apply map_filter_subseteq.
           }
-          (*
-          assert (Htot1 := Expression2_evalute_total_1).
-          
-          Search sat2E.
-          eapply HH3.
-          *)
+          assert(Hinj := TermOverExpression2_satisfies_injective ρ φ' t' t'' HH3 Ht'2).
+          subst t''.
+          exact Ht''.
         }
+        destruct IHl as [ρ0 Hρ0].
+        destruct Hρ0 as [[Hρ01 Hρ02] Hρ03].
+        assert (Xa := X a ltac:(set_solver) t avoid ltac:(set_solver)).
+        ltac1:(ospecialize (Xa _)).
+        {
+          clear Xa.
+          exists (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of a) ρ).
+          split.
+          {
+            rewrite elem_of_subseteq.
+            intros x Hx.
+            unfold vars_of in Hx; simpl in Hx.
+            unfold Valuation2 in *.
+            rewrite elem_of_dom in Hx.
+            unfold is_Some in Hx.
+            destruct Hx as [x0 Hx0].
+            rewrite map_lookup_filter in Hx0.
+            rewrite bind_Some in Hx0.
+            destruct Hx0 as [x1 [H1x2 H2x1]].
+            ltac1:(simplify_option_eq).
+            apply H.
+          }
+          {
+            specialize (HH3 0 t a erefl erefl).
+            apply Expression2Term_matches_enough in HH3 as HH3'.
+            assert (HH3'' : vars_of a ⊆ vars_of ((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of a) ρ))).
+            {
+              rewrite elem_of_subseteq.
+              intros x Hx.
+              unfold vars_of at 1; simpl.
+              unfold Valuation2 in *.
+              rewrite elem_of_dom.
+              unfold is_Some.
+              destruct (ρ !! x) eqn:Hρx.
+              {
+                exists t0.
+                rewrite map_lookup_filter.
+                rewrite bind_Some.
+                exists t0.
+                split>[exact Hρx|].
+                ltac1:(simplify_option_eq).
+                reflexivity.
+              }
+              {
+                ltac1:(exfalso).
+                clear -Hx HH3' Hρx.
+                unfold vars_of in HH3' at 2; simpl in HH3'.
+                rewrite elem_of_subseteq in HH3'.
+                specialize (HH3' x Hx).
+                ltac1:(rewrite elem_of_dom in HH3').
+                destruct HH3' as [y Hy].
+                ltac1:(rewrite Hy in Hρx).
+                inversion Hρx.
+              }
+            }
+            apply TermOverExpression2_evalute_total_2 in HH3''.
+            destruct HH3'' as [e He].
+            eapply TermOverExpression2_satisfies_extensive in He as He'
+              >[|apply map_filter_subseteq].
+            
+            unfold satisfies in He'; simpl in He'.
+            assert(Hinj := TermOverExpression2_satisfies_injective _ _ _ _ HH3 He').
+            subst e.
+            apply He.
+          }
+        }
+        destruct Xa as [ρ1 H1ρ1].
       }
     }
   Qed.
