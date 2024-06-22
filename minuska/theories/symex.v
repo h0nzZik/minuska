@@ -128,7 +128,8 @@ Module Implementation.
       }
     }
     {
-      induction l.
+      revert ρ Hρ1 Hρ2.
+      induction l; intros ρ Hρ1 Hρ2.
       {
         simpl in *.
         unfold satisfies in Hρ2; simpl in Hρ2.
@@ -171,11 +172,13 @@ Module Implementation.
         }
       }
       {
-        ltac1:(ospecialize (IHl _ _ _)).
+        ltac1:(ospecialize (IHl _ _)).
         {
           clear IHl.
           intros x Hx.
           specialize (X x ltac:(set_solver)).
+          intros g0 avoid0 Havoid0 Hρ0.
+          destruct Hρ0 as [ρ0 [H1ρ0 H2ρ0]].
           ltac1:(naive_solver).
         }
         {
@@ -191,6 +194,12 @@ Module Implementation.
           clear.
           ltac1:(set_solver).
         }
+        unfold Valuation2 in *.
+        Print vars_of.
+        ltac1:(unshelve(eremember (map_filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) _ ρ) as ρ'));
+          try (apply _).
+        Set Typeclasses Debug.
+        apply _.
         {
           clear IHl.
           unfold TermOver in *.
@@ -203,7 +212,12 @@ Module Implementation.
           rewrite fmap_cons in Havoid.
           rewrite union_list_cons in Havoid.
           unfold satisfies in Hρ2; simpl in Hρ2.
-          Search sat2E.
+          apply Expression2Term_matches_enough in Hρ2.
+          unfold Valuation2 in *.
+          unfold TermOver in *.
+          rewrite vars_of_t_term_e in Hρ2.
+          rewrite fmap_cons in Hρ2.
+          rewrite union_list_cons in Hρ2.
           ltac1:(set_solver).
         }
       }
