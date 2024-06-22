@@ -1686,65 +1686,17 @@ Proof.
         remember (l0 !! i) as Hl0i.
         destruct Hl0i.
         {
-
+            specialize (HH t0 t ltac:(assumption) ltac:(reflexivity)).
+            specialize (H _ _ HH).
+            clear -H2X H.
+            ltac1:(set_solver).
         }
         {
             symmetry in HeqHl0i.
             rewrite lookup_ge_None in HeqHl0i.
-        }
-    }
-
-
-
-
-    
-    ltac1:(funelim (sat2E ρ g t)); intros HH;
-        unfold vars_of in *; simpl in *.
-    {
-        destruct t; 
-        ltac1:(simp sat2E in HH);
-            apply Expression2_evaluate_Some_enough in HH;
-            exact HH.
-    }
-    {
-        ltac1:(simp sat2E in HH).
-        inversion HH.
-    }
-    {
-        rewrite <- Heqcall in HH. clear Heqcall.
-        destruct HH as [Hss' [Hll' HH]].
-        subst s'.
-        rewrite elem_of_subseteq.
-        intros x Hx.
-        rewrite elem_of_union_list in Hx.
-        destruct Hx as [X [H1X H2X]].
-        revert l' x ρ s X H1X H2X Hll' HH.
-        induction l; intros l' x ρ s X H1X H2X Hll' HH; simpl in *.
-        {
-            rewrite elem_of_nil in H1X. inversion H1X.
-        }
-        {
-            destruct l'; simpl in *.
-            { ltac1:(inversion Hll'). }
-            {
-                rewrite elem_of_cons in H1X.
-                destruct H1X as [H1X|H1X].
-                {
-                    subst X.
-                    simpl in H2X.
-                    assert (HH1 := HH 0 t a erefl erefl).
-                    specialize (IHl l' x ρ s).
-                    eapply IHl>[()|apply H2X|()|()].
-                    rewrite elem_of_list_fmap.
-                }
-                {
-                    specialize (IHl H1X).
-                }
-                apply (IHl l' x X).
-                {
-                    
-                }
-            }
+            apply lookup_lt_Some in Hi.
+            unfold TermOver in *.
+            ltac1:(lia).
         }
     }
 Qed.
