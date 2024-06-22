@@ -1636,3 +1636,115 @@ Proof.
         exact He.
     }
 Qed.
+
+Lemma Expression2Term_matches_enough
+    {Σ : StaticModel}
+    (t : TermOver Expression2)
+    (ρ : Valuation2)
+    (g : TermOver builtin_value)
+:
+    satisfies ρ g t ->
+    vars_of t ⊆ vars_of ρ
+.
+Proof.
+    unfold satisfies; simpl.
+
+    revert ρ g.
+    induction t; intros ρ g HH; destruct g; simpl in *;
+        ltac1:(simp sat2E in HH).
+    {
+        apply Expression2_evaluate_Some_enough in HH.
+        unfold vars_of; simpl.
+        exact HH.
+    }
+    {
+        apply Expression2_evaluate_Some_enough in HH.
+        unfold vars_of; simpl.
+        exact HH.
+    }
+    {
+        inversion HH.
+    }
+    {
+        destruct HH as [Hs0s [Hl0l HH]].
+        subst s0.
+        rewrite Forall_forall in H.
+        unfold Valuation2 in *.
+        unfold TermOver in *.
+        rewrite vars_of_t_term_e.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        rewrite elem_of_union_list in Hx.
+        destruct Hx as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [t [HX Ht]].
+        subst X.
+        specialize (H _ Ht).
+        rewrite elem_of_list_lookup in Ht.
+        destruct Ht as [i Hi].
+        specialize (HH i).
+        remember (l0 !! i) as Hl0i.
+        destruct Hl0i.
+        {
+
+        }
+        {
+            symmetry in HeqHl0i.
+            rewrite lookup_ge_None in HeqHl0i.
+        }
+    }
+
+
+
+
+    
+    ltac1:(funelim (sat2E ρ g t)); intros HH;
+        unfold vars_of in *; simpl in *.
+    {
+        destruct t; 
+        ltac1:(simp sat2E in HH);
+            apply Expression2_evaluate_Some_enough in HH;
+            exact HH.
+    }
+    {
+        ltac1:(simp sat2E in HH).
+        inversion HH.
+    }
+    {
+        rewrite <- Heqcall in HH. clear Heqcall.
+        destruct HH as [Hss' [Hll' HH]].
+        subst s'.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        rewrite elem_of_union_list in Hx.
+        destruct Hx as [X [H1X H2X]].
+        revert l' x ρ s X H1X H2X Hll' HH.
+        induction l; intros l' x ρ s X H1X H2X Hll' HH; simpl in *.
+        {
+            rewrite elem_of_nil in H1X. inversion H1X.
+        }
+        {
+            destruct l'; simpl in *.
+            { ltac1:(inversion Hll'). }
+            {
+                rewrite elem_of_cons in H1X.
+                destruct H1X as [H1X|H1X].
+                {
+                    subst X.
+                    simpl in H2X.
+                    assert (HH1 := HH 0 t a erefl erefl).
+                    specialize (IHl l' x ρ s).
+                    eapply IHl>[()|apply H2X|()|()].
+                    rewrite elem_of_list_fmap.
+                }
+                {
+                    specialize (IHl H1X).
+                }
+                apply (IHl l' x X).
+                {
+                    
+                }
+            }
+        }
+    }
+Qed.

@@ -65,23 +65,26 @@ Module Implementation.
     (g : TermOver builtin_value)
   :
     elements (vars_of t) ⊆ avoid ->
-    ({ ρ : Valuation2 & satisfies ρ g t }) ->
+    ({ ρ : Valuation2 & ((vars_of ρ ⊆ vars_of t) * satisfies ρ g t)%type }) ->
     ({ ρ : Valuation2 &
       (
         (satisfies ρ g ((toe_to_cpat avoid t).1))
         *
         (satisfies ρ tt ((toe_to_cpat avoid t).2))
+        *
+        (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2))
       )%type
     })
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid Havoid [ρ Hρ]).
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid [ρ [Hρ1 Hρ2]]).
     {
-      inversion Hρ; clear Hρ.
+      inversion Hρ2; clear Hρ2.
       simpl.
       unfold satisfies; simpl.
       exists (<[(fresh avoid) := g]>ρ).
+      split.
       split.
       {
         ltac1:(simp sat2B).
@@ -94,32 +97,114 @@ Module Implementation.
         apply elem_of_list_singleton_inv in Hx.
         subst x.
         unfold satisfies; simpl.
-        split.
+        unfold Valuation2 in *.
+        ltac1:(rewrite lookup_insert).
+        unfold isSome.
+        split>[|reflexivity].
         {
           apply Expression2_evaluate_extensive_Some with (ρ2 := <[fresh avoid := g]>ρ) in H0.
           {
             rewrite H0.
-            unfold Valuation2 in *.
-            apply lookup_insert.
+            reflexivity.
+          }
+          apply insert_subseteq.
+          apply not_elem_of_dom_1.
+          assert (Hfr: fresh avoid ∉ avoid).
+          {
+            apply infinite_is_fresh.
+          }
+          intros HContra.
+          apply Hfr. clear Hfr.
+          ltac1:(set_solver).
+        }
+      }
+      {
+        unfold Valuation2 in *.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        ltac1:(rewrite dom_insert).
+        ltac1:(set_solver).
+      }
+    }
+    {
+      induction l.
+      {
+        simpl in *.
+        unfold satisfies in Hρ2; simpl in Hρ2.
+        destruct g; ltac1:(simp sat2E in Hρ2).
+        { inversion Hρ2. }
+        {
+          destruct Hρ2 as [Hsb [Hlnil Hρ2]].
+          subst s.
+          unfold vars_of in Hρ1; simpl in Hρ1.
+          simpl in Hlnil.
+          apply nil_length_inv in Hlnil.
+          subst l.
+          assert (Hempty : dom ρ = ∅) by ltac1:(set_solver).
+          unfold Valuation2 in *.
+          apply dom_empty_inv_L in Hempty.
+          subst ρ. clear Hρ1 Hρ2.
+          unfold satisfies; simpl.
+          exists ∅.
+          split.
+          {
+            ltac1:(simp sat2B).
+            (repeat split).
+            {
+              clear.
+              ltac1:(set_solver).
+            }
+            {
+              rewrite elem_of_nil in H.
+              inversion H.
+            }
+            {
+              rewrite elem_of_nil in H.
+              inversion H.
+            }
           }
           {
-            unfold Valuation2 in *.
-            apply insert_subseteq.
-            assert (Hfr: fresh avoid ∉ avoid).
-            {
-              apply infinite_is_fresh.
-            }
-            apply not_elem_of_dom_1.
-            apply Expression2_evaluate_Some_enough in H0.
-            unfold vars_of in Havoid; simpl in Havoid.
-            unfold vars_of in Havoid; simpl in Havoid.
+            unfold vars_of; simpl.
+            ltac1:(clear; set_solver).
           }
         }
+      }
+      {
+        ltac1:(ospecialize (IHl _ _ _)).
         {
-          unfold isSome.
-          unfold Valuation2 in *.
-          rewrite lookup_insert.
-          reflexivity.
+          clear IHl.
+          intros x Hx.
+          specialize (X x ltac:(set_solver)).
+          ltac1:(naive_solver).
+        }
+        {
+          unfold TermOver in *.
+          rewrite -> vars_of_t_term_e.
+          rewrite -> vars_of_t_term_e in Hρ1.
+          rewrite fmap_cons in Hρ1.
+          rewrite union_list_cons in Hρ1.
+          rewrite -> vars_of_t_term_e in Havoid.
+          rewrite fmap_cons in Havoid.
+          rewrite union_list_cons in Havoid.
+          eapply transitivity>[|apply Havoid].
+          clear.
+          ltac1:(set_solver).
+        }
+        {
+          clear IHl.
+          unfold TermOver in *.
+          rewrite vars_of_t_term_e.
+          rewrite vars_of_t_term_e in Hρ1.
+          rewrite fmap_cons in Hρ1.
+          rewrite union_list_cons in Hρ1.
+          clear X.
+          rewrite -> vars_of_t_term_e in Havoid.
+          rewrite fmap_cons in Havoid.
+          rewrite union_list_cons in Havoid.
+          unfold satisfies in Hρ2; simpl in Hρ2.
+          Search sat2E.
+          ltac1:(set_solver).
         }
       }
     }
