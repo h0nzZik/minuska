@@ -128,104 +128,94 @@ Module Implementation.
       }
     }
     {
-      revert ρ Hρ1 Hρ2.
-      induction l; intros ρ Hρ1 Hρ2.
+      destruct g.
+      { inversion Hρ2. }
+      unfold satisfies in Hρ2; simpl in Hρ2.
+      ltac1:(simp sat2E in Hρ2).
+      destruct Hρ2 as [HH1 [HH2 HH3]].
+      subst b.
+      revert ρ X l0 Hρ1 HH2 HH3.
+      induction l; intros ρ X l0 Hρ1 HH2 HH3.
       {
         simpl in *.
-        unfold satisfies in Hρ2; simpl in Hρ2.
-        destruct g; ltac1:(simp sat2E in Hρ2).
-        { inversion Hρ2. }
+        unfold vars_of in Hρ1; simpl in Hρ1.
+        apply nil_length_inv in HH2.
+        subst l0.
+        assert (Hempty : dom ρ = ∅) by ltac1:(set_solver).
+        unfold Valuation2 in *.
+        apply dom_empty_inv_L in Hempty.
+        subst ρ. clear Hρ1 Hρ2.
+        unfold satisfies; simpl.
+        exists ∅.
+        split.
         {
-          destruct Hρ2 as [Hsb [Hlnil Hρ2]].
-          subst s.
-          unfold vars_of in Hρ1; simpl in Hρ1.
-          simpl in Hlnil.
-          apply nil_length_inv in Hlnil.
-          subst l.
-          assert (Hempty : dom ρ = ∅) by ltac1:(set_solver).
-          unfold Valuation2 in *.
-          apply dom_empty_inv_L in Hempty.
-          subst ρ. clear Hρ1 Hρ2.
-          unfold satisfies; simpl.
-          exists ∅.
-          split.
+          ltac1:(simp sat2B).
+          (repeat split).
           {
-            ltac1:(simp sat2B).
-            (repeat split).
-            {
-              clear.
-              ltac1:(set_solver).
-            }
-            {
-              rewrite elem_of_nil in H.
-              inversion H.
-            }
-            {
-              rewrite elem_of_nil in H.
-              inversion H.
-            }
+            clear.
+            ltac1:(set_solver).
           }
           {
-            unfold vars_of; simpl.
-            ltac1:(clear; set_solver).
+            rewrite elem_of_nil in H.
+            inversion H.
           }
+          {
+            rewrite elem_of_nil in H.
+            inversion H.
+          }
+        }
+        {
+          unfold vars_of; simpl.
+          ltac1:(clear; set_solver).
         }
       }
       {
-        ltac1:(ospecialize (IHl _ _)).
-        {
-          clear IHl.
-          intros x Hx.
-          specialize (X x ltac:(set_solver)).
-          intros g0 avoid0 Havoid0 Hρ0.
-          destruct Hρ0 as [ρ0 [H1ρ0 H2ρ0]].
-          ltac1:(naive_solver).
-        }
-        {
-          unfold TermOver in *.
-          rewrite -> vars_of_t_term_e.
-          rewrite -> vars_of_t_term_e in Hρ1.
-          rewrite fmap_cons in Hρ1.
-          rewrite union_list_cons in Hρ1.
-          rewrite -> vars_of_t_term_e in Havoid.
-          rewrite fmap_cons in Havoid.
-          rewrite union_list_cons in Havoid.
-          eapply transitivity>[|apply Havoid].
-          clear.
-          ltac1:(set_solver).
-        }
         unfold Valuation2 in *.
+        unfold TermOver in *.
+        destruct l0; simpl in *.
+        {
+          ltac1:(lia).
+        }
+        rewrite vars_of_t_term_e in Havoid.
+        rewrite fmap_cons in Havoid.
+        rewrite union_list_cons in Havoid.
+        rewrite vars_of_t_term_e in IHl.
+        specialize (IHl ltac:(set_solver)).
         remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) ρ) as ρ'. 
-        ltac1:(ospecialize (IHl ρ' _)).
+        specialize (IHl ρ').
+        ltac1:(ospecialize (IHl _ l0 _)).
         {
           clear IHl.
+          intros.
+          apply X.
+          {
+            rewrite elem_of_cons.
+            right. assumption.
+          }
+          {
+            assumption.
+          }
+          {
+            assumption.
+          }
+        }
+        {
           unfold Valuation2 in *.
           unfold TermOver in *.
           subst ρ'.
           ltac1:(cut(vars_of
             (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ vars_of l) ρ)
-            = vars_of (t_term b l))).
+            = vars_of l)).
           {
             intros HHH. rewrite HHH. apply reflexivity.
           }
-          rewrite vars_of_t_term_e.
           unfold vars_of at 1; simpl.
           unfold Valuation2 in *.
           apply dom_filter_L.
           intros x.
+          simpl.
           split; intros Hx.
           {
-            rewrite elem_of_union_list in Hx.
-            destruct Hx as [X0 [H1X0 H2X0]].
-            rewrite elem_of_list_fmap in H1X0.
-            destruct H1X0 as [t [H1t H2t]].
-            subst X0.
-            simpl.
-            apply Expression2Term_matches_enough in Hρ2.
-            unfold TermOver,Valuation2 in *.
-            rewrite vars_of_t_term_e in Hρ2.
-            rewrite fmap_cons in Hρ2.
-            rewrite union_list_cons in Hρ2.
             ltac1:(cut (x ∈ dom ρ)).
             {
               intros Hxρ.
@@ -236,33 +226,49 @@ Module Implementation.
               split>[apply Hx0|].
               unfold vars_of; simpl.
               rewrite elem_of_union_list.
-              exists (vars_of t).
+              
+              unfold vars_of in Hx; simpl in Hx.
+              rewrite elem_of_union_list in Hx.
+              destruct Hx as [X0 [H1X0 H2X0]].
+              rewrite elem_of_list_fmap in H1X0.
+              destruct H1X0 as [t' [H1t' H2t']].
+              exists (vars_of t').
               split.
               {
                 rewrite elem_of_list_fmap.
-                exists t.
-                split>[reflexivity|exact H2t].
+                exists t'.
+                split>[reflexivity|exact H2t'].
               }
               {
+                subst X0.
                 exact H2X0.
               }
             }
-            clear -Hρ2 H2t H2X0.
-            unfold vars_of in Hρ2 at 3; simpl in Hρ2.
-            rewrite elem_of_subseteq in Hρ2.
-            specialize (Hρ2 x).
-            apply Hρ2. clear Hρ2.
-            rewrite elem_of_union. right.
-            rewrite elem_of_union_list.
-            exists (vars_of t).
-            split.
+            unfold vars_of in Hx; simpl in Hx.
+            rewrite elem_of_union_list in Hx.
+            destruct Hx as [X0 [H1X0 H2X0]].
+            rewrite elem_of_list_fmap in H1X0.
+            destruct H1X0 as [t' [H1t' H2t']].
+            subst X0.
+            rewrite elem_of_list_lookup in H2t'.
+            destruct H2t' as [i Hi].
+            specialize (HH3 (S i)).
+            remember (l0 !! i) as l0i.
+            destruct l0i.
             {
-              rewrite elem_of_list_fmap.
-              exists t.
-              split>[reflexivity|exact H2t].
+              symmetry in Heql0i.
+              specialize (HH3 t0 _ Hi).
+              specialize (HH3 Heql0i).
+              apply Expression2Term_matches_enough in HH3.
+              clear IHl X.
+              ltac1:(set_solver).
             }
             {
-              exact H2X0.
+              symmetry in Heql0i.
+              apply lookup_ge_None in Heql0i.
+              simpl in HH2.
+              apply lookup_lt_Some in Hi.
+              ltac1:(lia).
             }
           }
           {
@@ -272,26 +278,14 @@ Module Implementation.
             exact H2x0.
           }
         }
-        
+        simpl in HH2.
+        specialize (IHl ltac:(lia)).
+
+        ltac1:(ospecialize (IHl _)).
         {
           clear IHl.
-          unfold TermOver in *.
-          rewrite vars_of_t_term_e.
-          rewrite vars_of_t_term_e in Hρ1.
-          rewrite fmap_cons in Hρ1.
-          rewrite union_list_cons in Hρ1.
-          clear X.
-          rewrite -> vars_of_t_term_e in Havoid.
-          rewrite fmap_cons in Havoid.
-          rewrite union_list_cons in Havoid.
-          unfold satisfies in Hρ2; simpl in Hρ2.
-          apply Expression2Term_matches_enough in Hρ2.
-          unfold Valuation2 in *.
-          unfold TermOver in *.
-          rewrite vars_of_t_term_e in Hρ2.
-          rewrite fmap_cons in Hρ2.
-          rewrite union_list_cons in Hρ2.
-          ltac1:(set_solver).
+          intros.
+          eapply HH3.
         }
       }
     }
