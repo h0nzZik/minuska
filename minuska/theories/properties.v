@@ -1902,7 +1902,6 @@ Proof.
             exact H.
         }
         clear X'.
-        Set Printing Coercions.
         remember (pfmap l (fun x pf => projT1 (X'' x pf))) as l'.
         exists (t_term b l').
         ltac1:(simp sat2E).
@@ -1944,3 +1943,48 @@ Proof.
     }
 Qed.
 
+
+Lemma TermOverExpression2_satisfies_extensive
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (t : TermOver Expression2)
+    (gt : TermOver builtin_value)
+    :
+    ρ1 ⊆ ρ2 ->
+    satisfies ρ1 gt t ->
+    satisfies ρ2 gt t
+.
+Proof.
+    revert gt ρ1 ρ2.
+    unfold TermOver in *.
+    unfold Valuation2 in *.
+    ltac1:(induction t using TermOver_rect; intros gt ρ1 ρ2 Hρ1ρ2).
+    {
+        unfold satisfies; simpl.
+        destruct gt; ltac1:(simp sat2E).
+        {
+            intros HH.
+            eapply Expression2_evaluate_extensive_Some>[|apply HH].
+            exact Hρ1ρ2.
+        }
+        {
+            intros HH.
+            eapply Expression2_evaluate_extensive_Some>[|apply HH].
+            exact Hρ1ρ2.
+        }
+    }
+    {
+        unfold satisfies; simpl.
+        destruct gt; ltac1:(simp sat2E).
+        intros [HH1 [HH2 HH3]].
+        (repeat split); try assumption.
+        intros i t' φ' H1 H2.
+        specialize (HH3 i t' φ' H1 H2).
+        eapply X.
+        {
+            rewrite elem_of_list_lookup. exists i. apply H1.
+        }
+        { apply Hρ1ρ2. }
+        apply HH3.
+    }
+Qed.

@@ -285,10 +285,63 @@ Module Implementation.
         {
           clear IHl.
           intros.
+          (* assert (HH3old := HH3).*)
           specialize (HH3 (S i) t' φ' pf1 pf2).
-          assert (Htot := Expression2_evalute_total_iff t' φ').
+          apply Expression2Term_matches_enough in HH3 as HH3'.
+          assert (HH4 : vars_of φ' ⊆ vars_of ρ' ).
+          {
+            subst ρ'.
+            unfold vars_of at 2; simpl.
+            rewrite elem_of_subseteq.
+            intros x Hx.
+            assert (Hx' : x ∈ vars_of ρ) by ltac1:(clear -Hx HH3'; set_solver).
+            destruct (ρ !! x) eqn:Heqρx.
+            {
+              unfold Valuation2,TermOver in *.
+              rewrite elem_of_dom.
+              exists t0.
+              rewrite map_lookup_filter.
+              rewrite bind_Some.
+              simpl.
+              exists t0.
+              split>[exact Heqρx|].
+              ltac1:(simplify_option_eq).
+              reflexivity.
+              ltac1:(exfalso).
+              apply H; clear H.
+              unfold vars_of; simpl.
+              rewrite elem_of_union_list.
+              exists (vars_of φ').
+              split>[|exact Hx].
+              rewrite elem_of_list_fmap.
+              exists φ'.
+              split>[reflexivity|].
+              rewrite elem_of_list_lookup.
+              exists i.
+              exact pf1.
+            }
+            {
+              unfold Valuation2,TermOver in *.
+              ltac1:(rewrite <- not_elem_of_dom in Heqρx).
+              unfold vars_of in Hx'; simpl in Hx'.
+              ltac1:(exfalso; contradiction Heqρx).
+            }
+          }
+
+          assert (Htot2 := TermOverExpression2_evalute_total_2 φ' ρ' HH4).
+          destruct Htot2 as [t'' Ht''].
+          assert (Ht'2: sat2E ρ t'' φ').
+          {
+            eapply Expression2_evaluate_extensive_Some.
+            Search satisfies Expression2.
+            Check sat2E.
+          }
+          (*
+          assert (Htot1 := Expression2_evalute_total_1).
+          
           Search sat2E.
           eapply HH3.
+          *)
         }
       }
     }
