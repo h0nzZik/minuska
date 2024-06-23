@@ -462,6 +462,83 @@ Module Implementation.
     }
   Qed.
 
+  Lemma toe_to_cpat_avoid
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (t : TermOver Expression2)
+  :
+    forall x,
+      x ∈ vars_of (toe_to_cpat avoid t).1 ->
+      x ∉ avoid
+  .
+  Proof.
+    revert avoid.
+    induction t; intros avoid x Htoe.
+    {
+      unfold vars_of in Htoe; simpl in Htoe.
+      unfold vars_of in Htoe; simpl in Htoe.
+      rewrite elem_of_singleton in Htoe.
+      subst.
+      apply infinite_is_fresh.
+    }
+    {
+      rewrite Forall_forall in H.
+      simpl in Htoe.
+      unfold TermOver in *.
+      rewrite vars_of_t_term in Htoe.
+      rewrite elem_of_union_list in Htoe.
+      destruct Htoe as [X [H1X H2X]].
+      rewrite elem_of_list_fmap in H1X.
+      destruct H1X as [y [H1y H2y]].
+      subst X.
+
+      clear s.
+      revert x y avoid H2y H2X H.
+      induction l; intros x y avoid H2y H2X H.
+      {
+        simpl in H2y.
+        rewrite elem_of_nil in H2y.
+        destruct H2y.
+      }
+      {
+        simpl in *.
+        rewrite elem_of_cons in H2y.
+        destruct H2y as [H2y|H2y].
+        {
+          subst.
+          apply (H a).
+          {
+            rewrite elem_of_cons.
+            left.
+            reflexivity.
+          }
+          {
+            apply H2X.
+          }
+        }
+        {
+          specialize (IHl _ _ _ H2y H2X).
+          ltac1:(ospecialize (IHl _)).
+          {
+            intros.
+            simpl in *.
+            apply (H x0).
+            {
+              rewrite elem_of_cons.
+              right.
+              assumption.
+            }
+            {
+              apply H1.
+            }
+          }
+          clear - IHl.
+          ltac1:(set_solver).
+        }
+      }
+    }
+  Qed.
+
   Lemma toe_to_cpat_correct_1
     {Σ : StaticModel}
     (avoid : list variable)
@@ -773,7 +850,7 @@ Module Implementation.
           exact Ht''.
         }
         destruct IHl as [ρ0 Hρ0].
-        destruct Hρ0 as [[Hρ01 Hρ02] Hρ03].
+        destruct Hρ0 as [[[Hρ01 Hρ02] Hρ03] Hρ04].
         assert (Xa := X a ltac:(set_solver) t avoid ltac:(set_solver) (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of a) ρ')).
         ltac1:(ospecialize (Xa _ _)).
         {
