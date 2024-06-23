@@ -341,6 +341,127 @@ Module Implementation.
       }
   Qed.
 
+  Lemma toe_to_cpat_good_side
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (t : TermOver Expression2)
+  :
+    vars_of (toe_to_cpat avoid t).2 ⊆ vars_of (toe_to_cpat avoid t).1 ∪ vars_of t
+  .
+  Proof.
+    revert avoid.
+    induction t; intros avoid.
+    {
+      simpl in *.
+      unfold vars_of in *; simpl in *.
+      unfold vars_of in *; simpl in *.
+      unfold vars_of; simpl.
+      ltac1:(set_solver).
+    }
+    {
+      rewrite Forall_forall in H.
+      unfold TermOver in *.
+      rewrite vars_of_t_term_e.
+      simpl in *.
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      unfold vars_of in Hx; simpl in Hx.
+      rewrite elem_of_union_list in Hx.
+      destruct Hx as [X [H1X H2X]].
+      rewrite elem_of_list_fmap in H1X.
+      destruct H1X as [y [H1y H2y]].
+      subst X.
+      unfold TermOver in *.
+      rewrite vars_of_t_term.
+      rewrite elem_of_union.
+      rewrite elem_of_union_list.
+
+      clear s.
+      revert avoid x y H2X H2y H.
+      induction l; intros avoid x y H2X H2y H.
+      {
+        simpl in *.
+        rewrite elem_of_nil in H2y.
+        destruct H2y.
+      }
+      {
+        unfold TermOver in *.
+        simpl in *.
+        rewrite elem_of_app in H2y.
+        destruct H2y as [H2y|H2y].
+        {
+          assert (Ha := H a).
+          ltac1:(ospecialize (Ha _)).
+          {
+            rewrite elem_of_cons.
+            left.
+            reflexivity.
+          }
+          specialize (Ha avoid).
+          rewrite elem_of_subseteq in Ha.
+          specialize (Ha x).
+          unfold vars_of in Ha at 1; simpl in Ha.
+          rewrite elem_of_union_list in Ha.
+          ltac1:(ospecialize (Ha _)).
+          {
+            exists (vars_of y).
+            rewrite elem_of_list_fmap.
+            split>[|exact H2X].
+            exists y.
+            split>[reflexivity|].
+            exact H2y.
+          }
+          rewrite elem_of_union in Ha.
+          destruct Ha as [Ha|Ha].
+          {
+            left.
+            exists (vars_of (toe_to_cpat avoid a).1).
+            rewrite elem_of_cons.
+            split>[|exact Ha].
+            left.
+            reflexivity.
+          }
+          {
+            right.
+            rewrite elem_of_union.
+            left.
+            exact Ha.
+          }
+        }
+        {
+          specialize (IHl (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2)))).
+          specialize (IHl x y H2X).
+          specialize (IHl H2y).
+          ltac1:(ospecialize (IHl _)).
+          {
+            clear -H.
+            intros.
+            specialize (H x).
+            rewrite elem_of_cons in H.
+            specialize (H (or_intror H0)).
+            apply H.
+          }
+          destruct IHl as [IHl|IHl].
+          {
+            destruct IHl as [Y [H1Y H2Y]].
+            left.
+            exists Y.
+            split>[|apply H2Y].
+            rewrite elem_of_cons.
+            right.
+            apply H1Y.
+          }
+          {
+            right.
+            rewrite elem_of_union.
+            right.
+            apply IHl.
+          }
+        }
+      }
+    }
+  Qed.
+
   Lemma toe_to_cpat_correct_1
     {Σ : StaticModel}
     (avoid : list variable)
@@ -692,6 +813,37 @@ Module Implementation.
         destruct Xa as [ρ1 H1ρ1].
         destruct H1ρ1 as [H1ρ1 H2ρ1].
         destruct H1ρ1 as [H1ρ1 H3ρ1].
+        remember (Valuation2_merge_with ρ0 ρ1) as oρ3.
+        destruct oρ3.
+        {
+          admit.
+        }
+        {
+          ltac1:(exfalso).
+          unfold Valuation2_merge_with in Heqoρ3.
+          ltac1:(case_match; simplify_eq/=).
+          clear Heqoρ3.
+          unfold Valuation2_compatible_with in H.
+          rewrite <- not_true_iff_false in H.
+          apply H. clear H.
+          rewrite forallb_forall.
+          intros x Hx.
+          rewrite <- elem_of_list_In in Hx.
+          rewrite elem_of_elements in Hx.
+          rewrite elem_of_intersection in Hx.
+          destruct Hx as [H1x H2x].
+          unfold TermOver in *.
+          ltac1:(rewrite elem_of_dom in H1x).
+          ltac1:(rewrite elem_of_dom in H2x).
+          destruct H1x as [y1 Hy1].
+          destruct H2x as [y2 Hy2].
+          ltac1:(rewrite Hy1).
+          ltac1:(rewrite Hy2).
+          rewrite bool_decide_eq_true.
+          apply f_equal.
+
+          Search subseteq union.
+        }
       }
     }
   Qed.
