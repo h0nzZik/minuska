@@ -2069,3 +2069,48 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma Expression2_evalute_strip
+    {Σ : StaticModel}
+    (e : Expression2)
+    (g : TermOver builtin_value)
+    (ρ : Valuation2)
+:
+    Expression2_evaluate ρ e = Some g ->
+    Expression2_evaluate (filter (fun kv => kv.1 ∈ vars_of e) ρ) e = Some g
+.
+Proof.
+    intros HH.
+    apply Expression2_evaluate_Some_enough in HH as HH1.
+    assert (HH2 : vars_of e ⊆ vars_of (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of e) ρ)).
+    {
+        unfold vars_of at 2; simpl.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        ltac1:(rewrite elem_of_dom).
+        unfold vars_of in HH1, Hx; simpl in HH1,Hx.
+        rewrite elem_of_subseteq in HH1.
+        specialize (HH1 _ Hx).
+        ltac1:(rewrite elem_of_dom in HH1).
+        destruct HH1 as [y Hy].
+        exists y.
+        unfold Valuation2 in *.
+        apply map_lookup_filter_Some_2.
+        exact Hy.
+        simpl.
+        apply Hx.
+    }
+    apply Expression2_evaluate_Some_enough_inv in HH2 as HH3.
+    destruct HH3 as [g0 Hg0].
+    eapply Expression2_evaluate_extensive_Some with (ρ2 := ρ) in Hg0 as H1g0.
+    {
+        assert (g = g0) by ltac1:(congruence).
+        subst g0.
+        apply Hg0.
+    }
+    {
+        unfold Valuation2 in *.
+        apply map_filter_subseteq.
+    }
+Qed.

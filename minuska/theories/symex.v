@@ -547,6 +547,7 @@ Module Implementation.
   :
     elements (vars_of t) ⊆ avoid ->
     forall (ρ' : Valuation2),
+      avoid ⊆ elements (vars_of ρ') ->
       vars_of ρ' ⊆ vars_of t ->
       satisfies ρ' g t ->
       ({ ρ : Valuation2 &
@@ -563,7 +564,7 @@ Module Implementation.
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' H1ρ' H2ρ').
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' Havoid2 H1ρ' H2ρ').
     {
       inversion H2ρ'; clear H2ρ'.
       simpl.
@@ -632,8 +633,8 @@ Module Implementation.
       ltac1:(simp sat2E in H2ρ').
       destruct H2ρ' as [HH1 [HH2 HH3]].
       subst b.
-      revert ρ' X l0 H1ρ' HH2 HH3.
-      induction l; intros ρ' X l0 H1ρ' HH2 HH3.
+      revert ρ' X l0 H1ρ' HH2 HH3 Havoid2.
+      induction l; intros ρ' X l0 H1ρ' HH2 HH3 Havoid2.
       {
         simpl in *.
         unfold vars_of in H1ρ'; simpl in H1ρ'.
@@ -696,6 +697,9 @@ Module Implementation.
           {
             rewrite elem_of_cons.
             right. assumption.
+          }
+          {
+            assumption.
           }
           {
             assumption.
@@ -849,6 +853,41 @@ Module Implementation.
           subst t''.
           exact Ht''.
         }
+        (*
+        ltac1:(ospecialize (IHl _)).
+        {
+          clear IHl.
+          subst ρ'2.
+          ltac1:(rewrite elem_of_subseteq).
+          intros x Hx.
+          rewrite elem_of_elements.
+          unfold vars_of at 1; simpl.
+          ltac1:(rewrite elem_of_dom).
+          unfold is_Some.
+          ltac1:(rewrite elem_of_subseteq in Havoid2).
+          specialize (Havoid2 x Hx).
+          rewrite elem_of_elements in Havoid2.
+          unfold vars_of in Havoid2; simpl in Havoid2.
+          ltac1:(rewrite elem_of_dom in Havoid2).
+          destruct Havoid2 as [y Hy].
+          exists y.
+          apply map_lookup_filter_Some_2.
+          exact Hy.
+          simpl.
+          rewrite vars_of_t_term_e in H1ρ'.
+          rewrite elem_of_subseteq in H1ρ'.
+          specialize (H1ρ' x).
+          ltac1:(ospecialize (H1ρ' _)).
+          {
+            unfold vars_of; simpl.
+            ltac1:(rewrite elem_of_dom).
+            exists y. exact Hy.
+          }
+          rewrite fmap_cons in H1ρ'.
+          rewrite union_list_cons in H1ρ'.
+          rewrite
+        }
+        *)
         destruct IHl as [ρ0 Hρ0].
         destruct Hρ0 as [[[Hρ01 Hρ02] Hρ03] Hρ04].
         assert (Xa := X a ltac:(set_solver) t avoid ltac:(set_solver) (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of a) ρ')).
@@ -946,6 +985,27 @@ Module Implementation.
           {
             ltac1:(set_solver).
           }
+          assert (H1x: x ∈ vars_of (toe_to_cpat avoid a).1 ∪ vars_of a).
+          {
+            apply elem_of_dom_2 in Hy2.
+            unfold vars_of in Hvρ1 at 1; simpl in Hvρ1.
+            clear - Hvρ1 Hy2.
+            ltac1:(set_solver).
+          }
+          rewrite elem_of_union in H1x.
+          destruct H1x as [H1x | H1x].
+          {
+
+          }
+          {
+            assert (H2x: x ∈ avoid).
+            {
+              clear - H1x Havoid.
+              ltac1:(set_solver).
+            }
+            Search avoid.
+          }
+          assert (Havoid1 := toe_to_cpat_avoid avoid a x).
           Search ρ'.
 
           Search subseteq union.
