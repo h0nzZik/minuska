@@ -486,7 +486,7 @@ Module Implementation.
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' H1ρ'1 H2ρ').
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' H1ρ' H2ρ').
     {
       inversion H2ρ'; clear H2ρ'.
       simpl.
@@ -550,22 +550,22 @@ Module Implementation.
     }
     {
       destruct g.
-      { inversion Hρ2. }
-      unfold satisfies in Hρ2; simpl in Hρ2.
-      ltac1:(simp sat2E in Hρ2).
-      destruct Hρ2 as [HH1 [HH2 HH3]].
+      { inversion H2ρ'. }
+      unfold satisfies in H2ρ'; simpl in H2ρ'.
+      ltac1:(simp sat2E in H2ρ').
+      destruct H2ρ' as [HH1 [HH2 HH3]].
       subst b.
-      revert ρ X l0 Hρ1 HH2 HH3.
-      induction l; intros ρ X l0 Hρ1 HH2 HH3.
+      revert ρ' X l0 H1ρ' HH2 HH3.
+      induction l; intros ρ' X l0 H1ρ' HH2 HH3.
       {
         simpl in *.
-        unfold vars_of in Hρ1; simpl in Hρ1.
+        unfold vars_of in H1ρ'; simpl in H1ρ'.
         apply nil_length_inv in HH2.
         subst l0.
-        assert (Hempty : dom ρ = ∅) by ltac1:(set_solver).
+        assert (Hempty : dom ρ' = ∅) by ltac1:(set_solver).
         unfold Valuation2 in *.
         apply dom_empty_inv_L in Hempty.
-        subst ρ. clear Hρ1 Hρ2.
+        subst ρ'. clear H1ρ' H2ρ'.
         unfold satisfies; simpl.
         exists ∅.
         split.
@@ -583,6 +583,13 @@ Module Implementation.
           {
             rewrite elem_of_nil in H.
             inversion H.
+          }
+          {
+            unfold vars_of at 1; simpl.
+            unfold Valuation2 in *.
+            rewrite dom_empty_L.
+            clear.
+            ltac1:(set_solver).
           }
         }
         {
@@ -602,9 +609,9 @@ Module Implementation.
         rewrite union_list_cons in Havoid.
         rewrite vars_of_t_term_e in IHl.
         specialize (IHl ltac:(set_solver)).
-        remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) ρ) as ρ'. 
-        specialize (IHl ρ').
-        ltac1:(ospecialize (IHl _ l0 _)).
+        remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) ρ') as ρ'2. 
+        specialize (IHl ρ'2).
+        ltac1:(ospecialize (IHl _ l0)).
         {
           clear IHl.
           intros.
@@ -619,13 +626,17 @@ Module Implementation.
           {
             assumption.
           }
+          {
+            assumption.
+          }
         }
+        ltac1:(ospecialize (IHl _)).
         {
           unfold Valuation2 in *.
           unfold TermOver in *.
-          subst ρ'.
+          subst ρ'2.
           ltac1:(cut(vars_of
-            (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ vars_of l) ρ)
+            (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ vars_of l) ρ')
             = vars_of l)).
           {
             intros HHH. rewrite HHH. apply reflexivity.
@@ -637,7 +648,7 @@ Module Implementation.
           simpl.
           split; intros Hx.
           {
-            ltac1:(cut (x ∈ dom ρ)).
+            ltac1:(cut (x ∈ dom ρ')).
             {
               intros Hxρ.
               rewrite elem_of_dom in Hxρ.
@@ -709,14 +720,14 @@ Module Implementation.
           (* assert (HH3old := HH3).*)
           specialize (HH3 (S i) t' φ' pf1 pf2).
           apply Expression2Term_matches_enough in HH3 as HH3'.
-          assert (HH4 : vars_of φ' ⊆ vars_of ρ' ).
+          assert (HH4 : vars_of φ' ⊆ vars_of ρ'2 ).
           {
-            subst ρ'.
+            subst ρ'2.
             unfold vars_of at 2; simpl.
             rewrite elem_of_subseteq.
             intros x Hx.
-            assert (Hx' : x ∈ vars_of ρ) by ltac1:(clear -Hx HH3'; set_solver).
-            destruct (ρ !! x) eqn:Heqρx.
+            assert (Hx' : x ∈ vars_of ρ') by ltac1:(clear -Hx HH3'; set_solver).
+            destruct (ρ' !! x) eqn:Heqρx.
             {
               unfold Valuation2,TermOver in *.
               rewrite elem_of_dom.
@@ -749,83 +760,78 @@ Module Implementation.
             }
           }
 
-          assert (Htot2 := TermOverExpression2_evalute_total_2 φ' ρ' HH4).
+          assert (Htot2 := TermOverExpression2_evalute_total_2 φ' ρ'2 HH4).
           destruct Htot2 as [t'' Ht''].
-          assert (Ht'2: sat2E ρ t'' φ').
+          assert (Ht'2: sat2E ρ' t'' φ').
           {
             eapply TermOverExpression2_satisfies_extensive>[|apply Ht''].
-            subst ρ'.
+            subst ρ'2.
             apply map_filter_subseteq.
           }
-          assert(Hinj := TermOverExpression2_satisfies_injective ρ φ' t' t'' HH3 Ht'2).
+          assert(Hinj := TermOverExpression2_satisfies_injective ρ' φ' t' t'' HH3 Ht'2).
           subst t''.
           exact Ht''.
         }
         destruct IHl as [ρ0 Hρ0].
         destruct Hρ0 as [[Hρ01 Hρ02] Hρ03].
-        assert (Xa := X a ltac:(set_solver) t avoid ltac:(set_solver)).
-        ltac1:(ospecialize (Xa _)).
+        assert (Xa := X a ltac:(set_solver) t avoid ltac:(set_solver) (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of a) ρ')).
+        ltac1:(ospecialize (Xa _ _)).
         {
-          clear Xa.
-          exists (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of a) ρ).
-          split.
+          rewrite elem_of_subseteq.
+          intros x Hx.
+          unfold vars_of in Hx; simpl in Hx.
+          unfold Valuation2 in *.
+          rewrite elem_of_dom in Hx.
+          unfold is_Some in Hx.
+          destruct Hx as [x0 Hx0].
+          rewrite map_lookup_filter in Hx0.
+          rewrite bind_Some in Hx0.
+          destruct Hx0 as [x1 [H1x2 H2x1]].
+          ltac1:(simplify_option_eq).
+          apply H.
+        }
+        {
+          specialize (HH3 0 t a erefl erefl).
+          apply Expression2Term_matches_enough in HH3 as HH3'.
+          assert (HH3'' : vars_of a ⊆ vars_of ((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of a) ρ'))).
           {
             rewrite elem_of_subseteq.
             intros x Hx.
-            unfold vars_of in Hx; simpl in Hx.
+            unfold vars_of at 1; simpl.
             unfold Valuation2 in *.
-            rewrite elem_of_dom in Hx.
-            unfold is_Some in Hx.
-            destruct Hx as [x0 Hx0].
-            rewrite map_lookup_filter in Hx0.
-            rewrite bind_Some in Hx0.
-            destruct Hx0 as [x1 [H1x2 H2x1]].
-            ltac1:(simplify_option_eq).
-            apply H.
-          }
-          {
-            specialize (HH3 0 t a erefl erefl).
-            apply Expression2Term_matches_enough in HH3 as HH3'.
-            assert (HH3'' : vars_of a ⊆ vars_of ((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of a) ρ))).
+            rewrite elem_of_dom.
+            unfold is_Some.
+            destruct (ρ' !! x) eqn:Hρx.
             {
-              rewrite elem_of_subseteq.
-              intros x Hx.
-              unfold vars_of at 1; simpl.
-              unfold Valuation2 in *.
-              rewrite elem_of_dom.
-              unfold is_Some.
-              destruct (ρ !! x) eqn:Hρx.
-              {
-                exists t0.
-                rewrite map_lookup_filter.
-                rewrite bind_Some.
-                exists t0.
-                split>[exact Hρx|].
-                ltac1:(simplify_option_eq).
-                reflexivity.
-              }
-              {
-                ltac1:(exfalso).
-                clear -Hx HH3' Hρx.
-                unfold vars_of in HH3' at 2; simpl in HH3'.
-                rewrite elem_of_subseteq in HH3'.
-                specialize (HH3' x Hx).
-                ltac1:(rewrite elem_of_dom in HH3').
-                destruct HH3' as [y Hy].
-                ltac1:(rewrite Hy in Hρx).
-                inversion Hρx.
-              }
+              exists t0.
+              rewrite map_lookup_filter.
+              rewrite bind_Some.
+              exists t0.
+              split>[exact Hρx|].
+              ltac1:(simplify_option_eq).
+              reflexivity.
             }
-            apply TermOverExpression2_evalute_total_2 in HH3''.
-            destruct HH3'' as [e He].
-            eapply TermOverExpression2_satisfies_extensive in He as He'
-              >[|apply map_filter_subseteq].
-            
-            unfold satisfies in He'; simpl in He'.
-            assert(Hinj := TermOverExpression2_satisfies_injective _ _ _ _ HH3 He').
-            subst e.
-            apply He.
+            {
+              ltac1:(exfalso).
+              clear -Hx HH3' Hρx.
+              unfold vars_of in HH3' at 2; simpl in HH3'.
+              rewrite elem_of_subseteq in HH3'.
+              specialize (HH3' x Hx).
+              ltac1:(rewrite elem_of_dom in HH3').
+              destruct HH3' as [y Hy].
+              ltac1:(rewrite Hy in Hρx).
+              inversion Hρx.
+            }
           }
+          apply TermOverExpression2_evalute_total_2 in HH3''.
+          destruct HH3'' as [e He].
+          eapply TermOverExpression2_satisfies_extensive in He as He'
+            >[|apply map_filter_subseteq].
+          
+          unfold satisfies in He'; simpl in He'.
+          assert(Hinj := TermOverExpression2_satisfies_injective _ _ _ _ HH3 He').
+          subst e.
+          apply He.
         }
         destruct Xa as [ρ1 H1ρ1].
         destruct H1ρ1 as [H1ρ1 H2ρ1].
@@ -863,7 +869,7 @@ Module Implementation.
           {
             ltac1:(set_solver).
           }
-          Search ρ.
+          Search ρ'.
 
           Search subseteq union.
         }
