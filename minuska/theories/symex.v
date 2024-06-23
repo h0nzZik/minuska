@@ -592,10 +592,10 @@ Module Implementation.
           (satisfies ρ g ((toe_to_cpat avoid t).1))
           *
           (satisfies ρ tt ((toe_to_cpat avoid t).2))
+          (* *
+          (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2)) *)
           *
-          (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2))
-          *
-          ((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of t) ρ') ⊆ ρ)
+          ((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ avoid) ρ') ⊆ ρ)
         )%type
       })
   .
@@ -606,10 +606,10 @@ Module Implementation.
       inversion H2ρ'; clear H2ρ'.
       simpl.
       unfold satisfies; simpl.
-      exists (<[(fresh avoid) := g]>((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of a) ρ'))).
+      exists (<[(fresh avoid) := g]>((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ avoid) ρ'))).
       split.
       split.
-      split.
+      (* split. *)
       {
         ltac1:(simp sat2B).
         unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar.
@@ -629,24 +629,46 @@ Module Implementation.
           apply Expression2_evalute_strip in H0.
           symmetry.
           eapply Expression2_evaluate_extensive_Some>[|apply H0].
-          apply insert_subseteq.
-          apply not_elem_of_dom_1.
-          assert (Hfr: fresh avoid ∉ avoid).
-          {
-            apply infinite_is_fresh.
-          }
-          intros HContra.
-          rewrite elem_of_dom in HContra.
-          destruct HContra as [y Hy].
-          rewrite map_lookup_filter in Hy.
-          rewrite bind_Some in Hy.
-          destruct Hy as [x [H1x H2x]].
+          ltac1:(rewrite map_subseteq_spec).
+          intros i x Hix.
+          ltac1:(rewrite map_lookup_filter in Hix).
+          rewrite bind_Some in Hix.
+          destruct Hix as [x0 [H1x0 H2x0]].
+          rewrite bind_Some in H2x0.
+          simpl in H2x0.
+          destruct H2x0 as [x1 [H1x1 H2x1]].
           ltac1:(simplify_option_eq).
-          clear H0 ρ' H1x.
-          unfold vars_of in Havoid; simpl in Havoid.
-          ltac1:(set_solver).
+          rewrite lookup_insert_ne.
+          {
+            rewrite map_lookup_filter.
+            rewrite bind_Some.
+            exists x.
+            split>[exact H1x0|].
+            rewrite bind_Some.
+            simpl.
+            unfold vars_of in Havoid; simpl in Havoid.
+            ltac1:(rewrite elem_of_subseteq in Havoid).
+            specialize (Havoid i).
+            rewrite elem_of_elements in Havoid.
+            specialize (Havoid x1).
+            exists Havoid.
+            split>[|reflexivity].
+            ltac1:(simplify_option_eq).
+            apply f_equal.
+            apply proof_irrelevance.
+            ltac1:(contradiction H2).
+            ltac1:(contradiction H1).
+          }
+          {
+            intros HContra.
+            subst i.
+            unfold vars_of in Havoid; simpl in Havoid.
+            assert (fresh avoid ∉ avoid) by (apply infinite_is_fresh).
+            ltac1:(set_solver).
+          }
         }
       }
+      (*
       {
         unfold Valuation2 in *.
         unfold vars_of; simpl.
@@ -666,9 +688,13 @@ Module Implementation.
           unfold Valuation2,TermOver in *.
           rewrite map_lookup_filter in Hy.
           ltac1:(simplify_option_eq).
+          apply Expression2_evaluate_Some_enough in H0.
+          unfold vars_of in Havoid; simpl in Havoid.
+          unfold vars_of in Havoid; simpl in Havoid.
           ltac1:(set_solver).
         }
       }
+      *)
       {
         unfold Valuation2 in *.
         apply insert_subseteq.
@@ -682,8 +708,6 @@ Module Implementation.
         destruct HContra as [y Hy].
         rewrite map_lookup_filter in Hy.
         ltac1:(simplify_option_eq).
-        unfold vars_of in Havoid; simpl in Havoid.
-        ltac1:(set_solver).
       }
     }
     {
@@ -701,7 +725,8 @@ Module Implementation.
         apply nil_length_inv in HH2.
         subst l0.
         clear HH3.
-        exists ∅.
+        exists ρ'.
+        (*exists ∅.*)
         split.
         {
           ltac1:(simp sat2B).
@@ -718,36 +743,10 @@ Module Implementation.
             rewrite elem_of_nil in H.
             inversion H.
           }
-          {
-            unfold vars_of at 1; simpl.
-            unfold Valuation2 in *.
-            rewrite dom_empty_L.
-            clear.
-            ltac1:(set_solver).
-          }
         }
         {
-          assert (Htmp: ∀ (v : Valuation2), v = ∅ -> v ⊆ ∅ ).
-          {
-            intros v Hv.
-            rewrite Hv.
-            unfold Valuation2 in *.
-            ltac1:(set_solver).
-          }
-          apply Htmp. clear Htmp.
-          ltac1:(rewrite map_filter_empty_iff).
-          rewrite map_Forall_to_list.
-          simpl.
-          rewrite Forall_forall.
-          intros x Hx.
-          unfold uncurry; simpl.
           unfold Valuation2 in *.
-          ltac1:(rewrite vars_of_t_term_e).
-          rewrite fmap_nil.
-          rewrite union_list_nil.
-          destruct x.
-          clear.
-          ltac1:(set_solver).
+          apply map_filter_subseteq.
         }
       }
       {
@@ -762,7 +761,7 @@ Module Implementation.
         rewrite union_list_cons in Havoid.
         rewrite vars_of_t_term_e in IHl.
         specialize (IHl ltac:(set_solver)).
-        remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ vars_of l) ρ') as ρ'2. 
+        remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ avoid) ρ') as ρ'2. 
         specialize (IHl ρ'2).
         ltac1:(ospecialize (IHl _ l0)).
         {
@@ -799,16 +798,24 @@ Module Implementation.
             ltac1:(simplify_option_eq).
             reflexivity.
             ltac1:(exfalso).
-            unfold vars_of in H1; simpl in H1.
-            rewrite elem_of_union_list in H1.
-            apply H1. clear H1.
-            exists (vars_of φ').
-            split>[|assumption].
-            rewrite elem_of_list_fmap.
-            exists φ'.
-            split>[reflexivity|].
-            rewrite elem_of_list_lookup.
-            exists i. assumption.
+            ltac1:(rewrite elem_of_subseteq in Havoid).
+            specialize (Havoid i0).
+            rewrite elem_of_elements in Havoid.
+            rewrite elem_of_union in Havoid.
+            rewrite elem_of_union_list in Havoid.
+            ltac1:(ospecialize (Havoid _)).
+            {
+              right.
+              exists (vars_of φ').
+              rewrite elem_of_list_fmap.
+              split>[|assumption].
+              exists φ'.
+              split>[reflexivity|].
+              rewrite elem_of_list_lookup.
+              exists i.
+              assumption.
+            }
+            ltac1:(contradiction).
           }
           {
             apply HH3 with (i := (S i)).
@@ -817,7 +824,7 @@ Module Implementation.
             apply pf2.
           }
         }
-        destruct IHl as [ρ3 [[[H1ρ3 H2ρ3] H3ρ3]H4ρ3]].
+        destruct IHl as [ρ3 [[H1ρ3 H2ρ3] H3ρ3]].
         assert (Xa := X a).
         ltac1:(ospecialize (Xa _)).
         {
@@ -825,16 +832,22 @@ Module Implementation.
           left.
           reflexivity.
         }
+        
         assert (HH3a := HH3 0 t a erefl erefl).
         apply TermOverExpression2_satisfies_strip in HH3a as HH3a'.
         specialize (Xa t avoid ltac:(set_solver)).
         specialize (Xa _ HH3a').
-        destruct Xa as [ρ4 [[[H1ρ4 H2ρ4] H3ρ4] H4ρ4]].
-        ltac1:(rewrite map_filter_filter_l in H4ρ4).
+        destruct Xa as [ρ4 [[H1ρ4 H2ρ4] H3ρ4]].
+        ltac1:(rewrite map_filter_filter_r in H3ρ4).
         {
           intros i x H1x H2x.
-          simpl in *. exact H2x.
+          simpl in *.
+          ltac1:(set_solver).
         }
+        (*
+        
+        
+        
         remember (Valuation2_merge_with ρ3 ρ4) as oρm.
         destruct oρm.
         {
@@ -944,6 +957,7 @@ Module Implementation.
             }
           }
         }
+        *)
         Check map_filter_filter_l.
         (*
         *)
