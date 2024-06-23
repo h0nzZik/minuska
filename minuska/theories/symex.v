@@ -877,6 +877,7 @@ Module Implementation.
         specialize (Xa t avoid ltac:(set_solver)).
         specialize (Xa _ HH3a).
         destruct Xa as [ρ4 [[H1ρ4 H2ρ4] H3ρ4]].
+        (* FIXME I have no idea what to write here*)
         remember (Valuation2_merge_with (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ3) (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ4)) as oρm.
         destruct oρm.
         {
@@ -901,13 +902,36 @@ Module Implementation.
             destruct i; simpl in *.
             {
               ltac1:(simplify_eq/=).
-              eapply TermOverBoV_satisfies_extensive>[apply Hcor2|].
-              apply
-            }
-            {
+              (*clear - H1ρ4.*)
+              apply TermOverBoV_satisfies_strip in H1ρ4.
+              eapply TermOverBoV_satisfies_extensive>[|apply H1ρ4].
+              assert (Havoid2 := toe_to_cpat_avoid avoid a).
+              ltac1:(rewrite map_subseteq_spec).
+              ltac1:(rewrite map_subseteq_spec in Hcor2).
+              intros i x Hix.
+              ltac1:(rewrite map_lookup_filter in Hix).
+              ltac1:(rewrite bind_Some in Hix).
+              destruct Hix as [x0 [H1x0 H2x0]].
+              ltac1:(simplify_option_eq).
+              specialize (Havoid2 i H).
 
+              specialize (Hcor2 i x).
+              apply Hcor2. clear Hcor2.
+              rewrite map_lookup_filter.
+              rewrite bind_Some.
+              simpl.
+              exists x.
+              split>[apply H1x0|].
+              ltac1:(simplify_option_eq).
+              ltac1:(exfalso).
+              admit.
             }
+            admit.
           }
+          {
+            admit.
+          }
+          admit.
         }
         {
           ltac1:(exfalso).
