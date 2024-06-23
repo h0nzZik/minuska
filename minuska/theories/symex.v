@@ -46,6 +46,45 @@ Module Implementation.
   end
   .
 
+  Fixpoint toe_to_cpat_list
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (l : list (TermOver Expression2))
+  : 
+    ((list (TermOver BuiltinOrVar))*(list SideCondition2))%type
+  :=
+    match l with
+    | [] => ([], [])
+    | t'::ts' =>
+      let tmp := toe_to_cpat avoid t' in
+      let rest := toe_to_cpat_list (avoid ++ elements (vars_of (tmp.2))) ts' in
+      (tmp.1::rest.1, (tmp.2 ++ rest.2))
+    end
+  .
+
+  Lemma toe_to_cpat_list_equiv
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (l : list (TermOver Expression2))
+    (s : symbol)
+  :
+    toe_to_cpat avoid (t_term s l) = ((t_term s ((toe_to_cpat_list avoid l).1)), ((toe_to_cpat_list avoid l).2))
+  .    
+  Proof.
+    simpl.
+    revert s avoid.
+    induction l; intros s avoid.
+    {
+      simpl. reflexivity.
+    }
+    {
+      simpl in *.
+      specialize (IHl s (avoid ++ elements (vars_of (toe_to_cpat avoid a).2))).
+      inversion IHl; subst; clear IHl.
+      repeat f_equal.
+    }
+  Qed.
+
   Lemma elem_of_list_singleton_inv
     {A : Type}
     (x y : A)
@@ -835,6 +874,69 @@ Module Implementation.
           apply elem_of_dom_2 in Hy1 as Hy1'.
           specialize (H3ρ3 Hy1').
           clear Hy1'.
+          lazy_match! Constr.type (&H) with
+          | x ∈ vars_of (toe_to_cpat ?avoid ?t).1 ∪ vars_of (toe_to_cpat ?avoid ?t).2 =>
+            Message.print (Message.of_constr (avoid));
+            assert(Hw1 := toe_to_cpat_good_side $avoid $t)
+          end.
+          assert (Hxx: x ∈ vars_of (toe_to_cpat avoid a).1 \/ x ∈ vars_of a).
+          {
+            ltac1:(set_solver).
+          }
+          destruct Hxx as [Hxx|Hxx].
+          {
+            admit.
+          }
+          {
+            assert (Hxρ': x ∈ dom ρ').
+            {
+              apply Expression2Term_matches_enough in HH3a.
+              unfold vars_of in HH3a at 2; simpl in HH3a.
+              clear -Hxx HH3a.
+              ltac1:(set_solver).
+            }
+            rewrite elem_of_dom in Hxρ'.
+            destruct Hxρ' as [y Hy].
+            
+            ltac1:(rewrite map_subseteq_spec in H4ρ4).
+            specialize (H4ρ4 x y).
+            rewrite map_lookup_filter in H4ρ4.
+            rewrite bind_Some in H4ρ4.
+            ltac1:(ospecialize (H4ρ4 _)).
+            {
+              exists y.
+              split>[assumption|].
+              ltac1:(simplify_option_eq).
+              reflexivity.
+              reflexivity.
+            }
+
+            ltac1:(rewrite map_subseteq_spec in H4ρ3).
+            specialize (H4ρ3 x y).
+            rewrite map_lookup_filter in H4ρ3.
+            rewrite bind_Some in H4ρ3.
+            ltac1:(ospecialize (H4ρ3 _)).
+            {
+              exists y.
+              split.
+              {
+                rewrite map_lookup_filter.
+                rewrite bind_Some.
+                exists y.
+                split>[assumption|].
+                rewrite bind_Some.
+                simpl.
+                reflexivity.
+              }
+              {
+
+              }
+              split>[|reflexivity].
+              
+              
+              reflexivity.
+            }
+          }
         }
         Check map_filter_filter_l.
         (*
