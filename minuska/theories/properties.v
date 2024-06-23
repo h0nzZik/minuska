@@ -2289,3 +2289,76 @@ Proof.
         apply HH3.
     }
 Qed.
+
+
+Lemma TermOverBoV_satisfies_strip
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    (g : TermOver builtin_value)
+    (ρ : Valuation2)
+:
+    satisfies ρ g t ->
+    satisfies (filter (fun kv => kv.1 ∈ vars_of t) ρ) g t
+.
+Proof.
+    revert ρ g.
+    ltac1:(induction t using TermOver_rect; intros ρ g HH).
+    {
+        unfold satisfies in *; simpl in *.
+        ltac1:(simp sat2B in HH).
+        ltac1:(simp sat2B).
+        unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar in *.
+        ltac1:(repeat case_match; try congruence).
+        unfold Valuation2 in *.
+        rewrite map_lookup_filter.
+        rewrite HH.
+        simpl.
+        ltac1:(simplify_option_eq).
+        reflexivity.
+        ltac1:(exfalso).
+        apply H. clear H.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        rewrite elem_of_singleton.
+        reflexivity.
+    }
+    {
+        unfold satisfies in *; simpl in *.
+        destruct g;
+            ltac1:(simp sat2B in HH).
+        { destruct HH. }
+        ltac1:(simp sat2B).
+        ltac1:(destruct_and!; (repeat split); simplify_eq/=; try congruence).
+        intros.
+        eapply TermOverBoV_satisfies_extensive>[|eapply X].
+        {
+            unfold TermOver, Valuation2 in *.
+            ltac1:(rewrite map_subseteq_spec).
+            intros i0 x Hx.
+            rewrite map_lookup_filter in Hx.
+            rewrite map_lookup_filter.
+            ltac1:(simplify_option_eq).
+            reflexivity.
+            ltac1:(exfalso).
+            rewrite vars_of_t_term in H3.
+            rewrite elem_of_union_list in H3.
+            apply H3. clear H3.
+            exists (vars_of φ').
+            split>[|assumption].
+            rewrite elem_of_list_fmap.
+            exists φ'.
+            split>[reflexivity|].
+            rewrite elem_of_list_lookup.
+            exists i. assumption.
+        }
+        {
+            rewrite elem_of_list_lookup.
+            exists i. assumption.
+        }
+        {
+            eapply H2.
+            apply pf1.
+            apply pf2.
+        }
+    }
+Qed.

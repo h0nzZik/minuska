@@ -901,7 +901,8 @@ Module Implementation.
             destruct i; simpl in *.
             {
               ltac1:(simplify_eq/=).
-              Search satisfies.
+              eapply TermOverBoV_satisfies_extensive>[apply Hcor2|].
+              apply
             }
             {
 
