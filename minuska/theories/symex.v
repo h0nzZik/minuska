@@ -693,6 +693,7 @@ Module Implementation.
       ltac1:(simp sat2E in H2ρ').
       destruct H2ρ' as [HH1 [HH2 HH3]].
       subst b.
+      rewrite toe_to_cpat_list_equiv.
       revert ρ' X l0 HH2 HH3.
       induction l; intros ρ' X l0 HH2 HH3.
       {
@@ -910,7 +911,12 @@ Module Implementation.
               reflexivity.
               reflexivity.
             }
-
+            assert (x ∈ avoid).
+            {
+              ltac1:(set_solver).
+            }
+            Search l.
+            (* HERE *)
             ltac1:(rewrite map_subseteq_spec in H4ρ3).
             specialize (H4ρ3 x y).
             rewrite map_lookup_filter in H4ρ3.
