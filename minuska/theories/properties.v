@@ -2070,7 +2070,7 @@ Proof.
     }
 Qed.
 
-Lemma filter_pred_impl
+Lemma set_filter_pred_impl
     {A B : Type}
     {_EA : EqDecision A}
     {_Elo : ElemOf A B}
@@ -2100,6 +2100,45 @@ Proof.
     ltac1:(naive_solver).
 Qed.
 
+(*
+Lemma map_filter_pred_impl
+    {K : Type}
+    {M : Type → Type}
+    {H0 : ∀ A : Type, Lookup K A (M A)}
+    {A : Type} 
+    {_PA : PartialAlter K A (M A)}
+    {_ME : Empty (M A) }
+    {_EA : EqDecision K}
+    (P1 P2 : (K*A) -> Prop)
+    {_DP1 : ∀ (x : K*A), Decision (P1 x)}
+    {_DP2 : ∀ (x : K*A), Decision (P2 x)}
+    (thing : M A)
+    :
+    (forall x, P1 x -> P2 x) ->
+    (filter  P1 thing) ⊆ filter P2 thing
+.
+Proof.
+
+    About map_filter.
+    intros Himpl.
+    ltac1:(rewrite map_subseteq_spec).
+    intros i x Hx.
+    Set Typeclasses Debug.
+    Set Printing All.
+    ltac1:(rewrite -> map_lookup_filter in Hx).
+    Search filter lookup.
+    Check (proj2 (@elem_of_subseteq _ _ _ (@filter _ _ _ P1 _DP1 thing) (@filter _ _ _ P2 _DP2 thing))).
+    ltac1:(apply (proj2 (@elem_of_subseteq _ _ _ (@filter _ _ _ P1 _DP1 thing) (@filter _ _ _ P2 _DP2 thing)))).
+    intros x.
+    intros Hx.
+    Locate elem_of_filter.
+    Set Printing All.
+    Check @elem_of_filter.
+    ltac1:(apply (proj1 (elem_of_filter P1 thing x)) in Hx).
+    ltac1:(apply (proj2 (elem_of_filter P2 thing x))).
+    ltac1:(naive_solver).
+Qed.
+*)
 Lemma Expression2_evalute_strip
     {Σ : StaticModel}
     (e : Expression2)
@@ -2175,6 +2214,32 @@ Proof.
         eapply TermOverExpression2_satisfies_extensive>[|eapply X].
         {
             unfold TermOver, Valuation2 in *.
+            ltac1:(rewrite map_subseteq_spec).
+            intros i0 x Hx.
+            rewrite map_lookup_filter in Hx.
+            rewrite map_lookup_filter.
+            ltac1:(simplify_option_eq).
+            reflexivity.
+            ltac1:(exfalso).
+            rewrite vars_of_t_term_e in H3.
+            rewrite elem_of_union_list in H3.
+            apply H3. clear H3.
+            exists (vars_of φ').
+            split>[|assumption].
+            rewrite elem_of_list_fmap.
+            exists φ'.
+            split>[reflexivity|].
+            rewrite elem_of_list_lookup.
+            exists i. assumption.
+        }
+        {
+            rewrite elem_of_list_lookup.
+            exists i. assumption.
+        }
+        {
+            eapply H2.
+            apply pf1.
+            apply pf2.
         }
     }
 Qed.
