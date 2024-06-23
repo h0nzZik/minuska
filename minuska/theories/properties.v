@@ -2070,6 +2070,35 @@ Proof.
     }
 Qed.
 
+Lemma filter_pred_impl
+    {A B : Type}
+    {_EA : EqDecision A}
+    {_Elo : ElemOf A B}
+    {_Els : Elements A B}
+    {_Em : Empty B}
+    {_Sg : Singleton A B}
+    {_IB : Intersection B}
+    {_DB : Difference B}
+    {_U : Union B}
+    {_FS : @FinSet A B _Elo _Em _Sg _U _IB _DB _Els _EA}
+    (P1 P2 : A -> Prop)
+    {_DP1 : ∀ (x : A), Decision (P1 x)}
+    {_DP2 : ∀ (x : A), Decision (P2 x)}
+    (thing : B)
+    :
+    (forall (x : A), P1 x -> P2 x) ->
+    @filter A B (set_filter) P1 _ thing ⊆ @filter A B (set_filter) P2 _ thing
+.
+Proof.
+    intros Himpl.
+    unfold subseteq.
+    ltac1:(apply (proj2 (@elem_of_subseteq A B _ (@filter A B _ P1 _DP1 thing) (@filter A B _ P2 _DP2 thing)))).
+    intros x.
+    intros Hx.
+    ltac1:(apply (proj1 (elem_of_filter P1 thing x)) in Hx).
+    ltac1:(apply (proj2 (elem_of_filter P2 thing x))).
+    ltac1:(naive_solver).
+Qed.
 
 Lemma Expression2_evalute_strip
     {Σ : StaticModel}
@@ -2112,5 +2141,40 @@ Proof.
     {
         unfold Valuation2 in *.
         apply map_filter_subseteq.
+    }
+Qed.
+
+
+Lemma TermOverExpression2_satisfies_strip
+    {Σ : StaticModel}
+    (t : TermOver Expression2)
+    (g : TermOver builtin_value)
+    (ρ : Valuation2)
+:
+    satisfies ρ g t ->
+    satisfies (filter (fun kv => kv.1 ∈ vars_of t) ρ) g t
+.
+Proof.
+    revert ρ g.
+    ltac1:(induction t using TermOver_rect; intros ρ g HH).
+    {
+        unfold satisfies in *; simpl in *.
+        ltac1:(simp sat2E in HH).
+        ltac1:(simp sat2E).
+        apply Expression2_evalute_strip.
+        apply HH.
+    }
+    {
+        unfold satisfies in *; simpl in *.
+        destruct g;
+            ltac1:(simp sat2E in HH).
+        { destruct HH. }
+        ltac1:(simp sat2E).
+        ltac1:(destruct_and!; (repeat split); simplify_eq/=; try congruence).
+        intros.
+        eapply TermOverExpression2_satisfies_extensive>[|eapply X].
+        {
+            unfold TermOver, Valuation2 in *.
+        }
     }
 Qed.

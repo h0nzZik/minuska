@@ -547,8 +547,6 @@ Module Implementation.
   :
     elements (vars_of t) ⊆ avoid ->
     forall (ρ' : Valuation2),
-      avoid ⊆ elements (vars_of ρ') ->
-      vars_of ρ' ⊆ vars_of t ->
       satisfies ρ' g t ->
       ({ ρ : Valuation2 &
         (
@@ -558,18 +556,18 @@ Module Implementation.
           *
           (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2))
           *
-          (ρ' ⊆ ρ)
+          ((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of t) ρ') ⊆ ρ)
         )%type
       })
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' Havoid2 H1ρ' H2ρ').
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' H2ρ').
     {
       inversion H2ρ'; clear H2ρ'.
       simpl.
       unfold satisfies; simpl.
-      exists (<[(fresh avoid) := g]>ρ').
+      exists (<[(fresh avoid) := g]>((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of a) ρ'))).
       split.
       split.
       split.
@@ -589,11 +587,9 @@ Module Implementation.
         unfold isSome.
         split>[|reflexivity].
         {
-          apply Expression2_evaluate_extensive_Some with (ρ2 := <[fresh avoid := g]>ρ') in H0.
-          {
-            rewrite H0.
-            reflexivity.
-          }
+          apply Expression2_evalute_strip in H0.
+          symmetry.
+          eapply Expression2_evaluate_extensive_Some>[|apply H0].
           apply insert_subseteq.
           apply not_elem_of_dom_1.
           assert (Hfr: fresh avoid ∉ avoid).
@@ -601,7 +597,14 @@ Module Implementation.
             apply infinite_is_fresh.
           }
           intros HContra.
-          apply Hfr. clear Hfr.
+          rewrite elem_of_dom in HContra.
+          destruct HContra as [y Hy].
+          rewrite map_lookup_filter in Hy.
+          rewrite bind_Some in Hy.
+          destruct Hy as [x [H1x H2x]].
+          ltac1:(simplify_option_eq).
+          clear H0 ρ' H1x.
+          unfold vars_of in Havoid; simpl in Havoid.
           ltac1:(set_solver).
         }
       }
@@ -611,7 +614,21 @@ Module Implementation.
         unfold vars_of; simpl.
         unfold vars_of; simpl.
         ltac1:(rewrite dom_insert).
-        ltac1:(set_solver).
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        rewrite elem_of_union in Hx.
+        destruct Hx.
+        {
+          ltac1:(set_solver).
+        }
+        {
+          rewrite elem_of_dom in H.
+          destruct H as [y Hy].
+          unfold Valuation2,TermOver in *.
+          rewrite map_lookup_filter in Hy.
+          ltac1:(simplify_option_eq).
+          ltac1:(set_solver).
+        }
       }
       {
         unfold Valuation2 in *.
@@ -622,7 +639,11 @@ Module Implementation.
           apply infinite_is_fresh.
         }
         intros HContra.
-        apply Hfr. clear Hfr.
+        rewrite elem_of_dom in HContra.
+        destruct HContra as [y Hy].
+        rewrite map_lookup_filter in Hy.
+        ltac1:(simplify_option_eq).
+        unfold vars_of in Havoid; simpl in Havoid.
         ltac1:(set_solver).
       }
     }
@@ -633,18 +654,13 @@ Module Implementation.
       ltac1:(simp sat2E in H2ρ').
       destruct H2ρ' as [HH1 [HH2 HH3]].
       subst b.
-      revert ρ' X l0 H1ρ' HH2 HH3 Havoid2.
-      induction l; intros ρ' X l0 H1ρ' HH2 HH3 Havoid2.
+      revert ρ' X l0 HH2 HH3.
+      induction l; intros ρ' X l0 HH2 HH3.
       {
         simpl in *.
-        unfold vars_of in H1ρ'; simpl in H1ρ'.
         apply nil_length_inv in HH2.
         subst l0.
-        assert (Hempty : dom ρ' = ∅) by ltac1:(set_solver).
-        unfold Valuation2 in *.
-        apply dom_empty_inv_L in Hempty.
-        subst ρ'. clear H1ρ' H2ρ'.
-        unfold satisfies; simpl.
+        clear HH3.
         exists ∅.
         split.
         {
@@ -671,8 +687,27 @@ Module Implementation.
           }
         }
         {
-          unfold vars_of; simpl.
-          ltac1:(clear; set_solver).
+          assert (Htmp: ∀ (v : Valuation2), v = ∅ -> v ⊆ ∅ ).
+          {
+            intros v Hv.
+            rewrite Hv.
+            unfold Valuation2 in *.
+            ltac1:(set_solver).
+          }
+          apply Htmp. clear Htmp.
+          ltac1:(rewrite map_filter_empty_iff).
+          rewrite map_Forall_to_list.
+          simpl.
+          rewrite Forall_forall.
+          intros x Hx.
+          unfold uncurry; simpl.
+          unfold Valuation2 in *.
+          ltac1:(rewrite vars_of_t_term_e).
+          rewrite fmap_nil.
+          rewrite union_list_nil.
+          destruct x.
+          clear.
+          ltac1:(set_solver).
         }
       }
       {
@@ -704,12 +739,15 @@ Module Implementation.
           {
             assumption.
           }
-          {
-            assumption.
-          }
-          {
-            assumption.
-          }
+        }
+        ltac1:(specialize (IHl ltac:(lia))).
+        simpl in *.
+        ltac1:(ospecialize (IHl _)).
+        {
+          clear IHl X.
+          intros.
+          subst ρ'2.
+          eapply HH3.
         }
         ltac1:(ospecialize (IHl _)).
         {
