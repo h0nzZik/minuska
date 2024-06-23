@@ -2243,3 +2243,49 @@ Proof.
         }
     }
 Qed.
+
+Lemma TermOverBoV_satisfies_extensive
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (t : TermOver BuiltinOrVar)
+    (gt : TermOver builtin_value)
+    :
+    ρ1 ⊆ ρ2 ->
+    satisfies ρ1 gt t ->
+    satisfies ρ2 gt t
+.
+Proof.
+    revert gt ρ1 ρ2.
+    unfold TermOver in *.
+    unfold Valuation2 in *.
+    ltac1:(induction t using TermOver_rect; intros gt ρ1 ρ2 Hρ1ρ2).
+    {
+        unfold satisfies; simpl.
+        destruct gt,a ; ltac1:(simp sat2B); simpl.
+        {
+            intros HH.
+            unfold TermOver in *.
+            ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
+            ltac1:(naive_solver).
+        }
+        {
+            intros HH.
+            ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
+            ltac1:(naive_solver).
+        }
+    }
+    {
+        unfold satisfies; simpl.
+        destruct gt; ltac1:(simp sat2B).
+        intros [HH1 [HH2 HH3]].
+        (repeat split); try assumption.
+        intros i t' φ' H1 H2.
+        specialize (HH3 i t' φ' H1 H2).
+        eapply X.
+        {
+            rewrite elem_of_list_lookup. exists i. apply H1.
+        }
+        { apply Hρ1ρ2. }
+        apply HH3.
+    }
+Qed.
