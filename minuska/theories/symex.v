@@ -469,25 +469,30 @@ Module Implementation.
     (g : TermOver builtin_value)
   :
     elements (vars_of t) ⊆ avoid ->
-    ({ ρ : Valuation2 & ((vars_of ρ ⊆ vars_of t) * satisfies ρ g t)%type }) ->
-    ({ ρ : Valuation2 &
-      (
-        (satisfies ρ g ((toe_to_cpat avoid t).1))
-        *
-        (satisfies ρ tt ((toe_to_cpat avoid t).2))
-        *
-        (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2))
-      )%type
-    })
+    forall (ρ' : Valuation2),
+      vars_of ρ' ⊆ vars_of t ->
+      satisfies ρ' g t ->
+      ({ ρ : Valuation2 &
+        (
+          (satisfies ρ g ((toe_to_cpat avoid t).1))
+          *
+          (satisfies ρ tt ((toe_to_cpat avoid t).2))
+          *
+          (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2))
+          *
+          (ρ' ⊆ ρ)
+        )%type
+      })
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid Havoid [ρ [Hρ1 Hρ2]]).
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' H1ρ'1 H2ρ').
     {
-      inversion Hρ2; clear Hρ2.
+      inversion H2ρ'; clear H2ρ'.
       simpl.
       unfold satisfies; simpl.
-      exists (<[(fresh avoid) := g]>ρ).
+      exists (<[(fresh avoid) := g]>ρ').
+      split.
       split.
       split.
       {
@@ -506,7 +511,7 @@ Module Implementation.
         unfold isSome.
         split>[|reflexivity].
         {
-          apply Expression2_evaluate_extensive_Some with (ρ2 := <[fresh avoid := g]>ρ) in H0.
+          apply Expression2_evaluate_extensive_Some with (ρ2 := <[fresh avoid := g]>ρ') in H0.
           {
             rewrite H0.
             reflexivity.
@@ -528,6 +533,18 @@ Module Implementation.
         unfold vars_of; simpl.
         unfold vars_of; simpl.
         ltac1:(rewrite dom_insert).
+        ltac1:(set_solver).
+      }
+      {
+        unfold Valuation2 in *.
+        apply insert_subseteq.
+        apply not_elem_of_dom_1.
+        assert (Hfr: fresh avoid ∉ avoid).
+        {
+          apply infinite_is_fresh.
+        }
+        intros HContra.
+        apply Hfr. clear Hfr.
         ltac1:(set_solver).
       }
     }
@@ -841,6 +858,12 @@ Module Implementation.
           ltac1:(rewrite Hy2).
           rewrite bool_decide_eq_true.
           apply f_equal.
+          assert (Hgood := toe_to_cpat_good_side avoid a).
+          assert (Hvρ1 : vars_of ρ1 ⊆ vars_of (toe_to_cpat avoid a).1 ∪ vars_of a).
+          {
+            ltac1:(set_solver).
+          }
+          Search ρ.
 
           Search subseteq union.
         }
