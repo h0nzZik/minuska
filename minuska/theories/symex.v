@@ -1120,9 +1120,61 @@ Module Implementation.
               exact Hcor2.
             }
             {
-              specialize (HH3 (S i) t').
+              unfold satisfies in H1ρ3; simpl in H1ρ3.
+              ltac1:(simp sat2B in H1ρ3).
+              destruct H1ρ3 as [H11ρ3 [H12ρ3 H13ρ3]].
+              specialize (H13ρ3 _ _ _ pf1 pf2).
+              apply TermOverBoV_satisfies_strip in H13ρ3.
+              eapply TermOverBoV_satisfies_extensive>[|apply H13ρ3].
+              clear - Hcor1 pf1.
+              ltac1:(rewrite map_subseteq_spec).
+              ltac1:(rewrite map_subseteq_spec in Hcor1).
+              intros j x Hjx.
+              specialize (Hcor1 j x).
+              ltac1:(rewrite map_lookup_filter in Hjx).
+              rewrite bind_Some in Hjx.
+              destruct Hjx as [x0 [H1x0 H2x0]].
+              rewrite bind_Some in H2x0.
+              simpl in *.
+              destruct H2x0 as [x1 [H1x1 H2x1]].
+              ltac1:(simplify_option_eq).
+              apply Hcor1. clear Hcor1.
+              rewrite map_lookup_filter.
+              rewrite bind_Some.
+              exists x.
+              split>[assumption|].
+              simpl.
+              rewrite bind_Some.
+              simpl.
+              ltac1:(unshelve(eexists)).
+              {
+                apply take_drop_middle in pf1.
+                ltac1:(rewrite <- pf1).
+                unfold vars_of; simpl.
+                rewrite fmap_app.
+                rewrite union_list_app.
+                rewrite fmap_cons.
+                rewrite union_list_cons.
+                ltac1:(set_solver).
+              }
+              {
+                ltac1:(simplify_option_eq).
+                split>[|reflexivity].
+                ltac1:(apply f_equal).
+                apply proof_irrelevance.
+                ltac1:(contradiction).
+                ltac1:(exfalso).
+
+                apply take_drop_middle in pf1.
+                ltac1:(rewrite <- pf1 in H0).
+                unfold vars_of in H0; simpl in H0.
+                rewrite fmap_app in H0.
+                rewrite union_list_app in H0.
+                rewrite fmap_cons in H0.
+                rewrite union_list_cons in H0.
+                ltac1:(set_solver).
+              }
             }
-            admit.
           }
           {
             admit.
