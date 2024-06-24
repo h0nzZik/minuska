@@ -1177,7 +1177,58 @@ Module Implementation.
             }
           }
           {
-            admit.
+            unfold satisfies; simpl.
+            intros c Hc.
+            rewrite elem_of_app in Hc.
+            destruct (decide (c ∈ (toe_to_cpat avoid a).2)).
+            {
+              clear Hc.
+              unfold satisfies in H2ρ4; simpl in H2ρ4.
+              specialize (H2ρ4 c ltac:(assumption)).
+
+
+              apply TermOverBoV_satisfies_strip in H2ρ4.
+              eapply TermOverBoV_satisfies_extensive>[|apply H2ρ4].
+              ltac1:(rewrite map_subseteq_spec).
+              intros i x Hix.
+              ltac1:(rewrite map_lookup_filter in Hix).
+              rewrite bind_Some in Hix.
+              destruct Hix as [x0 [H1x0 H2x0]].
+              rewrite bind_Some in H2x0.
+              destruct H2x0 as [x1 [H1x1 H2x1]].
+              simpl in *.
+              ltac1:(simplify_eq/=).
+              ltac1:(rewrite map_subseteq_spec in Hcor2).
+              specialize (Hcor2 i x).
+              ltac1:(ospecialize (Hcor2 _)).
+              {
+                clear Hcor2.
+                ltac1:(rewrite map_lookup_filter).
+                rewrite bind_Some.
+                exists x.
+                split>[apply H1x0|].
+                rewrite bind_Some.
+                simpl.
+                ltac1:(simplify_option_eq).
+                {
+                  exists H1.
+                  (repeat split).
+                }
+                {
+                  ltac1:(contradiction).
+                }
+                {
+                  ltac1:(exfalso; set_solver).
+                }
+              }
+              exact Hcor2.
+            }
+            {
+              assert (c ∈ (toe_to_cpat_list (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).2).
+              {
+                ltac1:(set_solver).
+              }
+            }
           }
           admit.
           *)

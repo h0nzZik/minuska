@@ -2362,3 +2362,60 @@ Proof.
         }
     }
 Qed.
+
+Lemma SideCondition_satisfies_strip
+    {Σ : StaticModel}
+    (c : SideCondition2)
+    (ρ : Valuation2)
+:
+    satisfies ρ () c ->
+    satisfies (filter (fun kv => kv.1 ∈ vars_of c) ρ) () c
+.
+Proof.
+    unfold satisfies; simpl.
+    intros [HH1 HH2].
+    unfold is_true in *.
+    unfold isSome in *.
+    (destruct (Expression2_evaluate ρ (sc_left c)) as [g1|] eqn:Heq1)>[|ltac1:(congruence)].
+    symmetry in HH1.
+    eapply Expression2_evalute_strip in HH1 as HH1'.
+    eapply Expression2_evalute_strip in Heq1 as HH2'.
+    clear HH2.
+    eapply Expression2_evaluate_extensive_Some in HH1' as HH1''.
+    rewrite HH1''. clear HH1''.
+    eapply Expression2_evaluate_extensive_Some in HH2' as HH2''.
+    rewrite HH2''. clear HH2''.
+    (repeat split).
+    {
+        ltac1:(rewrite map_subseteq_spec).
+        intros i x Hix.
+        ltac1:(rewrite map_lookup_filter in Hix).
+        rewrite bind_Some in Hix.
+        destruct Hix as [x0 [H1x0 H2x0]].
+        ltac1:(simplify_option_eq).
+        ltac1:(rewrite map_lookup_filter bind_Some).
+        exists x.
+        split>[assumption|].
+        ltac1:(simplify_option_eq).
+        reflexivity.
+        ltac1:(contradiction H1). clear H1.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
+    }
+    {
+        ltac1:(rewrite map_subseteq_spec).
+        intros i x Hix.
+        ltac1:(rewrite map_lookup_filter in Hix).
+        rewrite bind_Some in Hix.
+        destruct Hix as [x0 [H1x0 H2x0]].
+        ltac1:(simplify_option_eq).
+        ltac1:(rewrite map_lookup_filter bind_Some).
+        exists x.
+        split>[assumption|].
+        ltac1:(simplify_option_eq).
+        reflexivity.
+        ltac1:(contradiction H1). clear H1.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
+    }
+Qed.
