@@ -1380,6 +1380,7 @@ Module Implementation.
               }
             }
 
+            (* FIXME this is too weak. *)
             assert (Hmdom := merge_valuations_dom _ _ _ Heqoρm).
             apply map_subseteq_po.
             {
@@ -1464,12 +1465,48 @@ Module Implementation.
                 reflexivity.
               }
               subst g'.
+              rewrite bind_Some in H2g'.
+              simpl in H2g'.
+              destruct H2g' as [Hxavoid _].
               clear H2g'.
               assert (Hxdomv : x ∈ dom v).
               {
                 ltac1:(rewrite elem_of_dom).
                 exists g. exact H1g'. 
               }
+              rewrite Hmdom in Hxdomv.
+              clear Hmdom.
+              rewrite elem_of_union in Hxdomv.
+              destruct Hxdomv as [Hxdomv|Hxdomv].
+              {
+                ltac1:(rewrite elem_of_dom in Hxdomv).
+                destruct Hxdomv as [g' Hg'].
+                rewrite map_lookup_filter in Hg'.
+                rewrite bind_Some in Hg'.
+                destruct Hg' as [g'' [H1g'' H2g'']].
+                simpl in H2g''.
+                rewrite bind_Some in H2g''.
+                destruct H2g'' as [pf1 [H1pf1 H2pf1]].
+                inversion H2pf1; subst g''; clear H2pf1.
+                clear H1pf1. clear pf1.
+
+                assert (g = g').
+                {
+                  
+                }
+                rewrite elem_of_app in pf1.
+                destruct pf1 as [pf1|pf1].
+                {
+                  admit.
+                }
+                {
+                  simpl.
+                }
+              }
+              {
+
+              }
+
             }
             clear - H3ρ4 H3ρ3 Hcor1 Hcor2 Hmdom.
             apply map_eq.
