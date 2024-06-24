@@ -1187,7 +1187,7 @@ Module Implementation.
               specialize (H2ρ4 c ltac:(assumption)).
 
 
-              apply TermOverBoV_satisfies_strip in H2ρ4.
+              apply SideCondition_satisfies_strip in H2ρ4.
               eapply TermOverBoV_satisfies_extensive>[|apply H2ρ4].
               ltac1:(rewrite map_subseteq_spec).
               intros i x Hix.

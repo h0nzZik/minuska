@@ -2419,3 +2419,28 @@ Proof.
         ltac1:(set_solver).
     }
 Qed.
+
+Lemma SideCondition_satisfies_extensive
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (c : SideCondition2)
+    :
+    ρ1 ⊆ ρ2 ->
+    satisfies ρ1 () c ->
+    satisfies ρ2 () c
+.
+Proof.
+    intros Hrhos.
+    unfold satisfies; simpl.
+    intros [HH1 HH2].
+    unfold is_true in *.
+    unfold isSome in *.
+    (destruct (Expression2_evaluate ρ1 (sc_left c)) as [g1|] eqn:Heq1)>[|ltac1:(congruence)].
+    symmetry in HH1.
+    eapply Expression2_evaluate_extensive_Some in Heq1.
+    eapply Expression2_evaluate_extensive_Some in HH1.
+    rewrite Heq1. rewrite HH1.
+    (repeat split).
+    assumption.
+    assumption.
+Qed.
