@@ -1154,12 +1154,49 @@ Module Implementation.
             {
               ltac1:(set_solver).
             }
-            assert (ρ' !! x = Some y1).
+            assert (Hρ'x: ρ' !! x = Some y1).
             {
-              clear - Hxavoid H1g1 H3ρ4.
-              Search filter eq.
-              rewrite map_eq in H3ρ4.
+              clear - Hxavoid H1g1 H3ρ3.
+              ltac1:(cut(filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) ρ' !! x = Some y1)).
+              {
+                intros HH.
+                rewrite map_lookup_filter in HH.
+                rewrite bind_Some in HH.
+                destruct HH as [x0 [HH1 HH2]].
+                ltac1:(simplify_option_eq).
+                apply HH1.
+              }
+              ltac1:(rewrite H3ρ3).
+              rewrite map_lookup_filter.
+              rewrite bind_Some.
+              exists y1.
+              split>[apply H1g1|].
+              ltac1:(simplify_option_eq).
+              reflexivity.
+              ltac1:(set_solver).
             }
+            assert (Hρ4x: ρ4 !! x = Some y1).
+            {
+              clear - Hxavoid Hρ'x H3ρ4 a.
+              ltac1:(cut(filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ4 !! x = Some y1)).
+              {
+                intros HH.
+                rewrite map_lookup_filter in HH.
+                rewrite bind_Some in HH.
+                destruct HH as [x0 [HH1 HH2]].
+                ltac1:(simplify_option_eq).
+                apply HH1.
+              }
+              ltac1:(rewrite <- H3ρ4).
+              rewrite map_lookup_filter.
+              rewrite bind_Some.
+              exists y1.
+              split>[apply Hρ'x|].
+              simpl.
+              ltac1:(simplify_option_eq).
+              reflexivity.
+            }
+            ltac1:(congruence).
           }
           {
             assert (x ∈ vars_of (toe_to_cpat avoid a).1) by ltac1:(clear X; set_solver).
@@ -1177,15 +1214,56 @@ Module Implementation.
             {
               ltac1:(contradiction).
             }
-            {
-              admit.
+            {  
+              assert (Hxavoid: x ∈ avoid).
+              {
+                ltac1:(set_solver).
+              }
+              assert (Hρ'x: ρ' !! x = Some y1).
+              {
+                clear - Hxavoid H1g1 H3ρ3.
+                ltac1:(cut(filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) ρ' !! x = Some y1)).
+                {
+                  intros HH.
+                  rewrite map_lookup_filter in HH.
+                  rewrite bind_Some in HH.
+                  destruct HH as [x0 [HH1 HH2]].
+                  ltac1:(simplify_option_eq).
+                  apply HH1.
+                }
+                ltac1:(rewrite H3ρ3).
+                rewrite map_lookup_filter.
+                rewrite bind_Some.
+                exists y1.
+                split>[apply H1g1|].
+                ltac1:(simplify_option_eq).
+                reflexivity.
+                ltac1:(set_solver).
+              }
+              assert (Hρ4x: ρ4 !! x = Some y1).
+              {
+                clear - Hxavoid Hρ'x H3ρ4 a.
+                ltac1:(cut(filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ4 !! x = Some y1)).
+                {
+                  intros HH.
+                  rewrite map_lookup_filter in HH.
+                  rewrite bind_Some in HH.
+                  destruct HH as [x0 [HH1 HH2]].
+                  ltac1:(simplify_option_eq).
+                  apply HH1.
+                }
+                ltac1:(rewrite <- H3ρ4).
+                rewrite map_lookup_filter.
+                rewrite bind_Some.
+                exists y1.
+                split>[apply Hρ'x|].
+                simpl.
+                ltac1:(simplify_option_eq).
+                reflexivity.
+              }
+              ltac1:(congruence).
             }
-            (*assert (Havoid5 := toe_to_cpat_list_good_side_2 (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).*)
-            Check toe_to_cpat_good_side.
-            Search toe_to_cpat.
           }
-          
-          ltac1:(congruence).
         }
           
         (*
