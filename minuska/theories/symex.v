@@ -517,6 +517,30 @@ Module Implementation.
     }
   Qed.
 
+
+  Lemma toe_to_cpat_list_good_side
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (l : list (TermOver Expression2))
+  :
+    vars_of (toe_to_cpat_list avoid l).2 ⊆ vars_of (toe_to_cpat_list avoid l).1 ∪ vars_of l
+  .
+  Proof.
+    revert avoid.
+    induction l; intros avoid; simpl in *.
+    {
+      unfold vars_of; simpl. ltac1:(set_solver).
+    }
+    {
+      unfold vars_of; simpl.
+      repeat (rewrite fmap_app).
+      repeat (rewrite union_list_app).
+      specialize (IHl (avoid ++ elements (⋃ (vars_of <$> (toe_to_cpat avoid a).2)))).
+      assert (Hbase := toe_to_cpat_good_side avoid a).
+      ltac1:(set_solver).
+    }
+  Qed.
+  
   Lemma toe_to_cpat_avoid
     {Σ : StaticModel}
     (avoid : list variable)
@@ -791,8 +815,8 @@ Module Implementation.
       destruct H2ρ' as [HH1 [HH2 HH3]].
       subst b.
       rewrite toe_to_cpat_list_equiv.
-      revert ρ' X l0 HH2 HH3.
-      induction l; intros ρ' X l0 HH2 HH3.
+      revert ρ' avoid X l0 HH2 HH3 Havoid.
+      induction l; intros ρ' avoid X l0 HH2 HH3 Havoid.
       {
         simpl in *.
         apply nil_length_inv in HH2.
@@ -828,13 +852,15 @@ Module Implementation.
         {
           ltac1:(lia).
         }
+        (*++ elements (vars_of ((toe_to_cpat avoid a).2)) *)
         rewrite vars_of_t_term_e in Havoid.
         rewrite fmap_cons in Havoid.
         rewrite union_list_cons in Havoid.
         rewrite vars_of_t_term_e in IHl.
-        specialize (IHl ltac:(set_solver)).
+        (* specialize (IHl ltac:(set_solver)). *)
         remember (filter (fun kv : (variable*(TermOver builtin_value))%type => kv.1 ∈ avoid) ρ') as ρ'2. 
         specialize (IHl ρ').
+        specialize (IHl (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2)))).
         ltac1:(ospecialize (IHl _ l0)).
         {
           clear IHl.
@@ -863,6 +889,11 @@ Module Implementation.
           simpl.
           assumption.
         }
+        ltac1:(ospecialize (IHl _)).
+        {
+          clear IHl.
+          ltac1:(set_solver).
+        }
         destruct IHl as [ρ3 [[H1ρ3 H2ρ3] H3ρ3]].
         assert (Xa := X a).
         ltac1:(ospecialize (Xa _)).
@@ -874,14 +905,24 @@ Module Implementation.
         
         assert (HH3a := HH3 0 t a erefl erefl).
         apply TermOverExpression2_satisfies_strip in HH3a as HH3a'.
-        specialize (Xa t avoid ltac:(set_solver)).
+        specialize (Xa t (avoid) ltac:(set_solver)).
         specialize (Xa _ HH3a).
         destruct Xa as [ρ4 [[H1ρ4 H2ρ4] H3ρ4]].
+        
         (* FIXME I have no idea what to write here*)
-        remember (Valuation2_merge_with (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ3) (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ4)) as oρm.
+        remember (Valuation2_merge_with
+          (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ (vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).1 ∪ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).2)) ρ3)
+          (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ (vars_of (toe_to_cpat avoid a).1 ∪ vars_of (toe_to_cpat avoid a).2)) ρ4)) as oρm.
+        
+        (*
+        remember (
+          Valuation2_merge_with ρ4 ρ3
+        ) as oρm.
+        *)
         destruct oρm.
         {
           symmetry in Heqoρm.
+          (*
           apply Valuation2_merge_with_correct in Heqoρm as Hcor.
           destruct Hcor as [Hcor1 Hcor2].
           exists v.
@@ -932,6 +973,8 @@ Module Implementation.
             admit.
           }
           admit.
+          *)
+          admit.
         }
         {
           ltac1:(exfalso).
@@ -956,6 +999,15 @@ Module Implementation.
           ltac1:(rewrite Hy2).
           rewrite bool_decide_eq_true.
           apply f_equal.
+          rewrite map_lookup_filter in Hy1.
+          rewrite map_lookup_filter in Hy2.
+          rewrite bind_Some in Hy1.
+          rewrite bind_Some in Hy2.
+          destruct Hy1 as [g1 [H1g1 H2g1]].
+          destruct Hy2 as [g2 [H1g2 H2g2]].
+          ltac1:(simplify_option_eq).
+          assert (Hgood1 := toe_to_cpat_good_side avoid a).
+          Search toe_to_cpat.
           ltac1:(congruence).
         }
           
