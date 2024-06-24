@@ -396,6 +396,33 @@ Module Implementation.
       }
   Qed.
 
+  Lemma Valuation2_merge_with_correct_2
+      {Σ : StaticModel}
+      (ρ1 ρ2 ρ : Valuation2):
+      Valuation2_merge_with ρ1 ρ2 = Some ρ ->
+      ∀ x g, ρ !! x = Some g ->
+      (ρ1 !! x = Some g \/ ρ2 !! x = Some g)
+  .
+  Proof.
+    intros.
+    unfold Valuation2_merge_with in H.
+    ltac1:(case_match); ltac1:(simplify_eq/=).
+    ltac1:(rename H0 into H).
+    ltac1:(rewrite lookup_merge in H).
+    unfold diag_None in H.
+    ltac1:(repeat (case_match; simpl in *; idtac; simplify_eq/=)).
+    {
+      left. assumption.
+    }
+    {
+      left. assumption.
+    }
+    {
+      right. assumption.
+    }
+  Qed.
+  
+
   Lemma toe_to_cpat_good_side
     {Σ : StaticModel}
     (avoid : list variable)
