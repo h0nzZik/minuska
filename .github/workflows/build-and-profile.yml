@@ -29,8 +29,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v9     
+    - name: Setup Nix
+      uses: DeterminateSystems/nix-installer-action@v9
+      uses: DeterminateSystems/magic-nix-cache-action@main
 
     - name: 'Build with Coq 8.19'
       run: nix build -L '.#minuska-coq_8_19' --out-link ./result-minuska
