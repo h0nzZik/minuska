@@ -1407,8 +1407,7 @@ Module Implementation.
               }
             }
 
-            (* FIXME this is too weak. *)
-            assert (Hmdom := merge_valuations_dom _ _ _ Heqoρm).
+            assert (Hmc2 := Valuation2_merge_with_correct_2 _ _ _ Heqoρm).
             apply map_subseteq_po.
             {
               rewrite map_subseteq_spec.
@@ -1495,74 +1494,51 @@ Module Implementation.
               rewrite bind_Some in H2g'.
               simpl in H2g'.
               destruct H2g' as [Hxavoid _].
-              clear H2g'.
-              assert (Hxdomv : x ∈ dom v).
+              specialize (Hmc2 _ _ H1g').
+              destruct Hmc2 as [Hmc2|Hmc2].
               {
-                ltac1:(rewrite elem_of_dom).
-                exists g. exact H1g'. 
-              }
-              rewrite Hmdom in Hxdomv.
-              clear Hmdom.
-              rewrite elem_of_union in Hxdomv.
-              destruct Hxdomv as [Hxdomv|Hxdomv].
-              {
-                ltac1:(rewrite elem_of_dom in Hxdomv).
-                destruct Hxdomv as [g' Hg'].
-                rewrite map_lookup_filter in Hg'.
-                rewrite bind_Some in Hg'.
-                destruct Hg' as [g'' [H1g'' H2g'']].
-                simpl in H2g''.
-                rewrite bind_Some in H2g''.
-                destruct H2g'' as [pf1 [H1pf1 H2pf1]].
-                inversion H2pf1; subst g''; clear H2pf1.
-                clear H1pf1. clear pf1.
-
-                assert (g = g').
-                {
-                  
-                }
-                rewrite elem_of_app in pf1.
-                destruct pf1 as [pf1|pf1].
-                {
-                  admit.
-                }
-                {
-                  simpl.
-                }
-              }
-              {
-
-              }
-
-            }
-            clear - H3ρ4 H3ρ3 Hcor1 Hcor2 Hmdom.
-            apply map_eq.
-            intros i.
-            rewrite map_lookup_filter.
-            rewrite map_lookup_filter.
-            destruct (ρ' !! i) eqn:Hρ'i, (v !! i) eqn:Hvi;
-              simpl in *; ltac1:(simplify_option_eq; try congruence).
-            {
-              apply f_equal.
-              assert (Htmp1: filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ' !! i = Some t).
-              {
-                rewrite map_lookup_filter.
-                rewrite Hρ'i. simpl.
+                ltac1:(rewrite map_lookup_filter in Hmc2).
                 ltac1:(simplify_option_eq).
-                reflexivity.
-              }
-
-              assert (Htmp2: filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) ρ' !! i = Some t).
-              {
-                rewrite map_lookup_filter.
-                rewrite Hρ'i. simpl.
+                assert (Htmp: filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ' !! x = Some g).
+                {
+                  rewrite Helper1.
+                  rewrite map_lookup_filter.
+                  rewrite bind_Some.
+                  exists g.
+                  split>[assumption|].
+                  ltac1:(simplify_option_eq).
+                  reflexivity.
+                }
+                exists g.
+                split>[|reflexivity].
+                rewrite map_lookup_filter in Htmp.
+                rewrite bind_Some in Htmp.
+                destruct Htmp as [x0 [H1x0 H2x0]].
                 ltac1:(simplify_option_eq).
-                reflexivity.
-                ltac1:(set_solver).
+                assumption.
               }
-              
+              {
+                ltac1:(rewrite map_lookup_filter in Hmc2).
+                ltac1:(simplify_option_eq).
+                assert (Htmp: filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ' !! x = Some g).
+                {
+                  rewrite H3ρ4.
+                  rewrite map_lookup_filter.
+                  rewrite bind_Some.
+                  exists g.
+                  split>[assumption|].
+                  ltac1:(simplify_option_eq).
+                  reflexivity.
+                }
+                exists g.
+                split>[|reflexivity].
+                rewrite map_lookup_filter in Htmp.
+                rewrite bind_Some in Htmp.
+                destruct Htmp as [x0 [H1x0 H2x0]].
+                ltac1:(simplify_option_eq).
+                assumption.
+              }
             }
-            ltac1:(congruence).
           }
         }
         {
