@@ -625,6 +625,7 @@ Module Implementation.
     }
   Qed.
 
+  (*
   Lemma toe_to_cpat_list_good_side
     {Σ : StaticModel}
     (avoid : list variable)
@@ -646,7 +647,7 @@ Module Implementation.
       assert (Hbase := toe_to_cpat_good_side avoid a).
       ltac1:(set_solver).
     }
-  Qed.
+  Qed.*)
 
   Lemma toe_to_cpat_avoid
     {Σ : StaticModel}
@@ -1149,7 +1150,16 @@ Module Implementation.
           assert (Hgood2 := toe_to_cpat_list_good_side (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).
           destruct (decide (x ∈ vars_of a)).
           {
-            admit.
+            assert (Hxavoid: x ∈ avoid).
+            {
+              ltac1:(set_solver).
+            }
+            assert (ρ' !! x = Some y1).
+            {
+              clear - Hxavoid H1g1 H3ρ4.
+              Search filter eq.
+              rewrite map_eq in H3ρ4.
+            }
           }
           {
             assert (x ∈ vars_of (toe_to_cpat avoid a).1) by ltac1:(clear X; set_solver).
@@ -1157,6 +1167,19 @@ Module Implementation.
             assert (Havoid3' := contraPnot Havoid3). clear Havoid3.
             assert (Havoid4 := toe_to_cpat_good_side_2 avoid a).
             specialize (Havoid3' ltac:(set_solver)).
+            assert (Hgood3 := toe_to_cpat_list_good_side (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).
+            assert (Hdil: x ∈ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).1 ∪ vars_of l).
+            {
+              ltac1:(set_solver).
+            }
+            rewrite elem_of_union in Hdil.
+            destruct Hdil as [Hdil|Hdil].
+            {
+              ltac1:(contradiction).
+            }
+            {
+              admit.
+            }
             (*assert (Havoid5 := toe_to_cpat_list_good_side_2 (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).*)
             Check toe_to_cpat_good_side.
             Search toe_to_cpat.
