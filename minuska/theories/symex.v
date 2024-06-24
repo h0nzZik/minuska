@@ -517,6 +517,37 @@ Module Implementation.
     }
   Qed.
 
+  Lemma toe_to_cpat_list_good_side
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (l : list (TermOver Expression2))
+  :
+    vars_of (toe_to_cpat_list avoid l).2 ⊆ vars_of (toe_to_cpat_list avoid l).1 ∪ vars_of l
+  .
+  Proof.
+    revert avoid.
+    induction l; intros avoid; simpl in *.
+    {
+      unfold vars_of; simpl.
+      ltac1:(set_solver).
+    }
+    {
+      unfold vars_of; simpl.
+      repeat (rewrite fmap_app).
+      repeat (rewrite union_list_app).
+      rewrite union_subseteq.
+      split.
+      {
+        assert (Htmp := toe_to_cpat_good_side avoid a).
+        unfold vars_of in Htmp at 1; simpl in Htmp.
+        ltac1:(set_solver).
+      }
+      {
+        specialize (IHl (avoid ++ elements (⋃ (vars_of <$> (toe_to_cpat avoid a).2))) ).
+        ltac1:(set_solver).
+      }
+    }
+  Qed.
 
   Lemma toe_to_cpat_good_side_2
     {Σ : StaticModel}
@@ -1126,6 +1157,7 @@ Module Implementation.
             assert (Havoid3' := contraPnot Havoid3). clear Havoid3.
             assert (Havoid4 := toe_to_cpat_good_side_2 avoid a).
             specialize (Havoid3' ltac:(set_solver)).
+            (*assert (Havoid5 := toe_to_cpat_list_good_side_2 (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).*)
             Check toe_to_cpat_good_side.
             Search toe_to_cpat.
           }
