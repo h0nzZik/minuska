@@ -1624,26 +1624,10 @@ Module Implementation.
             ltac1:(congruence).
           }
           {
-            assert (x ∈ vars_of (toe_to_cpat avoid a).1) by ltac1:(clear X; set_solver).
-            assert (Havoid3 := toe_to_cpat_list_avoid ((avoid ++ elements (vars_of (toe_to_cpat avoid a).2))) l x).
-            assert (Havoid3' := contraPnot Havoid3). clear Havoid3.
-            assert (Havoid4 := toe_to_cpat_good_side_2 avoid a).
-            specialize (Havoid3' ltac:(set_solver)).
-            assert (Hgood3 := toe_to_cpat_list_good_side (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).
-            assert (Hdil: x ∈ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).1 ∪ vars_of l).
+            assert (Happ: x ∈ avoid ++ elements (vars_of (toe_to_cpat avoid a).1)) by ltac1:(clear -n Hgood1 H; set_solver).
+            rewrite elem_of_app in Happ.
+            destruct (decide (x ∈ avoid)) as [Hxavoid|Hxavoid].
             {
-              ltac1:(set_solver).
-            }
-            rewrite elem_of_union in Hdil.
-            destruct Hdil as [Hdil|Hdil].
-            {
-              ltac1:(contradiction).
-            }
-            {  
-              assert (Hxavoid: x ∈ avoid).
-              {
-                ltac1:(set_solver).
-              }
               assert (Hρ'x: ρ' !! x = Some y1).
               {
                 clear - Hxavoid H1g1 H3ρ3.
@@ -1688,138 +1672,33 @@ Module Implementation.
               }
               ltac1:(congruence).
             }
-          }
-        }
-          
-        (*
-        
-        
-        {
-          
-          
-          
-          assert (x ∈ vars_of (toe_to_cpat avoid a).1 ∪ vars_of (toe_to_cpat avoid a).2).
-          {
-            apply elem_of_dom_2 in Hy2.
-            unfold vars_of in H3ρ4 at 1; simpl in H3ρ4.
-            ltac1:(set_solver).
-          }
-          rewrite elem_of_subseteq in H3ρ3.
-          specialize (H3ρ3 x).
-          unfold vars_of in H3ρ3 at 1; simpl in H3ρ3.
-          apply elem_of_dom_2 in Hy1 as Hy1'.
-          specialize (H3ρ3 Hy1').
-          clear Hy1'.
-          lazy_match! Constr.type (&H) with
-          | x ∈ vars_of (toe_to_cpat ?avoid ?t).1 ∪ vars_of (toe_to_cpat ?avoid ?t).2 =>
-            Message.print (Message.of_constr (avoid));
-            assert(Hw1 := toe_to_cpat_good_side $avoid $t)
-          end.
-          assert (Hxx: x ∈ vars_of (toe_to_cpat avoid a).1 \/ x ∈ vars_of a).
-          {
-            ltac1:(set_solver).
-          }
-          destruct Hxx as [Hxx|Hxx].
-          {
-            admit.
-          }
-          {
-            assert (Hxρ': x ∈ dom ρ').
             {
-              apply Expression2Term_matches_enough in HH3a.
-              unfold vars_of in HH3a at 2; simpl in HH3a.
-              clear -Hxx HH3a.
-              ltac1:(set_solver).
-            }
-            rewrite elem_of_dom in Hxρ'.
-            destruct Hxρ' as [y Hy].
-            
-            ltac1:(rewrite map_subseteq_spec in H4ρ4).
-            specialize (H4ρ4 x y).
-            rewrite map_lookup_filter in H4ρ4.
-            rewrite bind_Some in H4ρ4.
-            ltac1:(ospecialize (H4ρ4 _)).
-            {
-              exists y.
-              split>[assumption|].
-              ltac1:(simplify_option_eq).
-              reflexivity.
-              reflexivity.
-            }
-            assert (x ∈ avoid).
-            {
-              ltac1:(set_solver).
-            }
-            Search l.
-            (* HERE *)
-            ltac1:(rewrite map_subseteq_spec in H4ρ3).
-            specialize (H4ρ3 x y).
-            rewrite map_lookup_filter in H4ρ3.
-            rewrite bind_Some in H4ρ3.
-            ltac1:(ospecialize (H4ρ3 _)).
-            {
-              exists y.
-              split.
+              assert (Hxel: x ∈ elements (vars_of (toe_to_cpat avoid a).1)) by ltac1:(clear - Happ Hxavoid; set_solver).
+              assert (Havoid3 := toe_to_cpat_list_avoid ((avoid ++ elements (vars_of (toe_to_cpat avoid a).2))) l x).
+              assert (Havoid3' := contraPnot Havoid3). clear Havoid3.
+              assert (Havoid4 := toe_to_cpat_good_side_2 avoid a).
+              specialize (Havoid3' ltac:(clear - Havoid4 Happ; set_solver)).
+              assert (Hgood3 := toe_to_cpat_list_good_side (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).
+              assert (Hdil: x ∈ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).1 ∪ vars_of l).
               {
-                rewrite map_lookup_filter.
-                rewrite bind_Some.
-                exists y.
-                split>[assumption|].
-                rewrite bind_Some.
-                simpl.
-                reflexivity.
+                clear - Hxel H0 Hgood3 Hxavoid.
+                ltac1:(set_solver).
               }
+              rewrite elem_of_union in Hdil.
+              destruct Hdil as [Hdil|Hdil].
               {
-
+                ltac1:(contradiction).
               }
-              split>[|reflexivity].
-              
-              
-              reflexivity.
+              {  
+                assert (Hxavoid': x ∈ avoid).
+                {
+                  ltac1:(set_solver).
+                }
+                ltac1:(contradiction Hxavoid).
+              }
             }
           }
         }
-        *)
-        Check map_filter_filter_l.
-        (*
-        *)
-        (*
-        remember (Valuation2_merge_with (filter
-  (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of a) ρ') ρ3) as oρ4.
-        destruct oρ4.
-        {
-          admit.
-        }
-        {
-          ltac1:(exfalso).
-          unfold Valuation2_merge_with in Heqoρ4.
-          ltac1:(case_match; simplify_eq/=).
-          clear Heqoρ4.
-          unfold Valuation2_compatible_with in H.
-          rewrite <- not_true_iff_false in H.
-          apply H. clear H.
-          rewrite forallb_forall.
-          intros x Hx.
-          rewrite <- elem_of_list_In in Hx.
-          rewrite elem_of_elements in Hx.
-          rewrite elem_of_intersection in Hx.
-          destruct Hx as [H1x H2x].
-          unfold TermOver in *.
-          ltac1:(rewrite elem_of_dom in H1x).
-          ltac1:(rewrite elem_of_dom in H2x).
-          destruct H1x as [y1 Hy1].
-          destruct H2x as [y2 Hy2].
-          ltac1:(rewrite Hy1).
-          ltac1:(rewrite Hy2).
-          rewrite bool_decide_eq_true.
-          apply f_equal.
-          assert (Hgood := toe_to_cpat_good_side avoid a).
-          rewrite map_lookup_filter in Hy1.
-          rewrite bind_Some in Hy1.
-          destruct Hy1 as [g [H1g H2g]].
-          ltac1:(simplify_option_eq).
-        }
-        *)
       }
     }
   Qed.
