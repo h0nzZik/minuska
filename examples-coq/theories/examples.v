@@ -4,6 +4,7 @@ From stdpp Require Import countable.
 From Minuska Require Import
     prelude
     spec
+    basic_properties
     syntax_properties
     string_variables
     builtins
