@@ -540,7 +540,7 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
-  
+
   Lemma toe_to_cpat_avoid
     {Σ : StaticModel}
     (avoid : list variable)
@@ -618,6 +618,38 @@ Module Implementation.
     }
   Qed.
 
+
+  Lemma toe_to_cpat_list_avoid
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (l : list (TermOver Expression2))
+  :
+    forall x,
+      x ∈ vars_of (toe_to_cpat_list avoid l).1 ->
+      x ∉ avoid
+  .
+  Proof.
+    revert avoid.
+    induction l; intros avoid x Hx; simpl in *.
+    {
+      unfold vars_of in Hx; simpl in Hx.
+      ltac1:(set_solver).
+    }
+    {
+      unfold vars_of in Hx; simpl in Hx.
+      rewrite elem_of_union in Hx.
+      destruct Hx as [Hx|Hx].
+      {
+        apply toe_to_cpat_avoid in Hx.
+        exact Hx.
+      }
+      {
+        specialize (IHl _ _ Hx).
+        ltac1:(set_solver).
+      }
+    }
+  Qed.
+  
   Lemma toe_to_cpat_correct_1
     {Σ : StaticModel}
     (avoid : list variable)
@@ -1007,7 +1039,17 @@ Module Implementation.
           destruct Hy2 as [g2 [H1g2 H2g2]].
           ltac1:(simplify_option_eq).
           assert (Hgood1 := toe_to_cpat_good_side avoid a).
-          Search toe_to_cpat.
+          assert (Hgood2 := toe_to_cpat_list_good_side (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) l).
+          destruct (decide (x ∈ vars_of a)).
+          {
+            admit.
+          }
+          {
+            assert (x ∈ vars_of (toe_to_cpat avoid a).1) by ltac1:(clear X; set_solver).
+            assert (Havoid3 := toe_to_cpat_avoid ((avoid ++ elements (vars_of (toe_to_cpat avoid a).2)))).
+            Search toe_to_cpat.
+          }
+          
           ltac1:(congruence).
         }
           
