@@ -1062,9 +1062,9 @@ Module Implementation.
         destruct oρm.
         {
           symmetry in Heqoρm.
-          (*
           apply Valuation2_merge_with_correct in Heqoρm as Hcor.
           destruct Hcor as [Hcor1 Hcor2].
+          
           exists v.
           unfold satisfies at 1; simpl.
           ltac1:(simp sat2B).
@@ -1077,35 +1077,50 @@ Module Implementation.
             simpl.
             ltac1:(rewrite length_toe_to_cpat_list).
             apply HH2.
-          }
+          }          
           {
             intros.
             destruct i; simpl in *.
             {
               ltac1:(simplify_eq/=).
-              (*clear - H1ρ4.*)
               apply TermOverBoV_satisfies_strip in H1ρ4.
               eapply TermOverBoV_satisfies_extensive>[|apply H1ρ4].
-              assert (Havoid2 := toe_to_cpat_avoid avoid a).
               ltac1:(rewrite map_subseteq_spec).
-              ltac1:(rewrite map_subseteq_spec in Hcor2).
               intros i x Hix.
               ltac1:(rewrite map_lookup_filter in Hix).
-              ltac1:(rewrite bind_Some in Hix).
+              rewrite bind_Some in Hix.
               destruct Hix as [x0 [H1x0 H2x0]].
-              ltac1:(simplify_option_eq).
-              specialize (Havoid2 i H).
-
+              rewrite bind_Some in H2x0.
+              destruct H2x0 as [x1 [H1x1 H2x1]].
+              simpl in *.
+              ltac1:(simplify_eq/=).
+              ltac1:(rewrite map_subseteq_spec in Hcor2).
               specialize (Hcor2 i x).
-              apply Hcor2. clear Hcor2.
-              rewrite map_lookup_filter.
-              rewrite bind_Some.
-              simpl.
-              exists x.
-              split>[apply H1x0|].
-              ltac1:(simplify_option_eq).
-              ltac1:(exfalso).
-              admit.
+              ltac1:(ospecialize (Hcor2 _)).
+              {
+                clear Hcor2.
+                ltac1:(rewrite map_lookup_filter).
+                rewrite bind_Some.
+                exists x.
+                split>[apply H1x0|].
+                rewrite bind_Some.
+                simpl.
+                ltac1:(simplify_option_eq).
+                {
+                  exists H1.
+                  (repeat split).
+                }
+                {
+                  ltac1:(contradiction).
+                }
+                {
+                  ltac1:(exfalso; set_solver).
+                }
+              }
+              exact Hcor2.
+            }
+            {
+              specialize (HH3 (S i) t').
             }
             admit.
           }
