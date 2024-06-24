@@ -2,6 +2,7 @@
 
 theories/prelude.v
 theories/spec.v
+theories/basic_properties.v
 theories/lowlang.v
 theories/properties.v
 theories/spec_syntax.v
@@ -31,5 +32,7 @@ theories/interp_loop.v
 theories/example.v
 theories/default_everything.v
 theories/unification_interface.v
+theories/textbook_unification_alg.v
 theories/textbook_unification.v
+theories/symex_spec.v
 theories/symex.v

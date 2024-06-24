@@ -266,9 +266,11 @@ Instance VarsOf_SideCondition2
 |}.
 
 #[export]
-Program Instance VarsOf_list_SideCondition2
+Program Instance VarsOf_list_something
     {Σ : StaticModel}
-    : VarsOf (list SideCondition2) variable
+    {A : Type}
+    {_VA: VarsOf A variable}
+    : VarsOf (list A) variable
 := {|
     vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.

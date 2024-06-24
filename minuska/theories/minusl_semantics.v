@@ -1,9 +1,10 @@
 From Minuska Require Import
     prelude
     spec
+    basic_properties
     minusl_syntax
     spec
-    lowlang
+    lowlang (* TODO remove this dependency*)
     properties
 .
 

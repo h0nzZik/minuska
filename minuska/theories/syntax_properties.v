@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec
+    basic_properties
     lowlang
 .
 
@@ -68,14 +69,6 @@ Section eqdec.
     #[export]
     Instance atomicProposition_eqdec {Σ : StaticModel}
         : EqDecision AtomicProposition
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance BuiltinOrVar_eqdec {Σ : StaticModel}
-        : EqDecision BuiltinOrVar
     .
     Proof.
         ltac1:(solve_decision).
@@ -423,42 +416,6 @@ match ao with
 | pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
-#[export]
-Instance TermOver_eqdec
-    {T : Type}
-    {A : Type}
-    {_edT : EqDecision T}
-    {_edA : EqDecision A}
-    :
-    EqDecision (@TermOver' T A)
-.
-Proof.
-    intros t1 t2.
-    remember (uglify' t1) as ut1 in |-.
-    remember (uglify' t2) as ut2 in |-.
-    destruct (decide (ut1 = ut2)) as [Heq|Hneq].
-    {
-        left.
-        abstract(
-            subst;
-            apply (f_equal prettify) in Heq;
-            rewrite (cancel prettify uglify') in Heq;
-            rewrite (cancel prettify uglify') in Heq;
-            subst;
-            reflexivity
-        ).
-    }
-    {
-        right.
-        abstract(
-            intros HContra;
-            subst;
-            apply Hneq;
-            reflexivity
-        ).
-    }
-Defined.
-
 
 #[export]
 Instance TermOver_count
@@ -490,170 +447,6 @@ Proof.
     }
 Defined.
 
-Lemma elem_of_next
-    {A : Type}
-    (x y : A)
-    (l : list A)
-    :
-    x <> y ->
-    x ∈ (y::l) ->
-    x ∈ l
-.
-Proof.
-    intros. inversion H0; subst; clear H0.
-    { ltac1:(contradiction). }
-    { assumption. }
-Qed.
-
-(* TODO *)
-Section custom_induction_principle_2.
-
-    Context
-        {Σ : StaticModel}
-        {A : Type}
-        {_edA : EqDecision A}
-        (P : TermOver A -> Type)
-        (true_for_over : forall a, P (t_over a) )
-        (preserved_by_term :
-            forall
-                (s : symbol)
-                (l : list (TermOver A)),
-                (forall x, x ∈ l -> P x) ->
-                P (t_term s l)
-        )
-    .
-
-    Fixpoint TermOver_rect (p : TermOver A) : P p :=
-    match p with
-    | t_over a => true_for_over a
-    | t_term s l =>  preserved_by_term s l
-        (fun x pf => 
-            (fix go (l' : list (TermOver A)) : x ∈ l' -> P x :=
-            match l' as l'0 return x ∈ l'0 -> P x with
-            | nil => fun pf' => match not_elem_of_nil _ pf' with end
-            | y::ys => 
-                match (decide (x = y)) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect (TermOver A) y P (TermOver_rect y) x (eq_sym e)) 
-                | right n => fun pf' =>
-                    let H := @elem_of_next _ _ _ _ n pf' in
-                    go ys H
-                end
-            end
-            ) l pf
-        )
-    end.
-
-End custom_induction_principle_2.
-
-
-Fixpoint TermOverBuiltin_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
-    : TermOver builtin_value
-:=
-    if (decide (t = m)) then v else
-    match t with
-    | t_over o => t_over o
-    | t_term s l => t_term s (map (fun t'' => TermOverBuiltin_subst t'' m v) l)
-    end
-.
-
-Fixpoint is_subterm_b
-    {Σ : StaticModel}
-    {A : Type}
-    {_edA : EqDecision A}
-    (m t : TermOver A)
-    : bool
-:=
-    if (decide (t = m)) then true else
-    match t with
-    | t_over _ => false
-    | t_term _ l => existsb (is_subterm_b m) l
-    end
-.
-
-Lemma not_subterm_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
-    :
-    is_subterm_b m t = false ->
-    TermOverBuiltin_subst t m v = t
-.
-Proof.
-    induction t; simpl; intros; ltac1:(case_match; try congruence).
-    f_equal.
-    clear H1. revert H0 H.
-    induction l; simpl; intros H0 H.
-    { reflexivity. }
-    rewrite Forall_cons in H.
-    destruct H as [H1 H2].
-    rewrite orb_false_iff in H0.
-    destruct H0 as [H01 H02].
-    specialize (IHl H02 H2). clear H0 H2.
-    rewrite IHl. rewrite (H1 H01). reflexivity.
-Qed.
-
-Lemma is_subterm_sizes
-    {Σ : StaticModel}
-    {A : Type}
-    {_edA : EqDecision A}
-    (p q : TermOver A)
-    :
-    is_subterm_b p q = true ->
-    TermOver_size p <= TermOver_size q
-.
-Proof.
-    revert p.
-    induction q; simpl; intros p HH.
-    {
-        unfold is_left in *.
-        ltac1:(repeat case_match; subst; simpl in *; lia).
-    }
-    {
-        unfold is_left in *.
-        ltac1:(repeat case_match; subst; simpl in *; try lia).
-        rewrite existsb_exists in HH.
-        destruct HH as [x [H1x H2x]].
-
-        rewrite <- elem_of_list_In in H1x.
-        rewrite elem_of_list_lookup in H1x.
-        destruct H1x as [i Hi].
-        apply take_drop_middle in Hi.
-        rewrite <- Hi in H.
-        rewrite Forall_app in H.
-        rewrite Forall_cons in H.
-        destruct H as [IH1 [IH2 IH3]].
-        specialize (IH2 p H2x).
-        rewrite <- Hi.
-        rewrite sum_list_with_app.
-        simpl.
-        ltac1:(lia).
-    }
-Qed.
-
-
-#[export]
-Instance Expression2_eqdec
-    {Σ : StaticModel}
-    : EqDecision (Expression2)
-.
-Proof. ltac1:(solve_decision). Defined.
-
-#[export]
-Instance SideCondition2_eqdec
-    {Σ : StaticModel}
-    : EqDecision (SideCondition2)
-.
-Proof. ltac1:(solve_decision). Defined.
-
-#[export]
-Instance RewritingRule2_eqdec
-    {Σ : StaticModel}
-    {Act : Set}
-    {_EA : EqDecision Act}
-    : EqDecision (RewritingRule2 Act)
-.
-Proof. ltac1:(solve_decision). Defined.
 
 
 Lemma compose_prettify_uglify
@@ -741,11 +534,3 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma vars_of_t_term
-    {Σ : StaticModel}
-    (s : symbol)
-    (l : list (TermOver BuiltinOrVar))
-    :
-    vars_of (t_term s l) = union_list ( vars_of <$> l)
-.
-Proof. reflexivity. Qed.

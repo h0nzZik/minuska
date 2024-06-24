@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec
+    basic_properties
     lowlang
     properties
     semantics_properties
@@ -2436,181 +2437,6 @@ Proof.
     }
 Qed.
 
-Program Fixpoint pfmap
-    {A B : Type}
-    (l : list A)
-    (f : forall (x : A), x ∈ l -> B)
-    : list B
-:=
-match l with
-| nil => nil
-| x::xs => (f x _)::(pfmap xs (fun (x' : A) (pf' : x' ∈ xs) => f x' _))
-end
-.
-Next Obligation.
-    intros. subst. rewrite elem_of_cons. left. reflexivity.
-Defined.
-Next Obligation.
-    intros. subst. rewrite elem_of_cons. right. exact pf'.
-Defined.
-Fail Next Obligation.
-
-
-Program Fixpoint pflookup
-    {A : Type}
-    (l : list A)
-    (i : nat)
-    (pflt : i < length l)
-    : { x : A | x ∈ l}
-:=
-match l with
-| [] => _
-| x::xs =>
-    match i with
-    | 0 => (exist _ x _ )
-    | S i' =>
-        let tmp := pflookup xs i' _ in
-        let x' := proj1_sig tmp in
-        let pf := proj2_sig tmp in
-        (exist _ x' _)
-    end
-end.
-Next Obligation.
-    abstract(ltac1:(lia)).
-Qed.
-Next Obligation.
-    abstract(left).
-Qed.
-Next Obligation.
-    abstract(ltac1:(lia)).
-Qed.
-Next Obligation.
-    abstract(right; assumption).
-Defined.
-Fail Next Obligation.
-
-
-Lemma pflookup_spec
-    {A : Type}
-    (l : list A)
-    (i : nat)
-    (pflt : i < length l)
-    :
-    Some (proj1_sig (pflookup l i pflt)) = l !! i
-.
-Proof.
-    revert i pflt.
-    induction l; intros i pflt.
-    {
-        simpl in pflt. ltac1:(lia).
-    }
-    {
-        destruct i;
-            simpl in *.
-        {
-            reflexivity.
-        }
-        {
-            apply IHl.
-        }
-    }
-Qed.
-
-Lemma length_pfmap
-    {A B : Type}
-    (l : list A)
-    (f : forall (x : A), x ∈ l -> B)
-    :
-    length (pfmap l f) = length l
-.
-Proof.
-    induction l; simpl.
-    { reflexivity. }
-    {
-        rewrite IHl. reflexivity.
-    }
-Qed.
-
-Lemma pfmap_lookup_Some_lt
-    {A B : Type}
-    (l : list A)
-    (f : forall (x : A), x ∈ l -> B)
-    (i : nat)
-    (y : B)
-    :
-    pfmap l f !! i = Some y ->
-    i < length l
-.
-Proof.
-    revert i f.
-    induction l; intros i f H.
-    {
-        simpl in H.
-        rewrite lookup_nil in H.
-        inversion H.
-    }
-    {
-        simpl in *.
-        destruct i.
-        {
-            ltac1:(lia).
-        }
-        {
-            simpl in H.
-            specialize (IHl i _ H).
-            ltac1:(lia).
-        }
-    }
-Qed.
-
-Arguments pfmap_lookup_Some_lt {A B}%_type_scope {l}%_list_scope {f}%_function_scope {i}%_nat_scope {y} _.
-
-Lemma pfmap_lookup_Some_1
-    {A B : Type}
-    (l : list A)
-    (f : forall (x : A), x ∈ l -> B)
-    (i : nat)
-    (y : B)
-    (pf : pfmap l f !! i = Some y)
-    :
-    let pflt : i < length l := pfmap_lookup_Some_lt pf in
-    y = (let xpf := (pflookup l i pflt) in (f (proj1_sig xpf) (proj2_sig xpf) ))
-.
-Proof.
-    simpl.
-    revert i y f pf.
-    induction l; intros i y f pf.
-    {
-        simpl in pf. ltac1:(exfalso). rewrite lookup_nil in pf. inversion pf.
-    }
-    {
-        destruct i.
-        {
-            simpl in *. inversion pf; subst.
-            f_equal.
-            apply proof_irrelevance.
-        }
-        {
-            simpl in *.
-            (* specialize (IHl i y). *)
-            ltac1:(unshelve(erewrite IHl at 1))>[()|()|apply pf|].
-            simpl.
-            assert (Htmp0: ((@pfmap_lookup_Some_lt A _ l
-          (λ (x' : A) (pf' : x' ∈ l),
-             f x'
-               (@flip2 Prop iff (λ x y0 : Prop, impl y0 x) iff_flip_impl_subrelation 
-                  (x' ∈ a :: l) (x' = a ∨ x' ∈ l) (@elem_of_cons A l x' a)
-                  (@or_intror (x' = a) (x' ∈ l) pf'))) i y pf)) = ((pflookup_obligation_3 A (a :: l) (S i) (@pfmap_lookup_Some_lt A _ (a :: l) f (S i) y pf) a l
-          erefl i erefl))).
-            {
-                apply proof_irrelevance.
-            }
-            rewrite Htmp0.
-            apply f_equal.
-            apply proof_irrelevance.
-        }
-    }
-Qed.
 
 
 Fixpoint factor_by_subst
@@ -7386,9 +7212,11 @@ Proof.
             intros i s0 l0 HH'1 HH'2.
             ltac1:(replace (map) with (@fmap _ list_fmap) in HH'2 by reflexivity).
             rewrite list_lookup_fmap in HH'2.
-            destruct (l!!i) as [l0'|] eqn:Hli > [|inversion HH'2].
+            destruct (l!!i) as [l0'|] eqn:Hli > [|ltac1:(rewrite Hli in HH'2);inversion HH'2].
             specialize (X l0').
-            simpl in HH'2. injection HH'2 as HH'2.
+            simpl in HH'2.
+            ltac1:(rewrite Hli in HH'2).
+             injection HH'2 as HH'2.
             subst l0.
             specialize (HH3 _ _ _ HH'1 Hli).
             ltac1:(ospecialize (X _)).
