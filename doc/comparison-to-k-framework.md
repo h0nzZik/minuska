@@ -1,28 +1,50 @@
-# Comparison to K framework
+# Comparison to K-framework
 
-Minuska is inspired by [recent work on Xiaohong Chen and others](https://link.springer.com/chapter/10.1007/978-3-030-81688-9_23) on extending K framework with proof certificate generation for certain tasks.
+Minuska is inspired by [the recent work of Xiaohong Chen and others](https://link.springer.com/chapter/10.1007/978-3-030-81688-9_23) on extending [K-framework](https://kframework.org/) with proof certificate generation for certain tasks.
 
 ## Backend
 
 ### Terms
-K framework, is based on rewriting of terms with builtins.
-There, the configuration of the program being executed
-is a closed term whose leaves can be either nullary terms (that is, constants)
-or builtins (also known as domain values) -
-such as integers, lists, or finite maps.
-Our approach is very similar; the main difference is that in Minuska, terms
+K-framework is based on rewriting of terms over builtin values.
+A program configuration is a closed term whose leaves can be, in addition to nullary terms (constants),
+also built-in values (such as integers, lists, or finite dictionaries).
+Our approach is very similar; one difference is that in Minuska, terms
 are unsorted and varyadic, while they are sorted and polyadic in K.
 This comes with the usual costs and benefits: 
-a semantic engineer using K can benefit from an early error detection
-at the cost of lower flexibility,
-and knowing sorts statically could in principle be exploited by optimizations,
-although we do not know whether K actually uses the knowledge
+a semantics engineer using K can benefit from an early error detection
+at the price of lower flexibility;
+knowing sorts when generating an interpreter could in principle be exploited by optimizations,
+although I do not know whether K uses the knowledge
 for that purpose.
+
+#### Transparency vs opacity of built-in values
+
+In K-framework, built-in values are transparent: the generated tools can "see" into them and
+run pattern-matching or unification algorithms on terms nested deeply in built-in values.
+In contrast, built-in values are opaque in Minuska, and the formal semantics of Minuska's specification language
+does not depend on details of particular models of built-in values. Both approaches have their advantages.
+
+A typical semantics of a concurrent language in K-framework exploits transparency of built-in values.
+Such semantics keeps the state of all threads in a built-in dictionary (or list);
+semantic rules can then query the dictionary for a key-value pair such that the value matches a given pattern.
+K-framework supports a special syntax for declaring parts of configurations to behave in this way.
+That way, semantics rules directly access the identifier and data specific to the "current" thread.
+A language expressed in Minuska has to resort to other implementations of concurrency: for example, storing
+the state of the "current" thread separately from the states of all other threads.
+
+
+Some may consider the K-framework approach more convenient for a concurrent semantics engineer.
+However, implementing transparency of built-in values is necessarily more complex than opaque built-in values.
+In a rewriting framework like K (or Maude), pattern matching and unification modulo associativity and commutativity axioms
+is needed. The complexity can have implications regarding both correctness and performance of a derived language tool.
+
+
+#### Domain reasoning
 Another difference is that in K, proofs of domain reasoning
 are omitted from the resulting proof certificate, while in Minuska,
 the implementation of builtins is verified in Coq.
 For example, we use a verified implementation of lists from Coq's
-standard library, and of finite maps from the Std++ library.
+standard library and finite dictionaries from the Std++ library.
 
 ### Rewriting
 K framework, as well as Minuska, implements the topmost semantics
@@ -36,7 +58,7 @@ and they do so in between regular rewriting steps.
 However, we believe that function rules do not present a significant advantage of K
 against Minuska, and have three reasons for that belief.
 
-First, since function rules are applied in-between computational steps,
+First, since function rules are applied between computational steps,
 they are hard to debug in practice: as far as we know, K does not have
 any debugging facilities for showing what happens inside one computational step.
 Second, function rules do not play nice with K's formal verification facilities.
