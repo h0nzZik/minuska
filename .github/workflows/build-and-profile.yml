@@ -29,8 +29,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup Nix
+    - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v9
+    - name: Setup Magic Nix Cache
       uses: DeterminateSystems/magic-nix-cache-action@main
 
     - name: 'Build with Coq 8.19'
