@@ -1051,8 +1051,8 @@ Module Implementation.
         
         (* FIXME I have no idea what to write here*)
         remember (Valuation2_merge_with
-          (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ (vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).1 ∪ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).2)) ρ3)
-          (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ (vars_of (toe_to_cpat avoid a).1 ∪ vars_of (toe_to_cpat avoid a).2)) ρ4)) as oρm.
+          (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements ((vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).1 ∪ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).2))) ρ3)
+          (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements ((vars_of (toe_to_cpat avoid a).1 ∪ vars_of (toe_to_cpat avoid a).2))) ρ4)) as oρm.
         
         (*
         remember (
@@ -1224,6 +1224,9 @@ Module Implementation.
                   apply take_drop_middle in Hi0.
                   apply H0. clear H0.
                   rewrite <- Hi0.
+                  rewrite elem_of_app.
+                  right.
+                  rewrite elem_of_elements.
                   rewrite elem_of_union.
                   right.
                   unfold vars_of; simpl.
@@ -1283,6 +1286,9 @@ Module Implementation.
                   apply take_drop_middle in Hi0.
                   apply H1. clear H1.
                   rewrite <- Hi0.
+                  rewrite elem_of_app.
+                  right.
+                  rewrite elem_of_elements.
                   rewrite elem_of_union.
                   right.
                   unfold vars_of; simpl.
@@ -1374,8 +1380,98 @@ Module Implementation.
               }
             }
 
-
-            clear - H3ρ4 H3ρ3.
+            assert (Hmdom := merge_valuations_dom _ _ _ Heqoρm).
+            apply map_subseteq_po.
+            {
+              rewrite map_subseteq_spec.
+              intros x g.
+              rewrite map_lookup_filter.
+              rewrite map_lookup_filter.
+              intros HHxg.
+              rewrite bind_Some in HHxg.
+              destruct HHxg as [y [H1y H2y]].
+              rewrite bind_Some.
+              exists y.
+              rewrite bind_Some in H2y.
+              destruct H2y as [pf1 [H1pf1 H2pf1]].
+              simpl in *.
+              inversion H2pf1; subst; clear H2pf1.
+              assert (Htmp0 : filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid) ρ' !! x = Some g).
+              {
+                rewrite map_lookup_filter.
+                rewrite bind_Some.
+                exists g.
+                split>[apply H1y|].
+                rewrite bind_Some.
+                simpl.
+                exists pf1.
+                split>[assumption|reflexivity].
+              }
+              rewrite Helper1 in Htmp0.
+              ltac1:(rewrite map_subseteq_spec in Hcor1).
+              specialize (Hcor1 x g).
+              ltac1:(ospecialize (Hcor1 _)).
+              {
+                rewrite map_lookup_filter.
+                rewrite bind_Some.
+                
+                rewrite map_lookup_filter in Htmp0.
+                rewrite bind_Some in Htmp0.
+                destruct Htmp0 as [g0 [H1g0 H2g0]].
+                exists g0. simpl in *.
+                split>[apply H1g0|].
+                rewrite bind_Some.
+                ltac1:(unshelve(eexists)).
+                {
+                  rewrite elem_of_app.
+                  left.
+                  assumption.
+                }
+                assert(g0 = g).
+                {
+                  ltac1:(simplify_option_eq).
+                  reflexivity.
+                }
+                subst g0.
+                split>[|reflexivity].
+                ltac1:(simplify_option_eq).
+                {
+                  apply f_equal.
+                  apply proof_irrelevance.
+                }
+                {
+                  ltac1:(contradiction).
+                }
+                {
+                  ltac1:(exfalso; set_solver).
+                }
+              }
+              split>[exact Hcor1|].
+              ltac1:(simplify_option_eq).
+              reflexivity.
+            }
+            {
+              rewrite map_subseteq_spec.
+              intros x g Hxg.
+              rewrite map_lookup_filter in Hxg.
+              rewrite map_lookup_filter.
+              rewrite bind_Some in Hxg.
+              rewrite bind_Some.
+              destruct Hxg as [g' [H1g' H2g']].
+              assert (g = g').
+              {
+                ltac1:(simplify_option_eq).
+                reflexivity.
+              }
+              subst g'.
+              clear H2g'.
+              assert (Hxdomv : x ∈ dom v).
+              {
+                ltac1:(rewrite elem_of_dom).
+                exists g. exact H1g'. 
+              }
+            }
+            clear - H3ρ4 H3ρ3 Hcor1 Hcor2 Hmdom.
             apply map_eq.
             intros i.
             rewrite map_lookup_filter.
@@ -1390,6 +1486,15 @@ Module Implementation.
                 rewrite Hρ'i. simpl.
                 ltac1:(simplify_option_eq).
                 reflexivity.
+              }
+
+              assert (Htmp2: filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) ρ' !! i = Some t).
+              {
+                rewrite map_lookup_filter.
+                rewrite Hρ'i. simpl.
+                ltac1:(simplify_option_eq).
+                reflexivity.
+                ltac1:(set_solver).
               }
               
             }
