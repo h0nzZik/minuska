@@ -46,6 +46,13 @@ jobs:
     - name: 'Build Docker image'
       run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
 
+    - name: 'Archive Docker image'
+      uses: actions/upload-artifact@v4
+      with:
+        name: 'minuska-docker-image'
+        path: |
+          ./result-minuska-docker
+        retention-days: 5
       
     #- name: Build
     #  run: nix develop '.#minuska' --command ./build-and-profile.sh
@@ -76,4 +83,21 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      packages: write
+    steps:
+      - name: Download a single artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: 'minuska-docker-image'
+
+      - name: 'Push Docker image'
+        run: |
+          docker image tag minuska:${GITHUB_SHA} ./result-minuska-docker
+          docker image push ghcr.io/h0nzZik/minuska:${GITHUB_SHA}
 
