@@ -146,6 +146,8 @@
           passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
 
+
+        # TODO remove this
         packages.minuska-symbolic
         = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
@@ -162,6 +164,16 @@
 
           passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
+
+
+        packages.minuska-docker
+        = pkgs.dockerTools.buildImage {
+          name = "minuska-docker";
+          config = {
+            Cmd = [ "${self.outputs.packages.${system}.minuska}/bin/minuska" ];
+          };
+        };
+
 
         packages.default = self.outputs.packages.${system}.minuska;
         

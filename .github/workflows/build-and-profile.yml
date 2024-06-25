@@ -43,6 +43,9 @@ jobs:
     - name: 'Run standalone examples'
       run: nix develop -L '.#examples-standalone' --command ./examples-standalone/test.sh
 
+    - name: 'Build Docker image'
+      run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
+
       
     #- name: Build
     #  run: nix develop '.#minuska' --command ./build-and-profile.sh
