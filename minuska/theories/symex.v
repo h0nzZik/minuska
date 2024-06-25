@@ -1703,6 +1703,136 @@ Module Implementation.
     }
   Qed.
 
+  Lemma toe_to_cpat_correct_2
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (t : TermOver Expression2)
+    (g : TermOver builtin_value)
+  :
+    elements (vars_of t) ⊆ avoid ->
+    forall (ρ : Valuation2),
+      (satisfies ρ g ((toe_to_cpat avoid t).1)) ->
+      (satisfies ρ tt ((toe_to_cpat avoid t).2)) ->
+      satisfies ρ g t
+  .
+  Proof.
+    revert avoid g.
+    ltac1:(induction t using TermOver_rect; intros avoid g Havoid ρ Hsat1 Hsat2).
+    {
+      simpl in *.
+      unfold satisfies in *; simpl in *.
+      ltac1:(simp sat2B in Hsat1).
+      ltac1:(simp sat2E).
+      specialize(Hsat2 ({| sc_left := e_variable (fresh avoid); sc_right := a |})).
+      specialize (Hsat2 ltac:(set_solver)).
+      unfold satisfies in Hsat2; simpl in Hsat2.
+      unfold isSome in *.
+      destruct (ρ !! fresh avoid) eqn:Hρfr.
+      {
+        destruct Hsat2 as [Hsat2 _].
+        symmetry in Hsat2.
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        assumption.
+      }
+      {
+        destruct Hsat2 as [_ HContra].
+        inversion HContra.
+      }
+    }
+    {
+      unfold satisfies; simpl.
+      rewrite toe_to_cpat_list_equiv in Hsat1.
+      rewrite toe_to_cpat_list_equiv in Hsat2.
+      unfold satisfies in Hsat1, Hsat2. simpl in Hsat1, Hsat2.
+      destruct g; ltac1:(simp sat2B in Hsat1).
+      { destruct Hsat1. }
+      ltac1:(simp sat2E).
+      destruct Hsat1 as [HH1 [HH2 HH3]].
+      subst b.
+      split>[reflexivity|].
+      ltac1:(rewrite length_toe_to_cpat_list in HH2).
+      split>[assumption|].
+
+      revert l0 avoid HH2 HH3 X Havoid Hsat2.
+      induction l; intros l0 avoid HH2 HH3 X Havoid Hsat2.
+      {
+        destruct l0; simpl in *; try ltac1:(lia).
+        intros.
+        rewrite lookup_nil in pf1. inversion pf1.
+      }
+      {
+        destruct l0; simpl in *; try ltac1:(lia).
+        intros i t' φ' H1i H2i.
+        destruct i.
+        {
+          simpl in *.
+          ltac1:(simplify_eq/=).
+          eapply X with (avoid := avoid).
+          {
+            rewrite elem_of_cons.
+            left.
+            reflexivity.
+          }
+          {
+            ltac1:(rewrite vars_of_t_term_e in Havoid).
+            rewrite fmap_cons in Havoid.
+            rewrite union_list_cons in Havoid.
+            ltac1:(set_solver).
+          }
+          {
+            specialize (HH3 0). simpl in HH3.
+            apply HH3.
+            { reflexivity. }
+            { reflexivity. }
+          }
+          {
+            unfold satisfies; simpl.
+            intros c Hc.
+            apply Hsat2.
+            { ltac1:(set_solver). }
+          }
+        }
+        {
+          simpl in *.
+          ltac1:(ospecialize (IHl l0 (avoid ++ elements (vars_of (toe_to_cpat avoid a).2)) _ _ _ _ _)).
+          {
+            ltac1:(lia).
+          }
+          {
+            intros i0 t'0 φ'0 H'1 H'2.
+            apply HH3 with (i := (S i0)).
+            simpl. exact H'1.
+            simpl. exact H'2.
+          }
+          {
+            intros.
+            apply X with (avoid := (avoid0 (* ++ elements (vars_of (toe_to_cpat avoid0 φ').2) *))).
+            { rewrite elem_of_cons. right. assumption. }
+            { ltac1:(set_solver). }
+            { assumption. }
+            { assumption. }
+          }
+          {
+            ltac1:(rewrite vars_of_t_term_e in Havoid).
+            rewrite fmap_cons in Havoid.
+            rewrite union_list_cons in Havoid.
+            ltac1:(rewrite vars_of_t_term_e).
+            ltac1:(set_solver).
+          }
+          {
+            intros c Hc.
+            apply Hsat2.
+            { ltac1:(set_solver). }
+          }
+          eapply IHl.
+          { apply H1i. }
+          { apply H2i. }
+        }
+      }
+    }
+  Qed.
+
   Definition keep_data (A : Type) (l : list (option A)) : list A
   :=
     fold_right (fun b a => match b with Some b' => b'::a | None => a end) [] l
