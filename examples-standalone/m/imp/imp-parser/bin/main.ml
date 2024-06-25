@@ -1,7 +1,8 @@
 open Core
 open Printf
 
-
+let do_parse input_filename output_filename () =
+    ()
 
 let command =
   Command.basic
@@ -11,6 +12,6 @@ let command =
         input_filename = anon (("program.imp" %: Filename_unix.arg_type)) and
         output_filename = anon (("program.ast" %: Filename_unix.arg_type))
      in
-     fun () -> compile input_filename output_filename ())
+     fun () -> do_parse input_filename output_filename ())
 
 let () = Command_unix.run ~version:"0.1" command

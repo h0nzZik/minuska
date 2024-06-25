@@ -24,7 +24,7 @@ type id = [ `Id of string ]
 type aexpr =
   [ `AExprVar of id
   | `AExprInt of int
-  | `AExprPlus of (aexpr*aepxr)
+  | `AExprPlus of (aexpr*aexpr)
   | `AExprMinus of (aexpr*aexpr)
   ]
 
