@@ -119,9 +119,10 @@
         = pkgs.stdenv.mkDerivation {
           name = "examples-standalone";
           src = ./examples-standalone;
-          propagatedBuildInputs = [
+          nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
+            pkgs.ocaml
             pkgs.dune_3
             pkgs.ocamlPackages.menhir
             #pkgs.ocamlPackages.findlib
@@ -218,6 +219,15 @@
                 packages = [
                   examples-coq.coqPackages.coq-lsp
                 ];
+              };
+
+          examples-standalone =
+            let
+              examples-standalone = self.outputs.packages.${system}.examples-standalone;
+            in
+              pkgs.mkShell {
+                inputsFrom = [examples-standalone];
+                packages = [];
               };
 
           minuska-bench =

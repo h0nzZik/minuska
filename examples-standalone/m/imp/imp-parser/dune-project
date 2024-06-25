@@ -10,6 +10,6 @@
     menhir
     core
     core_unix
-    coq-minuska
+    ppx_jane
   )
 )
