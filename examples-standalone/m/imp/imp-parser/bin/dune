@@ -11,17 +11,17 @@
   (dev
     (flags (:standard -warn-error -A))))
 
-
-(library
- (name libimpparser)
+(executable
  (public_name imp-parser)
- (modules syntax parser lexer)
+ (name main)
+ (modules main syntax parser lexer)
  (libraries
     core
-    coq-minuska
     core_unix
     core_unix.command_unix
     core_unix.filename_unix
+    libminuska
  )
  (preprocess (pps ppx_jane))
-)
+ )
+

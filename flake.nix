@@ -122,6 +122,13 @@
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
+            pkgs.dune_3
+            pkgs.ocamlPackages.menhir
+            #pkgs.ocamlPackages.findlib
+            pkgs.ocamlPackages.core
+            pkgs.ocamlPackages.core_unix
+            pkgs.ocamlPackages.ppx_jane
+
           ];
         };
 
