@@ -1,0 +1,5 @@
+name: imp
+semantics: imp.m
+parser:
+  library: imp-parser.a
+  

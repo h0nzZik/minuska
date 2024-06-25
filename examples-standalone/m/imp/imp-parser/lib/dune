@@ -1,0 +1,27 @@
+(ocamllex
+  (modules lexer)
+)
+
+(menhir
+  (modules parser)
+  (flags -la 2)
+)
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
+
+
+(library
+ (name libimpparser)
+ (public_name imp-parser)
+ (modules syntax parser lexer)
+ (libraries
+    core
+    coq-minuska
+    core_unix
+    core_unix.command_unix
+    core_unix.filename_unix
+ )
+ (preprocess (pps ppx_jane))
+)
