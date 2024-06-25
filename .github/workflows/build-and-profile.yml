@@ -95,9 +95,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: 'minuska-docker-image'
+          path: './result-minuska-docker'
 
       - name: 'Push Docker image'
         run: |
-          docker image tag ./result-minuska-docker ghcr.io/h0nzZik/minuska:${GITHUB_SHA}
+          ls
+          docker image import ./result-minuska-docker ghcr.io/h0nzZik/minuska:${GITHUB_SHA}
           docker image push ghcr.io/h0nzZik/minuska:${GITHUB_SHA}
 
