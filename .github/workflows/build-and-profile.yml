@@ -98,6 +98,6 @@ jobs:
 
       - name: 'Push Docker image'
         run: |
-          docker image tag minuska:${GITHUB_SHA} ./result-minuska-docker
+          docker image tag ./result-minuska-docker ghcr.io/h0nzZik/minuska:${GITHUB_SHA}
           docker image push ghcr.io/h0nzZik/minuska:${GITHUB_SHA}
 
