@@ -4,11 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    vscoq.url = "github:coq-community/vscoq";
-    vscoq.inputs.nixpkgs.follows = "nixpkgs";
    };
 
-  outputs = { self, nixpkgs, flake-utils, vscoq }: (
+  outputs = { self, nixpkgs, flake-utils }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
 
@@ -49,17 +47,17 @@
               coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
 
-            buildInputs = [] ++ bothNativeAndOtherInputs;
+            #buildInputs = [] ++ bothNativeAndOtherInputs;
 
-            propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
+            #propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
 
             passthru = { inherit coqPackages; };
 
             postPatch = ''
               substituteInPlace bin/main.ml \
-                --replace "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
-                --replace "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
-                --replace "coqc" "${coqPackages.coq}/bin/coqc"
+                --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
+                --replace-fail "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
+                --replace-fail "coqc" "${coqPackages.coq}/bin/coqc"
             '';
 
 
@@ -71,10 +69,11 @@
 
             postInstall = ''
               wrapProgram $out/bin/minuska \
-                --prefix OCAMLPATH : $OCAMLPATH \
-                --prefix COQPATH : $COQPATH \
-                --prefix PATH : $PATH \
-                --prefix CAML_LD_LIBRARY_PATH : $CAML_LD_LIBRARY_PATH
+                --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
+                --set OCAMLPATH $OCAMLPATH \
+                --set COQPATH $COQPATH \
+                --set PATH $PATH \
+                --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
             '';
           } ) { };  in
           wrapped
@@ -125,7 +124,7 @@
             pkgs.ocaml
             pkgs.dune_3
             pkgs.ocamlPackages.menhir
-            #pkgs.ocamlPackages.findlib
+            pkgs.ocamlPackages.findlib
             pkgs.ocamlPackages.core
             pkgs.ocamlPackages.core_unix
             pkgs.ocamlPackages.ppx_jane
@@ -197,7 +196,6 @@
                 packages = [
                   minuska.coqPackages.coq-lsp 
                   minuska.coqPackages.coqide 
-                  vscoq.packages.${system}.vscoq-language-server-coq-8-19
                 ];
               };
 
