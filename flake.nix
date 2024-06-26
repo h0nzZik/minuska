@@ -31,6 +31,7 @@
               coqPackages.coq.ocamlPackages.core
               coqPackages.coq.ocamlPackages.core_unix
               coqPackages.coq.ocamlPackages.ppx_jane
+              coqPackages.coq.ocamlPackages.ppx_sexp_conv
            ] ++ coqLibraries ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 

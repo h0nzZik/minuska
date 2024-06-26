@@ -1,5 +1,6 @@
 open Core
 open Printf
+open Sexplib.Std
 
 open Libminuska
 module Syntax = Libminuska.Syntax
@@ -117,6 +118,21 @@ let compile input_filename interpreter_name () =
   fprintf stdout "Hello, interpreter!\n";
   ()
 
+
+type languagedescr =
+{
+  language           : string ;
+  semantics          : string ;
+  parser_exe     : string ;
+  parser_builder : string option [@sexp.option];
+} [@@deriving sexp]
+
+let generate_interpreter scm_filename () =
+  let dir = Filename.dirname scm_filename in
+  let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
+  compile (Filename.concat dir cfg.semantics) (cfg.language ^ "-interpreter")
+  ()
+
 let command_generate =
   Command.basic
     ~summary:"Generate a Coq (*.v) file from a Minuska (*.m) file"
@@ -151,10 +167,21 @@ let command_compile =
      in
      fun () -> compile input_filename output_filename ())
 
+let command_generate_interpreter =
+Command.basic
+  ~summary:"Generate an interpreter from a Minuska project file (*.scm)"
+  ~readme:(fun () -> "TODO")
+  (let%map_open.Command
+      scm_filename = anon (("lang.scm" %: Filename_unix.arg_type))
+    in
+    fun () -> generate_interpreter scm_filename ())
+    
+
 let command =
   Command.group
     ~summary:"A verified semantic framework"
-    ["compile", command_compile;
+    ["generate-interpreter", command_generate_interpreter;
+     "compile", command_compile;
      "def2coq", command_generate;
      "gt2coq", command_groundterm2coq]
 
