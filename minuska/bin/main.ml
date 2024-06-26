@@ -87,13 +87,20 @@ let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let compile input_filename interpreter_name () =
+let compile input_filename interpreter_name oparserexe () =
   (* let real_interpreter_name = Filename_unix.realpath interpreter_name in *)
   let real_interpreter_name = interpreter_name in
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
+  let mlparserfile = Filename.concat mldir "parser.ml" in
   transform input_filename coqfile ();
+  let oux_mlparserfile = Out_channel.create mlparserfile in
+  (match oparserexe with
+  | Some parserexe -> fprintf oux_mlparserfile "let path_to_parser : string option = Some \"%s\"" parserexe
+  | None -> fprintf oux_mlparserfile "let path_to_parser : string option = None"
+  );
+  Out_channel.close oux_mlparserfile;
   let oux_coqfile = Out_channel.create coqfile in
   append_definition input_filename oux_coqfile;
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
@@ -112,7 +119,7 @@ let compile input_filename interpreter_name () =
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
           "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -o ";
-          "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
+          "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile; " "; mlparserfile] in
   let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in
   let _ = input_filename in
   fprintf stdout "Hello, interpreter!\n";
@@ -130,7 +137,9 @@ type languagedescr =
 let generate_interpreter scm_filename () =
   let dir = Filename.dirname scm_filename in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
-  compile (Filename.concat dir cfg.semantics) (cfg.language ^ "-interpreter")
+  let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
+  let parserfile = if (Filename.is_relative cfg.parser_exe) then (Filename.concat dir cfg.parser_exe) else (cfg.parser_exe) in
+  compile mfile (cfg.language ^ "-interpreter") (Some parserfile) ();
   ()
 
 let command_generate =
@@ -165,7 +174,7 @@ let command_compile =
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("interpreter" %: Filename_unix.arg_type))
      in
-     fun () -> compile input_filename output_filename ())
+     fun () -> compile input_filename output_filename None ())
 
 let command_generate_interpreter =
 Command.basic
