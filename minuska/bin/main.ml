@@ -87,7 +87,7 @@ let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let compile input_filename interpreter_name oparserexe () =
+let compile input_filename interpreter_name oparserexe parser_builder () =
   (* let real_interpreter_name = Filename_unix.realpath interpreter_name in *)
   let real_interpreter_name = interpreter_name in
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
@@ -95,17 +95,25 @@ let compile input_filename interpreter_name oparserexe () =
   let mlfile = Filename.concat mldir "interpreter.ml" in
   let mlparserfile = Filename.concat mldir "parser.ml" in
   transform input_filename coqfile ();
+  (* generate/build/refresh the parser*)
+  ( match parser_builder with
+  | Some command -> let _ = run [command] in ()
+  | None -> ()
+  );
+  (* generate parser.ml with path to the parser  *)
   let oux_mlparserfile = Out_channel.create mlparserfile in
   (match oparserexe with
   | Some parserexe -> fprintf oux_mlparserfile "let path_to_parser : string option = Some \"%s\"" parserexe
   | None -> fprintf oux_mlparserfile "let path_to_parser : string option = None"
   );
   Out_channel.close oux_mlparserfile;
+  (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
   append_definition input_filename oux_coqfile;
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
+  (* extract coq into ocaml *)
   let libdir = Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib" in
   let minuska_dir = libdir ^ "/coq/user-contrib/Minuska" in
   let coq_minuska_dir = libdir ^ "/coq-minuska" in
@@ -113,6 +121,7 @@ let compile input_filename interpreter_name oparserexe () =
   (* fprintf stdout "libdir: %s" libdir; *)
   let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
+  (* compile the main ocaml file (after adding an entry command) *)
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.Miskeleton.main lang_interpreter)") in
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [
@@ -139,7 +148,12 @@ let generate_interpreter scm_filename () =
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
   let parserfile = if (Filename.is_relative cfg.parser_exe) then (Filename.concat dir cfg.parser_exe) else (cfg.parser_exe) in
-  compile mfile (cfg.language ^ "-interpreter") (Some parserfile) ();
+  let parser_builder = (
+    match cfg.parser_builder with
+    | Some command -> Some ("pushd " ^ dir ^ "; " ^ command)
+    | None -> None
+  ) in
+  compile mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
   ()
 
 let command_generate =
@@ -174,7 +188,7 @@ let command_compile =
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("interpreter" %: Filename_unix.arg_type))
      in
-     fun () -> compile input_filename output_filename None ())
+     fun () -> compile input_filename output_filename None None ())
 
 let command_generate_interpreter =
 Command.basic
