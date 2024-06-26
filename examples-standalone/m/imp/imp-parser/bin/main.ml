@@ -17,7 +17,45 @@ let parse_with_error lexbuf =
     exit (-1)
 
 
-let print_ast ast oux =
+let rec print_commands (cs : Syntax.command list) =
+  match cs with
+  | [] -> ""
+  | c::[] -> (print_command c)
+  | c1::c2::cs2 -> "seq[" ^ (print_command c1) ^ ", " ^ (print_commands (c2::cs2)) ^ "]"
+and print_command (c : Syntax.command) =
+  match c with
+  | `CmdAssign (x,e) -> "assign[" ^ (print_var x) ^ ", " ^ (print_aexpr e) ^ "]"
+  | `CmdIf (b, cs1, cs2) -> "if[" ^ (print_bexpr b) ^ ", " ^ (print_commands cs1) ^ ", " ^ (print_commands cs2) ^ "]"
+  | `CmdWhile (b, cs) -> "while[" ^ (print_bexpr b) ^ ", " ^ (print_commands cs) ^ "]"
+and print_var (x : Syntax.id) =
+  match x with
+  | `Id s -> "var[" ^ (print_string s ) ^ "]"
+and print_string (x : string) =
+  "(@builtin-string \"" ^ x ^ "\")"
+and print_int (x : int) =
+  "(@builtin-int " ^ (string_of_int x) ^ ")"
+and print_bool (x : bool) =
+  "(@builtin-bool " ^ (string_of_bool x) ^ ")"
+and print_aexpr (e : Syntax.aexpr) =
+  match e with
+  | `AExprInt n -> print_int n
+  | `AExprVar x -> "var[" ^ (print_var x) ^ "]" 
+  | `AExprPlus (a, b) -> "plus[" ^ (print_aexpr a) ^ ", " ^ (print_aexpr b) ^ "]"
+  | `AExprMinus (a, b) -> "minus[" ^ (print_aexpr a) ^ ", " ^ (print_aexpr b) ^ "]"
+and print_bexpr (e : Syntax.bexpr) =
+  match e with
+  | `BExprBool b -> print_bool b
+  | `BExprNeg e2 -> "neg[" ^ (print_bexpr e2) ^ "]"
+  | `BExprAnd (e1,e2) -> "and[" ^ (print_bexpr e1) ^ ", " ^ (print_bexpr e2) ^ "]"
+  | `BExprOr (e1,e2) -> "or[" ^ (print_bexpr e1) ^ ", " ^ (print_bexpr e2) ^ "]"
+  | `BExprEq (e1,e2) -> "eq[" ^ (print_aexpr e1) ^ ", " ^ (print_aexpr e2) ^ "]"
+  | `BExprLe (e1,e2) -> "le[" ^ (print_aexpr e1) ^ ", " ^ (print_aexpr e2) ^ "]"
+  | `BExprLt (e1,e2) -> "lt[" ^ (print_aexpr e1) ^ ", " ^ (print_aexpr e2) ^ "]"
+
+
+let print_ast (ast : Syntax.command list) oux =
+    let s = print_commands ast in
+    fprintf oux "%s" s;
     ()
 
 let parse_and_print lexbuf oux =
