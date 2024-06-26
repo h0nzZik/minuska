@@ -1,0 +1,5 @@
+
+(install
+ (files data/minuska.png)
+ (section share)
+ (package coq-minuska))

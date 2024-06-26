@@ -93,6 +93,7 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
+  let appdir = Filename.concat mldir "interpreter.AppDir" in
   transform input_filename coqfile ();
   (* generate/build/refresh the parser*)
   ( match parser_builder with
@@ -100,7 +101,7 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   | None -> ()
   );
   let oparseexestr = (match oparserexe with
-  | Some parserexe -> "(Some \"" ^ parserexe ^ "\")"
+  | Some _ -> "(Some (Filename.dirname Sys.argv.(0) ^ \"../libexec/parser\") )"
   | None -> "None"
   ) in
   (* create coqfile *)
@@ -125,7 +126,28 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
           "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
-  let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in
+  (* Filename.dirname Sys.argv.(0) ^ "../lib" *)
+  let _ = Core_unix.mkdir_p appdir in
+  let _ = Core_unix.mkdir_p (Filename.concat appdir "bin") in
+  let _ = Core_unix.mkdir_p (Filename.concat appdir "libexec") in
+  let desktop_oux = Out_channel.create (Filename.concat appdir "interpreter.desktop") in
+  fprintf desktop_oux "%s" {|[Desktop Entry]
+Name=Interpreter
+Exec=interpreter
+Icon=interpreter
+Type=Application
+Categories=Utility;
+Terminal=true|};
+  Out_channel.close desktop_oux;
+  let _ = run ["mv "; mldir; "/interpreter.exe"; " "; (Filename.concat appdir "bin/interpreter")] in
+  let _ = (match oparserexe with
+  | Some parserexe -> let _ = run ["cp "; parserexe; " "; ((Filename.concat appdir "libexec/parser"))] in ()
+  | None -> ()
+  ) in
+  let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska.png"); " "; (Filename.concat appdir "interpreter.png")] in
+  let _ = run ["ln -s "; (Filename.concat appdir "libexec/parser"); " "; (Filename.concat appdir "AppRun")] in
+  let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
+  (* let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in *)
   let _ = input_filename in
   fprintf stdout "Hello, interpreter!\n";
   ()
