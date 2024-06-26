@@ -4,18 +4,25 @@ type token =
   | BOOL of bool
   | BRACKET_ROUND_LEFT
   | BRACKET_ROUND_RIGHT
-  | PLUS
-  | MINUS
-  | EQ
-  | LE
-  | LT
-  | BANG
-  | COLONEQ
-  | SEMICOLON
-  | IF
-  | THEN
-  | ELSE
-  | FI
+  | OP_PLUS
+  | OP_MINUS
+  | OP_EQ
+  | OP_LE
+  | OP_LT
+  | OP_BANG
+  | OP_AND
+  | OP_OR
+  | OP_COLONEQ
+  | OP_SEMICOLON
+  | KEYWORD_IF
+  | KEYWORD_THEN
+  | KEYWORD_ELSE
+  | KEYWORD_FI
+  | KEYWORD_AND
+  | KEYWORD_OR
+  | KEYWORD_WHILE
+  | KEYWORD_DO
+  | KEYWORD_DONE
   | EOF
 
 
@@ -41,4 +48,5 @@ type bexpr =
 type command =
   [ `CmdAssign of (id*aexpr)
   | `CmdIf of (bexpr*(command list)*(command list))
+  | `CmdWhile of (bexpr*(command list))
   ]

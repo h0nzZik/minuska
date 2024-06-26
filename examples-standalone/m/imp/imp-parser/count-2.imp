@@ -1,0 +1,7 @@
+sum := 0;
+i := 2;
+while i <= i do
+  sum := sum + 1;
+  i := i + -1
+done;
+sum
