@@ -117,7 +117,21 @@ let run step input_filename depth output_file () =
   In_channel.close inx;
   ()
 
-let command_run step =
+
+(* TODO cleanup after execution *)
+let parse_first (path_to_parser : string option) input_file : string =
+  match path_to_parser with
+  | Some s -> (
+      let astdir = (Filename_unix.temp_dir "language-interpreter" ".minuska") in
+      let astfile = Filename.concat astdir "input.ast" in
+      let c = (s ^ " " ^ input_file ^ " " ^ astfile) in
+      (*fprintf stderr "command: %s" c;*)
+      let _ = Sys_unix.command c in
+      astfile
+    )
+  | None -> input_file
+
+let command_run (path_to_parser : string option) step =
   Command.basic
     ~summary:"An interpreter"
     ~readme:(fun () -> "TODO")
@@ -126,10 +140,10 @@ let command_run step =
         depth = flag "--depth" (required int) ~doc:"maximal number of steps to execute" and
         output_file = flag "--output-file" (optional string) ~doc:"filename to put the final configuration to"
      in
-     fun () -> run step program depth output_file ())
+     fun () -> run step (parse_first path_to_parser program) depth output_file ())
 
-let main step =
+let main (path_to_parser : string option) step =
   Printexc.record_backtrace true;
-    try (Command_unix.run ~version:"0.2" (command_run step)) with
+    try (Command_unix.run ~version:"0.2" (command_run path_to_parser step)) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 

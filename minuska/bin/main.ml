@@ -93,20 +93,16 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
-  let mlparserfile = Filename.concat mldir "parser.ml" in
   transform input_filename coqfile ();
   (* generate/build/refresh the parser*)
   ( match parser_builder with
   | Some command -> let _ = run [command] in ()
   | None -> ()
   );
-  (* generate parser.ml with path to the parser  *)
-  let oux_mlparserfile = Out_channel.create mlparserfile in
-  (match oparserexe with
-  | Some parserexe -> fprintf oux_mlparserfile "let path_to_parser : string option = Some \"%s\"" parserexe
-  | None -> fprintf oux_mlparserfile "let path_to_parser : string option = None"
-  );
-  Out_channel.close oux_mlparserfile;
+  let oparseexestr = (match oparserexe with
+  | Some parserexe -> "(Some \"" ^ parserexe ^ "\")"
+  | None -> "None"
+  ) in
   (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
   append_definition input_filename oux_coqfile;
@@ -122,21 +118,20 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
   (* compile the main ocaml file (after adding an entry command) *)
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "%s\n" "let _ = (Libminuska.Miskeleton.main lang_interpreter)") in
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s lang_interpreter)\n" oparseexestr) in
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
           "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -o ";
-          "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile; " "; mlparserfile] in
+          "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in
   let _ = input_filename in
   fprintf stdout "Hello, interpreter!\n";
   ()
 
 
-type languagedescr =
-{
+type languagedescr = {
   language           : string ;
   semantics          : string ;
   parser_exe     : string ;
