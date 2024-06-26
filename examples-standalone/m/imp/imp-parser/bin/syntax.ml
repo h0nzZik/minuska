@@ -49,4 +49,5 @@ type command =
   [ `CmdAssign of (id*aexpr)
   | `CmdIf of (bexpr*(command list)*(command list))
   | `CmdWhile of (bexpr*(command list))
+  | `CmdExpr of aexpr
   ]

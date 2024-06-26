@@ -25,8 +25,9 @@ let rec print_commands (cs : Syntax.command list) =
 and print_command (c : Syntax.command) =
   match c with
   | `CmdAssign (x,e) -> "assign[" ^ (print_var x) ^ ", " ^ (print_aexpr e) ^ "]"
-  | `CmdIf (b, cs1, cs2) -> "if[" ^ (print_bexpr b) ^ ", " ^ (print_commands cs1) ^ ", " ^ (print_commands cs2) ^ "]"
+  | `CmdIf (b, cs1, cs2) -> "ite[" ^ (print_bexpr b) ^ ", " ^ (print_commands cs1) ^ ", " ^ (print_commands cs2) ^ "]"
   | `CmdWhile (b, cs) -> "while[" ^ (print_bexpr b) ^ ", " ^ (print_commands cs) ^ "]"
+  | `CmdExpr e -> print_aexpr e
 and print_var (x : Syntax.id) =
   match x with
   | `Id s -> "var[" ^ (print_string s ) ^ "]"
@@ -39,7 +40,7 @@ and print_bool (x : bool) =
 and print_aexpr (e : Syntax.aexpr) =
   match e with
   | `AExprInt n -> print_int n
-  | `AExprVar x -> "var[" ^ (print_var x) ^ "]" 
+  | `AExprVar x -> (print_var x)
   | `AExprPlus (a, b) -> "plus[" ^ (print_aexpr a) ^ ", " ^ (print_aexpr b) ^ "]"
   | `AExprMinus (a, b) -> "minus[" ^ (print_aexpr a) ^ ", " ^ (print_aexpr b) ^ "]"
 and print_bexpr (e : Syntax.bexpr) =

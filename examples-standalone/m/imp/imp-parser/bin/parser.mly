@@ -108,6 +108,8 @@ command:
     cs = commands
     KEYWORD_DONE
     { `CmdWhile (cond,cs) }
+  | e = aexpr
+    { `CmdExpr e }
 
 commands:
   | cs = separated_nonempty_list(OP_SEMICOLON, command)
