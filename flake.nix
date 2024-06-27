@@ -128,7 +128,6 @@
           src = ./examples-standalone;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
-            pkgs.fuse
             pkgs.time
             pkgs.ocaml
             pkgs.dune_3
@@ -137,6 +136,9 @@
             pkgs.ocamlPackages.core
             pkgs.ocamlPackages.core_unix
             pkgs.ocamlPackages.ppx_jane
+          ];
+          buildInputs = [
+            pkgs.fuse
           ];
         };
 

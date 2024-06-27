@@ -27,7 +27,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - run: sudo apt-get install libfuse2
     - uses: actions/checkout@v3
 
     - name: Install Nix
