@@ -139,7 +139,7 @@
           ];
           buildInputs = [
             pkgs.fuse
-            pkgs.readelf
+            pkgs.strace
           ];
         };
 
