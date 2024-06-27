@@ -110,9 +110,11 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
-            pkgs.coqPackages_8_19.dpdgraph
+            #pkgs.coqPackages_8_19.dpdgraph
             coq.ocamlPackages.menhir
-          ];
+          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
+           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
