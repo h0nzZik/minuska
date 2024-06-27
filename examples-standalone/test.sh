@@ -18,6 +18,12 @@ mkdir -p "$TEMPDIR"
 > "$LOGFILEOUT"
 > "$LOGFILEERR"
 
+printlogs() {
+  cat "$LOGFILEERR"
+  cat "$LOGFILEOUT"
+}
+trap printlogs 0
+
 run10times() {
   for run in {1..10}; do "$@"; done
 }
