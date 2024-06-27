@@ -101,7 +101,7 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   | None -> ()
   );
   let oparseexestr = (match oparserexe with
-  | Some _ -> "(Some (Filename.dirname Sys.argv.(0) ^ \"../libexec/parser\") )"
+  | Some _ -> "(Some (Filename.dirname Sys.argv.(0) ^ \"/../libexec/parser\") )"
   | None -> "None"
   ) in
   (* create coqfile *)
@@ -145,7 +145,13 @@ Terminal=true|};
   | None -> ()
   ) in
   let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska.png"); " "; (Filename.concat appdir "interpreter.png")] in
-  let _ = run ["ln -s "; (Filename.concat appdir "bin/interpreter"); " "; (Filename.concat appdir "AppRun")] in
+  let apprun_oux = Out_channel.create (Filename.concat appdir "AppRun") in
+  fprintf apprun_oux "%s" {|#!/usr/bin/env bash
+$(dirname "$0")/bin/interpreter $@
+|};
+  Out_channel.close apprun_oux;
+  let _ = run ["chmod +x "; ((Filename.concat appdir "AppRun"))] in
+  (*let _ = run ["ln -s "; (Filename.concat appdir "bin/interpreter"); " "; (Filename.concat appdir "AppRun")] in*)
   let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
   (* let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in *)
   let _ = input_filename in
