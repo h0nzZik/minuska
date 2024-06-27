@@ -139,6 +139,7 @@
           ];
           buildInputs = [
             pkgs.fuse
+            pkgs.readelf
           ];
         };
 

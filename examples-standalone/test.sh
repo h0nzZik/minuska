@@ -37,7 +37,7 @@ runCase() {
 
   output=$(mktemp)
   echo "Running test '$name'"
-  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>>"$LOGFILEERR" >>"$LOGFILEOUT"
+  "$TIME" --output "$output.time" --format "%e" strace --follow-forks "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>>"$LOGFILEERR" >>"$LOGFILEOUT"
   if [[ -e "$expout" ]]; then
     diff "$output" "$expout"
   fi
