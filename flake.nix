@@ -53,7 +53,10 @@
 
             #propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
 
-            passthru = { inherit coqPackages; };
+            passthru = {
+              inherit coqPackages;
+              inherit coqLibraries;
+	    };
 
             postPatch = ''
               substituteInPlace bin/main.ml \
@@ -131,11 +134,19 @@
             pkgs.ocamlPackages.core
             pkgs.ocamlPackages.core_unix
             pkgs.ocamlPackages.ppx_jane
-
           ];
         };
 
-
+        packages.examples-hybrid
+        = pkgs.stdenv.mkDerivation {
+          name = "examples-hybrid";
+          src = ./examples-hybrid;
+          nativeBuildInputs = [
+            self.outputs.packages.${system}.minuska
+            pkgs.time
+          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
+           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+        };
 
         packages.minuska-bench
         = pkgs.coqPackages_8_19.callPackage 

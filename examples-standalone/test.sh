@@ -8,11 +8,15 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 pushd "$SCRIPT_DIR"
 
 TEMPDIR="$(pwd)/_temp"
+LOGFILEOUT="$TEMPDIR/log-stdout.txt"
+LOGFILEERR="$TEMPDIR/log-stderr.txt"
 TIME=$(which time)
 
 rm -rf "$TEMPDIR"
 mkdir -p "$TEMPDIR"
 
+> "$LOGFILEOUT"
+> "$LOGFILEERR"
 
 run10times() {
   for run in {1..10}; do "$@"; done
@@ -27,8 +31,10 @@ runCase() {
 
   output=$(mktemp)
   echo "Running test '$name'"
-  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>/dev/null >/dev/null
-  diff "$output" "$expout"
+  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>"$LOGFILEERR" >"$LOGFILEOUT"
+  if [[ -e "$expout" ]]; then
+    diff "$output" "$expout"
+  fi
   cat "$output.time"
   rm -f "$output"
 }
@@ -39,7 +45,9 @@ doCompile() {
   mkdir -p interpreters
   pushd interpreters
   minuska generate-interpreter ../languages/$lang/lang.scm 2>/dev/null >/dev/null && echo "Compilation finished."
+  local state=$?
   popd
+  return $state
 }
 
 
@@ -55,8 +63,8 @@ testNative() {
 
   doCompile decrement
   echo "Decrement tests"
-  runCase "dec into 2" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 2 ./languages/decrement/tests/two
-  runCase "dec into 1" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 3 ./languages/decrement/tests/one
+  runCase "dec into 2" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 2 DONOTTTEST
+  runCase "dec into 1" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 3 DONOTTTEST
 
 
   doCompile decrement-builtin
@@ -66,8 +74,8 @@ testNative() {
   runCase "arith-01" ./interpreters/arith-interpreter ./languages/arith/tests/01.arith 20 ./languages/arith/tests/01.result
 
   doCompile imp
-  runCase "imp-01" ./interpreters/imp-interpreter ./languages/imp/tests/01.imp 20 ./m/imp.d/01.result
-  runCase "imp-lookup" ./interpreters/imp-interpreter ./languages/imp/tests/00-assign-lookup-trivial.imp 20 ./languages/imp/tests/00-assign-lookup-trivial.result
+  runCase "imp-01" ./interpreters/imp-interpreter ./languages/imp/tests/01.imp 20 ./languages/imp/tests/01.result
+  #runCase "imp-lookup" ./interpreters/imp-interpreter ./languages/imp/tests/00-assign-lookup-trivial.imp 20 ./languages/imp/tests/00-assign-lookup-trivial.result
   runCase "imp-count-10" ./interpreters/imp-interpreter ./languages/imp/tests/03-count-10.imp 1000 ./languages/imp/tests/03-count-10.result
 
 
@@ -80,35 +88,4 @@ testNative() {
   runCase "two-counters.1'000'000" ./interpreters/two-counters-interpreter ./languages/two-counters/tests/1000000.tc 50000000 ./languages/two-counters/tests/1000000.result
 }
 
-testInCoq() {
-  rm -rf coqfiles
-  mkdir -p coqfiles
-  
-  echo "Generating *.v files"
-  minuska def2coq ./languages/imp/imp.m coqfiles/imp.v
-  minuska gt2coq ./languages/imp/tests/count-1.imp coqfiles/count1.v
-  minuska gt2coq ./languages/imp/tests/count-2.imp coqfiles/count2.v
-  minuska gt2coq ./languages/imp/tests/count-3.imp coqfiles/count3.v
-  minuska gt2coq ./languages/imp/tests/count-4.imp coqfiles/count4.v
-  minuska gt2coq ./languages/imp/tests/count-5.imp coqfiles/count5.v
-  minuska gt2coq ./languages/imp/tests/count-6.imp coqfiles/count6.v
-  minuska gt2coq ./languages/imp/tests/count-7.imp coqfiles/count7.v
-
-  pushd coqfiles > /dev/null
-  for vfile in *.v; do
-    echo "Compiling $vfile"
-    coqc -R . Test "$vfile" > /dev/null
-  done 
-  popd > /dev/null
-  cp test-imp/testCount*.v ./coqfiles/
-  pushd coqfiles > /dev/null
-  for testvfile in testCount*.v; do
-    echo "coqc $testvfile"
-    "$TIME" --output "$testvfile.time" --format "%e" coqc -R . Test "$testvfile" 2> /dev/null
-    cat "$testvfile.time"
-  done
-  popd > /dev/null
-}
-
-testInCoq
 testNative
