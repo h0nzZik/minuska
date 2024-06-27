@@ -16,13 +16,13 @@ testInCoq() {
   
   echo "Generating *.v files"
   minuska def2coq ./languages/imp/imp.m coqfiles/imp.v
-  minuska gt2coq ./languages/imp/tests/count-1.imp coqfiles/count1.v
-  minuska gt2coq ./languages/imp/tests/count-2.imp coqfiles/count2.v
-  minuska gt2coq ./languages/imp/tests/count-3.imp coqfiles/count3.v
-  minuska gt2coq ./languages/imp/tests/count-4.imp coqfiles/count4.v
-  minuska gt2coq ./languages/imp/tests/count-5.imp coqfiles/count5.v
-  minuska gt2coq ./languages/imp/tests/count-6.imp coqfiles/count6.v
-  minuska gt2coq ./languages/imp/tests/count-7.imp coqfiles/count7.v
+  minuska gt2coq ./imp-ast/count-1.imp coqfiles/count1.v
+  minuska gt2coq ./imp-ast/count-2.imp coqfiles/count2.v
+  minuska gt2coq ./imp-ast/count-3.imp coqfiles/count3.v
+  minuska gt2coq ./imp-ast/count-4.imp coqfiles/count4.v
+  minuska gt2coq ./imp-ast/count-5.imp coqfiles/count5.v
+  minuska gt2coq ./imp-ast/count-6.imp coqfiles/count6.v
+  minuska gt2coq ./imp-ast/count-7.imp coqfiles/count7.v
 
   pushd coqfiles > /dev/null
   for vfile in *.v; do
