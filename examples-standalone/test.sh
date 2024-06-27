@@ -31,7 +31,7 @@ runCase() {
 
   output=$(mktemp)
   echo "Running test '$name'"
-  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>"$LOGFILEERR" >"$LOGFILEOUT"
+  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>>"$LOGFILEERR" >>"$LOGFILEOUT"
   if [[ -e "$expout" ]]; then
     diff "$output" "$expout"
   fi
@@ -44,7 +44,7 @@ doCompile() {
   echo "Compiling: minuska generate-interpreter $lang" 
   mkdir -p interpreters
   pushd interpreters
-  minuska generate-interpreter ../languages/$lang/lang.scm 2>/dev/null >/dev/null && echo "Compilation finished."
+  minuska generate-interpreter ../languages/$lang/lang.scm 2>>"$LOGFILEERR" >>"$LOGFILEOUT" && echo "Compilation finished."
   local state=$?
   popd
   return $state
