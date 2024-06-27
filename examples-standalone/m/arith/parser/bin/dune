@@ -12,7 +12,7 @@
     (flags (:standard -warn-error -A))))
 
 (executable
- (public_name imp-parser)
+ (public_name parser)
  (name main)
  (modules main syntax parser lexer)
  (libraries
