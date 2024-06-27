@@ -144,7 +144,7 @@ Terminal=true|};
   | Some parserexe -> let _ = run ["cp "; parserexe; " "; ((Filename.concat appdir "libexec/parser"))] in ()
   | None -> ()
   ) in
-  let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska.png"); " "; (Filename.concat appdir "interpreter.png")] in
+  let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska-256x256.png"); " "; (Filename.concat appdir "interpreter.png")] in
   let apprun_oux = Out_channel.create (Filename.concat appdir "AppRun") in
   fprintf apprun_oux "%s" {|#!/usr/bin/env bash
 exec -a "$ARGV0" $(dirname "$0")/bin/interpreter $@
