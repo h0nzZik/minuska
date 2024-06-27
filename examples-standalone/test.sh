@@ -34,9 +34,12 @@ runCase() {
 }
 
 doCompile() {
-  local cmd="$@"
-  echo "Compiling: minuska compile $cmd" 
-  minuska compile $cmd 2>/dev/null >/dev/null && echo "Compilation finished."
+  local lang="$1"
+  echo "Compiling: minuska generate-interpreter $lang" 
+  mkdir -p interpreters
+  pushd interpreters
+  minuska generate-interpreter ../languages/$lang/lang.scm 2>/dev/null >/dev/null && echo "Compilation finished."
+  popd
 }
 
 
@@ -44,37 +47,37 @@ testNative() {
   rm -rf ./interpreters
   mkdir -p ./interpreters
 
-  if doCompile ./m/fail-invalid-semantics.m interpreters/invalid.exe ; then
+  if doCompile fail-invalid-semantics ; then
     echo "ERROR: an invalid language definition compiles!"
     exit 1
   fi
 
 
-  doCompile ./m/decrement.m ./interpreters/decrement
+  doCompile decrement
   echo "Decrement tests"
-  runCase "dec into 2" ./interpreters/decrement ./m/decrement.d/three 2 ./m/decrement.d/two
-  runCase "dec into 1" ./interpreters/decrement ./m/decrement.d/three 3 ./m/decrement.d/one
+  runCase "dec into 2" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 2 ./languages/decrement/tests/two
+  runCase "dec into 1" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 3 ./languages/decrement/tests/one
 
 
-  doCompile ./m/decrement-builtin.m ./interpreters/decrement-builtin
-  runCase "dec builtin into -1" ./interpreters/decrement-builtin ./m/decrement-builtin.d/cfg_3 5 ./m/decrement-builtin.d/cfg_minus_1
+  doCompile decrement-builtin
+  runCase "dec builtin into -1" ./interpreters/decrement-builtin-interpreter ./languages/decrement-builtin/tests/cfg_3.decb 5 ./languages/decrement-builtin/tests/cfg_minus_1
 
-  doCompile ./m/arith.m ./interpreters/arith
-  runCase "arith-01" ./interpreters/arith ./m/arith.d/01 20 ./m/arith.d/01.result
+  doCompile arith
+  runCase "arith-01" ./interpreters/arith-interpreter ./languages/arith/tests/01.arith 20 ./languages/arith/tests/01.result
 
-  doCompile ./m/imp.m ./interpreters/imp
-  runCase "imp-01" ./interpreters/imp ./m/imp.d/01 20 ./m/imp.d/01.result
-  runCase "imp-lookup" ./interpreters/imp ./m/imp.d/00-assign-lookup-trivial.imp 20 ./m/imp.d/00-assign-lookup-trivial.result
-  runCase "imp-count-10" ./interpreters/imp ./m/imp.d/03-count-10.imp 1000 ./m/imp.d/03-count-10.result
+  doCompile imp
+  runCase "imp-01" ./interpreters/imp-interpreter ./languages/imp/tests/01.imp 20 ./m/imp.d/01.result
+  runCase "imp-lookup" ./interpreters/imp-interpreter ./languages/imp/tests/00-assign-lookup-trivial.imp 20 ./languages/imp/tests/00-assign-lookup-trivial.result
+  runCase "imp-count-10" ./interpreters/imp-interpreter ./languages/imp/tests/03-count-10.imp 1000 ./languages/imp/tests/03-count-10.result
 
 
-  doCompile ./m/two-counters.m ./interpreters/two-counters
-  runCase "two-counters.10" ./interpreters/two-counters ./m/two-counters.d/10         50000000 ./m/two-counters.d/10.result
-  runCase "two-counters.100" ./interpreters/two-counters ./m/two-counters.d/100       50000000 ./m/two-counters.d/100.result
-  runCase "two-counters.1'000" ./interpreters/two-counters ./m/two-counters.d/1000     50000000 ./m/two-counters.d/1000.result
-  runCase "two-counters.10'000" ./interpreters/two-counters ./m/two-counters.d/10000   50000000 ./m/two-counters.d/10000.result
-  runCase "two-counters.100'000" ./interpreters/two-counters ./m/two-counters.d/100000  50000000 ./m/two-counters.d/100000.result
-  runCase "two-counters.1'000'000" ./interpreters/two-counters ./m/two-counters.d/1000000 50000000 ./m/two-counters.d/1000000.result
+  doCompile two-counters
+  runCase "two-counters.10"        ./interpreters/two-counters-interpreter ./languages/two-counters/tests/10.tc      50000000 ./languages/two-counters/tests/10.result
+  runCase "two-counters.100"       ./interpreters/two-counters-interpreter ./languages/two-counters/tests/100.tc     50000000 ./languages/two-counters/tests/100.result
+  runCase "two-counters.1'000"     ./interpreters/two-counters-interpreter ./languages/two-counters/tests/1000.tc    50000000 ./languages/two-counters/tests/1000.result
+  runCase "two-counters.10'000"    ./interpreters/two-counters-interpreter ./languages/two-counters/tests/10000.tc   50000000 ./languages/two-counters/tests/10000.result
+  runCase "two-counters.100'000"   ./interpreters/two-counters-interpreter ./languages/two-counters/tests/100000.tc  50000000 ./languages/two-counters/tests/100000.result
+  runCase "two-counters.1'000'000" ./interpreters/two-counters-interpreter ./languages/two-counters/tests/1000000.tc 50000000 ./languages/two-counters/tests/1000000.result
 }
 
 testInCoq() {
@@ -82,14 +85,14 @@ testInCoq() {
   mkdir -p coqfiles
   
   echo "Generating *.v files"
-  minuska def2coq ./m/imp.m coqfiles/imp.v
-  minuska gt2coq ./m/imp.d/count-1.imp coqfiles/count1.v
-  minuska gt2coq ./m/imp.d/count-2.imp coqfiles/count2.v
-  minuska gt2coq ./m/imp.d/count-3.imp coqfiles/count3.v
-  minuska gt2coq ./m/imp.d/count-4.imp coqfiles/count4.v
-  minuska gt2coq ./m/imp.d/count-5.imp coqfiles/count5.v
-  minuska gt2coq ./m/imp.d/count-6.imp coqfiles/count6.v
-  minuska gt2coq ./m/imp.d/count-7.imp coqfiles/count7.v
+  minuska def2coq ./languages/imp/imp.m coqfiles/imp.v
+  minuska gt2coq ./languages/imp/tests/count-1.imp coqfiles/count1.v
+  minuska gt2coq ./languages/imp/tests/count-2.imp coqfiles/count2.v
+  minuska gt2coq ./languages/imp/tests/count-3.imp coqfiles/count3.v
+  minuska gt2coq ./languages/imp/tests/count-4.imp coqfiles/count4.v
+  minuska gt2coq ./languages/imp/tests/count-5.imp coqfiles/count5.v
+  minuska gt2coq ./languages/imp/tests/count-6.imp coqfiles/count6.v
+  minuska gt2coq ./languages/imp/tests/count-7.imp coqfiles/count7.v
 
   pushd coqfiles > /dev/null
   for vfile in *.v; do
