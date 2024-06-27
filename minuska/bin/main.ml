@@ -145,7 +145,7 @@ Terminal=true|};
   | None -> ()
   ) in
   let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska.png"); " "; (Filename.concat appdir "interpreter.png")] in
-  let _ = run ["ln -s "; (Filename.concat appdir "libexec/parser"); " "; (Filename.concat appdir "AppRun")] in
+  let _ = run ["ln -s "; (Filename.concat appdir "bin/interpreter"); " "; (Filename.concat appdir "AppRun")] in
   let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
   (* let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in *)
   let _ = input_filename in
