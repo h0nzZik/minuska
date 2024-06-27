@@ -173,7 +173,7 @@ let generate_interpreter scm_filename () =
   let parserfile = if (Filename.is_relative cfg.parser_exe) then (Filename.concat dir cfg.parser_exe) else (cfg.parser_exe) in
   let parser_builder = (
     match cfg.parser_builder with
-    | Some command -> Some ("pushd " ^ dir ^ "; " ^ command)
+    | Some command -> Some ("cd " ^ dir ^ "; " ^ command)
     | None -> None
   ) in
   compile mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
