@@ -4,13 +4,23 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
+    nix-appimage.url = "github:ralismark/nix-appimage";
+    nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
+    nix-appimage.inputs.flake-utils.follows = "flake-utils";
    };
 
-  outputs = { self, nixpkgs, flake-utils }: (
+  outputs = { self, nixpkgs, flake-utils, nix-appimage }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
 
         pkgs = nixpkgs.legacyPackages.${system};
+
+        runtime = pkgs.runCommand "appimage-runtime" {} ''
+            mkdir -p $out/bin/
+            mkdir -p $out/libexec/
+            ln -s ${nix-appimage.outputs.packages.${system}.runtime} $out/libexec/appimage-runtime
+          ''
+        ;
 
         minuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
@@ -63,7 +73,7 @@
                 --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
                 --replace-fail "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
                 --replace-fail "coqc" "${coqPackages.coq}/bin/coqc" \
-                --replace-fail "appimagetool" "${pkgs.appimagekit}/bin/appimagetool"
+                --replace-fail "appimagetool" "${pkgs.appimagekit}/bin/appimagetool --runtime-file ${runtime}/libexec/appimage-runtime"
             '';
 
 
@@ -96,6 +106,7 @@
         );
 
       in {
+        # packages.appimage-runtime = runtime ;
 
         packages.minuska-coq_8_19 = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
@@ -136,10 +147,12 @@
             pkgs.ocamlPackages.core
             pkgs.ocamlPackages.core_unix
             pkgs.ocamlPackages.ppx_jane
+            #runtime
           ];
           buildInputs = [
             pkgs.fuse
             pkgs.strace
+            #runtime
           ];
         };
 
