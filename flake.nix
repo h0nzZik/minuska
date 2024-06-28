@@ -28,8 +28,6 @@
            let coqLibraries = [
               coqPackages.equations
               coqPackages.QuickChick
-              # TODO remove, we will not use this
-              #coqPackages.CoLoR
               stdpp
            ]; in
            let bothNativeAndOtherInputs = [
@@ -93,24 +91,10 @@
             '';
           } ) { };  in
           wrapped
-          #pkgs.symlinkJoin {
-          #  name = wrapped.name;
-          #  paths = [
-          #    wrapped
-          #    coqPackages.coq
-          #  ];
-          #  postInstall = ''
-          #    wrapProgram $out/bin/coqc
-          #  '';
-          #}
-        );
+       );
 
       in {
-        # packages.appimage-runtime = runtime ;
-
-        packages.minuska-coq_8_19 = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
-
-        packages.minuska = self.outputs.packages.${system}.minuska-coq_8_19;
+        packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
         packages.examples-coq
         = pkgs.coqPackages_8_19.callPackage 
@@ -121,8 +105,7 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
-            #pkgs.coqPackages_8_19.dpdgraph
-            coq.ocamlPackages.menhir
+            #coq.ocamlPackages.menhir
           ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
            ++ self.outputs.packages.${system}.minuska.coqLibraries ;
 
@@ -177,25 +160,6 @@
             pkgs.python312
             self.outputs.packages.${system}.examples-coq
             #self.outputs.packages.${system}.examples-coq.coqPackages.coq
-          ];
-          enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-
-          passthru = { coqPackages = pkgs.coqPackages_8_19; };
-        } ) { } ;
-
-
-        # TODO remove this
-        packages.minuska-symbolic
-        = pkgs.coqPackages_8_19.callPackage 
-        ( { coq, stdenv }:
-        stdenv.mkDerivation {
-          name = "minuska-symbolic";
-          src = ./minuska-symbolic;
-
-          propagatedBuildInputs = [
-            self.outputs.packages.${system}.minuska
-            pkgs.coqPackages_8_19.CoLoR
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
@@ -269,15 +233,6 @@
                   minuska-bench.coqPackages.coq-lsp
                   #benchexec
                 ];
-              };
-
-          minuska-symbolic =
-            let
-              minuska-symbolic = self.outputs.packages.${system}.minuska-symbolic;
-            in
-              pkgs.mkShell {
-                inputsFrom = [minuska-symbolic];
-                packages = [minuska-symbolic.coqPackages.coq-lsp minuska-symbolic.coqPackages.coqide];
               };
 
         };

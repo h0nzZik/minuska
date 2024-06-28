@@ -56,19 +56,5 @@ See the [ideas document](./doc/ideas.md)
 
 # Troubleshooting
 
-## NixOS
+If your system does not support FUSE, or its configuration is broken, try `export APPIMAGE_EXTRACT_AND_RUN=1` before running any generated interpreters. 
 
-If you get
-```
-dlopen(): error loading libfuse.so.2
-
-(null)
-```
-when running a generated interpreter, it is probably because your NixOS system does not support `AppImage`s.
-In that case, see the [NixOS AppImage wiki](https://nixos.wiki/wiki/Appimage),
-and add
-```nix
-programs.appimage.enable = true;
-programs.appimage.binfmt = true;
-```
-into your system's `configuration.nix`.
