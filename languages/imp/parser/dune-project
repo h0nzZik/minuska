@@ -1,0 +1,15 @@
+(lang dune 3.14)
+
+(name imp-parser)
+(version 0.1)
+(using menhir 3.0)
+
+(package
+  (name imp-parser)
+  (depends
+    menhir
+    core
+    core_unix
+    ppx_jane
+  )
+)

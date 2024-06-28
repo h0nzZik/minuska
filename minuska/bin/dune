@@ -9,5 +9,5 @@
     core_unix.filename_unix
     libminuska
  )
- (preprocess (pps ppx_jane))
+ (preprocess (pps ppx_jane ppx_sexp_conv))
  )

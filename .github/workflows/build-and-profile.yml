@@ -24,9 +24,11 @@ concurrency:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
+    - run: echo "APPIMAGE_EXTRACT_AND_RUN=1" >> $GITHUB_ENV
+
     - uses: actions/checkout@v3
 
     - name: Install Nix
@@ -42,6 +44,9 @@ jobs:
 
     - name: 'Run standalone examples'
       run: nix develop -L '.#examples-standalone' --command ./examples-standalone/test.sh
+
+    - name: 'Run hybrid examples'
+      run: nix develop -L '.#examples-hybrid' --command ./examples-hybrid/test.sh
 
     - name: 'Build Docker image'
       run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker

@@ -4,15 +4,23 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    vscoq.url = "github:coq-community/vscoq";
-    vscoq.inputs.nixpkgs.follows = "nixpkgs";
+    nix-appimage.url = "github:ralismark/nix-appimage";
+    nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
+    nix-appimage.inputs.flake-utils.follows = "flake-utils";
    };
 
-  outputs = { self, nixpkgs, flake-utils, vscoq }: (
+  outputs = { self, nixpkgs, flake-utils, nix-appimage }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
 
         pkgs = nixpkgs.legacyPackages.${system};
+
+        runtime = pkgs.runCommand "appimage-runtime" {} ''
+            mkdir -p $out/bin/
+            mkdir -p $out/libexec/
+            ln -s ${nix-appimage.outputs.packages.${system}.runtime} $out/libexec/appimage-runtime
+          ''
+        ;
 
         minuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
@@ -33,6 +41,7 @@
               coqPackages.coq.ocamlPackages.core
               coqPackages.coq.ocamlPackages.core_unix
               coqPackages.coq.ocamlPackages.ppx_jane
+              coqPackages.coq.ocamlPackages.ppx_sexp_conv
            ] ++ coqLibraries ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
@@ -45,21 +54,26 @@
             nativeBuildInputs = [
               pkgs.makeWrapper
               pkgs.dune_3
+              pkgs.appimagekit
               coqPackages.coq.ocamlPackages.menhir
               coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
 
-            buildInputs = [] ++ bothNativeAndOtherInputs;
+            #buildInputs = [] ++ bothNativeAndOtherInputs;
 
-            propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
+            #propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
 
-            passthru = { inherit coqPackages; };
+            passthru = {
+              inherit coqPackages;
+              inherit coqLibraries;
+	    };
 
             postPatch = ''
               substituteInPlace bin/main.ml \
-                --replace "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
-                --replace "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
-                --replace "coqc" "${coqPackages.coq}/bin/coqc"
+                --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
+                --replace-fail "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
+                --replace-fail "coqc" "${coqPackages.coq}/bin/coqc" \
+                --replace-fail "appimagetool" "${pkgs.appimagekit}/bin/appimagetool --runtime-file ${runtime}/libexec/appimage-runtime"
             '';
 
 
@@ -71,10 +85,11 @@
 
             postInstall = ''
               wrapProgram $out/bin/minuska \
-                --prefix OCAMLPATH : $OCAMLPATH \
-                --prefix COQPATH : $COQPATH \
-                --prefix PATH : $PATH \
-                --prefix CAML_LD_LIBRARY_PATH : $CAML_LD_LIBRARY_PATH
+                --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
+                --set OCAMLPATH $OCAMLPATH \
+                --set COQPATH $COQPATH \
+                --set PATH $PATH \
+                --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
             '';
           } ) { };  in
           wrapped
@@ -91,6 +106,7 @@
         );
 
       in {
+        # packages.appimage-runtime = runtime ;
 
         packages.minuska-coq_8_19 = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
@@ -105,9 +121,11 @@
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
-            pkgs.coqPackages_8_19.dpdgraph
+            #pkgs.coqPackages_8_19.dpdgraph
             coq.ocamlPackages.menhir
-          ];
+          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
+           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
@@ -119,13 +137,33 @@
         = pkgs.stdenv.mkDerivation {
           name = "examples-standalone";
           src = ./examples-standalone;
-          propagatedBuildInputs = [
+          nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
+            pkgs.ocaml
+            pkgs.dune_3
+            pkgs.ocamlPackages.menhir
+            pkgs.ocamlPackages.findlib
+            pkgs.ocamlPackages.core
+            pkgs.ocamlPackages.core_unix
+            pkgs.ocamlPackages.ppx_jane
           ];
+          #buildInputs = [
+          #  pkgs.fuse
+          #  pkgs.strace
+          #];
         };
 
-
+        packages.examples-hybrid
+        = pkgs.stdenv.mkDerivation {
+          name = "examples-hybrid";
+          src = ./examples-hybrid;
+          nativeBuildInputs = [
+            self.outputs.packages.${system}.minuska
+            pkgs.time
+          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
+           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+        };
 
         packages.minuska-bench
         = pkgs.coqPackages_8_19.callPackage 
@@ -189,7 +227,6 @@
                 packages = [
                   minuska.coqPackages.coq-lsp 
                   minuska.coqPackages.coqide 
-                  vscoq.packages.${system}.vscoq-language-server-coq-8-19
                 ];
               };
 
@@ -211,6 +248,15 @@
                 packages = [
                   examples-coq.coqPackages.coq-lsp
                 ];
+              };
+
+          examples-standalone =
+            let
+              examples-standalone = self.outputs.packages.${system}.examples-standalone;
+            in
+              pkgs.mkShell {
+                inputsFrom = [examples-standalone];
+                packages = [];
               };
 
           minuska-bench =
