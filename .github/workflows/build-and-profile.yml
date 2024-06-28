@@ -27,7 +27,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - run: capsh --print
+    - run: |
+        capsh --print
+        sudo mount
     - uses: actions/checkout@v3
 
     - name: Install Nix
