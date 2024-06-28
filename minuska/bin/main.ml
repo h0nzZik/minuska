@@ -152,7 +152,7 @@ exec -a "$ARGV0" $(dirname "$0")/bin/interpreter $@
   Out_channel.close apprun_oux;
   let _ = run ["chmod +x "; ((Filename.concat appdir "AppRun"))] in
   (*let _ = run ["ln -s "; (Filename.concat appdir "bin/interpreter"); " "; (Filename.concat appdir "AppRun")] in*)
-  let _ = run ["appimagetool --appimage-extract-and-run "; appdir; " "; real_interpreter_name] in
+  let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
   (* let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in *)
   let _ = input_filename in
   fprintf stdout "Hello, interpreter!\n";
