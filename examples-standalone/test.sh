@@ -22,7 +22,8 @@ printlogs() {
   cat "$LOGFILEERR"
   cat "$LOGFILEOUT"
 }
-trap printlogs 0
+# Enable this when debugging
+#trap printlogs 0
 
 run10times() {
   for run in {1..10}; do "$@"; done
@@ -37,7 +38,7 @@ runCase() {
 
   output=$(mktemp)
   echo "Running test '$name'"
-  "$TIME" --output "$output.time" --format "%e" strace --follow-forks "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>>"$LOGFILEERR" >>"$LOGFILEOUT"
+  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>>"$LOGFILEERR" >>"$LOGFILEOUT"
   if [[ -e "$expout" ]]; then
     diff "$output" "$expout"
   fi

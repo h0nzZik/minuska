@@ -147,13 +147,11 @@
             pkgs.ocamlPackages.core
             pkgs.ocamlPackages.core_unix
             pkgs.ocamlPackages.ppx_jane
-            #runtime
           ];
-          buildInputs = [
-            pkgs.fuse
-            pkgs.strace
-            #runtime
-          ];
+          #buildInputs = [
+          #  pkgs.fuse
+          #  pkgs.strace
+          #];
         };
 
         packages.examples-hybrid
