@@ -53,7 +53,6 @@ doCompile() {
   pushd interpreters
   minuska generate-interpreter ../languages/$lang/lang.scm 2>>"$LOGFILEERR" >>"$LOGFILEOUT" && echo "Compilation finished."
   local state=$?
-  readelf -d "$lang-interpreter" || true
   popd
   return $state
 }
