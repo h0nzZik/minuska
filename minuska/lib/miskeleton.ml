@@ -101,8 +101,9 @@ let parse_gt_and_run lexbuf oux step depth output_file bench =
     let res = run_n_steps step depth 0 (wrap_init cg) in (
     let b = Benchmark.sub (Benchmark.make 0L) t0 in
     if bench then (
-      fprintf oux "Execution times:\n";
-      fprintf oux "%s\n" (Benchmark.to_string b);
+      fprintf stderr "Execution wall clock time: %.02f\n" (b.wall);
+      (*fprintf oux "Execution times:\n";
+      fprintf oux "%s\n" (Benchmark.to_string b);*)
       ()
     ) else ();
     match res with
@@ -128,14 +129,24 @@ let run step input_filename depth output_file bench () =
 
 
 (* TODO cleanup after execution *)
-let parse_first (path_to_parser : string option) input_file (f : string -> unit) : unit =
+let parse_first bench (path_to_parser : string option) input_file (f : string -> unit) : unit =
   match path_to_parser with
   | Some s -> (
       let astdir = (Filename_unix.temp_dir "language-interpreter" ".minuska") in
       let astfile = Filename.concat astdir "input.ast" in
       let c = (s ^ " " ^ input_file ^ " " ^ astfile) in
-      (*fprintf stderr "command: %s" c;*)
+      let t0 = Benchmark.make 0L in
       let _ = Sys_unix.command c in
+      let b = Benchmark.sub (Benchmark.make 0L) t0 in
+      if bench then (
+        fprintf stderr "Parsing wall clock time: %.02f\n" (b.wall);
+        (*fprintf oux "Execution times:\n";
+        fprintf oux "%s\n" (Benchmark.to_string b);*)
+        ()
+      ) else ();
+
+      (*fprintf stderr "command: %s" c;*)
+      
       (f astfile)
     )
   | None -> (f input_file)
@@ -150,7 +161,7 @@ let command_run (path_to_parser : string option) step =
         bench = flag "--bench" (no_arg) ~doc:"measure the time to parse and execute the program" and
         output_file = flag "--output-file" (optional string) ~doc:"filename to put the final configuration to"
      in
-     fun () -> (parse_first path_to_parser program (fun fname -> run step fname depth output_file bench ()) ))
+     fun () -> (parse_first bench path_to_parser program (fun fname -> run step fname depth output_file bench ()) ))
 
 let main (path_to_parser : string option) step =
   Printexc.record_backtrace true;

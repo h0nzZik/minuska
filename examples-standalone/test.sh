@@ -40,20 +40,22 @@ runCase() {
   local depth="$4"
   local expout="$5"
 
-  output=$(mktemp)
+  local output=$(mktemp)
   #echo "Running test '$name'"
-  "$TIME" --output "$output.time" --format "%e" "$interpreter" --depth "$depth" --output-file "$output" "$input" 2>>"$LOGFILEERR" >>"$LOGFILEOUT"
+  "$TIME" --output "$output.time" --format "%e" "$interpreter" --bench --depth "$depth" --output-file "$output" "$input" >>"$LOGFILEOUT" 2>>"$output".err
   if [[ -e "$expout" ]]; then
     diff "$output" "$expout"
   fi
+  local extime=$(cat "$output".err | grep 'Execution' | cut -d ':' -f 2 | xargs)
+  local parsetime=$(cat "$output".err | grep 'Parsing' | cut -d ':' -f 2 | xargs)
   local mytime=$(cat "$output.time")
-  echo "$name,  $mytime"
+  echo "$name,  $mytime,  $parsetime,  $extime"
   rm -f "$output"
 }
 
 doCompile() {
   local lang="$1"
-  #echo "Compiling: minuska generate-interpreter $lang" 
+  echo "Compiling $lang" 
   mkdir -p interpreters
   pushd interpreters > /dev/null
   minuska generate-interpreter ../languages/$lang/lang.scm 2>>"$LOGFILEERR" >>"$LOGFILEOUT" #&& echo "Compilation finished."
@@ -67,12 +69,12 @@ testNative() {
   rm -rf ./interpreters
   mkdir -p ./interpreters
 
+  echo "Compiling..."
   if doCompile fail-invalid-semantics ; then
     echo "ERROR: an invalid language definition compiles!"
     exit 1
   fi
 
-  echo "Compiling..."
   doCompile decrement
   doCompile decrement-builtin
   doCompile arith
@@ -81,7 +83,7 @@ testNative() {
 
 
   echo "Native (via OCaml extraction) benchmarks"
-  echo "name, execution time"
+  echo "name, wall, parsing, execution"
 
   #echo "Decrement tests"
   runCase "dec-into-2" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 2 DONOTTTEST
