@@ -23,6 +23,8 @@ testInCoq() {
   minuska gt2coq ./imp-ast/count-5.imp coqfiles/count5.v
   minuska gt2coq ./imp-ast/count-6.imp coqfiles/count6.v
   minuska gt2coq ./imp-ast/count-7.imp coqfiles/count7.v
+  minuska def2coq ./languages/two-counters/two-counters.m coqfiles/twocounters.v
+  minuska gt2coq ./tc-ast/tc10.ast coqfiles/tc10.v
 
   echo "Compiling *.v files"
   pushd coqfiles > /dev/null
@@ -32,8 +34,9 @@ testInCoq() {
   done 
   popd > /dev/null
   cp test-imp/testCount*.v ./coqfiles/
+  cp test-tc/testTC*.v ./coqfiles/
   pushd coqfiles > /dev/null
-  for testvfile in testCount*.v; do
+  for testvfile in "test"*.v; do
     echo "coqc $testvfile"
     "$TIME" --output "$testvfile.time" --format "%e" coqc -R . Test "$testvfile" 2> /dev/null | grep 'Finished transaction'
     cat "$testvfile.time"
