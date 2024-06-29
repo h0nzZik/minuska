@@ -35,7 +35,7 @@ imp-count-to(5), 2.322, 3.00
 imp-count-to(6), 2.569, 3.25
 imp-count-to(7), 3.004, 3.70
 ```
-(For the last column of that figure, see [../bench-standalone](../bench-standalone) and [../bench-hybrid](../bench-hybrid)).
+(For the last column of that figure, see [../bench-standalone](../bench-standalone)).
 
 Figure 5 of that paper is also contained in the output:
 ```
