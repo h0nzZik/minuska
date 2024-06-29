@@ -3,7 +3,7 @@
 Minuska is a framework for defining operational semantics ("language definitions") of programming languages and deriving tools from them.
 Currently, the project is a research prototype, and the only tools derivable from language definitions are interpreters.
 Users looking for a mature programming language framework are advised to check out [K framework](https://kframework.org/) or [PLT-Redex](https://redex.racket-lang.org/).
-(For a more detailed comparison to K framework, look [here](./doc/comparison-to-k-framework.md))
+(For a more detailed comparison to K framework, look [here](./doc/comparison-to-k-framework.md).)
 
 Minuska is built on top of the [Coq proof assistant](https://coq.inria.fr/). At its core is a simple language MinusLang for expressing programming language semantics
 in an exact, unambiguous way: MinusLang has a simple formal semantics (mechanized in [spec.v](https://h0nzzik.github.io/minuska/Minuska.spec.html)),
@@ -52,9 +52,11 @@ In principle, many features could be implemented in Minuska that would make the 
 These include support for concrete syntax of programming languages, formalization of the strictness declarations, symbolic execution, and deductive verification.
 See the [ideas document](./doc/ideas.md)
 
-
-
 # Troubleshooting
 
-If your system does not support FUSE, or its configuration is broken, try `export APPIMAGE_EXTRACT_AND_RUN=1` before running any generated interpreters. 
+If your system does not support FUSE, or its configuration is broken, try `export APPIMAGE_EXTRACT_AND_RUN=1` before running any generated interpreters.
+This needs to be done e.g., in Docker, or when running on Github-hosted runners.
 
+# Papers
+
+An extended version of the preliminary 'Minuska: Towards a Formally Verified Programming Language Framework' paper is available [here](h0nzzik.github.io/papers/minuska-extended.pdf).
