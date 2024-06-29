@@ -10,6 +10,10 @@ pushd "$SCRIPT_DIR" > /dev/null
 TEMPDIR="$(pwd)/_temp"
 LOGFILEOUT="$TEMPDIR/log-stdout.txt"
 LOGFILEERR="$TEMPDIR/log-stderr.txt"
+if [[ -n "$VERBOSE" ]]; then
+  LOGFILEOUT=/dev/stdout
+  LOGFILEERR=/dev/stderr
+fi
 TIME=$(which time)
 
 rm -rf "$TEMPDIR"

@@ -21,7 +21,8 @@
             ln -s ${nix-appimage.outputs.packages.${system}.runtime} $out/libexec/appimage-runtime
           ''
         ;
-        appimage-wrapper = pkgs.writeShellScriptBin "appimagetool" ''
+        appimagetool-wrapper = pkgs.writeShellScriptBin "appimagetool" ''
+	  export PATH="${pkgs.appimagekit}/bin:$PATH"
           ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
         '';
 
@@ -56,7 +57,7 @@
             nativeBuildInputs = [
               pkgs.makeWrapper
               pkgs.dune_3
-              appimage-wrapper
+              appimagetool-wrapper
               #pkgs.appimagekit
               coqPackages.coq.ocamlPackages.menhir
               coqPackages.coq.ocamlPackages.odoc
