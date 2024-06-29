@@ -69,7 +69,7 @@ testNative() {
   rm -rf ./interpreters
   mkdir -p ./interpreters
 
-  echo "Compiling..."
+  echo "== Compilation"
   if doCompile fail-invalid-semantics ; then
     echo "ERROR: an invalid language definition compiles!"
     exit 1
@@ -82,8 +82,9 @@ testNative() {
   doCompile two-counters
 
 
-  echo "Native (via OCaml extraction) benchmarks"
-  echo "name, wall, parsing, execution"
+  echo
+  echo "== Native (via OCaml extraction) benchmarks"
+  echo "name, total, parsing, execution"
 
   #echo "Decrement tests"
   runCase "dec-into-2" ./interpreters/decrement-interpreter ./languages/decrement/tests/three.dec 2 DONOTTTEST
