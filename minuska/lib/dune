@@ -23,6 +23,7 @@
  (public_name coq-minuska)
  (modules syntax parser lexer miparse micoqprint miunparse miskeleton libminuska dsm)
  (libraries
+    benchmark
     core
     zarith
     core_unix

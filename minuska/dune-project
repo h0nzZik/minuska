@@ -21,6 +21,7 @@
 (package
  (name coq-minuska)
  (depends
+    benchmark
     coq
     menhir
     core

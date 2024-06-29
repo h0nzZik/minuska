@@ -12,6 +12,7 @@ homepage: "https://github.com/h0nzZik/minuska"
 bug-reports: "https://github.com/h0nzZik/minuska/issues"
 depends: [
   "dune" {>= "3.14"}
+  "benchmark"
   "coq"
   "menhir"
   "core"
