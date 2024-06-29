@@ -90,8 +90,15 @@ testNative() {
 
   runCase "imp-01" ./interpreters/imp-interpreter ./languages/imp/tests/01.imp 20 ./languages/imp/tests/01.result
   #runCase "imp-lookup" ./interpreters/imp-interpreter ./languages/imp/tests/00-assign-lookup-trivial.imp 20 ./languages/imp/tests/00-assign-lookup-trivial.result
-  runCase "imp-count-10" ./interpreters/imp-interpreter ./languages/imp/tests/03-count-10.imp 1000 ./languages/imp/tests/03-count-10.result
 
+  runCase "imp-count-1" ./interpreters/imp-interpreter ./languages/imp/tests/count-1.imp 1000000 DONTTEST
+  runCase "imp-count-2" ./interpreters/imp-interpreter ./languages/imp/tests/count-2.imp 1000000 DONTTEST
+  runCase "imp-count-3" ./interpreters/imp-interpreter ./languages/imp/tests/count-3.imp 1000000 DONTTEST
+  runCase "imp-count-4" ./interpreters/imp-interpreter ./languages/imp/tests/count-4.imp 1000000 DONTTEST
+  runCase "imp-count-5" ./interpreters/imp-interpreter ./languages/imp/tests/count-5.imp 1000000 DONTTEST
+  runCase "imp-count-6" ./interpreters/imp-interpreter ./languages/imp/tests/count-6.imp 1000000 DONTTEST
+  runCase "imp-count-7" ./interpreters/imp-interpreter ./languages/imp/tests/count-7.imp 1000000 DONTTEST
+  runCase "imp-count-10" ./interpreters/imp-interpreter ./languages/imp/tests/03-count-10.imp 1000000 ./languages/imp/tests/03-count-10.result
 
   runCase "two-counters.10"        ./interpreters/two-counters-interpreter ./languages/two-counters/tests/10.tc      50000000 ./languages/two-counters/tests/10.result
   runCase "two-counters.100"       ./interpreters/two-counters-interpreter ./languages/two-counters/tests/100.tc     50000000 ./languages/two-counters/tests/100.result
