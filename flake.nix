@@ -101,12 +101,12 @@
       in {
         packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
-        packages.examples-coq
+        packages.old-examples-coq
         = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
-          name = "examples-coq";
-          src = ./examples-coq;
+          name = "old-examples-coq";
+          src = ./old-examples-coq;
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
@@ -121,10 +121,10 @@
         } ) { } ;
 
 
-        packages.examples-standalone
+        packages.bench-standalone
         = pkgs.stdenv.mkDerivation {
-          name = "examples-standalone";
-          src = ./examples-standalone;
+          name = "bench-standalone";
+          src = ./bench-standalone;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
@@ -142,10 +142,10 @@
           #];
         };
 
-        packages.examples-hybrid
+        packages.bench-hybrid
         = pkgs.stdenv.mkDerivation {
-          name = "examples-hybrid";
-          src = ./examples-hybrid;
+          name = "bench-hybrid";
+          src = ./bench-hybrid;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
@@ -153,12 +153,12 @@
            ++ self.outputs.packages.${system}.minuska.coqLibraries ;
         };
 
-        packages.minuska-bench
+        packages.bench-coq
         = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
-          name = "minuska-bench";
-          src = ./minuska-bench;
+          name = "bench-coq";
+          src = ./bench-coq;
 
           propagatedBuildInputs = [
             pkgs.time
@@ -219,23 +219,23 @@
                 ];
               };
 
-          examples-standalone =
+          bench-standalone =
             let
-              examples-standalone = self.outputs.packages.${system}.examples-standalone;
+              bench-standalone = self.outputs.packages.${system}.bench-standalone;
             in
               pkgs.mkShell {
-                inputsFrom = [examples-standalone];
+                inputsFrom = [bench-standalone];
                 packages = [];
               };
 
-          minuska-bench =
+          bench-coq =
             let
-              minuska-bench = self.outputs.packages.${system}.minuska-bench;
+              bench-coq = self.outputs.packages.${system}.bench-coq;
             in
               pkgs.mkShell {
-                inputsFrom = [minuska-bench];
+                inputsFrom = [bench-coq];
                 packages = [
-                  minuska-bench.coqPackages.coq-lsp
+                  bench-coq.coqPackages.coq-lsp
                   #benchexec
                 ];
               };
