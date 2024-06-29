@@ -21,6 +21,10 @@
             ln -s ${nix-appimage.outputs.packages.${system}.runtime} $out/libexec/appimage-runtime
           ''
         ;
+        appimagetool-wrapper = pkgs.writeShellScriptBin "appimagetool" ''
+	  export PATH="${pkgs.appimagekit}/bin:$PATH"
+          ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
+        '';
 
         minuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
@@ -40,6 +44,7 @@
               coqPackages.coq.ocamlPackages.core_unix
               coqPackages.coq.ocamlPackages.ppx_jane
               coqPackages.coq.ocamlPackages.ppx_sexp_conv
+              coqPackages.coq.ocamlPackages.benchmark
            ] ++ coqLibraries ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
@@ -52,7 +57,8 @@
             nativeBuildInputs = [
               pkgs.makeWrapper
               pkgs.dune_3
-              pkgs.appimagekit
+              appimagetool-wrapper
+              #pkgs.appimagekit
               coqPackages.coq.ocamlPackages.menhir
               coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
@@ -70,8 +76,7 @@
               substituteInPlace bin/main.ml \
                 --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
                 --replace-fail "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
-                --replace-fail "coqc" "${coqPackages.coq}/bin/coqc" \
-                --replace-fail "appimagetool" "${pkgs.appimagekit}/bin/appimagetool --runtime-file ${runtime}/libexec/appimage-runtime"
+                --replace-fail "coqc" "${coqPackages.coq}/bin/coqc"
             '';
 
 
