@@ -101,12 +101,12 @@
       in {
         packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
-        packages.old-examples-coq
+        packages.languages-in-coq
         = pkgs.coqPackages_8_19.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
-          name = "old-examples-coq";
-          src = ./old-examples-coq;
+          name = "languages-in-coq";
+          src = ./languages-in-coq;
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.minuska
@@ -163,7 +163,7 @@
           propagatedBuildInputs = [
             pkgs.time
             pkgs.python312
-            self.outputs.packages.${system}.old-examples-coq
+            self.outputs.packages.${system}.languages-in-coq
             #self.outputs.packages.${system}.examples-coq.coqPackages.coq
           ];
           enableParallelBuilding = true;

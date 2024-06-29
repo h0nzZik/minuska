@@ -48,8 +48,8 @@ jobs:
     - name: 'Run Coq benchmarks'
       run: nix develop -L '.#bench-coq' --command ./bench-coq/build-and-profile.sh
 
-    - name: 'Build old Coq examples'
-      run: nix build -L '.#old-examples-coq'
+    - name: 'Build Coq language examples'
+      run: nix build -L '.#languages-in-coq'
 
     - name: 'Build Docker image'
       run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
