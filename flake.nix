@@ -163,7 +163,7 @@
           propagatedBuildInputs = [
             pkgs.time
             pkgs.python312
-            self.outputs.packages.${system}.examples-coq
+            self.outputs.packages.${system}.old-examples-coq
             #self.outputs.packages.${system}.examples-coq.coqPackages.coq
           ];
           enableParallelBuilding = true;
