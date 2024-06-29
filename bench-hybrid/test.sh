@@ -9,6 +9,13 @@ pushd "$SCRIPT_DIR" > /dev/null
 
 TIME=$(which time)
 
+LOGFILEOUT="./log-stdout.txt"
+LOGFILEERR="./log-stderr.txt"
+if [[ -n "$VERBOSE" ]]; then
+  LOGFILEOUT=/dev/stdout
+  LOGFILEERR=/dev/stderr
+fi
+
 
 testInCoq() {
   rm -rf coqfiles
@@ -23,19 +30,28 @@ testInCoq() {
   minuska gt2coq ./imp-ast/count-5.imp coqfiles/count5.v
   minuska gt2coq ./imp-ast/count-6.imp coqfiles/count6.v
   minuska gt2coq ./imp-ast/count-7.imp coqfiles/count7.v
+  minuska def2coq ./languages/two-counters/two-counters.m coqfiles/twocounters.v
+  minuska gt2coq ./tc-ast/tc10.ast coqfiles/tc10.v
+  minuska gt2coq ./tc-ast/tc20.ast coqfiles/tc20.v
+  minuska gt2coq ./tc-ast/tc50.ast coqfiles/tc50.v
+  minuska gt2coq ./tc-ast/tc100.ast coqfiles/tc100.v
+
+
+
 
   echo "Compiling *.v files"
   pushd coqfiles > /dev/null
   for vfile in *.v; do
-    echo "Compiling $vfile" > /dev/null
-    coqc -R . Test "$vfile" > /dev/null 2>/dev/null
+    echo "Compiling $vfile" > "$LOGFILEOUT"
+    coqc -R . Test "$vfile" > "$LOGFILEOUT" 2>"$LOGFILEERR"
   done 
   popd > /dev/null
   cp test-imp/testCount*.v ./coqfiles/
+  cp test-tc/testTC*.v ./coqfiles/
   pushd coqfiles > /dev/null
-  for testvfile in testCount*.v; do
+  for testvfile in test*.v; do
     echo "coqc $testvfile"
-    "$TIME" --output "$testvfile.time" --format "%e" coqc -R . Test "$testvfile" 2> /dev/null | grep 'Finished transaction'
+    "$TIME" --output "$testvfile.time" --format "%e" coqc -R . Test "$testvfile" 2> "$LOGFILEERR" | grep 'Finished transaction'
     cat "$testvfile.time"
   done
   popd > /dev/null
