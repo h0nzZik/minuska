@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+set -e
+
+# https://stackoverflow.com/a/246128/6209703
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+pushd "$SCRIPT_DIR" > /dev/null
+
 TIME=$(which time)
 
 # https://stackoverflow.com/a/10983009/6209703
