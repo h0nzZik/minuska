@@ -758,35 +758,40 @@ Fixpoint Expression_evaluate
     {Σ : StaticModel}
     (ρ : gmap variable GroundTerm)
     (t : Expression)
-    : option GroundTerm :=
+    : option (NondetValue -> GroundTerm) :=
 match t with
-| ft_element e => Some e
-| ft_variable x => ρ !! x
+| ft_element e => Some (fun _ => e)
+| ft_variable x =>
+    match ρ !! x with
+    | Some v => Some (fun _ => v)
+    | None => None
+    end
 | ft_nullary f =>
-    Some (uglify' (builtin_nullary_function_interp f))
+    Some (fun nv => uglify' (builtin_nullary_function_interp f nv))
 | ft_unary f t =>
-    e ← prettify <$> Expression_evaluate ρ t;
-    Some (uglify' (builtin_unary_function_interp f e))
+    e ← Expression_evaluate ρ t;
+    Some (fun nv => uglify' (builtin_unary_function_interp f (prettify (e nv)) nv))
 | ft_binary f t1 t2 =>
-    e1 ← prettify <$> Expression_evaluate ρ t1;
-    e2 ← prettify <$> Expression_evaluate ρ t2;
-    Some (uglify' (builtin_binary_function_interp f e1 e2))
+    e1 ← Expression_evaluate ρ t1;
+    e2 ← Expression_evaluate ρ t2;
+    Some (fun nv => uglify' (builtin_binary_function_interp f (prettify (e1 nv)) (prettify (e2 nv)) nv))
 | ft_ternary f t1 t2 t3 =>
-    e1 ← prettify <$> Expression_evaluate ρ t1;
-    e2 ← prettify <$> Expression_evaluate ρ t2;
-    e3 ← prettify <$> Expression_evaluate ρ t3;
-    Some (uglify' (builtin_ternary_function_interp f e1 e2 e3))
+    e1 ← Expression_evaluate ρ t1;
+    e2 ← Expression_evaluate ρ t2;
+    e3 ← Expression_evaluate ρ t3;
+    Some (fun nv => uglify' (builtin_ternary_function_interp f (prettify (e1 nv)) (prettify (e2 nv)) (prettify (e3 nv)) nv))
 end.
 
 
 Definition val_satisfies_ap
-    {Σ : StaticModel} (ρ : Valuation) (ap : AtomicProposition)
+    {Σ : StaticModel} (ρ : Valuation) (ap : AtomicProposition) (nv : NondetValue)
     : Type :=
 match ap with
 | apeq e1 e2 => 
-    let v1 := Expression_evaluate ρ e1 in
-    let v2 := Expression_evaluate ρ e2 in
-    v1 = v2 /\ isSome v1
+    match (Expression_evaluate ρ e1), (Expression_evaluate ρ e2) with
+    | Some f1, Some f2 => (f1 nv) = (f2 nv)
+    | _, _ => False
+    end
 end
 .
 
@@ -799,7 +804,7 @@ Program Instance Satisfies_val_ap
         AtomicProposition
         variable
 := {|
-    satisfies := fun ρ u ap => val_satisfies_ap ρ ap ;
+    satisfies := fun ρ u ap nv => val_satisfies_ap ρ ap nv;
 |}.
 
 
