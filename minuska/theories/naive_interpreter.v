@@ -2,7 +2,7 @@
 From Minuska Require Import
     prelude
     spec
-    lowlang
+    basic_properties
     varsof
     syntax_properties
     properties
@@ -10,6 +10,7 @@ From Minuska Require Import
     spec_interpreter
     basic_matching
     try_match
+    valuation_merge
 .
 
 Require Import Logic.PropExtensionality.
@@ -18,456 +19,112 @@ Require Import Coq.Classes.Morphisms.
 Require Import Coq.Classes.Morphisms_Prop.
 Require Import Coq.Logic.FunctionalExtensionality.
 
+Fixpoint try_match_new
+    {Σ : StaticModel}
+    (g : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    : option Valuation2
+:=
+    match φ with
+    | t_over (bov_variable x) => Some (<[x := g]>∅)
+    | t_over (bov_builtin b) =>
+        match g with
+        | t_over b' =>
+            match (decide (b = b')) with
+            | left _ => Some ∅
+            | right _ => None
+            end
+        | t_term _ _ => None
+        end
+    | t_term s l =>
+        match g with
+        | t_over _ => None
+        | t_term s' l' =>
+            match (decide (s = s')) with
+            | left _ =>
+                let tmp := zip_with try_match_new l' l in
+                Valuation2_merge_olist tmp
+            | right _ => None
+            end
+        end
+    end
+.
+
 Definition evaluate_sc
     {Σ : StaticModel}
-    (ρ : Valuation)
-    (sc : SideCondition)
-    : bool :=
-match sc with
-| sc_constraint c =>
-    matchesb ρ () c
-end.
-
-
-Fixpoint PreTerm'_symbol_A_to_SymbolicTermB
-    {Σ : StaticModel}
-    {A B : Type}
-    (A_to_SymbolicTermB : A ->
-        ((Term' symbol B))
-    )
-    (x : PreTerm' symbol A)
-    : ((PreTerm' symbol B))
+    (ρ : Valuation2)
+    (sc : SideCondition2)
+    : bool
 :=
-match x with
-| pt_operator a => (pt_operator a)
-| pt_app_operand x' a =>
-    let t1 : (PreTerm' symbol B)
-        := PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB x' in
-    match A_to_SymbolicTermB a with
-    | (term_preterm t2) => (pt_app_ao t1 t2)
-    | (term_operand t2) => (pt_app_operand t1 t2)
+    match Expression2_evaluate ρ (sc_left sc), Expression2_evaluate ρ (sc_right sc) with
+    | Some l, Some r => bool_decide (l = r)
+    | _, _ => false
     end
-| pt_app_ao x1 x2 =>
-    let t1 : (PreTerm' symbol B)
-        := PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB x1 in
-    let t2 : (PreTerm' symbol B)
-        := PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB x2 in
-    pt_app_ao t1 t2
-end.
+.
 
-Definition Term'_symbol_A_to_SymbolicTermB
+Definition evaluate_scs
     {Σ : StaticModel}
-    {A B : Type}
-    (A_to_SymbolicTermB : A ->
-        ((Term' symbol B))
-    )
-    (x : Term' symbol A)
-    : ((Term' symbol B))
+    (ρ : Valuation2)
+    (scs : list SideCondition2)
+    : bool
 :=
-match x with
-| term_preterm app => term_preterm (PreTerm'_symbol_A_to_SymbolicTermB A_to_SymbolicTermB app)
-| term_operand operand => A_to_SymbolicTermB operand
-end.
-
-
-Definition evaluate_rhs_pattern
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (φ : Term' symbol Expression)
-    : option GroundTerm :=
-    let f : Expression -> option GroundTerm
-        := (Expression_evaluate ρ) in
-    let fφ  : Term' symbol (option GroundTerm)
-        := f <$> φ in 
-    let cfφ : option (Term' symbol GroundTerm)
-        := Term'_collapse_option fφ in
-    cfφ' ← cfφ;
-    let flat := Term'_symbol_A_to_SymbolicTermB id cfφ' in
-    Some flat
+    forallb (evaluate_sc ρ ) scs
 .
-
-Definition rewrite_with
-    {Σ : StaticModel}
-    {Act : Set}
-    (r : RewritingRule Act)
-    (g : GroundTerm)
-    : option GroundTerm
-:=
-    ρ ← try_match g (fr_from r);
-    if (forallb (evaluate_sc ρ) (fr_scs r)) then
-        evaluate_rhs_pattern ρ (fr_to r)
-    else None
-.
-
-Lemma evaluate_rhs_pattern_correct
-    {Σ : StaticModel}
-    
-    (φ : ExpressionTerm)
-    (ρ : Valuation)
-    (g : GroundTerm)
-    :
-    evaluate_rhs_pattern ρ φ = Some g <->
-    matchesb ρ g φ = true
-.
-Proof.
-    unfold evaluate_rhs_pattern.
-    rewrite bind_Some.
-    
-    ltac1:(
-        under [fun e => _]functional_extensionality => e
-    ).
-    {
-        ltac1:(rewrite inj_iff).
-        ltac1:(over).
-    }
-    destruct φ; cbn.
-    {
-        cbn.
-        ltac1:(
-            under [fun e => _]functional_extensionality => e
-        ).
-        {
-            ltac1:(rewrite bind_Some).
-            ltac1:(
-                under [fun e' => _]functional_extensionality => e'
-            ).
-            {
-                ltac1:(rewrite inj_iff).
-                ltac1:(over).
-            }
-            ltac1:(over).
-        }
-        destruct g; cbn.
-        {
-            unfold matchesb; simpl.
-            cbn.
-
-            split; intros H.
-            {
-                destruct H as [e H].
-                destruct H as [H1 H2].
-                destruct H1 as [e' [H11 H12]].
-                cbn in *.
-                subst.
-                cbn in *.
-                inversion H2; subst; clear H2.
-                cbn in *.
-                inversion H11; subst; clear H11.
-                revert e' H0.
-                induction ao; intros e' H0.
-                {
-                    cbn in *.
-                    inversion H0; subst; clear H0.
-                    simpl. unfold matchesb; simpl.
-                    apply bool_decide_eq_true.
-                    reflexivity.
-                }
-                {
-                    cbn in *.
-                    rewrite bind_Some in H0.
-                    destruct H0 as [x [H1 H2]].
-                    rewrite bind_Some in H2.
-                    destruct H2 as [x0 H2].
-                    destruct H2 as [H2 H3].
-                    inversion H3; subst; clear H3.
-                    cbn.
-                    destruct x0.
-                    {
-                        unfold matchesb; simpl.
-                        rewrite andb_true_iff.
-                        unfold matchesb in IHao; simpl in IHao.
-                        rewrite IHao.
-                        {
-                            split>[reflexivity|].
-                            unfold matchesb; simpl.
-                            apply bool_decide_eq_true.
-                            assumption.
-                        }
-                        {
-                            assumption.
-                        }
-                    }
-                    {
-                        unfold matchesb; simpl.
-                        rewrite andb_true_iff.
-                        unfold matchesb in IHao; simpl in IHao.
-                        split.
-                        {
-                            apply IHao.
-                            exact H1.
-                        }
-                        {
-                            unfold matchesb; simpl.
-                            apply bool_decide_eq_true.
-                            assumption.
-                        }
-                    }
-                }
-                {
-                    cbn in *.
-                    rewrite bind_Some in H0.
-                    destruct H0 as [x [H1 H2]].
-                    rewrite bind_Some in H2.
-                    destruct H2 as [x0 H2].
-                    destruct H2 as [H2 H3].
-                    inversion H3; subst; clear H3.
-                    specialize (IHao1 _ H1).
-                    specialize (IHao2 _ H2).
-                    cbn.
-                    unfold matchesb; simpl.
-                    rewrite andb_true_iff.
-                    split; assumption.
-                }
-            }
-            {
-                
-                remember (fun (v:builtin_value) (e':Expression) =>
-                    match Expression_evaluate ρ e' with
-                    | Some v' => v'
-                    | None => term_operand v
-                    end
-                ) as zipper.
-                remember (fun (s1 s2 : symbol) => s1) as symleft.
-                remember (fun (g : PreTerm' symbol builtin_value) (e' : Expression) =>
-                    (term_preterm g)
-                ) as f1.
-                remember (fun (b : builtin_value) (et : PreTerm' symbol Expression) =>
-                    (@term_operand symbol _ b)
-                ) as f2.
-                remember (PreTerm'_zipWith symleft zipper f1 f2 ao0 ao) as zipped.
-                exists (term_preterm zipped).
-                cbn.
-                split.
-                {
-                    exists zipped.
-                    subst.
-                    repeat constructor.
-                    clear -H.
-                    apply matchesb_satisfies in H.
-
-                    induction H.
-                    {
-                        simpl.
-                        cbn.
-                        reflexivity.
-                    }
-                    {
-                        cbn in s.
-                        cbn.
-                        rewrite bind_Some.
-                        cbn.
-                        ltac1:(
-                            under [fun e => _]functional_extensionality => e
-                        ).
-                        {
-                            ltac1:(rewrite bind_Some).
-                            ltac1:(
-                                under [fun e' => _]functional_extensionality => e'
-                            ).
-                            {
-                                ltac1:(rewrite inj_iff).
-                                ltac1:(over).
-                            }
-                            ltac1:(over).
-                        }
-                        cbn in *.
-                        eexists.
-                        split>[apply IHaoxy_satisfies_aoxz|].
-                        eexists.
-                        split>[apply s|].
-                        apply f_equal.
-                        rewrite s.
-                        reflexivity.
-                    }
-                    {
-                        cbn in s.
-                        cbn.
-                        rewrite bind_Some.
-                        cbn in *.
-                        ltac1:(
-                            under [fun e => _]functional_extensionality => e
-                        ).
-                        {
-                            ltac1:(rewrite bind_Some).
-                            ltac1:(
-                                under [fun e' => _]functional_extensionality => e'
-                            ).
-                            {
-                                ltac1:(rewrite inj_iff).
-                                ltac1:(over).
-                            }
-                            ltac1:(over).
-                        }
-                        cbn in *.
-                        eexists.
-                        split>[apply IHaoxy_satisfies_aoxz|].
-                        eexists.
-                        split>[apply s|].
-                        reflexivity.
-                    }
-                    {
-                        unfold satisfies in s; simpl in s.
-                        inversion s.
-                    }
-                    {
-                        cbn in H0.
-                        cbn.
-                        rewrite bind_Some.
-                        cbn in *.
-                        ltac1:(
-                            under [fun e => _]functional_extensionality => e
-                        ).
-                        {
-                            ltac1:(rewrite bind_Some).
-                            ltac1:(
-                                under [fun e' => _]functional_extensionality => e'
-                            ).
-                            {
-                                ltac1:(rewrite inj_iff).
-                                ltac1:(over).
-                            }
-                            ltac1:(over).
-                        }
-                        cbn in *.
-                        eexists.
-                        split>[apply IHaoxy_satisfies_aoxz1|].
-                        eexists.
-                        split>[apply IHaoxy_satisfies_aoxz2|].
-                        reflexivity.
-                    }
-                }
-                {
-                    subst. cbn.
-                    apply f_equal.
-                    apply matchesb_satisfies in H.
-                    induction H.
-                    {
-                        cbn. reflexivity.
-                    }
-                    {
-                        cbn in *.
-                        rewrite s.
-                        rewrite IHaoxy_satisfies_aoxz.
-                        reflexivity.
-                    }
-                    {
-                        cbn in *.
-                        rewrite IHaoxy_satisfies_aoxz.
-                        reflexivity.
-                    }
-                    {
-                        unfold satisfies in s; simpl in s.
-                        inversion s.
-                    }
-                    {
-                        cbn in *.
-                        rewrite IHaoxy_satisfies_aoxz1.
-                        rewrite IHaoxy_satisfies_aoxz2.
-                        reflexivity.
-                    }
-                }
-            }
-        }
-        {
-            cbn.
-            split; intros H.
-            {
-                destruct H as [e H].
-                destruct H as [H1 H2].
-                destruct H1 as [e' [H11 H12]].
-                subst. cbn in *.
-                inversion H2.
-            }
-            {
-                inversion H.
-            }
-        }
-    }
-    {
-        ltac1:(
-            under [fun e => _]functional_extensionality => e
-        ).
-        {
-            ltac1:(rewrite bind_Some).
-            ltac1:(
-                under [fun e' => _]functional_extensionality => e'
-            ).
-            {
-                ltac1:(rewrite inj_iff).
-                ltac1:(over).
-            }
-            ltac1:(over).
-        }
-        cbn.
-        destruct g; cbn.
-        {
-            split; intros H.
-            {
-                destruct H as [e H].
-                destruct H as [[e' [H'1 H'2]] H].
-                subst.
-                cbn in H.
-                subst.
-                unfold matchesb; simpl.
-                unfold matchesb; simpl.
-                apply bool_decide_eq_true.
-                assumption.
-            }
-            {
-                eexists.
-                split.
-                {
-                    unfold matchesb in H; simpl in H.
-                    unfold matchesb in H; simpl in H.
-                    apply bool_decide_eq_true in H.
-                    eexists. split>[|reflexivity].
-                    apply H.
-                }
-                {
-                    cbn. reflexivity.
-                }
-            }
-        }
-        {
-            split; intros H.
-            {
-                destruct H as [e H].
-                destruct H as [[e' [H'1 H'2]] H].
-                subst.
-                cbn in H.
-                subst.
-                do 2 (unfold matchesb; simpl).
-                apply bool_decide_eq_true.
-                assumption.
-            }
-            {
-                eexists.
-                split.
-                {
-                    do 2 (unfold matchesb in H; simpl in H).
-                    apply bool_decide_eq_true in H.
-                    eexists. split>[|reflexivity].
-                    apply H.
-                }
-                {
-                    cbn. reflexivity.
-                }
-            }
-        }
-    }
-Qed.
 
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
     {Act : Set}
-    (g : GroundTerm)
-    (r : RewritingRule Act)
-    : option Valuation
+    (g : TermOver builtin_value)
+    (r : RewritingRule2 Act)
+    : option Valuation2
 :=
-    ρ ← try_match g (fr_from r);
-    let validates := matchesb ρ () (fr_scs r) in
-    if validates then Some ρ else None
+    ρ ← try_match_new g (r_from r);
+    if evaluate_scs ρ (r_scs r)
+    then (Some ρ)
+    else None
 .
+
+Definition thy_lhs_match_one
+    {Σ : StaticModel}
+    {Act : Set}
+    (e : TermOver builtin_value)
+    (Γ : list (RewritingRule2 Act))
+    : option (RewritingRule2 Act * Valuation2 * nat)%type
+:=
+    let froms : list (TermOver BuiltinOrVar)
+        := r_from <$> Γ
+    in
+    let vs : list (option Valuation2)
+        := (try_match_lhs_with_sc e) <$> Γ
+    in
+    let found : option (nat * option Valuation2)
+        := list_find isSome vs
+    in
+    nov ← found;
+    let idx : nat := nov.1 in
+    let ov : option Valuation2 := nov.2 in
+    v ← ov;
+    r ← Γ !! idx;
+    Some (r, v, idx)
+.
+
+Definition naive_interpreter_ext
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : list (RewritingRule2 Act))
+    (e : TermOver builtin_value)
+    : option ((TermOver builtin_value)*nat)
+:=
+    let oρ : option ((RewritingRule2 Act)*Valuation2*nat)
+        := thy_lhs_match_one e Γ in
+    match oρ with
+    | None => None
+    | Some (r,ρ,idx) =>
+        e' ← (evaluate_rhs_pattern ρ (fr_to r));
+        Some (e',idx)
+    end
+.
+
 
 (*
 #[global]
@@ -715,14 +372,14 @@ Qed.
 Definition thy_lhs_match_one
     {Σ : StaticModel}
     {Act : Set}
-    (e : GroundTerm)
-    (Γ : list (RewritingRule Act))
-    : option (RewritingRule Act * Valuation * nat)%type
+    (e : TermOver builtin_value)
+    (Γ : list (RewritingRule2 Act))
+    : option (RewritingRule2 Act * Valuation2 * nat)%type
 :=
-    let froms : list SymbolicTerm
+    let froms : list (TermOver BuiltinOrVar)
         := fr_from <$> Γ
     in
-    let vs : list (option Valuation)
+    let vs : list (option Valuation2)
         := (try_match_lhs_with_sc e) <$> Γ
     in
     let found : option (nat * option Valuation)
@@ -979,6 +636,15 @@ Definition naive_interpreter_ext
     (e : TermOver builtin_value)
     : option ((TermOver builtin_value)*nat)
 :=
+    let oρ : option ((RewritingRule2 Act)*Valuation2*nat)
+        := thy_lhs_match_one e Γ in
+    match oρ with
+    | None => None
+    | Some (r,ρ,idx) =>
+        e' ← (evaluate_rhs_pattern ρ (fr_to r));
+        Some (e',idx)
+    end
+
     ab ← (@flat_naive_interpreter_ext Σ Act (fmap r_to_fr Γ) (uglify' e));
     Some (prettify ab.1, ab.2)
 .

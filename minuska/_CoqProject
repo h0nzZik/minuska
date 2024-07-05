@@ -11,6 +11,7 @@ theories/syntax_properties.v
 theories/semantics_properties.v
 theories/spec_lowlang_interpreter.v
 theories/spec_interpreter.v
+theories/valuation_merge.v
 
 theories/minuska.v
 theories/string_variables.v
