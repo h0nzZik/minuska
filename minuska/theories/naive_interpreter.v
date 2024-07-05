@@ -108,6 +108,53 @@ Definition thy_lhs_match_one
     Some (r, v, idx)
 .
 
+(* TODO move *)
+Definition list_collect
+    {A : Type}
+    (l : list (option A))
+    : option (list A)
+:=
+    foldr (fun ox ol => x ← ox; l' ← ol; Some (x::l')) (Some []) l
+.
+
+(* TODO move *)
+Fixpoint TermOver_collect
+    {Σ : StaticModel}
+    {A : Type}
+    (t : TermOver (option A))
+    : option (TermOver A)
+:=
+    match t with
+    | t_over None => None
+    | t_over (Some x) => Some (t_over x)
+    | t_term s l =>
+        l' ← list_collect (TermOver_collect <$> l);
+        Some (t_term s l')
+    end
+.
+
+Fixpoint TermOver_join
+    {Σ : StaticModel}
+    {A : Type}
+    (t : TermOver (TermOver A))
+    : TermOver A
+:=
+    match t with
+    | t_over x => x
+    | t_term s l =>
+        t_term s (TermOver_join <$> l)
+    end
+.
+
+Definition eval_et
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (et : TermOver Expression2)
+    : option (TermOver builtin_value)
+:=
+    TermOver_join <$> (TermOver_collect (TermOver_map (Expression2_evaluate ρ) et))
+.
+
 Definition naive_interpreter_ext
     {Σ : StaticModel}
     {Act : Set}
@@ -120,7 +167,7 @@ Definition naive_interpreter_ext
     match oρ with
     | None => None
     | Some (r,ρ,idx) =>
-        e' ← (evaluate_rhs_pattern ρ (fr_to r));
+        e' ← (eval_et ρ (r_to r));
         Some (e',idx)
     end
 .
