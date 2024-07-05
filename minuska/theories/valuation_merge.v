@@ -334,4 +334,42 @@ Definition Valuation2_merge_olist
       right. assumption.
     }
   Qed.
-  
+
+#[global]
+Instance option_Valuation2_vars_of
+    {Σ : StaticModel}
+    :
+    VarsOf (option Valuation2) variable
+:= {|
+    vars_of := fun oρ => match oρ with None => ∅ | Some ρ => vars_of ρ end
+|}.
+
+Lemma Valuation2_merge_olist_vars_of
+    {Σ : StaticModel}
+    (l : list (option Valuation2))
+    (ρ : Valuation2):
+    Valuation2_merge_olist l = Some ρ ->
+    vars_of ρ = vars_of l
+.
+Proof.
+    unfold vars_of in *; simpl in *.
+    revert ρ.
+    induction l; simpl in *; intros ρ HH.
+    {
+        inversion HH; subst; clear HH.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
+    }
+    {
+        rewrite bind_Some in HH.
+        destruct HH as [ρ1 [HH1 HH2]].
+        rewrite bind_Some in HH2.
+        destruct HH2 as [ρ2 [HH2 HH3]].
+        unfold vars_of; simpl.
+        subst.
+        specialize (IHl _ HH2).
+        apply merge_valuations_dom in HH3.
+        rewrite HH3. clear HH3.
+        ltac1:(set_solver).
+    }
+Qed.

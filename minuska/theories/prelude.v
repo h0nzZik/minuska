@@ -488,3 +488,62 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma bind_Some_T_1
+    (A B : Type)
+    (f : A -> option B)
+    (mx : option A)
+    (y : B)
+    :
+    (mbind f mx) = Some y ->
+    {x : A & mx = Some x /\ f x = Some y}
+.
+Proof.
+    intros HH.
+    destruct mx; simpl in *.
+    {
+        exists a.
+        split>[reflexivity|exact HH].
+    }
+    { inversion HH. }
+Qed.
+
+Lemma bind_Some_T_2
+    (A B : Type)
+    (f : A -> option B)
+    (mx : option A)
+    (y : B)
+    :
+    {x : A & mx = Some x /\ f x = Some y} ->
+    (mbind f mx) = Some y
+.
+Proof.
+    intros HH.
+    destruct HH as [x HH].
+    destruct HH as [H1 H2].
+    destruct mx; simpl in *.
+    {
+        inversion H1; subst; clear H1.
+        exact H2.
+    }
+    {
+        inversion H1.
+    }
+Qed.
+
+Lemma bind_None_T_1 (A B : Type) (f : A → option B) (mx : option A):
+  mbind f mx = None ->
+  (mx = None) +
+  ({ x : A & mx = Some x ∧ f x = None })
+.
+Proof.
+    intros H.
+    destruct mx; simpl in *.
+    {
+        right. exists a. split>[reflexivity|]. exact H.
+    }
+    {
+        left. reflexivity.
+    }
+Qed.

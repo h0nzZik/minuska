@@ -173,88 +173,115 @@ Definition naive_interpreter_ext
 .
 
 
-(*
-#[global]
-Instance VarsOf_list_SideCondition
+Lemma try_match_new_complete
     {Σ : StaticModel}
     :
-    VarsOf (list SideCondition) variable
-:= {|
-    vars_of := fun scs => union_list (vars_of <$> scs) ;
-|}.
-*)
-
-Lemma bind_Some_T_1
-    (A B : Type)
-    (f : A -> option B)
-    (mx : option A)
-    (y : B)
-    :
-    (mbind f mx) = Some y ->
-    {x : A & mx = Some x /\ f x = Some y}
+    ∀ (a : (TermOver builtin_value)) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
+        satisfies ρ a b ->
+        { ρ' : Valuation2 &
+            vars_of ρ' = vars_of b /\
+            ρ' ⊆ ρ /\
+            try_match_new a b = Some ρ' 
+        }
 .
 Proof.
-    intros HH.
-    destruct mx; simpl in *.
+    intros a.
+    ltac1:(induction a using TermOver_rect); intros b' ρ Hb'; destruct b'.
     {
-        exists a.
-        split>[reflexivity|exact HH].
-    }
-    { inversion HH. }
-Qed.
-
-Lemma bind_Some_T_2
-    (A B : Type)
-    (f : A -> option B)
-    (mx : option A)
-    (y : B)
-    :
-    {x : A & mx = Some x /\ f x = Some y} ->
-    (mbind f mx) = Some y
-.
-Proof.
-    intros HH.
-    destruct HH as [x HH].
-    destruct HH as [H1 H2].
-    destruct mx; simpl in *.
-    {
-        inversion H1; subst; clear H1.
-        exact H2.
-    }
-    {
-        inversion H1.
-    }
-Qed.
-
-Lemma bind_None_T_1 (A B : Type) (f : A → option B) (mx : option A):
-  mbind f mx = None ->
-  (mx = None) +
-  ({ x : A & mx = Some x ∧ f x = None })
-.
-Proof.
-    intros H.
-    destruct mx; simpl in *.
-    {
-        right. exists a. split>[reflexivity|]. exact H.
+        simpl in *.
+        unfold satisfies in Hb'; simpl in Hb'.
+        ltac1:(simp sat2B in Hb').
+        destruct a0; simpl in *.
+        {
+            unfold Valuation2 in *.
+            inversion Hb'; subst; clear Hb'.
+            exists ∅.
+            (repeat split).
+            { apply map_empty_subseteq. }
+            {
+                destruct (decide (b = b)); ltac1:(congruence).
+            }
+        }
+        {
+            exists (<[x:=t_over a]> ∅).
+            (repeat split).
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold Valuation2 in *.
+                rewrite dom_insert_L.
+                ltac1:(set_solver).
+            }
+            {
+                unfold Valuation2 in *.
+                apply insert_subseteq_l.
+                { assumption. }
+                { apply map_empty_subseteq. }
+            }
+        }
     }
     {
-        left. reflexivity.
+        simpl in *.
+        unfold satisfies in Hb'; simpl in Hb'.
+        ltac1:(simp sat2B in Hb').
+        destruct Hb'.
+    }
+    {
+        simpl in *.
+        unfold satisfies in Hb'; simpl in Hb'.
+        ltac1:(simp sat2B in Hb').
+        destruct a.
+        {
+            simpl in *.
+            inversion Hb'.
+        }
+        {
+            simpl in *.
+            exists (<[x:=t_term b l]> ∅).
+            (repeat split).
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold Valuation2 in *.
+                rewrite dom_insert_L.
+                ltac1:(clear; set_solver).
+            }
+            {
+                unfold Valuation2 in *.
+                apply insert_subseteq_l.
+                { assumption. }
+                { apply map_empty_subseteq. }
+            }
+        }
+    }
+    {
+        unfold satisfies in Hb'; simpl in Hb'.
+        ltac1:(simp sat2B in Hb').
+        destruct Hb' as [H1 [H2 H3]].
+        subst b.
+        unfold try_match_new. fold (@try_match_new Σ).
+        remember (Valuation2_merge_olist (zip_with try_match_new l l0) ) as onew.
+        destruct onew.
+        {
+            exists v.
+            (repeat split).
+        }
     }
 Qed.
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
     {Act : Set}
-    (g : GroundTerm)
-    (r : RewritingRule Act)
-    (ρ : gmap variable GroundTerm)
+    (g : TermOver builtin_value)
+    (r : RewritingRule2 Act)
+    (ρ : gmap variable (TermOver builtin_value))
     :
-    vars_of (fr_scs r) ⊆ vars_of (fr_from r) ->
-    matchesb ρ g (fr_from r) = true ->
-    matchesb ρ () (fr_scs r) = true ->
+    vars_of (r_scs r) ⊆ vars_of (r_from r) ->
+    satisfies ρ g (r_from r) = true ->
+    satisfies ρ () (r_scs r) = true ->
     {
-        ρ' : (gmap variable GroundTerm) &
-        vars_of ρ' = vars_of (fr_from r) ∧
+        ρ' : (gmap variable (TermOver builtin_value)) &
+        vars_of ρ' = vars_of (r_from r) ∧
         ρ' ⊆ ρ ∧
         try_match_lhs_with_sc g r = Some ρ'
     }   
@@ -271,9 +298,6 @@ Proof.
         the NOOTA property.
     *)
     intros Hn H1 H2.
-    (*
-    assert (H10 := H1).
-    assert (H20 := H2).*)
     apply try_match_complete in H1.
     destruct H1 as [ρ1 [H1ρ1 H2ρ1]].
     destruct H2ρ1 as [H2ρ1 H3ρ2].
