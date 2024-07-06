@@ -36,7 +36,7 @@ let append_definition input_filename output_channel =
     .
     Proof.
         apply @global_naive_interpreter_sound.
-        { apply _. }
+        (*{ apply _. }*)
         ltac1:(assert(Htmp: isSome(RewritingTheory2_wf_heuristics (fst T)))).
         {
             apply language_well_formed.
