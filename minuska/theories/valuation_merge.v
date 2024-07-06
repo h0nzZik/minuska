@@ -21,6 +21,34 @@ From Minuska Require Import
       := forallb (fun k => bool_decide (ρ1 !! k = ρ2 !! k)) (elements (dom ρ1 ∩ dom ρ2))
   .
 
+Definition Valuation2_compatible_with_bound
+    {Σ : StaticModel}
+    (ρ1 ρ2 ρ : Valuation2)
+    :
+    ρ1 ⊆ ρ ->
+    ρ2 ⊆ ρ ->
+    Valuation2_compatible_with ρ1 ρ2 = true
+.
+Proof.
+    intros H1 H2.
+    unfold Valuation2_compatible_with.
+    rewrite forallb_forall.
+    intros x Hx.
+    rewrite <- elem_of_list_In in Hx.
+    rewrite elem_of_elements in Hx.
+    rewrite elem_of_intersection in Hx.
+    destruct Hx as [H1x H2x].
+    unfold Valuation2 in *.
+    rewrite elem_of_dom in H1x.
+    rewrite elem_of_dom in H2x.
+    destruct H1x as [y1 Hy1].
+    destruct H2x as [y2 Hy2].
+    rewrite bool_decide_eq_true.
+    eapply lookup_weaken in Hy1 as Hy1'>[|apply H1].
+    eapply lookup_weaken in Hy2 as Hy2'>[|apply H2].
+    ltac1:(congruence).
+Qed.
+
   Definition Valuation2_merge_with
       {Σ : StaticModel}
       (ρ1 ρ2 : Valuation2)
@@ -373,3 +401,5 @@ Proof.
         ltac1:(set_solver).
     }
 Qed.
+
+

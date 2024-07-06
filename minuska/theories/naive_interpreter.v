@@ -260,11 +260,86 @@ Proof.
         destruct Hb' as [H1 [H2 H3]].
         subst b.
         unfold try_match_new. fold (@try_match_new Σ).
+
+        revert l0 H2 H3 X.
+        induction l; intros l0 H2 H3 X.
+        {
+            destruct l0.
+            {
+                simpl in *.
+                exists ∅.
+                unfold Valuation2 in *.
+                (repeat split).
+                { apply map_empty_subseteq. }
+                {
+                    destruct (decide (s = s)); ltac1:(congruence).
+                }
+            }
+            {
+                simpl in *. inversion H2.
+            }
+        }
+        {
+            destruct l0; simpl in *.
+            {
+                ltac1:(lia).
+            }
+            {
+                specialize (IHl l0 ltac:(lia)).
+                ltac1:(ospecialize (IHl _ _)).
+                {
+                    intros. apply H3 with (i := S i); simpl in *; assumption.
+                }
+                {
+                    intros.
+                    apply X.
+                    { rewrite elem_of_cons. right. assumption. }
+                    { assumption. }
+                }
+                destruct IHl as [ρ'1 [HH1 [HH2 HH3]]].
+                destruct (decide (s = s))>[|ltac1:(congruence)].
+                apply Valuation2_merge_olist_vars_of in HH3 as HH3'.
+                rewrite HH3.
+                clear HH3.
+                
+                specialize (X a ltac:(set_solver)).
+                specialize (H3 0 a t erefl erefl).
+                specialize (X _ _ H3).
+                destruct X as [ρ' [H4 [H5 H6]]].
+                rewrite H6. simpl. clear H6. simpl.
+                unfold Valuation2_merge_with.
+                assert (Hcompat: Valuation2_compatible_with ρ' ρ'1 = true).
+                {
+                    
+                }
+                exists ((merge Valuation2_use_left ρ' ρ'1)).
+                (repeat split).
+                {
+                    unfold vars_of; simpl.
+                    rewrite dom_merge_use_left.
+                    Search dom merge.
+                }
+                {
+                    
+                }
+                Search Valuation2_merge_with.
+            }
+        }
+
+
         remember (Valuation2_merge_olist (zip_with try_match_new l l0) ) as onew.
         destruct onew.
         {
             exists v.
             (repeat split).
+            {
+                symmetry in Heqonew.
+                apply Valuation2_merge_olist_vars_of in Heqonew.
+                rewrite Heqonew. clear Heqonew.
+                unfold vars_of; simpl.
+                
+                Search union_list.
+            }
         }
     }
 Qed.
