@@ -482,3 +482,33 @@ Proof.
         }
     }
 Qed.
+
+Lemma merge_use_left_below {Σ : StaticModel} (ρ ρ' ρ'': Valuation2) :
+    ρ' ⊆ ρ ->
+    ρ'' ⊆ ρ ->
+    merge Valuation2_use_left ρ' ρ'' ⊆ ρ
+.
+Proof.
+    intros H1 H2.
+    unfold Valuation2 in *.
+    apply map_subseteq_spec.
+    intros i x Hix.
+    rewrite lookup_merge in Hix.
+    unfold diag_None, Valuation2_use_left in Hix.
+    ltac1:(repeat case_match; simplify_eq/=).
+    {
+        eapply lookup_weaken.
+        { apply H. }
+        { assumption. }
+    }
+    {
+        eapply lookup_weaken.
+        { apply H. }
+        { assumption. }
+    }
+    {
+        eapply lookup_weaken.
+        { apply H0. }
+        { assumption. }
+    }
+Qed.

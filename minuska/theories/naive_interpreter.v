@@ -321,14 +321,23 @@ Proof.
                 {
                     unfold Valuation2 in *.
                     ltac1:(rewrite vars_of_t_term).
-                    Search dom merge.
-                    apply merge_valuations_dom.
-                    Search dom merge.
+                    rewrite fmap_cons.
+                    rewrite union_list_cons.
+                    unfold vars_of at 1; simpl.
+                    ltac1:(rewrite dom_merge_use_left).
+                    unfold vars_of at 1 in HH1; simpl in HH1.
+                    rewrite HH1.
+                    ltac1:(rewrite vars_of_t_term).
+                    unfold vars_of in H4 at 1; simpl in H4.
+                    rewrite H4.
+                    clear.
+                    ltac1:(set_solver).
                 }
                 {
-                    
+
+                    Locate merge_use_left_below.
+                    Search merge subseteq.
                 }
-                Search Valuation2_merge_with.
             }
         }
 
