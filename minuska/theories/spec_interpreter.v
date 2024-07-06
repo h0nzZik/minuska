@@ -82,11 +82,11 @@ Definition RewritingRule2_wf2
     (r : RewritingRule2 Act)
     : Type
 := 
-    forall (g : TermOver builtin_value) (ρ : Valuation2),
+    forall (g : TermOver builtin_value) (ρ : Valuation2) (nv : NondetValue),
         satisfies ρ g (r_from r) ->
-        satisfies ρ () (r_scs r) ->
+        satisfies ρ nv (r_scs r) ->
         { g' : (TermOver builtin_value) &
-            satisfies ρ g' (r_to r)
+            satisfies ρ (nv,g') (r_to r)
         }
 .
 
