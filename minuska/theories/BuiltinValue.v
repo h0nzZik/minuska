@@ -13,6 +13,71 @@ Section sec.
         {_sc : Countable symbol}
     .
 
+    (* This is an attempt at an alternative definition that avoids lowlang.
+        I could not figure out how to implement decision procedure for equality,
+        so it is left for future work.
+    
+    (* TODO make parametric in a user type *)
+    Inductive BuiltinValue0 :=
+    | bv_error
+    | bv_bool (b : bool)
+    (* | bv_nat (n : nat) *)
+    | bv_Z (z : Z)
+    | bv_sym (s : symbol)
+    | bv_str (s : string)
+    | bv_list (m : list (@TermOver' symbol BuiltinValue0))
+    | bv_pmap (m : Pmap (@TermOver' symbol BuiltinValue0))
+    .
+
+    Fixpoint BVsize (r : BuiltinValue0) : nat :=
+    match r with
+    | bv_error => 1
+    | bv_bool _ => 1
+    | bv_Z _ => 1
+    | bv_sym _ => 1
+    | bv_str _ => 1
+    | bv_list l =>
+        let TermBVsize := (fix TermBVsize (t : @TermOver' symbol BuiltinValue0) : nat :=
+        match t with
+        | t_over m => S (BVsize m)
+        | t_term _ l => S (
+            (fix helper (l' : list (@TermOver' symbol BuiltinValue0)) : nat :=
+            match l' with
+            | [] => 1
+            | x::xs => S (TermBVsize x + helper xs)
+            end
+            )l)
+        end) in
+        S (sum_list_with TermBVsize l)
+    | bv_pmap PEmpty => 1
+    | bv_pmap (PNodes m) =>
+        let TermBVsize := (fix TermBVsize (t : @TermOver' symbol BuiltinValue0) : nat :=
+        match t with
+        | t_over m => S (BVsize m)
+        | t_term _ l => S (
+            (fix helper (l' : list (@TermOver' symbol BuiltinValue0)) : nat :=
+            match l' with
+            | [] => 1
+            | x::xs => S (TermBVsize x + helper xs)
+            end
+            )l)
+        end) in
+        S ((fix mypmsz (m' : Pmap_ne (@TermOver' symbol BuiltinValue0)) :=
+        match m' with
+        | PNode001 m'' => S (mypmsz m'')
+        | PNode010 m'' => S (TermBVsize m'')
+        | PNode011 m1 m2 => S (TermBVsize m1 + mypmsz m2)
+        | PNode100 m'' => mypmsz m''
+        | PNode101 m1 m2 => S (mypmsz m1 + mypmsz m2)
+        | PNode110 m1 m2 => S (mypmsz m1 + TermBVsize m2)
+        | PNode111 m1 m2 m3 => S (mypmsz m1 + TermBVsize m2 + mypmsz m3)
+        end
+        ) m)
+    end
+    .
+    
+    *)
+
     (* TODO make parametric in a user type *)
     Inductive BuiltinValue0 :=
     | bv_error
