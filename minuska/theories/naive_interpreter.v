@@ -6,7 +6,6 @@ From Minuska Require Import
     varsof
     syntax_properties
     properties
-    spec_lowlang_interpreter
     spec_interpreter
     basic_matching
     try_match
@@ -1086,10 +1085,8 @@ Proof.
         specialize (Hc ρ').
         ltac1:(ospecialize (Hc _)).
         {
-            unfold RewritingTheory_wf in wfΓ.
             unfold is_true in wfΓ.
             specialize (wfΓ r).
-            unfold RewritingRule_wf in wfΓ.
             specialize (wfΓ Hin).
             apply wfΓ.
         }
@@ -1101,7 +1098,6 @@ Proof.
             unfold satisfies; simpl.
             intros x Hx.
             eapply sc_satisfies_insensitive in Hsat2 as Hsat2'. apply Hsat2'.
-            unfold RewritingTheory_wf in wfΓ.
             assert (Htmp := valuation_restrict_vars_of_self ρ' ρ H2).
             eapply Valuation2_restrict_eq_subseteq in Htmp.
             symmetry. apply Htmp.
@@ -1110,7 +1106,6 @@ Proof.
                 
                 unfold is_true in wfΓ.
                 specialize (wfΓ r).
-                unfold RewritingRule_wf in wfΓ.
                 specialize (wfΓ Hin).
                 unfold RewritingRule2_wf in *.
                 destruct wfΓ as [wf1 wf2].
@@ -1525,7 +1520,6 @@ Proof.
             destruct H1x as [y [H1y H2y]].
             inversion H2y; subst; clear H2y.
             simpl.
-            unfold rewriting_relation_flat.
             exists r.
             destruct Hmatch as [[Hin Hm1] Hm2].
             exists (r_act r).
@@ -1587,7 +1581,6 @@ Proof.
         unfold naive_interpreter.
 
         destruct Hnotstuck as [e' He'].
-        unfold rewriting_relation_flat in He'.
         destruct He' as [r' [a [H1r' H2r']]].
         unfold rewrites_to in H2r'.
         destruct H2r' as [ρ' Hρ'].
@@ -1607,13 +1600,10 @@ Proof.
             }
             {
                 ltac1:(exfalso).
-                unfold RewritingTheory_wf in wfΓ.
-                unfold RewritingRule_wf in wfΓ.
                 specialize (wfΓ r).
                 destruct Hin.
                 specialize (wfΓ ltac:(assumption)).
                 destruct wfΓ as [wf1 wf2].
-                unfold RewritingRule_wf2 in wf2.
                 specialize (wf2 e ρ).
                 specialize (wf2 ltac:(assumption) ltac:(assumption)).
                 destruct wf2 as [g' Hg'].
