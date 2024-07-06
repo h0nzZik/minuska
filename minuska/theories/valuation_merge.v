@@ -403,3 +403,82 @@ Proof.
 Qed.
 
 
+
+
+Lemma dom_merge_use_left
+    {Σ : StaticModel}
+    (ρ' ρ'' : Valuation2)
+    :
+    dom (merge Valuation2_use_left ρ' ρ'') = dom ρ'' ∪ dom ρ'
+.
+Proof.
+    unfold Valuation2 in *.
+    apply set_eq.
+    intros x.
+    rewrite elem_of_dom.
+    unfold is_Some.
+    rewrite lookup_merge.
+    unfold diag_None.
+    destruct (ρ' !! x) eqn:Heq1,(ρ'' !! x) eqn:Heq2; simpl.
+    {
+        split; intros H.
+        { 
+            destruct H as [x' Hx'].
+            inversion Hx'; subst; clear Hx'.
+            rewrite elem_of_union.
+            left.
+            rewrite elem_of_dom.
+            exists t0. assumption.
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            rewrite elem_of_union.
+            right.
+            rewrite elem_of_dom.
+            exists t.
+            assumption.
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            rewrite elem_of_union.
+            left.
+            rewrite elem_of_dom.
+            exists t.
+            assumption.
+        }
+        {
+            eexists. reflexivity.
+        }
+    }
+    {
+        split; intros H.
+        {
+            destruct H as [x' Hx'].
+            inversion Hx'.
+        }
+        {
+            rewrite elem_of_union in H.
+            destruct H as [H|H].
+            {
+                rewrite elem_of_dom in H.
+                destruct H as [g Hg].
+                ltac1:(simplify_eq/=).
+            }
+            {
+                rewrite elem_of_dom in H.
+                destruct H as [g Hg].
+                ltac1:(simplify_eq/=).
+            }
+        }
+    }
+Qed.

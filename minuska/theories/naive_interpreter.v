@@ -310,13 +310,19 @@ Proof.
                 unfold Valuation2_merge_with.
                 assert (Hcompat: Valuation2_compatible_with ρ' ρ'1 = true).
                 {
-                    
+                    eapply Valuation2_compatible_with_bound.
+                    { apply H5. }
+                    { apply HH2. }
                 }
+                rewrite Hcompat.
+                simpl.
                 exists ((merge Valuation2_use_left ρ' ρ'1)).
                 (repeat split).
                 {
-                    unfold vars_of; simpl.
-                    rewrite dom_merge_use_left.
+                    unfold Valuation2 in *.
+                    ltac1:(rewrite vars_of_t_term).
+                    Search dom merge.
+                    apply merge_valuations_dom.
                     Search dom merge.
                 }
                 {
