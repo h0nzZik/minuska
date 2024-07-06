@@ -42,8 +42,12 @@ Fixpoint try_match_new
         | t_term s' l' =>
             match (decide (s = s')) with
             | left _ =>
-                let tmp := zip_with try_match_new l' l in
-                Valuation2_merge_olist tmp
+                match (decide (length l = length l')) with
+                | left _ =>
+                    let tmp := zip_with try_match_new l' l in
+                    Valuation2_merge_olist tmp
+                | right _ => None
+                end
             | right _ => None
             end
         end
@@ -298,6 +302,8 @@ Proof.
                 }
                 destruct IHl as [ρ'1 [HH1 [HH2 HH3]]].
                 destruct (decide (s = s))>[|ltac1:(congruence)].
+                destruct (decide (length l0 = length l))>[|ltac1:(lia)].
+                clear e0.
                 apply Valuation2_merge_olist_vars_of in HH3 as HH3'.
                 rewrite HH3.
                 clear HH3.
@@ -338,10 +344,76 @@ Proof.
                     { assumption. }
                     { assumption. }
                 }
+                {
+                    ltac1:(repeat case_match).
+                    { reflexivity. }
+                    { ltac1:(lia). }
+                }
             }
         }
     }
 Qed.
+
+Lemma try_match_new_correct {Σ : StaticModel} :
+    ∀ (a : TermOver builtin_value) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
+        try_match_new a b = Some ρ ->
+        satisfies ρ a b
+.
+Proof.
+    intros a b.
+    revert a.
+    ltac1:(induction b using TermOver_rect); intros g ρ HH;
+        destruct g.
+    {
+        simpl in *.
+        ltac1:(repeat case_match; simpl in *; simplify_eq/=).
+        { unfold satisfies; simpl. ltac1:(simp sat2B). }
+        {
+            unfold satisfies; simpl.
+            ltac1:(simp sat2B).
+            simpl.
+            unfold Valuation2 in *.
+            apply lookup_insert.
+        }
+    }
+    {
+        simpl in *.
+        destruct a; simpl in *.
+        { inversion HH. }
+        {
+            ltac1:(simplify_eq/=).
+            unfold satisfies; simpl.
+            ltac1:(simp sat2B).
+            simpl.
+            unfold Valuation2 in *.
+            apply lookup_insert.
+        }
+    }
+    {
+        simpl in *. inversion HH.
+    }
+    {
+        simpl in *.
+        ltac1:(repeat case_match); subst.
+        {
+            unfold satisfies; simpl in *.
+            ltac1:(simp sat2B).
+            split>[reflexivity|].
+            split>[ltac1:(lia)|].
+            intros i t' φ' HHφ' HHt'.
+
+            eapply TermOverBoV_satisfies_extensive>[|apply X].
+            {  }
+            { rewrite elem_of_list_lookup. exists i. assumption. }
+
+            Search Valuation2_merge_olist.
+        }
+        {
+            inversion HH.
+        }
+    }
+Qed.
+
 
 Definition Valuation2_restrict
     {Σ : StaticModel}
@@ -353,7 +425,6 @@ Definition Valuation2_restrict
         (λ x : variable * (TermOver builtin_value), x.1 ∈ r)
         ρ
 .
-
 
 Lemma sc_satisfies_insensitive
     {Σ : StaticModel}
@@ -799,16 +870,18 @@ Qed.
 
 Lemma valuation_restrict_vars_of_self
     {Σ : StaticModel}
-    (ρ' ρ : gmap variable GroundTerm)
+    (ρ' ρ : Valuation2)
     :
     ρ' ⊆ ρ  ->
-    valuation_restrict ρ' (vars_of ρ') = valuation_restrict ρ (vars_of ρ')
+    Valuation2_restrict ρ' (vars_of ρ') = Valuation2_restrict ρ (vars_of ρ')
 .
 Proof.
     intros H.
+    unfold Valuation2 in *.
     rewrite map_eq_iff.
-    unfold valuation_restrict.
+    unfold Valuation2_restrict.
     intros i.
+    unfold Valuation2 in *.
     rewrite map_lookup_filter.
     rewrite map_lookup_filter.
     destruct (ρ' !! i) eqn:Hρ'i.
@@ -816,7 +889,7 @@ Proof.
         simpl.
         ltac1:(repeat case_guard; simpl in *; simplify_eq/=).
         {
-            assert (Hρi: ρ !! i = Some g).
+            assert (Hρi: ρ !! i = Some t).
             {
                 eapply lookup_weaken>[|apply H].
                 assumption.
@@ -835,6 +908,7 @@ Proof.
         {
             ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity; exfalso).
             unfold vars_of in *; simpl in *.
+            unfold Valuation2 in *.
             rewrite elem_of_dom in H0.
             destruct H0 as [g' Hg'].
             rewrite Hρ'i in Hg'.
@@ -846,40 +920,17 @@ Proof.
     }
 Qed.
 
-Definition thy_lhs_match_one
-    {Σ : StaticModel}
-    {Act : Set}
-    (e : TermOver builtin_value)
-    (Γ : list (RewritingRule2 Act))
-    : option (RewritingRule2 Act * Valuation2 * nat)%type
-:=
-    let froms : list (TermOver BuiltinOrVar)
-        := fr_from <$> Γ
-    in
-    let vs : list (option Valuation2)
-        := (try_match_lhs_with_sc e) <$> Γ
-    in
-    let found : option (nat * option Valuation)
-        := list_find isSome vs
-    in
-    nov ← found;
-    let idx : nat := nov.1 in
-    let ov : option Valuation := nov.2 in
-    v ← ov;
-    r ← Γ !! idx;
-    Some (r, v, idx)
-.
 
 Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
     {Act : Set}
-    (e : GroundTerm)
-    (Γ : RewritingTheory Act)
-    (wfΓ : RewritingTheory_wf Γ)
+    (e : TermOver builtin_value)
+    (Γ : RewritingTheory2 Act)
+    (wfΓ : RewritingTheory2_wf Γ)
     :
     thy_lhs_match_one e Γ = None ->
-    notT { r : RewritingRule Act & { ρ : Valuation &
-        ((r ∈ Γ) * (satisfies ρ e (fr_from r)) * (satisfies ρ tt (fr_scs r)))%type
+    notT { r : RewritingRule2 Act & { ρ : Valuation2 &
+        ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (satisfies ρ tt (r_scs r)))%type
     } }
         
 .
@@ -923,9 +974,7 @@ Proof.
         rewrite Forall_forall in Heqfound.
         ltac1:(rename HContra1 into Hsat1).
         ltac1:(rename HContra2 into Hsat2).
-        apply satisfies_matchesb in Hsat1.
-        apply satisfies_matchesb in Hsat2.
-        apply try_match_complete in Hsat1.
+        apply try_match_new_complete in Hsat1.
         destruct Hsat1 as [ρ' [H1 [H2 H3]]].
 
         assert (Hc := try_match_lhs_with_sc_complete e r).

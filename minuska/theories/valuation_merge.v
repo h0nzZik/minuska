@@ -512,3 +512,41 @@ Proof.
         { assumption. }
     }
 Qed.
+
+Lemma Valuation2_merge_olist_correct
+    {Σ : StaticModel}
+    (l : list (option Valuation2))
+    (ρ : Valuation2):
+    Valuation2_merge_olist l = Some ρ ->
+    ∀ (i : nat) ρ', l !! i = Some (Some ρ') -> ρ' ⊆ ρ
+.
+Proof.
+    revert ρ.
+    induction l; intros ρ HH i ρ' H1.
+    {
+        rewrite lookup_nil in H1.
+        inversion H1.
+    }
+    {
+        simpl in *.
+        rewrite bind_Some in HH.
+        destruct HH as [x [H1x H2x]].
+        subst a.
+        rewrite bind_Some in H2x.
+        destruct H2x as [y [H1y H2y]].
+        destruct i; simpl in *.
+        {
+            ltac1:(simplify_eq/=).
+            apply Valuation2_merge_with_correct in H2y.
+            apply (proj1 H2y).
+        }
+        {
+            specialize (IHl _ H1y i _ H1).
+            apply Valuation2_merge_with_correct in H2y.
+            unfold Valuation2 in *.
+            eapply transitivity.
+            { apply IHl. }
+            { apply (proj2 H2y). }
+        }
+    }
+Qed.
