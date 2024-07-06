@@ -7,8 +7,6 @@ From Minuska Require Import
     syntax_properties
     properties
     spec_interpreter
-    basic_matching
-    try_match
     valuation_merge
 .
 
@@ -887,7 +885,7 @@ Proof.
         apply bind_Some_T_2.
         exists ρ1.
         split>[apply H3ρ2|].
-        unfold matchesb in *; simpl in *.
+        simpl in *.
         ltac1:(case_match).
         { reflexivity. }
         unfold satisfies in H2; simpl in H2.
