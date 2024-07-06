@@ -1398,6 +1398,106 @@ Proof.
     }
 Qed.
 
+Lemma eval_et_correct_2
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (et : TermOver Expression2)
+    (g : TermOver builtin_value)
+    :
+    satisfies ρ g et ->
+    eval_et ρ et = Some g
+.
+Proof.
+    revert g.
+    induction et; intros g; destruct g; simpl in *; intros HH.
+    {
+        unfold satisfies in HH. simpl in HH.
+        ltac1:(simp sat2E in HH).
+        unfold eval_et. simpl. rewrite HH. simpl. reflexivity.
+    }
+    {
+        unfold satisfies in HH. simpl in HH.
+        ltac1:(simp sat2E in HH).
+        unfold eval_et. simpl. rewrite HH. simpl. reflexivity.
+    }
+    {
+        unfold satisfies in HH. simpl in HH.
+        ltac1:(simp sat2E in HH).
+        destruct HH.
+    }
+    {
+        unfold satisfies in HH. simpl in HH.
+        ltac1:(simp sat2E in HH).
+        destruct HH as [HH1 [HH2 HH3]].
+        subst s0.
+        revert l0 HH2 HH3.
+        induction l; intros l0 HH2 HH3; simpl in *.
+        {
+            destruct l0; simpl in *.
+            {
+                unfold eval_et; simpl.
+                reflexivity.
+            }
+            {
+                ltac1:(lia).
+            }
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            specialize (IHl IH2).
+            destruct l0.
+            {
+                simpl in *. ltac1:(lia).
+            }
+            {
+                clear IH2.
+                specialize (IHl l0 ltac:(simpl in *;lia)).
+                ltac1:(ospecialize (IHl _)).
+                {
+                    intros. apply HH3 with (i := (S i));
+                        simpl in *;
+                        assumption.
+                }
+                specialize (HH3 0 t a erefl erefl).
+
+
+                unfold eval_et in *.
+                ltac1:(rewrite [TermOver_map _ _]/=).
+                rewrite fmap_Some.
+                simpl.
+                ltac1:(setoid_rewrite bind_Some).
+                ltac1:(setoid_rewrite bind_Some).
+                ltac1:(setoid_rewrite bind_Some).
+
+                specialize (IH1 _ HH3).
+                rewrite fmap_Some in IH1.
+                destruct IH1 as [y [H1y H2y]].
+
+                rewrite fmap_Some in IHl.
+                destruct IHl as [x [H1x H2x]].
+                ltac1:(setoid_rewrite H1y).
+                simpl in H1x.
+                rewrite bind_Some in H1x.
+                destruct H1x as [z [H1z H2z]].
+                ltac1:(setoid_rewrite H1z).
+                exists (t_term s (y::z)).
+                subst t.
+                simpl.
+                ltac1:(simplify_eq/=).
+                (repeat split).
+                exists (y::z).
+                (repeat split).
+                exists y.
+                (repeat split).
+                exists z.
+                (repeat split).
+            }
+        }
+    }
+Qed.
+
+
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
     {Act : Set}
@@ -1433,11 +1533,10 @@ Proof.
             unfold rewrites_to.
             exists ρ.
             unfold rewrites_in_valuation_under_to.
-            repeat split; try assumption.
-            Search eval_et.
-            apply evaluate_rhs_pattern_correct in H1y.
-            apply matchesb_satisfies in H1y.
-            exact H1y.
+            apply eval_et_correct in H1y.
+            (repeat split); try assumption.
+            apply Hm2. exact H.
+            apply Hm2. exact H.
         }
         {
             inversion H1x.
@@ -1452,11 +1551,11 @@ Proof.
                 apply thy_lhs_match_one_Some in Hmatch.
                 destruct Hmatch as [Hin Hsat].
                 assert (Hts := @thy_lhs_match_one_Some Σ).
-                unfold rewriting_relation_flat in Hstuck.
-                unfold flattened_rewrites_to in Hstuck.
-                unfold flattened_rewrites_in_valuation_under_to in Hstuck.
-                assert (Hev := evaluate_rhs_pattern_correct (fr_to r) ρ).
-                ltac1:(cut (~ ∃ g', evaluate_rhs_pattern ρ (fr_to r) = Some g')).
+                unfold rewriting_relation in Hstuck.
+                unfold rewrites_to in Hstuck.
+                unfold rewrites_in_valuation_under_to in Hstuck.
+                assert (Hev := eval_et_correct ρ (r_to r)).
+                ltac1:(cut (~ ∃ g', eval_et ρ (r_to r) = Some g')).
                 {
                     intros HContra. clear -HContra.
                     rewrite <- eq_None_ne_Some.
@@ -1469,29 +1568,30 @@ Proof.
                 }
                 intros HContra.
                 destruct HContra as [pg' Hg'].
-                rewrite Hev in Hg'.
+                apply Hev in Hg'.
                 clear Hev.
-                apply matchesb_satisfies in Hg'.
                 apply Hstuck. clear Hstuck.
                 exists pg'. exists r.
-                exists (fr_act r).
+                exists (r_act r).
                 destruct Hin.
                 split>[assumption|].
                 exists ρ.
                 repeat split; try assumption.
+                { apply Hsat. assumption. }
+                { apply Hsat. assumption. }
             }
         }
     }
     {
         intros e Hnotstuck.
-        unfold flat_naive_interpreter.
+        unfold naive_interpreter.
 
         destruct Hnotstuck as [e' He'].
         unfold rewriting_relation_flat in He'.
         destruct He' as [r' [a [H1r' H2r']]].
-        unfold flattened_rewrites_to in H2r'.
+        unfold rewrites_to in H2r'.
         destruct H2r' as [ρ' Hρ'].
-        unfold flattened_rewrites_in_valuation_under_to in Hρ'.
+        unfold rewrites_in_valuation_under_to in Hρ'.
 
         
         destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
@@ -1501,7 +1601,7 @@ Proof.
             destruct Hmatch as [Hin Hsat].
             
             
-            destruct (evaluate_rhs_pattern ρ (fr_to r)) eqn:Heval.
+            destruct (eval_et ρ (r_to r)) eqn:Heval.
             {
                 eexists. reflexivity.
             }
@@ -1517,8 +1617,7 @@ Proof.
                 specialize (wf2 e ρ).
                 specialize (wf2 ltac:(assumption) ltac:(assumption)).
                 destruct wf2 as [g' Hg'].
-                apply satisfies_matchesb in Hg'.
-                assert (Hn : notT { g : _ & evaluate_rhs_pattern ρ (fr_to r) = Some g } ).
+                assert (Hn : notT { g : _ & eval_et ρ (r_to r) = Some g } ).
                 {
                     intros HContra.
                     destruct HContra as [g HContra].
@@ -1527,7 +1626,8 @@ Proof.
                 }
                 apply Hn. clear Hn.
                 exists g'.
-                rewrite evaluate_rhs_pattern_correct.
+                Check eval_et_correct.
+                Check evaluate_rhs_pattern_correct.
                 apply Hg'.
             }
         }
