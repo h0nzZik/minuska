@@ -1158,17 +1158,51 @@ Proof.
     }
 Qed.
 
+Lemma evaluate_scs_correct
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (scs : list SideCondition2)
+    :
+    evaluate_scs ρ scs = true ->
+    satisfies ρ () scs
+.
+Proof.
+    intros HH.
+    unfold evaluate_scs in HH.
+    rewrite forallb_forall in HH.
+    unfold satisfies; simpl.
+    intros x Hx.
+    specialize (HH x).
+    rewrite elem_of_list_In in Hx.
+    specialize (HH Hx).
+    
+    unfold evaluate_sc in HH.
+    unfold satisfies; simpl.
+    ltac1:(repeat case_match).
+    {
+        apply bool_decide_eq_true in HH.
+        subst.
+        (repeat split).
+    }
+    {
+        inversion HH.
+    }
+    {
+        inversion HH.
+    }
+Qed.
+
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
     {Act : Set}
-    (e : GroundTerm)
-    (Γ : list (RewritingRule Act))
-    (r : RewritingRule Act)
-    (ρ : Valuation)
+    (e : TermOver builtin_value)
+    (Γ : list (RewritingRule2 Act))
+    (r : RewritingRule2 Act)
+    (ρ : Valuation2)
     (rule_idx : nat)
     :
     thy_lhs_match_one e Γ = Some (r, ρ, rule_idx) ->
-    ((r ∈ Γ) * (satisfies ρ e (fr_from r)) * (satisfies ρ tt (fr_scs r)))%type
+    ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (satisfies ρ tt (r_scs r)))%type
 .
 Proof.
     intros H.
@@ -1208,12 +1242,10 @@ Proof.
                 unfold try_match_lhs_with_sc in HTM.
                 apply bind_Some_T_1 in HTM.
                 destruct HTM as [x [H1x H2x]].
-                destruct (matchesb x () (fr_scs r)) eqn:Heq.
+                destruct (evaluate_scs x (r_scs r)) eqn:Heq.
                 {
                     inversion H2x; subst; clear H2x.
-                    apply try_match_correct in H1x.
-                    apply matchesb_satisfies in Heq.
-                    apply matchesb_satisfies in H1x.
+                    apply try_match_new_correct in H1x.
                     assumption.
                 }
                 {
@@ -1230,13 +1262,11 @@ Proof.
             unfold try_match_lhs_with_sc in HTM.
             apply bind_Some_T_1 in HTM.
             destruct HTM as [x [H1x H2x]].
-            destruct (matchesb x () (fr_scs r)) eqn:Heq.
+            destruct (evaluate_scs x (r_scs r)) eqn:Heq.
             {
                 inversion H2x; subst; clear H2x.
-                apply try_match_correct in H1x.
-                apply matchesb_satisfies in Heq.
-                apply matchesb_satisfies in H1x.
-                assumption.
+                apply evaluate_scs_correct in Heq.
+                exact Heq.
             }
             {
                 inversion H2x.
