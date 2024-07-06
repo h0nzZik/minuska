@@ -334,26 +334,10 @@ Proof.
                     ltac1:(set_solver).
                 }
                 {
-
-                    Locate merge_use_left_below.
-                    Search merge subseteq.
+                    apply merge_use_left_below.
+                    { assumption. }
+                    { assumption. }
                 }
-            }
-        }
-
-
-        remember (Valuation2_merge_olist (zip_with try_match_new l l0) ) as onew.
-        destruct onew.
-        {
-            exists v.
-            (repeat split).
-            {
-                symmetry in Heqonew.
-                apply Valuation2_merge_olist_vars_of in Heqonew.
-                rewrite Heqonew. clear Heqonew.
-                unfold vars_of; simpl.
-                
-                Search union_list.
             }
         }
     }
