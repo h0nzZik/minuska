@@ -724,16 +724,19 @@ Proof.
         intros x Hx.
         rewrite <- elem_of_list_In in Hx.
         specialize (H2 x Hx) as H2x.
+
         apply sc_satisfies_insensitive with (v2 := ρ1) in H2x.
-        unfold satisfies in H2x. simpl in H2x. unfold evaluate_sc.
-        
-        ltac1:(repeat case_match; destruct_and?; simplify_eq/=).
         {
-            apply bool_decide_eq_true.
-            reflexivity.
-        }
-        {
-            ltac1:(congruence).
+            unfold satisfies in H2x. simpl in H2x. unfold evaluate_sc.
+            
+            ltac1:(repeat case_match; destruct_and?; simplify_eq/=).
+            {
+                apply bool_decide_eq_true.
+                reflexivity.
+            }
+            {
+                ltac1:(congruence).
+            }
         }
         {
             unfold Valuation2_restrict.
@@ -764,75 +767,32 @@ Proof.
                     }
                     unfold Valuation2 in *.
                     rewrite H1ρ1 in Htmp.
+                    clear - Htmp Hn Hx H.
+                    rewrite elem_of_list_lookup in Hx.
+                    destruct Hx as [j Hj].
+                    apply take_drop_middle in Hj.
+                    rewrite <- Hj in Hn. clear Hj.
+                    unfold vars_of at 1 in Hn; simpl in Hn.
+                    rewrite fmap_app in Hn.
+                    rewrite union_list_app in Hn.
+                    rewrite fmap_cons in Hn.
+                    rewrite union_list_cons in Hn.
+                    ltac1:(set_solver).
                 }
                 {
-                    eapply lookup_weaken in Hρ1i.
+                    ltac1:(exfalso).
+                    eapply lookup_weaken in Hρ1i>[|apply H2ρ1].
                     rewrite Hρi in Hρ1i.
                     inversion Hρ1i.
                 }
                 { reflexivity. }
             }
             {
-                eapply lookup_weaken in H0.
-                rewrite Hρi in H0.
-                exact H0.
-                exact H2ρ1.
+                destruct (ρ !! i) as [y|] eqn:Hρi, (ρ1 !! i) as [z|] eqn:Hρ1i;
+                    ltac1:(simplify_option_eq);
+                    reflexivity.
             }
             
-        }
-        
-        Locate matchesb_insensitive.
-        erewrite matchesb_insensitive in H2. apply H2.
-        unfold valuation_restrict.
-        rewrite map_eq_iff.
-        intros i.
-        do 2 (rewrite map_lookup_filter).
-        unfold Valuation in *.
-        
-        destruct (ρ!!i) eqn:Hρi, (ρ1!!i) eqn:Hρ1i; simpl in *.
-        {
-            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity).
-            ltac1:(rewrite map_subseteq_spec in H2ρ1).
-            specialize (H2ρ1 i).
-            specialize (H2ρ1 g1 Hρ1i).
-            ltac1:(simplify_eq/=).
-            reflexivity.
-        }
-        {
-            ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity).
-            ltac1:(exfalso).
-
-            ltac1:(cut(i ∈ vars_of ρ1)).
-            {
-                intros HHH. unfold vars_of in HHH; simpl in HHH.
-                rewrite elem_of_dom in HHH.
-                destruct HHH as [s Hs].
-                rewrite Hs in Hρ1i.
-                inversion Hρ1i.
-            }
-            clear H2ρ1.
-            rewrite H1ρ1.
-            clear H1ρ1.
-            eapply elem_of_weaken>[|apply Hn].
-            clear Hn.
-            rewrite <- elem_of_list_In in Hx.
-            unfold vars_of; simpl.
-            rewrite elem_of_union_list.
-            exists (vars_of x).
-            split>[|assumption].
-            rewrite elem_of_list_fmap.
-            exists x.
-            split>[reflexivity|].
-            exact Hx.
-        }
-        {
-            ltac1:(exfalso).
-            eapply lookup_weaken in Hρ1i>[|apply H2ρ1].
-            rewrite Hρi in Hρ1i.
-            inversion Hρ1i.
-        }
-        {
-            reflexivity.
         }
     }
 Qed.
