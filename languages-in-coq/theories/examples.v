@@ -802,9 +802,7 @@ Module imp.
         (naive_interpreter Γ.1) 
     .
     Proof.
-        Check @naive_interpreter_sound.
-        apply @naive_interpreter_sound.
-        { apply _. }
+        apply naive_interpreter_sound.
         ltac1:(assert(Htmp: isSome(RewritingTheory2_wf_heuristics (Γ.1)))).
         {
             ltac1:(compute_done).

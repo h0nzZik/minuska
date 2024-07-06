@@ -208,6 +208,17 @@
                 packages = [minuska minuska.coqPackages.coq-lsp minuska.coqPackages.coq];
               };
 
+          languages-in-coq =
+            let
+              languages-in-coq = self.outputs.packages.${system}.languages-in-coq;
+            in
+              pkgs.mkShell {
+                inputsFrom = [languages-in-coq];
+                packages = [
+                  languages-in-coq.coqPackages.coq-lsp
+                ];
+              };
+
           examples-coq =
             let
               examples-coq = self.outputs.packages.${system}.examples-coq;
