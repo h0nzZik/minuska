@@ -483,6 +483,42 @@ Definition Valuation2_restrict
         ρ
 .
 
+
+Lemma Valuation2_restrict_eq_subseteq
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (r r' : gset variable)
+:
+    r ⊆ r' ->
+    Valuation2_restrict ρ1 r' = Valuation2_restrict ρ2 r' ->
+    Valuation2_restrict ρ1 r = Valuation2_restrict ρ2 r
+.
+Proof.
+    intros H1 H2.
+    unfold Valuation2 in *.
+    unfold Valuation2_restrict in *.
+    rewrite map_eq_iff.
+    rewrite map_eq_iff in H2.
+    intros x.
+    specialize (H2 x).
+    do 2 ltac1:(rewrite map_lookup_filter in H2).
+    do 2 ltac1:(rewrite map_lookup_filter).
+    simpl in *.
+    rewrite elem_of_subseteq in H1.
+    specialize (H1 x).
+    simpl in *.
+    ltac1:(case_guard as Hcg1; case_guard as Hcg2); simpl in *; try ltac1:(auto with nocore).
+    {
+        destruct (ρ1 !! x) eqn:Hρ1x, (ρ2 !! x) eqn:Hρ2x; simpl in *;
+            reflexivity.
+    }
+    {
+        ltac1:(exfalso).
+        ltac1:(auto with nocore).
+    }
+Qed.
+
+
 Lemma sc_satisfies_insensitive
     {Σ : StaticModel}
     :
@@ -1046,23 +1082,38 @@ Proof.
             apply wfΓ.
         }
         assert (H3' := H3).
-        apply try_match_correct in H3'.
+        apply try_match_new_correct in H3'.
         specialize (Hc H3').
         ltac1:(ospecialize (Hc _)).
         {
-            erewrite matchesb_insensitive.
-            apply Hsat2.
+            unfold satisfies; simpl.
+            intros x Hx.
+            eapply sc_satisfies_insensitive in Hsat2 as Hsat2'. apply Hsat2'.
             unfold RewritingTheory_wf in wfΓ.
-            unfold is_true in wfΓ.
-            specialize (wfΓ r).
-            unfold RewritingRule_wf in wfΓ.
-            specialize (wfΓ Hin).
-            eapply valuation_restrict_eq_subseteq.
-            { apply wfΓ. }
-            rewrite <- H1.
-            clear -H2.
-            apply valuation_restrict_vars_of_self.
-            assumption.
+            assert (Htmp := valuation_restrict_vars_of_self ρ' ρ H2).
+            eapply Valuation2_restrict_eq_subseteq in Htmp.
+            symmetry. apply Htmp.
+            {
+                rewrite H1.
+                
+                unfold is_true in wfΓ.
+                specialize (wfΓ r).
+                unfold RewritingRule_wf in wfΓ.
+                specialize (wfΓ Hin).
+                unfold RewritingRule2_wf in *.
+                destruct wfΓ as [wf1 wf2].
+                unfold RewritingRule2_wf1 in *.
+                unfold RewritingRule2_wf2 in *.
+                eapply transitivity>[|apply wf1].
+                unfold vars_of at 2; simpl.
+                rewrite elem_of_list_lookup in Hx.
+                destruct Hx as [i Hi].
+                apply take_drop_middle in Hi.
+                rewrite <- Hi.
+                ltac1:(rewrite fmap_app fmap_cons union_list_app union_list_cons).
+                ltac1:(set_solver).
+            }
+            { exact Hx. }
         }
         destruct Hc as [ρ'' [H1ρ'' [H2ρ'' H3ρ'']]].
 
@@ -1071,7 +1122,7 @@ Proof.
         {
             clear Heqfound.
             
-            unfold Valuation in *.
+            unfold Valuation2 in *.
             rewrite elem_of_list_fmap.
             exists (r).
             split.
