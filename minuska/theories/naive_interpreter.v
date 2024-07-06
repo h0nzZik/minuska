@@ -408,15 +408,52 @@ Proof.
             rewrite <- tdm2 in HH.
             rewrite zip_with_app in HH.
             {
+
                 rewrite <- zip_with_take in HH.
                 simpl in HH.
+                apply Valuation2_merge_olist_inv with (i := i) in HH as HH''.
+                destruct HH'' as [ρ' HHρ'].
                 eapply TermOverBoV_satisfies_extensive>[|apply X].
                 { 
                     eapply Valuation2_merge_olist_correct in HH as HH'.
                     apply HH'.
-                
+                    apply HHρ'.
                 }
                 { rewrite elem_of_list_lookup. exists i. assumption. }
+                
+                simpl in HHρ'.
+                rewrite lookup_app_r in HHρ'.
+                rewrite take_length in HHρ'.
+                rewrite zip_with_length in HHρ'.
+                unfold Valuation2,TermOver in *.
+                rewrite e0 in HHρ'.
+                unfold Valuation2,TermOver in *.
+                rewrite Nat.min_id in HHρ'.
+                assert (Hm : i `min` length l0 = i).
+                {
+                    apply lookup_lt_Some in HHφ'.
+                    ltac1:(lia).
+                }
+                rewrite Hm in HHρ'.
+                rewrite Nat.sub_diag in HHρ'.
+                simpl in HHρ'.
+                ltac1:(simplify_eq/=).
+                assumption.
+                {
+                    rewrite take_length.
+                    rewrite zip_with_length.
+                    ltac1:(lia).
+                }
+                rewrite app_length.
+                rewrite take_length.
+                simpl.
+                rewrite zip_with_length.
+                rewrite zip_with_length.
+                rewrite drop_length.
+                rewrite drop_length.
+                unfold Valuation2,TermOver in *.
+                apply lookup_lt_Some in HHφ'.
+                ltac1:(lia).
             }
             {
                 unfold Valuation2,TermOver in *.
@@ -424,8 +461,9 @@ Proof.
                 rewrite take_length.
                 ltac1:(lia).
             }
-
-            Search Valuation2_merge_olist.
+        }
+        {
+            inversion HH.
         }
         {
             inversion HH.
