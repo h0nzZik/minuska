@@ -366,7 +366,7 @@ mkSatisfies {
          whose result is not in Prop.
     *)
     satisfies :
-        V -> A -> B -> NondetValue -> Type ;
+        V -> A -> B -> Type ;
 }.
 
 Arguments satisfies : simpl never.
@@ -428,7 +428,7 @@ Instance Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_instnace
         (BuiltinOrVar)
         variable
 := {|
-    satisfies := fun ρ tg ts _ => Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ tg ts ;
+    satisfies := fun ρ tg ts => Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ tg ts ;
 |}.
 
 Equations? sat2B
@@ -526,11 +526,11 @@ Instance Satisfies_TermOverBuiltin_TermOverExpression2
     {Σ : StaticModel}
     : Satisfies
         Valuation2
-        (TermOver builtin_value)
+        (NondetValue*(TermOver builtin_value))
         (TermOver Expression2)
         variable
 := {|
-    satisfies := fun ρ tg ts => sat2E ρ tg ts ;
+    satisfies := fun ρ tgnv ts => sat2E ρ tgnv.2 ts tgnv.1 ;
 |}.
 
 #[export]
@@ -538,11 +538,11 @@ Instance Satisfies_SideCondition2
     {Σ : StaticModel}
     : Satisfies
         Valuation2
-        unit
+        NondetValue
         SideCondition2
         variable
 := {|
-    satisfies := fun ρ _ sc nv =>
+    satisfies := fun ρ nv sc =>
         match (Expression2_evaluate ρ (sc_left sc)),(Expression2_evaluate ρ (sc_right sc)) with
         | Some v1, Some v2 => v1 nv = v2 nv
         | _, _ => False
@@ -555,11 +555,11 @@ Instance Satisfies_Valuation2_scs2
     {Σ : StaticModel}
     : Satisfies
         Valuation2
-        unit
+        NondetValue
         (list SideCondition2)
         variable
 := {|
-    satisfies := fun ρ _ l nv => forall x, x ∈ l -> satisfies ρ () x nv;
+    satisfies := fun ρ nv l => forall x, x ∈ l -> satisfies ρ nv x;
 |}.
 
 #[export]
@@ -571,7 +571,7 @@ Instance Satisfies_Valuation2_TermOverBuiltin_TermOverBoV
         (TermOver BuiltinOrVar)
         variable
 := {|
-    satisfies := fun ρ tg ts _ => sat2B ρ tg ts
+    satisfies := fun ρ tg ts => sat2B ρ tg ts
 |}.
 
 Definition rewrites_in_valuation_under_to
@@ -584,9 +584,9 @@ Definition rewrites_in_valuation_under_to
     (nv : NondetValue)
     (to : TermOver builtin_value)
     : Type
-:= ((satisfies ρ from (r_from r) nv)
-* (satisfies ρ to (r_to r) nv)
-* (satisfies ρ tt (r_scs r) nv)
+:= ((satisfies ρ from (r_from r))
+* (satisfies ρ (nv,to) (r_to r))
+* (satisfies ρ nv (r_scs r))
 * (under = r_act r)
 )%type
 .
