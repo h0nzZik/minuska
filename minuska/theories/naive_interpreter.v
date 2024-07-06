@@ -176,6 +176,18 @@ Definition naive_interpreter_ext
     end
 .
 
+Definition naive_interpreter
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : list (RewritingRule2 Act))
+    (e : TermOver builtin_value)
+    : option (TermOver builtin_value)
+:=
+    ei ← naive_interpreter_ext Γ e;
+    Some (ei.1)
+.
+
+
 
 Lemma try_match_new_complete
     {Σ : StaticModel}
@@ -1275,70 +1287,129 @@ Proof.
     }
 Qed.
 
-
-Definition flat_naive_interpreter_ext
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule Act))
-    (e : GroundTerm)
-    : option (GroundTerm*nat)
-:=
-    let oρ : option ((RewritingRule Act)*Valuation*nat)
-        := thy_lhs_match_one e Γ in
-    match oρ with
-    | None => None
-    | Some (r,ρ,idx) =>
-        e' ← (evaluate_rhs_pattern ρ (fr_to r));
-        Some (e',idx)
-    end
+Lemma list_collect_Some_length
+    {A : Type}
+    (l : list (option A))
+    (l' : list A)
+    :
+    list_collect l = Some l' ->
+    length l = length l'
 .
-
-Definition naive_interpreter_ext
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
-    (e : TermOver builtin_value)
-    : option ((TermOver builtin_value)*nat)
-:=
-    let oρ : option ((RewritingRule2 Act)*Valuation2*nat)
-        := thy_lhs_match_one e Γ in
-    match oρ with
-    | None => None
-    | Some (r,ρ,idx) =>
-        e' ← (evaluate_rhs_pattern ρ (fr_to r));
-        Some (e',idx)
-    end
-
-    ab ← (@flat_naive_interpreter_ext Σ Act (fmap r_to_fr Γ) (uglify' e));
-    Some (prettify ab.1, ab.2)
-.
-
-Definition flat_naive_interpreter
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : RewritingTheory Act)
-    (e : GroundTerm)
-    : option (GroundTerm)
-:=
-    ei ← flat_naive_interpreter_ext Γ e;
-    Some ei.1
-.
-
-
-
-
-Lemma flat_naive_interpreter_sound
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : RewritingTheory Act)
-    : FlatInterpreter_sound Γ (flat_naive_interpreter Γ).
 Proof.
-    unfold FlatInterpreter_sound.
+    revert l'.
+    induction l; intros l' HH; destruct l'; simpl in *.
+    { reflexivity. }
+    {
+        ltac1:(simplify_eq/=).
+    }
+    {
+        ltac1:(simplify_option_eq).
+    }
+    {
+        ltac1:(simplify_option_eq).
+        erewrite IHl.
+        reflexivity.
+        reflexivity.
+    }
+Qed.
+
+Lemma eval_et_correct
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (et : TermOver Expression2)
+    (g : TermOver builtin_value)
+    :
+    eval_et ρ et = Some g ->
+    satisfies ρ g et
+.
+Proof.
+    intros HH.
+    unfold satisfies; simpl.
+    unfold eval_et in HH.
+    revert g HH.
+    induction et; simpl in *; intros g HH.
+    {
+        destruct (Expression2_evaluate ρ a) eqn:Heq.
+        {
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            ltac1:(simp sat2E).
+        }
+        {
+            simpl in *.
+            inversion HH.
+        }
+    }
+    {
+        destruct g.
+        {
+            simpl in *.
+            ltac1:(simplify_option_eq).
+        }
+        {   
+            ltac1:(simplify_option_eq).
+            ltac1:(simp sat2E).
+            split>[reflexivity|].
+            rewrite fmap_length.
+            ltac1:(rename H1 into l1).
+            split.
+            {
+                apply list_collect_Some_length in Heqo0.
+                rewrite fmap_length in Heqo0.
+                rewrite map_length in Heqo0.
+                symmetry. assumption.
+            }
+            {
+                revert l1 Heqo0.
+                induction l; intros l1 HH.
+                {
+                    intros.
+                    rewrite lookup_nil in pf1.
+                    inversion pf1.
+                }
+                {
+                    rewrite Forall_cons in H.
+                    destruct H as [IH1 IH2].
+                    specialize (IHl IH2).
+                    simpl in HH.
+                    ltac1:(simplify_option_eq).
+                    symmetry in Heqo0.
+                    destruct (list_collect (TermOver_collect <$> map (TermOver_map (Expression2_evaluate ρ)) l)) eqn:Heq';
+                        ltac1:(simplify_eq/=).
+                    specialize (IHl _ erefl).
+                    intros.
+                    destruct i.
+                    {
+                        simpl in *.
+                        ltac1:(simplify_eq/=).
+                        apply IH1.
+                        { reflexivity. }
+                    }
+                    {
+                        simpl in *.
+                        apply IHl with (i := i ).
+                        assumption.
+                        assumption.
+                    }
+
+                }
+            }
+        }
+    }
+Qed.
+
+Lemma naive_interpreter_sound
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : RewritingTheory2 Act)
+    : Interpreter_sound Γ (naive_interpreter Γ).
+Proof.
+    unfold Interpreter_sound.
     intros wfΓ.
-    unfold flat_naive_interpreter.
-    unfold FlatInterpreter_sound.
-    unfold flat_stuck,not_stuck_flat.
-    unfold flat_naive_interpreter_ext.
+    unfold naive_interpreter.
+    unfold Interpreter_sound.
+    unfold stuck,not_stuck.
+    unfold naive_interpreter_ext.
     repeat split.
     {
         intros e1 e2.
@@ -1357,12 +1428,13 @@ Proof.
             unfold rewriting_relation_flat.
             exists r.
             destruct Hmatch as [[Hin Hm1] Hm2].
-            exists (fr_act r).
+            exists (r_act r).
             split>[apply Hin|].
-            unfold flattened_rewrites_to.
+            unfold rewrites_to.
             exists ρ.
-            unfold flattened_rewrites_in_valuation_under_to.
+            unfold rewrites_in_valuation_under_to.
             repeat split; try assumption.
+            Search eval_et.
             apply evaluate_rhs_pattern_correct in H1y.
             apply matchesb_satisfies in H1y.
             exact H1y.
@@ -1472,16 +1544,6 @@ Proof.
 Qed.
 
 
-Definition naive_interpreter
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
-    (e : TermOver builtin_value)
-    : option (TermOver builtin_value)
-:=
-    ei ← flat_naive_interpreter_ext (fmap r_to_fr Γ) (uglify' e);
-    Some (prettify ei.1)
-.
 
 Lemma vars_of_E2conv
     {Σ : StaticModel}
