@@ -434,3 +434,16 @@ Lemma vars_of_t_term_e
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
 Proof. reflexivity. Qed.
+
+
+Fixpoint TermOver_size_with
+    {T : Type}
+    {A : Type}
+    (fsz : A -> nat)
+    (t : @TermOver' T A)
+    : nat
+:=
+match t with
+| t_over a => fsz a
+| t_term _ l => S (sum_list_with (S ∘ TermOver_size_with fsz) l)
+end.
