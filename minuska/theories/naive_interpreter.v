@@ -1626,8 +1626,7 @@ Proof.
                 }
                 apply Hn. clear Hn.
                 exists g'.
-                Check eval_et_correct.
-                Check evaluate_rhs_pattern_correct.
+                apply eval_et_correct_2 in Hg'.
                 apply Hg'.
             }
         }
@@ -1638,6 +1637,10 @@ Proof.
             apply Hmatch.
             exists r'. exists ρ'.
             (repeat split); try assumption.
+            apply H3.
+            assumption.
+            apply H3.
+            assumption.
             assumption.
         }
     }
