@@ -367,7 +367,7 @@ Proof.
     {
         simpl in *.
         ltac1:(repeat case_match; simpl in *; simplify_eq/=).
-        { unfold satisfies; simpl. ltac1:(simp sat2B). }
+        { unfold satisfies; simpl. ltac1:(simp sat2B). simpl. reflexivity. }
         {
             unfold satisfies; simpl.
             ltac1:(simp sat2B).
@@ -401,10 +401,29 @@ Proof.
             split>[reflexivity|].
             split>[ltac1:(lia)|].
             intros i t' φ' HHφ' HHt'.
-
-            eapply TermOverBoV_satisfies_extensive>[|apply X].
-            {  }
-            { rewrite elem_of_list_lookup. exists i. assumption. }
+            clear H0.
+            apply take_drop_middle in HHφ' as tdm1.
+            apply take_drop_middle in HHt' as tdm2.
+            rewrite <- tdm1 in HH.
+            rewrite <- tdm2 in HH.
+            rewrite zip_with_app in HH.
+            {
+                rewrite <- zip_with_take in HH.
+                simpl in HH.
+                eapply TermOverBoV_satisfies_extensive>[|apply X].
+                { 
+                    eapply Valuation2_merge_olist_correct in HH as HH'.
+                    apply HH'.
+                
+                }
+                { rewrite elem_of_list_lookup. exists i. assumption. }
+            }
+            {
+                unfold Valuation2,TermOver in *.
+                rewrite take_length.
+                rewrite take_length.
+                ltac1:(lia).
+            }
 
             Search Valuation2_merge_olist.
         }
