@@ -28,7 +28,7 @@ Definition Interpreter
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
     : Type
-    := TermOver builtin_value -> option (TermOver builtin_value)
+    := TermOver builtin_value -> NondetValue -> option (TermOver builtin_value)
 .
 
 Definition Interpreter_sound'

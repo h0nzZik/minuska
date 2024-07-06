@@ -54,11 +54,12 @@ Fixpoint try_match_new
 Definition evaluate_sc
     {Σ : StaticModel}
     (ρ : Valuation2)
+    (nv : NondetValue)
     (sc : SideCondition2)
     : bool
 :=
     match Expression2_evaluate ρ (sc_left sc), Expression2_evaluate ρ (sc_right sc) with
-    | Some l, Some r => bool_decide (l = r)
+    | Some l, Some r => bool_decide (l nv = r nv)
     | _, _ => false
     end
 .
@@ -66,21 +67,23 @@ Definition evaluate_sc
 Definition evaluate_scs
     {Σ : StaticModel}
     (ρ : Valuation2)
+    (nv : NondetValue)
     (scs : list SideCondition2)
     : bool
 :=
-    forallb (evaluate_sc ρ ) scs
+    forallb (evaluate_sc ρ nv) scs
 .
 
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
     {Act : Set}
     (g : TermOver builtin_value)
+    (nv : NondetValue)
     (r : RewritingRule2 Act)
     : option Valuation2
 :=
     ρ ← try_match_new g (r_from r);
-    if evaluate_scs ρ (r_scs r)
+    if evaluate_scs ρ nv (r_scs r)
     then (Some ρ)
     else None
 .
@@ -89,6 +92,7 @@ Definition thy_lhs_match_one
     {Σ : StaticModel}
     {Act : Set}
     (e : TermOver builtin_value)
+    (nv : NondetValue)
     (Γ : list (RewritingRule2 Act))
     : option (RewritingRule2 Act * Valuation2 * nat)%type
 :=
@@ -96,7 +100,7 @@ Definition thy_lhs_match_one
         := r_from <$> Γ
     in
     let vs : list (option Valuation2)
-        := (try_match_lhs_with_sc e) <$> Γ
+        := (try_match_lhs_with_sc e nv) <$> Γ
     in
     let found : option (nat * option Valuation2)
         := list_find isSome vs
@@ -150,10 +154,13 @@ Fixpoint TermOver_join
 Definition eval_et
     {Σ : StaticModel}
     (ρ : Valuation2)
+    (nv : NondetValue)
     (et : TermOver Expression2)
     : option (TermOver builtin_value)
 :=
-    TermOver_join <$> (TermOver_collect (TermOver_map (Expression2_evaluate ρ) et))
+    let tmp1 := (TermOver_map (fun x => let y := Expression2_evaluate ρ x in ((fun f => f nv)<$> y)) et) in
+    let tmp2 := (TermOver_collect tmp1) in
+    TermOver_join <$> tmp2
 .
 
 Definition naive_interpreter_ext
