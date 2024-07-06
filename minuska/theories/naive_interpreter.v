@@ -723,7 +723,64 @@ Proof.
         rewrite forallb_forall.
         intros x Hx.
         rewrite <- elem_of_list_In in Hx.
-        specialize (H2 x Hx).
+        specialize (H2 x Hx) as H2x.
+        apply sc_satisfies_insensitive with (v2 := ρ1) in H2x.
+        unfold satisfies in H2x. simpl in H2x. unfold evaluate_sc.
+        
+        ltac1:(repeat case_match; destruct_and?; simplify_eq/=).
+        {
+            apply bool_decide_eq_true.
+            reflexivity.
+        }
+        {
+            ltac1:(congruence).
+        }
+        {
+            unfold Valuation2_restrict.
+            unfold Valuation2 in *.
+            apply map_eq.
+            intros i.
+            rewrite map_lookup_filter.
+            rewrite map_lookup_filter.
+            ltac1:(simplify_option_eq).
+            {
+                unfold mbind,option_bind.
+                destruct (ρ !! i) as [y|] eqn:Hρi, (ρ1 !! i) as [z|] eqn:Hρ1i.
+                {
+                    eapply lookup_weaken in Hρ1i.
+                    rewrite Hρi in Hρ1i.
+                    exact Hρ1i.
+                    exact H2ρ1.     
+                }
+                {
+                    ltac1:(exfalso).
+                    unfold vars_of in H1ρ1 at 1; simpl in H1ρ1.
+                    assert (Htmp : i ∉ dom ρ1).
+                    {
+                        intros HContra.
+                        rewrite elem_of_dom in HContra.
+                        destruct HContra as [zz Hzz].
+                        ltac1:(simplify_eq/=).
+                    }
+                    unfold Valuation2 in *.
+                    rewrite H1ρ1 in Htmp.
+                }
+                {
+                    eapply lookup_weaken in Hρ1i.
+                    rewrite Hρi in Hρ1i.
+                    inversion Hρ1i.
+                }
+                { reflexivity. }
+            }
+            {
+                eapply lookup_weaken in H0.
+                rewrite Hρi in H0.
+                exact H0.
+                exact H2ρ1.
+            }
+            
+        }
+        
         Locate matchesb_insensitive.
         erewrite matchesb_insensitive in H2. apply H2.
         unfold valuation_restrict.
