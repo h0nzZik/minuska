@@ -597,12 +597,11 @@ Definition rewrites_to
     (r : RewritingRule2 Act)
     (from : TermOver builtin_value)
     (under : Act)
+    (nv : NondetValue)
     (to : TermOver builtin_value)
     : Type
 := { ρ : Valuation2 &
-    { nv : NondetValue &
         rewrites_in_valuation_under_to ρ r from under nv to
-    }
    }
 .
 
@@ -610,7 +609,8 @@ Definition rewriting_relation
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
+    (nv : NondetValue)
     : TermOver builtin_value -> TermOver builtin_value -> Type
     := fun from to =>
-        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to r from a to)%type}}
+        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to r from a nv to)%type}}
 .

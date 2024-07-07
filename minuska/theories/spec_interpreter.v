@@ -10,7 +10,7 @@ Definition not_stuck
     (Γ : list (RewritingRule2 Act))
     (e : TermOver builtin_value) : Type
 :=
-    { e' : _ & rewriting_relation Γ e e' }
+    { e' : _ & { nv : NondetValue & rewriting_relation Γ nv e e' } }
 .
 
 Definition stuck
@@ -38,16 +38,16 @@ Definition Interpreter_sound'
     (interpreter : Interpreter Γ)
     : Type
     := ((
-        forall e1 e2,
-            interpreter e1 = Some e2 ->
-            rewriting_relation Γ e1 e2
+        forall e1 e2 nv,
+            interpreter e1 nv = Some e2 ->
+            rewriting_relation Γ nv e1 e2
     )
     *
     (forall e,
-        stuck Γ e -> interpreter e = None)
+        stuck Γ e -> forall nv, interpreter e nv = None)
     * (forall e,
         not_stuck Γ e ->
-        exists e', interpreter e = Some e')
+        exists e' (nv : NondetValue), interpreter e nv = Some e')
     )%type
 .
 

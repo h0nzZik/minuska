@@ -167,15 +167,16 @@ Definition naive_interpreter_ext
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
+    (nv : NondetValue)
     (e : TermOver builtin_value)
     : option ((TermOver builtin_value)*nat)
 :=
     let oρ : option ((RewritingRule2 Act)*Valuation2*nat)
-        := thy_lhs_match_one e Γ in
+        := thy_lhs_match_one e nv Γ in
     match oρ with
     | None => None
     | Some (r,ρ,idx) =>
-        e' ← (eval_et ρ (r_to r));
+        e' ← (eval_et ρ nv (r_to r));
         Some (e',idx)
     end
 .
@@ -184,10 +185,11 @@ Definition naive_interpreter
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
+    (nv : NondetValue)
     (e : TermOver builtin_value)
     : option (TermOver builtin_value)
 :=
-    ei ← naive_interpreter_ext Γ e;
+    ei ← naive_interpreter_ext Γ nv e;
     Some (ei.1)
 .
 
@@ -345,8 +347,9 @@ Proof.
                     ltac1:(rewrite vars_of_t_term).
                     rewrite fmap_cons.
                     rewrite union_list_cons.
-                    unfold vars_of at 1; simpl.
-                    ltac1:(rewrite dom_merge_use_left).
+                    unfold TermOver,Valuation2 in *.
+                    (*ltac1:(unfold vars_of at 1; simpl).
+                    ltac1:(rewrite dom_merge_use_left).*)
                     unfold vars_of at 1 in HH1; simpl in HH1.
                     rewrite HH1.
                     ltac1:(rewrite vars_of_t_term).
