@@ -416,39 +416,6 @@ match ao with
 | pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
-
-#[export]
-Instance TermOver_count
-    {T : Type}
-    {A : Type}
-    {_edT : EqDecision T}
-    {_edA : EqDecision A}
-    {_cT : Countable T}
-    {_cA : Countable A}
-    :
-    Countable (@TermOver' T A)
-.
-Proof.
-    ltac1:(unshelve(eapply inj_countable)).
-    { apply (Term' T A). }
-    { apply uglify'. }
-    {
-        intros t. apply prettify in t.
-        apply Some. exact t.
-    }
-    { apply _. }
-    {
-        abstract(
-            intros x;
-            simpl;
-            rewrite (cancel prettify uglify');
-            reflexivity
-        ).
-    }
-Defined.
-
-
-
 Lemma compose_prettify_uglify
     {T : Type}
     (A : Type)

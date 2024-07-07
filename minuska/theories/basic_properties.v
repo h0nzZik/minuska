@@ -447,3 +447,97 @@ match t with
 | t_over a => fsz a
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size_with fsz) l)
 end.
+
+
+Fixpoint TO_to_tree
+    {T : Type}
+    {A : Type}
+    (t : @TermOver' T A)
+    :
+    (gen_tree (T+A)%type)
+:=
+    match t with
+    | t_over a => GenLeaf (inr a)
+    | t_term s l =>
+        let l' := TO_to_tree <$> l in
+        GenNode 0 ((GenLeaf (inl s))::l')
+    end
+.
+
+Fixpoint TO_of_tree
+    {T : Type}
+    {A : Type}
+    (t : (gen_tree (T+A)%type))
+    :
+    option (@TermOver' T A)
+:=
+match t with
+| GenLeaf (inr a) =>
+    Some (t_over a)
+
+| GenNode 0 (GenLeaf (inl s)::l') =>
+    l ← list_collect (TO_of_tree <$> l');
+    Some (t_term s l)
+
+| GenLeaf (inl _) => None
+| GenNode 0 ((GenNode _ _)::_) => None
+| GenNode 0 (GenLeaf (inr _)::_) => None
+| GenNode 0 [] => None
+| GenNode (S _) _ => None
+end
+.
+
+Lemma TO_from_to_tree
+    {T : Type}
+    {A : Type}
+    :
+    forall t,
+        @TO_of_tree T A (TO_to_tree t) = Some t
+.
+Proof.
+    intros t; induction t.
+    { reflexivity. }
+    {
+        simpl.
+        rewrite bind_Some.
+        exists l.
+        (repeat split).
+        induction l.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            specialize (IHl IH2).
+            clear IH2.
+            rewrite fmap_cons.
+            rewrite fmap_cons.
+            rewrite IH1. clear IH1.
+            simpl.
+            rewrite IHl.
+            simpl.
+            reflexivity.
+        }
+    }
+Qed.
+
+#[export]
+Instance TermOver_countable
+    {T : Type}
+    {A : Type}
+    {_edT : EqDecision T}
+    {_edA : EqDecision A}
+    {_cT : Countable T}
+    {_cA : Countable A}
+    :
+    Countable (@TermOver' T A)
+.
+Proof.
+    apply inj_countable with (
+        f := TO_to_tree
+    )(
+        g := TO_of_tree
+    ).
+    {
+        intros. apply TO_from_to_tree.
+    }
+Defined.

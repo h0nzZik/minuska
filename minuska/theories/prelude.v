@@ -547,3 +547,38 @@ Proof.
         left. reflexivity.
     }
 Qed.
+
+Definition list_collect
+    {A : Type}
+    (l : list (option A))
+    : option (list A)
+:=
+    foldr (fun ox ol => x ← ox; l' ← ol; Some (x::l')) (Some []) l
+.
+
+Lemma list_collect_Some_length
+    {A : Type}
+    (l : list (option A))
+    (l' : list A)
+    :
+    list_collect l = Some l' ->
+    length l = length l'
+.
+Proof.
+    revert l'.
+    induction l; intros l' HH; destruct l'; simpl in *.
+    { reflexivity. }
+    {
+        ltac1:(simplify_eq/=).
+    }
+    {
+        ltac1:(simplify_option_eq).
+    }
+    {
+        ltac1:(simplify_option_eq).
+        erewrite IHl.
+        reflexivity.
+        reflexivity.
+    }
+Qed.
+

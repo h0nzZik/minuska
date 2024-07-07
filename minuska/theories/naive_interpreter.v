@@ -114,15 +114,6 @@ Definition thy_lhs_match_one
 .
 
 (* TODO move *)
-Definition list_collect
-    {A : Type}
-    (l : list (option A))
-    : option (list A)
-:=
-    foldr (fun ox ol => x ← ox; l' ← ol; Some (x::l')) (Some []) l
-.
-
-(* TODO move *)
 Fixpoint TermOver_collect
     {Σ : StaticModel}
     {A : Type}
@@ -348,10 +339,13 @@ Proof.
                     rewrite fmap_cons.
                     rewrite union_list_cons.
                     unfold TermOver,Valuation2 in *.
-                    (*ltac1:(unfold vars_of at 1; simpl).
-                    ltac1:(rewrite dom_merge_use_left).*)
-                    unfold vars_of at 1 in HH1; simpl in HH1.
+                    unfold vars_of; simpl.
+                    ltac1:(rewrite dom_merge_use_left).
+                    unfold vars_of in HH1; simpl in HH1.
                     rewrite HH1.
+                    Check @vars_of.
+                    fold ((@vars_of (TermOver' BuiltinOrVar) variable _ _) <$> l0).
+                    Check vars_of_t_term.
                     ltac1:(rewrite vars_of_t_term).
                     unfold vars_of in H4 at 1; simpl in H4.
                     rewrite H4.
@@ -1290,31 +1284,6 @@ Proof.
     }
 Qed.
 
-Lemma list_collect_Some_length
-    {A : Type}
-    (l : list (option A))
-    (l' : list A)
-    :
-    list_collect l = Some l' ->
-    length l = length l'
-.
-Proof.
-    revert l'.
-    induction l; intros l' HH; destruct l'; simpl in *.
-    { reflexivity. }
-    {
-        ltac1:(simplify_eq/=).
-    }
-    {
-        ltac1:(simplify_option_eq).
-    }
-    {
-        ltac1:(simplify_option_eq).
-        erewrite IHl.
-        reflexivity.
-        reflexivity.
-    }
-Qed.
 
 Lemma eval_et_correct
     {Σ : StaticModel}
