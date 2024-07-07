@@ -343,11 +343,9 @@ Proof.
                     ltac1:(rewrite dom_merge_use_left).
                     unfold vars_of in HH1; simpl in HH1.
                     rewrite HH1.
-                    Check @vars_of.
-                    fold ((@vars_of (TermOver' BuiltinOrVar) variable _ _) <$> l0).
-                    Check vars_of_t_term.
-                    ltac1:(rewrite vars_of_t_term).
-                    unfold vars_of in H4 at 1; simpl in H4.
+                    (*fold ((@vars_of (@TermOver' (@symbol Σ) (@BuiltinOrVar Σ)) (@variable Σ) _ (@variable_countable variable variables )) <$> l0).*)                    Check vars_of_t_term.
+                    (*ltac1:(rewrite vars_of_t_term).*)
+                    unfold vars_of in H4; simpl in H4.
                     rewrite H4.
                     clear.
                     ltac1:(set_solver).
@@ -534,23 +532,22 @@ Qed.
 
 Lemma sc_satisfies_insensitive
     {Σ : StaticModel}
+    (nv : NondetValue)
     :
     ∀ (v1 v2 : Valuation2) (b : SideCondition2),
             Valuation2_restrict v1 (vars_of b) = Valuation2_restrict v2 (vars_of b) ->
-            satisfies v1 () b -> satisfies v2 () b
+            satisfies v1 nv b -> satisfies v2 nv b
 .
 Proof.
     intros.
     unfold satisfies in *; simpl in *.
     unfold Valuation2_restrict in H.
-    destruct X as [H1 H2].
-    unfold is_true in *.
-    unfold isSome in *.
+    destruct (Expression2_evaluate v1 (sc_left b)) eqn:H1>[|ltac1:(contradiction)].
+    destruct (Expression2_evaluate v1 (sc_right b)) eqn:H2>[|ltac1:(contradiction)].
     destruct (Expression2_evaluate v1 (sc_left b)) eqn:Heq>[|ltac1:(congruence)].
-    clear H2.
-    symmetry in H1.
+    inversion H1; subst; clear H1.
     apply Expression2_evalute_strip in Heq.
-    apply Expression2_evalute_strip in H1.
+    apply Expression2_evalute_strip in H2.
     assert (H'1:
         filter (λ x : variable * TermOver builtin_value, x.1 ∈ vars_of (sc_left b)) v1 =
         filter (λ x : variable * TermOver builtin_value, x.1 ∈ vars_of (sc_left b)) v2
@@ -581,12 +578,12 @@ Proof.
                 (filter
                     (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b)
                     v1
-                ) !! x = Some t0
+                ) !! x = Some t1
             ).
             {
                 rewrite map_lookup_filter.
                 rewrite bind_Some.
-                exists t0.
+                exists t1.
                 split>[exact H1z|].
                 rewrite bind_Some.
                 simpl.
@@ -627,17 +624,17 @@ Proof.
             ltac1:(simplify_option_eq).
             destruct Heq2 as [Heq2|Heq2].
             {
-                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v1 !! x = Some t0).
+                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v1 !! x = Some t1).
                 {
                     rewrite map_lookup_filter.
                     rewrite bind_Some.
-                    exists t0.
+                    exists t1.
                     split>[assumption|].
                     ltac1:(simplify_option_eq).
                     {   reflexivity. }
                     {
                         unfold vars_of in H3; simpl in H3.
-                        ltac1:(exfalso; clear - H3 H2; set_solver).
+                        ltac1:(exfalso; clear - H3 H1; set_solver).
                     }
                 }
                 rewrite H in Hfil.
@@ -661,17 +658,17 @@ Proof.
             ltac1:(simplify_option_eq).
             destruct Heq1 as [Heq2|Heq2].
             {
-                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v2 !! x = Some t0).
+                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v2 !! x = Some t1).
                 {
                     rewrite map_lookup_filter.
                     rewrite bind_Some.
-                    exists t0.
+                    exists t1.
                     split>[assumption|].
                     ltac1:(simplify_option_eq).
                     {   reflexivity. }
                     {
                         unfold vars_of in H3; simpl in H3.
-                        ltac1:(exfalso; clear - H3 H2; set_solver).
+                        ltac1:(exfalso; clear - H3 H1; set_solver).
                     }
                 }
                 rewrite <- H in Hfil.
@@ -717,12 +714,12 @@ Proof.
                 (filter
                     (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b)
                     v1
-                ) !! x = Some t0
+                ) !! x = Some t1
             ).
             {
                 rewrite map_lookup_filter.
                 rewrite bind_Some.
-                exists t0.
+                exists t1.
                 split>[exact H1z|].
                 rewrite bind_Some.
                 simpl.
@@ -763,17 +760,17 @@ Proof.
             ltac1:(simplify_option_eq).
             destruct Heq2 as [Heq2|Heq2].
             {
-                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v1 !! x = Some t0).
+                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v1 !! x = Some t1).
                 {
                     rewrite map_lookup_filter.
                     rewrite bind_Some.
-                    exists t0.
+                    exists t1.
                     split>[assumption|].
                     ltac1:(simplify_option_eq).
                     {   reflexivity. }
                     {
                         unfold vars_of in H3; simpl in H3.
-                        ltac1:(exfalso; clear - H3 H2; set_solver).
+                        ltac1:(exfalso; clear - H3 H1; set_solver).
                     }
                 }
                 rewrite H in Hfil.
@@ -797,17 +794,17 @@ Proof.
             ltac1:(simplify_option_eq).
             destruct Heq1 as [Heq2|Heq2].
             {
-                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v2 !! x = Some t0).
+                assert (Hfil : filter (λ x0 : variable * TermOver builtin_value, x0.1 ∈ vars_of b) v2 !! x = Some t1).
                 {
                     rewrite map_lookup_filter.
                     rewrite bind_Some.
-                    exists t0.
+                    exists t1.
                     split>[assumption|].
                     ltac1:(simplify_option_eq).
                     {   reflexivity. }
                     {
                         unfold vars_of in H3; simpl in H3.
-                        ltac1:(exfalso; clear - H3 H2; set_solver).
+                        ltac1:(exfalso; clear - H3 H1; set_solver).
                     }
                 }
                 rewrite <- H in Hfil.
@@ -824,13 +821,14 @@ Proof.
         { reflexivity. }
     }
     rewrite H'1 in Heq.
-    rewrite H'2 in H1.
+    rewrite H'2 in H2.
 
     eapply Expression2_evaluate_extensive_Some in Heq.
     rewrite Heq.
-    eapply Expression2_evaluate_extensive_Some in H1.
-    rewrite H1.
+    eapply Expression2_evaluate_extensive_Some in H2.
+    rewrite H2.
     (repeat split).
+    assumption.
     unfold Valuation2 in *.
     apply map_filter_subseteq.
     unfold Valuation2 in *.
