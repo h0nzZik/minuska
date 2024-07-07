@@ -541,3 +541,23 @@ Proof.
         intros. apply TO_from_to_tree.
     }
 Defined.
+
+
+Definition BoV_to_Expr2
+    {Σ : StaticModel}
+    (bov : BuiltinOrVar)
+    : Expression2
+:=
+    match bov with
+    | bov_builtin b => (e_ground ((t_over b)))
+    | bov_variable x => e_variable x
+    end
+.
+
+Definition TermOverBoV_to_TermOverExpr2
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    : TermOver Expression2
+:=
+    TermOver_map BoV_to_Expr2 t
+.
