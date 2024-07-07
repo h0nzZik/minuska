@@ -176,8 +176,8 @@ Definition naive_interpreter
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
-    (nv : NondetValue)
     (e : TermOver builtin_value)
+    (nv : NondetValue)
     : option (TermOver builtin_value)
 :=
     ei ← naive_interpreter_ext Γ nv e;
@@ -1498,7 +1498,6 @@ Proof.
     }
 Qed.
 
-
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
     {Act : Set}
@@ -1513,11 +1512,11 @@ Proof.
     unfold naive_interpreter_ext.
     repeat split.
     {
-        intros e1 e2.
+        intros e1 e2 nv.
         intros Hbind.
         apply bind_Some_T_1 in Hbind.
         destruct Hbind as [x [H1x H2x]].
-        destruct (thy_lhs_match_one e1 Γ) eqn:Hmatch.
+        destruct (thy_lhs_match_one e1 nv Γ) eqn:Hmatch.
         {
             destruct p as [[r ρ] idx].
             apply thy_lhs_match_one_Some in Hmatch.
@@ -1535,16 +1534,14 @@ Proof.
             unfold rewrites_in_valuation_under_to.
             apply eval_et_correct in H1y.
             (repeat split); try assumption.
-            apply Hm2. exact H.
-            apply Hm2. exact H.
         }
         {
             inversion H1x.
         }
     }
     {
-        intros e Hstuck.
-        destruct (thy_lhs_match_one e Γ) eqn:Hmatch>[|reflexivity].
+        intros e Hstuck nv.
+        destruct (thy_lhs_match_one e nv Γ) eqn:Hmatch>[|reflexivity].
         {
             destruct p as [[r ρ] rule_idx].
             {
@@ -1554,8 +1551,8 @@ Proof.
                 unfold rewriting_relation in Hstuck.
                 unfold rewrites_to in Hstuck.
                 unfold rewrites_in_valuation_under_to in Hstuck.
-                assert (Hev := eval_et_correct ρ (r_to r)).
-                ltac1:(cut (~ ∃ g', eval_et ρ (r_to r) = Some g')).
+                assert (Hev := eval_et_correct ρ (r_to r) nv).
+                ltac1:(cut (~ ∃ g', eval_et ρ nv (r_to r) = Some g')).
                 {
                     intros HContra. clear -HContra.
                     rewrite <- eq_None_ne_Some.
@@ -1571,14 +1568,12 @@ Proof.
                 apply Hev in Hg'.
                 clear Hev.
                 apply Hstuck. clear Hstuck.
-                exists pg'. exists r.
+                exists pg'. exists nv. exists r.
                 exists (r_act r).
                 destruct Hin.
                 split>[assumption|].
                 exists ρ.
                 repeat split; try assumption.
-                { apply Hsat. assumption. }
-                { apply Hsat. assumption. }
             }
         }
     }
@@ -1587,22 +1582,24 @@ Proof.
         unfold naive_interpreter.
 
         destruct Hnotstuck as [e' He'].
-        destruct He' as [r' [a [H1r' H2r']]].
+        destruct He' as [nv [r' [a [H1r' H2r']]]].
         unfold rewrites_to in H2r'.
         destruct H2r' as [ρ' Hρ'].
         unfold rewrites_in_valuation_under_to in Hρ'.
 
         
-        destruct (thy_lhs_match_one e Γ) eqn:Hmatch.
+        destruct (thy_lhs_match_one e nv Γ) eqn:Hmatch.
         {
             destruct p as [[r ρ] rule_idx]; cbn in *.
-            apply thy_lhs_match_one_Some in Hmatch.
-            destruct Hmatch as [Hin Hsat].
+            apply thy_lhs_match_one_Some in Hmatch as Hmatch'.
+            destruct Hmatch' as [Hin Hsat].
             
             
-            destruct (eval_et ρ (r_to r)) eqn:Heval.
+            destruct (eval_et ρ nv (r_to r)) eqn:Heval.
             {
-                eexists. reflexivity.
+                eexists. exists nv. rewrite Hmatch. simpl.
+                rewrite Heval. simpl.
+                reflexivity.
             }
             {
                 ltac1:(exfalso).
@@ -1611,9 +1608,9 @@ Proof.
                 specialize (wfΓ ltac:(assumption)).
                 destruct wfΓ as [wf1 wf2].
                 specialize (wf2 e ρ).
-                specialize (wf2 ltac:(assumption) ltac:(assumption)).
+                specialize (wf2 nv ltac:(assumption) ltac:(assumption)).
                 destruct wf2 as [g' Hg'].
-                assert (Hn : notT { g : _ & eval_et ρ (r_to r) = Some g } ).
+                assert (Hn : notT { g : _ & eval_et ρ nv (r_to r) = Some g } ).
                 {
                     intros HContra.
                     destruct HContra as [g HContra].
@@ -1631,12 +1628,10 @@ Proof.
             destruct Hρ' as [[[H1 H2] H3] H4].
             apply thy_lhs_match_one_None in Hmatch.
             apply Hmatch.
-            exists r'. exists ρ'.
-            (repeat split); try assumption.
-            apply H3.
-            assumption.
-            apply H3.
-            assumption.
+            {
+                exists r'. exists ρ'.
+                (repeat split); try assumption.
+            }
             assumption.
         }
     }
