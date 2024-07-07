@@ -842,15 +842,16 @@ Lemma try_match_lhs_with_sc_complete
     (g : TermOver builtin_value)
     (r : RewritingRule2 Act)
     (ρ : Valuation2)
+    (nv : NondetValue)
     :
     vars_of (r_scs r) ⊆ vars_of (r_from r) ->
     satisfies ρ g (r_from r) ->
-    satisfies ρ () (r_scs r) ->
+    satisfies ρ nv (r_scs r) ->
     {
         ρ' : (gmap variable (TermOver builtin_value)) &
         vars_of ρ' = vars_of (r_from r) ∧
         ρ' ⊆ ρ ∧
-        try_match_lhs_with_sc g r = Some ρ'
+        try_match_lhs_with_sc g nv r = Some ρ'
     }   
 .
 Proof.
@@ -907,10 +908,13 @@ Proof.
             ltac1:(repeat case_match; destruct_and?; simplify_eq/=).
             {
                 apply bool_decide_eq_true.
-                reflexivity.
+                assumption.
             }
             {
-                ltac1:(congruence).
+                destruct H2x.
+            }
+            {
+                destruct H2x.
             }
         }
         {
@@ -932,7 +936,7 @@ Proof.
                 }
                 {
                     ltac1:(exfalso).
-                    unfold vars_of in H1ρ1 at 1; simpl in H1ρ1.
+                    unfold vars_of in H1ρ1; simpl in H1ρ1.
                     assert (Htmp : i ∉ dom ρ1).
                     {
                         intros HContra.
@@ -947,7 +951,7 @@ Proof.
                     destruct Hx as [j Hj].
                     apply take_drop_middle in Hj.
                     rewrite <- Hj in Hn. clear Hj.
-                    unfold vars_of at 1 in Hn; simpl in Hn.
+                    unfold vars_of in Hn; simpl in Hn.
                     rewrite fmap_app in Hn.
                     rewrite union_list_app in Hn.
                     rewrite fmap_cons in Hn.
@@ -1031,17 +1035,18 @@ Lemma thy_lhs_match_one_None
     (e : TermOver builtin_value)
     (Γ : RewritingTheory2 Act)
     (wfΓ : RewritingTheory2_wf Γ)
+    (nv : NondetValue)
     :
-    thy_lhs_match_one e Γ = None ->
+    thy_lhs_match_one e nv Γ = None ->
     notT { r : RewritingRule2 Act & { ρ : Valuation2 &
-        ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (satisfies ρ tt (r_scs r)))%type
+        ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (satisfies ρ nv (r_scs r)))%type
     } }
         
 .
 Proof.
     unfold thy_lhs_match_one.
     intros H [r [ρ [[Hin HContra1] HContra2]]].
-    destruct (list_find isSome (try_match_lhs_with_sc e <$> Γ)) eqn:Heqfound.
+    destruct (list_find isSome (try_match_lhs_with_sc e nv <$> Γ)) eqn:Heqfound.
     {
         destruct p as [n oρ].
         rewrite list_find_Some in Heqfound.
@@ -1083,7 +1088,7 @@ Proof.
 
         assert (Hc := try_match_lhs_with_sc_complete e r).
         specialize (Hc ρ').
-        ltac1:(ospecialize (Hc _)).
+        ltac1:(ospecialize (Hc nv _)).
         {
             unfold is_true in wfΓ.
             specialize (wfΓ r).
@@ -1112,7 +1117,7 @@ Proof.
                 unfold RewritingRule2_wf1 in *.
                 unfold RewritingRule2_wf2 in *.
                 eapply transitivity>[|apply wf1].
-                unfold vars_of at 2; simpl.
+                unfold vars_of; simpl.
                 rewrite elem_of_list_lookup in Hx.
                 destruct Hx as [i Hi].
                 apply take_drop_middle in Hi.
@@ -1168,10 +1173,11 @@ Qed.
 Lemma evaluate_scs_correct
     {Σ : StaticModel}
     (ρ : Valuation2)
+    (nv : NondetValue)
     (scs : list SideCondition2)
     :
-    evaluate_scs ρ scs = true ->
-    satisfies ρ () scs
+    evaluate_scs ρ nv scs = true ->
+    satisfies ρ nv scs
 .
 Proof.
     intros HH.
@@ -1190,6 +1196,7 @@ Proof.
         apply bool_decide_eq_true in HH.
         subst.
         (repeat split).
+        { assumption. }
     }
     {
         inversion HH.
@@ -1206,10 +1213,11 @@ Lemma thy_lhs_match_one_Some
     (Γ : list (RewritingRule2 Act))
     (r : RewritingRule2 Act)
     (ρ : Valuation2)
+    (nv : NondetValue)
     (rule_idx : nat)
     :
-    thy_lhs_match_one e Γ = Some (r, ρ, rule_idx) ->
-    ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (satisfies ρ tt (r_scs r)))%type
+    thy_lhs_match_one e nv Γ = Some (r, ρ, rule_idx) ->
+    ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (satisfies ρ nv (r_scs r)))%type
 .
 Proof.
     intros H.
@@ -1243,13 +1251,13 @@ Proof.
             {
                 destruct H12 as [H1 H2].
                 unfold is_true, isSome in H1.
-                destruct (try_match_lhs_with_sc e r) eqn:HTM>[|inversion H1].
+                destruct (try_match_lhs_with_sc e nv r) eqn:HTM>[|inversion H1].
                 clear H1.
                 inversion H1ρ'; subst; clear H1ρ'.
                 unfold try_match_lhs_with_sc in HTM.
                 apply bind_Some_T_1 in HTM.
                 destruct HTM as [x [H1x H2x]].
-                destruct (evaluate_scs x (r_scs r)) eqn:Heq.
+                destruct (evaluate_scs x nv (r_scs r)) eqn:Heq.
                 {
                     inversion H2x; subst; clear H2x.
                     apply try_match_new_correct in H1x.
@@ -1263,13 +1271,13 @@ Proof.
         {
             destruct H12 as [H1 H2].
             unfold is_true, isSome in H1.
-            destruct (try_match_lhs_with_sc e r) eqn:HTM>[|inversion H1].
+            destruct (try_match_lhs_with_sc e nv r) eqn:HTM>[|inversion H1].
             clear H1.
             inversion H1ρ'; subst; clear H1ρ'.
             unfold try_match_lhs_with_sc in HTM.
             apply bind_Some_T_1 in HTM.
             destruct HTM as [x [H1x H2x]].
-            destruct (evaluate_scs x (r_scs r)) eqn:Heq.
+            destruct (evaluate_scs x nv (r_scs r)) eqn:Heq.
             {
                 inversion H2x; subst; clear H2x.
                 apply evaluate_scs_correct in Heq.
@@ -1287,10 +1295,11 @@ Lemma eval_et_correct
     {Σ : StaticModel}
     (ρ : Valuation2)
     (et : TermOver Expression2)
+    (nv : NondetValue)
     (g : TermOver builtin_value)
     :
-    eval_et ρ et = Some g ->
-    satisfies ρ g et
+    eval_et ρ nv et = Some g ->
+    satisfies ρ (nv,g) et
 .
 Proof.
     intros HH.
@@ -1304,6 +1313,8 @@ Proof.
             simpl in *.
             ltac1:(simplify_eq/=).
             ltac1:(simp sat2E).
+            rewrite Heq.
+            reflexivity.
         }
         {
             simpl in *.
@@ -1361,7 +1372,21 @@ Proof.
                         assumption.
                         assumption.
                     }
-
+                    {
+                        intros.
+                        destruct i.
+                        {
+                            simpl in *.
+                            ltac1:(simplify_eq/=).
+                            apply IH1.
+                            { reflexivity. }
+                        }
+                        {
+                            simpl in *.
+                            specialize (IHl H0 erefl i t' φ' pf1 pf2).
+                            apply IHl.
+                        }
+                    }
                 }
             }
         }
@@ -1372,10 +1397,11 @@ Lemma eval_et_correct_2
     {Σ : StaticModel}
     (ρ : Valuation2)
     (et : TermOver Expression2)
+    (nv : NondetValue)
     (g : TermOver builtin_value)
     :
-    satisfies ρ g et ->
-    eval_et ρ et = Some g
+    satisfies ρ (nv,g) et ->
+    eval_et ρ nv et = Some g
 .
 Proof.
     revert g.
@@ -1383,12 +1409,17 @@ Proof.
     {
         unfold satisfies in HH. simpl in HH.
         ltac1:(simp sat2E in HH).
-        unfold eval_et. simpl. rewrite HH. simpl. reflexivity.
+        unfold eval_et. simpl.
+        destruct (Expression2_evaluate ρ a) eqn:Heq>[|ltac1:(contradiction)].
+        simpl.
+        rewrite HH. reflexivity.
     }
     {
         unfold satisfies in HH. simpl in HH.
         ltac1:(simp sat2E in HH).
-        unfold eval_et. simpl. rewrite HH. simpl. reflexivity.
+        unfold eval_et. simpl. 
+        destruct (Expression2_evaluate ρ a) eqn:Heq>[|ltac1:(contradiction)].
+        simpl. rewrite HH. reflexivity.
     }
     {
         unfold satisfies in HH. simpl in HH.
