@@ -23,10 +23,10 @@ From Equations Require Export Equations.
 
 #[global]
 Set Equations Transparent.
-
+(*
 Lemma satisfies_top_bov_cons_1
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (topSymbol topSymbol' : symbol)
     (states : list (TermOver builtin_value))
     (lds : list (TermOver BuiltinOrVar))
@@ -208,10 +208,11 @@ Proof.
         }
     }
 Qed.
-
+*)
+(*
 Lemma satisfies_top_bov_cons_2
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (topSymbol topSymbol' : symbol)
     (states : list (TermOver builtin_value))
     (lds : list (TermOver BuiltinOrVar))
@@ -355,10 +356,10 @@ Proof.
         }
     }
 Qed.
+*)
 
+(*
 (* The proof if the same as for satisfies_top_bov_cons*)
-
-
 
 Lemma satisfies_top_bov_cons_expr_1
     {Σ : StaticModel}
@@ -691,13 +692,13 @@ Proof.
         }
     }
 Qed.
-
+*)
 
 Lemma satisfies_var
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     x γ:
-    ρ !! x = Some (uglify' γ) ->
+    ρ !! x = Some (γ) ->
     satisfies ρ γ (t_over (bov_variable x))
 .
 Proof.
@@ -707,51 +708,44 @@ Qed.
 
 Lemma satisfies_var_expr
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
+    (nv : NondetValue)
     x γ:
-    ρ !! x = Some (uglify' γ) ->
-    satisfies ρ γ (t_over (ft_variable x))
+    ρ !! x = Some (γ) ->
+    satisfies ρ (nv,γ) (t_over (e_variable x))
 .
 Proof.
     intros H.
-    destruct γ; (repeat constructor); assumption.
+    unfold satisfies; simpl.
+    destruct γ; ltac1:(simp sat2E); simpl;
+        rewrite H; reflexivity.
 Qed.
 
 
 Lemma satisfies_var_inv
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     x γ:
     satisfies ρ γ (t_over (bov_variable x)) ->
-    ρ !! x = Some (uglify' γ)
+    ρ !! x = Some (γ)
 .
 Proof.
-    intros H.
-    inversion H; subst; clear H.
-    {
-        apply (f_equal prettify) in H2.
-        rewrite (cancel prettify uglify') in H2.
-        subst.
-        inversion pf; subst; clear pf.
-        assumption.
-    }
-    {
-        apply (f_equal prettify) in H2.
-        rewrite (cancel prettify uglify') in H2.
-        subst.
-        inversion X; subst; clear X.
-        assumption.
-    }
+    unfold satisfies; simpl.
+    ltac1:(simp sat2B). simpl.
+    intros H; exact H.
 Qed.
 
 Lemma satisfies_var_expr_inv
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
+    (nv : NondetValue)
     x γ:
-    satisfies ρ γ (t_over (ft_variable x)) ->
-    ρ !! x = Some (uglify' γ)
+    satisfies ρ (nv,γ) (t_over (e_variable x)) ->
+    ρ !! x = Some (γ)
 .
 Proof.
+    unfold satisfies; simpl.
+    ltac1:(simp sat2E).
     intros H.
     inversion H; subst; clear H.
     {
