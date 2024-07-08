@@ -1442,7 +1442,7 @@ Qed.
 
 Lemma enveloping_preserves_or_increases_delta
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (γ1 γ2 : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
     (s : symbol)
@@ -3648,7 +3648,7 @@ Proof.
     }
 Qed.
 
-
+(*
 Lemma frto_step_app
     {Σ : StaticModel}
     (Act : Set)
@@ -3683,8 +3683,8 @@ Proof.
         { apply IHflattened_rewrites_to_over. }
     }
 Qed.
-
-
+*)
+(*
 Lemma frto_app
     {Σ : StaticModel}
     (Act : Set)
@@ -3718,7 +3718,7 @@ Proof.
         }
     }
 Qed.
-
+*)
 
 Lemma val_elem_of_dom_1
     {Σ : StaticModel}
@@ -3743,11 +3743,12 @@ Qed.
 
 Lemma satisfies_TermOverBoV_to_TermOverExpr
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (γ : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
+    (nv : NondetValue)
     :
-    satisfies ρ γ (TermOverBoV_to_TermOverExpr φ)
+    satisfies ρ (nv,γ) (TermOverBoV_to_TermOverExpr2 φ)
     ->
     satisfies ρ γ φ
 .
@@ -3761,43 +3762,32 @@ Proof.
         {
             destruct a; simpl in *.
             {
-                inversion H; subst; clear H.
-                {
-                    apply (f_equal prettify) in H2.
-                    rewrite (cancel prettify uglify') in H2.
-                    subst γ.
-                    constructor.
-                    inversion pf; subst; clear pf.
-                    constructor.
-                }   
-                {
-                    apply (f_equal prettify) in H2.
-                    rewrite (cancel prettify uglify') in H2.
-                    subst γ.
-                    inversion X.
-                }             
+                unfold satisfies in *; simpl in *.
+                unfold TermOverBoV_to_TermOverExpr2 in H.
+                simpl in *.
+                ltac1:(simp sat2E in H).
+                ltac1:(simp sat2B).
+                simpl.
+                ltac1:(case_match; try contradiction);
+                    subst; simpl in *;
+                    ltac1:(simplify_eq/=).
+                reflexivity.  
             }
             {
+                unfold satisfies in *; simpl in *.
+                unfold TermOverBoV_to_TermOverExpr2 in H.
+                simpl in *.
+                ltac1:(simp sat2E in H).
+                ltac1:(simp sat2B).
+                simpl.
+                ltac1:(case_match; try contradiction);
+                    subst; simpl in *;
+                    ltac1:(simplify_eq/=).
+                ltac1:(case_match; try contradiction);
+                    subst; simpl in *;
+                    ltac1:(simplify_eq/=).
                 inversion H; subst; clear H.
-                {
-                    apply (f_equal prettify) in H2.
-                    rewrite (cancel prettify uglify') in H2.
-                    subst γ.
-                    constructor.
-                    inversion pf; subst; clear pf.
-                    constructor.
-                    assumption.
-                }
-                {
-                    apply (f_equal prettify) in H2.
-                    rewrite (cancel prettify uglify') in H2.
-                    subst γ.
-                    inversion X; subst; clear X.
-                    simpl.
-                    apply satisfies_var.
-                    rewrite uglify'_prettify'.
-                    assumption.
-                }
+                reflexivity.
             }
         }
     }
@@ -3810,30 +3800,25 @@ Proof.
             destruct HH as [lγ [[H1 H2] H3]].
             subst γ.
             unfold satisfies; simpl.
-            unfold apply_symbol'; simpl.
-            constructor.
-            unfold to_PreTerm'; simpl.
-            apply satisfies_top_bov_cons_1.
+            ltac1:(simp sat2B).
+            split>[reflexivity|].
+            rewrite map_length in H2.
+            unfold TermOver in *.
+            split>[ltac1:(lia)|].
+            intros.
+            apply X.
             {
-                rewrite map_length in H2. ltac1:(lia).
+                rewrite elem_of_list_lookup.
+                exists i. assumption.
             }
-            { reflexivity. }
+            eapply H3.
+            { apply pf2. }
             {
-                intros i s0 l0 H1i H2i.
-                apply X.
-                {
-                    rewrite elem_of_list_lookup.
-                    exists i. assumption.
-                }
-                eapply H3.
-                { apply H1i. }
-                {
-                    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
-                    rewrite list_lookup_fmap.
-                    rewrite H2i.
-                    simpl.      
-                    reflexivity.              
-                }
+                ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                rewrite list_lookup_fmap.
+                rewrite pf1.
+                simpl.      
+                reflexivity.              
             }
         }
     }
@@ -3841,12 +3826,13 @@ Qed.
 
 Lemma satisfies_TermOverBoV_to_TermOverExpr_2
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (γ : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
+    (nv : NondetValue)
     :    
     satisfies ρ γ φ ->
-    satisfies ρ γ (TermOverBoV_to_TermOverExpr φ)
+    satisfies ρ (nv,γ) (TermOverBoV_to_TermOverExpr φ)
 .
 Proof.
     revert γ.

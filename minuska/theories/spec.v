@@ -614,3 +614,16 @@ Definition rewriting_relation
     := fun from to =>
         { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to r from a nv to)%type}}
 .
+
+Definition rewrites_to_nondet
+    {Σ : StaticModel}
+    {Act : Set}
+    (r : RewritingRule2 Act)
+    (from : TermOver builtin_value)
+    (under : Act)
+    (to : TermOver builtin_value)
+    : Type
+:= { nv : NondetValue &
+        rewrites_to r from under nv to
+   }
+.
