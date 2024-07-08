@@ -1009,3 +1009,250 @@ Proof.
     assumption.
     assumption.
 Qed.
+
+
+Lemma satisfies_term_bov_inv
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (γ : TermOver builtin_value)
+    (s : symbol)
+    (l : list (TermOver BuiltinOrVar))
+    :
+    satisfies ρ γ (t_term s l) ->
+    { lγ : list (TermOver builtin_value) &
+        ((γ = (t_term s lγ)) *
+        (length l = length lγ) *
+        ( forall (i : nat) γ e,
+            lγ !! i = Some γ ->
+            l !! i = Some e ->
+            satisfies ρ γ e
+        )
+        )%type
+    }
+.
+Proof.
+    revert γ.
+    induction l using rev_ind_T; intros γ.
+    {
+        intros H. exists [].
+        unfold satisfies in H; simpl in H.
+        destruct γ;
+            ltac1:(simp sat2B in H).
+        { destruct H. }
+        {
+            destruct H as [H1 [H2 H3]].
+            destruct l.
+            {
+                subst s0.
+                (repeat split).
+                intros.
+                rewrite lookup_nil in H.
+                inversion H.
+            }
+            {
+                simpl in H2. inversion H2.
+            }
+        }
+    }
+    {
+        intros H.
+        unfold satisfies in H; simpl in H.
+        destruct γ; ltac1:(simp sat2B in H).
+        { destruct H. }
+        destruct H as [H1 [H2 H3]].
+        destruct (analyze_list_from_end l0) as [He|He].
+        {
+            subst l0.
+            rewrite app_length in H2.
+            simpl in H2.
+            ltac1:(lia).
+        }
+        destruct He as [l' [x' Hl0]].
+        subst l0.
+        do 2 (rewrite app_length in H2).
+        simpl in H2.
+        assert (length l' = length l) by ltac1:(lia).
+        clear H2.
+        specialize (H3 (length l) x' x) as H3'.
+        unfold TermOver in *; simpl in *.
+        rewrite lookup_app_r in H3'>[|ltac1:(lia)].
+        rewrite lookup_app_r in H3'>[|ltac1:(lia)].
+        rewrite Nat.sub_diag in H3'.
+        rewrite H in H3'.
+        rewrite Nat.sub_diag in H3'.
+        specialize (H3' erefl erefl).
+        unfold satisfies in IHl; simpl in IHl.
+        specialize (IHl (t_term s l')).
+        ltac1:(ospecialize (IHl _)).
+        {
+            ltac1:(simp sat2B).
+            split>[reflexivity|].
+            split>[ltac1:(lia)|].
+            intros.
+            apply H3 with (i := i).
+            {
+                rewrite lookup_app_l.
+                assumption.
+                apply lookup_lt_Some in pf1.
+                assumption.
+            }
+            {
+                rewrite lookup_app_l.
+                assumption.
+                apply lookup_lt_Some in pf2.
+                assumption.
+            }
+        }
+        destruct IHl as [lγ Hlγ].
+        destruct Hlγ as [[HH1 HH2] HH3].
+        inversion HH1; subst; clear HH1.
+        exists (lγ ++ [x']).
+        (repeat split).
+        {
+            do 2 (rewrite app_length).
+            simpl.
+            ltac1:(lia).
+        }
+        {
+            intros.
+            destruct (decide (i < length l)).
+            {
+                rewrite lookup_app_l in H0>[|ltac1:(lia)].
+                rewrite lookup_app_l in H1>[|ltac1:(lia)].
+                eapply HH3.
+                apply H0.
+                apply H1.
+            }
+            {
+                unfold satisfies; simpl.
+                eapply H3.
+                apply H1.
+                apply H0.   
+            }
+        }
+    }
+Qed.
+
+
+Lemma satisfies_term_expr_inv
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (γ : TermOver builtin_value)
+    (s : symbol)
+    (l : list (TermOver Expression2))
+    :
+    satisfies ρ (nv,γ) (t_term s l) ->
+    { lγ : list (TermOver builtin_value) &
+        ((γ = (t_term s lγ)) *
+        (length l = length lγ) *
+        ( forall (i : nat) γ e,
+            lγ !! i = Some γ ->
+            l !! i = Some e ->
+            satisfies ρ (nv,γ) e
+        )
+        )%type
+    }
+.
+Proof.
+    revert γ.
+    induction l using rev_ind_T; intros γ.
+    {
+        intros H. exists [].
+        unfold satisfies in H; simpl in H.
+        destruct γ;
+            ltac1:(simp sat2E in H).
+        { destruct H. }
+        {
+            destruct H as [H1 [H2 H3]].
+            destruct l.
+            {
+                subst s0.
+                (repeat split).
+                intros.
+                rewrite lookup_nil in H.
+                inversion H.
+            }
+            {
+                simpl in H2. inversion H2.
+            }
+        }
+    }
+    {
+        intros H.
+        unfold satisfies in H; simpl in H.
+        destruct γ; ltac1:(simp sat2E in H).
+        { destruct H. }
+        destruct H as [H1 [H2 H3]].
+        destruct (analyze_list_from_end l0) as [He|He].
+        {
+            subst l0.
+            rewrite app_length in H2.
+            simpl in H2.
+            ltac1:(lia).
+        }
+        destruct He as [l' [x' Hl0]].
+        subst l0.
+        do 2 (rewrite app_length in H2).
+        simpl in H2.
+        assert (length l' = length l) by ltac1:(lia).
+        clear H2.
+        specialize (H3 (length l) x' x) as H3'.
+        unfold TermOver in *; simpl in *.
+        rewrite lookup_app_r in H3'>[|ltac1:(lia)].
+        rewrite lookup_app_r in H3'>[|ltac1:(lia)].
+        rewrite Nat.sub_diag in H3'.
+        rewrite H in H3'.
+        rewrite Nat.sub_diag in H3'.
+        specialize (H3' erefl erefl).
+        unfold satisfies in IHl; simpl in IHl.
+        specialize (IHl (t_term s l')).
+        ltac1:(ospecialize (IHl _)).
+        {
+            ltac1:(simp sat2E).
+            split>[reflexivity|].
+            split>[ltac1:(lia)|].
+            intros.
+            apply H3 with (i := i).
+            {
+                rewrite lookup_app_l.
+                assumption.
+                apply lookup_lt_Some in pf1.
+                assumption.
+            }
+            {
+                rewrite lookup_app_l.
+                assumption.
+                apply lookup_lt_Some in pf2.
+                assumption.
+            }
+        }
+        destruct IHl as [lγ Hlγ].
+        destruct Hlγ as [[HH1 HH2] HH3].
+        inversion HH1; subst; clear HH1.
+        exists (lγ ++ [x']).
+        (repeat split).
+        {
+            do 2 (rewrite app_length).
+            simpl.
+            ltac1:(lia).
+        }
+        {
+            intros.
+            destruct (decide (i < length l)).
+            {
+                rewrite lookup_app_l in H0>[|ltac1:(lia)].
+                rewrite lookup_app_l in H1>[|ltac1:(lia)].
+                eapply HH3.
+                apply H0.
+                apply H1.
+            }
+            {
+                unfold satisfies; simpl.
+                eapply H3.
+                apply H1.
+                apply H0.   
+            }
+        }
+    }
+Qed.

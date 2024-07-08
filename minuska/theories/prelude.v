@@ -582,3 +582,100 @@ Proof.
     }
 Qed.
 
+
+
+
+Lemma length_filter_l_1_impl_h_in_l
+    {A : Type}
+    {_edA : EqDecision A}
+    (l : list A)
+    (h : A):
+    length (filter (eq h) l) = 1 ->
+    h ∈ l
+.
+Proof.
+    intros H.
+    induction l; simpl in *.
+    { inversion H. }
+    {
+        rewrite filter_cons in H.
+        destruct (decide (h = a)).
+        {
+            subst. left.
+        }
+        {
+            right. apply IHl. apply H.
+        }
+    }
+Qed.
+
+Lemma h_in_l_impl_length_filter_l_gt_1
+    {T : Type}
+    (P : T -> Prop)
+    {_dP: forall x, Decision (P x)}
+    (l : list T)
+    (h : T)
+    :
+    h ∈ l ->
+    P h ->
+    length (filter P l) >= 1
+.
+Proof.
+    induction l; simpl.
+    {
+        intros HH. inversion HH.
+    }
+    {
+        intros HH1 HH2.
+        rewrite elem_of_cons in HH1.
+        destruct HH1 as [HH1|HH1].
+        {
+            subst. rewrite filter_cons.
+            destruct (decide (P a))>[|ltac1:(contradiction)].
+            simpl.
+            ltac1:(lia).
+        }
+        {
+            specialize (IHl HH1 HH2).
+            rewrite filter_cons.
+            ltac1:(case_match).
+            {
+                simpl. ltac1:(lia).
+            }
+            {
+                exact IHl.
+            }
+        }
+    }
+Qed.
+
+
+Lemma length_filter_l_1_impl_h_in_l'
+    {T : Type}
+    (P : T -> Prop)
+    {_dP: forall x, Decision (P x)}
+    (l : list T)
+    :
+    length (filter P l) = 1 ->
+    exists h, 
+    h ∈ l /\ P h
+.
+Proof.
+    intros H.
+    induction l; simpl in *.
+    { inversion H. }
+    {
+        rewrite filter_cons in H.
+        destruct (decide (P a)).
+        {
+            subst. exists a. split. left. assumption.
+        }
+        {
+            specialize (IHl H).
+            destruct IHl as [h [H1h H2h]].
+            exists h. split.
+            right. assumption. assumption.
+        }
+    }
+Qed.
+
