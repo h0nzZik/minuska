@@ -561,3 +561,90 @@ Definition TermOverBoV_to_TermOverExpr2
 :=
     TermOver_map BoV_to_Expr2 t
 .
+
+
+
+Lemma size_subst_1
+    {Σ : StaticModel}
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    TermOver_size φ <= TermOver_size (TermOverBoV_subst φ h ψ)
+.
+Proof.
+    induction φ; simpl.
+    {
+        destruct a; simpl.
+        { ltac1:(lia). }
+        {
+            destruct (decide (h = x)); simpl.
+            {
+                destruct ψ; simpl; ltac1:(lia).
+            }
+            {
+                ltac1:(lia).
+            }
+        }
+    }
+    {
+        revert H.
+        induction l; intros H; simpl in *.
+        { ltac1:(lia). }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2). clear H2.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+Lemma size_subst_2
+    {Σ : StaticModel}
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    h ∈ vars_of_to_l2r φ ->
+    TermOver_size ψ <= TermOver_size (TermOverBoV_subst φ h ψ)
+.
+Proof.
+    revert h ψ.
+    induction φ; intros h ψ Hin; simpl in *.
+    {
+        destruct a.
+        {
+            inversion Hin.
+        }
+        {
+            inversion Hin; subst; clear Hin.
+            {
+                destruct (decide (x = x))>[|ltac1:(contradiction)].
+                ltac1:(lia).
+            }
+            {
+                inversion H1.
+            }
+        }
+    }
+    {
+        revert H Hin.
+        induction l; intros H Hin; simpl in *.
+        {
+            inversion Hin.
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2). clear H2.
+            destruct (decide (h ∈ vars_of_to_l2r a )) as [Hin'|Hnotin'].
+            {
+                specialize (H1 h ψ Hin'). clear Hin.
+                ltac1:(lia).
+            }
+            {
+                specialize (IHl ltac:(set_solver)).
+                ltac1:(lia).
+            }
+        }
+    }
+Qed.

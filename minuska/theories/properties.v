@@ -1256,3 +1256,43 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma satisfies_TermOverBuiltin_to_TermOverBoV
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (γ : TermOver builtin_value)
+    :
+    satisfies ρ γ (TermOverBuiltin_to_TermOverBoV γ)
+.
+Proof.
+    unfold satisfies; simpl.
+    ltac1:(induction γ using TermOver_rect).
+    {
+        unfold TermOverBuiltin_to_TermOverBoV.
+        simpl.
+        ltac1:(simp sat2B).
+        simpl.
+        reflexivity.
+    }
+    {
+        unfold TermOverBuiltin_to_TermOverBoV.
+        simpl.
+        ltac1:(simp sat2B).
+        simpl.
+        split>[reflexivity|].
+        rewrite map_length.
+        split>[reflexivity|].
+        intros i t' φ' HH1 HH2.
+        ltac1:(replace (map) with (@fmap list list_fmap) in HH1 by reflexivity).
+        rewrite list_lookup_fmap in HH1.
+        ltac1:(rewrite HH2 in HH1).
+        simpl in HH1.
+        ltac1:(simplify_eq/=).
+        apply H.
+        rewrite elem_of_list_lookup.
+        exists i.
+        exact HH2.
+    }
+Qed.
+
