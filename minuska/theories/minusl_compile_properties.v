@@ -1183,48 +1183,36 @@ Proof.
         destruct Hsat as [lγ [[H1 H2] H3]].
         subst.
         simpl.
-        rewrite <- vars_of_uglify in Hin.
         simpl in Hin.
-        rewrite elem_of_list_In in Hin.
-        rewrite in_concat in Hin.
-        destruct Hin as [x0 [H1x0 H2x0]].
-        rewrite <- elem_of_list_In in H1x0.
-        rewrite <- elem_of_list_In in H2x0.
-        ltac1:(replace map with (@fmap _ list_fmap) in H1x0 by reflexivity).
-        ltac1:(rewrite elem_of_list_lookup in H1x0).
-        destruct H1x0 as [i Hi].
-        rewrite list_lookup_fmap in Hi.
-        unfold TermOver in *.
-        destruct (l !! i) eqn:Hli.
+        rewrite vars_of_t_term in Hin.
+        clear s.
+        revert l H Hin H2 H3; induction lγ; intros l H Hin H2 H3.
         {
-            simpl in Hi. inversion Hi; subst; clear Hi.
-            rewrite Forall_forall in H.
-            specialize (H t).
-            ltac1:(ospecialize (H _)).
-            {
-                rewrite elem_of_list_lookup.
-                exists i. exact Hli.
-            }
-            destruct (lγ !! i) eqn:Hlγi.
-            {
-                specialize (H3 _ _ _ Hlγi Hli).
-                specialize (H t0).
-                rewrite <- vars_of_uglify in H.
-                specialize (H H2x0 Hsome H3).
-                apply take_drop_middle in Hlγi.
-                rewrite <- Hlγi.
-                rewrite sum_list_with_app.
-                simpl.
-                ltac1:(lia).
-            }
-            {
-                apply lookup_ge_None_1 in Hlγi.
-                apply lookup_lt_Some in Hli.
-                ltac1:(lia).
-            }
+            simpl in *.
+            destruct l; simpl in *; try ltac1:(lia).
+            ltac1:(exfalso; clear -Hin; set_solver).
         }
         {
-            simpl in Hi. inversion Hi.
+            simpl in *.
+            destruct l; simpl in *; try ltac1:(lia).
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            
+            rewrite elem_of_union in Hin.
+            destruct Hin as [Hin|Hin].
+            {
+                specialize (H3 0 a t erefl erefl) as H3'.
+                specialize (IH1 _ Hin Hsome H3').
+                ltac1:(lia).
+            }
+            {
+                specialize (IHlγ _ IH2 Hin ltac:(lia)).
+                ltac1:(ospecialize (IHlγ _)).
+                {
+                    intros. apply H3 with (i := S i); simpl; assumption.
+                }
+                ltac1:(lia).
+            }
         }
     }
 Qed.
