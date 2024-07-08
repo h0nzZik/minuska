@@ -1273,29 +1273,6 @@ Proof.
     }
 Qed.
 
-Lemma double_satisfies_contradiction_weaker
-    {Σ : StaticModel}
-    (ρ : Valuation)
-    (ay : BuiltinOrVar)
-    (cz cx : symbol)
-    (lx : list (TermOver builtin_value))
-    (lz : list (TermOver BuiltinOrVar))
-    :
-    vars_of_to_l2r ((t_over ay)) = vars_of_to_l2r ((t_term cz lz)) ->
-    satisfies ρ (t_term cx lx) (t_over ay) ->
-    satisfies ρ (t_term cx lx) (t_term cz lz) ->
-    False
-.
-Proof.
-    intros.
-    eapply double_satisfies_contradiction>[|apply X|apply X0].
-    apply set_eq.
-    intros x.
-    rewrite <- vars_of_uglify.
-    rewrite <- vars_of_uglify.
-    rewrite H.
-    ltac1:(tauto).
-Qed.
 
 Lemma vars_of_apply_symbol
     {Σ : StaticModel}
@@ -1335,19 +1312,19 @@ Qed.
 
 Definition size_of_var_in_val
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (x : variable)
     : nat
 :=
     match ρ!!x with
     | None => 0
-    | Some g => pred (TermOver_size (prettify g))
+    | Some g => pred (TermOver_size (g))
     end
 .
 
 Definition delta_in_val
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (ψ : TermOver BuiltinOrVar)
     : nat
 :=
@@ -1358,7 +1335,7 @@ Definition delta_in_val
 
 Lemma concrete_is_larger_than_symbolic
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (γ : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
     :
@@ -1369,24 +1346,25 @@ Proof.
     revert φ.
     induction γ; intros φ H1.
     {
-        inversion H1; subst; clear H1.
-        apply (f_equal prettify) in H3.
-        rewrite (cancel prettify uglify') in H3.
-        subst φ.
-        simpl.
-        unfold delta_in_val.
-        unfold vars_of_to_l2r.
-        destruct z.
+        unfold satisfies in H1; simpl in H1.
+        destruct φ; ltac1:(simp sat2B in H1);
+            simpl in H1.
         {
-            simpl. reflexivity.
+            destruct a0; simpl in *;
+                ltac1:(simplify_eq/=);
+                unfold delta_in_val,vars_of_to_l2r;
+                simpl.
+            {
+                reflexivity.
+            }
+            {
+                unfold size_of_var_in_val; simpl.
+                unfold Valuation2,TermOver in *.
+                rewrite H1.
+                simpl. reflexivity.
+            }
         }
-        {
-            simpl.
-            unfold size_of_var_in_val.
-            inversion pf; subst; clear pf.
-            rewrite H1. simpl.
-            reflexivity.
-        }
+        { destruct H1. }
     }
     {
         simpl.
@@ -1394,28 +1372,23 @@ Proof.
         {
             destruct a.
             {
-                inversion H1; subst; clear H1.
-                inversion X.
+                unfold satisfies in H1; simpl in H1.
+                ltac1:(simp sat2B in H1).
+                simpl in H1.
+                inversion H1.
             }
             {
-                inversion H1; subst; clear H1.
-                inversion X; subst; clear X.
+                unfold satisfies in H1; simpl in H1.
+                ltac1:(simp sat2B in H1).
+                simpl in H1.
                 simpl.
                 unfold delta_in_val. simpl.
                 unfold size_of_var_in_val.
+                unfold Valuation2,TermOver in *.
                 rewrite H1. simpl.
                 unfold TermOver in *.
-                apply f_equal.
-                ltac1:(replace ((prettify' (to_PreTerm'' s (map uglify' l))))
-                with ((t_term s l))).
-                {
-                    simpl. ltac1:(lia).
-                }
-                {
-                    rewrite <- (cancel prettify uglify').
-                    simpl.
-                    reflexivity.
-                }
+                apply f_equal.            
+                simpl. ltac1:(lia).
             }
         }
         {
