@@ -1219,159 +1219,57 @@ Qed.
 
 Lemma double_satisfies_contradiction
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (ay : BuiltinOrVar)
     (cz cx : symbol)
     (lx : list (TermOver builtin_value))
     (lz : list (TermOver BuiltinOrVar))
     :
-    vars_of (@uglify' (@symbol Σ) BuiltinOrVar (t_over ay)) = vars_of (uglify' (t_term cz lz)) ->
+    vars_of ((t_over ay)) = vars_of ((t_term cz lz)) ->
     satisfies ρ (t_term cx lx) (t_over ay) ->
     satisfies ρ (t_term cx lx) (t_term cz lz) ->
     False
 .
 Proof.
     intros Hvars H1 H2.
-        inversion H1; subst; clear H1.
-        inversion H2; subst; clear H2.
-        unfold to_PreTerm'' in pf.
-        apply satisfies_top_bov_cons_2 in pf.
-        destruct pf as [[pf1 pf2] pf3].
-        subst cz.
-        destruct ay.
-        {
-            inversion X; subst; clear X.
-        }
-        {
-            
-            ltac1:(exfalso).
-            simpl in Hvars.
-            assert (Htmp1 := satisfies_in_size ρ x).
-            unfold vars_of in Hvars; simpl in Hvars.
-            unfold vars_of in Hvars; simpl in Hvars.
-
-            inversion X; subst; clear X.
-            assert (∃ z, z ∈ map uglify' lz /\ x ∈ (vars_of z)).
-            {
-                clear -Hvars.
-                revert Hvars.
-                induction lz using rev_ind; intros Hvars.
-                {
-                    simpl in Hvars. ltac1:(set_solver).
-                }
-                {
-                    rewrite map_app in Hvars.
-                    unfold to_PreTerm'' in Hvars.
-                    rewrite fold_left_app in Hvars.
-                    simpl in Hvars.
-                    unfold helper in Hvars.
-                    destruct (uglify' x0) eqn:Hux0.
-                    {
-                        simpl in Hvars.
-                        destruct (decide (x ∈ vars_of ao)).
-                        {
-                            apply (f_equal prettify) in Hux0.
-                            rewrite (cancel prettify uglify') in Hux0.
-                            subst x0.
-                            exists (term_preterm ao).
-                            rewrite map_app.
-                            split.
-                            {
-                                rewrite elem_of_app.
-                                right. ltac1:(rewrite /map).
-                                rewrite (cancel uglify' prettify).
-                                clear. constructor.
-                            }
-                            {
-                                unfold vars_of; simpl. assumption.
-                            }
-                        }
-                        {
-                            specialize (IHlz ltac:(set_solver)).
-                            destruct IHlz as [z [H1z H2z]].
-                            exists z.
-                            split.
-                            {
-                                rewrite map_app.
-                                rewrite elem_of_app.
-                                left. assumption.
-                            }
-                            {
-                                assumption.
-                            }
-                    }
-                }
-                {
-                    simpl in Hvars.
-                    destruct (decide (x ∈ vars_of operand)).
-                    {
-                        apply (f_equal prettify) in Hux0.
-                        rewrite (cancel prettify uglify') in Hux0.
-                        subst x0.
-                        exists (term_operand operand).
-                        rewrite map_app.
-                        split.
-                        {
-                            rewrite elem_of_app.
-                            right. ltac1:(rewrite /map).
-                            rewrite (cancel uglify' prettify).
-                            clear. constructor.
-                        }
-                        {
-                            unfold vars_of; simpl. assumption.
-                        }
-                    }
-                    {
-                        specialize (IHlz ltac:(set_solver)).
-                        destruct IHlz as [z [H1z H2z]].
-                        exists z.
-                        split.
-                        {
-                            rewrite map_app.
-                            rewrite elem_of_app.
-                            left. assumption.
-                        }
-                        {
-                            assumption.
-                        }
-                    }
-                }
-            }
-        }
-        {
-            destruct H as [z [H1z H2z]].
-            ltac1:(replace map with (@fmap _ list_fmap) in H1z by reflexivity).
-            rewrite elem_of_list_lookup in H1z.
-            destruct H1z as [i Hi].
-            rewrite list_lookup_fmap in Hi.
-            unfold TermOver in *.
-            destruct (lz !! i) eqn:Hlzi.
-            {
-                inversion Hi; subst; clear Hi.
-
-                destruct (lx !! i) eqn:Hlxi.
-                {
-                    specialize (pf3 _ _ _ Hlxi Hlzi).
-                    specialize (Htmp1 t0 (t_term cx lx)).
-                    specialize (Htmp1 t H2z H0 pf3).
-                    simpl in Htmp1.
-                    clear - Htmp1 Hlxi.
-                    apply take_drop_middle in Hlxi.
-                    rewrite <- Hlxi in Htmp1.
-                    rewrite sum_list_with_app in Htmp1.
-                    simpl in Htmp1.
-                    ltac1:(lia).
-                }
-                {
-                    apply lookup_ge_None_1 in Hlxi.
-                    apply lookup_lt_Some in Hlzi.
-                    ltac1:(lia).
-                }
-            }
-            {
-                inversion Hi.
-            }
-        }
+    unfold satisfies in *; simpl in *.
+    ltac1:(simp sat2B in H1).
+    ltac1:(simp sat2B in H2).
+    destruct ay; simpl in *;
+        ltac1:(destruct_and?; simplify_eq/=).
+    rewrite vars_of_t_term in Hvars.
+    assert (H: x ∈ vars_of lz).
+    {
+        unfold vars_of; simpl.
+        rewrite <- Hvars.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
+    }
+    unfold vars_of in H; simpl in H.
+    rewrite elem_of_union_list in H.
+    destruct H as [X [H1X H2X]].
+    rewrite elem_of_list_fmap in H1X.
+    destruct H1X as [y [H1y H2y]].
+    subst.
+    rewrite elem_of_list_lookup in H2y.
+    destruct H2y as [i Hi].
+    destruct (lx !! i) eqn:Hlxi.
+    {
+        specialize (H3 i _ _ Hi Hlxi).
+        assert (Htmp1 := satisfies_in_size ρ x t (t_term cz lx) y H2X H1 H3).
+        simpl in Htmp1.
+        apply take_drop_middle in Hlxi.
+        rewrite <- Hlxi in Htmp1.
+        rewrite sum_list_with_app in Htmp1.
+        simpl in Htmp1.
+        ltac1:(lia).
+    }
+    {
+        apply lookup_ge_None in Hlxi.
+        apply lookup_lt_Some in Hi.
+        unfold Valuation2,TermOver in *.
+        ltac1:(lia).
     }
 Qed.
 
