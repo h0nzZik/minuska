@@ -935,7 +935,7 @@ Qed.
 Lemma forall_satisfies_inv'
     {Σ : StaticModel}
     (sz : nat)
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (γ1 γ2 : list (TermOver builtin_value))
     (l : list (TermOver BuiltinOrVar))
     :
@@ -948,7 +948,7 @@ Lemma forall_satisfies_inv'
 with satisfies_inv'
     {Σ : StaticModel}
     (sz : nat)
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (x y : TermOver builtin_value)
     (z : TermOver BuiltinOrVar)
     :
@@ -1021,102 +1021,83 @@ Proof.
             z as [az|cz lz]
             .
         {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            inversion pf; subst; clear pf;
-            inversion pf0; subst; clear pf0;
-            try reflexivity.
-            ltac1:(simplify_eq /=).
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=); reflexivity.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            simpl in H1.
+            destruct H1.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=).
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct H1.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=).
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct H2.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=).
             reflexivity.
         }
         {
-            inversion H1.
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct az.
-            {
-                inversion pf; subst; clear pf.
-                unfold to_PreTerm'' in H3.
-                apply satisfies_builtin_inv in X.
-                inversion X.
-            }
-            {
-                inversion pf; subst; clear pf.
-                inversion X; subst; clear X.
-                ltac1:(simplify_eq /=).
-            }
-        }
-        {
-            inversion H1.
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct az.
-            {
-                inversion pf; subst; clear pf.
-                unfold to_PreTerm'' in X.
-                apply satisfies_builtin_inv in X.
-                inversion X.
-            }
-            {
-                inversion pf; subst; clear pf.
-                inversion X; subst; clear X.
-                ltac1:(simplify_eq /=).
-            }
-        }
-        {
-            inversion H2.
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            destruct az.
-            {
-                apply satisfies_builtin_inv in X.
-                inversion X.
-            }
-            {
-                inversion X; subst; clear X.
-                inversion X0; subst; clear X0.
-                ltac1:(simplify_eq /=).
-                apply to_preterm_eq_inv in H.
-                destruct H as [H1 H2].
-                subst cy.
-                apply map_uglify'_inj in H2.
-                subst ly.
-                reflexivity.
-            }
-        }
-        {
-            inversion H1; subst; clear H1.
-            inversion H2; subst; clear H2.
-            unfold to_PreTerm'' in pf.
-            unfold to_PreTerm'' in pf0.
-            apply satisfies_top_bov_cons_2 in pf.
-            apply satisfies_top_bov_cons_2 in pf0.
-            destruct pf as [H1 H2].
-            destruct pf0 as [H3 H4].
-            assert (IH1 := forall_satisfies_inv' Σ sz ρ lx ly lz).
-            destruct H1. subst cx.
-            destruct H3. subst cy.
-            simpl in Hsz.
-            specialize (IH1 ltac:(lia)).
-            specialize (IH1 ltac:(assumption)).
-            specialize (IH1 ltac:(assumption)).
-            specialize (IH1 ltac:(assumption)).
-            specialize (IH1 ltac:(assumption)).
-            subst.
-            reflexivity.
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            ltac1:(destruct_and!).
+            ltac1:(simplify_eq/=).
+            f_equal.
+            eapply forall_satisfies_inv' with (l := lz)(sz := sz).
+            ltac1:(lia).
+            unfold TermOver in *;
+                ltac1:(lia).
+            unfold TermOver in *;
+                ltac1:(lia).
+            intros.
+            eapply H5.
+            apply H0.
+            apply H.
+            intros.
+            eapply H3.
+            apply H0.
+            apply H.
         }
     }
 Qed.
 
 Lemma forall_satisfies_inv
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (γ1 γ2 : list (TermOver builtin_value))
     (l : list (TermOver BuiltinOrVar))
     :
@@ -1135,7 +1116,7 @@ Qed.
 
 Lemma satisfies_inv
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (x y : TermOver builtin_value)
     (z : TermOver BuiltinOrVar)
     :
@@ -1153,13 +1134,13 @@ Qed.
 
 Lemma satisfies_in_size
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (x : variable)
     (t t' : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
     :
-    x ∈ vars_of (uglify' φ) ->
-    ρ !! x = Some (uglify' t') ->
+    x ∈ vars_of (φ) ->
+    ρ !! x = Some (t') ->
     satisfies ρ t φ ->
     TermOver_size t' <= TermOver_size t
 .
@@ -1169,55 +1150,30 @@ Proof.
     {
         destruct a.
         {
-            inversion Hsat; subst; clear Hsat.
-            {
-                apply (f_equal prettify) in H1.
-                rewrite (cancel prettify uglify') in H1.
-                subst t.
-                simpl in *.
-                unfold vars_of in Hin; simpl in Hin.
-                unfold vars_of in Hin; simpl in Hin.
-                clear -Hin.
-                ltac1:(exfalso).
-                ltac1:(set_solver).
-            }
-            {
-                unfold vars_of in Hin; simpl in Hin.
-                unfold vars_of in Hin; simpl in Hin.
-                clear -Hin.
-                ltac1:(exfalso).
-                ltac1:(set_solver).
-            }
+            unfold satisfies in *; simpl in *.
+            destruct t; ltac1:(simp sat2B in Hsat);
+                simpl in *; ltac1:(simplify_eq/=).
+            ltac1:(exfalso).
+            unfold vars_of in Hin; simpl in Hin.
+            unfold vars_of in Hin; simpl in Hin.
+            ltac1:(set_solver).
         }
         {
-            unfold vars_of in Hin; simpl in Hin.
-            unfold vars_of in Hin; simpl in Hin.
-            rewrite elem_of_singleton in Hin. subst x0.
-            inversion Hsat; subst; clear Hsat.
+            unfold satisfies in *; simpl in *.
+            destruct t; ltac1:(simp sat2B in Hsat);
+                simpl in *; ltac1:(simplify_eq/=).
             {
-                apply (f_equal prettify) in H1.
-                rewrite (cancel prettify uglify') in H1.
-                subst t.
-                simpl in *.
-                inversion pf; subst; clear pf.
-                rewrite H1 in Hsome. inversion Hsome; subst; clear Hsome.
-                apply (f_equal prettify) in H0.
-                rewrite (cancel prettify uglify') in H0.
-                subst t'.
-                simpl.
+                unfold vars_of in Hin; simpl in Hin.
+                unfold vars_of in Hin; simpl in Hin.
+                rewrite elem_of_singleton in Hin. subst x0.
+                ltac1:(simplify_eq/=).
                 ltac1:(lia).
             }
             {
-                apply (f_equal prettify) in H1.
-                rewrite (cancel prettify uglify') in H1.
-                subst t.
-                simpl in *.
-                inversion X; subst; clear X.
-                rewrite H0 in Hsome. inversion Hsome; subst; clear Hsome.
-                apply (f_equal prettify) in H1.
-                rewrite (cancel prettify uglify') in H1.
-                subst t'.
-                simpl.
+                unfold vars_of in Hin; simpl in Hin.
+                unfold vars_of in Hin; simpl in Hin.
+                rewrite elem_of_singleton in Hin. subst x0.
+                ltac1:(simplify_eq/=).
                 ltac1:(lia).
             }
         }
