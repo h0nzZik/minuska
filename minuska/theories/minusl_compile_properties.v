@@ -3824,6 +3824,7 @@ Proof.
     }
 Qed.
 
+(*
 Lemma satisfies_TermOverBoV_to_TermOverExpr_2
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -3925,7 +3926,7 @@ Proof.
         }
     }
 Qed.
-
+*)
 
 (*
 Lemma vars_of_t_term
@@ -3974,7 +3975,7 @@ Qed.
 
 Equations? TermOverBoV_eval
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (φ : TermOver BuiltinOrVar)
     (pf : vars_of φ ⊆ vars_of ρ)
     : TermOver builtin_value
@@ -3985,7 +3986,7 @@ Equations? TermOverBoV_eval
     ;
 
     TermOverBoV_eval ρ (t_over (bov_variable x)) pf with (inspect (ρ !! x)) => {
-        | (@exist _ _ (Some t) pf') := prettify t;
+        | (@exist _ _ (Some t) pf') := t;
         | (@exist _ _ None pf') := _ ;
     }
     ;
@@ -3997,19 +3998,21 @@ Equations? TermOverBoV_eval
 .
 Proof.
     {
-        ltac1:(exfalso).
+        ltac1:(exfalso).        
         abstract(
-        rewrite elem_of_subseteq in pf;
-        specialize (pf x);
-        unfold vars_of in pf; simpl in pf;
-        unfold vars_of in pf; simpl in pf;
-        unfold vars_of in pf; simpl in pf;
-        rewrite elem_of_singleton in pf;
-        specialize (pf eq_refl);
-        rewrite elem_of_dom in pf;
-        ltac1:(rewrite pf' in pf);
-        eapply is_Some_None;
-        apply pf).
+            rewrite elem_of_subseteq in pf;
+            specialize (pf x);
+            unfold vars_of in pf; simpl in pf;
+            unfold vars_of in pf; simpl in pf;
+            unfold vars_of in pf; simpl in pf;
+            rewrite elem_of_singleton in pf;
+            specialize (pf eq_refl);
+            unfold Valuation2 in *;
+            rewrite elem_of_dom in pf;
+            ltac1:(rewrite pf' in pf);
+            eapply is_Some_None;
+            apply pf
+        ).
     }
     {
         unfold TermOver in *.
@@ -4037,7 +4040,7 @@ Defined.
 
 Lemma satisfies_TermOverBoV__impl__vars_subseteq
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (c : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
     :
@@ -4048,56 +4051,30 @@ Proof.
     revert ρ c.
     induction φ; intros ρ c HH.
     {
-        inversion HH; subst; clear HH.
+        unfold satisfies in HH; simpl in HH.
+        ltac1:(simp sat2B in HH).
+        destruct a; simpl in HH; subst.
         {
-            apply (f_equal prettify) in H1.
-            rewrite (cancel prettify uglify') in H1.
-            simpl in H1.
-            destruct a; simpl in *.
-            {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                apply empty_subseteq.
-            }
-            {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                inversion pf; subst; clear pf.
-                rewrite elem_of_subseteq.
-                intros x' Hx'.
-                rewrite elem_of_singleton in Hx'.
-                subst x'.
-                rewrite elem_of_dom.
-                exists (term_operand y).
-                exact H2.
-            }
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
         }
-        {
-            destruct a; simpl in *.
-            {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                apply empty_subseteq.
-            }
-            {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                inversion X; subst; clear X.
-                rewrite elem_of_subseteq.
-                intros x' Hx'.
-                rewrite elem_of_singleton in Hx'.
-                subst x'.
-                rewrite elem_of_dom.
-                exists (term_preterm axy).
-                exact H0.
-            }
-        }
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        rewrite elem_of_subseteq.
+        intros x' Hx'.
+        rewrite elem_of_singleton in Hx'.
+        subst x'.
+        unfold Valuation2 in *.
+        rewrite elem_of_dom.
+        exists (c).
+        exact HH.
     }
     {
+        unfold satisfies in HH; simpl in HH.
+        destruct c; ltac1:(simp sat2B in HH).
+        { destruct HH. }
+        destruct HH as [HH1 [HH2 HH3]].
         unfold TermOver in *.
         rewrite vars_of_t_term.
         rewrite elem_of_subseteq.
@@ -4113,49 +4090,22 @@ Proof.
         rewrite Forall_app in H.
         rewrite Forall_cons in H.
         destruct H as [H1 [H2 H3]].
-        apply satisfies_term_bov_inv in HH.
-        destruct HH as [lγ [[H4 H5] H6]].
-        subst c.
-        rewrite <- (firstn_skipn (length l1) lγ) in H6.
-        destruct (drop (length l1) lγ) as [|m ms] eqn:Hed.
+        
+        subst s0.
+        destruct (l0 !! length l1) eqn:Heq.
         {
-            clear -Hed H5.
-            rewrite <- (firstn_skipn (length l1) lγ) in H5.
-            rewrite app_length in H5.
-            rewrite app_length in H5.
-            rewrite take_length in H5.
-            rewrite Hed in H5.
-            simpl in H5.
+            specialize (HH3 (length l1) t y).
+            rewrite lookup_app_r in HH3>[|unfold TermOver in *; ltac1:(lia)].
+            rewrite Nat.sub_diag in HH3. simpl in HH3.
+            specialize (HH3 erefl Heq).
+            specialize (H2 _ _ HH3).
+            clear -H2 Hx.
+            ltac1:(set_solver).
+        }
+        {
+            apply lookup_ge_None in Heq.
+            rewrite app_length in HH2. simpl in HH2.
             ltac1:(lia).
-        }
-
-        eapply H2>[|apply Hx].
-        eapply H6 with (i := length l1).
-        {
-            rewrite lookup_app_r.
-            {
-                rewrite take_length.
-                rewrite app_length in H5.
-                simpl in H5.
-                ltac1:(
-                    replace (length l1 - length l1 `min` length lγ)
-                    with 0
-                    by lia
-                ).
-                reflexivity.
-            }
-            {
-                rewrite take_length. ltac1:(lia).
-            }
-        }
-        {
-            rewrite lookup_app_r.
-            {
-                rewrite Nat.sub_diag. simpl. reflexivity.
-            }
-            {
-                ltac1:(lia).
-            }
         }
     }
 Qed.
