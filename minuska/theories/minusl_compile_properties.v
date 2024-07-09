@@ -4128,8 +4128,8 @@ Proof.
             ltac1:(set_solver).
         }
         {
-            unfold vars_of at 2; simpl.
-            unfold vars_of at 2; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
             destruct (decide (x = x0)).
             {
                 subst.
@@ -4168,7 +4168,7 @@ Qed.
 
 Lemma satisfies_TermOverBoV_eval
     {Σ : StaticModel}
-    (ρ : Valuation)
+    (ρ : Valuation2)
     (φ : TermOver BuiltinOrVar)
     pf
     :
@@ -4177,65 +4177,15 @@ Lemma satisfies_TermOverBoV_eval
 Proof.
     ltac1:(funelim (TermOverBoV_eval ρ φ pf)).
     {
-        constructor. constructor.
+        unfold satisfies; simpl.
+        ltac1:(simp TermOverBoV_eval).
+        ltac1:(simp sat2B).
     }
     {
-        rewrite <- Heqcall.
-        constructor.
-        fold (@uglify' (@symbol Σ)).
-        unfold to_PreTerm''.
-        apply satisfies_top_bov_cons_1.
-        {
-            rewrite length_pfmap. reflexivity.
-        }
-        {
-            reflexivity.
-        }
-        {
-            intros i s0 l0 H1i H2i.
-            assert (HP4 := @pfmap_lookup_Some_1 (TermOver BuiltinOrVar)).
-            specialize (HP4 (TermOver builtin_value) l).
-            specialize (HP4 _ i _ H1i).
-            simpl in HP4.
-            (*subst s0.*)
-            rewrite HP4.
-            assert (Htmp1: Some (proj1_sig ((pflookup l i (pfmap_lookup_Some_lt H1i)))) = Some l0).
-            {
-                rewrite <- H2i.
-                apply pflookup_spec.
-            }
-            apply (inj Some) in Htmp1.
-            rewrite <- Htmp1.
-            ltac1:(unshelve(eapply X0))>[()|()|reflexivity|()].
-            unfold eq_rect. reflexivity.
-        }
-    }
-    {
-        simpl.
-        apply satisfies_var.
-        unfold Valuation in *.
-        ltac1:(rewrite pf').
-        apply f_equal.
-        rewrite <- Heqcall.
-        rewrite (cancel uglify' prettify).
-        reflexivity.
-    }
-    {
-        unfold vars_of in pf; simpl in pf.
-        unfold vars_of in pf; simpl in pf.
-        unfold vars_of in pf; simpl in pf.
-        clear H Heqcall.
-        unfold Valuation in *.
-        apply not_elem_of_dom_2 in pf'.
-        ltac1:(exfalso).
-        apply pf'. clear pf'.
-        rewrite elem_of_subseteq in pf.
-        apply pf.
-        rewrite elem_of_singleton.
-        reflexivity.
+        
     }
 Qed.
-
+(*
 Lemma TermOverBoV_eval__varsofindependent
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation)
@@ -4734,7 +4684,7 @@ Proof.
         ltac1:(set_solver).
     }
 Qed.
-
+*)
 (*
 Lemma compile_correct_1
     {Σ : StaticModel}
