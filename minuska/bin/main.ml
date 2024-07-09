@@ -111,7 +111,7 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
   (* extract coq into ocaml *)
-  let libdir = Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib" in
+  let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) in
   let minuska_dir = libdir ^ "/coq/user-contrib/Minuska" in
   let coq_minuska_dir = libdir ^ "/coq-minuska" in
   let _ = coq_minuska_dir in
@@ -120,11 +120,12 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
   (* compile the main ocaml file (after adding an entry command) *)
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s lang_interpreter)\n" oparseexestr) in
+  (*let _ = run [ "env" ] in*)
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
-          "ocamlfind ocamlopt -thread -package coq-minuska -package zarith -linkpkg -g -o ";
+          "ocamlfind ocamlopt -thread -package libminuska -package zarith -linkpkg -g -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   (* Filename.dirname Sys.argv.(0) ^ "../lib" *)
   let _ = Core_unix.mkdir_p appdir in

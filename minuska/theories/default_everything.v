@@ -43,7 +43,7 @@ Instance DSM : StaticModel :=
 
 Definition GT := @TermOver' string myBuiltinType.
 
-Definition StepT := GT -> option GT.
+Definition StepT := NondetValue -> GT -> option GT.
 
 Definition gt_over (b : myBuiltinType) : GT := @t_over string myBuiltinType b.
 Definition gt_term (s : string) (l : list GT) : GT := @t_term string myBuiltinType s l.

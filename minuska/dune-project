@@ -2,7 +2,7 @@
 (using coq 0.8)
 
 
-(name coq-minuska)
+(name libminuska)
 (version 0.2)
 
 (using menhir 3.0)
@@ -19,7 +19,14 @@
 (license MIT)
 
 (package
- (name coq-minuska)
+  (name coq-minuska)
+  (depends
+     cpq
+  )
+)
+
+(package
+ (name libminuska)
  (depends
     benchmark
     coq

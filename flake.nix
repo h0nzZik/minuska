@@ -44,6 +44,7 @@
               coqPackages.coq.ocamlPackages.core_unix
               coqPackages.coq.ocamlPackages.ppx_jane
               coqPackages.coq.ocamlPackages.ppx_sexp_conv
+              coqPackages.coq.ocamlPackages.base_quickcheck
               coqPackages.coq.ocamlPackages.benchmark
            ] ++ coqLibraries ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
@@ -84,6 +85,13 @@
               runHook preBuild
               dune build @all theories/Minuska.html ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
               runHook postBuild
+            '';
+
+            installPhase = ''
+              mkdir -p $out
+              runHook preInstall
+              dune install --prefix $out
+              runHook postInstall
             '';
 
             postInstall = ''
