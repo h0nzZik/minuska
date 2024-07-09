@@ -6315,7 +6315,7 @@ Lemma in_compile_inv
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
-    (r : RewritingRule Act)
+    (r : RewritingRule2 Act)
 :
   r
 ∈ compile invisible_act topSymbol cseqSymbol holeSymbol
@@ -6325,30 +6325,30 @@ Lemma in_compile_inv
         { lc : TermOver BuiltinOrVar &
         { ld : TermOver BuiltinOrVar &
         { a : Act &
-        { rc : TermOver Expression &
-        { rd : TermOver Expression &
-        { scs : list SideCondition &
+        { rc : TermOver Expression2 &
+        { rd : TermOver Expression2 &
+        { scs : list SideCondition2 &
             mld_rewrite Act lc ld a rc rd scs ∈ mlld_decls Act D /\
             r =
             {|
-                fr_from :=
-                apply_symbol' topSymbol
-                [apply_symbol' cseqSymbol
-                [uglify' lc; term_operand (bov_variable continuationVariable)];
-                uglify' ld];
-                fr_to :=
-                apply_symbol' topSymbol
-                [apply_symbol' cseqSymbol
-                [uglify' rc; term_operand (ft_variable continuationVariable)];
-                uglify' rd];
-                fr_scs := scs;
-                fr_act := a
+                r_from :=
+                t_term topSymbol
+                [t_term cseqSymbol
+                [lc; t_over (bov_variable continuationVariable)];
+                ld];
+                r_to :=
+                t_term topSymbol
+                [t_term cseqSymbol
+                [rc; t_over (e_variable continuationVariable)];
+                rd];
+                r_scs := scs;
+                r_act := a
             |}
         }}}}}}
     ) + (
         { c : _ &
         { h : variable &
-        { scs : list SideCondition &
+        { scs : list SideCondition2 &
         mld_context Act c h scs ∈ mlld_decls Act D /\
         (
             r = ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
@@ -6465,14 +6465,15 @@ Proof.
     intros ?. apply _.
 Qed.
 
+(*
 Fixpoint frto_all_nonlast_states_satisfy
     {Σ : StaticModel}
     {Act : Set}
-    (Γ : RewritingTheory Act)
+    (Γ : RewritingTheory2 Act)
     (P : TermOver builtin_value -> Prop)
     (x y : TermOver builtin_value)
     (w : list Act)
-    (r : flattened_rewrites_to_over Γ x w y)
+    (r : rewrites_to_thy Γ x w y)
     :
     Prop
 :=
@@ -6801,7 +6802,6 @@ Proof.
             }
         }
         {
-            (*
             destruct H as [c [h [Hh [scs [Hhscs [HH1 HH2]]]]]].
             destruct HH2 as [HH2|HH2].
             {
@@ -7023,7 +7023,7 @@ Proof.
             {
 
             }
-            *)
+
             admit.
         }
     }
@@ -7034,3 +7034,5 @@ About vars_of_uglify.
 
 
 Search sum_list_with compose.
+            *)
+            

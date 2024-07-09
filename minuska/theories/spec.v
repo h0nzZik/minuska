@@ -627,3 +627,16 @@ Definition rewrites_to_nondet
         rewrites_to r from under nv to
    }
 .
+
+Definition rewrites_to_thy
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : RewritingTheory2 Act)
+    (from : TermOver builtin_value)
+    (under : Act)
+    (to : TermOver builtin_value)
+:= { r : RewritingRule2 Act &
+    ((r ∈ Γ)*(rewrites_to_nondet r from under to))%type
+
+}
+.

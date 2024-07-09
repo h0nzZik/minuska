@@ -28,7 +28,7 @@ Definition Interpreter
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
     : Type
-    := TermOver builtin_value -> NondetValue -> option (TermOver builtin_value)
+    := NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
 .
 
 Definition Interpreter_sound'
@@ -39,15 +39,15 @@ Definition Interpreter_sound'
     : Type
     := ((
         forall e1 e2 nv,
-            interpreter e1 nv = Some e2 ->
+            interpreter nv e1 = Some e2 ->
             rewriting_relation Γ nv e1 e2
     )
     *
     (forall e,
-        stuck Γ e -> forall nv, interpreter e nv = None)
+        stuck Γ e -> forall nv, interpreter nv e = None)
     * (forall e,
         not_stuck Γ e ->
-        exists e' (nv : NondetValue), interpreter e nv = Some e')
+        exists e' (nv : NondetValue), interpreter nv e = Some e')
     )%type
 .
 

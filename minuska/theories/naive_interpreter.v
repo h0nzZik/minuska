@@ -176,8 +176,8 @@ Definition naive_interpreter
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
-    (e : TermOver builtin_value)
     (nv : NondetValue)
+    (e : TermOver builtin_value)
     : option (TermOver builtin_value)
 :=
     ei ← naive_interpreter_ext Γ nv e;
