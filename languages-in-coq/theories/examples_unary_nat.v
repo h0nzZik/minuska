@@ -199,7 +199,7 @@ Module unary_nat.
     .
 
     Definition interp_fact(fuel : nat) (from : nat)
-    := let r := interp_loop (naive_interpreter Γfact.1) fuel (initial_fact from) in
+    := let r := interp_loop (tl _ nondet_stream) (naive_interpreter Γfact.1) fuel (initial_fact from) in
         (r.1, (final r.2))
     .
     (* Time Compute ((interp_fact 500 4)). *)
@@ -261,7 +261,7 @@ Module unary_nat.
 
     Definition interp_fib (fuel : nat) (from : nat)
     := 
-        let r := interp_loop (naive_interpreter Γfib.1) fuel ((initial_fib from)) in
+        let r := interp_loop (tl _ nondet_stream) (naive_interpreter Γfib.1) fuel ((initial_fib from)) in
         (r.1, (final r.2))
     .
 
