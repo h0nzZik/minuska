@@ -23,34 +23,34 @@ Definition ctx_heat
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
-    (isValue : Expression -> (list SideCondition))
+    (isValue : Expression2 -> (list SideCondition2))
     (c : TermOver BuiltinOrVar)
     (h : variable) (* occurs once in `c` *)
-    (scs : list SideCondition)
+    (scs : list SideCondition2)
     :
-    RewritingRule Act
+    RewritingRule2 Act
 := {|
-    fr_from := (uglify' (t_term topSymbol [
+    r_from := ((t_term topSymbol [
         (t_term cseqSymbol [
             c;
             (t_over (bov_variable contVariable))
         ]);
         t_over (bov_variable dataVariable)])
     );
-    fr_to   := (uglify' (t_term topSymbol [
+    r_to   := ((t_term topSymbol [
         (t_term cseqSymbol [
-            (t_over (ft_variable h));
+            (t_over (e_variable h));
             (t_term cseqSymbol [
-                (TermOverBoV_to_TermOverExpr
+                (TermOverBoV_to_TermOverExpr2
                     (TermOverBoV_subst c h (t_term holeSymbol []))
                 );
-                (t_over (ft_variable contVariable))
+                (t_over (e_variable contVariable))
             ])
         ]);
-        t_over (ft_variable dataVariable)])
+        t_over (e_variable dataVariable)])
     );
-    fr_scs := scs;
-    fr_act := invisible_act ;
+    r_scs := scs;
+    r_act := invisible_act ;
 |}.
 
 Definition ctx_cool
@@ -59,13 +59,13 @@ Definition ctx_cool
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
-    (isValue : Expression -> (list SideCondition))
+    (isValue : Expression2 -> (list SideCondition2))
     (c : TermOver BuiltinOrVar)
     (h : variable)
     :
-    RewritingRule Act
+    RewritingRule2 Act
 := {|
-    fr_from := (uglify' (t_term topSymbol [
+    r_from := ((t_term topSymbol [
         (t_term cseqSymbol [
             (t_over (bov_variable h));
             (t_term cseqSymbol [
@@ -76,22 +76,22 @@ Definition ctx_cool
         t_over (bov_variable dataVariable)])
     );
 
-    fr_to   := (uglify' (t_term topSymbol [
+    r_to   := ((t_term topSymbol [
         (t_term cseqSymbol [
-            (TermOverBoV_to_TermOverExpr c);
-            (t_over (ft_variable contVariable))
+            (TermOverBoV_to_TermOverExpr2 c);
+            (t_over (e_variable contVariable))
         ]);
-        t_over (ft_variable dataVariable)])
+        t_over (e_variable dataVariable)])
     );
 
-    fr_scs := isValue (ft_variable h);
+    r_scs := isValue (e_variable h);
 
-    fr_act := invisible_act ;
+    r_act := invisible_act ;
 |}.
 
 
 Definition CompileT {Σ : StaticModel} {Act : Set} : Type :=
-    MinusL_LangDef Act -> RewritingTheory Act
+    MinusL_LangDef Act -> RewritingTheory2 Act
 .
 
 Definition down2
@@ -117,15 +117,15 @@ Definition down2E
     {Σ : StaticModel}
     (topSymbol cseqSymbol : symbol)
     (continuationVariable : variable)
-    (ctrl data : TermOver Expression)
-    : TermOver Expression
+    (ctrl data : TermOver Expression2)
+    : TermOver Expression2
 :=
     t_term topSymbol
         [
             (t_term cseqSymbol
                 [
                     ctrl;
-                    t_over (ft_variable continuationVariable)
+                    t_over (e_variable continuationVariable)
                 ]
             );
             data
@@ -154,18 +154,18 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
-    (isValue : Expression -> (list SideCondition))
+    (isValue : Expression2 -> (list SideCondition2))
     (avoid : gset variable)
     (d : MinusL_Decl Act)
-    : (list (RewritingRule Act))
+    : (list (RewritingRule2 Act))
 :=
     match d with
     | mld_rewrite _ lc ld a rc rd scs => [
         ({|
-            fr_from := uglify' (down2 topSymbol cseqSymbol continuationVariable lc ld) ;
-            fr_to := uglify' (down2E topSymbol cseqSymbol continuationVariable rc rd) ;
-            fr_scs := scs ;
-            fr_act := a;
+            r_from := (down2 topSymbol cseqSymbol continuationVariable lc ld) ;
+            r_to := (down2E topSymbol cseqSymbol continuationVariable rc rd) ;
+            r_scs := scs ;
+            r_act := a;
         |})
         ]
     | mld_context _ c h scs =>

@@ -4,10 +4,8 @@ From Minuska Require Import
     basic_properties
     minusl_syntax
     spec
-    lowlang (* TODO remove this dependency*)
     properties
 .
-
 
 Section MinusL_sem.
     Context
@@ -33,16 +31,16 @@ Section MinusL_sem.
         forall
             (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
             (a : Act)
-            (rc : TermOver Expression) (rd : TermOver Expression)
-            (scs : list SideCondition),
+            (rc : TermOver Expression2) (rd : TermOver Expression2)
+            (scs : list SideCondition2),
             (mld_rewrite Act lc ld a rc rd scs) ∈ (mlld_decls Act D) ->
-        forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value)
-            (ρ : Valuation),
+        forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value) (nv : NondetValue)
+            (ρ : Valuation2),
             satisfies ρ ctrl1 lc ->
             satisfies ρ state1 ld ->
-            satisfies ρ ctrl2 rc ->
-            satisfies ρ state2 rd ->
-            satisfies ρ () scs ->
+            satisfies ρ (nv,ctrl2) rc ->
+            satisfies ρ (nv,state2) rd ->
+            satisfies ρ nv scs ->
         MinusL_rewrites D ctrl1 state1 [a] ctrl2 state2
 
     | mlr_trans :
@@ -57,17 +55,18 @@ Section MinusL_sem.
         forall
             (c : TermOver BuiltinOrVar)
             (h : variable)
-            (scs : list SideCondition),
+            (scs : list SideCondition2),
             (mld_context Act c h scs) ∈ (mlld_decls Act D) ->
         forall (ctrl1 state1 ctrl2 state2 r v : TermOver builtin_value)
             (w : list Act)
-            (ρ1 : Valuation)
-            (ρ2 : Valuation),
+            (ρ1 : Valuation2)
+            (ρ2 : Valuation2)
+            (nv : NondetValue),
             (∀ x, x ∈ vars_of_to_l2r c -> x <> h -> ρ1 !! x = ρ2 !! x) ->
-            satisfies (<[h := uglify' r]>ρ1) ctrl1 c ->
-            satisfies ρ1 () scs ->
-            satisfies (<[h := uglify' v]>ρ2) ctrl2 c ->
-            satisfies ρ2 () (MinusL_isValue Act D (ft_element (uglify' v))) ->
+            satisfies (<[h := r]>ρ1) ctrl1 c ->
+            satisfies ρ1 nv scs ->
+            satisfies (<[h := v]>ρ2) ctrl2 c ->
+            satisfies ρ2 nv (MinusL_isValue Act D (e_ground v)) ->
             MinusL_rewrites D r state1 w v state2 ->
             MinusL_rewrites D ctrl1 state1 w ctrl2 state2
     .

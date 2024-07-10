@@ -175,7 +175,7 @@ Module Implementation.
           specialize (Ha avoid).
           rewrite elem_of_subseteq in Ha.
           specialize (Ha x).
-          unfold vars_of in Ha at 1; simpl in Ha.
+          unfold vars_of in Ha ; simpl in Ha.
           rewrite elem_of_union_list in Ha.
           ltac1:(ospecialize (Ha _)).
           {
@@ -259,7 +259,7 @@ Module Implementation.
       split.
       {
         assert (Htmp := toe_to_cpat_good_side avoid a).
-        unfold vars_of in Htmp at 1; simpl in Htmp.
+        unfold vars_of in Htmp ; simpl in Htmp.
         ltac1:(set_solver).
       }
       {
@@ -282,7 +282,7 @@ Module Implementation.
     {
       unfold vars_of; simpl.
       unfold vars_of; simpl.
-      unfold vars_of at 1; simpl.
+      unfold vars_of; simpl.
       ltac1:(set_solver).
     }
     {
@@ -485,13 +485,13 @@ Module Implementation.
     (g : TermOver builtin_value)
   :
     elements (vars_of t) ⊆ avoid ->
-    forall (ρ' : Valuation2),
-      satisfies ρ' g t ->
+    forall (ρ' : Valuation2) (nv : NondetValue),
+      satisfies ρ' (nv,g) t ->
       ({ ρ : Valuation2 &
         (
           (satisfies ρ g ((toe_to_cpat avoid t).1))
           *
-          (satisfies ρ tt ((toe_to_cpat avoid t).2))
+          (satisfies ρ nv ((toe_to_cpat avoid t).2))
           (* *
           (vars_of ρ ⊆ vars_of ((toe_to_cpat avoid t).1) ∪ vars_of ((toe_to_cpat avoid t).2)) *)
           *
@@ -501,9 +501,8 @@ Module Implementation.
   .
   Proof.
     revert g avoid.
-    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' H2ρ').
+    ltac1:(induction t using TermOver_rect; intros g avoid Havoid ρ' nv H2ρ').
     {
-      inversion H2ρ'; clear H2ρ'.
       simpl.
       unfold satisfies; simpl.
       exists (<[(fresh avoid) := g]>((filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ avoid) ρ'))).
@@ -524,77 +523,52 @@ Module Implementation.
         unfold Valuation2 in *.
         ltac1:(rewrite lookup_insert).
         unfold isSome.
-        split>[|reflexivity].
+        unfold satisfies in H2ρ'; simpl in H2ρ'.
+        ltac1:(simp sat2E in H2ρ').
+        destruct (Expression2_evaluate ρ' a) eqn:H2ρ''>[|ltac1:(contradiction)].
+        subst g.
+        apply Expression2_evalute_strip in H2ρ''.
+        eapply Expression2_evaluate_extensive_Some in H2ρ''.
+        rewrite H2ρ''.
+        { reflexivity. }
+        ltac1:(rewrite map_subseteq_spec).
+        intros i x Hix.
+        ltac1:(rewrite map_lookup_filter in Hix).
+        rewrite bind_Some in Hix.
+        destruct Hix as [x0 [H1x0 H2x0]].
+        rewrite bind_Some in H2x0.
+        simpl in H2x0.
+        destruct H2x0 as [x1 [H1x1 H2x1]].
+        ltac1:(simplify_option_eq).
+        rewrite lookup_insert_ne.
         {
-          apply Expression2_evalute_strip in H0.
-          symmetry.
-          eapply Expression2_evaluate_extensive_Some>[|apply H0].
-          ltac1:(rewrite map_subseteq_spec).
-          intros i x Hix.
-          ltac1:(rewrite map_lookup_filter in Hix).
-          rewrite bind_Some in Hix.
-          destruct Hix as [x0 [H1x0 H2x0]].
-          rewrite bind_Some in H2x0.
-          simpl in H2x0.
-          destruct H2x0 as [x1 [H1x1 H2x1]].
+          rewrite map_lookup_filter.
+          rewrite bind_Some.
+          exists x.
+          split>[exact H1x0|].
+          rewrite bind_Some.
+          simpl.
+          unfold vars_of in Havoid; simpl in Havoid.
+          ltac1:(rewrite elem_of_subseteq in Havoid).
+          specialize (Havoid i).
+          rewrite elem_of_elements in Havoid.
+          specialize (Havoid x1).
+          exists Havoid.
+          split>[|reflexivity].
           ltac1:(simplify_option_eq).
-          rewrite lookup_insert_ne.
-          {
-            rewrite map_lookup_filter.
-            rewrite bind_Some.
-            exists x.
-            split>[exact H1x0|].
-            rewrite bind_Some.
-            simpl.
-            unfold vars_of in Havoid; simpl in Havoid.
-            ltac1:(rewrite elem_of_subseteq in Havoid).
-            specialize (Havoid i).
-            rewrite elem_of_elements in Havoid.
-            specialize (Havoid x1).
-            exists Havoid.
-            split>[|reflexivity].
-            ltac1:(simplify_option_eq).
-            apply f_equal.
-            apply proof_irrelevance.
-            ltac1:(contradiction H2).
-            ltac1:(contradiction H1).
-          }
-          {
-            intros HContra.
-            subst i.
-            unfold vars_of in Havoid; simpl in Havoid.
-            assert (fresh avoid ∉ avoid) by (apply infinite_is_fresh).
-            ltac1:(set_solver).
-          }
-        }
-      }
-      (*
-      {
-        unfold Valuation2 in *.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        ltac1:(rewrite dom_insert).
-        rewrite elem_of_subseteq.
-        intros x Hx.
-        rewrite elem_of_union in Hx.
-        destruct Hx.
-        {
-          ltac1:(set_solver).
+          apply f_equal.
+          apply proof_irrelevance.
+          ltac1:(contradiction).
+          ltac1:(contradiction).
         }
         {
-          rewrite elem_of_dom in H.
-          destruct H as [y Hy].
-          unfold Valuation2,TermOver in *.
-          rewrite map_lookup_filter in Hy.
-          ltac1:(simplify_option_eq).
-          apply Expression2_evaluate_Some_enough in H0.
+          intros HContra.
+          subst i.
           unfold vars_of in Havoid; simpl in Havoid.
-          unfold vars_of in Havoid; simpl in Havoid.
+          assert (fresh avoid ∉ avoid) by (apply infinite_is_fresh).
           ltac1:(set_solver).
         }
       }
-      *)
       {
         unfold Valuation2 in *.
         apply map_eq.
@@ -686,6 +660,7 @@ Module Implementation.
         (*exists ∅.*)
         split.
         {
+          unfold satisfies; simpl.
           ltac1:(simp sat2B).
           (repeat split).
           {
@@ -693,12 +668,9 @@ Module Implementation.
             ltac1:(set_solver).
           }
           {
-            rewrite elem_of_nil in H.
-            inversion H.
-          }
-          {
-            rewrite elem_of_nil in H.
-            inversion H.
+            intros x Hx.
+            rewrite elem_of_nil in Hx.
+            inversion Hx.
           }
         }
         {
@@ -766,10 +738,9 @@ Module Implementation.
         assert (HH3a := HH3 0 t a erefl erefl).
         apply TermOverExpression2_satisfies_strip in HH3a as HH3a'.
         specialize (Xa t (avoid) ltac:(set_solver)).
-        specialize (Xa _ HH3a).
+        specialize (Xa _ nv HH3a).
         destruct Xa as [ρ4 [[H1ρ4 H2ρ4] H3ρ4]].
         
-        (* FIXME I have no idea what to write here*)
         remember (Valuation2_merge_with
           (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements ((vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).1 ∪ vars_of (toe_to_cpat_list (avoid ++ elements (vars_of ((toe_to_cpat avoid a).2))) l).2))) ρ3)
           (filter (λ kv : variable * TermOver' builtin_value, kv.1 ∈ avoid ++ elements ((vars_of (toe_to_cpat avoid a).1 ∪ vars_of (toe_to_cpat avoid a).2))) ρ4)) as oρm.
@@ -786,7 +757,7 @@ Module Implementation.
           destruct Hcor as [Hcor1 Hcor2].
           
           exists v.
-          unfold satisfies at 1; simpl.
+          unfold satisfies; simpl.
           ltac1:(simp sat2B).
           split.
           split.
@@ -1403,14 +1374,14 @@ Module Implementation.
     (g : TermOver builtin_value)
   :
     elements (vars_of t) ⊆ avoid ->
-    forall (ρ : Valuation2),
+    forall (ρ : Valuation2) (nv : NondetValue),
       (satisfies ρ g ((toe_to_cpat avoid t).1)) ->
-      (satisfies ρ tt ((toe_to_cpat avoid t).2)) ->
-      satisfies ρ g t
+      (satisfies ρ nv ((toe_to_cpat avoid t).2)) ->
+      satisfies ρ (nv,g) t
   .
   Proof.
     revert avoid g.
-    ltac1:(induction t using TermOver_rect; intros avoid g Havoid ρ Hsat1 Hsat2).
+    ltac1:(induction t using TermOver_rect; intros avoid g Havoid ρ nv Hsat1 Hsat2).
     {
       simpl in *.
       unfold satisfies in *; simpl in *.
@@ -1422,15 +1393,15 @@ Module Implementation.
       unfold isSome in *.
       destruct (ρ !! fresh avoid) eqn:Hρfr.
       {
-        destruct Hsat2 as [Hsat2 _].
-        symmetry in Hsat2.
+        destruct (Expression2_evaluate ρ a) eqn:Heq>[|ltac1:(contradiction)].
+        subst.
         simpl in *.
         ltac1:(simplify_eq/=).
-        assumption.
+        reflexivity.
       }
       {
-        destruct Hsat2 as [_ HContra].
-        inversion HContra.
+        destruct (Expression2_evaluate ρ a) eqn:Heq>[|ltac1:(contradiction)].
+        destruct Hsat2.
       }
     }
     {

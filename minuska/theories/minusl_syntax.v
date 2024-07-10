@@ -14,12 +14,12 @@ Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
 | mld_rewrite
     (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
     (a : Act)
-    (rc : TermOver Expression) (rd : TermOver Expression)
-    (scs : list SideCondition)
+    (rc : TermOver Expression2) (rd : TermOver Expression2)
+    (scs : list SideCondition2)
 | mld_context
     (c : TermOver BuiltinOrVar)
     (h : variable)
-    (scs : list SideCondition)
+    (scs : list SideCondition2)
 .
 
 #[export]
@@ -51,7 +51,7 @@ Record MinusL_LangDef
     (Act : Set)
     : Type
  := mkMinusL_LangDef {
-    mlld_isValue_scs : list SideCondition ;
+    mlld_isValue_scs : list SideCondition2 ;
     mlld_isValue_var : variable ;
     mlld_decls : list (MinusL_Decl Act) ;
 }.
@@ -77,31 +77,31 @@ Definition MinusL_LangDef_wf
         h ∉ vars_of (mlld_isValue_scs Act D)
 .
 *)
+Print SideCondition2.
 Definition MinusL_isValue
     {Σ : StaticModel}
     (Act : Set)
     (D : MinusL_LangDef Act)
     :
-    Expression -> list SideCondition
+    Expression2 -> list SideCondition2
 :=
     let x := (mlld_isValue_var Act D) in
     fun e =>
-        (fun c => 
-            match c with
-            | sc_constraint (apeq e1 e2) =>
-                sc_constraint (apeq (
-                    Expression_subst
-                        e1
-                        x
-                        e
-                ) (
-                    Expression_subst
-                        e2
-                        x
-                        e
-                ))
-            end
-        ) <$> (mlld_isValue_scs Act D)
+    (fun sc =>
+        @mkSideCondition2 Σ
+        (
+            Expression2_subst
+                (sc_left sc)
+                x
+                e
+        ) (
+            Expression2_subst
+                (sc_right sc)
+                x
+                e
+        )
+    )
+     <$> (mlld_isValue_scs Act D)
 .
 
 

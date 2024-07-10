@@ -10,7 +10,7 @@ Definition not_stuck
     (Γ : list (RewritingRule2 Act))
     (e : TermOver builtin_value) : Type
 :=
-    { e' : _ & rewriting_relation Γ e e' }
+    { e' : _ & { nv : NondetValue & rewriting_relation Γ nv e e' } }
 .
 
 Definition stuck
@@ -28,7 +28,7 @@ Definition Interpreter
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
     : Type
-    := TermOver builtin_value -> option (TermOver builtin_value)
+    := NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
 .
 
 Definition Interpreter_sound'
@@ -38,16 +38,16 @@ Definition Interpreter_sound'
     (interpreter : Interpreter Γ)
     : Type
     := ((
-        forall e1 e2,
-            interpreter e1 = Some e2 ->
-            rewriting_relation Γ e1 e2
+        forall e1 e2 nv,
+            interpreter nv e1 = Some e2 ->
+            rewriting_relation Γ nv e1 e2
     )
     *
     (forall e,
-        stuck Γ e -> interpreter e = None)
+        stuck Γ e -> forall nv, interpreter nv e = None)
     * (forall e,
         not_stuck Γ e ->
-        exists e', interpreter e = Some e')
+        exists e' (nv : NondetValue), interpreter nv e = Some e')
     )%type
 .
 
@@ -82,11 +82,11 @@ Definition RewritingRule2_wf2
     (r : RewritingRule2 Act)
     : Type
 := 
-    forall (g : TermOver builtin_value) (ρ : Valuation2),
+    forall (g : TermOver builtin_value) (ρ : Valuation2) (nv : NondetValue),
         satisfies ρ g (r_from r) ->
-        satisfies ρ () (r_scs r) ->
+        satisfies ρ nv (r_scs r) ->
         { g' : (TermOver builtin_value) &
-            satisfies ρ g' (r_to r)
+            satisfies ρ (nv,g') (r_to r)
         }
 .
 

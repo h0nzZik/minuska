@@ -89,14 +89,14 @@ Proof.
         rewrite elem_of_singleton in HH1.
         subst x0.
         destruct (decide (x = x))>[|ltac1:(contradiction)].
-        unfold vars_of at 3; simpl.
-        unfold vars_of at 3; simpl.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
         ltac1:(set_solver).
         }
     }
     {
         revert HH1 H.
-        unfold vars_of at 1; simpl.
+        unfold vars_of; simpl.
         induction l; intros HH1 HH2.
         {
         simpl. unfold vars_of; simpl. ltac1:(set_solver).
@@ -107,18 +107,18 @@ Proof.
         destruct (decide (x ∈ vars_of a)) as [Hin|Hnotin].
         {
             specialize (HH2 Hin). simpl.
-            unfold vars_of at 1; simpl.
-            unfold vars_of at 1 in HH2; simpl in HH2.
+            unfold vars_of; simpl.
+            unfold vars_of in HH2; simpl in HH2.
             rewrite HH2. clear HH2.
             destruct (decide (x ∈ (⋃ (vars_of <$> l)))) as [Hin2 |Hnotin2].
             {
             specialize (IHl Hin2 HH3).
-            unfold vars_of at 1 in IHl; simpl in IHl.
+            unfold vars_of in IHl; simpl in IHl.
             unfold fmap in IHl.
             unfold fmap.
             rewrite IHl.
-            unfold vars_of at 6; simpl.
-            unfold vars_of at 4; simpl.
+            unfold vars_of ; simpl.
+            unfold vars_of ; simpl.
             ltac1:(set_solver).
             }
             {
@@ -142,7 +142,7 @@ Proof.
             unfold fmap in Htmp.
             ltac1:(replace (list_fmap) with (map)  in Htmp by reflexivity).
             rewrite Htmp.
-            unfold vars_of at 5. simpl.
+            unfold vars_of . simpl.
             ltac1:(set_solver).
             }
         }
@@ -154,12 +154,12 @@ Proof.
             }
             {
             specialize (IHl HH1 HH3).        
-            unfold vars_of at 1; simpl.
-            unfold vars_of at 1 in IHl; simpl in IHl.
+            unfold vars_of ; simpl.
+            unfold vars_of  in IHl; simpl in IHl.
             rewrite subst_notin2.
             {
                 unfold fmap in IHl; simpl in IHl.
-                unfold vars_of at 4; simpl.
+                unfold vars_of ; simpl.
                 unfold fmap.
                 rewrite IHl.
                 ltac1:(set_solver).  
@@ -329,8 +329,8 @@ Proof.
         apply subset_size.
         ltac1:(rewrite eqns_vars_cons).
         simpl.
-        unfold vars_of at 1; simpl.
-        unfold vars_of at 1; simpl.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
         rewrite strict_spec.
         split.
         {
@@ -482,8 +482,8 @@ Proof.
         unfold deg; simpl.
         ltac1:(rewrite eqns_vars_cons). simpl.
         rewrite sub_notin>[|assumption].
-        unfold vars_of at 1; simpl.
-        unfold vars_of at 1; simpl.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
         apply left_lex.
         apply subset_size.
         ltac1:(set_solver).
@@ -654,7 +654,7 @@ Proof.
     {
         unfold deg. simpl.
         rewrite eqns_vars_cons. simpl.
-        do 4 (unfold vars_of at 1; simpl).
+        do 4 (unfold vars_of; simpl).
         rewrite union_empty_l_L.
         rewrite union_empty_l_L.
         apply right_lex.

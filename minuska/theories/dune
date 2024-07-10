@@ -20,6 +20,7 @@
  (package coq-minuska))
 
 (install
+ (package coq-minuska)
  (section share)
  (source_trees (%{project_root}/coqdocjs-extra/resources/ as Minuska.html/resources))
 )

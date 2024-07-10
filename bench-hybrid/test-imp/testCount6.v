@@ -12,6 +12,8 @@ Import Ascii.
 Time Compute (let steps := 10000 in
   @interp_loop.interp_loop
     default_everything.DSM
+    spec.nondet_gen
+    0
     imp.lang_interpreter
     steps
     count6.given_groundterm

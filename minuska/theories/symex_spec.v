@@ -30,13 +30,14 @@ Class SymbolicExecutor
       forall (g g' : TermOver builtin_value),
         se_State_interp s g ->
         se_State_interp s' g' ->
-        rewriting_relation Γ g g'
+          { nv : NondetValue &
+          rewriting_relation Γ nv g g' }
   ;
 
   se_next_complete:
-    forall (s : se_State) (g g' : TermOver builtin_value),
+    forall (s : se_State) (g g' : TermOver builtin_value) (nv : NondetValue),
       se_State_interp s g ->
-      rewriting_relation Γ g g' ->
+      rewriting_relation Γ nv g g' ->
       exists (s' : se_State),
         s' ∈ se_next s /\
         se_State_interp s' g'

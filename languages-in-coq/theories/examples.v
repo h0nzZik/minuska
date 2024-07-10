@@ -93,7 +93,7 @@ Module two_counters.
 
     Definition interp_loop_number fuel := 
         fun (m n : nat) =>
-        let fg' := ((interp_loop interp fuel) ∘ pair_to_state) (m,n) in
+        let fg' := ((interp_loop nondet_gen 0 interp fuel) ∘ pair_to_state) (m,n) in
         state_to_pair fg'.2
     .
     Compute (interp_loop_number 100 10 10).
@@ -157,7 +157,7 @@ Module two_counters_Z.
 
     Definition interp_loop_number (fuel : nat) := 
         fun (m n : Z) =>
-        let fg' := (((interp_in_from Γ fuel)) ∘ pair_to_state) (m,n) in
+        let fg' := (((interp_in_from Γ nondet_gen fuel)) ∘ pair_to_state) (m,n) in
         state_to_pair fg'.1.2
     .
 
@@ -314,7 +314,7 @@ Module arith.
     .
 
     Definition interp_from (fuel : nat) from
-        := interp_in_from Γ fuel from
+        := interp_in_from Γ nondet_gen fuel from
     .
 
     Definition interp_list (fuel : nat) (x : Z) (ly : list Z)
@@ -436,7 +436,7 @@ Module fib_native.
 
 
     Definition interp_from (fuel : nat) from
-        := interp_in_from Γ fuel from
+        := interp_in_from Γ nondet_gen fuel from
     .
 
     Definition initial0 (x : TermOver builtin_value) :=
@@ -446,7 +446,7 @@ Module fib_native.
     .
 
     Definition fib_interp_from (fuel : nat) (from : Z)
-        := interp_in_from Γ fuel (ground (initial0
+        := interp_in_from Γ nondet_gen fuel (ground (initial0
                 (t_over (bv_Z from))))
     .
 
@@ -791,7 +791,7 @@ Module imp.
 
     Definition initial0 (x : TermOver builtin_value) :=
         (ground (
-            u_cfg [ u_state [ u_cseq [x; u_emptyCseq [] ] ; (builtin_nullary_function_interp b_map_empty) ] ]
+            u_cfg [ u_state [ u_cseq [x; u_emptyCseq [] ] ; (builtin_nullary_function_interp b_map_empty (nondet_gen 0)) ] ]
         ))
     .
 
@@ -813,7 +813,7 @@ Module imp.
     Qed.
 
     Definition imp_interp_from (fuel : nat) (from : (TermOver builtin_value))
-        := interp_loop (naive_interpreter Γ.1) fuel (ground (initial0 from))
+        := interp_loop nondet_gen 1 (naive_interpreter Γ.1) fuel (ground (initial0 from))
     .
 
     (*  

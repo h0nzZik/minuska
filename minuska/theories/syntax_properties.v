@@ -416,39 +416,6 @@ match ao with
 | pt_app_ao ao' _ => AO'_getOperator ao'
 end.
 
-
-#[export]
-Instance TermOver_count
-    {T : Type}
-    {A : Type}
-    {_edT : EqDecision T}
-    {_edA : EqDecision A}
-    {_cT : Countable T}
-    {_cA : Countable A}
-    :
-    Countable (@TermOver' T A)
-.
-Proof.
-    ltac1:(unshelve(eapply inj_countable)).
-    { apply (Term' T A). }
-    { apply uglify'. }
-    {
-        intros t. apply prettify in t.
-        apply Some. exact t.
-    }
-    { apply _. }
-    {
-        abstract(
-            intros x;
-            simpl;
-            rewrite (cancel prettify uglify');
-            reflexivity
-        ).
-    }
-Defined.
-
-
-
 Lemma compose_prettify_uglify
     {T : Type}
     (A : Type)
@@ -534,3 +501,64 @@ Proof.
     reflexivity.
 Qed.
 
+
+Lemma vars_of_uglify
+    {Σ : StaticModel}
+    (h : variable) a:
+    h ∈ vars_of_to_l2r a
+    <->
+    h ∈ (vars_of (uglify' a))
+.
+Proof.
+    induction a; unfold vars_of; simpl.
+    {
+        destruct a; unfold vars_of; simpl.
+        { ltac1:(set_solver). }
+        { ltac1:(set_solver). }
+    }
+    {
+        unfold TermOver in *.
+        unfold to_PreTerm''; simpl.
+        revert s h H.
+        induction l using rev_ind; intros s h H.
+        {
+            simpl. unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite map_app.
+            rewrite map_app.
+            rewrite concat_app.
+            rewrite fold_left_app.
+            rewrite elem_of_app.
+            simpl.
+
+            rewrite Forall_app in H.
+            destruct H as [H1 H2].
+            specialize (IHl s h H1). clear H1.
+            rewrite IHl. clear IHl.
+            rewrite Forall_cons in H2.
+            destruct H2 as [H2 _].
+            unfold helper; simpl.
+            destruct (uglify' x) eqn:Hux;
+                unfold vars_of; simpl;
+                rewrite elem_of_union;
+                rewrite app_nil_r;
+                rewrite H2; clear H2;
+                unfold vars_of; simpl.
+            {
+                reflexivity.
+            }
+            {
+                destruct operand; unfold vars_of; simpl.
+                {
+                    ltac1:(tauto).
+                }
+                {
+                    rewrite elem_of_singleton.
+                    ltac1:(tauto).
+                }
+            }
+        }
+    }
+Qed.

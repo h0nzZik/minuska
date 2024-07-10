@@ -547,3 +547,139 @@ Proof.
         left. reflexivity.
     }
 Qed.
+
+Definition list_collect
+    {A : Type}
+    (l : list (option A))
+    : option (list A)
+:=
+    foldr (fun ox ol => x ← ox; l' ← ol; Some (x::l')) (Some []) l
+.
+
+Lemma list_collect_Some_length
+    {A : Type}
+    (l : list (option A))
+    (l' : list A)
+    :
+    list_collect l = Some l' ->
+    length l = length l'
+.
+Proof.
+    revert l'.
+    induction l; intros l' HH; destruct l'; simpl in *.
+    { reflexivity. }
+    {
+        ltac1:(simplify_eq/=).
+    }
+    {
+        ltac1:(simplify_option_eq).
+    }
+    {
+        ltac1:(simplify_option_eq).
+        erewrite IHl.
+        reflexivity.
+        reflexivity.
+    }
+Qed.
+
+
+
+
+Lemma length_filter_l_1_impl_h_in_l
+    {A : Type}
+    {_edA : EqDecision A}
+    (l : list A)
+    (h : A):
+    length (filter (eq h) l) = 1 ->
+    h ∈ l
+.
+Proof.
+    intros H.
+    induction l; simpl in *.
+    { inversion H. }
+    {
+        rewrite filter_cons in H.
+        destruct (decide (h = a)).
+        {
+            subst. left.
+        }
+        {
+            right. apply IHl. apply H.
+        }
+    }
+Qed.
+
+Lemma h_in_l_impl_length_filter_l_gt_1
+    {T : Type}
+    (P : T -> Prop)
+    {_dP: forall x, Decision (P x)}
+    (l : list T)
+    (h : T)
+    :
+    h ∈ l ->
+    P h ->
+    length (filter P l) >= 1
+.
+Proof.
+    induction l; simpl.
+    {
+        intros HH. inversion HH.
+    }
+    {
+        intros HH1 HH2.
+        rewrite elem_of_cons in HH1.
+        destruct HH1 as [HH1|HH1].
+        {
+            subst. rewrite filter_cons.
+            destruct (decide (P a))>[|ltac1:(contradiction)].
+            simpl.
+            ltac1:(lia).
+        }
+        {
+            specialize (IHl HH1 HH2).
+            rewrite filter_cons.
+            ltac1:(case_match).
+            {
+                simpl. ltac1:(lia).
+            }
+            {
+                exact IHl.
+            }
+        }
+    }
+Qed.
+
+
+Lemma length_filter_l_1_impl_h_in_l'
+    {T : Type}
+    (P : T -> Prop)
+    {_dP: forall x, Decision (P x)}
+    (l : list T)
+    :
+    length (filter P l) = 1 ->
+    exists h, 
+    h ∈ l /\ P h
+.
+Proof.
+    intros H.
+    induction l; simpl in *.
+    { inversion H. }
+    {
+        rewrite filter_cons in H.
+        destruct (decide (P a)).
+        {
+            subst. exists a. split. left. assumption.
+        }
+        {
+            specialize (IHl H).
+            destruct IHl as [h [H1h H2h]].
+            exists h. split.
+            right. assumption. assumption.
+        }
+    }
+Qed.
+
+
+Inductive MyUnit := mytt.
+
+

@@ -44,6 +44,7 @@
               coqPackages.coq.ocamlPackages.core_unix
               coqPackages.coq.ocamlPackages.ppx_jane
               coqPackages.coq.ocamlPackages.ppx_sexp_conv
+              coqPackages.coq.ocamlPackages.base_quickcheck
               coqPackages.coq.ocamlPackages.benchmark
            ] ++ coqLibraries ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
@@ -72,6 +73,7 @@
               inherit coqLibraries;
 	    };
 
+
             postPatch = ''
               substituteInPlace bin/main.ml \
                 --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
@@ -86,7 +88,17 @@
               runHook postBuild
             '';
 
+            #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
+
+            #installPhase = ''
+            #  mkdir -p $out
+            #  runHook preInstall
+            #  dune install --prefix $out
+            #  runHook postInstall
+            #'';
+
             postInstall = ''
+              dune install --prefix $out libminuska
               wrapProgram $out/bin/minuska \
                 --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
                 --set OCAMLPATH $OCAMLPATH \

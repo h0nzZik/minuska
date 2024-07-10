@@ -11,6 +11,7 @@ From Minuska Require Import
 
 From Coq Require Import ZArith.
 
+
 Inductive Emptyset : Set := .
 
 #[export]
@@ -32,7 +33,7 @@ Module empty_builtin.
 
         #[local]
         Instance β
-            : Builtin := {|
+            : Builtin MyUnit := {|
             builtin_value
                 := Emptyset ;
             builtin_nullary_function
@@ -277,11 +278,11 @@ Module default_builtin.
             x y
         .
 
-        Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue.BuiltinValue0)) _ (@TermOver_count (symbol) BuiltinValue.BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue.BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
+        Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue.BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue.BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue.BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
 
         #[local]
         Instance β
-            : Builtin
+            : Builtin MyUnit
         := {|
             builtin_value
                 := BuiltinValue ;
@@ -301,56 +302,56 @@ Module default_builtin.
             builtin_nullary_function_interp
                 := fun p =>
                 match p with
-                | b_false => t_over (bv_bool false)
-                | b_true => t_over (bv_bool true)
-                | b_zero => t_over (bv_Z 0)
-                | b_list_empty => (t_over (bv_list nil))
-                | b_map_empty => (t_over (bv_pmap ∅))
+                | b_false => fun _ => t_over (bv_bool false)
+                | b_true => fun _ => t_over (bv_bool true)
+                | b_zero => fun _ => t_over (bv_Z 0)
+                | b_list_empty => fun _ => (t_over (bv_list nil))
+                | b_map_empty => fun _ => (t_over (bv_pmap ∅))
                 end ;
  
             builtin_unary_function_interp
                 := fun p v =>
                 match p with
-                | b_isBuiltin => bfmap1 impl_isBuiltin v
+                | b_isBuiltin => fun _ => bfmap1 impl_isBuiltin v
                 | b_isError =>
                     match v with
-                    | t_over x => t_over (bv_bool (impl_isError x))
-                    | _ => t_over (bv_bool false)
+                    | t_over x => fun _ => t_over (bv_bool (impl_isError x))
+                    | _ => fun _ => t_over (bv_bool false)
                     end
                 | b_isBool =>
                     match v with
-                    | t_over x => t_over (bv_bool (impl_isBool x))
-                    | _ => t_over (bv_bool false)
+                    | t_over x => fun _ => t_over (bv_bool (impl_isBool x))
+                    | _ => fun _ => t_over (bv_bool false)
                     end
                 | b_isString =>
                     match v with
-                    | t_over x => t_over (bv_bool (impl_isString x))
-                    | _ => t_over (bv_bool false)
+                    | t_over x => fun _ => t_over (bv_bool (impl_isString x))
+                    | _ => fun _ => t_over (bv_bool false)
                     end
                 | b_isList =>
                     match v with
-                    | t_over x => t_over (bv_bool (impl_isList x))
-                    | _ => t_over (bv_bool false)
+                    | t_over x => fun _ => t_over (bv_bool (impl_isList x))
+                    | _ => fun _ => t_over (bv_bool false)
                     end
                 | b_isMap =>
                     match v with
-                    | t_over x => t_over (bv_bool (impl_isMap x))
-                    | _ => t_over (bv_bool false)
+                    | t_over x => fun _ => t_over (bv_bool (impl_isMap x))
+                    | _ => fun _ => t_over (bv_bool false)
                     end
 
                 | b_bool_neg =>
-                    bfmap_bool__bool negb v
+                    fun _ => bfmap_bool__bool negb v
                 
                 | b_isZ =>
                     match v with
-                    | t_over x => t_over (bv_bool (impl_isZ x))
-                    | _ => t_over (bv_bool false)
+                    | t_over x => fun _ => t_over (bv_bool (impl_isZ x))
+                    | _ => fun _ => t_over (bv_bool false)
                     end
                 
                 | b_map_size =>
                     match v with
-                    | t_over (bv_pmap m) => (t_over (bv_Z (Z.of_nat (size m))))
-                    | _ => err
+                    | t_over (bv_pmap m) => fun _ => (t_over (bv_Z (Z.of_nat (size m))))
+                    | _ => fun _ => err
                     end
                 end;
 
@@ -358,67 +359,67 @@ Module default_builtin.
                 := fun p v1 v2 =>
                 match p with
                 | b_eq =>
-                    t_over (bv_bool (bool_decide (v1 = v2)))
+                    fun _ => t_over (bv_bool (bool_decide (v1 = v2)))
                 | b_and =>
-                    bfmap_bool_bool__bool andb v1 v2
+                    fun _ => bfmap_bool_bool__bool andb v1 v2
                 | b_or =>
-                    bfmap_bool_bool__bool orb v1 v2
+                    fun _ => bfmap_bool_bool__bool orb v1 v2
                 | b_iff =>
-                    bfmap_bool_bool__bool eqb v1 v2
+                    fun _ => bfmap_bool_bool__bool eqb v1 v2
                 | b_xor =>
-                    bfmap_bool_bool__bool xorb v1 v2                    
+                    fun _ => bfmap_bool_bool__bool xorb v1 v2                    
                 | b_Z_isLe =>
-                    bfmap_Z_Z__bool Z.leb v1 v2
+                    fun _ => bfmap_Z_Z__bool Z.leb v1 v2
                 | b_Z_isLt =>
-                    bfmap_Z_Z__bool Z.ltb v1 v2
+                    fun _ => bfmap_Z_Z__bool Z.ltb v1 v2
                 | b_Z_plus =>
-                    bfmap_Z_Z__Z Z.add v1 v2
+                    fun _ => bfmap_Z_Z__Z Z.add v1 v2
                 | b_Z_minus =>
-                    bfmap_Z_Z__Z Z.sub v1 v2
+                    fun _ => bfmap_Z_Z__Z Z.sub v1 v2
                 | b_Z_times =>
-                    bfmap_Z_Z__Z Z.mul v1 v2
+                    fun _ => bfmap_Z_Z__Z Z.mul v1 v2
                 | b_Z_div =>
                 match v2 with
-                | t_over (bv_Z (0)) => err
-                | _ => bfmap_Z_Z__Z Z.div v1 v2
+                | t_over (bv_Z (0)) => fun _ => err
+                | _ => fun _ => bfmap_Z_Z__Z Z.div v1 v2
                 end
                 | b_map_hasKey =>
                     match v1 with
                     | t_over (bv_pmap m) =>
                         let p := my_encode (v2) in
                         match m !! p with
-                        | Some _ => (t_over (bv_bool true))
-                        | None => (t_over (bv_bool false))
+                        | Some _ => fun _ => (t_over (bv_bool true))
+                        | None => fun _ => (t_over (bv_bool false))
                         end
-                    | _ => err
+                    | _ => fun _ => err
                     end
                 | b_map_lookup =>
                     match v1 with
                     | t_over (bv_pmap m) =>
                         let p := my_encode (v2) in
                         match m !! p with
-                        | Some v => (prettify v)
-                        | None => err
+                        | Some v => fun _ => (prettify v)
+                        | None => fun _ => err
                         end
-                    | _ => err
+                    | _ => fun _ => err
                     end
                 | b_have_same_symbol =>
                     match v1 with
                     | t_term s1 _ =>
                         match v2 with
-                        | t_term s2 _ => (t_over (bv_bool (bool_decide (s1 = s2))))
-                        | _ => t_over (bv_bool false)
+                        | t_term s2 _ => fun _ => (t_over (bv_bool (bool_decide (s1 = s2))))
+                        | _ => fun _ => t_over (bv_bool false)
                         end
-                    | _ => t_over (bv_bool false)
+                    | _ => fun _ => t_over (bv_bool false)
                     end
                 | b_is_applied_symbol =>
                     match v1 with
                     | t_over (bv_sym s) =>
                         match v2 with
-                        | t_term s' _ => (t_over (bv_bool (bool_decide (s' = s))))
-                        | _ => (t_over (bv_bool false))
+                        | t_term s' _ => fun _ => (t_over (bv_bool (bool_decide (s' = s))))
+                        | _ => fun _ => (t_over (bv_bool false))
                         end
-                    | _ => (t_over (bv_bool false))
+                    | _ => fun _ => (t_over (bv_bool false))
                     end
                 end ;
             builtin_ternary_function_interp := fun p v1 v2 v3 =>
@@ -428,8 +429,8 @@ Module default_builtin.
                     | t_over (bv_pmap m) =>
                         let p := my_encode (v2) in
                         let m' := <[ p := (uglify' v3) ]>m in
-                        t_over (bv_pmap m')
-                    | _ => err
+                        fun _ => t_over (bv_pmap m')
+                    | _ => fun _ => err
                     end
                 end ;
         |}.
