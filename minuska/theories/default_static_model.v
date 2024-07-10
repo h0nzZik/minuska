@@ -9,11 +9,11 @@ Instance MySymbols : Symbols string := Build_Symbols _ _ _.
 
 Section default_model.
     Context
-        (β : Builtin unit)
+        (β : Builtin MyUnit)
     .
 
-    CoFixpoint trivial_stream : Stream unit
-    := Seq unit () trivial_stream.
+    CoFixpoint trivial_stream : Stream MyUnit
+    := Seq MyUnit mytt trivial_stream.
     
     Definition default_model : StaticModel := {|
         symbol := string ;
@@ -22,7 +22,7 @@ Section default_model.
         variables := StringVariables ;
         builtin := β ;
         (* nondet_stream := trivial_stream; *)
-        nondet_gen := fun _ => () ;
+        nondet_gen := fun _ => mytt ;
     |}.
 
 

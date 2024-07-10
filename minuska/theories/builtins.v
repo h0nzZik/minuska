@@ -11,6 +11,7 @@ From Minuska Require Import
 
 From Coq Require Import ZArith.
 
+
 Inductive Emptyset : Set := .
 
 #[export]
@@ -32,7 +33,7 @@ Module empty_builtin.
 
         #[local]
         Instance β
-            : Builtin unit := {|
+            : Builtin MyUnit := {|
             builtin_value
                 := Emptyset ;
             builtin_nullary_function
@@ -281,7 +282,7 @@ Module default_builtin.
 
         #[local]
         Instance β
-            : Builtin unit
+            : Builtin MyUnit
         := {|
             builtin_value
                 := BuiltinValue ;

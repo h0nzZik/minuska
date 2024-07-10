@@ -679,3 +679,7 @@ Proof.
     }
 Qed.
 
+
+Inductive MyUnit := mytt.
+
+

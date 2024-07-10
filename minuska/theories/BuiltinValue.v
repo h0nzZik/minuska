@@ -170,8 +170,8 @@ Section sec.
         revert x Hsz y.
         induction sz; intros x Hsz y.
         {
-            abstract(destruct x; simpl in Hsz; try ltac1:(lia);
-            destruct m; simpl in Hsz; try ltac1:(lia)).
+            (*abstract( *)destruct x; simpl in Hsz; try ltac1:(lia);
+            destruct m; simpl in Hsz; try ltac1:(lia) (* ) *) .
         }
         {
             destruct x.
