@@ -73,10 +73,10 @@
               inherit coqLibraries;
 	    };
 
-            #    --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
 
             postPatch = ''
               substituteInPlace bin/main.ml \
+                --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
                 --replace-fail "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
                 --replace-fail "coqc" "${coqPackages.coq}/bin/coqc"
             '';
@@ -90,14 +90,15 @@
 
             #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
-            installPhase = ''
-              mkdir -p $out
-              runHook preInstall
-              dune install --prefix $out
-              runHook postInstall
-            '';
+            #installPhase = ''
+            #  mkdir -p $out
+            #  runHook preInstall
+            #  dune install --prefix $out
+            #  runHook postInstall
+            #'';
 
             postInstall = ''
+              dune install --prefix $out libminuska
               wrapProgram $out/bin/minuska \
                 --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
                 --set OCAMLPATH $OCAMLPATH \
