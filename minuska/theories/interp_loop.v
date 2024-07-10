@@ -7,7 +7,8 @@ From Minuska Require Import
 
 Fixpoint interp_loop
     {Σ : StaticModel}
-    (nvs : Stream NondetValue)
+    (nvs : nat -> NondetValue)
+    (idx : nat)
     (interp : NondetValue -> TermOver builtin_value -> option (TermOver builtin_value))
     (fuel : nat)
     (g : TermOver builtin_value)
@@ -16,16 +17,17 @@ Fixpoint interp_loop
 match fuel with
 | 0 => (0,g)
 | S fuel' =>
-    match interp (hd _ nvs) g with
+    match interp (nvs idx) g with
     | None => (fuel', g)
-    | Some g' => interp_loop (tl _ nvs) interp fuel' g'
+    | Some g' => interp_loop nvs (S idx) interp fuel' g'
     end
 end
 .
 
 Fixpoint interp_loop_ext
     {Σ : StaticModel}
-    (nvs : Stream NondetValue)
+    (nvs : nat -> NondetValue)
+    (idx : nat)
     (interp : NondetValue -> (TermOver builtin_value) -> option ((TermOver builtin_value)*nat))
     (fuel : nat)
     (g : (TermOver builtin_value))
@@ -35,9 +37,9 @@ Fixpoint interp_loop_ext
 match fuel with
 | 0 => (0,g,log)
 | S fuel' =>
-    match interp (hd _ nvs) g with
+    match interp (nvs idx) g with
     | None => (fuel', g, log)
-    | Some (g',log_entry) => interp_loop_ext (tl _ nvs) interp fuel' g' (cons log_entry log)
+    | Some (g',log_entry) => interp_loop_ext nvs (S idx) interp fuel' g' (cons log_entry log)
     end
 end
 .
@@ -46,12 +48,12 @@ Definition interp_in_from'
         {Σ : StaticModel}
         {Act : Set}
         (Γ : (list (RewritingRule2 Act))*(list string))
-        (nvs : Stream NondetValue)
+        (nvs : nat -> NondetValue)
         (fuel : nat)
         (from : (TermOver builtin_value))
         :  nat * (TermOver builtin_value) * list (option string)
     :=
-        let res := interp_loop_ext nvs (naive_interpreter_ext Γ.1)
+        let res := interp_loop_ext nvs 0 (naive_interpreter_ext Γ.1)
             fuel
             from
             nil
@@ -76,7 +78,7 @@ Definition interp_in_from
         {Σ : StaticModel}
         {Act : Set}
         (Γ : (list (RewritingRule2 Act))*(list string))
-        (nvs : Stream NondetValue)
+        (nvs : nat -> NondetValue)
         (fuel : nat)
         (from : (TermOver builtin_value))
         :  nat * (TermOver builtin_value) * string

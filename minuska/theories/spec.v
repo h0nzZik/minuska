@@ -127,7 +127,8 @@ Class StaticModel := {
     NondetValue : Type ;
     builtin :: Builtin NondetValue;
     variables :: MVariables variable ;
-    nondet_stream : Stream NondetValue ;
+    nondet_gen : nat -> NondetValue ;
+    (* nondet_stream : Stream NondetValue ; *)
 }.
 
 (* A class for querying variables of syntactic constructs. *)

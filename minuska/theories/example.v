@@ -51,7 +51,7 @@ Module example_1.
         naive_interpreter Γ.1
     .
 
-    Compute (naive_interpreter Γ.1 (hd _ nondet_stream) (t_term "S" [t_term "S" [t_term "0" nil]])).
+    Compute (naive_interpreter Γ.1 (nondet_gen 0) (t_term "S" [t_term "S" [t_term "0" nil]])).
 
     Fixpoint my_number' (n : nat) : TermOver builtin_value  :=
     match n with
@@ -108,11 +108,11 @@ Module example_1.
     Qed.
 
     Compute (my_number 2).
-    Compute (interp (hd _ nondet_stream) (my_number 2)).
+    Compute (interp (nondet_gen 0) (my_number 2)).
 
     Definition interp_loop_number (fuel : nat) := 
         fun n : nat =>
-        let fg' := (((interp_in_from Γ) nondet_stream fuel) ∘ my_number) n in
+        let fg' := (((interp_in_from Γ nondet_gen) fuel) ∘ my_number) n in
         my_number_inv fg'.1.2
     .
 

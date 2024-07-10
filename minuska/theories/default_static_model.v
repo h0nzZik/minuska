@@ -21,7 +21,8 @@ Section default_model.
         symbols :=  MySymbols;
         variables := StringVariables ;
         builtin := β ;
-        nondet_stream := trivial_stream;
+        (* nondet_stream := trivial_stream; *)
+        nondet_gen := fun _ => () ;
     |}.
 
 
