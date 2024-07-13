@@ -1497,27 +1497,120 @@ Module Implementation.
     }
   Qed.
 
-  Definition keep_data (A : Type) (l : list (option A)) : list A
+  Definition keep_data {A : Type} (l : list (option A)) : list A
   :=
     fold_right (fun b a => match b with Some b' => b'::a | None => a end) [] l
   .
 
-(*
+  Lemma keep_data_iff {A : Type} (ol : list (option A))
+    :
+    forall x,
+    x ∈ keep_data ol <-> (Some x) ∈ ol
+  .
+  Proof.
+    induction ol; intros x; simpl.
+    {
+      split; intros H; rewrite elem_of_nil in H; destruct H.
+    }
+    {
+      destruct a.
+      {
+        rewrite elem_of_cons.
+        rewrite elem_of_cons.
+        ltac1:(naive_solver).
+      }
+      {
+        rewrite elem_of_cons.
+        ltac1:(naive_solver).
+      }
+    }
+  Qed.
+
+
   Definition sym_step
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
     {Act : Set}
     (Γ : RewritingTheory2 Act)
-    (s : TermOver BuiltinOrVar)
+    (s : (TermOver BuiltinOrVar)*(list SideCondition2))
     :
-    list (TermOver BuiltinOrVar)
+    list ((TermOver BuiltinOrVar)*(list SideCondition2))%type
   :=
-    let l'' := (fun r => (ur ← ua_unify s (r.(r_from)); Some (ur, r))) <$> Γ in
+    (* Unify the symbolic state with all left-sides *)
+    let l'' := (fun r => (ur ← ua_unify s.1 (r.(r_from)); Some (ur, r))) <$> Γ in
+    (* Keep only the successful results *)
     let l' := filter (fun x => x <> None) l'' in
-    let l := keep_data l' in
-    (fun ur => sub_app_e ur.1 (ur.2.(r_to))) <$> l
+    let l : list (((SubT)*(RewritingRule2 Act))%type) := keep_data l' in
+    
+    let rhss : list (TermOver Expression2) := (fun ur => sub_app_e ur.1 (ur.2.(r_to))) <$> l in
+    let rhss' := (fun x => toe_to_cpat (elements (vars_of x)) x) <$> rhss in
+    (fun r => (r.1, s.2 ++ r.2))<$> rhss'
   .
-*)
+
+  Definition State_interp {Σ : StaticModel} :
+    ((TermOver BuiltinOrVar)*(list SideCondition2))%type ->
+    (TermOver builtin_value) ->
+    Type
+  :=
+    fun s g =>
+    {
+      ρ : Valuation2 & ((satisfies ρ g s.1)
+      * (forall (nv : NondetValue), satisfies ρ nv s.2))%type
+    }
+  .
+
+  Lemma sym_step_correct_1
+    {Σ : StaticModel}
+    {UA : UnificationAlgorithm}
+    {Act : Set}
+    (Γ : RewritingTheory2 Act)
+    (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
+    :
+    s' ∈ sym_step Γ s ->
+    ∀ (g g' : TermOver builtin_value),
+      State_interp s g ->
+      State_interp s' g' ->
+      { nv : NondetValue & rewriting_relation Γ nv g g' }
+  .
+  Proof.
+    intros Hs' g g' Hg Hg'.
+    unfold State_interp in Hg,Hg'.
+    destruct Hg as [ρ [H1g H2g]].
+    destruct Hg' as [ρ' [H1g' H2g']].
+    unfold sym_step in Hs'.
+    apply elem_of_list_fmap_T_1 in Hs'.
+    destruct Hs' as [[y1 y2] [Htmp Hs']].
+    subst s'. simpl in *.
+    apply elem_of_list_fmap_T_1 in Hs'.
+    destruct Hs' as [z [Htmp Hs']].
+    assert(Hcor' := toe_to_cpat_correct_2 (elements (vars_of z)) z g').
+    specialize(Hcor' ltac:(clear; set_solver)).
+    specialize (Hcor' ρ').
+    assert(Hcor: ∀ nv, satisfies ρ' (nv, g') z).
+    {
+      intros nv.
+      apply (Hcor' nv).
+      {
+        rewrite <- Htmp.
+        simpl.
+        exact H1g'.
+      }
+      {
+        rewrite <- Htmp.
+        simpl.
+        unfold satisfies; simpl.
+        unfold satisfies in H2g'; simpl in H2g'.
+        intros x Hx.
+        apply H2g'.
+        { clear -Hx; ltac1:(set_solver). }
+      }
+    }
+    clear Hcor'.
+    apply elem_of_list_fmap_T_1 in Hs'.
+    destruct Hs' as [[sub r] [Htmp' Hs']].
+    subst z. simpl in *.
+    
+  Qed.
 
 End Implementation.
 
