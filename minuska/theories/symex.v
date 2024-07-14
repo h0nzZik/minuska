@@ -1563,6 +1563,8 @@ Module Implementation.
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
     {Act : Set}
+    {_EA : EqDecision Act}
+    {_Inh : Inhabited NondetValue}
     (Γ : RewritingTheory2 Act)
     (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
     :
@@ -1609,6 +1611,39 @@ Module Implementation.
     apply elem_of_list_fmap_T_1 in Hs'.
     destruct Hs' as [[sub r] [Htmp' Hs']].
     subst z. simpl in *.
+    rewrite keep_data_iff in Hs'.
+    rewrite elem_of_list_filter in Hs'.
+    destruct Hs' as [_ Hs'].
+    Set Typeclasses Debug.
+    apply elem_of_list_fmap_T_1 in Hs'.
+    destruct Hs' as [r' [H1 H2]].
+    symmetry in H1.
+    apply bind_Some_T_1 in H1.
+    destruct H1 as [sub' [H1sub' H2sub']].
+    inversion H2sub'; subst; clear H2sub'.
+    exists inhabitant.
+    unfold rewriting_relation; simpl.
+    exists r.
+    exists (r_act r).
+    split>[exact H2|].
+    unfold rewrites_to; simpl.
+    unfold rewrites_in_valuation_under_to; simpl.
+    destruct s as [φ scs]. simpl in *.
+    exists ρ.
+    (repeat split).
+    {
+
+    }
+    {
+
+    }
+    {
+      unfold satisfies; simpl.
+      unfold satisfies in H2g; simpl in H2g.
+      intros x Hx.
+      apply (H2g _ x).
+      
+    }
     
   Qed.
 
