@@ -1559,6 +1559,69 @@ Module Implementation.
     }
   .
 
+
+  Lemma sym_step_sim_1
+    {Σ : StaticModel}
+    {UA : UnificationAlgorithm}
+    {Act : Set}
+    {_EA : EqDecision Act}
+    {_Inh : Inhabited NondetValue}
+    (Γ : RewritingTheory2 Act)
+    (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
+    :
+    s' ∈ sym_step Γ s ->
+    ∀ (g' : TermOver builtin_value) (nv : NondetValue),
+      State_interp s' g' ->
+      {
+        g : TermOver builtin_value &
+        ((State_interp s g)*(rewriting_relation Γ nv g g'))%type
+      }
+  .
+  Proof.
+    intros Hss' g' nv Hs'g'.
+    unfold sym_step in Hss'.
+    apply elem_of_list_fmap_T_1 in Hss'.
+    destruct Hss' as [[y1 y2] [Htmp Hs']].
+    subst s'. simpl in *.
+    apply elem_of_list_fmap_T_1 in Hs'.
+    destruct Hs' as [z [Htmp Hs']].
+    apply elem_of_list_fmap_T_1 in Hs'.
+    destruct Hs' as [y [H1y H2y]].
+    subst z.
+    rewrite keep_data_iff in H2y.
+    rewrite elem_of_list_filter in H2y.
+    destruct H2y as [_ H2y].
+    apply elem_of_list_fmap_T_1 in H2y.
+    destruct H2y as [y0 [H1y0 H2y0]].
+    ltac1:(simplify_option_eq).
+    ltac1:(rename H into sub).
+    ltac1:(rename y0 into r).
+    unfold State_interp in Hs'g'.
+    destruct Hs'g' as [ρ [H1s'g' H2s'g']].
+    simpl in H1s'g'.
+    assert (Hcor1 := toe_to_cpat_correct_2 (elements (vars_of (sub_app_e sub (r_to r))))).
+    simpl in *.
+    specialize (Hcor1 (sub_app_e sub (r_to r)) g' ltac:(clear; set_solver) ρ).
+    specialize (H2s'g' nv).
+    specialize (Hcor1 nv).
+    rewrite <- Htmp in Hcor1.
+    simpl in Hcor1.
+    specialize (Hcor1 H1s'g').
+    ltac1:(ospecialize (Hcor1 _)).
+    {
+      unfold satisfies; simpl.
+      unfold satisfies in H2s'g'; simpl in H2s'g'.
+      intros sc Hsc.
+      ltac1:(specialize (H2s'g' sc ltac:(set_solver))).
+      exact H2s'g'.
+    }
+    
+  Qed.
+
+(*
+  (* Hey this is not true. Because this says that any two concrete states that are somehow related symbolically are connected concretely also,
+  but consider the system `x => x +Int 1` and s={1,2} and s'={2,3}:
+  There is no transition from 1 to 3.*)
   Lemma sym_step_correct_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1646,6 +1709,6 @@ Module Implementation.
     }
     
   Qed.
-
+*)
 End Implementation.
 
