@@ -3,6 +3,7 @@ From Minuska Require Import
     spec
 .
 
+Require Import Coq.Logic.ProofIrrelevance.
 
 Lemma elem_of_next
     {A : Type}
@@ -646,5 +647,232 @@ Proof.
                 ltac1:(lia).
             }
         }
+    }
+Qed.
+
+
+Equations? TermOverBoV_eval
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (φ : TermOver BuiltinOrVar)
+    (pf : vars_of φ ⊆ vars_of ρ)
+    : TermOver builtin_value
+    by wf (TermOver_size φ) lt
+:=
+
+    TermOverBoV_eval ρ (t_over (bov_builtin b)) pf := t_over b
+    ;
+
+    TermOverBoV_eval ρ (t_over (bov_variable x)) pf with (inspect (ρ !! x)) => {
+        | (@exist _ _ (Some t) pf') := t;
+        | (@exist _ _ None pf') := _ ;
+    }
+    ;
+
+    
+    TermOverBoV_eval ρ (t_term s l) pf :=
+        t_term s (pfmap l (fun φ' pf' => TermOverBoV_eval ρ φ' _))
+    ;
+.
+Proof.
+    {
+        ltac1:(exfalso).        
+        abstract(
+            rewrite elem_of_subseteq in pf;
+            specialize (pf x);
+            unfold vars_of in pf; simpl in pf;
+            unfold vars_of in pf; simpl in pf;
+            unfold vars_of in pf; simpl in pf;
+            rewrite elem_of_singleton in pf;
+            specialize (pf eq_refl);
+            unfold Valuation2 in *;
+            rewrite elem_of_dom in pf;
+            ltac1:(rewrite pf' in pf);
+            eapply is_Some_None;
+            apply pf
+        ).
+    }
+    {
+        unfold TermOver in *.
+        intros. subst.
+        apply elem_of_list_split in pf'.
+        destruct pf' as [l1 [l2 Hl1l2]].
+        subst l.
+        rewrite vars_of_t_term in pf.
+        rewrite fmap_app in pf. rewrite fmap_cons in pf.
+        rewrite union_list_app_L in pf.
+        rewrite union_list_cons in pf.
+        ltac1:(set_solver).        
+    }
+    {
+        intros. subst. simpl.
+        apply elem_of_list_split in pf'.
+        destruct pf' as [l1 [l2 Hl1l2]].
+        subst l.
+        rewrite sum_list_with_app.
+        simpl.
+        ltac1:(lia).
+    }
+Defined.
+
+Lemma TermOverBoV_eval__varsofindependent
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (φ : TermOver BuiltinOrVar)
+    pf1 pf2
+    :
+    (∀ x, x ∈ vars_of φ -> ρ1 !! x = ρ2 !! x) ->
+    TermOverBoV_eval ρ1 φ pf1 = TermOverBoV_eval ρ2 φ pf2
+.
+Proof.
+    unfold TermOver in *.
+    ltac1:(funelim (TermOverBoV_eval ρ1 φ pf1)).
+    {
+        unfold TermOver in *.
+        intros HH.
+        (* rewrite <- Heqcall. *)
+        ltac1:(simp TermOverBoV_eval).
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        apply f_equal.
+        apply f_equal.
+        simpl.
+        ltac1:(move: TermOverBoV_eval_obligation_2).
+        intros HHpf.
+
+        eapply functional_extensionality_dep.
+        intros x.
+        eapply functional_extensionality_dep.
+        intros pf3.
+        ltac1:(unshelve(eapply H0)).
+        { exact x. }
+        { exact pf3. }
+        { 
+            abstract(
+                apply f_equal;
+                apply f_equal;
+                apply f_equal;
+                apply proof_irrelevance
+            ).
+        }
+        {
+            unfold eq_rect.
+            ltac1:(move: (TermOverBoV_eval__varsofindependent_subproof _ _ _ _ _ _ _ _)).
+            intros mypf.
+            assert(Htmp1:
+                TermOverBoV_eval_obligation_2 Σ ρ s l pf
+                (λ (x0 : StaticModel) (x1 : Valuation2) (x2 : TermOver
+                BuiltinOrVar) (x3 : vars_of
+                x2
+                ⊆ vars_of
+                x1) (_ : TermOver_size
+                x2 <
+                TermOver_size
+                (t_term
+                s
+                l)),
+                TermOverBoV_eval x1 x2 x3)
+                x
+                pf3
+            =
+                HHpf Σ ρ s l pf
+                (λ (x0 : StaticModel) (x1 : Valuation2) (x2 : TermOver
+                BuiltinOrVar) (x3 : vars_of
+                x2
+                ⊆ vars_of
+                x1) (_ : TermOver_size
+                x2 <
+                S
+                (sum_list_with
+                (S
+                ∘ TermOver_size)
+                l)),
+                TermOverBoV_eval x1 x2 x3)
+                x
+                pf3
+            ).
+            {
+                apply proof_irrelevance.
+            }
+            revert mypf.
+            rewrite Htmp1.
+            intros mypf.
+            assert (Htmp2: mypf = eq_refl).
+            {
+                apply proof_irrelevance.
+            }
+            rewrite Htmp2.
+            reflexivity.
+        }
+        unfold TermOver in *.
+        intros x0 Hx0.
+        apply HH.
+        clear -pf3 Hx0.
+        rewrite vars_of_t_term.
+        rewrite elem_of_union_list.
+        exists (vars_of x).
+        split>[|assumption].
+        rewrite elem_of_list_fmap.
+        exists x.
+        split>[reflexivity|].
+        exact pf3.
+    }
+    {
+        intros HH.
+        (*rewrite <- Heqcall.*)
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        simpl.
+        unfold TermOverBoV_eval_obligation_1.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        simpl in *.
+        remember (TermOverBoV_eval ρ (t_over (bov_variable x)) pf) as t.
+        assert (pf'2 : ρ2 !! x = Some t).
+        {
+            rewrite <- HH.
+            exact pf'.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            rewrite elem_of_singleton.
+            reflexivity.
+        }
+        ltac1:(rewrite -> pf').
+        intros HHH.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ2 x)).
+        ltac1:(rewrite -> pf'2).
+        intros HHH2.
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        simpl.
+        unfold TermOverBoV_eval_obligation_1.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        rewrite pf'.
+        intros ?.
+        f_equal.
+        assert (pf'2 : ρ2 !! x = None).
+        {
+            rewrite <- HH.
+            exact pf'.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            rewrite elem_of_singleton.
+            reflexivity.
+        }
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ2 x)).
+        rewrite pf'2.
+        intros ?.
+        f_equal.
+        apply proof_irrelevance.
     }
 Qed.

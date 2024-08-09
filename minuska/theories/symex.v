@@ -1559,14 +1559,26 @@ Module Implementation.
     }
   .
 
+  Print Valuation2.
+  Definition sub_val_compose
+    {Σ : StaticModel}
+    (sub : SubT)
+    (ρ : Valuation2)
+    :
+    Valuation2
+  :=
+
+  .
 
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
+    (*
     {Act : Set}
     {_EA : EqDecision Act}
+    *)
     {_Inh : Inhabited NondetValue}
-    (Γ : RewritingTheory2 Act)
+    (Γ : RewritingTheory2 unit)
     (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
     :
     s' ∈ sym_step Γ s ->
@@ -1615,7 +1627,11 @@ Module Implementation.
       ltac1:(specialize (H2s'g' sc ltac:(set_solver))).
       exact H2s'g'.
     }
-    
+    (*unfold rewriting_relation.*)
+    unfold State_interp.
+    remember (sub_app sub (r_from r)) as from'.
+    Search TermOver BuiltinOrVar builtin_value.
+    Search SubT.
   Qed.
 
 (*
