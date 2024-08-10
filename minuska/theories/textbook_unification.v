@@ -2108,4 +2108,12 @@ Next Obligation.
     repeat split.
     assumption.
 Qed.
-
+Next Obligation.
+    assert (Htmp := unify_no_variable_out_of_thin_air [(t1,t2)] ss H).
+    simpl in Htmp.
+    unfold eqns_vars,eqn_vars in Htmp.
+    rewrite fmap_cons in Htmp.
+    simpl in Htmp.
+    ltac1:(set_solver).
+Qed.
+Fail Next Obligation.

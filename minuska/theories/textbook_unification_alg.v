@@ -15,8 +15,7 @@ Definition eqns_size {Σ : StaticModel} (es : list eqn) := sum_list_with eqn_siz
 
 
 Definition eqn_vars {Σ : StaticModel} (e : eqn) := ((vars_of (e.1)) ∪ (vars_of (e.2))).
-Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list (eqn_vars <$> es)
-.
+Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list (eqn_vars <$> es).
 
 Lemma eqns_vars_cons
 {Σ : StaticModel}

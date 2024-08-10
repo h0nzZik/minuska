@@ -55,9 +55,10 @@ Class UnificationAlgorithm
                 sub_app s t1 <> sub_app s t2
     ;
 
-    (*
-    ua_unify_vars_of :
-        forall ss t,
-            vars_of (sub_app ss t) ⊆ vars_of t ∪ ⋃ (vars_of <$> ss.*2)
-    ;*)
+    (* out of thin air *)
+    ua_unify_oota:
+        forall t1 t2 ss,
+        ua_unify t1 t2 = Some ss ->
+            (list_to_set (fmap fst ss)) ∪ (⋃ (fmap (vars_of ∘ snd) ss)) ⊆ vars_of t1 ∪ vars_of t2
+    ;
 }.
