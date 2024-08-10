@@ -4102,27 +4102,6 @@ Proof.
 Qed.
 
 (*
-Lemma satisfies_TermOverBoV_eval
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    (φ : TermOver BuiltinOrVar)
-    pf
-    :
-    satisfies ρ (TermOverBoV_eval ρ φ pf) φ
-.
-Proof.
-    ltac1:(funelim (TermOverBoV_eval ρ φ pf)).
-    {
-        ltac1:(simp TermOverBoV_eval).
-        unfold satisfies; simpl.
-        ltac1:(simp sat2B).
-    }
-    {
-        
-    }
-Qed.
-*)
-(*
 
 
 

@@ -876,3 +876,118 @@ Proof.
         apply proof_irrelevance.
     }
 Qed.
+
+Lemma satisfies_TermOverBoV_eval
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (φ : TermOver BuiltinOrVar)
+    pf
+    :
+    satisfies ρ (TermOverBoV_eval ρ φ pf) φ
+.
+Proof.
+    ltac1:(funelim (TermOverBoV_eval ρ φ pf)).
+    {
+        ltac1:(simp TermOverBoV_eval).
+        unfold satisfies; simpl.
+        ltac1:(simp sat2B).
+        simpl. reflexivity.
+    }
+    {
+        rewrite <- Heqcall. clear Heqcall.
+        simpl.
+        unfold satisfies; simpl.
+        ltac1:(simp sat2B). simpl.
+        split>[reflexivity|].
+        rewrite length_pfmap.
+        split>[reflexivity|].
+        intros i t' φ' Ht'φ' HH.
+        pose (Helper := @pfmap_lookup_Some_1).
+        lazy_match! Constr.type &HH with
+        | (pfmap _ ?f) !! _ = _ => specialize (Helper _ _ _ $f)
+        end.
+        specialize (Helper i t' HH).
+        simpl in Helper.
+        rewrite Helper.
+        specialize (X φ' ).
+        ltac1:(ospecialize (X _)).
+        {
+            rewrite elem_of_list_lookup.
+            exists i. assumption.
+        }
+        specialize (X Σ ρ φ').
+        assert (Hmypf: vars_of φ' ⊆ vars_of ρ).
+        {
+            clear -pf Ht'φ'.
+            rewrite vars_of_t_term in pf.
+            rewrite elem_of_subseteq in pf.
+            rewrite elem_of_subseteq.
+            intros x.
+            specialize (pf x).
+            rewrite elem_of_union_list in pf.
+            intros HH.
+            ltac1:(ospecialize (pf _)).
+            {
+                ltac1:(setoid_rewrite elem_of_list_fmap).
+                exists (vars_of φ').
+                split.
+                {
+                    exists φ'.
+                    split>[reflexivity|].
+                    rewrite elem_of_list_lookup.
+                    exists i. assumption.
+                }
+                {
+                    exact HH.
+                }
+            }
+            exact pf.
+        }
+        specialize (X Hmypf).
+        simpl in X.
+        ltac1:(ospecialize (X _)).
+        {
+            clear - Ht'φ'.
+            apply take_drop_middle in Ht'φ'.
+            rewrite <- Ht'φ'.
+            rewrite sum_list_with_app.
+            simpl.
+            ltac1:(lia).
+        }
+        specialize (X Σ ρ φ' Hmypf erefl erefl).
+        unfold satisfies in X; simpl in X.
+
+        clear Helper.
+        lazy_match! goal with
+        | [ |- sat2B _ (TermOverBoV_eval _ _ ?x) _] => remember $x as mypf
+        end.
+        remember ((pflookup l i (pfmap_lookup_Some_lt HH))) as pfl.
+        (*
+        assert(Hil: i < length l).
+        {
+            apply lookup_lt_Some in Ht'φ'.
+            exact Ht'φ'.
+        }
+        *)
+        assert (Hφ': φ' = `pfl).
+        {
+            subst pfl.
+            assert(Htmp := @pflookup_spec _ l i (pfmap_lookup_Some_lt HH)).
+            ltac1:(rewrite Ht'φ' in Htmp).
+            injection Htmp as Htmp'.
+            symmetry in Htmp'.
+            exact Htmp'.
+        }
+        subst φ'.
+        ltac1:(replace mypf with Hmypf).
+        {
+            apply X.
+        }
+        {
+            apply proof_irrelevance.
+        }        
+    }
+    {
+        
+    }
+Qed.
