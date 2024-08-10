@@ -1682,7 +1682,19 @@ Module Implementation.
       
       rewrite <- HH1.
       *)
+      apply ua_unify_oota in Heqo as Hnoota.
       eapply transitivity>[apply vars_of_sub_app_sub|].
+      rewrite union_subseteq in Hnoota.
+      destruct Hnoota as [Hsub1 Hsub2].
+      ltac1:(cut (vars_of fr ∪ vars_of s.1 ⊆ vars_of ρ)).
+      {
+        intros HHH.
+        clear -HHH Hsub2.
+        rewrite list_fmap_compose in Hsub2.
+        ltac1:(set_solver).
+      }
+      (* I think I would need to feed the coercion a valuation that uses `sub`*)
+      Search s.
       (*eapply transitivity>[apply ua_unify_vars_of|].*)
       Check ua_unify_vars_of.
       (*
