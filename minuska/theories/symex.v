@@ -1559,11 +1559,6 @@ Module Implementation.
     }
   .
 
-
-  Print vars_of.
-  Print SubT.
-  Check union_list.
-  Print sub_app.
   Lemma vars_of_sub_app_sub
     {Σ : StaticModel} (sub : @SubT Σ) x:
     vars_of (sub_app sub x) ⊆ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ∪ (vars_of x)
@@ -1577,7 +1572,9 @@ Module Implementation.
     {
       destruct a as [x' t']; simpl in *.
       eapply transitivity. apply IHsub. clear IHsub.
-      Search TermOverBoV_subst vars_of.
+      assert (Htmp2 := vars_of_TermOverBoV_subst__approx).
+      unfold fmap; simpl.
+      ltac1:(set_solver).
     }
   Qed.
 
