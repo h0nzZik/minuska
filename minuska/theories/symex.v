@@ -1559,17 +1559,15 @@ Module Implementation.
     }
   .
 
-  Print Valuation2.
-  Definition sub_val_compose
-    {Σ : StaticModel}
-    (sub : SubT)
-    (ρ : Valuation2)
-    :
-    Valuation2
-  :=
-
+  (*
+  Lemma vars_of_sub_app_sub
+    {Σ : StaticModel} sub x:
+    vars_of (sub_app sub x) ⊆ vars_of sub ∪ vars_of x
   .
+  Proof.
 
+  Qed.
+*)
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1630,6 +1628,27 @@ Module Implementation.
     (*unfold rewriting_relation.*)
     unfold State_interp.
     remember (sub_app sub (r_from r)) as from'.
+    remember (r_from r) as fr.
+    remember (r_to r) as to.
+    pose(coerced := @TermOverBoV_eval Σ ρ from').
+    ltac1:(ospecialize (coerced _)).
+    {
+      subst from'.
+      apply Expression2Term_matches_enough in Hcor1.
+      apply vars_of_sat_tobov in H1s'g'.
+      unfold satisfies in H2s'g'; simpl in H2s'g'.
+      Search satisfies vars_of.
+      Search vars_of sub_app.
+    }
+    Search toe_to_cpat.
+    (*
+      s.1    --r-->  toe_to_cpat (to sub)  ---- (to sub)
+       |                     |
+       | sub                 | ρ
+       |                     |
+      fr sub                 g'
+
+    *)
     Search TermOver BuiltinOrVar builtin_value.
     Search SubT.
   Qed.
