@@ -1559,15 +1559,28 @@ Module Implementation.
     }
   .
 
-  (*
+
+  Print vars_of.
+  Print SubT.
+  Check union_list.
+  Print sub_app.
   Lemma vars_of_sub_app_sub
-    {Σ : StaticModel} sub x:
-    vars_of (sub_app sub x) ⊆ vars_of sub ∪ vars_of x
+    {Σ : StaticModel} (sub : @SubT Σ) x:
+    vars_of (sub_app sub x) ⊆ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ∪ (vars_of x)
   .
   Proof.
-
+    revert x;
+    induction sub; simpl; intros x.
+    {
+      ltac1:(set_solver).
+    }
+    {
+      destruct a as [x' t']; simpl in *.
+      eapply transitivity. apply IHsub. clear IHsub.
+      Search TermOverBoV_subst vars_of.
+    }
   Qed.
-*)
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1637,6 +1650,32 @@ Module Implementation.
       apply Expression2Term_matches_enough in Hcor1.
       apply vars_of_sat_tobov in H1s'g'.
       unfold satisfies in H2s'g'; simpl in H2s'g'.
+      assert (H2s'g'': forall x, x ∈ s.2 ++ y2 -> vars_of x ⊆ vars_of ρ).
+      {
+        intros x Hx.
+        specialize (H2s'g' x Hx).
+        destruct x as [x1 x2]; simpl in *.
+        unfold satisfies in H2s'g'; simpl in H2s'g'.
+        destruct (Expression2_evaluate ρ x1) as [t1|] eqn:He1,
+          (Expression2_evaluate ρ x2) as [t2|] eqn:He2;
+          try (ltac1:(contradiction)).
+        apply Expression2_evaluate_Some_enough in He1.
+        apply Expression2_evaluate_Some_enough in He2.
+          
+        unfold vars_of; simpl.
+        rewrite union_subseteq.
+        
+        split.
+        {
+          apply He1.
+        }
+        {
+          apply He2.
+        }
+      }
+      Print sub_app.
+      
+      
       Search satisfies vars_of.
       Search vars_of sub_app.
     }

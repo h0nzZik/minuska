@@ -4046,61 +4046,6 @@ Proof.
     }
 Qed.
 
-
-Lemma vars_of__TermOverBoV_subst__varless
-    {Σ : StaticModel} c x v
-    :
-    vars_of v = ∅ ->
-    vars_of (TermOverBoV_subst c x v) = vars_of c ∖ {[x]}
-.
-Proof.
-    induction c; simpl in *; intros HH.
-    {
-        destruct a.
-        {
-            unfold vars_of; simpl.
-            unfold vars_of; simpl.
-            unfold vars_of; simpl.
-            ltac1:(set_solver).
-        }
-        {
-            unfold vars_of; simpl.
-            unfold vars_of; simpl.
-            destruct (decide (x = x0)).
-            {
-                subst.
-                ltac1:(set_solver).
-            }
-            {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                ltac1:(set_solver).
-            }
-        }
-    }
-    {
-        unfold TermOver in *.
-        rewrite vars_of_t_term.
-        rewrite vars_of_t_term.
-        apply set_eq.
-        revert HH H.
-        induction l; intros HH H.
-        {
-            intros x0. simpl. ltac1:(set_solver).
-        }
-        {
-            intros x0.
-            specialize (IHl HH).
-            rewrite Forall_cons in H.
-            destruct H as [H1 H2].
-            specialize (IHl H2). clear H2.
-            specialize (H1 HH).
-            ltac1:(set_solver).
-        }
-    }
-Qed.
-
 (*
 
 

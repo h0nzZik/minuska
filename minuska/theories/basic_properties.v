@@ -1079,3 +1079,166 @@ Proof.
         }
     }
 Qed.    
+
+
+Lemma vars_of__TermOverBoV_subst__varless
+    {Σ : StaticModel} c x v
+    :
+    vars_of v = ∅ ->
+    vars_of (TermOverBoV_subst c x v) = vars_of c ∖ {[x]}
+.
+Proof.
+    induction c; simpl in *; intros HH.
+    {
+        destruct a.
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            destruct (decide (x = x0)).
+            {
+                subst.
+                ltac1:(set_solver).
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        unfold TermOver in *.
+        rewrite vars_of_t_term.
+        rewrite vars_of_t_term.
+        apply set_eq.
+        revert HH H.
+        induction l; intros HH H.
+        {
+            intros x0. simpl. ltac1:(set_solver).
+        }
+        {
+            intros x0.
+            specialize (IHl HH).
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2). clear H2.
+            specialize (H1 HH).
+            ltac1:(set_solver).
+        }
+    }
+Qed.
+
+
+Lemma vars_of_TermOverBoV_subst
+    {Σ : StaticModel}
+    (t t' : TermOver BuiltinOrVar)
+    (x : variable)
+:
+    x ∈ vars_of t ->
+    vars_of (TermOverBoV_subst t x t') =
+    vars_of t' ∪ (vars_of t ∖ {[x]})
+.
+Proof.
+    induction t; intros HH1; simpl in *.
+    {
+        unfold vars_of in HH1; simpl in HH1.
+        unfold vars_of in HH1; simpl in HH1.
+        unfold vars_of_BoV in HH1; simpl in HH1.
+        destruct a; simpl in *.
+        {
+        rewrite elem_of_empty in HH1. inversion HH1.
+        }
+        {
+        rewrite elem_of_singleton in HH1.
+        subst x0.
+        destruct (decide (x = x))>[|ltac1:(contradiction)].
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
+        }
+    }
+    {
+        revert HH1 H.
+        unfold vars_of; simpl.
+        induction l; intros HH1 HH2.
+        {
+        simpl. unfold vars_of; simpl. ltac1:(set_solver).
+        }
+        {
+        rewrite Forall_cons in HH2. destruct HH2 as [HH2 HH3].
+        simpl in HH1. rewrite elem_of_union in HH1.
+        destruct (decide (x ∈ vars_of a)) as [Hin|Hnotin].
+        {
+            specialize (HH2 Hin). simpl.
+            unfold vars_of; simpl.
+            unfold vars_of in HH2; simpl in HH2.
+            rewrite HH2. clear HH2.
+            destruct (decide (x ∈ (⋃ (vars_of <$> l)))) as [Hin2 |Hnotin2].
+            {
+            specialize (IHl Hin2 HH3).
+            unfold vars_of in IHl; simpl in IHl.
+            unfold fmap in IHl.
+            unfold fmap.
+            rewrite IHl.
+            unfold vars_of ; simpl.
+            unfold vars_of ; simpl.
+            ltac1:(set_solver).
+            }
+            {
+            assert(Htmp: ((fun t'' => TermOverBoV_subst t'' x t')<$> l = l)).
+            {
+                clear -Hnotin2. revert Hnotin2.
+                induction l; simpl; intros Hnotin2.
+                { reflexivity. }
+                {
+                rewrite elem_of_union in Hnotin2.
+                apply Decidable.not_or in Hnotin2.
+                destruct Hnotin2 as [HH1 HH2].
+                specialize (IHl HH2).
+                unfold fmap in IHl.
+                rewrite IHl.
+                rewrite subst_notin2.
+                { reflexivity. }
+                { exact HH1. }
+                }
+            }
+            unfold fmap in Htmp.
+            ltac1:(replace (list_fmap) with (map)  in Htmp by reflexivity).
+            rewrite Htmp.
+            unfold vars_of . simpl.
+            ltac1:(set_solver).
+            }
+        }
+        {
+            clear HH2.
+            destruct HH1 as [HH1|HH1].
+            {
+            ltac1:(exfalso; apply Hnotin; apply HH1).
+            }
+            {
+            specialize (IHl HH1 HH3).        
+            unfold vars_of ; simpl.
+            unfold vars_of  in IHl; simpl in IHl.
+            rewrite subst_notin2.
+            {
+                unfold fmap in IHl; simpl in IHl.
+                unfold vars_of ; simpl.
+                unfold fmap.
+                rewrite IHl.
+                ltac1:(set_solver).  
+            }
+            {
+                exact Hnotin.
+            }
+            }
+        }
+        }
+    }
+Qed.
