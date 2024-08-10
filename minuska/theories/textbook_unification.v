@@ -2076,7 +2076,7 @@ Program Definition
     UnificationAlgorithm
 := {|
     ua_unify := fun t1 t2 => textbook_unification_alg.unify [(t1,t2)] ;
-    ua_unify_vars_of := vars_of_sub_app_approx ;
+    (* ua_unify_vars_of := vars_of_sub_app_approx ; *)
 |}.
 Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).

@@ -1682,13 +1682,15 @@ Module Implementation.
       
       rewrite <- HH1.
       *)
-
+      eapply transitivity>[apply vars_of_sub_app_sub|].
+      (*eapply transitivity>[apply ua_unify_vars_of|].*)
+      Check ua_unify_vars_of.
       (*
       Search ua_unify.
       (* THIS IS WEIRD *)
       eapply transitivity>[|apply Hcor1]. *)
       (* Look at `HCor1`!*)
-      eapply transitivity>[apply vars_of_sub_app_sub|].
+      
       Check ua_unify_vars_of.
       Check vars_of_sub_app_sub.
       Print sub_app.
