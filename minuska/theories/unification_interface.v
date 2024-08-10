@@ -54,4 +54,9 @@ Class UnificationAlgorithm
             forall (s : SubT),
                 sub_app s t1 <> sub_app s t2
     ;
+
+    ua_unify_vars_of :
+        forall ss t,
+            vars_of (sub_app ss t) ⊆ vars_of t ∪ ⋃ (vars_of <$> ss.*2)
+    ;
 }.

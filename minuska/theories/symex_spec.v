@@ -7,6 +7,7 @@ Class SymbolicExecutor
   {Σ : StaticModel}
   {Act : Set}
   (Γ : RewritingTheory2 Act)
+  (Γwf: RewritingTheory2_wf_alt Γ)
   :=
 {
   se_State :

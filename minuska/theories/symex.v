@@ -1587,6 +1587,7 @@ Module Implementation.
     *)
     {_Inh : Inhabited NondetValue}
     (Γ : RewritingTheory2 unit)
+    (* wfΓ : RewritingTheory2_wf_alt Γ *)
     (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
     :
     s' ∈ sym_step Γ s ->
@@ -1670,6 +1671,26 @@ Module Implementation.
           apply He2.
         }
       }
+      (*
+      assert (wfr := wfΓ r H2y0).
+      destruct wfr as [H1r H2r].
+      unfold RewritingRule2_wf2' in H2r.*)
+      (*
+      apply ua_unify_sound in Heqo.
+      destruct Heqo as [HH1 HH2].
+      subst fr to.
+      
+      rewrite <- HH1.
+      *)
+
+      (*
+      Search ua_unify.
+      (* THIS IS WEIRD *)
+      eapply transitivity>[|apply Hcor1]. *)
+      (* Look at `HCor1`!*)
+      eapply transitivity>[apply vars_of_sub_app_sub|].
+      Check ua_unify_vars_of.
+      Check vars_of_sub_app_sub.
       Print sub_app.
       
       

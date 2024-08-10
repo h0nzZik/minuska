@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    (*properties*)
     minusl_syntax
     syntax_properties
     unification_interface
@@ -804,6 +803,21 @@ induction ss; intros x HH1 t HH2.
     { assumption. }
     }
 }
+Qed.
+
+Lemma vars_of_sub_app_approx {Σ : StaticModel} ss t:
+    vars_of (sub_app ss t) ⊆ vars_of t ∪ ⋃ (vars_of <$> ss.*2)
+.
+Proof.
+    rewrite elem_of_subseteq. intros x Hx.
+    assert(Htmp := sub_app_unbound_var_2 ss x).
+    rewrite elem_of_union.
+    apply dec_stable.
+    intros HContra.
+    apply Decidable.not_or in HContra.
+    destruct HContra as [HH1 HH2].
+    specialize (Htmp HH2 t HH1).
+    apply Htmp. clear Htmp. exact Hx.
 Qed.
 
 Lemma is_unifier_of_app
@@ -2062,6 +2076,7 @@ Program Definition
     UnificationAlgorithm
 := {|
     ua_unify := fun t1 t2 => textbook_unification_alg.unify [(t1,t2)] ;
+    ua_unify_vars_of := vars_of_sub_app_approx ;
 |}.
 Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).
