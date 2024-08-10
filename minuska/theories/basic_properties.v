@@ -988,6 +988,23 @@ Proof.
         }        
     }
     {
-        
+        inversion H; subst; clear H.
+        unfold satisfies; simpl.
+        ltac1:(simp sat2B).
+        unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar.
+        exact pf'.
+    }
+    {
+        inversion H; subst; clear H.
+        ltac1:(exfalso). clear Heqcall.
+        unfold vars_of in pf; simpl in pf.
+        unfold vars_of in pf; simpl in pf.
+        rewrite singleton_subseteq_l in pf.
+        ltac1:(rewrite elem_of_dom in pf).
+        ltac1:(rewrite pf' in pf).
+        unfold is_Some in pf.
+        destruct pf as [x0 HContra].
+        inversion HContra.
     }
 Qed.
+
