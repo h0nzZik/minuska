@@ -2390,4 +2390,9 @@ Next Obligation.
     simpl in Htmp.
     ltac1:(set_solver).
 Qed.
+Next Obligation.
+    assert (Htmp := unify_nodup [(t1, t2)] ss H).
+    simpl in Htmp.
+    apply Htmp.
+Qed.
 Fail Next Obligation.

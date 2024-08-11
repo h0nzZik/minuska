@@ -70,4 +70,10 @@ Class UnificationAlgorithm
         ua_unify t1 t2 = Some ss ->
             (list_to_set (fmap fst ss)) ∪ (⋃ (fmap (vars_of ∘ snd) ss)) ⊆ vars_of t1 ∪ vars_of t2
     ;
+
+    ua_unify_nodup:
+        forall t1 t2 ss,
+            ua_unify t1 t2 = Some ss ->
+            NoDup (fmap fst ss)
+    ;
 }.
