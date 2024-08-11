@@ -1310,3 +1310,76 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma vars_of_TermOverBoV_subst_e2__approx
+    {Σ : StaticModel}
+    (t : TermOver BuiltinOrVar)
+    (t' : TermOver Expression2)
+    (x : variable)
+:
+    vars_of (TermOverBoV_subst_expr2 t x t') ⊆
+    vars_of t' ∪ (vars_of t ∖ {[x]})
+.
+Proof.
+    induction t; simpl in *.
+    {
+        destruct a; simpl in *.
+        {
+            ltac1:(set_solver).
+        }
+        {
+            unfold TermOverBoV_subst_expr2. simpl.
+            destruct (decide (x = x0)).
+            {
+                subst. ltac1:(set_solver).
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        rewrite vars_of_t_term.
+        rewrite Forall_forall in H.
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        unfold TermOverBoV_subst_expr2 in Hx0.
+        simpl in Hx0.
+        rewrite vars_of_t_term_e in Hx0.
+        rewrite elem_of_union_list in Hx0.
+        destruct Hx0 as [X [H1X H2X]].
+        ltac1:(replace map with (@fmap _ list_fmap) in H1X by reflexivity).
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        subst X.
+        rewrite elem_of_list_fmap in H2y.
+        destruct H2y as [y0 [H1y0 H2y0]].
+        subst y.
+        specialize (H y0 H2y0).
+        ltac1:(rewrite elem_of_subseteq in H).
+        specialize (H x0 H2X).
+        rewrite (elem_of_union) in H.
+        destruct H as [H|H].
+        {
+            ltac1:(set_solver).
+        }
+        {
+            rewrite elem_of_union. right.
+            rewrite elem_of_difference in H.
+            destruct H as [H1 H2].
+            rewrite elem_of_difference.
+            split>[|assumption].
+            rewrite elem_of_union_list.
+            exists (vars_of y0).
+            rewrite elem_of_list_fmap.
+            split>[|assumption].
+            exists y0.
+            split>[reflexivity|].
+            assumption.
+        }
+    }
+Qed.
+

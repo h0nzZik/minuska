@@ -1578,6 +1578,25 @@ Module Implementation.
     }
   Qed.
 
+  Lemma vars_of_sub_app_e_sub
+    {Σ : StaticModel} (sub : @SubT Σ) x:
+    vars_of (sub_app_e sub x) ⊆ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ∪ (vars_of x)
+  .
+  Proof.
+    revert x;
+    induction sub; simpl; intros x.
+    {
+      ltac1:(set_solver).
+    }
+    {
+      destruct a as [x' t']; simpl in *.
+      eapply transitivity. apply IHsub. clear IHsub.
+      assert (Htmp2 := vars_of_TermOverBoV_subst_e2__approx).
+      unfold fmap; simpl.
+      ltac1:(set_solver).
+    }
+  Qed.
+
   Definition Valuation2_to_SubT
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -1953,6 +1972,11 @@ Module Implementation.
       subst fr to.
       clear coerced.
       clear ρ'.
+      assert(Hvttc := vars_of__toe_to_cpat (sub_app_e sub (r_to r)) (elements (vars_of (sub_app_e sub (r_to r))))).
+      rewrite <- Htmp in Hvttc. simpl in Hvttc.
+      assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).
+      About vars_of_sub_app_sub.
+      Search vars_of sub_app.
       Search toe_to_cpat.
 
       (* apply ua_unify_oota in Heqo as Hoota. *)
