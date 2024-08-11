@@ -1622,22 +1622,58 @@ Module Implementation.
   Defined.
   Fail Next Obligation.
 
+  Lemma extend_val_with_sub__vars
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (sub : SubT)
+  :
+    vars_of (extend_val_with_sub ρ sub) ⊆ vars_of ρ ∪ vars_of_sub sub
+  .
+  Proof.
+    induction sub; simpl in *.
+    {
+      ltac1:(set_solver).
+    }
+    {
+      ltac1:(repeat case_match); subst; simpl in *.
+      {
+        clear H0. ltac1:(rename e into H1).
+        unfold vars_of; simpl.
+        unfold Valuation2 in *.
+        rewrite dom_insert_L.
+        ltac1:(set_solver).
+      }
+      {
+        clear H0. ltac1:(rename n into H1).
+        unfold vars_of; simpl.
+        unfold Valuation2 in *.
+        ltac1:(set_solver).
+      }
+    }
+  Qed.
+
   Lemma extend_val_with_sub__extends
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
   :
+    vars_of_sub sub ## vars_of ρ ->
     ρ ⊆ extend_val_with_sub ρ sub
   .
   Proof.
-    induction sub.
+    induction sub; intros Hvars.
     {
       apply map_subseteq_po.
     }
     {
+      ltac1:(ospecialize (IHsub _)).
+      {
+        destruct a as [x t]; simpl in *.
+        ltac1:(set_solver).
+      }
       eapply transitivity. apply IHsub. clear IHsub.
       simpl.
-      destruct a as [x t]. simpl.
+      destruct a as [x t]. simpl in *.
       ltac1:(case_match).
       {
         clear H. ltac1:(rename e into H1).
