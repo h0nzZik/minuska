@@ -1657,6 +1657,7 @@ Module Implementation.
     (ρ : Valuation2)
     (sub : SubT)
   :
+    (* [NoDup sub.*1] would help me there *)
     vars_of_sub sub ## vars_of ρ ->
     ρ ⊆ extend_val_with_sub ρ sub
   .
@@ -1672,15 +1673,18 @@ Module Implementation.
         destruct a as [x t]; simpl in *.
         ltac1:(set_solver).
       }
+      assert(Htmp := extend_val_with_sub__vars ρ (sub)).
+      (*
       eapply transitivity. apply IHsub. clear IHsub.
       simpl.
-      assert(Htmp := extend_val_with_sub__vars ρ (sub)).
+      *)
       destruct a as [x t]. simpl in *.
       ltac1:(case_match).
       {
         clear H. ltac1:(rename e into H1).
         unfold Valuation2 in *.
-        apply insert_subseteq.
+        eapply transitivity>[|apply insert_subseteq].
+        exact IHsub.
         apply not_elem_of_dom_1.
         intros HContra.
         ltac1:(set_solver).

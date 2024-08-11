@@ -2061,6 +2061,288 @@ Proof.
     }
 Qed.
 
+Lemma unify_nodup
+    {Σ : StaticModel}
+    eqns sub
+    :
+    unify eqns = Some sub ->
+    NoDup (fmap fst sub)
+.
+Proof.
+    intros H1.
+    ltac1:(funelim (unify eqns)); ltac1:(simp unify in H1); simpl in H1.
+    {
+        ltac1:(simplify_eq/=).
+        constructor.
+    }
+    {
+        unfold unify_unfold_clause_6 in H1.
+        destruct (decide ((t_over (bov_builtin b) = t_over (bov_builtin b0)))).
+        {
+            clear Heq.
+            inversion e0; subst; clear e0.
+            apply H.
+            assumption.
+        }
+        {
+            inversion H1.
+        }
+    }
+    {
+        unfold unify_unfold_clause_6 in H1.
+        destruct (decide ((t_over (bov_builtin b) = t_over (bov_builtin b0)))).
+        {
+            inversion Heq.
+        }
+        {
+            inversion H1.
+        }
+    }
+    {
+        rewrite bind_Some in H1.
+        destruct H1 as [l [H1l H2l]].
+        ltac1:(simplify_eq/=).
+    }
+    {
+        rewrite bind_Some in H1.
+        destruct H1 as [l [H1l H2l]].
+        ltac1:(simplify_eq/=).
+        unfold vars_of in n; simpl in n.
+        unfold vars_of in n; simpl in n.
+        apply H in H1l as H1l'.
+        constructor.
+        {
+            apply unify_no_variable_out_of_thin_air in H1l as Hnoota.
+            ltac1:(cut (x ∉ eqns_vars (sub (t_over (bov_builtin b)) x es))).
+            {
+                intros ?. ltac1:(set_solver).
+            }
+            clear Hnoota.
+            destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
+            {
+                eapply eqns_vars_sub in Hin.
+                rewrite Hin.
+                clear.
+                ltac1:(set_solver).
+            }
+            {
+                eapply sub_notin in Hnotin as Hnotin'.
+                rewrite Hnotin'.
+                exact Hnotin.
+            }
+        }
+        {
+            assumption.
+        }
+    }
+    {
+        inversion H1.
+    }
+    {
+        inversion H1.
+    }
+    {
+        unfold vars_of in e; simpl in e.
+        unfold vars_of in e; simpl in e.
+        clear -e.
+        ltac1:(set_solver).
+    }
+    {
+        rewrite bind_Some in H1.
+        destruct H1 as [l [H1l H2l]].
+        ltac1:(simplify_eq/=).
+        constructor.
+        {
+            apply unify_no_variable_out_of_thin_air in H1l as Hnoota.
+            ltac1:(cut (x ∉ eqns_vars (sub (t_over (bov_builtin b)) x es))).
+            {
+                intros ?. ltac1:(set_solver).
+            }
+            clear Hnoota.
+            destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
+            {
+                eapply eqns_vars_sub in Hin.
+                rewrite Hin.
+                clear.
+                ltac1:(set_solver).
+            }
+            {
+                eapply sub_notin in Hnotin as Hnotin'.
+                rewrite Hnotin'.
+                exact Hnotin.
+            }
+        }
+        {
+            eapply H.
+            assumption.
+        }
+    }
+    {
+        subst.
+        unfold unify_unfold_clause_2 in H1.
+        destruct (decide (y=y))>[|ltac1:(contradiction)].
+        eapply H.
+        assumption.
+    }
+    {
+        unfold unify_unfold_clause_2 in H1.
+        destruct (decide (x=y))>[ltac1:(contradiction)|].
+        rewrite bind_Some in H1.
+        destruct H1 as [l [H1l H2l]].
+        ltac1:(simplify_eq/=).
+        constructor.
+        {
+            apply unify_no_variable_out_of_thin_air in H1l as Hnoota.
+            ltac1:(cut (x ∉ eqns_vars (sub (t_over (bov_variable y)) x es))).
+            {
+                intros ?. ltac1:(set_solver).
+            }
+            clear Hnoota.
+            destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
+            {
+                eapply eqns_vars_sub in Hin.
+                rewrite Hin.
+                clear -n.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+            {
+                eapply sub_notin in Hnotin as Hnotin'.
+                rewrite Hnotin'.
+                exact Hnotin.
+            }
+        }
+        {
+            eapply H.
+            assumption.
+        }
+    }
+    {
+        unfold unify_unfold_clause_3_1 in H1.
+        ltac1:(case_match).
+        {
+            inversion H1.
+        }
+        {
+            inversion Heq.
+        }
+    }
+    {
+        unfold unify_unfold_clause_3_1 in H1.
+        ltac1:(case_match).
+        {
+            inversion H1.
+        }
+        {
+            rewrite bind_Some in H1.
+            destruct H1 as [l [H1l H2l]].
+            ltac1:(simplify_eq/=).
+            constructor.
+            {
+                apply unify_no_variable_out_of_thin_air in H1l as Hnoota.
+                ltac1:(cut (x ∉ eqns_vars (sub (t_term s l0) x es))).
+                {
+                    intros ?. ltac1:(set_solver).
+                }
+                clear Hnoota.
+                
+                destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
+                {
+                    eapply eqns_vars_sub in Hin.
+                    rewrite Hin.
+                    clear -n.
+                    unfold vars_of; simpl.
+                    unfold vars_of; simpl.
+                    ltac1:(set_solver).
+                }
+                {
+                    eapply sub_notin in Hnotin as Hnotin'.
+                    rewrite Hnotin'.
+                    exact Hnotin.
+                }
+            }
+            {
+                apply H. assumption.
+            }
+        }
+    }
+    {
+        inversion H1.
+    }
+    {
+        inversion H1.
+    }
+    {
+        unfold unify_unfold_clause_4_1 in H1.
+        ltac1:(case_match).
+        {
+            inversion H1.
+        }
+        {
+            inversion Heq.
+        }
+    }
+    {
+        unfold unify_unfold_clause_4_1 in H1.
+        ltac1:(case_match).
+        {
+            inversion H1.
+        }
+        {
+            rewrite bind_Some in H1.
+            destruct H1 as [l [H1l H2l]].
+            ltac1:(simplify_eq/=).
+            constructor.
+            {
+                apply unify_no_variable_out_of_thin_air in H1l as Hnoota.
+                ltac1:(cut (x ∉ eqns_vars (sub (t_term s l0) x es))).
+                {
+                    intros ?. ltac1:(set_solver).
+                }
+                clear Hnoota.
+                
+                destruct (decide (x ∈ eqns_vars es)) as [Hin|Hnotin].
+                {
+                    eapply eqns_vars_sub in Hin.
+                    rewrite Hin.
+                    clear -n.
+                    unfold vars_of; simpl.
+                    unfold vars_of; simpl.
+                    ltac1:(set_solver).
+                }
+                {
+                    eapply sub_notin in Hnotin as Hnotin'.
+                    rewrite Hnotin'.
+                    exact Hnotin.
+                }
+            }
+            {
+                apply H. assumption.
+            }
+        }
+    }
+    {
+        unfold unify_unfold_clause_5 in H1.
+        ltac1:(case_match).
+        {
+            clear Heq.
+            destruct a0 as [? Hlen].
+            subst.
+            clear H0.
+            apply H.
+            assumption.
+        }
+        {
+            ltac1:(naive_solver).
+        }
+    }
+    {
+        unfold unify_unfold_clause_5 in H1.
+        ltac1:(case_match; naive_solver).
+    }
+Qed.
+
 Program Definition
     textbook_unification_algorithm
     {Σ : StaticModel}
