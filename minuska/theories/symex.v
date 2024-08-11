@@ -1661,25 +1661,29 @@ Module Implementation.
     ρ ⊆ extend_val_with_sub ρ sub
   .
   Proof.
-    induction sub; intros Hvars.
+    revert ρ.
+    induction sub; intros ρ Hvars.
     {
       apply map_subseteq_po.
     }
     {
-      ltac1:(ospecialize (IHsub _)).
+      ltac1:(ospecialize (IHsub ρ _)).
       {
         destruct a as [x t]; simpl in *.
         ltac1:(set_solver).
       }
       eapply transitivity. apply IHsub. clear IHsub.
       simpl.
+      assert(Htmp := extend_val_with_sub__vars ρ (sub)).
       destruct a as [x t]. simpl in *.
       ltac1:(case_match).
       {
         clear H. ltac1:(rename e into H1).
         unfold Valuation2 in *.
         apply insert_subseteq.
-        Search subseteq insert.
+        apply not_elem_of_dom_1.
+        intros HContra.
+        ltac1:(set_solver).
       }
       {
 
