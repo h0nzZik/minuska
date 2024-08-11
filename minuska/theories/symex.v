@@ -1743,6 +1743,102 @@ Module Implementation.
     }
   Qed.
 
+  Lemma vars_of__toe_to_cpat
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    avoid
+    :
+    vars_of et ⊆ vars_of (toe_to_cpat avoid et).1 ∪ vars_of (toe_to_cpat avoid et).2
+  .
+  Proof.
+    revert avoid.
+    induction et; intros avoid.
+    {
+      simpl in *.
+      unfold vars_of in *; simpl in *.
+      unfold vars_of in *; simpl in *.
+      ltac1:(set_solver).
+    }
+    {
+      rewrite toe_to_cpat_list_equiv.
+      rewrite vars_of_t_term_e.
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      rewrite elem_of_union_list in Hx.
+      rewrite elem_of_union.
+      destruct Hx as [X [H1X H2X]].
+      rewrite elem_of_list_fmap in H1X.
+      destruct H1X as [y [H1y H2y]].
+      subst X.
+      rewrite Forall_forall in H.
+
+      revert avoid H H2y H2X.
+      induction l; intros avoid H H2y H2X.
+      {
+        rewrite elem_of_nil in H2y.
+        destruct H2y.
+      }
+      {
+        rewrite elem_of_cons in H2y.
+        destruct H2y as [H2y|H2y].
+        {
+          subst a.
+          simpl.
+          rewrite vars_of_t_term.
+          rewrite fmap_cons.
+          rewrite union_list_cons.
+          rewrite elem_of_union.
+          (*specialize (H y ltac:(set_solver) (avoid ++ elements (vars_of (toe_to_cpat avoid y).2))). *)
+          specialize (H y ltac:(set_solver) (avoid)).
+          rewrite elem_of_subseteq in H.
+          specialize (H _ H2X).
+          rewrite elem_of_union in H.
+          destruct H as [H|H].
+          {
+            left. left. exact H.
+          }
+          {
+            right. unfold vars_of; simpl.
+            rewrite fmap_app.
+            rewrite union_list_app.
+            rewrite elem_of_union.
+            left. exact H.
+          }
+        }
+        {
+          simpl.
+          specialize (IHl (avoid ++ elements (vars_of (toe_to_cpat avoid a).2))).
+          ltac1:(ospecialize (IHl _)).
+          {
+            intros. apply H. rewrite elem_of_cons. right. assumption.
+          }
+          specialize (IHl H2y H2X).
+          destruct IHl as [IHl|IHl].
+          {
+            left.
+            rewrite vars_of_t_term.
+            rewrite fmap_cons.
+            rewrite union_list_cons.
+            rewrite elem_of_union.
+            right.
+            simpl in IHl.
+            apply IHl.
+          }
+          {
+            right.
+            unfold vars_of; simpl. 
+            rewrite fmap_app.
+            rewrite union_list_app.
+            simpl in IHl.
+            rewrite elem_of_union.
+            right.
+            apply IHl.
+          }
+        }
+      }
+    }
+  Qed.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1753,7 +1849,7 @@ Module Implementation.
     {_Inh : Inhabited NondetValue}
     {_Inh2 : Inhabited builtin_value}
     (Γ : RewritingTheory2 unit)
-    (* wfΓ : RewritingTheory2_wf_alt Γ *)
+    (wfΓ : RewritingTheory2_wf_alt Γ)
     (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
     :
     s' ∈ sym_step Γ s ->
@@ -1855,6 +1951,10 @@ Module Implementation.
       ltac1:(unfold ρ').
       rewrite extend_val_with_sub__vars.
       subst fr to.
+      clear coerced.
+      clear ρ'.
+      Search toe_to_cpat.
+
       (* apply ua_unify_oota in Heqo as Hoota. *)
       Search ua_unify.
       (* I think I would need to feed the coercion a valuation that uses `sub`*)
