@@ -24,6 +24,15 @@ match s with
 end
 .
 
+Fixpoint vars_of_sub {Σ : StaticModel} (s : SubT) : gset variable
+:=
+match s with
+| [] => ∅
+| (x,_)::s' => {[x]} ∪ vars_of_sub s'
+end
+.
+
+
 Class UnificationAlgorithm
     {Σ : StaticModel}
 := {

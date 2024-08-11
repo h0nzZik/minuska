@@ -1578,9 +1578,78 @@ Module Implementation.
     }
   Qed.
 
-  Print SubT.
+  Definition Valuation2_to_SubT
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    : SubT
+  :=
+    map_fold (fun x t sub => ((x,(TermOverBuiltin_to_TermOverBoV t))::sub)) [] ρ
+  .
 
-  Search BuiltinOrVar builtin_value.
+  (*
+    1. sub = [], ρ = { x ↦ 3 } ==> { x ↦ 3 }
+    2. sub = [(x, y + 3)], ρ = { y ↦ 4 } ==> { x ↦ 4 + 3, y ↦ 4 }
+    3. sub = [(x, y + 3)], ρ = { x ↦ 4 } ==> { x ↦ 4 } ??? IGNORE
+    Basically, I want to extend `ρ` with new variables found in the lhs of `sub`.
+  *)
+
+  #[local]
+  Obligation Tactic := idtac.
+  Program Fixpoint extend_val_with_sub
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+        (sub : SubT)
+    : Valuation2
+  :=
+    match sub with
+    | [] => ρ
+    | (x,t)::sub' =>
+      let ρ' := extend_val_with_sub ρ sub' in
+      let sub'' := Valuation2_to_SubT ρ' in
+      let t_filled := sub_app sub'' t in
+      match (decide (vars_of t_filled = ∅)) with
+      | left _ =>
+        let t_filled_coerced := TermOverBoV_to_TermOverBuiltin t_filled _ in
+        <[x := t_filled_coerced]>ρ'
+      | right _ => 
+        (* cannot coerce t_filled to a ground term => ignore *)
+        ρ'
+      end
+    end
+  .
+  Next Obligation.
+    intros; subst; assumption.
+  Defined.
+  Fail Next Obligation.
+
+  Lemma extend_val_with_sub__extends
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (sub : SubT)
+  :
+    ρ ⊆ extend_val_with_sub ρ sub
+  .
+  Proof.
+    induction sub.
+    {
+      apply map_subseteq_po.
+    }
+    {
+      eapply transitivity. apply IHsub. clear IHsub.
+      simpl.
+      destruct a as [x t]. simpl.
+      ltac1:(case_match).
+      {
+        clear H. ltac1:(rename e into H1).
+        unfold Valuation2 in *.
+        apply insert_subseteq.
+        Search subseteq insert.
+      }
+      {
+
+      }
+    }
+  Qed.
 
   Lemma sym_step_sim_1
     {Σ : StaticModel}

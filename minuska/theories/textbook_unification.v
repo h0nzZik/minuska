@@ -51,14 +51,6 @@ match s with
 end
 .
 
-Fixpoint vars_of_sub {Σ : StaticModel} (s : SubT) : gset variable
-:=
-match s with
-| [] => ∅
-| (x,_)::s' => {[x]} ∪ vars_of_sub s'
-end
-.
-
 Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : SubT)
 :
 wfsub V s1 ->
