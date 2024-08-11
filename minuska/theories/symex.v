@@ -1578,6 +1578,10 @@ Module Implementation.
     }
   Qed.
 
+  Print SubT.
+
+  Search BuiltinOrVar builtin_value.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1641,6 +1645,31 @@ Module Implementation.
     remember (sub_app sub (r_from r)) as from'.
     remember (r_from r) as fr.
     remember (r_to r) as to.
+
+    assert (H2s'g'': forall x, x ∈ s.2 ++ y2 -> vars_of x ⊆ vars_of ρ).
+    {
+      intros x Hx.
+      specialize (H2s'g' x Hx).
+      destruct x as [x1 x2]; simpl in *.
+      unfold satisfies in H2s'g'; simpl in H2s'g'.
+      destruct (Expression2_evaluate ρ x1) as [t1|] eqn:He1,
+        (Expression2_evaluate ρ x2) as [t2|] eqn:He2;
+        try (ltac1:(contradiction)).
+      apply Expression2_evaluate_Some_enough in He1.
+      apply Expression2_evaluate_Some_enough in He2.
+        
+      unfold vars_of; simpl.
+      rewrite union_subseteq.
+      
+      split.
+      {
+        apply He1.
+      }
+      {
+        apply He2.
+      }
+    }
+    pose(coerced0 := @TermOverBoV_eval Σ).
     pose(coerced := @TermOverBoV_eval Σ ρ from').
     ltac1:(ospecialize (coerced _)).
     {
@@ -1648,29 +1677,6 @@ Module Implementation.
       apply Expression2Term_matches_enough in Hcor1.
       apply vars_of_sat_tobov in H1s'g'.
       unfold satisfies in H2s'g'; simpl in H2s'g'.
-      assert (H2s'g'': forall x, x ∈ s.2 ++ y2 -> vars_of x ⊆ vars_of ρ).
-      {
-        intros x Hx.
-        specialize (H2s'g' x Hx).
-        destruct x as [x1 x2]; simpl in *.
-        unfold satisfies in H2s'g'; simpl in H2s'g'.
-        destruct (Expression2_evaluate ρ x1) as [t1|] eqn:He1,
-          (Expression2_evaluate ρ x2) as [t2|] eqn:He2;
-          try (ltac1:(contradiction)).
-        apply Expression2_evaluate_Some_enough in He1.
-        apply Expression2_evaluate_Some_enough in He2.
-          
-        unfold vars_of; simpl.
-        rewrite union_subseteq.
-        
-        split.
-        {
-          apply He1.
-        }
-        {
-          apply He2.
-        }
-      }
       (*
       assert (wfr := wfΓ r H2y0).
       destruct wfr as [H1r H2r].

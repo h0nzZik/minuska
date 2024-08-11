@@ -1296,3 +1296,50 @@ Proof.
     }
 Qed.
 
+
+#[local]
+Obligation Tactic := idtac.
+Program Fixpoint TermOverBoV_to_TermOverBuiltin
+    {Σ : StaticModel}
+    (φ : TermOver BuiltinOrVar)
+    (pf: vars_of φ = ∅)
+    : TermOver builtin_value
+:=
+    match φ with
+    | t_over (bov_builtin b) => fun pf' => t_over b
+    | t_over (bov_variable _) => fun pf' => _
+    | t_term s l => fun pf' => 
+        t_term s (
+            let l' :=
+                (fix go (l'' : list (TermOver BuiltinOrVar)) (pf'' : (vars_of l'') = ∅) : list (TermOver builtin_value) :=
+                (
+                    match l'' with
+                    | [] => fun _ => []
+                    | x::xs => fun pf''' => (
+                        let pf'''' : vars_of x = ∅ := _ in
+                        TermOverBoV_to_TermOverBuiltin x pf'''')::(go xs _)
+                    end pf''
+                )
+                ) l _ in
+            l'
+        )
+    end pf
+.
+Next Obligation.
+    intros.
+    subst.
+    unfold vars_of in pf'; simpl in pf'.
+    unfold vars_of in pf'; simpl in pf'.
+    apply non_empty_singleton_L in pf'.
+    destruct pf'.
+Defined.
+Next Obligation.
+    intros; subst; unfold vars_of in pf'''; simpl in pf'''; abstract(ltac1:(set_solver)).
+Defined.
+Next Obligation.
+    intros; subst; unfold vars_of in pf'''; simpl in pf'''; abstract(ltac1:(set_solver)).
+Defined.
+Next Obligation.
+    intros; subst; rewrite vars_of_t_term in pf'; apply pf'.
+Defined.
+Fail Next Obligation.
