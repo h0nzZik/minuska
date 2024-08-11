@@ -1598,13 +1598,14 @@ Module Implementation.
   Program Fixpoint extend_val_with_sub
     {Σ : StaticModel}
     (ρ : Valuation2)
-        (sub : SubT)
+    (sub : SubT)
+    (d : builtin_value)
     : Valuation2
   :=
     match sub with
     | [] => ρ
     | (x,t)::sub' =>
-      let ρ' := extend_val_with_sub ρ sub' in
+      let ρ' := extend_val_with_sub ρ sub' d in
       let sub'' := Valuation2_to_SubT ρ' in
       let t_filled := sub_app sub'' t in
       match (decide (vars_of t_filled = ∅)) with
@@ -1612,8 +1613,8 @@ Module Implementation.
         let t_filled_coerced := TermOverBoV_to_TermOverBuiltin t_filled _ in
         <[x := t_filled_coerced]>ρ'
       | right _ => 
-        (* cannot coerce t_filled to a ground term => ignore *)
-        ρ'
+        (* cannot coerce t_filled to a ground term => use a default value *)
+        <[x := (t_over d)]>ρ'
       end
     end
   .
@@ -1626,8 +1627,9 @@ Module Implementation.
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
+    (d : builtin_value)
   :
-    vars_of (extend_val_with_sub ρ sub) ⊆ vars_of ρ ∪ vars_of_sub sub
+    vars_of (extend_val_with_sub ρ sub d) = vars_of ρ ∪ vars_of_sub sub
   .
   Proof.
     induction sub; simpl in *.
@@ -1674,10 +1676,11 @@ Module Implementation.
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
+    (d : builtin_value)
   :
     NoDup sub.*1 ->
     vars_of_sub sub ## vars_of ρ ->
-    ρ ⊆ extend_val_with_sub ρ sub
+    ρ ⊆ extend_val_with_sub ρ sub d
   .
   Proof.
     revert ρ.
@@ -1696,7 +1699,7 @@ Module Implementation.
         destruct a as [x t]; simpl in *.
         ltac1:(set_solver).
       }
-      assert(Htmp := extend_val_with_sub__vars ρ (sub)).
+      assert(Htmp := extend_val_with_sub__vars ρ (sub) d).
       destruct a as [x t]. simpl in *.
       ltac1:(case_match).
       {
@@ -1719,7 +1722,23 @@ Module Implementation.
         }
       }
       {
-        exact IHsub.        
+        clear H. ltac1:(rename n into H1).
+        unfold Valuation2 in *.
+        eapply transitivity>[|apply insert_subseteq].
+        exact IHsub.
+        apply not_elem_of_dom_1.
+        intros HContra.
+        inversion Hnd; subst; clear Hnd.
+        assert(HContra' : x ∈ vars_of ρ \/ x ∈ vars_of_sub sub) by ltac1:(set_solver).
+        destruct HContra' as [HContra'|HContra'].
+        {
+          ltac1:(set_solver).
+        }
+        {
+          rewrite vars_of_sub_eq in HContra'.
+          rewrite elem_of_list_to_set in HContra'.
+          apply H2. apply HContra'.
+        }
       }
     }
   Qed.
@@ -1732,6 +1751,7 @@ Module Implementation.
     {_EA : EqDecision Act}
     *)
     {_Inh : Inhabited NondetValue}
+    {_Inh2 : Inhabited builtin_value}
     (Γ : RewritingTheory2 unit)
     (* wfΓ : RewritingTheory2_wf_alt Γ *)
     (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
@@ -1811,36 +1831,32 @@ Module Implementation.
         apply He2.
       }
     }
-    pose(coerced0 := @TermOverBoV_eval Σ).
-    pose(coerced := @TermOverBoV_eval Σ ρ from').
+    pose(ρ' := @extend_val_with_sub Σ ρ sub (@inhabitant _ _Inh2)).
+    pose(coerced := @TermOverBoV_eval Σ ρ' from').
+    
+    (*pose(coerced := @TermOverBoV_eval Σ ρ from').*)
     ltac1:(ospecialize (coerced _)).
     {
       subst from'.
       apply Expression2Term_matches_enough in Hcor1.
       apply vars_of_sat_tobov in H1s'g'.
       unfold satisfies in H2s'g'; simpl in H2s'g'.
-      (*
-      assert (wfr := wfΓ r H2y0).
-      destruct wfr as [H1r H2r].
-      unfold RewritingRule2_wf2' in H2r.*)
-      (*
-      apply ua_unify_sound in Heqo.
-      destruct Heqo as [HH1 HH2].
-      subst fr to.
-      
-      rewrite <- HH1.
-      *)
       apply ua_unify_oota in Heqo as Hnoota.
       eapply transitivity>[apply vars_of_sub_app_sub|].
       rewrite union_subseteq in Hnoota.
       destruct Hnoota as [Hsub1 Hsub2].
-      ltac1:(cut (vars_of fr ∪ vars_of s.1 ⊆ vars_of ρ)).
+      ltac1:(cut (vars_of fr ∪ vars_of s.1 ⊆ vars_of ρ')).
       {
         intros HHH.
         clear -HHH Hsub2.
         rewrite list_fmap_compose in Hsub2.
         ltac1:(set_solver).
       }
+      ltac1:(unfold ρ').
+      rewrite extend_val_with_sub__vars.
+      subst fr to.
+      (* apply ua_unify_oota in Heqo as Hoota. *)
+      Search ua_unify.
       (* I think I would need to feed the coercion a valuation that uses `sub`*)
       Search s.
       (*eapply transitivity>[apply ua_unify_vars_of|].*)
