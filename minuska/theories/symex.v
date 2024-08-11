@@ -1652,32 +1652,51 @@ Module Implementation.
     }
   Qed.
 
+  Lemma vars_of_sub_eq
+    {Σ : StaticModel}
+    (sub : SubT)
+  :
+    vars_of_sub sub = list_to_set (sub.*1)
+  .
+  Proof.
+    induction sub; simpl.
+    {
+      reflexivity.
+    }
+    { 
+      destruct a as [x t]. simpl in *.
+      rewrite IHsub.
+      reflexivity.
+    }
+  Qed.
+
   Lemma extend_val_with_sub__extends
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
   :
-    (* [NoDup sub.*1] would help me there *)
+    NoDup sub.*1 ->
     vars_of_sub sub ## vars_of ρ ->
     ρ ⊆ extend_val_with_sub ρ sub
   .
   Proof.
     revert ρ.
-    induction sub; intros ρ Hvars.
+    induction sub; intros ρ Hnd Hvars.
     {
       apply map_subseteq_po.
     }
     {
-      ltac1:(ospecialize (IHsub ρ _)).
+      ltac1:(ospecialize (IHsub ρ _ _)).
+      {
+        clear -Hnd.
+        inversion Hnd; subst; clear Hnd.
+        assumption.
+      }
       {
         destruct a as [x t]; simpl in *.
         ltac1:(set_solver).
       }
       assert(Htmp := extend_val_with_sub__vars ρ (sub)).
-      (*
-      eapply transitivity. apply IHsub. clear IHsub.
-      simpl.
-      *)
       destruct a as [x t]. simpl in *.
       ltac1:(case_match).
       {
@@ -1687,10 +1706,20 @@ Module Implementation.
         exact IHsub.
         apply not_elem_of_dom_1.
         intros HContra.
-        ltac1:(set_solver).
+        inversion Hnd; subst; clear Hnd.
+        assert(HContra' : x ∈ vars_of ρ \/ x ∈ vars_of_sub sub) by ltac1:(set_solver).
+        destruct HContra' as [HContra'|HContra'].
+        {
+          ltac1:(set_solver).
+        }
+        {
+          rewrite vars_of_sub_eq in HContra'.
+          rewrite elem_of_list_to_set in HContra'.
+          apply H2. apply HContra'.
+        }
       }
       {
-
+        exact IHsub.        
       }
     }
   Qed.
