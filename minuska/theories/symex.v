@@ -2046,7 +2046,28 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
-
+(*
+  Lemma wonderful_lemma
+    {Σ : StaticModel}
+    (φ : TermOver BuiltinOrVar)
+    (sub : SubT)
+    (d : TermOver builtin_value)
+    pf
+  :
+  sat2B
+    (extend_val_with_sub ρ sub d)
+    (
+      TermOverBoV_eval
+      (set_default_variables ρ'
+        (elements (vars_of (sub_app sub fr) ∖ vars_of ρ'))
+        d
+      )
+      (sub_app sub φ)
+      pf
+    )
+    φ
+  .
+*)
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -2138,10 +2159,8 @@ Module Implementation.
     pose(ρ' := @extend_val_with_sub Σ ρ sub (t_term (@inhabitant _ _Inh2) [])).
     epose(ρ'' := @set_default_variables Σ ρ' (elements ((@vars_of (TermOver BuiltinOrVar) variable _ _ _ (from')) ∖ (@vars_of Valuation2 variable _ _ (@VarsOf_Valuation2 Σ) ρ'))) (t_term (@inhabitant _ _Inh2) [])).
     unfold Valuation2 in *.
-    (* For some reason, plain `pose` does not work well with typeclasses :-( )*)
-    pose(coerced := @TermOverBoV_eval Σ ρ'' from').
     
-    ltac1:(ospecialize (coerced _)).
+    assert (Hmytmp: vars_of from' ⊆ vars_of ρ'').
     {
       subst from'.
       apply Expression2Term_matches_enough in Hcor1.
@@ -2190,6 +2209,8 @@ Module Implementation.
         apply Hx0.
       }
     }
+    (* For some reason, plain `pose` does not work well with typeclasses :-( )*)
+    pose(coerced := @TermOverBoV_eval Σ ρ'' from' Hmytmp).
     exists coerced.
     split.
     {
@@ -2197,12 +2218,33 @@ Module Implementation.
       split.
       {
         ltac1:(unfold ρ'').
-        Search set_default_variables.
         eapply TermOverBoV_satisfies_extensive.
         {
-          Search.
+          apply set_default_variables_ext.
+          apply NoDup_elements.
+          ltac1:(set_solver).
         }
+        ltac1:(unfold ρ').
+        ltac1:(unfold coerced).
+        ltac1:(unfold ρ'').
+        subst from'.
         unfold satisfies; simpl.
+        apply ua_unify_sound in Heqo as Hsound.
+        destruct Hsound as [Hsnd _].
+        clear coerced.
+        revert Hmytmp.
+        ltac1:(rewrite - {1 3} Hsnd).
+        intros Hmytmp.
+        apply (f_equal vars_of) in Hsnd as Hsnd'.
+        assert (Htmp6 : (elements (vars_of (sub_app sub fr) ∖ vars_of ρ')) = (elements (vars_of (sub_app sub s.1) ∖ vars_of ρ'))).
+        {
+          ltac1:(congruence).
+        }
+        ltac1:(unfold ρ'' in *; idtac).
+        clear ρ''.
+        revert Hmytmp.
+        ltac1:(rewrite {1 2} Htmp6).
+        intros Hmytmp.
         Search satisfies.
       }
       {
