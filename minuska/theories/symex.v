@@ -2046,7 +2046,7 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
-  
+
   Lemma set_default_variables_mono
     {Σ : StaticModel}
     (ρ1 ρ2 : Valuation2)
@@ -2095,20 +2095,58 @@ Module Implementation.
     φ
   .
   Proof.
+    (* First, get rid of default variables *)
+    (erewrite <- TermOverBoV_eval__varsofindependent_2>[|(
+      apply set_default_variables_ext
+    )])>[()|apply NoDup_elements|(ltac1:(set_solver))].
+    Unshelve.
+    {
+
+    }
+    {
+      
+      rewrite extend_val_with_sub__vars.
+      eapply transitivity>[apply pf|].
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      
+      rewrite set_default_variables_works_2 in Hx.
+      rewrite elem_of_union in Hx.
+      destruct Hx as [Hx|Hx].
+      {
+        rewrite extend_val_with_sub__vars in Hx.
+        apply Hx.
+      }
+      {
+        rewrite elem_of_list_to_set in Hx.
+        rewrite elem_of_elements in Hx.
+        rewrite elem_of_difference in Hx.
+        destruct Hx as [H1x H2x].
+        rewrite extend_val_with_sub__vars in H2x.
+        rewrite not_elem_of_union in H2x.
+        destruct H2x as [H2x H3x].
+        rewrite elem_of_union.
+        right. clear H2x.
+        assert (Htmp := vars_of_sub_app_sub_2 sub φ x).
+        destruct (decide (x ∈ vars_of φ)) as [Hin1|Hnotin1].
+        {
+          specialize (Htmp Hin1 H3x).
+        }
+        (*rewrite vars_of_sub_eq in H3x.*)
+        Search vars_of sub_app.
+        rewrite vars_of_sub_app_sub in H1x.
+
+      }
+    }
+      
     revert φ pf.
     induction sub; intros φ pf; simpl in *.
     {
-      erewrite <- TermOverBoV_eval__varsofindependent_2.
       apply satisfies_TermOverBoV_eval.
-      apply set_default_variables_ext.
-      apply NoDup_elements.
-      ltac1:(set_solver).
     }
     {
       destruct a as [x t].
       simpl in *.
-
-
       ltac1:(repeat case_match).
       {
         clear H.
@@ -2125,6 +2163,45 @@ Module Implementation.
           ).
         {
           eapply transitivity>[apply pf|].
+          rewrite elem_of_subseteq.
+          intros v Hv.
+          rewrite set_default_variables_works_2 in Hv.
+          {
+            rewrite elem_of_union in Hv.
+            destruct Hv as [Hv|Hv].
+            {
+              unfold vars_of; simpl.
+              unfold vars_of in Hv; simpl in Hv.
+              unfold Valuation2 in *.
+              rewrite dom_insert in Hv.
+              rewrite elem_of_union in Hv.
+              destruct Hv as [Hv|Hv].
+              {
+                apply elem_of_singleton in Hv.
+                subst v.
+                apply set_default_variables_works.
+                Search set_default_variables.
+              }
+              {
+
+              }
+              rewrite elem_of_dom in Hv.
+              exact Hv.
+            }
+            {
+
+            }
+          }
+          {
+            rewrite elem_of_disjoint.
+            intros u H1u H2u.
+            rewrite elem_of_list_to_set in H2u.
+            rewrite elem_of_elements in H2u.
+            rewrite elem_of_difference in H2u.
+            destruct H2u as [H2u H3u].
+            apply H3u.
+            apply H1u.
+          }
           Search set_default_variables.
         }
         specialize (IHsub _ pf).
