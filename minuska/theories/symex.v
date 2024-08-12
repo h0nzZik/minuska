@@ -1597,6 +1597,41 @@ Module Implementation.
     }
   Qed.
 
+  Lemma vars_of_sub_app_sub_3
+      {Σ : StaticModel} (sub : @SubT Σ) x y:
+      y ∈ vars_of (sub_app sub x) ->
+      y ∉ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ->
+      y ∉ vars_of_sub sub ->
+      y ∈ (vars_of x)
+    .
+    Proof.
+      revert x y.
+      induction sub; intros x y H1 H1' H2; simpl in *.
+      {
+        assumption.
+      }
+      {
+        destruct a as [y' t'].
+        apply not_elem_of_union in H2.
+        destruct H2 as [H2 H3].
+        rewrite elem_of_singleton in H2.
+        apply not_elem_of_union in H1'.
+        destruct H1' as [H4 H5].
+        specialize (IHsub _ _ H1 H5 H3).
+        simpl in *.
+        destruct (decide (y' ∈ vars_of x)) as [Hin|Hnotin].
+        {
+          assert (Htmp := vars_of_TermOverBoV_subst x t' y' Hin).
+          rewrite Htmp in IHsub. clear Htmp.
+          ltac1:(set_solver).
+        }
+        {
+          rewrite subst_notin2 in IHsub>[|assumption].
+          exact IHsub.
+        }
+      }
+  Qed.
+
   Definition Valuation2_to_SubT
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -2116,24 +2151,80 @@ Module Implementation.
         }
         ltac1:(unfold ρ').
         rewrite set_default_variables_works_2.
-        destruct (decide (x ∈ vars_of ρ)).
         {
-          rewrite elem_of_union.
-          left.
-          assumption.
+          destruct (decide (x ∈ vars_of ρ)).
+          {
+            rewrite elem_of_union.
+            left.
+            assumption.
+          }
+          {
+            rewrite elem_of_union.
+            right.
+            rewrite elem_of_list_to_set.
+            rewrite elem_of_elements.
+            rewrite elem_of_difference.
+            split; try assumption.
+            apply Hx.
+          }
         }
         {
-          rewrite elem_of_union.
-          right.
-          rewrite elem_of_list_to_set.
-          rewrite elem_of_elements.
-          rewrite elem_of_difference.
-          split; try assumption.
-          apply Hx.
+          clear. ltac1:(set_solver).
         }
       }
       {
-
+        destruct (decide (x ∈ vars_of_sub sub)).
+        {
+          ltac1:(set_solver).
+        }
+        ltac1:(cut(x ∈ vars_of ρ')).
+        {
+          intros HH. ltac1:(set_solver).
+        }
+        ltac1:(unfold ρ').
+        rewrite set_default_variables_works_2.
+        {
+          destruct (decide (x ∈ vars_of ρ)).
+          {
+            rewrite elem_of_union.
+            left.
+            assumption.
+          }
+          {
+            rewrite elem_of_union.
+            right.
+            rewrite elem_of_list_to_set.
+            rewrite elem_of_elements.
+            rewrite elem_of_difference.
+            split; try assumption.
+            clear Hsound' ρ'.
+            
+            assert (Htmp2 := vars_of_sub_app_sub_2 sub s.1 x Hx ltac:(assumption)).
+            rewrite Hunif in Htmp2.
+            Search vars_of sub_app.
+            Check vars_of_sub_app_sub.
+            assert (Htmp3 := vars_of_sub_app_sub sub (r_from r)).
+            rewrite vars_of_sub_eq in n.
+            rewrite elem_of_list_to_set in n.
+            rewrite list_fmap_compose in Hsub2.
+            rewrite elem_of_subseteq in Htmp3.
+            specialize (Htmp3 x Htmp2).
+            clear Htmp2.
+            rewrite elem_of_union in Htmp3.
+            (destruct Htmp3 as [Htmp3|Htmp3])>[|exact Htmp3].
+            ltac1:(set_solver).
+            Search vars_of_sub.
+            Search vars_of sub_app.
+            (*
+            apply ua_unify_oota in Heqo as Hnoota.
+            Search ua_unify.
+            apply Hx.
+            *)
+          }
+        }
+        {
+          clear. ltac1:(set_solver).
+        }
       }
       (*assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).*)
       About vars_of_sub_app_sub.
