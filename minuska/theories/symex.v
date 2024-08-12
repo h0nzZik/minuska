@@ -2249,8 +2249,16 @@ Module Implementation.
               clear.
               ltac1:(set_solver).
             }
-            assert(Harg'': TermOver_size a < TermOver_size (t_term s (a :: l))).
+            assert(Harg'': TermOver_size φ' < TermOver_size (t_term s (a :: l))).
             {
+              simpl.
+
+              assert(pf'' := pf').
+              rewrite elem_of_list_lookup in pf''.
+              destruct pf'' as [i' Hi'];
+              apply take_drop_middle in Hi'.
+              rewrite <- Hi'.
+              rewrite sum_list_with_app.
               simpl.
               ltac1:(lia).
             }
@@ -2268,9 +2276,10 @@ Module Implementation.
               rewrite union_list_cons in pf1';
               ltac1:(set_solver).
             }
-            eapply (H φ' Harg' Σ ∅ φ' Harg'').
+            ltac1:(unshelve(eapply (H φ' Harg' Σ ∅ φ' Harg''' Harg''))).
             {
-              
+              (repeat f_equal).
+              (* SOMETHING IS TERRIBLY WRONG BECAUSE WE HAVE MULTIPLE STATIC MODELS *)
             }
           }
           eapply IHl.
