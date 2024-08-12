@@ -2016,6 +2016,44 @@ Module Implementation.
     }
   Qed.
 
+
+  Lemma set_default_variables_works_2'
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+    x g
+  :
+    (vars_of ρ) ## (list_to_set xs) ->
+    x ∉ xs ->
+    (set_default_variables ρ xs d) !! x = Some g ->
+    ρ !! x = Some g
+  .
+  Proof.
+    revert ρ.
+    induction xs; intros ρ HH1 HH2 HH3; simpl.
+    {
+      ltac1:(set_solver).
+    }
+    {
+      specialize (IHxs ρ ltac:(set_solver) ltac:(set_solver)).
+      simpl in HH3.
+      unfold Valuation2 in *.
+      rewrite lookup_insert_Some in HH3.
+      destruct HH3 as [HH3 | HH3].
+      {
+        destruct HH3.
+        subst.
+        ltac1:(set_solver).
+      }
+      {
+        apply IHxs.
+        apply HH3.
+      }
+    }
+  Qed.
+
+
   Lemma set_default_variables_ext
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -2069,6 +2107,20 @@ Module Implementation.
     }
   Qed.
 
+  Lemma sub_app_builtin
+    {Σ : StaticModel}
+    (sub : SubT)
+    (b : builtin_value):
+    (sub_app sub (t_over (bov_builtin b))) = t_over (bov_builtin b)
+  .
+  Proof.
+    induction sub; simpl.
+    { reflexivity. }
+    {
+      destruct a; simpl.
+      apply IHsub.
+    }
+  Qed.
 
   Lemma wonderful_lemma
     {Σ : StaticModel}
@@ -2095,134 +2147,84 @@ Module Implementation.
     φ
   .
   Proof.
-    (* First, get rid of default variables *)
-    (erewrite <- TermOverBoV_eval__varsofindependent_2>[|(
-      apply set_default_variables_ext
-    )])>[()|apply NoDup_elements|(ltac1:(set_solver))].
-    Unshelve.
+    ltac1:(funelim (sat2B _ _ _)).
     {
-
-    }
-    {
-      
-      rewrite extend_val_with_sub__vars.
-      eapply transitivity>[apply pf|].
-      rewrite elem_of_subseteq.
-      intros x Hx.
-      
-      rewrite set_default_variables_works_2 in Hx.
-      rewrite elem_of_union in Hx.
-      destruct Hx as [Hx|Hx].
+      destruct bv;
+        simpl; ltac1:(simp sat2B);
+        unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar.
       {
-        rewrite extend_val_with_sub__vars in Hx.
-        apply Hx.
+        revert pf.
+        ltac1:(rewrite {2 3} sub_app_builtin).
+        ltac1:(rewrite {1 2} sub_app_builtin).
+        intros pf; simpl.
+        ltac1:(simp TermOverBoV_eval).
+        reflexivity.
       }
       {
-        rewrite elem_of_list_to_set in Hx.
-        rewrite elem_of_elements in Hx.
-        rewrite elem_of_difference in Hx.
-        destruct Hx as [H1x H2x].
-        rewrite extend_val_with_sub__vars in H2x.
-        rewrite not_elem_of_union in H2x.
-        destruct H2x as [H2x H3x].
-        rewrite elem_of_union.
-        right. clear H2x.
-        assert (Htmp := vars_of_sub_app_sub_2 sub φ x).
-        destruct (decide (x ∈ vars_of φ)) as [Hin1|Hnotin1].
+        revert x d pf.
+        induction sub; intros x d pf; simpl in *.
         {
-          specialize (Htmp Hin1 H3x).
-        }
-        (*rewrite vars_of_sub_eq in H3x.*)
-        Search vars_of sub_app.
-        rewrite vars_of_sub_app_sub in H1x.
-
-      }
-    }
-      
-    revert φ pf.
-    induction sub; intros φ pf; simpl in *.
-    {
-      apply satisfies_TermOverBoV_eval.
-    }
-    {
-      destruct a as [x t].
-      simpl in *.
-      ltac1:(repeat case_match).
-      {
-        clear H.
-        ltac1:(rename e into H1).
-        unfold Valuation2 in *.
-        assert (IHsub1 := IHsub (TermOverBoV_subst φ x t)).
-        assert(Htmp1 : vars_of (sub_app sub (TermOverBoV_subst φ x t))
-          ⊆ vars_of
-            (set_default_variables (extend_val_with_sub ρ sub d)
-            (elements
-            (vars_of (sub_app sub (TermOverBoV_subst φ x t))
-          ∖ vars_of (extend_val_with_sub ρ sub d)))
-            d)
+          ltac1:(simp TermOverBoV_eval).
+          unfold TermOverBoV_eval_unfold_clause_2.
+          destruct (inspect
+            (set_default_variables ρ0
+            (elements (vars_of (t_over (bov_variable x)) ∖ vars_of ρ0)) d
+            !! x)
           ).
-        {
-          eapply transitivity>[apply pf|].
-          rewrite elem_of_subseteq.
-          intros v Hv.
-          rewrite set_default_variables_works_2 in Hv.
+          destruct x0.
           {
-            rewrite elem_of_union in Hv.
-            destruct Hv as [Hv|Hv].
+            assert (Hdv := set_default_variables_ext ρ0 (elements (vars_of (t_over (bov_variable x)) ∖ (vars_of ρ0))) d).
+            ltac1:(ospecialize (Hdv _ _)).
             {
-              unfold vars_of; simpl.
-              unfold vars_of in Hv; simpl in Hv.
-              unfold Valuation2 in *.
-              rewrite dom_insert in Hv.
-              rewrite elem_of_union in Hv.
-              destruct Hv as [Hv|Hv].
-              {
-                apply elem_of_singleton in Hv.
-                subst v.
-                apply set_default_variables_works.
-                Search set_default_variables.
-              }
-              {
-
-              }
-              rewrite elem_of_dom in Hv.
-              exact Hv.
+              apply NoDup_elements.
             }
             {
-
+              ltac1:(set_solver).
             }
+            assert (Hdv2 := set_default_variables_works_2 ρ0 (elements (vars_of (t_over (bov_variable x)) ∖ (vars_of ρ0))) d).
+            ltac1:(ospecialize (Hdv2 _)).
+            {
+              ltac1:(set_solver).
+            }
+            clear Hdv.
+            unfold vars_of in Hdv2; simpl in Hdv2.
+            Search set_default_variables.
           }
           {
-            rewrite elem_of_disjoint.
-            intros u H1u H2u.
-            rewrite elem_of_list_to_set in H2u.
-            rewrite elem_of_elements in H2u.
-            rewrite elem_of_difference in H2u.
-            destruct H2u as [H2u H3u].
-            apply H3u.
-            apply H1u.
+
           }
-          Search set_default_variables.
-        }
-        specialize (IHsub _ pf).
-        destruct (decide (x ∈ vars_of φ)) as [Hin|Hnotin].
-        {
-          Search vars_of sub_app.
-          Check vars_of_TermOverBoV_subst.
-          Search TermOverBoV_subst.
-        }
-        {
+          unfold inspect; simpl.
+          revert pf.
+          ltac1:(move: erefl).
+          destruct (set_default_variables ρ0
+  (elements (vars_of (t_over (bov_variable x)) ∖ vars_of ρ0)) d
+!! x
+).
+          destruct (ρ0 !! x) as [v|] eqn:Hxv.
+          {
+            ltac1:(case_match).
+            
+          }
+          {
 
-        }
-        rewrite H1.
-        eapply IHsub.
-        specialize (IHsub _ pf).
-      }
-      {
+          }
+          ltac1:(case_match).
+          {
 
+          }
+        }
+        Search extend_val_with_sub.
+        Search TermOverBoV_eval.
       }
+    }
+    {
+
+    }
+    {
+
     }
   Qed.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -2401,7 +2403,34 @@ Module Implementation.
         ltac1:(rewrite {1 2} Htmp6).
         intros Hmytmp.
         ltac1:(unfold ρ' in *; idtac).
-        Search satisfies.
+        (* Time to use [wonderful_lemma] *)
+        apply Expression2Term_matches_enough in Hcor1.
+
+
+
+        (*
+        (erewrite <- TermOverBoV_eval__varsofindependent_2>[|(
+              apply set_default_variables_ext
+            )])>[()|apply NoDup_elements|(ltac1:(set_solver))].
+            Unshelve.
+        {
+
+        }
+        {
+          rewrite elem_of_subseteq.
+          intros x Hx.
+          assert (Htmp1 := vars_of_sub_app_sub sub s.1).
+          rewrite elem_of_subseteq in Htmp1.
+          specialize (Htmp1 x Hx).
+          rewrite elem_of_union in Htmp1.
+          rewrite extend_val_with_sub__vars.
+          rewrite elem_of_union.
+          clear Hmytmp.
+          clear Htmp6.
+        }
+        *)
+
+
       }
       {
 
