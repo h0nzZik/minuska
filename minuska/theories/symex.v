@@ -2130,6 +2130,7 @@ Module Implementation.
     (d : TermOver builtin_value)
     pf
   :
+    (forall x, x ∈ vars_of φ -> ~(x ∈ vars_of ρ <-> x ∈ vars_of_sub sub)) ->
   sat2B 
     (extend_val_with_sub ρ sub d)
     (
@@ -2161,8 +2162,8 @@ Module Implementation.
         reflexivity.
       }
       {
-        revert x d pf.
-        induction sub; intros x d pf; simpl in *.
+        revert ρ0 x d pf.
+        induction sub; intros ρ0 x d pf Hdisj; simpl in *.
         {
           ltac1:(simp TermOverBoV_eval).
           unfold TermOverBoV_eval_unfold_clause_2.
@@ -2173,48 +2174,30 @@ Module Implementation.
           ).
           destruct x0.
           {
-            assert (Hdv := set_default_variables_ext ρ0 (elements (vars_of (t_over (bov_variable x)) ∖ (vars_of ρ0))) d).
-            ltac1:(ospecialize (Hdv _ _)).
-            {
-              apply NoDup_elements.
-            }
-            {
-              ltac1:(set_solver).
-            }
-            assert (Hdv2 := set_default_variables_works_2 ρ0 (elements (vars_of (t_over (bov_variable x)) ∖ (vars_of ρ0))) d).
-            ltac1:(ospecialize (Hdv2 _)).
-            {
-              ltac1:(set_solver).
-            }
-            clear Hdv.
-            unfold vars_of in Hdv2; simpl in Hdv2.
-            Search set_default_variables.
+            eapply set_default_variables_works_2'>[()|()|apply e].
+            ltac1:(set_solver).
+            specialize (Hdisj x).
+            unfold vars_of in Hdisj; simpl in Hdisj.
+            unfold vars_of in Hdisj; simpl in Hdisj.
+            specialize(Hdisj ltac:(set_solver)).
+            intros HContra.
+            ltac1:(set_solver).
           }
           {
-
-          }
-          unfold inspect; simpl.
-          revert pf.
-          ltac1:(move: erefl).
-          destruct (set_default_variables ρ0
-  (elements (vars_of (t_over (bov_variable x)) ∖ vars_of ρ0)) d
-!! x
-).
-          destruct (ρ0 !! x) as [v|] eqn:Hxv.
-          {
-            ltac1:(case_match).
-            
-          }
-          {
-
-          }
-          ltac1:(case_match).
-          {
-
+            unfold TermOverBoV_eval_obligation_1; simpl.
+            ltac1:(exfalso).
+            unfold vars_of in pf; simpl in pf.
+            unfold vars_of in pf; simpl in pf.
+            unfold vars_of in e; simpl in e.
+            unfold vars_of in e; simpl in e.
+            unfold Valuation2 in *.
+            apply not_elem_of_dom_2 in e.
+            ltac1:(set_solver).
           }
         }
-        Search extend_val_with_sub.
-        Search TermOverBoV_eval.
+        {
+          
+        }
       }
     }
     {
