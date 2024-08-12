@@ -1618,7 +1618,7 @@ Module Implementation.
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
-    (d : builtin_value)
+    (d : TermOver builtin_value)
     : Valuation2
   :=
     match sub with
@@ -1633,7 +1633,7 @@ Module Implementation.
         <[x := t_filled_coerced]>ρ'
       | right _ => 
         (* cannot coerce t_filled to a ground term => use a default value *)
-        <[x := (t_over d)]>ρ'
+        <[x := d]>ρ'
       end
     end
   .
@@ -1646,7 +1646,7 @@ Module Implementation.
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
-    (d : builtin_value)
+    (d : TermOver builtin_value)
   :
     vars_of (extend_val_with_sub ρ sub d) = vars_of ρ ∪ vars_of_sub sub
   .
@@ -1695,7 +1695,7 @@ Module Implementation.
     {Σ : StaticModel}
     (ρ : Valuation2)
     (sub : SubT)
-    (d : builtin_value)
+    (d : TermOver builtin_value)
   :
     NoDup sub.*1 ->
     vars_of_sub sub ## vars_of ρ ->
@@ -1904,6 +1904,21 @@ Module Implementation.
     }
   Qed.
 
+  Fixpoint set_default_variables
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+    : Valuation2
+  :=
+    match xs with
+    | [] => ρ
+    | x::xs' => 
+      let ρ' := set_default_variables ρ xs' d in
+      <[x:=d]>ρ'
+    end
+  .
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1912,7 +1927,7 @@ Module Implementation.
     {_EA : EqDecision Act}
     *)
     {_Inh : Inhabited NondetValue}
-    {_Inh2 : Inhabited builtin_value}
+    {_Inh2 : Inhabited symbol}
     (Γ : RewritingTheory2 unit)
     (wfΓ : RewritingTheory2_wf_alt Γ)
     (s s' : (TermOver BuiltinOrVar)*(list SideCondition2))
@@ -1992,7 +2007,11 @@ Module Implementation.
         apply He2.
       }
     }
-    pose(ρ' := @extend_val_with_sub Σ ρ sub (@inhabitant _ _Inh2)).
+    pose(ρ' := @extend_val_with_sub Σ ρ sub (t_term (@inhabitant _ _Inh2) [])).
+    unfold Valuation2 in *.
+    About Valuation2_merge_olist_vars_of.
+    Search vars_of Valuation2.
+    pose(ρ'' := @set_default_variables Σ ρ' (elements ((vars_of (r_from r)) ∖ (@vars_of Valuation2 variable _ _ _ ρ))) ).
     pose(coerced := @TermOverBoV_eval Σ ρ' from').
     
     (*pose(coerced := @TermOverBoV_eval Σ ρ from').*)
@@ -2021,7 +2040,7 @@ Module Implementation.
       assert(Hvttc := vars_of__toe_to_cpat (sub_app_e sub (r_to r)) (elements (vars_of (sub_app_e sub (r_to r))))).
       rewrite <- Htmp in Hvttc. simpl in Hvttc.
       apply ua_unify_sound in Heqo as Hsound.
-      destruct Hsound as [Hunif _].
+      destruct Hsound as [Hunif Hsound'].
       ltac1:(rewrite elem_of_subseteq).
       intros x Hx.
       rewrite elem_of_union in Hx.
@@ -2035,14 +2054,10 @@ Module Implementation.
         {
           intros HH. ltac1:(set_solver).
         }
-        Search sub_app.
-        assert (Hsus := vars_of_sub_app_sub sub (r_from r)).
-        assert (x ∈ vars_of (sub_app sub (r_from r))).
-        {
-          clear -Hsus Hx.
-          ltac1:(set_solver).
-        }
-        Search vars_of sub_app.
+        assert (Hsus := vars_of_sub_app_sub_2 sub (r_from r) x Hx ltac:(assumption)).
+        rewrite <- Hunif in Hsus.
+        Search s.
+        assert(Hvt := vars_of__toe_to_cpat).
       }
       {
 
@@ -2050,7 +2065,7 @@ Module Implementation.
       (*assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).*)
       About vars_of_sub_app_sub.
       Search vars_of sub_app.
-      Search toe_to_cpat.
+      
 
       (* apply ua_unify_oota in Heqo as Hoota. *)
       Search ua_unify.
@@ -2116,7 +2131,7 @@ Module Implementation.
     apply elem_of_list_fmap_T_1 in Hs'.
     destruct Hs' as [z [Htmp Hs']].
     assert(Hcor' := toe_to_cpat_correct_2 (elements (vars_of z)) z g').
-    specialize(Hcor' ltac:(clear; set_solver)).
+    specialize(Hcor' ltac:(3; set_solver)).
     specialize (Hcor' ρ').
     assert(Hcor: ∀ nv, satisfies ρ' (nv, g') z).
     {
