@@ -2046,6 +2046,29 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
+  
+  Lemma set_default_variables_mono
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+    :
+    ρ1 ⊆ ρ2 ->
+    set_default_variables ρ1 xs d ⊆ set_default_variables ρ2 xs d
+  .
+  Proof.
+    induction xs; intros Hsub; simpl in *.
+    {
+      exact Hsub.
+    }
+    {
+      specialize(IHxs Hsub).
+      unfold Valuation2 in *.
+      apply insert_mono.
+      exact IHxs.
+    }
+  Qed.
+
 
   Lemma wonderful_lemma
     {Σ : StaticModel}
@@ -2075,62 +2098,52 @@ Module Implementation.
     revert φ pf.
     induction sub; intros φ pf; simpl in *.
     {
-      Search TermOverBoV_eval.
-      About TermOverBoV_eval__varsofindependent.
-      erewrite TermOverBoV_eval__varsofindependent.
+      erewrite <- TermOverBoV_eval__varsofindependent_2.
       apply satisfies_TermOverBoV_eval.
-      intros x Hx.
-      assert(Htmp := set_default_variables_ext ρ (elements (vars_of φ ∖ vars_of ρ)) d).
-      ltac1:(ospecialize (Htmp _ _)).
+      apply set_default_variables_ext.
+      apply NoDup_elements.
+      ltac1:(set_solver).
+    }
+    {
+      destruct a as [x t].
+      simpl in *.
+
+
+      ltac1:(repeat case_match).
       {
-        apply NoDup_elements.
+        clear H.
+        ltac1:(rename e into H1).
+        unfold Valuation2 in *.
+        assert (IHsub1 := IHsub (TermOverBoV_subst φ x t)).
+        assert(Htmp1 : vars_of (sub_app sub (TermOverBoV_subst φ x t))
+          ⊆ vars_of
+            (set_default_variables (extend_val_with_sub ρ sub d)
+            (elements
+            (vars_of (sub_app sub (TermOverBoV_subst φ x t))
+          ∖ vars_of (extend_val_with_sub ρ sub d)))
+            d)
+          ).
+        {
+          eapply transitivity>[apply pf|].
+          Search set_default_variables.
+        }
+        specialize (IHsub _ pf).
+        destruct (decide (x ∈ vars_of φ)) as [Hin|Hnotin].
+        {
+          Search vars_of sub_app.
+          Check vars_of_TermOverBoV_subst.
+          Search TermOverBoV_subst.
+        }
+        {
+
+        }
+        rewrite H1.
+        eapply IHsub.
+        specialize (IHsub _ pf).
       }
-      {
-        ltac1:(set_solver).
-      }
-      destruct (ρ !! x) as [g|] eqn:Hρx.
       {
 
       }
-      {
-        unfold Valuation2 in *.
-        apply not_elem_of_dom_1.
-        assert (Htmp2 := set_default_variables_works_2 ρ (elements (vars_of φ ∖ vars_of ρ)) d).
-        ltac1:(ospecialize (Htmp2 _)).
-        {
-          ltac1:(set_solver).
-        }
-        unfold vars_of in Htmp2; simpl in Htmp2.
-        unfold vars_of; simpl.
-        ltac1:(rewrite Htmp2).
-        intros HContra.
-        rewrite elem_of_union in HContra.
-        destruct HContra as [HContra|HContra].
-        {
-          ltac1:(rewrite elem_of_dom in HContra).
-          destruct HContra as [v Hv].
-          ltac1:(simplify_eq/=).
-        }
-        {
-          rewrite elem_of_list_to_set in HContra.
-          rewrite elem_of_elements in HContra.
-          clear Htmp2.
-          rewrite elem_of_difference in HContra.
-          destruct HContra as [HContra _].
-        }
-      }
-      Search set_default_variables.
-      Search set_default_variables.
-      Check lookup_weaken.
-      Search lookup subseteq.
-      unfold Valuation2 in *.
-      eapply lookup_weaken.
-      Search TermOverBoV_eval.
-      eapply TermOverBoV_satisfies_extensive>[|apply satisfies_TermOverBoV_eval].
-      
-      Search satisfies "ext".
-      apply satisfies_TermOverBoV_eval.
-      
     }
   Qed.
   Lemma sym_step_sim_1
