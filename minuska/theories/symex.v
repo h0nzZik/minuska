@@ -2130,6 +2130,87 @@ Module Implementation.
     :
     vars_of (sub_app sub φ) = ∅*)
 
+
+  Lemma TermOverBoV_to_TermOverBuiltin_iff
+    {Σ : StaticModel}
+    φ pf1 pf2
+    :
+    TermOverBoV_to_TermOverBuiltin φ pf1 = TermOverBoV_eval ∅ φ pf2
+  .
+  Proof.
+    ltac1:(funelim (TermOverBoV_eval _ _ _)).
+    {
+      simpl.
+      ltac1:(simp TermOverBoV_eval).
+      reflexivity.
+    }
+    {
+      ltac1:(simp TermOverBoV_eval).
+      clear Heqcall.
+      ltac1:(move: ((TermOverBoV_eval_obligation_2 Σ ∅ s l pf))).
+      revert pf1 pf H0.
+      intros pf1 pf2 pf3 pf4.
+      clear pf3.
+      clear pf2.
+      revert pf1.
+      induction l; intros pf1.
+      {
+        reflexivity.
+      }
+      {
+        simpl.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_to_TermOverBuiltin.
+        ltac1:(f_equal).
+        ltac1:(f_equal).
+        {
+          specialize (H a).
+          ltac1:(ospecialize (H _)).
+          {
+            rewrite elem_of_cons.
+            left.
+            reflexivity.
+          }
+          specialize (H Σ ∅ a).
+          assert (pf1' := pf1).
+          rewrite vars_of_t_term in pf1'.
+          rewrite fmap_cons in pf1'.
+          rewrite union_list_cons in pf1'.
+          assert (Harg: vars_of a ⊆ vars_of ∅).
+          {
+            abstract( 
+              clear - pf1';
+              unfold vars_of; simpl;
+              unfold vars_of in pf1'; simpl in pf1';
+              ltac1:(set_solver)
+            ).
+          }
+          specialize(H Harg).
+          simpl in H.
+          specialize(H ltac:(lia)).
+          specialize (H Σ).
+          ltac1:(unshelve(eapply (H))).
+          {
+            (repeat f_equal); apply proof_irrelevance.
+          }
+          {
+            unfold eq_rect, eq_trans; simpl.
+            unfold f_equal.
+            ltac1:(case_match).
+            reflexivity.
+          }
+        }
+        {
+          
+        }
+        {
+          apply IHl.
+        }
+      }
+      ltac1:(case_match).
+    }
+  Qed.
+
   Lemma wonderful_lemma
     {Σ : StaticModel}
     (φ : TermOver BuiltinOrVar)
@@ -2222,6 +2303,79 @@ Module Implementation.
             rewrite elem_of_singleton in Hdisj1.
             assert (Hx'rho0: x ∉ dom ρ0) by ltac1:(set_solver).
             clear Hdisj1.
+            unfold Valuation2 in *.
+            
+            destruct t; simpl.
+            {
+              destruct a; simpl.
+              {
+                apply f_equal.
+                revert pf.
+                ltac1:(move: extend_val_with_sub_obligation_1).
+                ltac1:(rewrite sub_app_builtin).
+                simpl. intros pf1 pf2.
+                ltac1:(simp TermOverBoV_eval).
+                ltac1:(move: (pf1 (@extend_val_with_sub) Σ ρ0 d (t_over (bov_builtin b)) sub H1)).
+                ltac1:(rewrite {1 2} sub_app_builtin).
+                intros pf0.
+                simpl.
+                reflexivity.
+              }
+              {
+                erewrite <- TermOverBoV_eval__varsofindependent_2.
+                Search TermOverBoV_eval.
+                rewrite <- IHsub.
+              }
+            }
+            {
+
+            }
+
+            
+
+
+
+
+
+
+
+            assert (Htmp0:
+              vars_of (sub_app sub (t_over (bov_variable x)))
+                ⊆ vars_of
+                  (set_default_variables (extend_val_with_sub ρ0 sub d)
+                  (elements
+                  (vars_of (sub_app sub (t_over (bov_variable x)))
+                ∖ vars_of (extend_val_with_sub ρ0 sub d)))
+                  d)
+            ).
+            {
+              rewrite elem_of_subseteq.
+              intros x' Hx'.
+              rewrite set_default_variables_works_2.
+              rewrite elem_of_union.
+              destruct (decide (x' ∈ vars_of (extend_val_with_sub ρ0 sub d))).
+              {
+                left.
+                assumption.
+              }
+              {
+                right.
+                rewrite elem_of_list_to_set.
+                rewrite elem_of_elements.
+                rewrite elem_of_difference.
+                split>[|assumption].
+                rewrite extend_val_with_sub__vars in n.
+                rewrite not_elem_of_union in n.
+                destruct n as [H11 H22].
+                apply vars_of_sub_app_sub_2.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                rewrite elem_of_singleton.
+                reflexivity.
+                assumption.
+              }
+              ltac1:(set_solver).
+            }
             assert (Htmp:
               x ∈ vars_of (set_default_variables (extend_val_with_sub ρ0 sub d)
               (elements (vars_of (sub_app sub (t_over (bov_variable x))) ∖ vars_of (extend_val_with_sub ρ0 sub d)))   d)
@@ -2248,8 +2402,13 @@ Module Implementation.
                 unfold vars_of; simpl.
                 rewrite elem_of_singleton.
                 reflexivity.
+                assumption.
               }
+              ltac1:(set_solver).
             }
+            
+            specialize (IHsub ). (* by Htmp *)
+
             assert(x ∉ vars_of_sub sub).
             {
               Search vars_of sub_app.
