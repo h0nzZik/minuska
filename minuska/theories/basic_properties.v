@@ -1153,6 +1153,97 @@ Proof.
     }
 Qed.
 
+Lemma TermOverBoV_eval__insert
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (x : variable)
+    (g : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    pf
+    :
+    TermOverBoV_eval (<[x := g]>ρ) (t_over (bov_variable x)) pf = g
+.
+Proof.
+    ltac1:(funelim (TermOverBoV_eval _ _ _)).
+    {
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        clear Heqcall.
+        ltac1:(repeat case_match); subst.
+        {
+            clear H. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+        }
+        {
+            clear H. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            ltac1:(exfalso).
+            rewrite lookup_insert in H1.
+            inversion H1.
+        }
+    }
+    {
+        clear Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        ltac1:(repeat case_match; subst).
+        {
+            clear H1. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+        }
+        {
+            clear H1. ltac1:(rename e0 into H1).
+            ltac1:(exfalso).
+            unfold Valuation2 in *.
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+        }
+    }
+    {
+        clear Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        ltac1:(repeat case_match; subst).
+        {
+            clear H0. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+            reflexivity.
+        }
+        {
+            clear H0. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            ltac1:(exfalso).
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+        }
+    }
+    {
+        clear Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        ltac1:(repeat case_match; subst).
+        {
+            clear H0. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+            reflexivity.
+        }
+        {
+            clear H0. ltac1:(rename e0 into H1).
+            unfold Valuation2 in *.
+            ltac1:(exfalso).
+            rewrite lookup_insert in H1.
+            ltac1:(simplify_eq/=).
+        }
+    }
+Qed.
 
 
 Lemma vars_of_sat_tobov

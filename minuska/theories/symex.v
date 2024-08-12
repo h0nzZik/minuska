@@ -2353,6 +2353,7 @@ Module Implementation.
    }
   Qed.
 
+
   Lemma wonderful_lemma
     {Σ : StaticModel}
     (φ : TermOver BuiltinOrVar)
@@ -2466,12 +2467,27 @@ Module Implementation.
               {
                 
 
+                erewrite <- TermOverBoV_eval__varsofindependent_2 with (ρ1 := (<[x:=TermOverBoV_to_TermOverBuiltin
+          (sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) (t_over (bov_variable x0)))
+          (extend_val_with_sub_obligation_1 (@extend_val_with_sub) Σ ρ0 d (t_over (bov_variable x0)) sub H1)]>
+     (extend_val_with_sub ρ0 sub d))).
+                {
+                  unfold TermOverBoV_to_TermOverBuiltin.
+                  apply f_equal. 
+                }
+                {
+                  apply set_default_variables_ext.
+                  { apply NoDup_elements. }
+                  { ltac1:(set_solver). }
+                }
                 erewrite <- TermOverBoV_eval__varsofindependent_2 with (ρ1 := empty).
                 {
                   unfold TermOverBoV_to_TermOverBuiltin.
                   (repeat f_equal).
                   ltac1:(move:(extend_val_with_sub_obligation_1 _ _ _ _ _ _ _)).
                   intros pf2.
+                  apply TermOverBoV_eval_empty_eq.
+                  ltac1:(f_equal).
                   admit.
                 }
                 {
