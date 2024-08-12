@@ -2104,8 +2104,8 @@ Module Implementation.
         apply He2.
       }
     }
-    epose(ρ' := @set_default_variables Σ ρ (elements ((@vars_of (TermOver BuiltinOrVar) variable _ _ _ (r_from r)) ∖ (@vars_of Valuation2 variable _ _ (@VarsOf_Valuation2 Σ) ρ))) (t_term (@inhabitant _ _Inh2) [])).
-    pose(ρ'' := @extend_val_with_sub Σ ρ' sub (t_term (@inhabitant _ _Inh2) [])).
+    pose(ρ' := @extend_val_with_sub Σ ρ sub (t_term (@inhabitant _ _Inh2) [])).
+    epose(ρ'' := @set_default_variables Σ ρ' (elements ((@vars_of (TermOver BuiltinOrVar) variable _ _ _ (from')) ∖ (@vars_of Valuation2 variable _ _ (@VarsOf_Valuation2 Σ) ρ'))) (t_term (@inhabitant _ _Inh2) [])).
     unfold Valuation2 in *.
     (* For some reason, plain `pose` does not work well with typeclasses :-( )*)
     pose(coerced := @TermOverBoV_eval Σ ρ'' from').
@@ -2117,115 +2117,48 @@ Module Implementation.
       apply vars_of_sat_tobov in H1s'g'.
       unfold satisfies in H2s'g'; simpl in H2s'g'.
       apply ua_unify_oota in Heqo as Hnoota.
-      eapply transitivity>[apply vars_of_sub_app_sub|].
       rewrite union_subseteq in Hnoota.
       destruct Hnoota as [Hsub1 Hsub2].
-      ltac1:(cut (vars_of fr ∪ vars_of s.1 ⊆ vars_of ρ'')).
-      {
-        intros HHH.
-        clear -HHH Hsub2.
-        rewrite list_fmap_compose in Hsub2.
-        ltac1:(set_solver).
-      }
+      
       ltac1:(unfold ρ'').
-      rewrite extend_val_with_sub__vars.
-      subst fr to.
-      clear coerced.
-      clear ρ''.
-      assert(Hvttc := vars_of__toe_to_cpat (sub_app_e sub (r_to r)) (elements (vars_of (sub_app_e sub (r_to r))))).
-      rewrite <- Htmp in Hvttc. simpl in Hvttc.
-      apply ua_unify_sound in Heqo as Hsound.
-      destruct Hsound as [Hunif Hsound'].
-      ltac1:(rewrite elem_of_subseteq).
+      rewrite elem_of_subseteq.
       intros x Hx.
-      rewrite elem_of_union in Hx.
-      destruct Hx as [Hx|Hx].
+      rewrite set_default_variables_works_2.
       {
-        destruct (decide (x ∈ vars_of_sub sub)).
-        {
-          ltac1:(set_solver).
-        }
-        ltac1:(cut(x ∈ vars_of ρ')).
-        {
-          intros HH. ltac1:(set_solver).
-        }
         ltac1:(unfold ρ').
-        rewrite set_default_variables_works_2.
+        rewrite extend_val_with_sub__vars.
+        rewrite elem_of_union.
+        rewrite elem_of_list_to_set.
+        rewrite elem_of_elements.
+        rewrite elem_of_difference.
+        subst.
+        destruct (decide (x ∈ vars_of ρ ∪ vars_of_sub sub)) as [Hin|Hnotin].
         {
-          destruct (decide (x ∈ vars_of ρ)).
-          {
-            rewrite elem_of_union.
-            left.
-            assumption.
-          }
-          {
-            rewrite elem_of_union.
-            right.
-            rewrite elem_of_list_to_set.
-            rewrite elem_of_elements.
-            rewrite elem_of_difference.
-            split; try assumption.
-            apply Hx.
-          }
+          unfold Valuation2 in *.
+          left.
+          exact Hin.
         }
         {
-          clear. ltac1:(set_solver).
+          right.
+          split.
+          { apply Hx. }
+          {
+            apply Hnotin.
+          }
         }
       }
       {
-        destruct (decide (x ∈ vars_of_sub sub)).
-        {
-          ltac1:(set_solver).
-        }
-        ltac1:(cut(x ∈ vars_of ρ')).
-        {
-          intros HH. ltac1:(set_solver).
-        }
-        ltac1:(unfold ρ').
-        rewrite set_default_variables_works_2.
-        {
-          destruct (decide (x ∈ vars_of ρ)).
-          {
-            rewrite elem_of_union.
-            left.
-            assumption.
-          }
-          {
-            rewrite elem_of_union.
-            right.
-            rewrite elem_of_list_to_set.
-            rewrite elem_of_elements.
-            rewrite elem_of_difference.
-            split; try assumption.
-            clear Hsound' ρ'.
-            
-            assert (Htmp2 := vars_of_sub_app_sub_2 sub s.1 x Hx ltac:(assumption)).
-            rewrite Hunif in Htmp2.
-            Search vars_of sub_app.
-            Check vars_of_sub_app_sub.
-            assert (Htmp3 := vars_of_sub_app_sub sub (r_from r)).
-            rewrite vars_of_sub_eq in n.
-            rewrite elem_of_list_to_set in n.
-            rewrite list_fmap_compose in Hsub2.
-            rewrite elem_of_subseteq in Htmp3.
-            specialize (Htmp3 x Htmp2).
-            clear Htmp2.
-            rewrite elem_of_union in Htmp3.
-            (destruct Htmp3 as [Htmp3|Htmp3])>[|exact Htmp3].
-            ltac1:(set_solver).
-            Search vars_of_sub.
-            Search vars_of sub_app.
-            (*
-            apply ua_unify_oota in Heqo as Hnoota.
-            Search ua_unify.
-            apply Hx.
-            *)
-          }
-        }
-        {
-          clear. ltac1:(set_solver).
-        }
+        rewrite elem_of_disjoint.
+        intros x0 Hx0.
+        rewrite elem_of_list_to_set.
+        rewrite elem_of_elements.
+        intros H1x0.
+        rewrite elem_of_difference in H1x0.
+        destruct H1x0 as [H1x0 H2x0].
+        apply H2x0.
+        apply Hx0.
       }
+    }
       (*assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).*)
       About vars_of_sub_app_sub.
       Search vars_of sub_app.
