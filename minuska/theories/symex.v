@@ -2122,6 +2122,14 @@ Module Implementation.
     }
   Qed.
 
+  (*
+  Lemma vars_of_sub_app_empty
+    {Σ : StaticModel}
+    (sub : SubT)
+    φ
+    :
+    vars_of (sub_app sub φ) = ∅*)
+
   Lemma wonderful_lemma
     {Σ : StaticModel}
     (φ : TermOver BuiltinOrVar)
@@ -2196,7 +2204,88 @@ Module Implementation.
           }
         }
         {
-          
+          ltac1:(repeat case_match).
+          {
+            subst; simpl in *.
+            unfold Valuation2 in *.
+            rewrite lookup_insert.
+            clear H1.
+            ltac1:(rename e0 into H1).
+            clear H0.
+            specialize (IHsub ρ0 x d).
+            assert (Hdisj1 := Hdisj x).
+            unfold vars_of in Hdisj1; simpl in Hdisj1.
+            unfold vars_of in Hdisj1; simpl in Hdisj1.
+            specialize (Hdisj1 ltac:(set_solver)).
+            unfold Valuation2 in *.
+            rewrite elem_of_union in Hdisj1.
+            rewrite elem_of_singleton in Hdisj1.
+            assert (Hx'rho0: x ∉ dom ρ0) by ltac1:(set_solver).
+            clear Hdisj1.
+            assert (Htmp:
+              x ∈ vars_of (set_default_variables (extend_val_with_sub ρ0 sub d)
+              (elements (vars_of (sub_app sub (t_over (bov_variable x))) ∖ vars_of (extend_val_with_sub ρ0 sub d)))   d)
+            ).
+            {
+              rewrite set_default_variables_works_2.
+              rewrite elem_of_union.
+              destruct (decide (x ∈ vars_of (extend_val_with_sub ρ0 sub d))).
+              {
+                left.
+                assumption.
+              }
+              {
+                right.
+                rewrite elem_of_list_to_set.
+                rewrite elem_of_elements.
+                rewrite elem_of_difference.
+                split>[|assumption].
+                rewrite extend_val_with_sub__vars in n.
+                rewrite not_elem_of_union in n.
+                destruct n as [H11 H22].
+                apply vars_of_sub_app_sub_2.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                rewrite elem_of_singleton.
+                reflexivity.
+              }
+            }
+            assert(x ∉ vars_of_sub sub).
+            {
+              Search vars_of sub_app.
+              
+            }
+            ltac1:(rewrite IHsub).
+            apply f_equal.
+            lazy_match! goal with
+            | [ |- (TermOverBoV_to_TermOverBuiltin _ ?pf1) = _ ] =>
+              remember $pf1
+            end.
+
+            remember (
+                (elements
+                (vars_of (sub_app sub t)
+              ∖ vars_of
+                (<[x:=TermOverBoV_to_TermOverBuiltin
+                (sub_app
+                (Valuation2_to_SubT
+                (extend_val_with_sub ρ0 sub d))
+                t)
+                e]>
+                (extend_val_with_sub ρ0 sub d))))
+            ) as els.
+            unfold Valuation2 in *.
+            ltac1:(rewrite <- Heqels).
+          }
+          {
+
+          }
+          {
+
+          }
+          {
+
+          }
         }
       }
     }
