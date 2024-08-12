@@ -877,6 +877,151 @@ Proof.
     }
 Qed.
 
+
+Lemma TermOverBoV_eval__varsofindependent_2
+    {Σ : StaticModel}
+    (ρ1 ρ2 : Valuation2)
+    (φ : TermOver BuiltinOrVar)
+    pf1 pf2
+    :
+    (ρ1 ⊆ ρ2) ->
+    TermOverBoV_eval ρ1 φ pf1 = TermOverBoV_eval ρ2 φ pf2
+.
+Proof.
+    unfold TermOver in *.
+    ltac1:(funelim (TermOverBoV_eval ρ1 φ pf1)).
+    {
+        unfold TermOver in *.
+        intros HH.
+        (* rewrite <- Heqcall. *)
+        ltac1:(simp TermOverBoV_eval).
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        apply f_equal.
+        apply f_equal.
+        simpl.
+        ltac1:(move: TermOverBoV_eval_obligation_2).
+        intros HHpf.
+
+        eapply functional_extensionality_dep.
+        intros x.
+        eapply functional_extensionality_dep.
+        intros pf3.
+        ltac1:(unshelve(eapply H0)).
+        { exact x. }
+        { exact pf3. }
+        { 
+            abstract(
+                apply f_equal;
+                apply f_equal;
+                apply f_equal;
+                apply proof_irrelevance
+            ).
+        }
+        {
+            unfold eq_rect.
+            ltac1:(move: (TermOverBoV_eval__varsofindependent_2_subproof _ _ _ _ _ _ _ _)).
+            intros mypf.
+            assert(Htmp1:
+                TermOverBoV_eval_obligation_2 Σ ρ s l pf
+                (λ (x0 : StaticModel) (x1 : Valuation2) (x2 : TermOver
+                BuiltinOrVar) (x3 : vars_of
+                x2
+                ⊆ vars_of
+                x1) (_ : TermOver_size
+                x2 <
+                TermOver_size
+                (t_term
+                s
+                l)),
+                TermOverBoV_eval x1 x2 x3)
+                x
+                pf3
+            =
+                HHpf Σ ρ s l pf
+                (λ (x0 : StaticModel) (x1 : Valuation2) (x2 : TermOver
+                BuiltinOrVar) (x3 : vars_of
+                x2
+                ⊆ vars_of
+                x1) (_ : TermOver_size
+                x2 <
+                S
+                (sum_list_with
+                (S
+                ∘ TermOver_size)
+                l)),
+                TermOverBoV_eval x1 x2 x3)
+                x
+                pf3
+            ).
+            {
+                apply proof_irrelevance.
+            }
+            revert mypf.
+            rewrite Htmp1.
+            intros mypf.
+            assert (Htmp2: mypf = eq_refl).
+            {
+                apply proof_irrelevance.
+            }
+            rewrite Htmp2.
+            reflexivity.
+        }
+        exact HH.
+    }
+    {
+        intros HH.
+        (*rewrite <- Heqcall.*)
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        simpl.
+        unfold TermOverBoV_eval_obligation_1.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        simpl in *.
+        remember (TermOverBoV_eval ρ (t_over (bov_variable x)) pf) as t.
+        assert (pf'2 : ρ2 !! x = Some t).
+        {
+            unfold Valuation2 in *.
+            eapply lookup_weaken.
+            { apply pf'. }
+            { apply HH. }
+        }
+        ltac1:(rewrite -> pf').
+        intros HHH.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ2 x)).
+        ltac1:(rewrite -> pf'2).
+        intros HHH2.
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite <- Heqcall.
+        ltac1:(simp TermOverBoV_eval).
+        unfold TermOverBoV_eval_unfold_clause_2.
+        simpl.
+        unfold TermOverBoV_eval_obligation_1.
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ x)).
+        rewrite pf'.
+        intros ?.
+        f_equal.
+        
+        ltac1:(move: (TermOverBoV_eval_subproof Σ ρ2 x)).
+        destruct (ρ2 !! x); simpl in *.
+        {
+            intros ?.
+            destruct ((TermOverBoV_eval_subproof0 erefl pf)).
+        }
+        {
+            intros ?.
+            destruct (TermOverBoV_eval_subproof0 erefl pf).
+        }
+    }
+Qed.
+
 Lemma satisfies_TermOverBoV_eval
     {Σ : StaticModel}
     (ρ : Valuation2)

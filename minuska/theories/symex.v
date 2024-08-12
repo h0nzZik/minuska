@@ -2046,20 +2046,24 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
-(*
+
   Lemma wonderful_lemma
     {Σ : StaticModel}
     (φ : TermOver BuiltinOrVar)
+    (ρ : Valuation2)
     (sub : SubT)
     (d : TermOver builtin_value)
     pf
   :
-  sat2B
+  sat2B 
     (extend_val_with_sub ρ sub d)
     (
       TermOverBoV_eval
-      (set_default_variables ρ'
-        (elements (vars_of (sub_app sub fr) ∖ vars_of ρ'))
+      (
+        set_default_variables
+        (extend_val_with_sub ρ sub d)
+        (elements
+          (vars_of (sub_app sub φ) ∖ vars_of (extend_val_with_sub ρ sub d)))
         d
       )
       (sub_app sub φ)
@@ -2067,7 +2071,68 @@ Module Implementation.
     )
     φ
   .
-*)
+  Proof.
+    revert φ pf.
+    induction sub; intros φ pf; simpl in *.
+    {
+      Search TermOverBoV_eval.
+      About TermOverBoV_eval__varsofindependent.
+      erewrite TermOverBoV_eval__varsofindependent.
+      apply satisfies_TermOverBoV_eval.
+      intros x Hx.
+      assert(Htmp := set_default_variables_ext ρ (elements (vars_of φ ∖ vars_of ρ)) d).
+      ltac1:(ospecialize (Htmp _ _)).
+      {
+        apply NoDup_elements.
+      }
+      {
+        ltac1:(set_solver).
+      }
+      destruct (ρ !! x) as [g|] eqn:Hρx.
+      {
+
+      }
+      {
+        unfold Valuation2 in *.
+        apply not_elem_of_dom_1.
+        assert (Htmp2 := set_default_variables_works_2 ρ (elements (vars_of φ ∖ vars_of ρ)) d).
+        ltac1:(ospecialize (Htmp2 _)).
+        {
+          ltac1:(set_solver).
+        }
+        unfold vars_of in Htmp2; simpl in Htmp2.
+        unfold vars_of; simpl.
+        ltac1:(rewrite Htmp2).
+        intros HContra.
+        rewrite elem_of_union in HContra.
+        destruct HContra as [HContra|HContra].
+        {
+          ltac1:(rewrite elem_of_dom in HContra).
+          destruct HContra as [v Hv].
+          ltac1:(simplify_eq/=).
+        }
+        {
+          rewrite elem_of_list_to_set in HContra.
+          rewrite elem_of_elements in HContra.
+          clear Htmp2.
+          rewrite elem_of_difference in HContra.
+          destruct HContra as [HContra _].
+        }
+      }
+      Search set_default_variables.
+      Search set_default_variables.
+      Check lookup_weaken.
+      Search lookup subseteq.
+      unfold Valuation2 in *.
+      eapply lookup_weaken.
+      Search TermOverBoV_eval.
+      eapply TermOverBoV_satisfies_extensive>[|apply satisfies_TermOverBoV_eval].
+      
+      Search satisfies "ext".
+      apply satisfies_TermOverBoV_eval.
+      
+    }
+  Qed.
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -2245,6 +2310,7 @@ Module Implementation.
         revert Hmytmp.
         ltac1:(rewrite {1 2} Htmp6).
         intros Hmytmp.
+        ltac1:(unfold ρ' in *; idtac).
         Search satisfies.
       }
       {
