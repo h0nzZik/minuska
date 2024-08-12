@@ -1956,6 +1956,31 @@ Module Implementation.
     }
   Qed.
 
+
+  Lemma set_default_variables_works_2
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+  :
+    (vars_of ρ) ## (list_to_set xs) ->
+    vars_of (set_default_variables ρ xs d) = union (vars_of ρ) (list_to_set xs)
+  .
+  Proof.
+    revert ρ.
+    induction xs; intros ρ HH; simpl.
+    {
+      ltac1:(set_solver).
+    }
+    {
+      specialize (IHxs ρ ltac:(set_solver)).
+      unfold vars_of; simpl.
+      unfold Valuation2 in *.
+      rewrite dom_insert_L.
+      ltac1:(set_solver).
+    }
+  Qed.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -2090,10 +2115,22 @@ Module Implementation.
           intros HH. ltac1:(set_solver).
         }
         ltac1:(unfold ρ').
-        assert (Hsus := vars_of_sub_app_sub_2 sub (r_from r) x Hx ltac:(assumption)).
-        rewrite <- Hunif in Hsus.
-        Search s.
-        assert(Hvt := vars_of__toe_to_cpat).
+        rewrite set_default_variables_works_2.
+        destruct (decide (x ∈ vars_of ρ)).
+        {
+          rewrite elem_of_union.
+          left.
+          assumption.
+        }
+        {
+          rewrite elem_of_union.
+          right.
+          rewrite elem_of_list_to_set.
+          rewrite elem_of_elements.
+          rewrite elem_of_difference.
+          split; try assumption.
+          apply Hx.
+        }
       }
       {
 
