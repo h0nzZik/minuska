@@ -1919,6 +1919,43 @@ Module Implementation.
     end
   .
 
+  Lemma set_default_variables_works
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+    (x : variable)
+  :
+    x ∈ xs ->
+    x ∈ vars_of (set_default_variables ρ xs d)
+  .
+  Proof.
+    revert x.
+    induction xs; simpl; intros x HH.
+    {
+      rewrite elem_of_nil in HH. destruct HH.
+    }
+    {
+      rewrite elem_of_cons in HH.
+      destruct HH as [HH|HH].
+      {
+        subst.
+        unfold vars_of; simpl.
+        unfold Valuation2 in *.
+        rewrite dom_insert_L.
+        ltac1:(set_solver).
+      }
+      {
+        specialize (IHxs _ HH).
+        unfold vars_of; simpl.
+        unfold Valuation2 in *.
+        rewrite dom_insert_L.
+        unfold vars_of in IHxs; simpl in IHxs.
+        ltac1:(set_solver).
+      }
+    }
+  Qed.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -2007,14 +2044,12 @@ Module Implementation.
         apply He2.
       }
     }
-    pose(ρ' := @extend_val_with_sub Σ ρ sub (t_term (@inhabitant _ _Inh2) [])).
+    epose(ρ' := @set_default_variables Σ ρ (elements ((@vars_of (TermOver BuiltinOrVar) variable _ _ _ (r_from r)) ∖ (@vars_of Valuation2 variable _ _ (@VarsOf_Valuation2 Σ) ρ))) (t_term (@inhabitant _ _Inh2) [])).
+    pose(ρ'' := @extend_val_with_sub Σ ρ' sub (t_term (@inhabitant _ _Inh2) [])).
     unfold Valuation2 in *.
-    About Valuation2_merge_olist_vars_of.
-    Search vars_of Valuation2.
-    pose(ρ'' := @set_default_variables Σ ρ' (elements ((vars_of (r_from r)) ∖ (@vars_of Valuation2 variable _ _ _ ρ))) ).
-    pose(coerced := @TermOverBoV_eval Σ ρ' from').
+    (* For some reason, plain `pose` does not work well with typeclasses :-( )*)
+    pose(coerced := @TermOverBoV_eval Σ ρ'' from').
     
-    (*pose(coerced := @TermOverBoV_eval Σ ρ from').*)
     ltac1:(ospecialize (coerced _)).
     {
       subst from'.
@@ -2025,18 +2060,18 @@ Module Implementation.
       eapply transitivity>[apply vars_of_sub_app_sub|].
       rewrite union_subseteq in Hnoota.
       destruct Hnoota as [Hsub1 Hsub2].
-      ltac1:(cut (vars_of fr ∪ vars_of s.1 ⊆ vars_of ρ')).
+      ltac1:(cut (vars_of fr ∪ vars_of s.1 ⊆ vars_of ρ'')).
       {
         intros HHH.
         clear -HHH Hsub2.
         rewrite list_fmap_compose in Hsub2.
         ltac1:(set_solver).
       }
-      ltac1:(unfold ρ').
+      ltac1:(unfold ρ'').
       rewrite extend_val_with_sub__vars.
       subst fr to.
       clear coerced.
-      clear ρ'.
+      clear ρ''.
       assert(Hvttc := vars_of__toe_to_cpat (sub_app_e sub (r_to r)) (elements (vars_of (sub_app_e sub (r_to r))))).
       rewrite <- Htmp in Hvttc. simpl in Hvttc.
       apply ua_unify_sound in Heqo as Hsound.
@@ -2050,10 +2085,11 @@ Module Implementation.
         {
           ltac1:(set_solver).
         }
-        ltac1:(cut(x ∈ vars_of ρ)).
+        ltac1:(cut(x ∈ vars_of ρ')).
         {
           intros HH. ltac1:(set_solver).
         }
+        ltac1:(unfold ρ').
         assert (Hsus := vars_of_sub_app_sub_2 sub (r_from r) x Hx ltac:(assumption)).
         rewrite <- Hunif in Hsus.
         Search s.
