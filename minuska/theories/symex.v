@@ -2305,6 +2305,54 @@ Module Implementation.
   Qed.
   *)
 
+  (*
+  Lemma vars_of_sub_app_under_empty
+    {Σ : StaticModel}
+    (sub : SubT)
+    (φ : TermOver BuiltinOrVar)
+    :
+    subseteq (vars_of (sub_app sub φ)) empty ->
+    sub_app sub φ = empty
+  .*)
+
+  Lemma TermOverBoV_eval_empty_eq
+    {Σ : StaticModel}
+    phi1 phi2 pf1 pf2
+    :
+    phi1 = phi2 ->
+    TermOverBoV_eval empty phi1 pf1 = TermOverBoV_eval empty phi2 pf2
+  .
+  Proof.
+    ltac1:(funelim(TermOverBoV_eval empty phi1 pf1)); intros HH.
+    {
+      subst.
+      ltac1:(simp TermOverBoV_eval).
+      reflexivity.
+    }
+    {
+      subst.
+      ltac1:(simp TermOverBoV_eval).
+      apply f_equal.
+      revert pf2. clear H0 Heqcall. revert pf.
+      intros pf1 pf2.
+      assert (Hpf: pf1 = pf2) by (apply proof_irrelevance).
+      rewrite Hpf.
+      reflexivity.
+    }
+    {
+      subst.
+      ltac1:(simp TermOverBoV_eval).
+      apply f_equal.
+      apply proof_irrelevance.
+    }
+    {
+     subst.
+     ltac1:(simp TermOverBoV_eval).
+     apply f_equal.
+     apply proof_irrelevance.
+   }
+  Qed.
+
   Lemma wonderful_lemma
     {Σ : StaticModel}
     (φ : TermOver BuiltinOrVar)
@@ -2416,7 +2464,25 @@ Module Implementation.
                 reflexivity.
               }
               {
-                erewrite <- TermOverBoV_eval__varsofindependent_2.
+                
+
+                erewrite <- TermOverBoV_eval__varsofindependent_2 with (ρ1 := empty).
+                {
+                  unfold TermOverBoV_to_TermOverBuiltin.
+                  (repeat f_equal).
+                  ltac1:(move:(extend_val_with_sub_obligation_1 _ _ _ _ _ _ _)).
+                  intros pf2.
+                  admit.
+                }
+                {
+                  unfold Valuation2 in *.
+                  unfold TermOver in *.
+                  unfold Subseteq_Valuation2 in *.
+                  rewrite map_subseteq_spec.
+                  intros i x1 Hx1.
+                  rewrite lookup_empty in Hx1.
+                  inversion Hx1.
+                }
                 Search TermOverBoV_eval.
                 rewrite <- IHsub.
               }
