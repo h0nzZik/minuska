@@ -2016,6 +2016,37 @@ Module Implementation.
     }
   Qed.
 
+  Lemma set_default_variables_ext
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+    :
+    NoDup xs ->
+    (vars_of ρ) ## (list_to_set xs) ->
+    ρ ⊆ set_default_variables ρ xs d
+  .
+  Proof.
+    revert d.
+    induction xs; intros d Hnd Hd; simpl in *.
+    {
+      apply map_subseteq_po.
+    }
+    {
+      inversion Hnd; subst; clear Hnd.
+      specialize (IHxs d ltac:(assumption) ltac:(set_solver)).
+      unfold Valuation2 in *.
+      eapply transitivity>[apply IHxs|].
+      apply insert_subseteq.
+      unfold Valuation2 in *.
+      apply not_elem_of_dom_1.
+      assert (Htmp := set_default_variables_works_2 ρ xs d ltac:(set_solver)).
+      unfold vars_of in Htmp; simpl in Htmp.
+      ltac1:(rewrite Htmp).
+      ltac1:(set_solver).
+    }
+  Qed.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -2159,6 +2190,34 @@ Module Implementation.
         apply Hx0.
       }
     }
+    exists coerced.
+    split.
+    {
+      exists ρ''.
+      split.
+      {
+        ltac1:(unfold ρ'').
+        Search set_default_variables.
+        eapply TermOverBoV_satisfies_extensive.
+        {
+          Search.
+        }
+        unfold satisfies; simpl.
+        Search satisfies.
+      }
+      {
+
+      }
+    }
+    {
+      unfold rewriting_relation.
+      exists r.
+      exists ().
+      split>[assumption|].
+      unfold rewrites_to.
+      exists ρ''.
+    }
+    
       (*assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).*)
       About vars_of_sub_app_sub.
       Search vars_of sub_app.
