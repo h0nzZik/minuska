@@ -1640,6 +1640,14 @@ Module Implementation.
     map_fold (fun x t sub => ((x,(TermOverBuiltin_to_TermOverBoV t))::sub)) [] ρ
   .
 
+
+  Definition TermOverBoV_to_TermOverBuiltin
+    {Σ : StaticModel} (φ : TermOver BuiltinOrVar) (pf : vars_of φ ⊆ vars_of ∅)
+  :=
+    TermOverBoV_eval ∅ φ pf
+  .
+
+
   (*
     1. sub = [], ρ = { x ↦ 3 } ==> { x ↦ 3 }
     2. sub = [(x, y + 3)], ρ = { y ↦ 4 } ==> { x ↦ 4 + 3, y ↦ 4 }
@@ -1673,7 +1681,10 @@ Module Implementation.
     end
   .
   Next Obligation.
-    intros; subst; assumption.
+    abstract(
+    intros; subst;
+    rewrite wildcard';
+    apply empty_subseteq).
   Defined.
   Fail Next Obligation.
 
@@ -2131,6 +2142,7 @@ Module Implementation.
     vars_of (sub_app sub φ) = ∅*)
 
 
+  (*
   Lemma TermOverBoV_to_TermOverBuiltin_iff
     {Σ : StaticModel}
     φ pf1 pf2
@@ -2291,6 +2303,7 @@ Module Implementation.
       ltac1:(case_match).
     }
   Qed.
+  *)
 
   Lemma wonderful_lemma
     {Σ : StaticModel}

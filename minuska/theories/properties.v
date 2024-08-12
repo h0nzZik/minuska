@@ -1296,7 +1296,7 @@ Proof.
     }
 Qed.
 
-
+(*
 #[local]
 Obligation Tactic := idtac.
 Program Fixpoint TermOverBoV_to_TermOverBuiltin
@@ -1343,3 +1343,4 @@ Next Obligation.
     intros; subst; rewrite vars_of_t_term in pf'; apply pf'.
 Defined.
 Fail Next Obligation.
+*)
