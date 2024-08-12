@@ -2152,8 +2152,8 @@ Module Implementation.
       intros pf1 pf2 pf3 pf4.
       clear pf3.
       clear pf2.
-      revert pf1.
-      induction l; intros pf1.
+      revert pf1 pf4 H.
+      induction l; intros pf1 pf4 H.
       {
         reflexivity.
       }
@@ -2201,7 +2201,79 @@ Module Implementation.
           }
         }
         {
-          
+          assert (pf1' := pf1).
+          rewrite vars_of_t_term in pf1'.
+          rewrite fmap_cons in pf1'.
+          rewrite union_list_cons in pf1'.
+          assert(pf1'': vars_of (t_term s l) = ∅).
+          {
+            rewrite vars_of_t_term.
+            ltac1:(set_solver).
+          }
+          specialize (IHl pf1'').
+          assert(pf4': (∀ (x : StaticModel) (x0 : Valuation2) (x1 : TermOver BuiltinOrVar),
+            vars_of x1 ⊆ vars_of x0 ->
+            TermOver_size x1 < TermOver_size (t_term s l) ->
+            TermOver builtin_value)
+            ->
+            ∀ φ' : TermOver' BuiltinOrVar,
+            φ' ∈ l → vars_of φ' ⊆ vars_of ∅
+          ).
+          {
+            abstract(
+              intros;
+              clear - pf1' H0;
+              rewrite elem_of_list_lookup in H0;
+              destruct H0 as [i Hi];
+              apply take_drop_middle in Hi;
+              rewrite <- Hi in pf1';
+              rewrite fmap_app in pf1';
+              rewrite fmap_cons in pf1';
+              unfold TermOver in *;
+              rewrite union_list_app_L in pf1';
+              rewrite union_list_cons in pf1';
+              ltac1:(set_solver)
+            ).
+          }
+          specialize (IHl pf4').
+          ltac1:(ospecialize (IHl _)).
+          {
+            intros.
+            assert(pf'' := pf').
+            rewrite elem_of_list_lookup in pf''.
+            destruct pf'' as [i Hi].
+            apply take_drop_middle in Hi.
+            assert (Harg': φ' ∈ a :: l).
+            {
+              rewrite <- Hi.
+              clear.
+              ltac1:(set_solver).
+            }
+            assert(Harg'': TermOver_size a < TermOver_size (t_term s (a :: l))).
+            {
+              simpl.
+              ltac1:(lia).
+            }
+            assert(Harg''': vars_of φ' ⊆ vars_of ∅).
+            {
+              intros.
+              rewrite elem_of_list_lookup in pf';
+              destruct pf' as [i' Hi'];
+              apply take_drop_middle in Hi';
+              rewrite <- Hi' in pf1';
+              rewrite fmap_app in pf1';
+              rewrite fmap_cons in pf1';
+              unfold TermOver in *;
+              rewrite union_list_app_L in pf1';
+              rewrite union_list_cons in pf1';
+              ltac1:(set_solver).
+            }
+            eapply (H φ' Harg' Σ ∅ φ' Harg'').
+            {
+              
+            }
+          }
+          eapply IHl.
         }
         {
           apply IHl.
