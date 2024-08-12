@@ -1858,6 +1858,52 @@ Module Implementation.
     }
   Qed.
 
+  Lemma vars_of_sub_app_sub_2
+    {Σ : StaticModel} (sub : SubT) (t : TermOver BuiltinOrVar)
+    (x : variable):
+    x ∈ vars_of t ->
+    x ∉ vars_of_sub sub ->
+    x ∈ vars_of (sub_app sub t)
+  .
+  Proof.
+    revert x t.
+    induction sub; intros x t H1 H2.
+    {
+      simpl. exact H1.
+    }
+    {
+      destruct a as [x' t'].
+      simpl in *.
+      rewrite not_elem_of_union in H2.
+      destruct H2 as [H2 H3].
+      rewrite elem_of_singleton in H2.
+      apply IHsub.
+      {
+        destruct (decide (x' ∈ vars_of t)) as [Hin|Hnotin].
+        {
+          clear IHsub.
+          rewrite vars_of_TermOverBoV_subst.
+          {
+            ltac1:(set_solver).
+          }
+          {
+            exact Hin.
+          }
+        }
+        {
+          rewrite subst_notin2.
+          { assumption. }
+          {
+            assumption.
+          }
+        }
+      }
+      {
+        assumption.
+      }
+    }
+  Qed.
+
   Lemma sym_step_sim_1
     {Σ : StaticModel}
     {UA : UnificationAlgorithm}
@@ -1974,7 +2020,34 @@ Module Implementation.
       clear ρ'.
       assert(Hvttc := vars_of__toe_to_cpat (sub_app_e sub (r_to r)) (elements (vars_of (sub_app_e sub (r_to r))))).
       rewrite <- Htmp in Hvttc. simpl in Hvttc.
-      assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).
+      apply ua_unify_sound in Heqo as Hsound.
+      destruct Hsound as [Hunif _].
+      ltac1:(rewrite elem_of_subseteq).
+      intros x Hx.
+      rewrite elem_of_union in Hx.
+      destruct Hx as [Hx|Hx].
+      {
+        destruct (decide (x ∈ vars_of_sub sub)).
+        {
+          ltac1:(set_solver).
+        }
+        ltac1:(cut(x ∈ vars_of ρ)).
+        {
+          intros HH. ltac1:(set_solver).
+        }
+        Search sub_app.
+        assert (Hsus := vars_of_sub_app_sub sub (r_from r)).
+        assert (x ∈ vars_of (sub_app sub (r_from r))).
+        {
+          clear -Hsus Hx.
+          ltac1:(set_solver).
+        }
+        Search vars_of sub_app.
+      }
+      {
+
+      }
+      (*assert (Hse := vars_of_sub_app_e_sub sub (r_to r)).*)
       About vars_of_sub_app_sub.
       Search vars_of sub_app.
       Search toe_to_cpat.
