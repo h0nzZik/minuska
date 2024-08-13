@@ -1707,6 +1707,14 @@ Module Implementation.
     3. sub = [(x, y + 3)], ρ = { x ↦ 4 } ==> { x ↦ 4 } ??? IGNORE
     Basically, I want to extend `ρ` with new variables found in the lhs of `sub`.
   *)
+  
+  (*
+    It is a bit problematic that this [extend_val_with_sub] function,
+    when composed with a conversion from valuations to substitutions,
+    is not an identity on substitutions when having an empty valuation.
+    Indeed, it kind of 'normalizes' the substitution into a natural order,
+    which is not what I want, because it makes reasoning harder.
+  *)
 
   #[local]
   Obligation Tactic := idtac.
@@ -2764,6 +2772,12 @@ Module Implementation.
     }
    Qed.
   
+  (*
+    Ok, so this very likely does not hold, because [extend_val_with_sub]
+    puts all items from the substitution list into map, therefore erasing the order.
+    Also, the values become groudnd terms.
+    But now I am even not sure whether it preserves the semantics.
+  *)
   Lemma extend_noop
     {Σ : StaticModel}
     sub d
@@ -2795,7 +2809,7 @@ Module Implementation.
           simpl.
           rewrite TermOverBuiltin_to_TermOverBoV__inv.
           simpl.
-          Search fmap map_to_list.
+          inversion Hnd; subst; clear Hnd.
           rewrite sub_app_identity.
           { reflexivity. }
           {
@@ -2817,7 +2831,7 @@ Module Implementation.
             unfold vars_of in Htmp3; simpl in Htmp3.
             Search dom lookup Some.
             apply elem_of_dom_2 in H6 as H6'.
-            ltac1:(rewrite Htmp3 in H6').
+            ltac1:(rewrite Htmp3 in H6'). clear Htmp3.
             apply H2. clear H2.
             rewrite elem_of_union in H6'.
             ltac1:(rewrite dom_empty_L in H6').
