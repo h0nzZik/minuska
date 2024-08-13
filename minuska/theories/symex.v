@@ -1696,6 +1696,28 @@ Module Implementation.
   
   Lemma Valuation2_to_SubT__NoDup
     {Σ : StaticModel}
+    (ρ : Valuation2)
+  :
+    NoDup (Valuation2_to_SubT ρ)
+  .
+  Proof.
+    unfold Valuation2_to_SubT.
+    rewrite NoDup_fmap.
+    {
+      unfold Valuation2 in *.
+      apply NoDup_map_to_list.
+    }
+    {
+      intros x y Hxy.
+      inversion Hxy; subst; clear Hxy.
+      destruct x,y.
+      simpl in *.
+      subst v0.
+      apply TermOverBuiltin_to_TermOverBoV_inj in H1.
+      subst t0.
+      reflexivity.
+    }
+  Qed.
     
 
 
