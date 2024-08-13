@@ -2785,7 +2785,8 @@ Module Implementation.
     NoDup (fmap fst sub) ->
     (Valuation2_to_SubT (extend_val_with_sub ∅ sub d)) ≡ₚ sub
   .
-  Proof.
+  Proof. Abort.
+  (*
   
     induction sub; simpl; intros Hnd.
     {
@@ -2875,7 +2876,140 @@ Module Implementation.
       }
     }
   Qed.
+  *)
   
+  Lemma sub_app_helper
+    {Σ : StaticModel}
+    l1 l2:
+    NoDup (fmap fst l1) ->
+    l1 ≡ₚ l2 ->
+    sub_app ((λ x0 : variable * TermOver builtin_value, (x0.1, TermOverBuiltin_to_TermOverBoV x0.2)) <$> l1)
+    =
+    sub_app ((λ x0 : variable * TermOver builtin_value, (x0.1, TermOverBuiltin_to_TermOverBoV x0.2)) <$> l2)
+  .
+  Proof.
+    intros Hnd HH.
+    revert Hnd.
+    induction HH; intros Hnd.
+    {
+      simpl. reflexivity.
+    }
+    {
+      simpl.
+      unfold fmap in IHHH.
+      rewrite IHHH.
+      reflexivity.
+      inversion Hnd; assumption.
+    }
+    {
+      repeat (rewrite fmap_cons).
+      apply functional_extensionality.
+      intros x0.
+      eapply sub_app_nodup_perm.
+      {
+        constructor.
+      }
+      {
+        destruct x,y; simpl in *.
+        inversion Hnd; subst; clear Hnd.
+        inversion H2; subst; clear H2.
+        constructor.
+        {
+          rewrite not_elem_of_cons.
+          rewrite not_elem_of_cons in H1.
+          split>[ltac1:(naive_solver)|].
+          destruct H1 as [_ H1].
+          rewrite elem_of_list_fmap in H1.
+          rewrite elem_of_list_fmap.
+          intros HContra.
+          apply H1. clear H1.
+          destruct HContra as [[y phi][H5 H6]].
+          subst.
+          rewrite elem_of_list_fmap in H6.
+          destruct H6 as [[z psi] [H7 H8]].
+          simpl in *. ltac1:(simplify_eq/=).
+          exists (z, psi).
+          simpl.
+          split>[reflexivity|assumption].
+        }
+        constructor.
+        {
+          rewrite elem_of_list_fmap in H3.
+          rewrite elem_of_list_fmap.
+          intros HContra.
+          apply H3. clear H3.
+          destruct HContra as [[y phi][H5 H6]].
+          subst.
+          rewrite elem_of_list_fmap in H6.
+          destruct H6 as [[z psi] [H7 H8]].
+          simpl in *. ltac1:(simplify_eq/=).
+          exists (z, psi).
+          simpl.
+          split>[reflexivity|assumption].
+        }
+        {
+          clear -H4.
+          induction l; simpl.
+          { constructor. }
+          {
+            inversion H4; subst; clear H4.
+            specialize (IHl ltac:(assumption)).
+            constructor.
+            {
+              rewrite elem_of_list_fmap.
+              rewrite elem_of_list_fmap in H1.
+              intros HContra. apply H1. clear H1.
+              destruct HContra as [[z g][H3 H4]].
+              simpl in *. subst.
+              rewrite elem_of_list_fmap in H4.
+              destruct H4 as [[z g'][H5 H6]].
+              simpl in *; subst.
+              inversion H5; subst; clear H5.
+              exists (a.1, g').
+              simpl. split; try assumption; try reflexivity.
+            }
+            {
+              apply IHl.
+            }
+          }
+        }
+      }
+      {
+        rewrite fmap_cons.
+        rewrite fmap_cons.
+        rewrite union_list_cons.
+        rewrite union_list_cons.
+        unfold compose at 1; simpl.
+        repeat (rewrite vars_of_TermOverBuiltin_to_TermOverBoV).
+        rewrite list_fmap_compose.
+        assert(⋃ (vars_of <$> ((λ x1 : variable * TermOver builtin_value, (x1.1, TermOverBuiltin_to_TermOverBoV x1.2)) <$> l).*2) = empty).
+        {
+          rewrite empty_union_list_L.
+          rewrite Forall_forall.
+          intros. rewrite elem_of_list_fmap in H.
+          destruct H as [y' [H1y H2y]].
+          subst.
+          rewrite elem_of_list_fmap in H2y.
+          destruct H2y as [y'' [H3y H4y]].
+          subst.
+          rewrite elem_of_list_fmap in H4y.
+          destruct H4y as [[y''' g] [H5y H6y]].
+          subst. simpl.
+          apply vars_of_TermOverBuiltin_to_TermOverBoV.
+        }
+        rewrite H.
+        ltac1:(set_solver).
+      }
+    }
+    {
+      rewrite IHHH1.
+      rewrite IHHH2.
+      reflexivity.
+      rewrite HH1 in Hnd.
+      assumption.
+      assumption.
+    }
+  Qed.
   (*
     Is this even true?
     
@@ -2912,6 +3046,39 @@ Module Implementation.
           ltac1:(induction ρ0 using map_ind).
           {
             simpl.
+            (*******)
+            clear HH HHdisj.
+            revert Hnd.
+            revert x.
+            induction sub; intros x HH; simpl.
+            {
+              unfold Valuation2_to_SubT.
+              unfold Valuation2 in *.
+              rewrite map_to_list_empty.
+              simpl.
+              reflexivity.
+            }
+            {
+              ltac1:(repeat case_match; subst; simpl in *; idtac).
+              {
+                clear H0 H1.
+                unfold Valuation2_to_SubT.
+                Search map_to_list insert.
+                inversion HH; subst; clear HH.
+                ltac1:(rewrite map_to_list_insert).
+                simpl.
+              }
+              {
+              
+              }
+              {
+              
+              }
+              {
+              
+              }
+            }
+            (*******)
             Search extend_val_with_sub.
           }  
           rewrite sub_app_identity.
