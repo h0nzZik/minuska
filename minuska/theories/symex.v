@@ -2898,9 +2898,29 @@ Module Implementation.
           }
           rewrite (sub_app_nodup_perm _ _ _ Htmp).
           {
+            rewrite TermOverBuiltin_to_TermOverBoV__inv.
+            simpl.
             simpl. rewrite IHsub.
             {
+              ltac1:(unfold φ').
+              ltac1:(unfold φ' in H1).
+              rewrite IHsub.
+              {
+                assert(H1' := H1).
+                rewrite IHsub in H1'.
+                {
+                  (* now the left sub_app does nothing *)
+                Search sub_app.
+                  rewrite subst_notin2.
+                }
+              }
               
+              apply IHsub.
+              assert (Ht: φ' = t).
+              {
+
+                (* ANd now what?? *)
+              }
             }
           }
           Search sub_app "≡ₚ".
