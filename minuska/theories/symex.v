@@ -3010,6 +3010,15 @@ Module Implementation.
       assumption.
     }
   Qed.
+  
+  (*
+  Lemma TermOverBoV_subst__sub_app__comm
+    {Σ : StaticModel}
+    (φ φ' : TermOver BuiltinOrVar)
+    (x : variable)
+    :
+    TermOverBoV_subst φ x (sub_app sub \)
+  *)
   (*
     Is this even true?
     
@@ -3043,14 +3052,19 @@ Module Implementation.
         {
           Search Valuation2_to_SubT.
           unfold Valuation2 in *.
-          ltac1:(induction ρ0 using map_ind).
+          remember (t_over (bov_variable x)) as phi.
+          clear Heqphi.
+          revert phi HH.
+          clear x.
+          revert sub HHdisj Hnd.
+          ltac1:(induction ρ0 using map_ind); intros sub HHdisj Hnd phi HH.
           {
             simpl.
             (*******)
             clear HH HHdisj.
             revert Hnd.
-            revert x.
-            induction sub; intros x HH; simpl.
+            revert phi.
+            induction sub; intros phi HH; simpl.
             {
               unfold Valuation2_to_SubT.
               unfold Valuation2 in *.
@@ -3063,10 +3077,40 @@ Module Implementation.
               {
                 clear H0 H1.
                 unfold Valuation2_to_SubT.
-                Search map_to_list insert.
                 inversion HH; subst; clear HH.
-                ltac1:(rewrite map_to_list_insert).
-                simpl.
+                erewrite sub_app_helper.
+                {
+                  ltac1:(shelve).
+                }
+                {
+                  ltac1:(shelve).
+                }
+                {
+                  unfold Valuation2 in *.
+                  eapply map_to_list_insert.
+                  apply not_elem_of_dom_1.
+                  assert (Htmp := extend_val_with_sub__vars ∅ sub d).
+                  unfold vars_of in Htmp; simpl in Htmp.
+                  ltac1:(rewrite Htmp).
+                  rewrite not_elem_of_union.
+                  ltac1:(rewrite dom_empty).
+                  split>[ltac1:(set_solver)|].
+                  rewrite vars_of_sub_eq.
+                  rewrite elem_of_list_to_set.
+                  apply H1.
+                }
+                Unshelve.
+                {
+                  simpl.
+                  unfold Valuation2_to_SubT in *.
+                  unfold fmap in *.
+                  rewrite TermOverBuiltin_to_TermOverBoV__inv.
+                  ltac1:(rewrite IHsub).
+                  { apply H2. }
+                  ltac1:(rewrite IHsub).
+                  { apply H2. }
+                  rewrite <- helper_lemma_1.
+                }
               }
               {
               
