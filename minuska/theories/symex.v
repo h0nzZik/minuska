@@ -1719,6 +1719,50 @@ Module Implementation.
     }
   Qed.
     
+    
+  Lemma Valuation2_to_SubT__NoDup_1
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+  :
+    NoDup (fmap fst (Valuation2_to_SubT ρ))
+  .
+  Proof.
+    unfold Valuation2_to_SubT.
+    Search NoDup fmap.
+    apply NoDup_fmap_fst.
+    {
+      intros.
+      assert (Htmp := NoDup_fst_map_to_list ρ).
+      rewrite elem_of_list_fmap in H.
+      rewrite elem_of_list_fmap in H0.
+      destruct H as [t1 [H1t1 H2t1]].
+      destruct H0 as [t2 [H1t2 H2t2]].
+      ltac1:(simplify_eq/=).
+      destruct t1 as [x1 t1].
+      destruct t2 as [x2 t2].
+      simpl in *.
+      subst x2.
+      ltac1:(rewrite elem_of_map_to_list in H2t1).
+      ltac1:(rewrite elem_of_map_to_list in H2t2).
+      ltac1:(simplify_eq/=).
+      reflexivity.
+    }
+    rewrite NoDup_fmap.
+    {
+      unfold Valuation2 in *.
+      apply NoDup_map_to_list.
+    }
+    {
+      intros x y Hxy.
+      inversion Hxy; subst; clear Hxy.
+      destruct x,y.
+      simpl in *.
+      subst v0.
+      apply TermOverBuiltin_to_TermOverBoV_inj in H1.
+      subst t0.
+      reflexivity.
+    }
+  Qed.
 
 
   Definition TermOverBoV_to_TermOverBuiltin
@@ -2468,54 +2512,39 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.*)
-  Lemma Valuation2_to_SubT_NoDup
+  
+  Lemma sub_app_nodup_perm
     {Σ : StaticModel}
-    (ρ : Valuation2)
-    :
-    NoDup (Valuation2_to_SubT ρ) /\ (fmap fst (Valuation2_to_SubT ρ) ⊆ (elements (dom ρ)))
-   .
-   Proof.
-    unfold Valuation2_to_SubT.
-    unfold Valuation2 in *.
-    ltac1:(induction ρ using map_ind).
+    (sub1 sub2 : SubT)
+    (φ : TermOver BuiltinOrVar)
+  :
+    NoDup (fst <$> sub1) ->
+    sub1 ≡ₚ sub2 ->
+    sub_app sub1 φ = sub_app sub2 φ
+  .
+  Proof.
+    
+    intros Hnd H. revert φ. induction H; intros φ.
     {
-      rewrite map_fold_empty.
-      split.
-      constructor.
+      simpl. reflexivity.
+    }
+    {
       simpl.
-      rewrite dom_empty_L.
-      rewrite elements_empty.
+      destruct x as [i t].
+      rewrite IHPermutation.
       reflexivity.
+      inversion Hnd; assumption.
     }
     {
       simpl.
-      rewrite map_fold_insert_L.
-      {
-        destruct IHρ as [IH1 IH2].
-        split.
-        {
-          constructor.
-          intros HContra.
-          apply not_elem_of_dom_2 in H.
-          ltac1:(set_solver).
-          apply IH1.
-        }
-        {
-          simpl.
-          rewrite dom_insert_L.
-          ltac1:(set_solver).
-        }
-      }
-      {
-        intros.
-      }
-      {
-        assumption.
-      }
+      destruct x as [i1 t1].
+      destruct y as [i2 t2].
+      inversion Hnd; subst; clear Hnd.
+      inversion H2; subst; clear H2.
+      apply not_elem_of_cons in H1.
+      destruct H1 as [H1 H2].
     }
-    Search map_fold.
-    ltac1:(eapply map_fold_ind).
-   Qed.
+  Qed.
   
   Lemma sub_similar
     {Σ : StaticModel}
@@ -2531,13 +2560,13 @@ Module Implementation.
     induction sub; intros HH; simpl in *.
     {
       unfold Valuation2 in *.
-      
+          
       
       revert x0 d HH.
       ltac1:(induction ρ0 using map_ind); intros x0 d HH.
       {
         unfold Valuation2_to_SubT.
-        ltac1:(rewrite map_fold_empty).
+        ltac1:(rewrite map_to_list_empty).
         simpl.
         reflexivity.
       }
@@ -2549,6 +2578,10 @@ Module Implementation.
         specialize (IHρ0 x0 d HH2).
         unfold Valuation2_to_SubT in *.
         rewrite not_elem_of_singleton in HH1.
+        Search map_to_list.
+        About map_to_list_insert.
+        assert (Hperm := map_to_list_insert m i x H).
+        ltac1:(rewrite map_to_list_insert).
       }
       
       
