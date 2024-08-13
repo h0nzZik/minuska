@@ -2723,6 +2723,53 @@ Module Implementation.
     }
   Qed.
   
+   Lemma vars_of_sub_Valuation2_to_SubT
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    :
+    vars_of_sub (Valuation2_to_SubT ρ) = vars_of ρ
+   .
+   Proof.
+    unfold Valuation2_to_SubT.
+    rewrite vars_of_sub_eq.
+    unfold vars_of; simpl.
+    apply set_eq.
+    intros x.
+    rewrite elem_of_list_to_set.
+    rewrite elem_of_list_fmap.
+    ltac1:(setoid_rewrite elem_of_list_fmap).
+    unfold Valuation2 in *.
+    rewrite elem_of_dom.
+    split; intros HH.
+    {
+      destruct HH as [[y t][H1 H2]].
+      simpl in *; subst.
+      destruct H2 as [[x g][H3 H4]].
+      simpl in *.
+      ltac1:(simplify_eq/=).
+      exists g.
+      rewrite elem_of_map_to_list in H4.
+      exact H4.
+    }
+    {
+      destruct HH as [g Hg].
+      exists (x, (TermOverBuiltin_to_TermOverBoV g)).
+      simpl.
+      split>[reflexivity|].
+      exists (x, g).
+      simpl.
+      split>[reflexivity|].
+      rewrite elem_of_map_to_list.
+      exact Hg.    
+    }
+   Qed.
+  
+  (*
+    Is this even true?
+    
+    What about this additional assumption>
+    [vars_of φ ⊆ vars_of_sub sub ∪ vars_of ρ0]
+  *)
   Lemma sub_similar
     {Σ : StaticModel}
     (sub : SubT)
@@ -2740,10 +2787,29 @@ Module Implementation.
     induction sub; intros φ ρ0 Hnd HHdisj HH; simpl in *.
     {
       unfold Valuation2 in *.
-          
       
-      revert φ d HH.
-      ltac1:(induction ρ0 using map_ind); intros φ d HH.
+      
+      revert ρ0 Hnd HHdisj HH.
+      induction φ; intros ρ0 Hnd HHdisj HH.
+      {
+        destruct a;
+          simpl.
+        {
+          rewrite sub_app_builtin. reflexivity.
+        }
+        {
+          
+          rewrite sub_app_identity.
+          { reflexivity. }
+          {
+            rewrite HH.
+            Search Valuation2_to_SubT.
+          }
+        }
+      }  
+      
+      revert φ d Hnd HHdisj.
+      ltac1:(induction ρ0 using map_ind); intros φ d Hnd HHdisj.
       {
         unfold Valuation2_to_SubT.
         ltac1:(rewrite map_to_list_empty).
@@ -2752,13 +2818,8 @@ Module Implementation.
       }
       {
         
-        unfold vars_of in HH; simpl in HH. 
-        ltac1:(rewrite dom_insert in HH).
-        rewrite disjoint_union_r in HH.
-        destruct HH as [HH1 HH2].
-        specialize (IHρ0 ltac:(set_solver) φ d HH2).
+        
         unfold Valuation2_to_SubT in *.
-        rewrite disjoint_singleton_r in HH1.
         assert (Hperm := map_to_list_insert m i x H).
         assert (Hperm':
           ((fun x => (x.1, TermOverBuiltin_to_TermOverBoV x.2)) <$> (map_to_list (<[i:=x]> m))) ≡ₚ ((fun x => (x.1, TermOverBuiltin_to_TermOverBoV x.2)) <$> ((i, x) :: map_to_list m))
@@ -2789,6 +2850,11 @@ Module Implementation.
         }
         {
           rewrite fmap_cons. simpl.
+          rewrite IHρ0.
+          {
+            apply 
+          }
+
           rewrite subst_notin2.
           {
             apply IHρ0.
@@ -2831,6 +2897,7 @@ Module Implementation.
             simpl.
             simpl. rewrite IHsub.
             {
+              rewrite <- helper_lemma_1.
               ltac1:(unfold φ').
               ltac1:(unfold φ' in H1).
               rewrite IHsub.
@@ -2838,6 +2905,7 @@ Module Implementation.
                 assert(H1' := H1).
                 rewrite IHsub in H1'.
                 {
+                  rewrite sub_app_identity. 
                   Check sub_app_identity.
                   (* now the left sub_app does nothing *)
                 Search sub_app.
@@ -3403,6 +3471,7 @@ Module Implementation.
         ltac1:(unfold ρ' in *; idtac).
         (* Time to use [wonderful_lemma] *)
         apply Expression2Term_matches_enough in Hcor1.
+        Search sub.
 
 
 
