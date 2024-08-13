@@ -2654,7 +2654,7 @@ Module Implementation.
     (x : variable)
     (g : TermOver builtin_value)
   :
-    x ∉ dom ρ ->
+    x ∉ vars_of ρ ->
     Valuation2_to_SubT (<[x:=g]>ρ) ≡ₚ (x, (TermOverBuiltin_to_TermOverBoV g))::(Valuation2_to_SubT ρ)
   .
   Proof.
@@ -2666,8 +2666,118 @@ Module Implementation.
       reflexivity.
     }
     {
-      apply not_elem_of_dom in HH. exact HH.
+      unfold vars_of in HH; simpl in HH.
+      unfold Valuation2 in *.
+      apply not_elem_of_dom_1 in HH. exact HH.
     }
+  Qed.
+  
+  Lemma TermOverBuiltin_to_TermOverBoV__inv
+    {Σ : StaticModel}
+    (φ : TermOver BuiltinOrVar)
+    pf
+    :
+    TermOverBuiltin_to_TermOverBoV (TermOverBoV_to_TermOverBuiltin φ pf) = φ
+  .
+  Proof.
+    unfold TermOverBoV_to_TermOverBuiltin.
+    ltac1:(funelim (TermOverBoV_eval _ _ _)); ltac1:(simp TermOverBoV_eval); unfold TermOverBuiltin_to_TermOverBoV.
+    {
+      simpl. reflexivity.
+    }
+    {
+      simpl.
+      f_equal.
+      assert (pf' := pf).
+      rewrite vars_of_t_term in pf'.
+      clear Heqcall.
+      clear -H pf'.
+      ltac1:(move: (TermOverBoV_eval_obligation_2 _ _ _ _ _ _)).
+      intros pf3. revert pf3.
+      assert (myH: 
+        forall (φ' : TermOver' BuiltinOrVar),
+          φ' ∈ l ->
+            forall pf,
+            TermOverBuiltin_to_TermOverBoV (TermOverBoV_eval ∅ φ' pf) = φ'
+      ).
+      {
+        intros.
+        specialize (H _ H0 Σ ∅).
+        specialize (H φ').
+        assert(Htmp: vars_of φ' ⊆ vars_of ∅).
+        {
+          abstract(
+          rewrite elem_of_list_lookup in H0;
+          destruct H0 as [i Hi];
+          apply take_drop_middle in Hi;
+          assert (mypf := pf);
+          rewrite <- Hi in mypf;
+          rewrite vars_of_t_term in mypf;
+          rewrite fmap_app in mypf;
+          rewrite union_list_app in mypf;
+          rewrite fmap_cons in mypf;
+          rewrite union_list_cons in mypf;
+          ltac1:(clear -mypf; set_solver)).
+        }
+        specialize (H Htmp).
+        ltac1:(ospecialize (H _)).
+        {
+          rewrite elem_of_list_lookup in H0;
+          destruct H0 as [i Hi];
+          apply take_drop_middle in Hi;
+          rewrite <- Hi.
+          simpl.
+          rewrite sum_list_with_app.
+          simpl.
+          ltac1:(lia).
+        }
+        specialize (H Σ).
+        ltac1:(unshelve(eapply (H))).
+        {
+          repeat f_equal.
+          apply proof_irrelevance.
+        }
+        {
+          unfold eq_rect,eq_trans,f_equal.
+          ltac1:(repeat case_match). reflexivity.
+        }
+      }
+      clear H.
+      revert myH pf'.
+      induction l; intros H pf' pf3 .
+      {
+        simpl. reflexivity.
+      }
+      {
+        simpl. f_equal.
+        {
+          eapply H.
+          { rewrite elem_of_cons. left. reflexivity. }
+        }
+        {
+          
+          apply IHl.
+          {
+            rewrite vars_of_t_term.
+            rewrite fmap_cons in pf'.
+            rewrite union_list_cons in pf'.
+            ltac1:(set_solver).
+          }
+          {
+            intros.
+            apply H.
+            rewrite elem_of_cons.
+            right. assumption.
+          }
+          {
+            rewrite fmap_cons in pf'.
+            rewrite union_list_cons in pf'.
+            ltac1:(set_solver).
+          }
+        }
+      }
+    }
+
   Qed.
   
   Lemma sub_similar
@@ -2677,12 +2787,14 @@ Module Implementation.
     (ρ0 : Valuation2)
     (d : TermOver builtin_value)
   :
-    vars_of φ ## dom ρ0 ->
+    NoDup (fst <$> sub) ->
+    vars_of_sub sub ## vars_of ρ0 ->
+    vars_of φ ## vars_of ρ0 ->
     sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) φ = sub_app sub φ
   .
   Proof.
     revert φ ρ0.
-    induction sub; intros φ ρ0 HH; simpl in *.
+    induction sub; intros φ ρ0 Hnd HHdisj HH; simpl in *.
     {
       unfold Valuation2 in *.
           
@@ -2697,10 +2809,11 @@ Module Implementation.
       }
       {
         
-        rewrite dom_insert in HH.
+        unfold vars_of in HH; simpl in HH. 
+        ltac1:(rewrite dom_insert in HH).
         rewrite disjoint_union_r in HH.
         destruct HH as [HH1 HH2].
-        specialize (IHρ0 φ d HH2).
+        specialize (IHρ0 ltac:(set_solver) φ d HH2).
         unfold Valuation2_to_SubT in *.
         rewrite disjoint_singleton_r in HH1.
         assert (Hperm := map_to_list_insert m i x H).
@@ -2721,7 +2834,6 @@ Module Implementation.
           rewrite Forall_forall.
           intros x1 Hx1.
           unfold compose in Hx1.
-          Search elem_of fmap.
           apply elem_of_list_fmap_2 in Hx1.
           destruct Hx1 as [y [H1y H2y]].
           subst x1.
@@ -2752,6 +2864,34 @@ Module Implementation.
         revert H1.
         set (sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) t) as φ'.
         intros H1.
+        destruct (decide (v ∈ vars_of φ)) as [Hin|Hnotin].
+        {
+          assert (Htmp := Valuation2_to_SubT__insert (extend_val_with_sub ρ0 sub d) v (TermOverBoV_to_TermOverBuiltin φ' (extend_val_with_sub_obligation_1 (@extend_val_with_sub) Σ ρ0 d t sub H1))).
+          rewrite extend_val_with_sub__vars in Htmp.
+          ltac1:(ospecialize (Htmp _)).
+          {
+            rewrite not_elem_of_union.
+            clear Htmp.
+            inversion Hnd; subst; clear Hnd.
+            rewrite vars_of_sub_eq in HHdisj.
+            assert (Hv: v ∉ ((fmap fst sub))) by ltac1:(set_solver).
+            rewrite elem_of_disjoint in HHdisj.
+            split>[try ltac1:(set_solver)|].
+            intros HContra.
+            rewrite vars_of_sub_eq in HContra.
+            specialize (HHdisj v ltac:(set_solver) ltac:(set_solver)).
+            exact HHdisj.
+          }
+          rewrite (sub_app_nodup_perm _ _ _ Htmp).
+          {
+            simpl. rewrite IHsub.
+            {
+              
+            }
+          }
+          Search sub_app "≡ₚ".
+        }
+        specialize (Htmp ltac:(set_solver)).
         Search Valuation2_to_SubT.
       }
       {
