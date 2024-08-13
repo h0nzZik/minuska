@@ -1631,14 +1631,72 @@ Module Implementation.
         }
       }
   Qed.
+  
+  #[global]
+  Instance TermOverBuiltin_to_TermOverBoV_inj
+    {Σ : StaticModel}
+   : Inj (=) (=) TermOverBuiltin_to_TermOverBoV
+  .
+  Proof.
+    unfold Inj.
+    intros x.
+    induction x; intros y Hxy; destruct y; simpl in *.
+    {
+      unfold TermOverBuiltin_to_TermOverBoV in Hxy.
+      simpl in Hxy.
+      ltac1:(simplify_eq/=).
+      reflexivity.
+    }
+    {
+      unfold TermOverBuiltin_to_TermOverBoV in Hxy.
+      simpl in Hxy.
+      ltac1:(simplify_eq/=).
+    }
+    {
+      unfold TermOverBuiltin_to_TermOverBoV in Hxy.
+      simpl in Hxy.
+      ltac1:(simplify_eq/=).
+    }
+    {
+      unfold TermOverBuiltin_to_TermOverBoV in Hxy.
+      simpl in Hxy.
+      ltac1:(simplify_eq/=).
+      revert l0 H0.
+      induction l; intros l0 H0; destruct l0; simpl in *.
+      {
+        reflexivity.
+      }
+      {
+        inversion H0.
+      }
+      {
+        inversion H0.
+      }
+      {
+        inversion H0; subst; clear H0.
+        rewrite Forall_cons in H.
+        destruct H as [HH1 HH2].
+        specialize (IHl HH2).
+        specialize (HH1 _ H2).
+        specialize (IHl _ H3).
+        inversion IHl; subst; clear IHl.
+        reflexivity.
+      }
+    }
+  Qed.
 
   Definition Valuation2_to_SubT
     {Σ : StaticModel}
     (ρ : Valuation2)
     : SubT
   :=
-    map_fold (fun x t sub => ((x,(TermOverBuiltin_to_TermOverBoV t))::sub)) [] ρ
+    let l := map_to_list ρ in
+    fmap (fun x => (x.1, (TermOverBuiltin_to_TermOverBoV x.2))) l
   .
+  
+  Lemma Valuation2_to_SubT__NoDup
+    {Σ : StaticModel}
+    
 
 
   Definition TermOverBoV_to_TermOverBuiltin
@@ -2352,6 +2410,169 @@ Module Implementation.
      apply proof_irrelevance.
    }
   Qed.
+  
+  (*
+  Lemma fmap_fst_Valuation2_to_SubT
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    :    
+    fmap fst (Valuation2_to_SubT ρ) ⊆ (elements (dom ρ))
+  .
+  Proof.
+    unfold Valuation2_to_SubT.
+    unfold Valuation2 in *.
+    ltac1:(induction ρ using map_ind).
+    {
+      rewrite map_fold_empty.
+      simpl.
+      rewrite dom_empty_L.
+      rewrite elements_empty.
+      reflexivity.
+    }
+    {
+      apply not_elem_of_dom_2 in H.
+      rewrite dom_insert_L.
+      rewrite map_fold_insert.
+      {
+        simpl.
+        ltac1:(set_solver).
+      }
+      {
+        apply _.
+      }
+      {
+        intros. apply _.
+      }
+      ltac1:(set_solver).
+    }
+  Qed.*)
+  Lemma Valuation2_to_SubT_NoDup
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    :
+    NoDup (Valuation2_to_SubT ρ) /\ (fmap fst (Valuation2_to_SubT ρ) ⊆ (elements (dom ρ)))
+   .
+   Proof.
+    unfold Valuation2_to_SubT.
+    unfold Valuation2 in *.
+    ltac1:(induction ρ using map_ind).
+    {
+      rewrite map_fold_empty.
+      split.
+      constructor.
+      simpl.
+      rewrite dom_empty_L.
+      rewrite elements_empty.
+      reflexivity.
+    }
+    {
+      simpl.
+      rewrite map_fold_insert_L.
+      {
+        destruct IHρ as [IH1 IH2].
+        split.
+        {
+          constructor.
+          intros HContra.
+          apply not_elem_of_dom_2 in H.
+          ltac1:(set_solver).
+          apply IH1.
+        }
+        {
+          simpl.
+          rewrite dom_insert_L.
+          ltac1:(set_solver).
+        }
+      }
+      {
+        intros.
+      }
+      {
+        assumption.
+      }
+    }
+    Search map_fold.
+    ltac1:(eapply map_fold_ind).
+   Qed.
+  
+  Lemma sub_similar
+    {Σ : StaticModel}
+    (sub : SubT)
+    (x0 : variable)
+    (ρ0 : Valuation2)
+    (d : TermOver builtin_value)
+  :
+    x0 ∉ dom ρ0 ->
+    sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) (t_over (bov_variable x0)) = sub_app sub (t_over (bov_variable x0))
+  .
+  Proof.
+    induction sub; intros HH; simpl in *.
+    {
+      unfold Valuation2 in *.
+      
+      
+      revert x0 d HH.
+      ltac1:(induction ρ0 using map_ind); intros x0 d HH.
+      {
+        unfold Valuation2_to_SubT.
+        ltac1:(rewrite map_fold_empty).
+        simpl.
+        reflexivity.
+      }
+      {
+        
+        rewrite dom_insert in HH.
+        rewrite not_elem_of_union in HH.
+        destruct HH as [HH1 HH2].
+        specialize (IHρ0 x0 d HH2).
+        unfold Valuation2_to_SubT in *.
+        rewrite not_elem_of_singleton in HH1.
+      }
+      
+      
+      
+      
+      revert HH.
+      revert x0.
+      revert d.
+      unfold Valuation2_to_SubT.
+      Check map_fold_ind.
+      apply (map_fold_ind (fun (b : TermOver builtin_value) (m : gmap variable (TermOver builtin_value)) =>
+        forall d x0, x0 ∉ dom m -> sub_app (Valuation2_to_SubT ρ0) (t_over (bov_variable x0)) = t_over (bov_variable x0) )).
+      {
+        intros. admit.
+      }
+      {
+        admit.
+      }
+      {
+        intros.
+      }
+      ltac1:(induction ρ0 using map_fold_ind); intros HH.
+      {
+        unfold Valuation2_to_SubT.
+        ltac1:(rewrite map_fold_empty).
+        simpl.
+        reflexivity.
+      }
+      {
+        rewrite dom_insert in HH.
+        rewrite not_elem_of_union in HH.
+        destruct HH as [HH1 HH2].
+        specialize (IHρ0 HH2).
+        unfold Valuation2_to_SubT in *.
+        rewrite not_elem_of_singleton in HH1.
+        Search map_fold insert.
+        Check map_fold_insert_L.
+        ltac1:(rewrite map_fold_insert); try assumption.
+        {
+          intros.
+          unfold Valuation2 in *.
+          ltac1:(rewrite lookup_insert in H1).
+        }
+      }
+    }
+  Qed.
 
 
   Lemma wonderful_lemma
@@ -2473,7 +2694,42 @@ Module Implementation.
      (extend_val_with_sub ρ0 sub d))).
                 {
                   unfold TermOverBoV_to_TermOverBuiltin.
-                  apply f_equal. 
+                  apply f_equal.
+                  assert (H1' := H1).
+                  assert (pf' := pf).
+                  revert H1' pf'.
+                  set (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) as wsub.
+                  set (sub_app wsub (t_over (bov_variable x0))) as x0_result.
+                  set (extend_val_with_sub_obligation_1 (@extend_val_with_sub)  Σ ρ0 d (t_over (bov_variable x0)) sub H1) as some_t.
+                  set (sub_app sub (t_over (bov_variable x0))) as x0_old_result.
+                  intros H1' pf'.
+                  (*
+                    It would come handy now if [x0_old_result = t_over (bov_variable x)].
+                    Since [x] is not in rho0, wsub  behaves with respect to x in the same way [sub] does.
+                    
+                  *)
+                  destruct (decide (x0 ∈ dom ρ0)) as [Hin1|Hnin1].
+                  {
+                    admit.
+                  }
+                  {
+                    ltac1:(exfalso).
+                    assert ((sub_app wsub (t_over (bov_variable x0))) = (sub_app sub (t_over (bov_variable x0)))).
+                    {
+                      ltac1:(unfold wsub).
+                      Search Valuation2_to_SubT.
+                    }
+                    Search sub_app.
+                  }
+                  ltac1:(move: (extend_val_with_sub_obligation_1 _ _ _ _ _ _ _)).
+
+
+
+                  epose (Htmp := TermOverBoV_eval__insert (extend_val_with_sub ρ0 sub d) x (TermOverBoV_eval ∅ (sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) (t_over (bov_variable x0)))
+                  (extend_val_with_sub_obligation_1 (@extend_val_with_sub) Σ ρ0 d (sub_app sub (t_over (bov_variable x0))) sub _))).
+                  erewrite Htmp.
+
+                  ltac1:(shelve).
                 }
                 {
                   apply set_default_variables_ext.

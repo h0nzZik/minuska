@@ -1158,7 +1158,6 @@ Lemma TermOverBoV_eval__insert
     (ρ : Valuation2)
     (x : variable)
     (g : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
     pf
     :
     TermOverBoV_eval (<[x := g]>ρ) (t_over (bov_variable x)) pf = g
