@@ -2777,7 +2777,21 @@ Module Implementation.
         }
       }
     }
-
+    {
+      assert (pf'' := pf').
+      unfold Valuation2 in *.
+      rewrite lookup_empty in pf''.
+      inversion pf''.
+    }
+    {
+      assert (pf'' := pf).
+      unfold Valuation2 in *.
+      unfold vars_of in pf''; simpl in pf''.
+      unfold vars_of in pf''; simpl in pf''.
+      unfold Valuation2 in *.
+      rewrite dom_empty in pf''.
+      ltac1:(set_solver).
+    }
   Qed.
   
   Lemma sub_similar
