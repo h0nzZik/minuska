@@ -2648,24 +2648,47 @@ Module Implementation.
     }
   Qed.
   
+  Lemma Valuation2_to_SubT__insert
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (x : variable)
+    (g : TermOver builtin_value)
+  :
+    x ∉ dom ρ ->
+    Valuation2_to_SubT (<[x:=g]>ρ) ≡ₚ (x, (TermOverBuiltin_to_TermOverBoV g))::(Valuation2_to_SubT ρ)
+  .
+  Proof.
+    intros HH.
+    unfold Valuation2_to_SubT.
+    unfold Valuation2 in *.
+    rewrite map_to_list_insert.
+    {
+      reflexivity.
+    }
+    {
+      apply not_elem_of_dom in HH. exact HH.
+    }
+  Qed.
+  
   Lemma sub_similar
     {Σ : StaticModel}
     (sub : SubT)
-    (x0 : variable)
+    (φ : TermOver BuiltinOrVar)
     (ρ0 : Valuation2)
     (d : TermOver builtin_value)
   :
-    x0 ∉ dom ρ0 ->
-    sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) (t_over (bov_variable x0)) = sub_app sub (t_over (bov_variable x0))
+    vars_of φ ## dom ρ0 ->
+    sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) φ = sub_app sub φ
   .
   Proof.
-    induction sub; intros HH; simpl in *.
+    revert φ ρ0.
+    induction sub; intros φ ρ0 HH; simpl in *.
     {
       unfold Valuation2 in *.
           
       
-      revert x0 d HH.
-      ltac1:(induction ρ0 using map_ind); intros x0 d HH.
+      revert φ d HH.
+      ltac1:(induction ρ0 using map_ind); intros φ d HH.
       {
         unfold Valuation2_to_SubT.
         ltac1:(rewrite map_to_list_empty).
@@ -2675,12 +2698,11 @@ Module Implementation.
       {
         
         rewrite dom_insert in HH.
-        rewrite not_elem_of_union in HH.
+        rewrite disjoint_union_r in HH.
         destruct HH as [HH1 HH2].
-        specialize (IHρ0 x0 d HH2).
+        specialize (IHρ0 φ d HH2).
         unfold Valuation2_to_SubT in *.
-        rewrite not_elem_of_singleton in HH1.
-        Search map_to_list.
+        rewrite disjoint_singleton_r in HH1.
         assert (Hperm := map_to_list_insert m i x H).
         assert (Hperm':
           ((fun x => (x.1, TermOverBuiltin_to_TermOverBoV x.2)) <$> (map_to_list (<[i:=x]> m))) ≡ₚ ((fun x => (x.1, TermOverBuiltin_to_TermOverBoV x.2)) <$> ((i, x) :: map_to_list m))
@@ -2689,7 +2711,7 @@ Module Implementation.
           apply fmap_Permutation.
           apply Hperm.
         }
-        assert (Hp2 := sub_app_nodup_perm _ _ (t_over (bov_variable x0)) Hperm').
+        assert (Hp2 := sub_app_nodup_perm _ _ φ Hperm').
         ltac1:(rewrite Hp2).
         {
           apply Valuation2_to_SubT__NoDup_1.
@@ -2699,7 +2721,6 @@ Module Implementation.
           rewrite Forall_forall.
           intros x1 Hx1.
           unfold compose in Hx1.
-          Set Typeclasses Debug.
           Search elem_of fmap.
           apply elem_of_list_fmap_2 in Hx1.
           destruct Hx1 as [y [H1y H2y]].
@@ -2713,15 +2734,31 @@ Module Implementation.
         }
         {
           rewrite fmap_cons. simpl.
-          destruct (decide (i = x0)).
+          rewrite subst_notin2.
           {
-            subst. ltac1:(apply IHρ0).
+            apply IHρ0.
           }
-          rewrite IHρ0.
+          {
+            assumption.
+          }
         }
-        apply IHρ0.
-        ltac1:(rewrite map_to_list_insert).
       }
+    }
+    {
+      simpl.
+      ltac1:(repeat case_match).
+      {
+        subst. simpl in *.  clear H0. ltac1:(rename e into H1).
+        revert H1.
+        set (sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) t) as φ'.
+        intros H1.
+        Search Valuation2_to_SubT.
+      }
+      {
+      
+      }
+      
+    }
       
       
       
