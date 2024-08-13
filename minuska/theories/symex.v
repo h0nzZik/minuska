@@ -2592,8 +2592,23 @@ Module Implementation.
       rewrite fmap_cons in Hvs.
       unfold compose in Hvs.
       simpl in Hvs.
-      
-      Search TermOverBoV_subst.
+      rewrite TermOverBoV_subst_comm.
+      { reflexivity. }
+      { ltac1:(congruence). }
+      { ltac1:(set_solver). }
+      { ltac1:(set_solver). }
+    }
+    {
+      specialize (IHPermutation1 Hnd Hvs φ).
+      rewrite IHPermutation1. clear IHPermutation.
+      rewrite IHPermutation2.
+      { reflexivity. }
+      {
+        rewrite <- H. assumption.
+      }
+      {
+        rewrite <- H. apply Hvs.
+      }
     }
   Qed.
   
