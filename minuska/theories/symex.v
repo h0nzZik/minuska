@@ -2764,6 +2764,104 @@ Module Implementation.
     }
    Qed.
   
+  Lemma extend_noop
+    {Σ : StaticModel}
+    sub d
+    :
+    NoDup (fmap fst sub) ->
+    (Valuation2_to_SubT (extend_val_with_sub ∅ sub d)) ≡ₚ sub
+  .
+  Proof.
+  
+    induction sub; simpl; intros Hnd.
+    {
+      unfold Valuation2_to_SubT.
+      ltac1:(rewrite map_to_list_empty).
+      simpl.
+      reflexivity.
+    }
+    {
+      ltac1:(repeat case_match).
+      {
+        subst; simpl in *.
+        clear H0. ltac1:(rename e into H1).
+        unfold Valuation2_to_SubT.
+        assert (Htmp := map_to_list_insert (extend_val_with_sub ∅ sub d) v).
+        ltac1:(rewrite - {4}IHsub).
+        { inversion Hnd; assumption. }
+        rewrite Htmp.
+        {
+          rewrite fmap_cons.
+          simpl.
+          rewrite TermOverBuiltin_to_TermOverBoV__inv.
+          simpl.
+          Search fmap map_to_list.
+          rewrite sub_app_identity.
+          { reflexivity. }
+          {
+            rewrite vars_of_sub_eq.
+            rewrite elem_of_disjoint.
+            intros x Hx.
+            rewrite elem_of_list_to_set in Hx.
+            rewrite elem_of_list_fmap in Hx.
+            destruct Hx as [[y phi][H1' H2']].
+            subst; simpl in *.
+            intros Hy.
+            rewrite elem_of_list_fmap in H2'.
+            destruct H2' as [[z t'] [H5 H6]].
+            ltac1:(simplify_eq/=).
+            ltac1:(rewrite elem_of_map_to_list in H6).
+            inversion Hnd; subst; clear Hnd.
+            rewrite elem_of_list_fmap in H2.
+            assert (Htmp3 := extend_val_with_sub__vars ∅ sub d).
+            unfold vars_of in Htmp3; simpl in Htmp3.
+            Search dom lookup Some.
+            apply elem_of_dom_2 in H6 as H6'.
+            ltac1:(rewrite Htmp3 in H6').
+            apply H2. clear H2.
+            rewrite elem_of_union in H6'.
+            ltac1:(rewrite dom_empty_L in H6').
+            destruct H6' as [?|HH].
+            {
+              ltac1:(set_solver).
+            }
+            rewrite vars_of_sub_eq in HH.
+            rewrite elem_of_list_to_set in HH.
+            rewrite elem_of_list_fmap in HH.
+            destruct HH as [[a b] [C D]].
+            subst; simpl in *.
+            exists x.
+            exists 
+          }
+          Search sub_app.
+          rewrite fmap_cons.
+          admit.
+        }
+        {
+          apply not_elem_of_dom.
+          assert (Htmp2 := extend_val_with_sub__vars ∅ sub d).
+          unfold vars_of in Htmp2; simpl in Htmp2.
+          ltac1:(rewrite Htmp2). clear Htmp2.
+          inversion Hnd; subst; clear Hnd.
+          rewrite not_elem_of_union.
+          ltac1:(rewrite dom_empty).
+          split>[ltac1:(set_solver)|].
+          rewrite vars_of_sub_eq.
+          unfold Valuation2 in *.
+          intros HContra.
+          rewrite elem_of_list_to_set in HContra.
+          ltac1:(rewrite elem_of_list_fmap in HContra).
+          destruct HContra as [y [H1y H2y]].
+          subst v.
+          apply H2. clear H2.
+          rewrite elem_of_list_fmap.
+          exists y.
+          split>[reflexivity|exact H2y].
+        }
+      }
+    }
+  Qed.
+  
   (*
     Is this even true?
     
@@ -2783,6 +2881,68 @@ Module Implementation.
     sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) φ = sub_app sub φ
   .
   Proof.
+    
+    revert sub ρ0.
+    induction φ; intros sub ρ0 Hnd HHdisj HH.
+      {
+        destruct a;
+          simpl.
+        {
+          rewrite sub_app_builtin.
+          rewrite sub_app_builtin.
+          reflexivity.
+        }
+        {
+          Search Valuation2_to_SubT.
+          unfold Valuation2 in *.
+          ltac1:(induction ρ0 using map_ind).
+          {
+            simpl.
+            Search extend_val_with_sub.
+          }  
+          rewrite sub_app_identity.
+          { 
+            rewrite sub_app_identity.
+            reflexivity.
+            ltac1:(set_solver). 
+          }
+          {
+            rewrite vars_of_sub_Valuation2_to_SubT.
+            symmetry.
+            assumption.
+          }
+        }
+      }
+      {
+        rewrite sub_app_term.
+        f_equal.
+        rewrite vars_of_t_term in HH.
+        clear s.
+        clear Hnd HHdisj.
+        revert ρ0 H HH.
+        induction l; intros ρ0 H HH.
+        {
+          simpl. reflexivity.
+        }
+        {
+          simpl.
+          rewrite fmap_cons in HH.
+          rewrite union_list_cons in HH.
+          rewrite Forall_cons in H.
+          destruct H as [H1 H2].
+          rewrite (IHl _ H2)>[|ltac1:(set_solver)].
+          rewrite sub_app_identity.
+          { reflexivity. }
+          rewrite vars_of_sub_Valuation2_to_SubT.
+          ltac1:(set_solver).
+        }
+      }
+    
+    
+    
+    
+    
+    
     revert φ ρ0.
     induction sub; intros φ ρ0 Hnd HHdisj HH; simpl in *.
     {
@@ -2802,177 +2962,50 @@ Module Implementation.
           rewrite sub_app_identity.
           { reflexivity. }
           {
-            rewrite HH.
-            Search Valuation2_to_SubT.
-          }
-        }
-      }  
-      
-      revert φ d Hnd HHdisj.
-      ltac1:(induction ρ0 using map_ind); intros φ d Hnd HHdisj.
-      {
-        unfold Valuation2_to_SubT.
-        ltac1:(rewrite map_to_list_empty).
-        simpl.
-        reflexivity.
-      }
-      {
-        
-        
-        unfold Valuation2_to_SubT in *.
-        assert (Hperm := map_to_list_insert m i x H).
-        assert (Hperm':
-          ((fun x => (x.1, TermOverBuiltin_to_TermOverBoV x.2)) <$> (map_to_list (<[i:=x]> m))) ≡ₚ ((fun x => (x.1, TermOverBuiltin_to_TermOverBoV x.2)) <$> ((i, x) :: map_to_list m))
-        ).
-        {
-          apply fmap_Permutation.
-          apply Hperm.
-        }
-        assert (Hp2 := sub_app_nodup_perm _ _ φ Hperm').
-        ltac1:(rewrite Hp2).
-        {
-          apply Valuation2_to_SubT__NoDup_1.
-        }
-        {
-          apply empty_union_list_L.
-          rewrite Forall_forall.
-          intros x1 Hx1.
-          unfold compose in Hx1.
-          apply elem_of_list_fmap_2 in Hx1.
-          destruct Hx1 as [y [H1y H2y]].
-          subst x1.
-          destruct y as [y t].
-          rewrite elem_of_list_fmap in H2y.
-          simpl.
-          destruct H2y as [y0 [H1y0 H2y0]].
-          inversion H1y0; subst; clear H1y0.
-          apply vars_of_TermOverBuiltin_to_TermOverBoV.
-        }
-        {
-          rewrite fmap_cons. simpl.
-          rewrite IHρ0.
-          {
-            apply 
-          }
-
-          rewrite subst_notin2.
-          {
-            apply IHρ0.
-          }
-          {
+            rewrite vars_of_sub_Valuation2_to_SubT.
+            symmetry.
             assumption.
           }
         }
       }
+      {
+        rewrite sub_app_term.
+        f_equal.
+        rewrite vars_of_t_term in HH.
+        clear s.
+        clear Hnd HHdisj.
+        revert ρ0 H HH.
+        induction l; intros ρ0 H HH.
+        {
+          simpl. reflexivity.
+        }
+        {
+          simpl.
+          rewrite fmap_cons in HH.
+          rewrite union_list_cons in HH.
+          rewrite Forall_cons in H.
+          destruct H as [H1 H2].
+          rewrite (IHl _ H2)>[|ltac1:(set_solver)].
+          rewrite sub_app_identity.
+          { reflexivity. }
+          rewrite vars_of_sub_Valuation2_to_SubT.
+          ltac1:(set_solver).
+        }
+      }  
     }
     {
-      simpl.
+      destruct a as [x t].
+      simpl in *.
+      inversion Hnd; subst; clear Hnd.
+      rewrite disjoint_union_l in HHdisj.
+      destruct HHdisj as [HHdisj1 HHdisj2].
       ltac1:(repeat case_match).
       {
-        subst. simpl in *.  clear H0. ltac1:(rename e into H1).
-        revert H1.
-        set (sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) t) as φ'.
-        intros H1.
-        destruct (decide (v ∈ vars_of φ)) as [Hin|Hnotin].
-        {
-          assert (Htmp := Valuation2_to_SubT__insert (extend_val_with_sub ρ0 sub d) v (TermOverBoV_to_TermOverBuiltin φ' (extend_val_with_sub_obligation_1 (@extend_val_with_sub) Σ ρ0 d t sub H1))).
-          rewrite extend_val_with_sub__vars in Htmp.
-          ltac1:(ospecialize (Htmp _)).
-          {
-            rewrite not_elem_of_union.
-            clear Htmp.
-            inversion Hnd; subst; clear Hnd.
-            rewrite vars_of_sub_eq in HHdisj.
-            assert (Hv: v ∉ ((fmap fst sub))) by ltac1:(set_solver).
-            rewrite elem_of_disjoint in HHdisj.
-            split>[try ltac1:(set_solver)|].
-            intros HContra.
-            rewrite vars_of_sub_eq in HContra.
-            specialize (HHdisj v ltac:(set_solver) ltac:(set_solver)).
-            exact HHdisj.
-          }
-          rewrite (sub_app_nodup_perm _ _ _ Htmp).
-          {
-            rewrite TermOverBuiltin_to_TermOverBoV__inv.
-            simpl.
-            simpl. rewrite IHsub.
-            {
-              rewrite <- helper_lemma_1.
-              ltac1:(unfold φ').
-              ltac1:(unfold φ' in H1).
-              rewrite IHsub.
-              {
-                assert(H1' := H1).
-                rewrite IHsub in H1'.
-                {
-                  rewrite sub_app_identity. 
-                  Check sub_app_identity.
-                  (* now the left sub_app does nothing *)
-                Search sub_app.
-                  rewrite subst_notin2.
-                }
-              }
-              
-              apply IHsub.
-              assert (Ht: φ' = t).
-              {
-
-                (* ANd now what?? *)
-              }
-            }
-          }
-          Search sub_app "≡ₚ".
-        }
-        specialize (Htmp ltac:(set_solver)).
-        Search Valuation2_to_SubT.
+        
+         erewrite IHsub.
       }
       {
       
-      }
-      
-    }
-      
-      
-      
-      
-      revert HH.
-      revert x0.
-      revert d.
-      unfold Valuation2_to_SubT.
-      Check map_fold_ind.
-      apply (map_fold_ind (fun (b : TermOver builtin_value) (m : gmap variable (TermOver builtin_value)) =>
-        forall d x0, x0 ∉ dom m -> sub_app (Valuation2_to_SubT ρ0) (t_over (bov_variable x0)) = t_over (bov_variable x0) )).
-      {
-        intros. admit.
-      }
-      {
-        admit.
-      }
-      {
-        intros.
-      }
-      ltac1:(induction ρ0 using map_fold_ind); intros HH.
-      {
-        unfold Valuation2_to_SubT.
-        ltac1:(rewrite map_fold_empty).
-        simpl.
-        reflexivity.
-      }
-      {
-        rewrite dom_insert in HH.
-        rewrite not_elem_of_union in HH.
-        destruct HH as [HH1 HH2].
-        specialize (IHρ0 HH2).
-        unfold Valuation2_to_SubT in *.
-        rewrite not_elem_of_singleton in HH1.
-        Search map_fold insert.
-        Check map_fold_insert_L.
-        ltac1:(rewrite map_fold_insert); try assumption.
-        {
-          intros.
-          unfold Valuation2 in *.
-          ltac1:(rewrite lookup_insert in H1).
-        }
       }
     }
   Qed.
