@@ -2513,18 +2513,59 @@ Module Implementation.
     }
   Qed.*)
   
+  Lemma TermOverBoV_subst_comm
+    {Σ : StaticModel}
+    (φ : TermOver BuiltinOrVar)
+    i1 i2 t1 t2:
+    i1 <> i2 ->
+    vars_of t1 = ∅ ->
+    vars_of t2 = ∅ ->
+    TermOverBoV_subst (TermOverBoV_subst φ i2 t2) i1 t1 = TermOverBoV_subst (TermOverBoV_subst φ i1 t1) i2 t2
+  .
+  Proof.
+    revert i1 i2 t1 t2.
+    induction φ; intros i1 i2 t1 t2 Hi1i2 Hvs1 Hvs2.
+    {
+      simpl.
+      ltac1:(repeat (case_match;simpl)); simpl in *;
+        ltac1:(simplify_eq/=); try reflexivity.
+      {
+        rewrite subst_notin2. reflexivity. rewrite Hvs2. ltac1:(set_solver).
+      }
+      {
+        rewrite subst_notin2. reflexivity. rewrite Hvs1. ltac1:(set_solver).
+      }
+    }
+    {
+      simpl.
+      f_equal.
+      revert i1 i2 t1 t2 Hi1i2 Hvs1 Hvs2.
+      induction l; intros i1 i2 t1 t2 Hi1i2 Hvs1 Hvs2; simpl.
+      { reflexivity. }
+      {
+        rewrite Forall_cons in H.
+        destruct H as [H1 H2].
+        specialize (IHl H2).
+        ltac1:(rewrite IHl); try assumption.
+        rewrite H1; try assumption.
+        reflexivity.
+      }
+    }
+  Qed.
+  
   Lemma sub_app_nodup_perm
     {Σ : StaticModel}
     (sub1 sub2 : SubT)
     (φ : TermOver BuiltinOrVar)
   :
     NoDup (fst <$> sub1) ->
+    ⋃ ( vars_of ∘ snd <$> sub1) = ∅ ->
     sub1 ≡ₚ sub2 ->
     sub_app sub1 φ = sub_app sub2 φ
   .
   Proof.
     
-    intros Hnd H. revert φ. induction H; intros φ.
+    intros Hnd Hvs H. revert φ. induction H; intros φ.
     {
       simpl. reflexivity.
     }
@@ -2534,6 +2575,9 @@ Module Implementation.
       rewrite IHPermutation.
       reflexivity.
       inversion Hnd; assumption.
+      rewrite fmap_cons in Hvs.
+      rewrite union_list_cons in Hvs.
+      ltac1:(set_solver).
     }
     {
       simpl.
@@ -2543,6 +2587,13 @@ Module Implementation.
       inversion H2; subst; clear H2.
       apply not_elem_of_cons in H1.
       destruct H1 as [H1 H2].
+      apply f_equal.
+      rewrite fmap_cons in Hvs.
+      rewrite fmap_cons in Hvs.
+      unfold compose in Hvs.
+      simpl in Hvs.
+      
+      Search TermOverBoV_subst.
     }
   Qed.
   
