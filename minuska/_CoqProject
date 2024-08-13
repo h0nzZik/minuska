@@ -30,6 +30,7 @@ theories/dt.v
 theories/interp_loop.v
 theories/example.v
 theories/default_everything.v
+theories/sub.v
 theories/unification_interface.v
 theories/textbook_unification_alg.v
 theories/textbook_unification.v

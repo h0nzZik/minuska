@@ -6,6 +6,7 @@ From Minuska Require Import
     syntax_properties
     unification_interface
     textbook_unification_alg
+    sub
 .
 
 Require Import Wellfounded.
@@ -191,113 +192,6 @@ induction a; simpl.
 }
 Qed.
 
-Lemma sub_app_term
-{Σ : StaticModel}
-(ss : SubT)
-(sym : symbol)
-(l : list (TermOver BuiltinOrVar))
-:
-sub_app ss (t_term sym l) = t_term sym ((sub_app ss) <$> l)
-.
-Proof.
-revert l sym.
-induction ss; intros l sym; simpl.
-{ f_equal. induction l; simpl; try reflexivity. unfold fmap in IHl. rewrite <- IHl. reflexivity. }
-{
-    destruct a; simpl.
-    rewrite IHss.
-    f_equal.
-    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
-    rewrite <- list_fmap_compose. reflexivity.
-}
-Qed.
-
-
-Lemma helper_lemma_1
-{Σ : StaticModel}
-(s : SubT)
-(x : variable)
-(t t' : TermOver BuiltinOrVar)
-:
-sub_app s (t_over (bov_variable x)) = sub_app s t' ->
-sub_app s t = sub_app s  (TermOverBoV_subst t x t')
-.
-Proof.
-revert s.
-induction t; simpl; intros ss HH.
-{
-    revert HH.
-    induction ss; intros HH; simpl in *.
-    {
-    subst t'.
-    destruct a; simpl.
-    { reflexivity. }
-    {
-        destruct (decide (x = x0)); simpl; subst; reflexivity.
-    }
-    }
-    {
-    destruct a0; simpl in *.
-    destruct a; simpl in *.
-    { reflexivity. }
-    destruct (decide (v = x0)); simpl in *.
-    {
-        subst.
-        destruct (decide (x = x0)); simpl in *.
-        {
-        subst.
-        destruct (decide (x0 = x0))>[|ltac1:(contradiction)].
-        inversion HH; subst; clear HH.
-        reflexivity.
-        }
-        {
-        destruct (decide (x0 = x))>[ltac1:(subst;contradiction)|].
-        destruct (decide (x0 = x0))>[|ltac1:(contradiction)].
-        reflexivity.
-        }
-    }
-    {
-        destruct (decide (x = x0)); simpl in *.
-        {
-        subst.
-        destruct (decide (v = x0)); simpl in *.
-        { subst.
-            ltac1:(contradiction n). reflexivity.
-        }
-        {
-            assumption.
-        }
-        }
-        {
-        destruct (decide (v = x0))>[subst; ltac1:(contradiction)|].
-        reflexivity.
-        }
-    }
-    }
-}
-{
-
-    rewrite sub_app_term.
-    rewrite sub_app_term.
-    apply f_equal.
-    revert ss HH H.
-    induction l; intros ss HH1 HH2.
-    { reflexivity. }
-    {
-    rewrite Forall_cons in HH2.
-    destruct HH2 as [HH2 HH3].
-    specialize (IHl ss HH1 HH3).
-    rewrite fmap_cons.
-    rewrite fmap_cons.
-    rewrite fmap_cons.
-    rewrite IHl.
-    specialize (HH2 ss HH1).
-    rewrite HH2.
-    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
-    reflexivity.
-    }
-}
-Qed.
 
 Lemma helper_lemma_2
 {Σ : StaticModel}

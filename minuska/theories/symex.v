@@ -8,6 +8,7 @@ From Minuska Require Import
     unification_interface
     symex_spec
     valuation_merge
+    sub
 .
 
 
@@ -1559,78 +1560,6 @@ Module Implementation.
     }
   .
 
-  Lemma vars_of_sub_app_sub
-    {Σ : StaticModel} (sub : @SubT Σ) x:
-    vars_of (sub_app sub x) ⊆ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ∪ (vars_of x)
-  .
-  Proof.
-    revert x;
-    induction sub; simpl; intros x.
-    {
-      ltac1:(set_solver).
-    }
-    {
-      destruct a as [x' t']; simpl in *.
-      eapply transitivity. apply IHsub. clear IHsub.
-      assert (Htmp2 := vars_of_TermOverBoV_subst__approx).
-      unfold fmap; simpl.
-      ltac1:(set_solver).
-    }
-  Qed.
-
-  Lemma vars_of_sub_app_e_sub
-    {Σ : StaticModel} (sub : @SubT Σ) x:
-    vars_of (sub_app_e sub x) ⊆ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ∪ (vars_of x)
-  .
-  Proof.
-    revert x;
-    induction sub; simpl; intros x.
-    {
-      ltac1:(set_solver).
-    }
-    {
-      destruct a as [x' t']; simpl in *.
-      eapply transitivity. apply IHsub. clear IHsub.
-      assert (Htmp2 := vars_of_TermOverBoV_subst_e2__approx).
-      unfold fmap; simpl.
-      ltac1:(set_solver).
-    }
-  Qed.
-
-  Lemma vars_of_sub_app_sub_3
-      {Σ : StaticModel} (sub : @SubT Σ) x y:
-      y ∈ vars_of (sub_app sub x) ->
-      y ∉ union_list ((@vars_of (TermOver BuiltinOrVar) variable _ _ (VarsOf_TermOver_BuiltinOrVar)) <$> (fmap snd sub)) ->
-      y ∉ vars_of_sub sub ->
-      y ∈ (vars_of x)
-    .
-    Proof.
-      revert x y.
-      induction sub; intros x y H1 H1' H2; simpl in *.
-      {
-        assumption.
-      }
-      {
-        destruct a as [y' t'].
-        apply not_elem_of_union in H2.
-        destruct H2 as [H2 H3].
-        rewrite elem_of_singleton in H2.
-        apply not_elem_of_union in H1'.
-        destruct H1' as [H4 H5].
-        specialize (IHsub _ _ H1 H5 H3).
-        simpl in *.
-        destruct (decide (y' ∈ vars_of x)) as [Hin|Hnotin].
-        {
-          assert (Htmp := vars_of_TermOverBoV_subst x t' y' Hin).
-          rewrite Htmp in IHsub. clear Htmp.
-          ltac1:(set_solver).
-        }
-        {
-          rewrite subst_notin2 in IHsub>[|assumption].
-          exact IHsub.
-        }
-      }
-  Qed.
   
   #[global]
   Instance TermOverBuiltin_to_TermOverBoV_inj
