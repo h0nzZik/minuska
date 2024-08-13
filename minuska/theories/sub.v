@@ -189,3 +189,23 @@ induction t; simpl; intros ss HH.
     }
 }
 Qed.
+
+Lemma sub_app_identity
+    {Σ : StaticModel}
+    (sub : SubT)
+    (φ : TermOver BuiltinOrVar)
+    :
+    vars_of_sub sub ## vars_of φ ->
+    sub_app sub φ = φ
+.
+Proof.
+    induction sub; intros HH; simpl in *.
+    { reflexivity. }
+    {
+        destruct a as [x t].
+        rewrite subst_notin2.
+        apply IHsub.
+        ltac1:(set_solver).
+        ltac1:(set_solver).
+    }
+Qed.

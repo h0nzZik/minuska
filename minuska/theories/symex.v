@@ -2838,6 +2838,7 @@ Module Implementation.
                 assert(H1' := H1).
                 rewrite IHsub in H1'.
                 {
+                  Check sub_app_identity.
                   (* now the left sub_app does nothing *)
                 Search sub_app.
                   rewrite subst_notin2.
