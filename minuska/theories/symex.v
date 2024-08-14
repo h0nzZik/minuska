@@ -3155,6 +3155,176 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
+  
+  Lemma sub_app_between
+    {Σ : StaticModel}
+    (phi : TermOver BuiltinOrVar)
+    (sub : SubT)
+    (V : gset variable)
+    :
+  ∀ v : variable,
+  wfsub (V ∖ {[v]}) sub
+  → ∀ t : TermOver BuiltinOrVar,
+      v ∉ vars_of t
+      → vars_of_sub sub ⊆ V
+        → sub_app sub (TermOverBoV_subst phi v (sub_app sub t)) = sub_app sub (TermOverBoV_subst phi v t)
+  .
+  Proof.
+  induction phi; intros v Hwfsub t Hvt Hsv.
+  {
+    simpl.
+    ltac1:(repeat case_match); subst; try reflexivity.
+    
+    clear -Hwfsub Hsv.
+    
+    
+    revert sub Hwfsub Hsv.
+    induction t; intros sub Hwfsub Hsv.
+    {
+      destruct a; simpl.
+      {
+        rewrite sub_app_builtin.
+        rewrite sub_app_builtin.
+        reflexivity.
+      }
+      {
+        rewrite sub_app_identity.
+        { reflexivity. }
+        {
+(*                          apply wfsub_subseteq in Hwfsub as Htmp. *)
+          
+          (*ltac1:(remember (t_over (bov_variable x)) as phi).
+          clear Heqphi.*)
+          revert V Hwfsub Hsv.
+          induction sub; intros V' Hwfsub Hsv; simpl.
+          { ltac1:(set_solver). }
+          {
+            destruct a as [y t].
+            simpl in *.
+            destruct Hwfsub as [H1 [H2 H3]].
+            destruct (decide (y = x0)).
+            {
+              subst.
+              assert (Htmp1 := sub_wf_app_disjoint sub _ t H3).
+              ltac1:(cut(x0 ∉ vars_of (sub_app sub t))).
+              {
+                intros ?. ltac1:(set_solver).
+              }
+              unfold wft in H2.
+              rewrite elem_of_difference in H1.
+              rewrite elem_of_singleton in H1.
+              destruct H1 as [H1 H4].
+              apply wfsub_subseteq_snd in H3 as H3'.
+              assert (Htmp2 := vars_of_sub_app_sub sub t).
+              ltac1:(set_solver).
+            }
+            {
+              rewrite disjoint_union_l.
+              split.
+              {
+                assert (Htmp2 := vars_of_sub_app_sub sub (t_over (bov_variable x0))).
+                unfold wft in H2.
+                apply wfsub_subseteq_snd in H3 as H3'.
+                rewrite disjoint_singleton_l.
+                intros HContra.
+                eapply elem_of_weaken in HContra>[|apply Htmp2].
+                rewrite elem_of_union in HContra.
+                destruct HContra as [HContra|HContra].
+                {
+                  ltac1:(set_solver).
+                }{
+                  unfold vars_of in HContra; simpl in HContra.
+                  unfold vars_of in HContra; simpl in HContra.
+                  ltac1:(set_solver).
+                }
+              }
+              {
+                eapply (IHsub (V' ∖ {[y]})).
+                {
+                  eapply wfsub_weaken>[|apply H3].
+                  ltac1:(set_solver).
+                }
+                apply wfsub_subseteq in H3.
+                ltac1:(set_solver).
+              }
+            }
+          }
+        }
+      }
+    }
+    {
+      simpl.
+      rewrite sub_app_term.
+      rewrite sub_app_term.
+      apply f_equal.
+      apply list_eq.
+      intros i.
+      Search lookup list fmap.
+      rewrite list_lookup_fmap.
+      rewrite list_lookup_fmap.
+      rewrite list_lookup_fmap.
+      unfold Valuation2,TermOver in *.
+      destruct (l !! i) eqn:Hli.
+      {
+        simpl.
+        apply f_equal.
+        rewrite Forall_forall in H.
+        apply H.
+        {
+          rewrite elem_of_list_lookup.
+          exists i. exact Hli.
+        }
+        {
+          apply Hwfsub.
+        }
+        {
+          apply Hsv.
+        }
+      }
+      {
+        simpl. reflexivity.
+      }
+    }
+  }
+  {
+    simpl.
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    apply list_eq.
+    intros i.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+    rewrite list_lookup_fmap.
+    unfold TermOver in *.
+    destruct (l !! i) eqn:Heq; simpl.
+    {
+      apply f_equal.
+      rewrite Forall_forall in H.
+      apply H.
+      {
+        rewrite elem_of_list_lookup.
+        exists i. exact Heq.
+      }
+      {
+        apply Hwfsub.
+      }
+      {
+        apply Hvt.
+      }
+      {
+        apply wfsub_subseteq in Hwfsub.
+        ltac1:(set_solver).
+      }
+    }
+    {
+      reflexivity.
+    }
+  }
+  
+  Qed.
   (*
     Is this even true?
     
@@ -3265,165 +3435,20 @@ Module Implementation.
                     ltac1:(set_solver).
                   }
                   
+                  (* HERE *)
+                  (* sub_app sub (TermOverBoV_subst phi v (sub_app sub t)) = sub_app sub (TermOverBoV_subst phi v t)  *)
+                  
                   (*remember (V ∖ {[v]}) as V'.*)
                   destruct Hwfsub as [_ [_ Hwfsub]].
                   assert (Hsv : vars_of_sub sub ⊆ V) by ltac1:(set_solver).
                   clear HeqV'.
                   clear -Hvt Hwfsub Hsv.
                   revert v Hwfsub t Hvt Hsv.
-                  induction phi; intros v Hwfsub t Hvt Hsv.
-                  {
-                    simpl.
-                    ltac1:(repeat case_match); subst; try reflexivity.
-                    
-                    clear -Hwfsub Hsv.
-                    
-                    
-                    revert sub Hwfsub Hsv.
-                    induction t; intros sub Hwfsub Hsv.
-                    {
-                      destruct a; simpl.
-                      {
-                        rewrite sub_app_builtin.
-                        rewrite sub_app_builtin.
-                        reflexivity.
-                      }
-                      {
-                        rewrite sub_app_identity.
-                        { reflexivity. }
-                        {
-(*                          apply wfsub_subseteq in Hwfsub as Htmp. *)
-                          
-                          (*ltac1:(remember (t_over (bov_variable x)) as phi).
-                          clear Heqphi.*)
-                          revert V Hwfsub Hsv.
-                          induction sub; intros V' Hwfsub Hsv; simpl.
-                          { ltac1:(set_solver). }
-                          {
-                            destruct a as [y t].
-                            simpl in *.
-                            destruct Hwfsub as [H1 [H2 H3]].
-                            destruct (decide (y = x0)).
-                            {
-                              subst.
-                              assert (Htmp1 := sub_wf_app_disjoint sub _ t H3).
-                              ltac1:(cut(x0 ∉ vars_of (sub_app sub t))).
-                              {
-                                intros ?. ltac1:(set_solver).
-                              }
-                              unfold wft in H2.
-                              rewrite elem_of_difference in H1.
-                              rewrite elem_of_singleton in H1.
-                              destruct H1 as [H1 H4].
-                              apply wfsub_subseteq_snd in H3 as H3'.
-                              assert (Htmp2 := vars_of_sub_app_sub sub t).
-                              ltac1:(set_solver).
-                            }
-                            {
-                              rewrite disjoint_union_l.
-                              split.
-                              {
-                                assert (Htmp2 := vars_of_sub_app_sub sub (t_over (bov_variable x0))).
-                                unfold wft in H2.
-                                apply wfsub_subseteq_snd in H3 as H3'.
-                                rewrite disjoint_singleton_l.
-                                intros HContra.
-                                eapply elem_of_weaken in HContra>[|apply Htmp2].
-                                rewrite elem_of_union in HContra.
-                                destruct HContra as [HContra|HContra].
-                                {
-                                  ltac1:(set_solver).
-                                }{
-                                  unfold vars_of in HContra; simpl in HContra.
-                                  unfold vars_of in HContra; simpl in HContra.
-                                  ltac1:(set_solver).
-                                }
-                              }
-                              {
-                                eapply (IHsub (V' ∖ {[y]})).
-                                {
-                                  eapply wfsub_weaken>[|apply H3].
-                                  ltac1:(set_solver).
-                                }
-                                apply wfsub_subseteq in H3.
-                                ltac1:(set_solver).
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                    {
-                      simpl.
-                      rewrite sub_app_term.
-                      rewrite sub_app_term.
-                      apply f_equal.
-                      apply list_eq.
-                      intros i.
-                      Search lookup list fmap.
-                      rewrite list_lookup_fmap.
-                      rewrite list_lookup_fmap.
-                      rewrite list_lookup_fmap.
-                      unfold Valuation2,TermOver in *.
-                      destruct (l !! i) eqn:Hli.
-                      {
-                        simpl.
-                        apply f_equal.
-                        rewrite Forall_forall in H.
-                        apply H.
-                        {
-                          rewrite elem_of_list_lookup.
-                          exists i. exact Hli.
-                        }
-                        {
-                          apply Hwfsub.
-                        }
-                        {
-                          apply Hsv.
-                        }
-                      }
-                      {
-                        simpl. reflexivity.
-                      }
-                    }
-                  }
-                  {
-                    simpl.
-                    rewrite sub_app_term.
-                    rewrite sub_app_term.
-                    apply f_equal.
-                    apply list_eq.
-                    intros i.
-                    rewrite list_lookup_fmap.
-                    rewrite list_lookup_fmap.
-                    rewrite list_lookup_fmap.
-                    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
-                    rewrite list_lookup_fmap.
-                    unfold TermOver in *.
-                    destruct (l !! i) eqn:Heq; simpl.
-                    {
-                      apply f_equal.
-                      rewrite Forall_forall in H.
-                      apply H.
-                      {
-                        rewrite elem_of_list_lookup.
-                        exists i. exact Heq.
-                      }
-                      {
-                        apply Hwfsub.
-                      }
-                      {
-                        apply Hvt.
-                      }
-                      {
-                        apply wfsub_subseteq in Hwfsub.
-                        ltac1:(set_solver).
-                      }
-                    }
-                    {
-                      reflexivity.
-                    }
-                  }
+                  intros.
+                  eapply sub_app_between.
+                  { apply Hwfsub. }
+                  { apply Hvt. }
+                  { apply Hsv. }
                 }
                 {
                   apply NoDup_fmap_fst.
@@ -3457,10 +3482,24 @@ Module Implementation.
                 erewrite sub_app_nodup_perm>[|apply Valuation2_to_SubT__insert|()|].
                 {
                   simpl.
-                  rewrite IHsub; admit.
+                  inversion HH; subst; clear HH.
+                  rewrite IHsub.
+                  {
+                    eapply sub_app_between.
+                  }
                 }
                 {
-                  admit.
+                  inversion HH; subst; clear HH.
+                  Search vars_of extend_val_with_sub.
+                  rewrite extend_val_with_sub__vars.
+                  rewrite vars_of_sub_eq.
+                  clear -H2.
+                  rewrite not_elem_of_union.
+                  rewrite elem_of_list_to_set.
+                  unfold vars_of; simpl.
+                  unfold Valuation2 in *.
+                  rewrite dom_empty_L.
+                  ltac1:(set_solver).
                 }
                 {
                   unfold Valuation2 in *.
@@ -3655,6 +3694,8 @@ Module Implementation.
         reflexivity.
       }
       {
+        (* This induction removes 'set_default_variables'.
+          I need to generalize! *)
         revert ρ0 x d pf.
         induction sub; intros ρ0 x d pf Hdisj; simpl in *.
         {
@@ -3743,6 +3784,10 @@ Module Implementation.
                   set (extend_val_with_sub_obligation_1 (@extend_val_with_sub)  Σ ρ0 d (t_over (bov_variable x0)) sub H1) as some_t.
                   set (sub_app sub (t_over (bov_variable x0))) as x0_old_result.
                   intros H1' pf'.
+                  assert (Htmp22: x0_old_result = t_over (bov_variable x)).
+                  {
+                    ltac1:(unfold x0_old_result).
+                  }
                   (*
                     It would come handy now if [x0_old_result = t_over (bov_variable x)].
                     Since [x] is not in rho0, wsub  behaves with respect to x in the same way [sub] does.
