@@ -3386,54 +3386,71 @@ Module Implementation.
                         simpl. reflexivity.
                       }
                     }
-                    
-                    
-                    
-                    
-                    revert t Hwfsub.
-                    induction sub; intros t Hwfsub.
+                  }
+                  {
+                    simpl.
+                    rewrite sub_app_term.
+                    rewrite sub_app_term.
+                    apply f_equal.
+                    apply list_eq.
+                    intros i.
+                    rewrite list_lookup_fmap.
+                    rewrite list_lookup_fmap.
+                    rewrite list_lookup_fmap.
+                    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+                    rewrite list_lookup_fmap.
+                    unfold TermOver in *.
+                    destruct (l !! i) eqn:Heq; simpl.
                     {
-                      simpl. reflexivity.
-                    }
-                    {
-                      simpl. destruct a as [y t']. simpl in *.
-                      destruct Hwfsub as [H1 [H2 H3]].
-                      rewrite (subst_notin2 y (sub_app sub (TermOverBoV_subst t y t'))).
+                      apply f_equal.
+                      rewrite Forall_forall in H.
+                      apply H.
                       {
-                        rewrite IHsub. reflexivity.
-                        eapply wfsub_weaken>[|apply Hwfsub].
+                        rewrite elem_of_list_lookup.
+                        exists i. exact Heq.
+                      }
+                      {
+                        apply Hwfsub.
+                      }
+                      {
+                        apply Hvt.
+                      }
+                      {
+                        apply wfsub_subseteq in Hwfsub.
                         ltac1:(set_solver).
                       }
-                      {
-                        unfold wft in Hwfsub.
-                        intros HContra.
-                        Search vars_of sub_app.
-                        assert (Htmp := vars_of_sub_app_sub sub (TermOverBoV_subst t y t')).
-                        assert (Htmp2: y ∈ ⋃ (vars_of <$> sub.*2) ∪ vars_of (TermOverBoV_subst t y t')) by ltac1:(set_solver).
-                        clear Htmp.
-                        apply wfsub_subseteq in H3.
-                        apply vars_of_sub_app_sub_3 in HContra.
-                        {
-                          admit. 
-                        }
-                        {
-
-                          rewrite vars_of_sub_eq in H3.
-                          intros HContra'.
-                        }
-                        Search vars_of sub_app.
-                      }
+                    }
+                    {
+                      reflexivity.
                     }
                   }
-                  (* I think I need some well-formedness of [sub] for this to hold *).
-                  (*
-                    For example, if
-                    phi = v
-                    sub = {x ↦ f(x)}
-                    t = x
-                    
-                    then this equality does not hold.
-                  *)
+                }
+                {
+                  apply NoDup_fmap_fst.
+                  {
+                    intros.
+                    unfold Valuation2 in *.                    
+                    rewrite elem_of_map_to_list in H.
+                    rewrite elem_of_map_to_list in H0.
+                    destruct (decide (v = x)).
+                    {
+                      subst.
+                      rewrite lookup_insert in H.
+                      rewrite lookup_insert in H0.
+                      ltac1:(simplify_eq/=).
+                      reflexivity.
+                    }
+                    {
+                      rewrite lookup_insert_ne in H>[|ltac1:(congruence)].
+                      rewrite lookup_insert_ne in H0>[|ltac1:(congruence)].
+                      ltac1:(simplify_eq/=).
+                      reflexivity.
+                    }
+                  }
+                  {
+                    unfold Valuation2 in *.
+                    apply NoDup_map_to_list.                    
+                  }
                 }
               }
               {
