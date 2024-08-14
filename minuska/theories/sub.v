@@ -257,3 +257,77 @@ induction s1; intros V HH1 HH2; simpl in *.
     }
 }
 Qed.
+
+
+
+Lemma sub_app_builtin
+{Σ : StaticModel}
+(ss : SubT)
+(b : builtin_value)
+:
+sub_app ss (t_over (bov_builtin b)) = t_over (bov_builtin b)
+.
+Proof.
+induction ss; simpl.
+{ reflexivity. }
+{
+    destruct a; simpl in *.
+    apply IHss.
+}
+Qed.
+
+
+
+Lemma helper_lemma_3 {Σ : StaticModel}:
+∀ l s1,
+(
+    ∀ x : variable,
+    sub_app l (t_over (bov_variable x)) =
+    sub_app (s1) (t_over (bov_variable x))
+) ->
+∀ t,
+    sub_app l t = sub_app (s1) t
+.
+Proof.
+intros l s1 HNice t.
+revert l s1 HNice.
+induction t; intros ll s1 HNice.
+{
+    destruct a.
+    {
+    rewrite sub_app_builtin.
+    rewrite sub_app_builtin.
+    reflexivity.
+    }
+    {
+    rewrite HNice.
+    reflexivity.
+    }
+}
+{
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    rewrite Forall_forall in H.
+    apply list_eq.
+    intros i.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    destruct (l !! i) eqn:Hli.
+    {
+    ltac1:(rewrite Hli).
+    simpl.
+    apply f_equal.
+    erewrite H.
+    reflexivity.
+    rewrite elem_of_list_lookup.
+    exists i. exact Hli.
+    apply HNice.
+    }
+    {
+    ltac1:(rewrite Hli).
+    simpl.
+    reflexivity.
+    }
+}
+Qed.
