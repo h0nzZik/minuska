@@ -3147,11 +3147,12 @@ Module Implementation.
       specialize (IHsub _ (TermOverBoV_subst t x t') H3).
       split>[|assumption].
       unfold wft in H2.
-      Search vars_of sub_app.
+      apply wfsub_subseteq_snd in H3.
       assert (Htmp := vars_of_sub_app_sub sub (TermOverBoV_subst t x t')).
-      {
-        
-      }
+      assert (x ∉ vars_of t') by ltac1:(set_solver).
+      Search vars_of TermOverBoV_subst.
+      assert (Happrox := vars_of_TermOverBoV_subst__approx t t' x).
+      ltac1:(set_solver).
     }
   Qed.
   (*
