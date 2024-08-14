@@ -3039,6 +3039,31 @@ Module Implementation.
       ltac1:(set_solver).
     }
   Qed.
+  
+  Lemma wfsub_subseteq
+    {Σ : StaticModel}
+    (V : gset variable)
+    (sub : SubT)
+    :
+    wfsub V sub ->
+    vars_of_sub sub ⊆ V
+  .
+  Proof.
+    induction sub; simpl.
+    {
+      intros ?; ltac1:(set_solver).
+    }
+    {
+      destruct a as [x t]; simpl in *; intros H1.
+      rewrite union_subseteq.
+      split>[
+        ltac1:(set_solver)|].
+       apply IHsub.
+       eapply wfsub_weaken>[|apply H1].
+       ltac1:(set_solver).
+    }
+  Qed.
+  
   (*
   Lemma TermOverBoV_subst__sub_app__comm
     {Σ : StaticModel}
@@ -3138,11 +3163,62 @@ Module Implementation.
                   rewrite TermOverBuiltin_to_TermOverBoV__inv.
                   ltac1:(rewrite IHsub).
                   { ltac1:(set_solver). }
-                  { apply Hwfsub. }
+                  { 
+                    eapply wfsub_weaken>[|apply Hwfsub].
+                    ltac1:(set_solver).
+                  }
                   { apply H2. }
                   ltac1:(rewrite IHsub).
-                  { apply Hwfsub. }
+                  { ltac1:(set_solver). }
+                  { 
+                    eapply wfsub_weaken>[|apply Hwfsub].
+                    ltac1:(set_solver).
+                  }
                   { apply H2. }
+                  assert (Hvt: v ∉ vars_of t).
+                  {
+                    clear -Hwfsub.
+                    unfold wft in Hwfsub.
+                    ltac1:(set_solver).
+                  }
+                  remember (V ∖ {[v]}) as V'.
+                  destruct Hwfsub as [_ [_ Hwfsub]].
+                  clear HeqV'.
+                  clear -Hvt Hwfsub.
+                  revert v t Hvt.
+                  induction phi; intros v t Hvt.
+                  {
+                    simpl.
+                    ltac1:(repeat case_match); subst; try reflexivity.
+                    
+                    clear -Hwfsub.
+                    revert t Hwfsub.
+                    induction sub; intros t Hwfsub.
+                    {
+                      simpl. reflexivity.
+                    }
+                    {
+                      simpl. destruct a as [y t']. simpl in *.
+                      rewrite (subst_notin2 y (sub_app sub (TermOverBoV_subst t y t'))).
+                      {
+                        rewrite IHsub. reflexivity.
+                        eapply wfsub_weaken>[|apply Hwfsub].
+                        ltac1:(set_solver).
+                      }
+                      {
+                        unfold wft in Hwfsub.
+                        intros HContra.
+                        apply vars_of_sub_app_sub_3 in HContra.
+                        {
+                          admit. 
+                        }
+                        {
+                          
+                        }
+                        Search vars_of sub_app.
+                      }
+                    }
+                  }
                   (* I think I need some well-formedness of [sub] for this to hold *).
                   (*
                     For example, if
