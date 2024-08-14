@@ -3370,6 +3370,218 @@ Module Implementation.
   }
   
   Qed.
+  
+  
+  
+  
+  Lemma sub_app_between_2
+    {Σ : StaticModel}
+    (phi : TermOver BuiltinOrVar)
+    (sub sub' : SubT)
+    (V : gset variable)
+    :
+  ∀ v : variable,
+  wfsub (V ∖ {[v]}) sub ->
+  wfsub (V ∖ {[v]}) sub' 
+  → ∀ t : TermOver BuiltinOrVar,
+      v ∉ vars_of t
+      → vars_of_sub sub ⊆ V
+      → (vars_of_sub sub ⊆ vars_of_sub sub')
+      → (forall x, x ∈ vars_of phi -> sub_app sub' (t_over (bov_variable x)) = sub_app sub (t_over (bov_variable x)))
+        → sub_app sub (TermOverBoV_subst phi v (sub_app sub' t)) = sub_app sub' (TermOverBoV_subst phi v t)
+  .
+  Proof.
+  revert sub sub'.
+  induction phi; intros sub sub' v Hwfsub Hwfsub' t Hvt Hsv Hvof Hsame.
+  {
+    simpl.
+    ltac1:(repeat case_match); subst; try reflexivity.
+    {
+    
+      clear -Hwfsub Hsv Hsame.
+      rewrite sub_app_builtin.
+      rewrite sub_app_builtin.
+      reflexivity.
+    }
+    {
+      assert (Htmp1 := sub_wf_app_disjoint sub' _ t Hwfsub').
+      rewrite sub_app_identity.
+      { reflexivity. }
+      ltac1:(set_solver).
+    }
+    {
+      symmetry.
+      apply Hsame.
+      unfold vars_of; simpl.
+      unfold vars_of; simpl.
+      ltac1:(set_solver).
+    }
+    }
+    
+    
+    revert sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame.
+    induction t; intros sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame.
+    {
+      destruct a; simpl.
+      {
+        rewrite sub_app_builtin.
+        rewrite sub_app_term.
+        rewrite sub_app_term.
+        f_equal.
+        apply list_eq.
+        intros i.
+        ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+        rewrite list_lookup_fmap.
+        rewrite list_lookup_fmap.
+        rewrite list_lookup_fmap.
+        rewrite list_lookup_fmap.
+        unfold Valuation2, TermOver in *.
+        destruct (l !! i) eqn:Hli; simpl; try reflexivity.
+        apply f_equal.
+        Search sub_app.
+        rewrite sub_app_builtin.
+        reflexivity.
+      }
+      {
+        rewrite sub_app_identity.
+        { reflexivity. }
+        {
+(*                          apply wfsub_subseteq in Hwfsub as Htmp. *)
+          
+          (*ltac1:(remember (t_over (bov_variable x)) as phi).
+          clear Heqphi.*)
+          revert V Hwfsub Hsv.
+          induction sub; intros V' Hwfsub Hsv; simpl.
+          { ltac1:(set_solver). }
+          {
+            destruct a as [y t].
+            simpl in *.
+            destruct Hwfsub as [H1 [H2 H3]].
+            destruct (decide (y = x0)).
+            {
+              subst.
+              assert (Htmp1 := sub_wf_app_disjoint sub _ t H3).
+              ltac1:(cut(x0 ∉ vars_of (sub_app sub t))).
+              {
+                intros ?. ltac1:(set_solver).
+              }
+              unfold wft in H2.
+              rewrite elem_of_difference in H1.
+              rewrite elem_of_singleton in H1.
+              destruct H1 as [H1 H4].
+              apply wfsub_subseteq_snd in H3 as H3'.
+              assert (Htmp2 := vars_of_sub_app_sub sub t).
+              ltac1:(set_solver).
+            }
+            {
+              rewrite disjoint_union_l.
+              split.
+              {
+                assert (Htmp2 := vars_of_sub_app_sub sub (t_over (bov_variable x0))).
+                unfold wft in H2.
+                apply wfsub_subseteq_snd in H3 as H3'.
+                rewrite disjoint_singleton_l.
+                intros HContra.
+                eapply elem_of_weaken in HContra>[|apply Htmp2].
+                rewrite elem_of_union in HContra.
+                destruct HContra as [HContra|HContra].
+                {
+                  ltac1:(set_solver).
+                }{
+                  unfold vars_of in HContra; simpl in HContra.
+                  unfold vars_of in HContra; simpl in HContra.
+                  ltac1:(set_solver).
+                }
+              }
+              {
+                eapply (IHsub (V' ∖ {[y]})).
+                {
+                  eapply wfsub_weaken>[|apply H3].
+                  ltac1:(set_solver).
+                }
+                apply wfsub_subseteq in H3.
+                ltac1:(set_solver).
+              }
+            }
+          }
+        }
+      }
+    }
+    {
+      simpl.
+      rewrite sub_app_term.
+      rewrite sub_app_term.
+      apply f_equal.
+      apply list_eq.
+      intros i.
+      Search lookup list fmap.
+      rewrite list_lookup_fmap.
+      rewrite list_lookup_fmap.
+      rewrite list_lookup_fmap.
+      unfold Valuation2,TermOver in *.
+      destruct (l !! i) eqn:Hli.
+      {
+        simpl.
+        apply f_equal.
+        rewrite Forall_forall in H.
+        apply H.
+        {
+          rewrite elem_of_list_lookup.
+          exists i. exact Hli.
+        }
+        {
+          apply Hwfsub.
+        }
+        {
+          apply Hsv.
+        }
+      }
+      {
+        simpl. reflexivity.
+      }
+    }
+  }
+  {
+    simpl.
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    apply list_eq.
+    intros i.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+    rewrite list_lookup_fmap.
+    unfold TermOver in *.
+    destruct (l !! i) eqn:Heq; simpl.
+    {
+      apply f_equal.
+      rewrite Forall_forall in H.
+      apply H.
+      {
+        rewrite elem_of_list_lookup.
+        exists i. exact Heq.
+      }
+      {
+        apply Hwfsub.
+      }
+      {
+        apply Hvt.
+      }
+      {
+        apply wfsub_subseteq in Hwfsub.
+        ltac1:(set_solver).
+      }
+    }
+    {
+      reflexivity.
+    }
+  }
+  
+  Qed.
+  
+  
   (*
     Is this even true?
     
@@ -3389,7 +3601,7 @@ Module Implementation.
     NoDup (fst <$> sub) ->
     vars_of_sub sub ## vars_of ρ0 ->
     (*vars_of φ ## vars_of ρ0 ->*)
-    vars_of φ ⊆ vars_of_sub sub ->
+    vars_of φ ⊆ vars_of_sub sub ∪ vars_of ρ0 ->
     sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) φ = sub_app sub φ
   .
   Proof.
@@ -3467,7 +3679,10 @@ Module Implementation.
                   rewrite (IHsub (V ∖ {[v]})).
                   {
                     unfold wft in H6.
-                    (*
+                    Search sub_app.
+                    ltac1:(erewrite sub_app_between).
+                    Check sub_app_between.
+                    
                     rewrite (IHsub (V ∖ {[v]})).
                     {
                       admit.
@@ -3479,8 +3694,9 @@ Module Implementation.
                       assumption.
                     }
                     { ltac1:(set_solver).
-                    admit.
                     *)
+                    admit.
+                    
                   }
                   { assumption. }
                   { assumption. }
@@ -3492,6 +3708,7 @@ Module Implementation.
                   {
                     assumption.
                   }
+                  (*
                   { apply H2. }
                   ltac1:(rewrite IHsub).
                   { ltac1:(set_solver). }
@@ -3525,6 +3742,7 @@ Module Implementation.
                   { apply Hwfsub. }
                   { apply Hvt. }
                   { apply Hsv. }
+                  *)
                 }
                 {
                   apply NoDup_fmap_fst.
