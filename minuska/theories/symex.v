@@ -3306,6 +3306,18 @@ Module Implementation.
                             destruct (decide (y = x0)).
                             {
                               subst.
+                              assert (Htmp1 := sub_wf_app_disjoint sub _ t H3).
+                              ltac1:(cut(x0 ∉ vars_of (sub_app sub t))).
+                              {
+                                intros ?. ltac1:(set_solver).
+                              }
+                              unfold wft in H2.
+                              rewrite elem_of_difference in H1.
+                              rewrite elem_of_singleton in H1.
+                              destruct H1 as [H1 H4].
+                              apply wfsub_subseteq_snd in H3 as H3'.
+                              assert (Htmp2 := vars_of_sub_app_sub sub t).
+                              ltac1:(set_solver).
                             }
                             specialize (IHsub _ H3).
                             destruct (decide (y = x)).
