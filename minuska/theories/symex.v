@@ -3636,7 +3636,17 @@ Qed.
     }
   Qed.
         
-  
+  Fixpoint rem_sub
+    {Σ : StaticModel}
+    (sub : SubT)
+    (V : gset variable)
+    : gset Variable
+  :=
+  match sub with
+  | [] => V
+  | (x,t)::xs => rem_sub xs (V ∖ {[x]})
+  end
+  .
   
   (*
     Is this even true?
@@ -3735,8 +3745,19 @@ Qed.
                   rewrite (IHsub (V ∖ {[v]})).
                   {
                     unfold wft in H6.
-                    Search sub_app.
-                    ltac1:(erewrite sub_app_between).
+                    ltac1:(erewrite sub_app_between_2).
+                    { rewrite union_subseteq in Hvo.
+                      destruct Hvo as [Hvo' Hvo].
+                      eapply IHsub.
+                     { apply H7'. }
+                      {
+                        apply H7.
+                      }
+                      {
+                        eapply transitivity>[apply vars_of_TermOverBoV_subst__approx|].
+                        ltac1:(set_solver).
+                      }
+                    }
                     Check sub_app_between.
                     
                     rewrite (IHsub (V ∖ {[v]})).
