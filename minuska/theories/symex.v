@@ -3464,7 +3464,32 @@ Module Implementation.
                 }
                 {
                   unfold Valuation2 in *.
-                  apply Valuation2_to_SubT__NoDup.
+                  apply NoDup_fmap_fst>[|apply Valuation2_to_SubT__NoDup].
+                  intros.
+                  Search Valuation2_to_SubT.
+                  unfold Valuation2_to_SubT in H,H1.
+                  rewrite elem_of_list_fmap in H.
+                  rewrite elem_of_list_fmap in H1.
+                  destruct H as [[y3 t3] [H3 HH3]].
+                  destruct H1 as [[y4 t4] [H4 HH4]].
+                  simpl in *. ltac1:(simplify_eq/=).
+                  unfold Valuation2,TermOver in *.
+                  rewrite elem_of_map_to_list in HH3.
+                  rewrite elem_of_map_to_list in HH4.
+                  destruct (decide (y3 = v)).
+                  {
+                    subst.
+                    rewrite lookup_insert in HH3.
+                    rewrite lookup_insert in HH4.
+                    ltac1:(simplify_eq/=).
+                    reflexivity.
+                  }
+                  {
+                    rewrite lookup_insert_ne in HH3>[|ltac1:(congruence)].
+                    rewrite lookup_insert_ne in HH4>[|ltac1:(congruence)].
+                    ltac1:(simplify_eq/=).
+                    reflexivity.
+                  }
                 }
                 Search Permutation sub_app.
 
