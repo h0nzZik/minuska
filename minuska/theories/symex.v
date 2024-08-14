@@ -3063,7 +3063,35 @@ Module Implementation.
        ltac1:(set_solver).
     }
   Qed.
-  
+  (*
+  Lemma wfsub_intersect
+    {Σ : StaticModel}
+    (V : gset variable)
+    (sub : SubT)
+    :
+    wfsub V sub ->
+    wfsub (V ∩ (vars_of_sub sub)) sub
+  .
+  Proof.
+    revert V.
+    induction sub; intros V HH.
+    {
+      simpl. exact I.
+    }
+    {
+      simpl in *.
+      destruct a as [x t]. simpl in *.
+      split.
+      { ltac1:(set_solver). }
+      destruct HH as [H1 [H2 H3]].
+      split.
+      {
+        unfold wft in *.
+        ltac1:(set_solver).
+      }
+    }
+  Qed.
+  *)
   (*
   Lemma TermOverBoV_subst__sub_app__comm
     {Σ : StaticModel}
@@ -3072,6 +3100,60 @@ Module Implementation.
     :
     TermOverBoV_subst φ x (sub_app sub \)
   *)
+
+
+  Lemma wfsub_subseteq_snd
+    {Σ : StaticModel}
+    (V : gset variable)
+    (sub : SubT)
+    :
+    wfsub V sub ->
+    ⋃ (vars_of <$> (snd <$> sub)) ⊆ V
+  .
+  Proof.
+    revert V.
+    induction sub; intros V H.
+    {
+      simpl. ltac1:(set_solver).
+    }
+    {
+      simpl in *.
+      destruct a as [x t].
+      simpl in *.
+      destruct H as [H1 [H2 H3]].
+      unfold wft in H2.
+      specialize (IHsub _ H3).
+      ltac1:(set_solver).
+    }
+  Qed.
+
+  Lemma sub_wf_app_disjoint
+    {Σ : StaticModel}
+    (sub : SubT)
+    (V : gset variable)
+    (t : TermOver BuiltinOrVar)
+    :
+    wfsub V sub ->  
+    vars_of (sub_app sub t) ## vars_of_sub sub
+  .
+  Proof.
+    revert V t.
+    induction sub; intros V t H1; simpl in *.
+    { ltac1:(set_solver). }
+    {
+      destruct a as [x t']. simpl in *.
+      destruct H1 as [H1 [H2 H3]].
+      rewrite disjoint_union_r.
+      specialize (IHsub _ (TermOverBoV_subst t x t') H3).
+      split>[|assumption].
+      unfold wft in H2.
+      Search vars_of sub_app.
+      assert (Htmp := vars_of_sub_app_sub sub (TermOverBoV_subst t x t')).
+      {
+        
+      }
+    }
+  Qed.
   (*
     Is this even true?
     
@@ -3181,17 +3263,73 @@ Module Implementation.
                     unfold wft in Hwfsub.
                     ltac1:(set_solver).
                   }
-                  remember (V ∖ {[v]}) as V'.
+                  
+                  (*remember (V ∖ {[v]}) as V'.*)
                   destruct Hwfsub as [_ [_ Hwfsub]].
+                  assert (Hsv : vars_of_sub sub ⊆ V) by ltac1:(set_solver).
                   clear HeqV'.
-                  clear -Hvt Hwfsub.
-                  revert v t Hvt.
-                  induction phi; intros v t Hvt.
+                  clear -Hvt Hwfsub Hsv.
+                  revert v Hwfsub t Hvt Hsv.
+                  induction phi; intros v Hwfsub t Hvt Hsv.
                   {
                     simpl.
                     ltac1:(repeat case_match); subst; try reflexivity.
                     
-                    clear -Hwfsub.
+                    clear -Hwfsub Hsv.
+                    
+                    
+                    revert sub Hwfsub Hsv.
+                    induction t; intros sub Hwfsub Hsv.
+                    {
+                      destruct a; simpl.
+                      {
+                        rewrite sub_app_builtin.
+                        rewrite sub_app_builtin.
+                        reflexivity.
+                      }
+                      {
+                        rewrite sub_app_identity.
+                        { reflexivity. }
+                        {
+(*                          apply wfsub_subseteq in Hwfsub as Htmp. *)
+                          
+                          (*ltac1:(remember (t_over (bov_variable x)) as phi).
+                          clear Heqphi.*)
+                          revert V Hwfsub Hsv.
+                          induction sub; intros V' Hwfsub Hsv; simpl.
+                          { ltac1:(set_solver). }
+                          {
+                            destruct a as [y t].
+                            simpl in *.
+                            destruct Hwfsub as [H1 [H2 H3]].
+                            destruct (decide (y = x0)).
+                            {
+                              subst.
+                            }
+                            specialize (IHsub _ H3).
+                            destruct (decide (y = x)).
+                            {
+                              simpl. subst.
+                              rewrite disjoint_union_l.
+                              unfold wft in *.
+                              split.
+                              {
+                                
+                              }
+                              {
+                              
+                              }
+                            }
+                          }
+                          Search vars_of sub_app.
+                        }
+
+                      }
+                    }
+                    
+                    
+                    
+                    
                     revert t Hwfsub.
                     induction sub; intros t Hwfsub.
                     {
@@ -3199,6 +3337,7 @@ Module Implementation.
                     }
                     {
                       simpl. destruct a as [y t']. simpl in *.
+                      destruct Hwfsub as [H1 [H2 H3]].
                       rewrite (subst_notin2 y (sub_app sub (TermOverBoV_subst t y t'))).
                       {
                         rewrite IHsub. reflexivity.
@@ -3208,12 +3347,19 @@ Module Implementation.
                       {
                         unfold wft in Hwfsub.
                         intros HContra.
+                        Search vars_of sub_app.
+                        assert (Htmp := vars_of_sub_app_sub sub (TermOverBoV_subst t y t')).
+                        assert (Htmp2: y ∈ ⋃ (vars_of <$> sub.*2) ∪ vars_of (TermOverBoV_subst t y t')) by ltac1:(set_solver).
+                        clear Htmp.
+                        apply wfsub_subseteq in H3.
                         apply vars_of_sub_app_sub_3 in HContra.
                         {
                           admit. 
                         }
                         {
-                          
+
+                          rewrite vars_of_sub_eq in H3.
+                          intros HContra'.
                         }
                         Search vars_of sub_app.
                       }
