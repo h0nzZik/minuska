@@ -209,3 +209,51 @@ Proof.
         ltac1:(set_solver).
     }
 Qed.
+
+Definition wft {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar)
+: Prop
+:= vars_of t ⊆ V
+.
+
+Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : SubT)
+: Prop
+:=
+match s with
+| [] => True
+| (x,t)::s' =>
+    x ∈ V /\ wft (V ∖ {[x]}) t  /\ wfsub (V ∖ {[x]}) (s')
+end
+.
+
+Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : SubT)
+:
+wfsub V s1 ->
+wfsub (V ∖ (vars_of_sub s1)) s2 ->
+wfsub V (s1 ++ s2)
+.
+Proof.
+revert V.
+induction s1; intros V HH1 HH2; simpl in *.
+{
+    rewrite difference_empty_L in HH2.
+    exact HH2.
+}
+{
+    destruct a; simpl in *.
+    destruct HH1 as [HH11 [HH12 HH13]].
+    split.
+    { exact HH11. }
+    split.
+    {
+    exact HH12.
+    }
+    {
+    apply IHs1.
+    { exact HH13. }
+    { 
+        ltac1:(replace (V ∖ {[v]} ∖ vars_of_sub s1) with (V ∖ ({[v]} ∪ vars_of_sub s1)) by set_solver).
+        exact HH2.
+    }
+    }
+}
+Qed.

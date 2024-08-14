@@ -3011,6 +3011,34 @@ Module Implementation.
     }
   Qed.
   
+  
+  Lemma wfsub_weaken
+    {Σ : StaticModel}
+    (V1 V2 : gset variable)
+    (sub : SubT)
+    :
+    V1 ⊆ V2 ->
+    wfsub V1 sub ->
+    wfsub V2 sub
+  .
+  Proof.
+    revert V1 V2.
+    induction sub; intros V1 V2 H1 H2.
+    {
+      simpl. exact I.
+    }
+    {
+      simpl. simpl in H2.
+      ltac1:(repeat case_match); subst; simpl in *.
+      specialize (IHsub (V1 ∖ {[v]}) (V2 ∖ {[v]}) ltac:(set_solver)).
+      unfold wft in *.
+      split>[ltac1:(naive_solver)|].
+      destruct H2 as [H2 [H3 H4]].
+      simpl in *. unfold TermOver in *.
+      specialize (IHsub H4).
+      ltac1:(set_solver).
+    }
+  Qed.
   (*
   Lemma TermOverBoV_subst__sub_app__comm
     {Σ : StaticModel}
@@ -3027,11 +3055,14 @@ Module Implementation.
   *)
   Lemma sub_similar
     {Σ : StaticModel}
+    (V : gset variable)
     (sub : SubT)
     (φ : TermOver BuiltinOrVar)
     (ρ0 : Valuation2)
     (d : TermOver builtin_value)
   :
+    vars_of_sub sub ⊆ V ->
+    wfsub V sub ->
     NoDup (fst <$> sub) ->
     vars_of_sub sub ## vars_of ρ0 ->
     vars_of φ ## vars_of ρ0 ->
@@ -3040,7 +3071,7 @@ Module Implementation.
   Proof.
     
     revert sub ρ0.
-    induction φ; intros sub ρ0 Hnd HHdisj HH.
+    induction φ; intros sub ρ0 Hvo Hwfsub Hnd HHdisj HH.
       {
         destruct a;
           simpl.
@@ -3050,21 +3081,21 @@ Module Implementation.
           reflexivity.
         }
         {
-          Search Valuation2_to_SubT.
           unfold Valuation2 in *.
           remember (t_over (bov_variable x)) as phi.
           clear Heqphi.
           revert phi HH.
           clear x.
-          revert sub HHdisj Hnd.
-          ltac1:(induction ρ0 using map_ind); intros sub HHdisj Hnd phi HH.
+          revert sub Hvo Hwfsub HHdisj Hnd.
+          ltac1:(induction ρ0 using map_ind); intros sub Hvo Hwfsub HHdisj Hnd phi HH.
           {
             simpl.
             (*******)
             clear HH HHdisj.
             revert Hnd.
             revert phi.
-            induction sub; intros phi HH; simpl.
+            revert Hwfsub.
+            induction sub; intros Hwfsub phi HH; simpl.
             {
               unfold Valuation2_to_SubT.
               unfold Valuation2 in *.
@@ -3106,10 +3137,21 @@ Module Implementation.
                   unfold fmap in *.
                   rewrite TermOverBuiltin_to_TermOverBoV__inv.
                   ltac1:(rewrite IHsub).
+                  { ltac1:(set_solver). }
+                  { apply Hwfsub. }
                   { apply H2. }
                   ltac1:(rewrite IHsub).
+                  { apply Hwfsub. }
                   { apply H2. }
-                  rewrite <- helper_lemma_1.
+                  (* I think I need some well-formedness of [sub] for this to hold *).
+                  (*
+                    For example, if
+                    phi = v
+                    sub = {x ↦ f(x)}
+                    t = x
+                    
+                    then this equality does not hold.
+                  *)
                 }
               }
               {
