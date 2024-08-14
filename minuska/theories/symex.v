@@ -2063,6 +2063,51 @@ Module Implementation.
     }
   Qed.
 
+  Lemma set_default_variables_works'
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (xs : list variable)
+    (d : TermOver builtin_value)
+    (x : variable)
+  :
+    x ∈ xs ->
+    (set_default_variables ρ xs d) !! x = Some d
+  .
+  Proof.
+    revert x.
+    induction xs; simpl; intros x HH.
+    {
+      rewrite elem_of_nil in HH. destruct HH.
+    }
+    {
+      rewrite elem_of_cons in HH.
+      destruct HH as [HH|HH].
+      {
+        subst.
+        unfold vars_of; simpl.
+        unfold Valuation2 in *.
+        rewrite lookup_insert.
+        reflexivity.
+      }
+      {
+        specialize (IHxs _ HH).
+        unfold vars_of; simpl.
+        unfold Valuation2 in *.
+        destruct (decide (x = a)).
+        {
+          subst.
+          rewrite lookup_insert.
+          reflexivity.
+        }
+        {
+          rewrite lookup_insert_ne>[|ltac1:(congruence)].
+          apply IHxs.
+        }
+      }
+    }
+  Qed.
+
+
 
   Lemma set_default_variables_works_2
     {Σ : StaticModel}
@@ -3680,7 +3725,29 @@ Module Implementation.
     φ
   .
   Proof.
-    ltac1:(funelim (sat2B _ _ _)).
+    remember (extend_val_with_sub ρ sub d) as ρ'.
+    remember (set_default_variables ρ' _ d) as ρ''.
+    assert (Hρ''1: ρ' ⊆ ρ'').
+    {
+      subst ρ''.
+      apply set_default_variables_ext.
+      {
+        apply NoDup_elements.
+      }
+      {
+        ltac1:(set_solver).
+      }
+    }
+    assert (Hρ''2: forall x, x ∈ (vars_of (sub_app sub φ) ∖ vars_of ρ') -> ρ'' !! x = Some d).
+    {
+      subst ρ''.
+      intros x Hx.
+      unfold Valuation2 in *.
+      Check set_default_variables_works.
+      Search set_default_variables.
+    }
+    revert Hρ''1.
+    ltac1:(funelim (sat2B _ _ _)); intros Hρ''1.
     {
       destruct bv;
         simpl; ltac1:(simp sat2B);
