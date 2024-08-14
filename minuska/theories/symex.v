@@ -3319,24 +3319,71 @@ Module Implementation.
                               assert (Htmp2 := vars_of_sub_app_sub sub t).
                               ltac1:(set_solver).
                             }
-                            specialize (IHsub _ H3).
-                            destruct (decide (y = x)).
                             {
-                              simpl. subst.
                               rewrite disjoint_union_l.
-                              unfold wft in *.
                               split.
                               {
-                                
+                                assert (Htmp2 := vars_of_sub_app_sub sub (t_over (bov_variable x0))).
+                                unfold wft in H2.
+                                apply wfsub_subseteq_snd in H3 as H3'.
+                                rewrite disjoint_singleton_l.
+                                intros HContra.
+                                eapply elem_of_weaken in HContra>[|apply Htmp2].
+                                rewrite elem_of_union in HContra.
+                                destruct HContra as [HContra|HContra].
+                                {
+                                  ltac1:(set_solver).
+                                }{
+                                  unfold vars_of in HContra; simpl in HContra.
+                                  unfold vars_of in HContra; simpl in HContra.
+                                  ltac1:(set_solver).
+                                }
                               }
                               {
-                              
+                                eapply (IHsub (V' ∖ {[y]})).
+                                {
+                                  eapply wfsub_weaken>[|apply H3].
+                                  ltac1:(set_solver).
+                                }
+                                apply wfsub_subseteq in H3.
+                                ltac1:(set_solver).
                               }
                             }
                           }
-                          Search vars_of sub_app.
                         }
-
+                      }
+                    }
+                    {
+                      simpl.
+                      rewrite sub_app_term.
+                      rewrite sub_app_term.
+                      apply f_equal.
+                      apply list_eq.
+                      intros i.
+                      Search lookup list fmap.
+                      rewrite list_lookup_fmap.
+                      rewrite list_lookup_fmap.
+                      rewrite list_lookup_fmap.
+                      unfold Valuation2,TermOver in *.
+                      destruct (l !! i) eqn:Hli.
+                      {
+                        simpl.
+                        apply f_equal.
+                        rewrite Forall_forall in H.
+                        apply H.
+                        {
+                          rewrite elem_of_list_lookup.
+                          exists i. exact Hli.
+                        }
+                        {
+                          apply Hwfsub.
+                        }
+                        {
+                          apply Hsv.
+                        }
+                      }
+                      {
+                        simpl. reflexivity.
                       }
                     }
                     
