@@ -3457,7 +3457,7 @@ Qed.
       v ∉ vars_of t
       → vars_of_sub sub ⊆ V
       → (vars_of_sub sub ⊆ vars_of_sub sub')
-      → (forall x, x ∈ vars_of phi -> sub_app sub' (t_over (bov_variable x)) = sub_app sub (t_over (bov_variable x)))
+      → (forall x, x ∈ vars_of phi ∪ vars_of t -> sub_app sub' (t_over (bov_variable x)) = sub_app sub (t_over (bov_variable x)))
         → sub_app sub (TermOverBoV_subst phi v (sub_app sub' t)) = sub_app sub' (TermOverBoV_subst phi v t)
   .
   Proof.
@@ -3488,16 +3488,18 @@ Qed.
     }
     }
     
-    
-    revert sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame.
-    induction t; intros sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame.
+    ltac1:(setoid_rewrite vars_of_t_term in Hsame).
+    simpl.
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    clear s.
+    revert l v Hvt sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame H.
+    induction t; intros l' v Hvt sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame H'.
     {
       destruct a; simpl.
       {
         rewrite sub_app_builtin.
-        rewrite sub_app_term.
-        rewrite sub_app_term.
-        f_equal.
         apply list_eq.
         intros i.
         ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
@@ -3506,24 +3508,87 @@ Qed.
         rewrite list_lookup_fmap.
         rewrite list_lookup_fmap.
         unfold Valuation2, TermOver in *.
-        destruct (l !! i) eqn:Hli; simpl; try reflexivity.
+        destruct (l' !! i) eqn:Hli; simpl; try reflexivity.
         apply f_equal.
-        apply helper_lemma_3.
-        intros 
-        Search sub_app.
-        rewrite sub_app_builtin.
-        reflexivity.
+        apply helper_lemma_3_ex.
+        intros.
+        symmetry.
+        apply Hsame.
+        eapply elem_of_weaken>[apply H|].
+        eapply transitivity>[apply vars_of_TermOverBoV_subst__approx|].
+        apply take_drop_middle in Hli.
+        rewrite <- Hli.
+        ltac1:(rewrite fmap_app fmap_cons union_list_app).
+        simpl.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
       }
-      {
+      { 
+        
+        revert x v Hvt sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame H'.
+        induction l'; intros x v Hvt sub sub' Hwfsub Hwfsub' Hsv Hvof Hsame H'.
+        {
+          simpl. reflexivity.
+        }
+        {
+          simpl.
+          rewrite Hsame>[|unfold vars_of; simpl; unfold vars_of; simpl; ltac1:(set_solver)].
+          ltac1:(erewrite sub_app_between)>[|apply Hwfsub|apply Hvt|()].
+          f_equal.
+          {
+            apply helper_lemma_3_ex.
+            intros.
+            symmetry.
+            apply Hsame.
+            eapply elem_of_weaken>[apply vars_of_TermOverBoV_subst__approx|].
+            { apply H. }
+            rewrite elem_of_subseteq.
+            intros x1 Hx1.
+            rewrite elem_of_union in Hx1.
+            rewrite elem_of_difference in Hx1.
+            destruct Hx1 as [HHH|HHH].
+            {
+              unfold vars_of in HHH; simpl in HHH. 
+              unfold vars_of in HHH; simpl in HHH.
+              rewrite elem_of_singleton in HHH.
+              subst x1.
+              rewrite elem_of_union.
+              right.
+              unfold vars_of; simpl.
+              unfold vars_of; simpl.
+              ltac1:(set_solver).
+            }
+            {
+              destruct HHH as [H1 H2].
+              rewrite elem_of_union.
+              left.
+              rewrite fmap_cons.
+              rewrite union_list_cons.
+              rewrite elem_of_union.
+              left.
+              assumption.
+            }
+          }
+          {
+            
+          }
+        }
+        
+        
+        
+        (*
         rewrite sub_app_identity.
-        { reflexivity. }
+        admit.
+        { admit. }*)
         {
 (*                          apply wfsub_subseteq in Hwfsub as Htmp. *)
           
           (*ltac1:(remember (t_over (bov_variable x)) as phi).
           clear Heqphi.*)
-          revert V Hwfsub Hsv.
-          induction sub; intros V' Hwfsub Hsv; simpl.
+          revert V Hsv H Hwfsub Hwfsub'.
+          (* FAAIL: I can't do induction on sub because there are two of them!! *)
+          induction sub; intros V' Hsv H Hwfsub Hwfsub'; simpl.
           { ltac1:(set_solver). }
           {
             destruct a as [y t].
