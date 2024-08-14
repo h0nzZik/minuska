@@ -3108,6 +3108,76 @@ Module Implementation.
        ltac1:(set_solver).
     }
   Qed.
+
+
+Lemma helper_lemma_3_ex {Σ : StaticModel}:
+∀ l s1 t,
+(
+    ∀ x : variable,
+    elem_of x (vars_of t) ->
+    sub_app l (t_over (bov_variable x)) =
+    sub_app (s1) (t_over (bov_variable x))
+) ->
+    sub_app l t = sub_app (s1) t
+.
+Proof.
+intros l s1 t HNice.
+revert l s1 HNice.
+induction t; intros ll s1 HNice.
+{
+    destruct a.
+    {
+    rewrite sub_app_builtin.
+    rewrite sub_app_builtin.
+    reflexivity.
+    }
+    {
+    rewrite HNice.
+    reflexivity.
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    ltac1:(set_solver).
+    }
+}
+{
+    rewrite sub_app_term.
+    rewrite sub_app_term.
+    apply f_equal.
+    rewrite Forall_forall in H.
+    apply list_eq.
+    intros i.
+    rewrite list_lookup_fmap.
+    rewrite list_lookup_fmap.
+    destruct (l !! i) eqn:Hli.
+    {
+    ltac1:(rewrite Hli).
+    simpl.
+    apply f_equal.
+    erewrite H.
+    reflexivity.
+    rewrite elem_of_list_lookup.
+    exists i. exact Hli.
+    intros.
+    apply HNice.
+    rewrite vars_of_t_term.
+    apply take_drop_middle in Hli.
+    rewrite <- Hli.
+    rewrite fmap_app.
+    rewrite union_list_app.
+    rewrite fmap_cons.
+    simpl.
+    ltac1:(set_solver).
+    }
+    {
+    ltac1:(rewrite Hli).
+    simpl.
+    reflexivity.
+    }
+}
+Qed.
+
+
+
   (*
   Lemma wfsub_intersect
     {Σ : StaticModel}
@@ -3438,6 +3508,8 @@ Module Implementation.
         unfold Valuation2, TermOver in *.
         destruct (l !! i) eqn:Hli; simpl; try reflexivity.
         apply f_equal.
+        apply helper_lemma_3.
+        intros 
         Search sub_app.
         rewrite sub_app_builtin.
         reflexivity.
