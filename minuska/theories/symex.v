@@ -3388,7 +3388,8 @@ Module Implementation.
     wfsub V sub ->
     NoDup (fst <$> sub) ->
     vars_of_sub sub ## vars_of ρ0 ->
-    vars_of φ ## vars_of ρ0 ->
+    (*vars_of φ ## vars_of ρ0 ->*)
+    vars_of φ ⊆ vars_of_sub sub ->
     sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) φ = sub_app sub φ
   .
   Proof.
@@ -3409,16 +3410,18 @@ Module Implementation.
           clear Heqphi.
           revert phi HH.
           clear x.
-          revert sub Hvo Hwfsub HHdisj Hnd.
-          ltac1:(induction ρ0 using map_ind); intros sub Hvo Hwfsub HHdisj Hnd phi HH.
+          revert V sub Hvo Hwfsub HHdisj Hnd.
+          ltac1:(induction ρ0 using map_ind); intros V sub Hvo Hwfsub HHdisj Hnd phi HH.
           {
             simpl.
             (*******)
-            clear HH HHdisj.
+            clear HHdisj.
             revert Hnd.
-            revert phi.
+            revert phi HH.
             revert Hwfsub.
-            induction sub; intros Hwfsub phi HH; simpl.
+            revert Hvo.
+            revert V.
+            induction sub; intros V Hvo Hwfsub phi HH Hnd; simpl.
             {
               unfold Valuation2_to_SubT.
               unfold Valuation2 in *.
@@ -3431,7 +3434,7 @@ Module Implementation.
               {
                 clear H0 H1.
                 unfold Valuation2_to_SubT.
-                inversion HH; subst; clear HH.
+                inversion Hnd; subst; clear Hnd.
                 erewrite sub_app_helper.
                 {
                   ltac1:(shelve).
@@ -3459,17 +3462,45 @@ Module Implementation.
                   unfold Valuation2_to_SubT in *.
                   unfold fmap in *.
                   rewrite TermOverBuiltin_to_TermOverBoV__inv.
-                  ltac1:(rewrite IHsub).
-                  { ltac1:(set_solver). }
-                  { 
-                    eapply wfsub_weaken>[|apply Hwfsub].
+                  destruct Hwfsub as [H5 [H6 H7]].
+                  apply wfsub_subseteq in H7 as H7'.
+                  rewrite (IHsub (V ∖ {[v]})).
+                  {
+                    unfold wft in H6.
+                    (*
+                    rewrite (IHsub (V ∖ {[v]})).
+                    {
+                      admit.
+                    }
+                    {
+                      assumption.
+                    }
+                    {
+                      assumption.
+                    }
+                    { ltac1:(set_solver).
+                    admit.
+                    *)
+                  }
+                  { assumption. }
+                  { assumption. }
+                  {
+                    eapply transitivity>[apply vars_of_TermOverBoV_subst__approx|].
+                    ltac1:(rewrite e).
                     ltac1:(set_solver).
+                  }
+                  {
+                    assumption.
                   }
                   { apply H2. }
                   ltac1:(rewrite IHsub).
                   { ltac1:(set_solver). }
                   { 
                     eapply wfsub_weaken>[|apply Hwfsub].
+                    ltac1:(set_solver).
+                  }
+                  {
+                    unfold wft in Hwfsub.
                     ltac1:(set_solver).
                   }
                   { apply H2. }
@@ -3528,6 +3559,7 @@ Module Implementation.
                 {
                   simpl.
                   inversion HH; subst; clear HH.
+                  Search Valuation2_to_SubT.
                   rewrite IHsub.
                   {
                     eapply sub_app_between.
@@ -3727,6 +3759,9 @@ Module Implementation.
   Proof.
     remember (extend_val_with_sub ρ sub d) as ρ'.
     remember (set_default_variables ρ' _ d) as ρ''.
+    revert pf.
+    ltac1:(rewrite {1 2} Heqρ'').
+    intros pf.
     assert (Hρ''1: ρ' ⊆ ρ'').
     {
       subst ρ''.
@@ -3743,19 +3778,21 @@ Module Implementation.
       subst ρ''.
       intros x Hx.
       unfold Valuation2 in *.
-      Check set_default_variables_works.
-      Search set_default_variables.
+      apply set_default_variables_works'.
+      rewrite elem_of_elements.
+      exact Hx.
     }
-    revert Hρ''1.
-    ltac1:(funelim (sat2B _ _ _)); intros Hρ''1.
+    clear Heqρ''.
+    revert ρ'' Hρ''1 Hρ''2.
+    ltac1:(funelim (sat2B _ _ _)); intros ρ'' Hρ''1 Hρ''2.
     {
       destruct bv;
         simpl; ltac1:(simp sat2B);
         unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar.
       {
+        intros HHH.
         revert pf.
-        ltac1:(rewrite {2 3} sub_app_builtin).
-        ltac1:(rewrite {1 2} sub_app_builtin).
+        rewrite sub_app_builtin.
         intros pf; simpl.
         ltac1:(simp TermOverBoV_eval).
         reflexivity.
@@ -3763,15 +3800,13 @@ Module Implementation.
       {
         (* This induction removes 'set_default_variables'.
           I need to generalize! *)
-        revert ρ0 x d pf.
-        induction sub; intros ρ0 x d pf Hdisj; simpl in *.
+        revert ρ0 x d pf Hρ''1 Hρ''2.
+        induction sub; intros ρ0 x d pf Hρ''1 Hρ''2 Hdisj ; simpl in *.
         {
           ltac1:(simp TermOverBoV_eval).
           unfold TermOverBoV_eval_unfold_clause_2.
           destruct (inspect
-            (set_default_variables ρ0
-            (elements (vars_of (t_over (bov_variable x)) ∖ vars_of ρ0)) d
-            !! x)
+            (set_default_variables ρ0 (elements (vars_of (t_over (bov_variable x)) ∖ vars_of ρ0)) d !! x)
           ).
           destruct x0.
           {
@@ -3834,6 +3869,11 @@ Module Implementation.
                 reflexivity.
               }
               {
+                ltac1:(setoid_rewrite elem_of_difference in Hρ''2).
+                unfold vars_of in Hρ''2.
+                Search ρ0.
+              
+                (* HERE? *)
                 
 
                 erewrite <- TermOverBoV_eval__varsofindependent_2 with (ρ1 := (<[x:=TermOverBoV_to_TermOverBuiltin
