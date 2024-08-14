@@ -3571,152 +3571,71 @@ Qed.
             }
           }
           {
-            
-          }
-        }
-        
-        
-        
-        (*
-        rewrite sub_app_identity.
-        admit.
-        { admit. }*)
-        {
-(*                          apply wfsub_subseteq in Hwfsub as Htmp. *)
-          
-          (*ltac1:(remember (t_over (bov_variable x)) as phi).
-          clear Heqphi.*)
-          revert V Hsv H Hwfsub Hwfsub'.
-          (* FAAIL: I can't do induction on sub because there are two of them!! *)
-          induction sub; intros V' Hsv H Hwfsub Hwfsub'; simpl.
-          { ltac1:(set_solver). }
-          {
-            destruct a as [y t].
-            simpl in *.
-            destruct Hwfsub as [H1 [H2 H3]].
-            destruct (decide (y = x0)).
+            rewrite Forall_cons in H'.
+            destruct H' as [H'1 H'2].
+            specialize (IHl' x v ltac:(assumption) sub sub' ltac:(assumption) ltac:(assumption)).
+            specialize (IHl' ltac:(assumption) ltac:(assumption)).
+            ltac1:(ospecialize (IHl' _)).
             {
-              subst.
-              assert (Htmp1 := sub_wf_app_disjoint sub _ t H3).
-              ltac1:(cut(x0 ∉ vars_of (sub_app sub t))).
-              {
-                intros ?. ltac1:(set_solver).
-              }
-              unfold wft in H2.
-              rewrite elem_of_difference in H1.
-              rewrite elem_of_singleton in H1.
-              destruct H1 as [H1 H4].
-              apply wfsub_subseteq_snd in H3 as H3'.
-              assert (Htmp2 := vars_of_sub_app_sub sub t).
+              intros. apply Hsame.
+              rewrite fmap_cons.
+              rewrite union_list_cons.
               ltac1:(set_solver).
             }
-            {
-              rewrite disjoint_union_l.
-              split.
-              {
-                assert (Htmp2 := vars_of_sub_app_sub sub (t_over (bov_variable x0))).
-                unfold wft in H2.
-                apply wfsub_subseteq_snd in H3 as H3'.
-                rewrite disjoint_singleton_l.
-                intros HContra.
-                eapply elem_of_weaken in HContra>[|apply Htmp2].
-                rewrite elem_of_union in HContra.
-                destruct HContra as [HContra|HContra].
-                {
-                  ltac1:(set_solver).
-                }{
-                  unfold vars_of in HContra; simpl in HContra.
-                  unfold vars_of in HContra; simpl in HContra.
-                  ltac1:(set_solver).
-                }
-              }
-              {
-                eapply (IHsub (V' ∖ {[y]})).
-                {
-                  eapply wfsub_weaken>[|apply H3].
-                  ltac1:(set_solver).
-                }
-                apply wfsub_subseteq in H3.
-                ltac1:(set_solver).
-              }
-            }
+            specialize (IHl' H'2).
+            unfold fmap in IHl'.
+            rewrite <- IHl'.
+            clear -Hsame.
+            apply list_eq.
+            intros i.
+            ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+            repeat (rewrite list_lookup_fmap).
+            unfold TermOver in *.
+            destruct (l' !! i) eqn:Hl'i; simpl; try reflexivity.
+            apply f_equal.
+            rewrite Hsame. reflexivity.
+            rewrite elem_of_union.
+            right.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            rewrite elem_of_singleton.
+            reflexivity.
           }
+          { assumption. }
         }
       }
     }
     {
-      simpl.
-      rewrite sub_app_term.
-      rewrite sub_app_term.
-      apply f_equal.
-      apply list_eq.
-      intros i.
-      Search lookup list fmap.
-      rewrite list_lookup_fmap.
-      rewrite list_lookup_fmap.
-      rewrite list_lookup_fmap.
-      unfold Valuation2,TermOver in *.
-      destruct (l !! i) eqn:Hli.
+      ltac1:(setoid_rewrite vars_of_t_term in Hsame).
+      revert H' Hsame.
+      induction l'; intros H' Hsame; simpl.
+      { reflexivity. }
       {
-        simpl.
-        apply f_equal.
-        rewrite Forall_forall in H.
-        apply H.
+        rewrite Forall_cons in H'.
+        destruct H' as [H'1 H2'].
+        specialize (IHl' H2').
+        ltac1:(ospecialize (IHl' _)).
         {
-          rewrite elem_of_list_lookup.
-          exists i. exact Hli.
+          intros.
+          apply Hsame.
+          ltac1:(rewrite fmap_cons union_list_cons).
+          ltac1:(set_solver).
+        }
+        f_equal.
+        {
+          apply H'1; try assumption.
+          intros.
+          apply Hsame.
+          ltac1:(rewrite fmap_cons union_list_cons).
+          ltac1:(set_solver).
         }
         {
-          apply Hwfsub.
-        }
-        {
-          apply Hsv.
+          apply IHl'.
         }
       }
-      {
-        simpl. reflexivity.
-      }
     }
-  }
-  {
-    simpl.
-    rewrite sub_app_term.
-    rewrite sub_app_term.
-    apply f_equal.
-    apply list_eq.
-    intros i.
-    rewrite list_lookup_fmap.
-    rewrite list_lookup_fmap.
-    rewrite list_lookup_fmap.
-    ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
-    rewrite list_lookup_fmap.
-    unfold TermOver in *.
-    destruct (l !! i) eqn:Heq; simpl.
-    {
-      apply f_equal.
-      rewrite Forall_forall in H.
-      apply H.
-      {
-        rewrite elem_of_list_lookup.
-        exists i. exact Heq.
-      }
-      {
-        apply Hwfsub.
-      }
-      {
-        apply Hvt.
-      }
-      {
-        apply wfsub_subseteq in Hwfsub.
-        ltac1:(set_solver).
-      }
-    }
-    {
-      reflexivity.
-    }
-  }
-  
   Qed.
+        
   
   
   (*
