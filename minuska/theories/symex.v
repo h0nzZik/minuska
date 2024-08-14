@@ -3454,7 +3454,20 @@ Module Implementation.
                 }
               }
               {
-              
+                erewrite sub_app_nodup_perm>[|apply Valuation2_to_SubT__insert|()|].
+                {
+                  simpl.
+                  rewrite IHsub; admit.
+                }
+                {
+                  admit.
+                }
+                {
+                  unfold Valuation2 in *.
+                  apply Valuation2_to_SubT__NoDup.
+                }
+                Search Permutation sub_app.
+
               }
               {
               
