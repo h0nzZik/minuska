@@ -3640,13 +3640,14 @@ Qed.
     {Σ : StaticModel}
     (sub : SubT)
     (V : gset variable)
-    : gset Variable
+    : gset variable
   :=
   match sub with
   | [] => V
   | (x,t)::xs => rem_sub xs (V ∖ {[x]})
   end
   .
+  
   
   (*
     Is this even true?
@@ -3668,12 +3669,13 @@ Qed.
     vars_of_sub sub ## vars_of ρ0 ->
     (*vars_of φ ## vars_of ρ0 ->*)
     vars_of φ ⊆ vars_of_sub sub ∪ vars_of ρ0 ->
+(*    rem_sub sub V ⊆ vars_of ρ0 ->*)
     sub_app (Valuation2_to_SubT (extend_val_with_sub ρ0 sub d)) φ = sub_app sub φ
   .
   Proof.
     
     revert sub ρ0.
-    induction φ; intros sub ρ0 Hvo Hwfsub Hnd HHdisj HH.
+    induction φ; intros sub ρ0 Hvo Hwfsub Hnd HHdisj HH (*Hrem*) .
       {
         destruct a;
           simpl.
@@ -3688,18 +3690,18 @@ Qed.
           clear Heqphi.
           revert phi HH.
           clear x.
-          revert V sub Hvo Hwfsub HHdisj Hnd.
-          ltac1:(induction ρ0 using map_ind); intros V sub Hvo Hwfsub HHdisj Hnd phi HH.
+          revert V sub Hvo Hwfsub HHdisj Hnd (*Hrem*) .
+          ltac1:(induction ρ0 using map_ind); intros V sub Hvo Hwfsub HHdisj Hnd phi HH (*Hrem*) .
           {
             simpl.
             (*******)
             clear HHdisj.
             revert Hnd.
-            revert phi HH.
+            revert phi HH (*Hrem*).
             revert Hwfsub.
             revert Hvo.
             revert V.
-            induction sub; intros V Hvo Hwfsub phi HH Hnd; simpl.
+            induction sub; intros V Hvo Hwfsub phi HH (*Hrem*) Hnd; simpl.
             {
               unfold Valuation2_to_SubT.
               unfold Valuation2 in *.
@@ -3755,6 +3757,10 @@ Qed.
                       }
                       {
                         eapply transitivity>[apply vars_of_TermOverBoV_subst__approx|].
+                        ltac1:(cut (vars_of t ⊆ vars_of_sub sub)).
+                        {
+                          intros ?. ltac1:(set_solver).
+                        }
                         ltac1:(set_solver).
                       }
                     }
