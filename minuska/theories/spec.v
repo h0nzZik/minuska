@@ -152,6 +152,7 @@ Instance VarsOf_TermOver
     ) ; 
 |}.
 
+Unset Elimination Schemes.
 Inductive Expression2
     {Σ : StaticModel}
     :=
@@ -159,6 +160,33 @@ Inductive Expression2
 | e_variable (x : variable)
 | e_fun (f : builtin_function_symbol) (l : list Expression2)
 .
+Set Elimination Schemes.
+
+Section custom_induction_principle.
+
+    Context
+        {Σ : StaticModel}
+        (P : Expression2 -> Prop)
+        (true_for_ground : forall e, P (e_ground e))
+        (true_for_var : forall x, P (e_variable x))
+        (preserved_by_fun :
+            forall
+                (f : builtin_function_symbol)
+                (l : list Expression2),
+                Forall P l ->
+                P (e_fun f l)
+        )
+    .
+
+    Fixpoint Expression2_ind (e : Expression2) : P e :=
+    match e with
+    | e_ground g => true_for_ground g
+    | e_variable x => true_for_var x
+    | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2_ind)
+    end.
+
+End custom_induction_principle.
+
 
 Fixpoint vars_of_Expression2
     {Σ : StaticModel}
