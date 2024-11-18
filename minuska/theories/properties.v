@@ -187,7 +187,8 @@ Proof.
     }
 Qed.
 
-
+(* This no longer holds *)
+(*
 Lemma Expression2_evaluate_Some_enough_inv
     {Σ : StaticModel}
     (e : Expression2)
@@ -273,8 +274,7 @@ Proof.
         split; reflexivity.
     }
 Qed.
-
-
+*)
 
 Lemma Expression2Term_matches_enough
     {Σ : StaticModel}
@@ -356,7 +356,7 @@ Lemma Expression2_evalute_total_1
 .
 Proof.
     revert e.
-    induction t; intros b H; cbn.
+    induction t; intros b Hb; cbn.
     {
         apply empty_subseteq.
     }
@@ -368,46 +368,42 @@ Proof.
         subst x0.
         ltac1:(rewrite elem_of_dom).
         unfold is_Some.
-        simpl in H.
+        simpl in Hb.
         ltac1:(case_match;simplify_eq/=).
         exists t. assumption.
     }
     {
-        ltac1:(set_solver).
-    }
-    {
-        ltac1:(simplify_eq/=).
-        rewrite bind_Some in H.
-        destruct H as [x [H1x H2x]].
-        ltac1:(simplify_eq/=).
+        simpl in Hb.
+        rewrite bind_Some in Hb.
+        destruct Hb as [x [H1x H2x]].
+        injection H2x as H2x.
         unfold vars_of; simpl.
-        eapply IHt.
-        apply H1x.
-    }
-    {
-        unfold vars_of; simpl.
-        rewrite union_subseteq.
-        unfold vars_of in *; simpl in *.
-        rewrite bind_Some in H.
-        destruct H as[x [H1x H2x]].
-        rewrite bind_Some in H2x.
-        destruct H2x as [y [H1y H2y]].
-        ltac1:(simplify_eq/=).
-        ltac1:(naive_solver).
-    }
-    {
-        unfold vars_of; simpl.
-        rewrite union_subseteq.
-        rewrite union_subseteq.
-        simpl in H.
-        rewrite bind_Some in H.
-        destruct H as[x [H1x H2x]].
-        rewrite bind_Some in H2x.
-        destruct H2x as [y [H1y H2y]].
-        rewrite bind_Some in H2y.
-        destruct H2y as [z [H1z H2z]].
-        ltac1:(simplify_eq/=).
-        ltac1:(naive_solver).
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        rewrite elem_of_union_list in Hx0.
+        destruct Hx0 as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [e [H1e H2e]].
+        subst X.
+        rewrite Forall_forall in H.
+        apply list_collect_inv in H1x as H1x'.
+        unfold isSome in H1x'.
+        rewrite Forall_fmap in H1x'.
+        rewrite Forall_forall in H1x'.
+        specialize (H1x' e H2e).
+        simpl in H1x'.
+        ltac1:(case_match).
+        {
+            clear H1x'.
+            eapply (H _ H2e); clear H.
+            { apply H0. }
+            {
+                exact H2X.
+            }
+        }
+        {
+            inversion H1x'.
+        }
     }
 Qed.
 
