@@ -165,198 +165,18 @@ Proof.
     }
 Qed.
 
-Lemma Expression2_evaluate_Some_enough
+Lemma Expression2_evaluate_total_1
     {Σ : StaticModel}
     (e : Expression2)
     (ρ : Valuation2)
-    (g : NondetValue -> TermOver builtin_value)
+    (ng : NondetValue -> TermOver builtin_value)
 :
-    Expression2_evaluate ρ e = Some g ->
-    vars_of e ⊆ vars_of ρ
+    Expression2_evaluate ρ e = Some ng ->
+    ( vars_of e ⊆ vars_of ρ )
 .
 Proof.
-    revert ρ g.
-    induction e; intros ρ g He; simpl in *;
-        repeat (unfold vars_of in *; simpl in *; ());
-        ltac1:(simplify_eq/=; simplify_option_eq; try set_solver).
-    {
-        unfold Valuation2 in *.
-        rewrite singleton_subseteq_l.
-        ltac1:(case_match;[|congruence]; simplify_eq/=).
-        rewrite elem_of_dom. exists t. assumption.
-    }
-Qed.
-
-(* This no longer holds *)
-(*
-Lemma Expression2_evaluate_Some_enough_inv
-    {Σ : StaticModel}
-    (e : Expression2)
-    (ρ : Valuation2)
-:
-    vars_of e ⊆ vars_of ρ ->
-    { g : _ & Expression2_evaluate ρ e = Some g }
-.
-Proof.
-    revert ρ.
-    induction e; intros ρ He; simpl in *;
-        repeat (unfold vars_of in *; simpl in *; ());
-        ltac1:(simplify_eq/=; simplify_option_eq; try set_solver).
-    {
-        exists (fun _ => e). reflexivity.
-    }
-    {
-        rewrite singleton_subseteq_l in He.
-        unfold Valuation2 in *.
-        rewrite elem_of_dom in He.
-        unfold is_Some in He.
-        destruct (ρ !! x) eqn:Heqρx.
-        {
-            exists (fun _ => t). reflexivity.
-        }
-        {
-            ltac1:(exfalso).
-            destruct He as [x0 HContra].
-            inversion HContra.
-        }
-    }
-    {
-        eexists. reflexivity.
-    }
-    {
-        specialize (IHe ρ He).
-        destruct IHe as [g Hg].
-        exists (fun nv => builtin_unary_function_interp f (g nv) nv).
-        rewrite bind_Some.
-        exists g.
-        split.
-        { assumption. }
-        { reflexivity. }
-    }
-    {
-        rewrite union_subseteq in He.
-        destruct He as [He1 He2].
-        specialize (IHe1 ρ He1).
-        specialize (IHe2 ρ He2).
-        destruct IHe1 as [g1 Hg1].
-        destruct IHe2 as [g2 Hg2].
-        eexists.
-        ltac1:(simp Expression2_evaluate).
-        rewrite Hg1.
-        rewrite bind_Some.
-        eexists.
-        split>[reflexivity|].
-        rewrite Hg2.
-        simpl. reflexivity.
-    }
-
-    {
-        rewrite union_subseteq in He.
-        rewrite union_subseteq in He.
-        destruct He as [[He1 He2] He3].
-        specialize (IHe1 ρ He1).
-        specialize (IHe2 ρ He2).
-        specialize (IHe3 ρ He3).
-        destruct IHe1 as [g1 Hg1].
-        destruct IHe2 as [g2 Hg2].
-        destruct IHe3 as [g3 Hg3].
-        eexists.
-        ltac1:(simp Expression2_evaluate).
-        rewrite Hg1.
-        rewrite bind_Some.
-        eexists.
-        split>[reflexivity|].
-        rewrite Hg2.
-        simpl.
-        rewrite bind_Some.
-        eexists.
-        rewrite Hg3.
-        split; reflexivity.
-    }
-Qed.
-*)
-
-Lemma Expression2Term_matches_enough
-    {Σ : StaticModel}
-    (t : TermOver Expression2)
-    (ρ : Valuation2)
-    (g : TermOver builtin_value)
-    (nv : NondetValue)
-:
-    satisfies ρ (nv,g) t ->
-    vars_of t ⊆ vars_of ρ
-.
-Proof.
-    unfold satisfies; simpl.
-
-    revert ρ g.
-    induction t; intros ρ g HH; destruct g; simpl in *;
-        ltac1:(simp sat2E in HH).
-    {
-        ltac1:(case_match;[|contradiction]).
-        apply Expression2_evaluate_Some_enough in H.
-        unfold vars_of; simpl.
-        exact H.
-    }
-    {
-        ltac1:(case_match;[|contradiction]).
-        apply Expression2_evaluate_Some_enough in H.
-        unfold vars_of; simpl.
-        exact H.
-    }
-    {
-        inversion HH.
-    }
-    {
-        destruct HH as [Hs0s [Hl0l HH]].
-        subst s0.
-        rewrite Forall_forall in H.
-        unfold Valuation2 in *.
-        unfold TermOver in *.
-        rewrite vars_of_t_term_e.
-        rewrite elem_of_subseteq.
-        intros x Hx.
-        rewrite elem_of_union_list in Hx.
-        destruct Hx as [X [H1X H2X]].
-        rewrite elem_of_list_fmap in H1X.
-        destruct H1X as [t [HX Ht]].
-        subst X.
-        specialize (H _ Ht).
-        rewrite elem_of_list_lookup in Ht.
-        destruct Ht as [i Hi].
-        specialize (HH i).
-        remember (l0 !! i) as Hl0i.
-        destruct Hl0i.
-        {
-            specialize (HH t0 t ltac:(assumption) ltac:(reflexivity)).
-            specialize (H _ _ HH).
-            clear -H2X H.
-            ltac1:(set_solver).
-        }
-        {
-            symmetry in HeqHl0i.
-            rewrite lookup_ge_None in HeqHl0i.
-            apply lookup_lt_Some in Hi.
-            unfold TermOver in *.
-            ltac1:(lia).
-        }
-    }
-Qed.
-
-
-
-Lemma Expression2_evalute_total_1
-    {Σ : StaticModel}
-    (t : Expression2)
-    (ρ : Valuation2)
-    (e : NondetValue -> TermOver builtin_value)
-:
-    Expression2_evaluate ρ t = Some e ->
-    ( vars_of t ⊆ vars_of ρ )
-.
-Proof.
-    revert e.
-    induction t; intros b Hb; cbn.
+    revert ng.
+    induction e; intros b Hb; cbn.
     {
         apply empty_subseteq.
     }
@@ -403,6 +223,73 @@ Proof.
         }
         {
             inversion H1x'.
+        }
+    }
+Qed.
+
+Lemma Expression2Term_matches_enough
+    {Σ : StaticModel}
+    (t : TermOver Expression2)
+    (ρ : Valuation2)
+    (g : TermOver builtin_value)
+    (nv : NondetValue)
+:
+    satisfies ρ (nv,g) t ->
+    vars_of t ⊆ vars_of ρ
+.
+Proof.
+    unfold satisfies; simpl.
+
+    revert ρ g.
+    induction t; intros ρ g HH; destruct g; simpl in *;
+        ltac1:(simp sat2E in HH).
+    {
+        ltac1:(case_match;[|contradiction]).
+        apply Expression2_evaluate_total_1 in H.
+        unfold vars_of; simpl.
+        exact H.
+    }
+    {
+        ltac1:(case_match;[|contradiction]).
+        apply Expression2_evaluate_total_1 in H.
+        unfold vars_of; simpl.
+        exact H.
+    }
+    {
+        inversion HH.
+    }
+    {
+        destruct HH as [Hs0s [Hl0l HH]].
+        subst s0.
+        rewrite Forall_forall in H.
+        unfold Valuation2 in *.
+        unfold TermOver in *.
+        rewrite vars_of_t_term_e.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        rewrite elem_of_union_list in Hx.
+        destruct Hx as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [t [HX Ht]].
+        subst X.
+        specialize (H _ Ht).
+        rewrite elem_of_list_lookup in Ht.
+        destruct Ht as [i Hi].
+        specialize (HH i).
+        remember (l0 !! i) as Hl0i.
+        destruct Hl0i.
+        {
+            specialize (HH t0 t ltac:(assumption) ltac:(reflexivity)).
+            specialize (H _ _ HH).
+            clear -H2X H.
+            ltac1:(set_solver).
+        }
+        {
+            symmetry in HeqHl0i.
+            rewrite lookup_ge_None in HeqHl0i.
+            apply lookup_lt_Some in Hi.
+            unfold TermOver in *.
+            ltac1:(lia).
         }
     }
 Qed.
