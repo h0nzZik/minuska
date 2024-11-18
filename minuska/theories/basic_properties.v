@@ -401,10 +401,7 @@ match e with
 | e_ground g => e_ground g
 | e_variable y =>
     if (decide (y = x)) then e' else (e_variable y)
-| e_nullary f => e_nullary f
-| e_unary f e1 => e_unary f (Expression2_subst e1 x e')
-| e_binary f e1 e2 => e_binary f (Expression2_subst e1 x e') (Expression2_subst e2 x e')
-| e_ternary f e1 e2 e3 => e_ternary f (Expression2_subst e1 x e') (Expression2_subst e2 x e') (Expression2_subst e3 x e')
+| e_fun f l => e_fun f ((fun e1 => Expression2_subst e1 x e') <$> l)
 end
 .
 
