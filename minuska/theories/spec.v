@@ -71,47 +71,19 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
     builtin_value_eqdec
         :: EqDecision builtin_value ;
     
-    builtin_nullary_function
+
+    builtin_function_symbol
         : Type ;
-    builtin_nullary_function_eqdec
-        :: EqDecision builtin_nullary_function ;
-
-    builtin_unary_function
-        : Type ;
-    builtin_unary_function_eqdec
-        :: EqDecision builtin_unary_function ;
-
-    builtin_binary_function
-        : Type ;
-    builtin_binary_function_eqdec
-        :: EqDecision builtin_binary_function ;
-    
-    builtin_ternary_function
-        : Type ;
-    builtin_ternary_function_eqdec
-        :: EqDecision builtin_ternary_function ;
-
-    builtin_nullary_function_interp
-        : builtin_nullary_function
-        -> (NondetValue -> @TermOver' symbol builtin_value) ;
-
-    builtin_unary_function_interp
-        : builtin_unary_function
-        -> (@TermOver' symbol builtin_value)
-        -> (NondetValue -> @TermOver' symbol builtin_value) ;
-
-    builtin_binary_function_interp
-        : builtin_binary_function
-        -> (@TermOver' symbol builtin_value)
-        -> (@TermOver' symbol builtin_value)
-        -> (NondetValue -> @TermOver' symbol builtin_value) ;
-
-    builtin_ternary_function_interp
-        : builtin_ternary_function
-        -> (@TermOver' symbol builtin_value)
-        -> (@TermOver' symbol builtin_value)
-        -> (@TermOver' symbol builtin_value)
-        -> (NondetValue -> @TermOver' symbol builtin_value) ;
+    builtin_function_symbol_eqdec
+        :: EqDecision builtin_function_symbol ;
+    (* I make the function interpretation total, and it is up to the concrete model
+       to decide what does applying functions with invalid arguments mean.
+       *)
+    builtin_function_interp
+        : builtin_function_symbol
+        -> NondetValue
+        -> list (@TermOver' symbol builtin_value)
+        -> @TermOver' symbol builtin_value ;
 }.
 
 Set Primitive Projections.
@@ -185,12 +157,8 @@ Inductive Expression2
     :=
 | e_ground (e : @TermOver' (symbol) builtin_value)
 | e_variable (x : variable)
-| e_nullary (f : builtin_nullary_function)
-| e_unary (f : builtin_unary_function) (t : Expression2)
-| e_binary (f : builtin_binary_function) (t1 : Expression2) (t2 : Expression2)
-| e_ternary (f : builtin_ternary_function) (t1 : Expression2) (t2 : Expression2) (t3 : Expression2)
+| e_fun (f : builtin_function_symbol) (l : list Expression2)
 .
-
 
 Fixpoint vars_of_Expression2
     {Σ : StaticModel}
@@ -199,10 +167,7 @@ Fixpoint vars_of_Expression2
 match t with
 | e_ground _ => ∅
 | e_variable x => {[x]}
-| e_nullary _ => ∅
-| e_unary _ t' => vars_of_Expression2 t'
-| e_binary _ t1 t2 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2
-| e_ternary _ t1 t2 t3 => vars_of_Expression2 t1 ∪ vars_of_Expression2 t2 ∪ vars_of_Expression2 t3
+| e_fun _ l => ⋃ (fmap vars_of_Expression2 l)
 end.
 
 
@@ -219,9 +184,6 @@ Inductive BuiltinOrVar {Σ : StaticModel} :=
 | bov_builtin (b : builtin_value)
 | bov_variable (x : variable)
 .
-
-
-
 
 Definition TermOver {Σ : StaticModel} (A : Type) : Type := @TermOver' symbol A.
 
@@ -472,20 +434,14 @@ match t with
     | Some v => Some (fun _ => v)
     | None => None
     end
-| e_nullary f =>
-    Some (fun nv => (builtin_nullary_function_interp f nv))
-| e_unary f t =>
-    e ← Expression2_evaluate ρ t;
-    Some (fun nv => (builtin_unary_function_interp f (e nv) nv))
-| e_binary f t1 t2 =>
-    e1 ← Expression2_evaluate ρ t1;
-    e2 ← Expression2_evaluate ρ t2;
-    Some (fun nv => (builtin_binary_function_interp f (e1 nv) (e2 nv) nv))
-| e_ternary f t1 t2 t3 =>
-    e1 ← Expression2_evaluate ρ t1;
-    e2 ← Expression2_evaluate ρ t2;
-    e3 ← Expression2_evaluate ρ t3;
-    Some (fun nv => (builtin_ternary_function_interp f (e1 nv) (e2 nv) (e3 nv) nv))
+| e_fun f l =>
+    let es' := Expression2_evaluate ρ <$> l in
+    es ← list_collect es';
+    Some (
+        fun nv =>
+        let args := (fun x => x nv) <$> es in
+        builtin_function_interp f nv args
+    )
 end.
 
 
