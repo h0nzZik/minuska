@@ -294,6 +294,83 @@ Proof.
     }
 Qed.
 
+Lemma Expression2_evaluate_Some_enough_inv
+    {Σ : StaticModel}
+    (e : Expression2)
+    (ρ : Valuation2)
+    :
+    vars_of e ⊆ vars_of ρ ->
+    { g : _ & Expression2_evaluate ρ e = Some g }
+.
+Proof.
+    induction e; intros Hsub.
+    {
+        simpl. exists (fun _ => e).
+        reflexivity.
+    }
+    {
+        simpl.
+        ltac1:(case_match).
+        {
+            exists (fun _ => t).
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            unfold vars_of in Hsub; simpl in Hsub.
+            rewrite elem_of_subseteq in Hsub.
+            specialize (Hsub x ltac:(set_solver)).
+            unfold Valuation2 in *.
+            rewrite elem_of_dom in Hsub.
+            rewrite H in Hsub.
+            unfold is_Some in Hsub.
+            destruct Hsub as [y Hy].
+            inversion Hy.
+        }
+    }
+    {
+        simpl.
+        assert (H1 : Forall isSome (Expression2_evaluate ρ <$> l)).
+        {
+            rewrite Forall_fmap.
+            rewrite Forall_forall.
+            intros e He.
+            specialize (X e He).
+            simpl.
+            unfold isSome.
+            ltac1:(case_match).
+            { reflexivity. }
+            ltac1:(exfalso).
+            unfold vars_of in Hsub; simpl in Hsub.
+            ltac1:(ospecialize (X _)).
+            {
+                clear X.
+                rewrite elem_of_subseteq in Hsub.
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                specialize (Hsub x).
+                rewrite elem_of_union_list in Hsub.
+                ltac1:(ospecialize (Hsub _)).
+                {
+                    clear Hsub.
+                    exists (vars_of e).
+                    rewrite elem_of_list_fmap.
+                    split>[|assumption].
+                    exists e.
+                    split>[|assumption].
+                    reflexivity.
+                }
+                exact Hsub.
+            }
+            destruct X as [g Hcontra].
+            inversion Hcontra.
+        }
+        apply list_collect_Forall in H1.
+        destruct H1 as [l_out [H1l_out H2l_out]].
+    }
+
+Qed.
+
 Lemma TermOverExpression2_evalute_total_2
     {Σ : StaticModel}
     (t : TermOver Expression2)

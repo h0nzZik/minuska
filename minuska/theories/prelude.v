@@ -697,6 +697,44 @@ Proof.
     }
 Qed.
 
+
+Lemma list_collect_Forall_T
+    {A : Type}
+    (l_in : list (option A))
+    :
+    Forall isSome l_in ->
+    { l_out : _ & list_collect l_in = Some l_out
+        /\ l_in = (Some <$> l_out) }
+.
+Proof.
+    induction l_in; intros H1; simpl.
+    {
+        exists [].
+        repeat split.
+    }
+    {
+        apply Forall_cons in H1.
+        destruct H1 as [H1 H2].
+        specialize (IHl_in H2).
+        destruct IHl_in as [l_out [H1l_out H2l_out]].
+        subst.
+        destruct a; simpl in H1.
+        {
+            clear H1.
+            exists (a::l_out).
+            simpl.
+            (repeat split).
+            rewrite H1l_out. clear H1l_out.
+            rewrite bind_Some.
+            exists l_out.
+            repeat split.
+        }
+        {
+            inversion H1.
+        }
+    }
+Qed.
+
 Lemma length_filter_l_1_impl_h_in_l
     {A : Type}
     {_edA : EqDecision A}
