@@ -10,10 +10,7 @@ From Minuska Require Import
 Import default_builtin.
 Export default_builtin.Notations.
 
-
-Arguments e_unary {Σ} f (t).
-Arguments e_binary {Σ} f (t1) (t2).
-Arguments e_ternary {Σ} f (t1) (t2) (t3).
+Arguments e_fun {Σ} f l%_list_scope.
 
 Definition SymbolicTerm_to_ExprTerm
     {Σ : StaticModel}
@@ -156,7 +153,7 @@ Notation "'rule' '[' n ']:' l '~>{' a '}' r"
 
 Notation "'rule' '[' n ']:' l '~>{' a '}' r 'where' s"
     := ((mkRuleDeclaration
-        n (rule (l) ~>{a} (r) requires (cons ((mkSideCondition2 _ ((e_nullary b_true)) (s))) nil))
+        n (rule (l) ~>{a} (r) requires (cons ((mkSideCondition2 _ ((e_fun b_true [])) (s))) nil))
     ))
     (at level 200)
 .
