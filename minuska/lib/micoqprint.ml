@@ -127,27 +127,9 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string
     | None -> failwith (String.append "Unknown builtin: " s)
     | Some name1 ->
         let name = (name1) in
-        match List.length es with
-        | 0 -> fprintf oux "(e_nullary %s)" name
-        | 1 ->
-            fprintf oux "(e_unary %s " name;
-            print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux ")"
-        | 2 ->
-            fprintf oux "(e_binary %s " name;
-            print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux " ";
-            print_expr_w_hole oux (List.nth_exn es 1) hole;
-            fprintf oux ")"
-        | 3 ->
-            fprintf oux "(e_ternary %s " name;
-            print_expr_w_hole oux (List.nth_exn es 0) hole;
-            fprintf oux " ";
-            print_expr_w_hole oux (List.nth_exn es 1) hole;
-            fprintf oux " ";
-            print_expr_w_hole oux (List.nth_exn es 2) hole;
-            fprintf oux ")"
-        | _ -> failwith "Bad length"
+        fprintf oux "(e_fun %s [" name;
+        myiter (fun x -> print_expr_w_hole oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+        fprintf oux "])"
 
 
 
