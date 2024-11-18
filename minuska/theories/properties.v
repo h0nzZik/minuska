@@ -79,6 +79,16 @@ Proof.
         }
     }
     {
+        intros HH.
+        rewrite bind_Some in HH.
+        rewrite bind_Some.
+        destruct HH as [x [H1x H2x]].
+        injection H2x as H2x.
+        Search list_collect.
+        rewrite <- H2x.
+        clear H2x.
+    }
+    {
         auto with nocore.
     }
     {

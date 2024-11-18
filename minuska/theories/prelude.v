@@ -583,6 +583,38 @@ Proof.
 Qed.
 
 
+Lemma list_collect_inv
+    {A : Type}
+    (l_in : list (option A))
+    (l_out : list A)
+:
+    list_collect l_in = Some l_out ->
+    Forall (isSome) l_in
+.
+Proof.
+    revert l_out.
+    induction l_in; intros l_out H1.
+    {
+        constructor.
+    }
+    {
+        simpl in H1.
+        rewrite bind_Some in H1.
+        destruct H1 as [x [H1x H2x]].
+        subst a.
+        rewrite bind_Some in H2x.
+        destruct H2x as [l' [H1l' H2l']].
+        injection H2l' as H2l'.
+        constructor.
+        {
+            reflexivity.
+        }
+        {
+            eapply IHl_in.
+            apply H1l'.
+        }
+    }
+Qed.
 
 
 Lemma length_filter_l_1_impl_h_in_l
