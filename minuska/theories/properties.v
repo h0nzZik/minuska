@@ -103,71 +103,65 @@ Proof.
                 ltac1:(naive_solver).
             }
             {
+                clear H.
                 specialize (H3x None).
-                ltac1:(exfalso).
                 ltac1:(ospecialize (H3x _)).
                 {
-                    
+                    rewrite elem_of_list_fmap.
+                    exists e. ltac1:(naive_solver).
                 }
-                Search None eq Some not.
+                inversion H3x.
             }
         }
-        rewrite Forall_forall in H.
-        rewrite Forall_forall in H1x.
-        Search Forall.
-        Search list_collect.
-        rewrite <- H2x.
-        clear H2x.
-    }
-    {
-        auto with nocore.
-    }
-    {
-        do 2 (rewrite bind_Some).
-        intros [x [Hx1 Hx2]].
-        exists x.
-        split>[|assumption].
-        apply (IHt _ Hx1).
-    }
-    {
-        do 2 (rewrite bind_Some).
-        intros [x [Hx1 Hx2]].
-        exists x.
-        rewrite (IHt1 _ Hx1).
-        split>[reflexivity|].
-        rewrite bind_Some in Hx2.
-        rewrite bind_Some.
-        destruct Hx2 as [x' [Hx'1 Hx'2]].
-        exists x'.
-        rewrite (IHt2 _ Hx'1).
-        split>[reflexivity|].
-        exact Hx'2.
-    }
-    {
-        do 2 (rewrite bind_Some).
-        intros [x [Hx1 Hx2]].
-        exists x.
-        rewrite (IHt1 _ Hx1).
-        simpl.
-        split>[reflexivity|].
-
-        rewrite bind_Some in Hx2.
-        destruct Hx2 as [x' [Hx'1 Hx'2]].
-        rewrite bind_Some.
-
-        rewrite bind_Some in Hx'2.
-        destruct Hx'2 as [x'' [Hx''1 Hx''2]].
-        exists x'.
-        rewrite (IHt2 _ Hx'1).
-        simpl.
-        split>[reflexivity|].
-
-        rewrite bind_Some.
-        exists x''.
-        rewrite (IHt3 _ Hx''1).
-        simpl.
-        split>[reflexivity|].
-        assumption.
+        apply list_collect_Forall in HSome.
+        destruct HSome as [l_out [H1l_out H2l_out]].
+        exists l_out.
+        split>[exact H1l_out|].
+        apply f_equal.
+        rewrite <- H2x. clear H2x.
+        apply functional_extensionality.
+        intros nv.
+        assert (H0: Some l_out = Some x).
+        {
+            rewrite <- H1x.
+            rewrite <- H1l_out.
+            apply f_equal.
+            clear - H H3x gt.
+            revert H H3x.
+            induction l; intros H H3x.
+            {
+                simpl. reflexivity.
+            }
+            {
+                rewrite fmap_cons.
+                rewrite fmap_cons.
+                rewrite fmap_cons in H3x.
+                rewrite Forall_cons in H3x.
+                destruct H3x as [HH1 HH2].
+                rewrite Forall_cons in H.
+                destruct H as [H1 H2].
+                specialize (IHl H2).
+                f_equal.
+                {
+                    
+                    unfold isSome in HH1.
+                    ltac1:(case_match).
+                    {
+                        ltac1:(specialize (H1 t erefl)).
+                        exact H1.
+                    }
+                    {
+                        inversion HH1.
+                    }
+                }
+                {
+                    apply IHl.
+                    apply HH2.
+                }
+            }
+        }
+        inversion H0; subst; clear H0.
+        reflexivity.
     }
 Qed.
 
