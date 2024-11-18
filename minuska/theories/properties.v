@@ -677,7 +677,7 @@ Lemma Expression2_evalute_strip
 .
 Proof.
     intros HH.
-    apply Expression2_evaluate_Some_enough in HH as HH1.
+    apply Expression2_evaluate_total_1 in HH as HH1.
     assert (HH2 : vars_of e ⊆ vars_of (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of e) ρ)).
     {
         unfold Valuation2 in *.

@@ -4,28 +4,6 @@ From Minuska Require Import
     lowlang
 .
 
-Fixpoint vars_of_Expression
-    {Σ : StaticModel}
-    (t : Expression)
-    : gset variable :=
-match t with
-| ft_element _ => ∅
-| ft_variable x => {[x]}
-| ft_nullary _ => ∅
-| ft_unary _ t' => vars_of_Expression t'
-| ft_binary _ t1 t2 => vars_of_Expression t1 ∪ vars_of_Expression t2
-| ft_ternary _ t1 t2 t3 => vars_of_Expression t1 ∪ vars_of_Expression t2 ∪ vars_of_Expression t3
-end.
-
-#[export]
-Instance VarsOf_Expression
-    {Σ : StaticModel}
-    : VarsOf Expression variable
-:= {|
-    vars_of := vars_of_Expression ; 
-|}.
-
-
 Definition vars_of_AP
     {Σ : StaticModel}
     (ap : AtomicProposition)
