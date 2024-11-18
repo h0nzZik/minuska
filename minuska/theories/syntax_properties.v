@@ -36,45 +36,6 @@ Section eqdec.
     Defined.
 
     #[export]
-    Instance Expression_eqdec {Σ : StaticModel}
-        : EqDecision (Expression)
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance LeftRight_eqdec
-        : EqDecision LeftRight
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Program Instance LeftRight_fin
-        : Finite LeftRight
-    := {|
-        enum := [LR_Left;LR_Right];
-    |}.
-    Next Obligation.
-        ltac1:(compute_done).
-    Qed.
-    Next Obligation.
-        destruct x;
-        ltac1:(compute_done).
-    Qed.
-    Fail Next Obligation.
-
-    #[export]
-    Instance atomicProposition_eqdec {Σ : StaticModel}
-        : EqDecision AtomicProposition
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
     Instance GroundTerm_eqdec {Σ : StaticModel}
         : EqDecision GroundTerm
     .
@@ -82,41 +43,6 @@ Section eqdec.
         intros e1 e2.
         apply Term'_eqdec.
         apply builtin_value_eqdec.
-    Defined.
-
-    #[export]
-    Instance  SymbolicTerm_eqdec {Σ : StaticModel}
-        : EqDecision SymbolicTerm
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance  SideCondition_eqdec {Σ : StaticModel}
-        : EqDecision SideCondition
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance ExpressionTerm_eqdec {Σ : StaticModel}
-        : EqDecision ExpressionTerm
-    .
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance RewritingRule_eqdec
-        {Σ : StaticModel}
-        (Act : Set)
-        {_aD : EqDecision Act}
-        : EqDecision (RewritingRule Act)
-    .
-    Proof.
-        ltac1:(solve_decision).
     Defined.
 
 End eqdec.

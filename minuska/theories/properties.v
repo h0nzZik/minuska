@@ -79,167 +79,153 @@ Proof.
         }
     }
     {
-        auto with nocore.
-    }
-    {
-        do 2 (rewrite bind_Some).
-        intros [x [Hx1 Hx2]].
-        exists x.
-        split>[|assumption].
-        apply (IHt _ Hx1).
-    }
-    {
-        do 2 (rewrite bind_Some).
-        intros [x [Hx1 Hx2]].
-        exists x.
-        rewrite (IHt1 _ Hx1).
-        split>[reflexivity|].
-        rewrite bind_Some in Hx2.
+        intros HH.
+        rewrite bind_Some in HH.
         rewrite bind_Some.
-        destruct Hx2 as [x' [Hx'1 Hx'2]].
-        exists x'.
-        rewrite (IHt2 _ Hx'1).
-        split>[reflexivity|].
-        exact Hx'2.
-    }
-    {
-        do 2 (rewrite bind_Some).
-        intros [x [Hx1 Hx2]].
-        exists x.
-        rewrite (IHt1 _ Hx1).
-        simpl.
-        split>[reflexivity|].
-
-        rewrite bind_Some in Hx2.
-        destruct Hx2 as [x' [Hx'1 Hx'2]].
-        rewrite bind_Some.
-
-        rewrite bind_Some in Hx'2.
-        destruct Hx'2 as [x'' [Hx''1 Hx''2]].
-        exists x'.
-        rewrite (IHt2 _ Hx'1).
-        simpl.
-        split>[reflexivity|].
-
-        rewrite bind_Some.
-        exists x''.
-        rewrite (IHt3 _ Hx''1).
-        simpl.
-        split>[reflexivity|].
-        assumption.
+        destruct HH as [x [H1x H2x]].
+        injection H2x as H2x.
+        apply list_collect_inv in H1x as H3x.
+        assert (HSome : Forall isSome (Expression2_evaluate ρ2 <$> l)).
+        {
+            rewrite Forall_forall.
+            rewrite Forall_forall in H3x.
+            rewrite Forall_forall in H.
+            intros ox Hox.
+            apply H3x.
+            rewrite elem_of_list_fmap.
+            rewrite elem_of_list_fmap in Hox.
+            destruct Hox as [e [H1e H2e]].
+            subst.
+            exists e.
+            split; try assumption.
+            destruct (Expression2_evaluate ρ1 e) eqn:Heq.
+            {
+                ltac1:(naive_solver).
+            }
+            {
+                clear H.
+                specialize (H3x None).
+                ltac1:(ospecialize (H3x _)).
+                {
+                    rewrite elem_of_list_fmap.
+                    exists e. ltac1:(naive_solver).
+                }
+                inversion H3x.
+            }
+        }
+        apply list_collect_Forall in HSome.
+        destruct HSome as [l_out [H1l_out H2l_out]].
+        exists l_out.
+        split>[exact H1l_out|].
+        apply f_equal.
+        rewrite <- H2x. clear H2x.
+        apply functional_extensionality.
+        intros nv.
+        assert (H0: Some l_out = Some x).
+        {
+            rewrite <- H1x.
+            rewrite <- H1l_out.
+            apply f_equal.
+            clear - H H3x gt.
+            revert H H3x.
+            induction l; intros H H3x.
+            {
+                simpl. reflexivity.
+            }
+            {
+                rewrite fmap_cons.
+                rewrite fmap_cons.
+                rewrite fmap_cons in H3x.
+                rewrite Forall_cons in H3x.
+                destruct H3x as [HH1 HH2].
+                rewrite Forall_cons in H.
+                destruct H as [H1 H2].
+                specialize (IHl H2).
+                f_equal.
+                {
+                    
+                    unfold isSome in HH1.
+                    ltac1:(case_match).
+                    {
+                        ltac1:(specialize (H1 t erefl)).
+                        exact H1.
+                    }
+                    {
+                        inversion HH1.
+                    }
+                }
+                {
+                    apply IHl.
+                    apply HH2.
+                }
+            }
+        }
+        inversion H0; subst; clear H0.
+        reflexivity.
     }
 Qed.
 
-Lemma Expression2_evaluate_Some_enough
+Lemma Expression2_evaluate_total_1
     {Σ : StaticModel}
     (e : Expression2)
     (ρ : Valuation2)
-    (g : NondetValue -> TermOver builtin_value)
+    (ng : NondetValue -> TermOver builtin_value)
 :
-    Expression2_evaluate ρ e = Some g ->
-    vars_of e ⊆ vars_of ρ
+    Expression2_evaluate ρ e = Some ng ->
+    ( vars_of e ⊆ vars_of ρ )
 .
 Proof.
-    revert ρ g.
-    induction e; intros ρ g He; simpl in *;
-        repeat (unfold vars_of in *; simpl in *; ());
-        ltac1:(simplify_eq/=; simplify_option_eq; try set_solver).
+    revert ng.
+    induction e; intros b Hb; cbn.
     {
-        unfold Valuation2 in *.
-        rewrite singleton_subseteq_l.
-        ltac1:(case_match;[|congruence]; simplify_eq/=).
-        rewrite elem_of_dom. exists t. assumption.
-    }
-Qed.
-
-
-Lemma Expression2_evaluate_Some_enough_inv
-    {Σ : StaticModel}
-    (e : Expression2)
-    (ρ : Valuation2)
-:
-    vars_of e ⊆ vars_of ρ ->
-    { g : _ & Expression2_evaluate ρ e = Some g }
-.
-Proof.
-    revert ρ.
-    induction e; intros ρ He; simpl in *;
-        repeat (unfold vars_of in *; simpl in *; ());
-        ltac1:(simplify_eq/=; simplify_option_eq; try set_solver).
-    {
-        exists (fun _ => e). reflexivity.
+        apply empty_subseteq.
     }
     {
-        rewrite singleton_subseteq_l in He.
-        unfold Valuation2 in *.
-        rewrite elem_of_dom in He.
-        unfold is_Some in He.
-        destruct (ρ !! x) eqn:Heqρx.
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        unfold vars_of in Hx0; simpl in Hx0.
+        rewrite elem_of_singleton in Hx0.
+        subst x0.
+        ltac1:(rewrite elem_of_dom).
+        unfold is_Some.
+        simpl in Hb.
+        ltac1:(case_match;simplify_eq/=).
+        exists t. assumption.
+    }
+    {
+        simpl in Hb.
+        rewrite bind_Some in Hb.
+        destruct Hb as [x [H1x H2x]].
+        injection H2x as H2x.
+        unfold vars_of; simpl.
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        rewrite elem_of_union_list in Hx0.
+        destruct Hx0 as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [e [H1e H2e]].
+        subst X.
+        rewrite Forall_forall in H.
+        apply list_collect_inv in H1x as H1x'.
+        unfold isSome in H1x'.
+        rewrite Forall_fmap in H1x'.
+        rewrite Forall_forall in H1x'.
+        specialize (H1x' e H2e).
+        simpl in H1x'.
+        ltac1:(case_match).
         {
-            exists (fun _ => t). reflexivity.
+            clear H1x'.
+            eapply (H _ H2e); clear H.
+            { apply H0. }
+            {
+                exact H2X.
+            }
         }
         {
-            ltac1:(exfalso).
-            destruct He as [x0 HContra].
-            inversion HContra.
+            inversion H1x'.
         }
     }
-    {
-        eexists. reflexivity.
-    }
-    {
-        specialize (IHe ρ He).
-        destruct IHe as [g Hg].
-        exists (fun nv => builtin_unary_function_interp f (g nv) nv).
-        rewrite bind_Some.
-        exists g.
-        split.
-        { assumption. }
-        { reflexivity. }
-    }
-    {
-        rewrite union_subseteq in He.
-        destruct He as [He1 He2].
-        specialize (IHe1 ρ He1).
-        specialize (IHe2 ρ He2).
-        destruct IHe1 as [g1 Hg1].
-        destruct IHe2 as [g2 Hg2].
-        eexists.
-        ltac1:(simp Expression2_evaluate).
-        rewrite Hg1.
-        rewrite bind_Some.
-        eexists.
-        split>[reflexivity|].
-        rewrite Hg2.
-        simpl. reflexivity.
-    }
-
-    {
-        rewrite union_subseteq in He.
-        rewrite union_subseteq in He.
-        destruct He as [[He1 He2] He3].
-        specialize (IHe1 ρ He1).
-        specialize (IHe2 ρ He2).
-        specialize (IHe3 ρ He3).
-        destruct IHe1 as [g1 Hg1].
-        destruct IHe2 as [g2 Hg2].
-        destruct IHe3 as [g3 Hg3].
-        eexists.
-        ltac1:(simp Expression2_evaluate).
-        rewrite Hg1.
-        rewrite bind_Some.
-        eexists.
-        split>[reflexivity|].
-        rewrite Hg2.
-        simpl.
-        rewrite bind_Some.
-        eexists.
-        rewrite Hg3.
-        split; reflexivity.
-    }
 Qed.
-
-
 
 Lemma Expression2Term_matches_enough
     {Σ : StaticModel}
@@ -259,13 +245,13 @@ Proof.
         ltac1:(simp sat2E in HH).
     {
         ltac1:(case_match;[|contradiction]).
-        apply Expression2_evaluate_Some_enough in H.
+        apply Expression2_evaluate_total_1 in H.
         unfold vars_of; simpl.
         exact H.
     }
     {
         ltac1:(case_match;[|contradiction]).
-        apply Expression2_evaluate_Some_enough in H.
+        apply Expression2_evaluate_total_1 in H.
         unfold vars_of; simpl.
         exact H.
     }
@@ -308,71 +294,81 @@ Proof.
     }
 Qed.
 
-
-
-Lemma Expression2_evalute_total_1
+Lemma Expression2_evaluate_Some_enough_inv
     {Σ : StaticModel}
-    (t : Expression2)
+    (e : Expression2)
     (ρ : Valuation2)
-    (e : NondetValue -> TermOver builtin_value)
-:
-    Expression2_evaluate ρ t = Some e ->
-    ( vars_of t ⊆ vars_of ρ )
+    :
+    vars_of e ⊆ vars_of ρ ->
+    { g : _ & Expression2_evaluate ρ e = Some g }
 .
 Proof.
-    revert e.
-    induction t; intros b H; cbn.
+    induction e; intros Hsub.
     {
-        apply empty_subseteq.
+        simpl. exists (fun _ => e).
+        reflexivity.
     }
     {
-        rewrite elem_of_subseteq.
-        intros x0 Hx0.
-        unfold vars_of in Hx0; simpl in Hx0.
-        rewrite elem_of_singleton in Hx0.
-        subst x0.
-        ltac1:(rewrite elem_of_dom).
-        unfold is_Some.
-        simpl in H.
-        ltac1:(case_match;simplify_eq/=).
-        exists t. assumption.
+        simpl.
+        ltac1:(case_match).
+        {
+            exists (fun _ => t).
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            unfold vars_of in Hsub; simpl in Hsub.
+            rewrite elem_of_subseteq in Hsub.
+            specialize (Hsub x ltac:(set_solver)).
+            unfold Valuation2 in *.
+            rewrite elem_of_dom in Hsub.
+            rewrite H in Hsub.
+            unfold is_Some in Hsub.
+            destruct Hsub as [y Hy].
+            inversion Hy.
+        }
     }
     {
-        ltac1:(set_solver).
-    }
-    {
-        ltac1:(simplify_eq/=).
-        rewrite bind_Some in H.
-        destruct H as [x [H1x H2x]].
-        ltac1:(simplify_eq/=).
-        unfold vars_of; simpl.
-        eapply IHt.
-        apply H1x.
-    }
-    {
-        unfold vars_of; simpl.
-        rewrite union_subseteq.
-        unfold vars_of in *; simpl in *.
-        rewrite bind_Some in H.
-        destruct H as[x [H1x H2x]].
-        rewrite bind_Some in H2x.
-        destruct H2x as [y [H1y H2y]].
-        ltac1:(simplify_eq/=).
-        ltac1:(naive_solver).
-    }
-    {
-        unfold vars_of; simpl.
-        rewrite union_subseteq.
-        rewrite union_subseteq.
-        simpl in H.
-        rewrite bind_Some in H.
-        destruct H as[x [H1x H2x]].
-        rewrite bind_Some in H2x.
-        destruct H2x as [y [H1y H2y]].
-        rewrite bind_Some in H2y.
-        destruct H2y as [z [H1z H2z]].
-        ltac1:(simplify_eq/=).
-        ltac1:(naive_solver).
+        simpl.
+        assert (H1 : Forall isSome (Expression2_evaluate ρ <$> l)).
+        {
+            rewrite Forall_fmap.
+            rewrite Forall_forall.
+            intros e He.
+            specialize (X e He).
+            simpl.
+            unfold isSome.
+            ltac1:(case_match).
+            { reflexivity. }
+            ltac1:(exfalso).
+            unfold vars_of in Hsub; simpl in Hsub.
+            ltac1:(ospecialize (X _)).
+            {
+                clear X.
+                rewrite elem_of_subseteq in Hsub.
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                specialize (Hsub x).
+                rewrite elem_of_union_list in Hsub.
+                ltac1:(ospecialize (Hsub _)).
+                {
+                    clear Hsub.
+                    exists (vars_of e).
+                    rewrite elem_of_list_fmap.
+                    split>[|assumption].
+                    exists e.
+                    split>[|assumption].
+                    reflexivity.
+                }
+                exact Hsub.
+            }
+            destruct X as [g Hcontra].
+            inversion Hcontra.
+        }
+        apply list_collect_Forall_T in H1.
+        destruct H1 as [l_out [H1l_out H2l_out]].
+        rewrite H1l_out. simpl.
+        eexists. reflexivity.
     }
 Qed.
 
@@ -681,7 +677,7 @@ Lemma Expression2_evalute_strip
 .
 Proof.
     intros HH.
-    apply Expression2_evaluate_Some_enough in HH as HH1.
+    apply Expression2_evaluate_total_1 in HH as HH1.
     assert (HH2 : vars_of e ⊆ vars_of (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of e) ρ)).
     {
         unfold Valuation2 in *.

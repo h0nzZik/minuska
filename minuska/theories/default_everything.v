@@ -57,7 +57,7 @@ Definition basic_rule
     (r : TermOver Expression2)
     (cond : Expression2) : Declaration
 :=
-    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary builtins.default_builtin.b_true) cond)] default_act)))
+    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_fun builtins.default_builtin.b_true []) cond)] default_act)))
 .
 
 
@@ -82,7 +82,7 @@ Definition framed_rule
     (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act
         (TermOverBoV_subst frame.2 frame.1 l)
         (TermOverBoV_subst_expr2 frame.2 frame.1 r)
-        [(mkSideCondition2 _ (e_nullary builtins.default_builtin.b_true) cond)] default_act)))
+        [(mkSideCondition2 _ (e_fun builtins.default_builtin.b_true []) cond)] default_act)))
 .
 
 Definition global_naive_interpreter := @naive_interpreter DSM Act.

@@ -538,9 +538,6 @@ End fib_native.
 
 Module imp.
 
-    Search "subst" Expression2.
-    Search Expression BuiltinOrVar.
-
     Import default_builtin.
     Import default_builtin.Notations.
 
@@ -723,7 +720,7 @@ Module imp.
                 u_cfg [ u_state [ u_cseq [ (var [t_over ($X)]) <:= t_over ($Y); t_over ($REST_SEQ)]; t_over ($VALUES) ] ]
             ~>{default_act} u_cfg [ u_state [
                     u_cseq [unitValue[]; t_over ($REST_SEQ)];
-                    t_over (e_ternary b_map_update ($VALUES) ($X) ($Y))
+                    t_over (e_fun b_map_update [($VALUES); ($X); ($Y)])
                 ] ]
                 where ((isString ($X)) && (isValue ($Y)))
         );
@@ -731,7 +728,7 @@ Module imp.
             rule ["var-lookup"]:
                 u_cfg [ u_state [ u_cseq [ var [t_over ($X) ]; t_over ($REST_SEQ)]; t_over ($VALUES)]]
             ~>{default_act} u_cfg [ u_state [
-                u_cseq [t_over (e_binary b_map_lookup ($VALUES) ($X)); t_over ($REST_SEQ)];
+                u_cseq [t_over (e_fun b_map_lookup [($VALUES); ($X)]); t_over ($REST_SEQ)];
                 t_over ($VALUES)
             ]]
         );
@@ -750,22 +747,22 @@ Module imp.
 
         decl_simple_rule ["bexpr-eq-Z-Z"]:
                 bexpr_eq [ t_over ($X); t_over ($Y) ]
-            ~> (t_over (e_binary b_eq ($X) ($Y)))
+            ~> (t_over (e_fun b_eq [($X); ($Y)]))
             where ((isValue ($X)) && (isValue ($Y)))
         ;
         decl_simple_rule ["bexpr-le-Z-Z"]:
                 bexpr_le [ t_over ($X); t_over ($Y) ]
-            ~> (t_over (e_binary b_Z_isLe ($X) ($Y)))
+            ~> (t_over (e_fun b_Z_isLe [($X); ($Y)]))
             where ((isZ ($X)) && (isZ ($Y)))
         ;
         decl_simple_rule ["bexpr-lt-Z-Z"]:
                bexpr_lt [ t_over ($X); t_over ($Y) ]
-            ~> (t_over (e_binary b_Z_isLt ($X) ($Y)))
+            ~> (t_over (e_fun b_Z_isLt [($X); ($Y)]))
             where ((isZ ($X)) && (isZ ($Y)))
         ;
         decl_simple_rule ["bexpr-negb-bool"]:
                bexpr_negb [t_over ($X) ]
-            ~> t_over (e_unary b_bool_neg ($X))
+            ~> t_over (e_fun b_bool_neg [($X)])
             where ((isBool ($X)))
         ;
         decl_strict (symbol "stmt_ite" of arity 3 strict in [0]) ;
@@ -791,7 +788,7 @@ Module imp.
 
     Definition initial0 (x : TermOver builtin_value) :=
         (ground (
-            u_cfg [ u_state [ u_cseq [x; u_emptyCseq [] ] ; (builtin_nullary_function_interp b_map_empty (nondet_gen 0)) ] ]
+            u_cfg [ u_state [ u_cseq [x; u_emptyCseq [] ] ; (builtin_function_interp b_map_empty (nondet_gen 0) []) ] ]
         ))
     .
 

@@ -213,12 +213,117 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+
+
+Section custom_induction_principle_2.
+
+    Context
+        {Σ : StaticModel}
+    .
+
+    Lemma Expression2_eqdec : EqDecision Expression2.
+    Proof.
+        ltac1:(unshelve(refine (fix go (e1 e2 : Expression2) : {e1 = e2} + {e1 <> e2} :=
+            match e1 with
+            | e_ground g1 =>
+                match e2 with
+                | e_ground g2 =>
+                    match (decide (g1 = g2)) with
+                    | left _ => left _
+                    | right _ => right _
+                    end
+                | _ => right _
+                end
+            | e_variable x1 =>
+                match e2 with
+                | e_variable x2 =>
+                    match (decide (x1 = x2)) with
+                    | left _ => left _
+                    | right _ => right _
+                    end
+                | _ => right _
+                end
+            | e_fun f1 l1 => (
+                match e2 with
+                | e_fun f2 l2 => (
+                    match (decide (f1 = f2)) with
+                    | left _ => (
+                        let tmp := (
+                            fix go' (l1' l2' : list Expression2) : {l1' = l2'} + {l1' <> l2'} :=
+                            match l1' with
+                            | [] =>
+                                match l2' with
+                                | [] => left _
+                                | _::_ => right _
+                                end
+                            | x1::xs1 =>
+                                match l2' with
+                                | [] => right _
+                                | x2::xs2 =>
+                                    match (go x1 x2) with
+                                    | left _ =>
+                                        match (go' xs1 xs2) with
+                                        | left _ => left _
+                                        | right _ => right _
+                                        end
+                                    | right _ => right _
+                                    end
+                                end
+                            end
+                            ) l1 l2 in
+                        match tmp with
+                        | left _ => left _
+                        | right _ => right _
+                        end
+                        )
+                    | right _ => right _
+                    end
+                    )
+                | _ => right _
+                end
+                )
+            end
+        )); abstract(congruence)).
+    Defined.
+
+    Fixpoint Expression2_rect
+        (P : Expression2 -> Type)
+        (true_for_ground : forall e, P (e_ground e))
+        (true_for_var : forall x, P (e_variable x))
+        (preserved_by_fun :
+            forall
+                (f : builtin_function_symbol)
+                (l : list Expression2),
+                (forall x, x ∈ l -> P x) ->
+                P (e_fun f l)
+        )
+        (e : Expression2)
+    :
+        P e :=
+    match e with
+    | e_ground g => true_for_ground g
+    | e_variable x => true_for_var x
+    | e_fun f l =>  preserved_by_fun f l
+        (fun x pf => 
+            (fix go (l' : list Expression2) : x ∈ l' -> P x :=
+            match l' as l'0 return x ∈ l'0 -> P x with
+            | nil => fun pf' => match not_elem_of_nil _ pf' with end
+            | y::ys => 
+                match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun y) x (eq_sym e)) 
+                | right n => fun pf' =>
+                    let H := @elem_of_next _ _ _ _ n pf' in
+                    go ys H
+                end
+            end
+            ) l pf
+        )
+    end
+    .
+End custom_induction_principle_2.
+
 #[export]
-Instance Expression2_eqdec
-    {Σ : StaticModel}
-    : EqDecision (Expression2)
-.
-Proof. ltac1:(solve_decision). Defined.
+Existing Instance Expression2_eqdec.
 
 #[export]
 Instance SideCondition2_eqdec
@@ -296,10 +401,7 @@ match e with
 | e_ground g => e_ground g
 | e_variable y =>
     if (decide (y = x)) then e' else (e_variable y)
-| e_nullary f => e_nullary f
-| e_unary f e1 => e_unary f (Expression2_subst e1 x e')
-| e_binary f e1 e2 => e_binary f (Expression2_subst e1 x e') (Expression2_subst e2 x e')
-| e_ternary f e1 e2 e3 => e_ternary f (Expression2_subst e1 x e') (Expression2_subst e2 x e') (Expression2_subst e3 x e')
+| e_fun f l => e_fun f ((fun e1 => Expression2_subst e1 x e') <$> l)
 end
 .
 
