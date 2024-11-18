@@ -365,10 +365,11 @@ Proof.
             destruct X as [g Hcontra].
             inversion Hcontra.
         }
-        apply list_collect_Forall in H1.
+        apply list_collect_Forall_T in H1.
         destruct H1 as [l_out [H1l_out H2l_out]].
+        rewrite H1l_out. simpl.
+        eexists. reflexivity.
     }
-
 Qed.
 
 Lemma TermOverExpression2_evalute_total_2
