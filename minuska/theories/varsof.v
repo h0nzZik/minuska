@@ -4,22 +4,6 @@ From Minuska Require Import
     lowlang
 .
 
-Definition vars_of_AP
-    {Σ : StaticModel}
-    (ap : AtomicProposition)
-    : gset variable :=
-match ap with
-| apeq e1 e2 => vars_of e1 ∪ vars_of e2
-end.
-
-#[export]
-Instance VarsOf_AP
-    {Σ : StaticModel}
-    : VarsOf AtomicProposition variable
-:= {|
-    vars_of := vars_of_AP ; 
-|}.
-
 Fixpoint vars_of_aosB
     {Σ : StaticModel}
     {T0 B var : Type}
@@ -44,32 +28,6 @@ Instance VarsOf_aosB
     : VarsOf (PreTerm' T0 B) var
 := {|
     vars_of := vars_of_aosB ; 
-|}.
-
-
-
-Definition vars_of_SideCondition
-    {Σ : StaticModel}
-    (c : SideCondition)
-    : gset variable :=
-match c with
-| sc_constraint c' => vars_of c'
-end.
-
-#[export]
-Instance VarsOf_SideCondition
-    {Σ : StaticModel}
-    : VarsOf SideCondition variable
-:= {|
-    vars_of := vars_of_SideCondition ; 
-|}.
-
-#[export]
-Program Instance VarsOf_list_SideCondition
-    {Σ : StaticModel}
-    : VarsOf (list SideCondition) variable
-:= {|
-    vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.
 
 Definition vars_of_Term'B
@@ -97,17 +55,6 @@ Instance VarsOf_Term'
 := {|
     vars_of := vars_of_Term'B ; 
 |}.
-
-
-#[export]
-Instance VarsOf_TermOver_Expression
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver Expression) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
 
 Lemma vars_of_uglify'
     {Σ : StaticModel}
