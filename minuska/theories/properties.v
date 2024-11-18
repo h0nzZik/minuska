@@ -85,6 +85,33 @@ Proof.
         destruct HH as [x [H1x H2x]].
         injection H2x as H2x.
         apply list_collect_inv in H1x as H3x.
+        assert (HSome : Forall isSome (Expression2_evaluate ρ2 <$> l)).
+        {
+            rewrite Forall_forall.
+            rewrite Forall_forall in H3x.
+            rewrite Forall_forall in H.
+            intros ox Hox.
+            apply H3x.
+            rewrite elem_of_list_fmap.
+            rewrite elem_of_list_fmap in Hox.
+            destruct Hox as [e [H1e H2e]].
+            subst.
+            exists e.
+            split; try assumption.
+            destruct (Expression2_evaluate ρ1 e) eqn:Heq.
+            {
+                ltac1:(naive_solver).
+            }
+            {
+                specialize (H3x None).
+                ltac1:(exfalso).
+                ltac1:(ospecialize (H3x _)).
+                {
+                    
+                }
+                Search None eq Some not.
+            }
+        }
         rewrite Forall_forall in H.
         rewrite Forall_forall in H1x.
         Search Forall.

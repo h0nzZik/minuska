@@ -616,6 +616,49 @@ Proof.
     }
 Qed.
 
+Lemma list_collect_Exists
+    {A : Type}
+    (l_in : list (option A))
+    :
+    Exists (not ∘ isSome) l_in ->
+    list_collect l_in = None
+.
+Proof.
+    induction l_in; intros H1; simpl.
+    { inversion H1. }
+    {
+        rewrite bind_None.
+        destruct a.
+        {
+            right.
+            inversion H1; subst; clear H1.
+            {
+                exists a.
+                split>[reflexivity|].
+                rewrite bind_None.
+                left.
+                apply IHl_in.
+                rewrite Exists_exists.
+                simpl in H0.
+                ltac1:(exfalso).
+                apply H0.
+                reflexivity.
+            }
+            {
+                exists a.
+                split>[reflexivity|].
+                rewrite bind_None.
+                left.
+                apply IHl_in.
+                apply H0.
+            }
+        }
+        {
+            left. reflexivity.
+        }
+    }
+Qed.
+
 Lemma list_collect_Forall
     {A : Type}
     (l_in : list (option A))
