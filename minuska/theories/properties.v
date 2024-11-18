@@ -84,6 +84,10 @@ Proof.
         rewrite bind_Some.
         destruct HH as [x [H1x H2x]].
         injection H2x as H2x.
+        apply list_collect_inv in H1x as H3x.
+        rewrite Forall_forall in H.
+        rewrite Forall_forall in H1x.
+        Search Forall.
         Search list_collect.
         rewrite <- H2x.
         clear H2x.
