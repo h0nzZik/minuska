@@ -434,7 +434,7 @@ Proof.
                 
                 simpl in HHρ'.
                 rewrite lookup_app_r in HHρ'.
-                rewrite take_length in HHρ'.
+                rewrite length_take in HHρ'.
                 rewrite zip_with_length in HHρ'.
                 unfold Valuation2,TermOver in *.
                 rewrite e0 in HHρ'.
@@ -451,12 +451,12 @@ Proof.
                 ltac1:(simplify_eq/=).
                 assumption.
                 {
-                    rewrite take_length.
+                    rewrite length_take.
                     rewrite zip_with_length.
                     ltac1:(lia).
                 }
                 rewrite app_length.
-                rewrite take_length.
+                rewrite length_take.
                 simpl.
                 rewrite zip_with_length.
                 rewrite zip_with_length.
@@ -468,8 +468,8 @@ Proof.
             }
             {
                 unfold Valuation2,TermOver in *.
-                rewrite take_length.
-                rewrite take_length.
+                rewrite length_take.
+                rewrite length_take.
                 ltac1:(lia).
             }
         }

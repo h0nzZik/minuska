@@ -806,12 +806,12 @@ Proof.
                     {
                         rewrite lookup_app_r.
                         {
-                            rewrite take_length.
+                            rewrite length_take.
                             ltac1:(replace ((length l1 - length l1 `min` length lγ)) with 0 by lia).
                             simpl. reflexivity.
                         }
                         {
-                            rewrite take_length.
+                            rewrite length_take.
                             ltac1:(lia).
                         }
                     }
@@ -890,7 +890,7 @@ Proof.
                     {
                         rewrite app_length in H6.
                         rewrite app_length in H6.
-                        rewrite take_length in H6.
+                        rewrite length_take in H6.
                         simpl in H6.
                         ltac1:(
                             replace (i + (length l1 + 1) - (length l1 `min` length lγ + 1))
@@ -926,7 +926,7 @@ Proof.
                     {
                         rewrite app_length.
                         rewrite app_length.
-                        rewrite take_length.
+                        rewrite length_take.
                         simpl.
                         ltac1:(lia).
                     }
@@ -1490,7 +1490,7 @@ Proof.
         rewrite HH2. clear HH2.
         remember (sum_list_with TermOver_size (take j l) ) as N1.
         remember (sum_list_with TermOver_size (drop (S j) l) ) as N2.
-        rewrite take_length.
+        rewrite length_take.
         rewrite drop_length.
 
         rewrite Forall_forall in H.
@@ -1541,7 +1541,7 @@ Proof.
         rewrite app_length.
         simpl.
         rewrite drop_length.
-        rewrite take_length.
+        rewrite length_take.
         ltac1:(lia).
     }
 Qed.
