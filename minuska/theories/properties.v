@@ -1277,7 +1277,7 @@ Proof.
         ltac1:(simp sat2B).
         simpl.
         split>[reflexivity|].
-        rewrite map_length.
+        rewrite length_map.
         split>[reflexivity|].
         intros i t' φ' HH1 HH2.
         ltac1:(replace (map) with (@fmap list list_fmap) in HH1 by reflexivity).
