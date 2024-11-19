@@ -435,7 +435,7 @@ Proof.
                 simpl in HHρ'.
                 rewrite lookup_app_r in HHρ'.
                 rewrite length_take in HHρ'.
-                rewrite zip_with_length in HHρ'.
+                rewrite length_zip_with in HHρ'.
                 unfold Valuation2,TermOver in *.
                 rewrite e0 in HHρ'.
                 unfold Valuation2,TermOver in *.
@@ -452,14 +452,14 @@ Proof.
                 assumption.
                 {
                     rewrite length_take.
-                    rewrite zip_with_length.
+                    rewrite length_zip_with.
                     ltac1:(lia).
                 }
                 rewrite length_app.
                 rewrite length_take.
                 simpl.
-                rewrite zip_with_length.
-                rewrite zip_with_length.
+                rewrite length_zip_with.
+                rewrite length_zip_with.
                 rewrite length_drop.
                 rewrite length_drop.
                 unfold Valuation2,TermOver in *.
