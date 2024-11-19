@@ -16,7 +16,7 @@ defined some mild criteria for when a language definition is [amenable to interp
 created a [very simple generic interpreter](https://h0nzzik.github.io/minuska/Minuska.naive_interpreter.html#naive_interpreter) that is parametric in a MinusLang language definition,
 and [proved it correct](https://h0nzzik.github.io/minuska/Minuska.naive_interpreter.html#naive_interpreter_sound).
 
-There are two ways of writing a language definition in Minuska: either as a Coq definition ([example](https://h0nzzik.github.io/minuska/Minuska.example.html)), or as a standalone `*.m` file ([example](https://github.com/h0nzZik/minuska/blob/main/minuska-examples/decrement.m)) that can be automatically converted to a Coq `*.v` file:
+There are two ways of writing a language definition in Minuska: either as a Coq definition ([example](https://h0nzzik.github.io/minuska/Minuska.example.html)), or as a standalone `*.m` file ([example](https://github.com/h0nzZik/minuska/blob/main/languages/decrement/decrement.m)) that can be automatically converted to a Coq `*.v` file:
 ```sh
 minuska def2coq language.m language.v
 ```
