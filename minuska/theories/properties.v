@@ -1067,6 +1067,7 @@ Proof.
         subst l0.
         do 2 (rewrite length_app in H2).
         simpl in H2.
+        unfold TermOver in *.
         assert (length l' = length l) by ltac1:(lia).
         clear H2.
         specialize (H3 (length l) x' x) as H3'.
@@ -1191,6 +1192,7 @@ Proof.
         subst l0.
         do 2 (rewrite length_app in H2).
         simpl in H2.
+        unfold TermOver in *.
         assert (length l' = length l) by ltac1:(lia).
         clear H2.
         specialize (H3 (length l) x' x) as H3'.
