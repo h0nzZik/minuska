@@ -14,18 +14,7 @@
       let
 
         pkgs = nixpkgs.legacyPackages.${system};
-
-        runtime = pkgs.runCommand "appimage-runtime" {} ''
-            mkdir -p $out/bin/
-            mkdir -p $out/libexec/
-            ln -s ${nix-appimage.outputs.packages.${system}.runtime} $out/libexec/appimage-runtime
-          ''
-        ;
-        appimagetool-wrapper = pkgs.writeShellScriptBin "appimagetool" ''
-	  export PATH="${pkgs.appimagekit}/bin:$PATH"
-          ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
-        '';
-
+        
         minuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
            let stdpp = coqPackages.stdpp; in
@@ -58,8 +47,7 @@
             nativeBuildInputs = [
               pkgs.makeWrapper
               pkgs.dune_3
-              appimagetool-wrapper
-              #pkgs.appimagekit
+              pkgs.appimagekit
               coqPackages.coq.ocamlPackages.menhir
               coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
