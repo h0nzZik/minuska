@@ -1255,7 +1255,7 @@ Proof.
         do 2 (rewrite sum_list_with_S).
         do 2 (rewrite map_length).
         do 2 (rewrite sum_list_fmap).
-        rewrite fmap_length.
+        rewrite length_fmap.
 
         assert (Hconcat: h ∈ concat (map vars_of_to_l2r l)).
         {
@@ -1832,7 +1832,7 @@ Proof.
                 unfold compose.
                 apply _.
             }
-            rewrite fmap_length in H'inφ.
+            rewrite length_fmap in H'inφ.
             apply H'inφ.
         }
         apply count_one_split in Hlen.

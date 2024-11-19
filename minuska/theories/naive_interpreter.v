@@ -1331,12 +1331,12 @@ Proof.
             ltac1:(simplify_option_eq).
             ltac1:(simp sat2E).
             split>[reflexivity|].
-            rewrite fmap_length.
+            rewrite length_fmap.
             ltac1:(rename H1 into l1).
             split.
             {
                 apply list_collect_Some_length in Heqo0.
-                rewrite fmap_length in Heqo0.
+                rewrite length_fmap in Heqo0.
                 rewrite map_length in Heqo0.
                 symmetry. assumption.
             }
