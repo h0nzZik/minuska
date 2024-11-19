@@ -791,7 +791,7 @@ Proof.
     destruct H2 as [lγ [[h4 H5] H6]].
     subst γ2. simpl in *.
     rewrite sum_list_with_app. simpl.
-    rewrite app_length in H5. simpl in H5.
+    rewrite length_app in H5. simpl in H5.
 
     destruct (lγ !! (length l1)) eqn:Hγ.
     {
@@ -888,8 +888,8 @@ Proof.
                     ).
                     rewrite lookup_app_r in H6.
                     {
-                        rewrite app_length in H6.
-                        rewrite app_length in H6.
+                        rewrite length_app in H6.
+                        rewrite length_app in H6.
                         rewrite length_take in H6.
                         simpl in H6.
                         ltac1:(
@@ -907,7 +907,7 @@ Proof.
                         ).
                         rewrite lookup_app_r in H6.
                         {
-                            rewrite app_length in H6.
+                            rewrite length_app in H6.
                             simpl in H6.
                             ltac1:(
                                 replace ((i + (length l1 + 1) - (length l1 + 1)))
@@ -919,13 +919,13 @@ Proof.
                             apply H6.
                         }
                         {
-                            rewrite app_length. simpl.
+                            rewrite length_app. simpl.
                             ltac1:(lia).
                         }
                     }
                     {
-                        rewrite app_length.
-                        rewrite app_length.
+                        rewrite length_app.
+                        rewrite length_app.
                         rewrite length_take.
                         simpl.
                         ltac1:(lia).
@@ -1264,7 +1264,7 @@ Proof.
             { ltac1:(lia). }
             {
                 rewrite filter_app in Hexactlyonce.
-                rewrite app_length in Hexactlyonce.
+                rewrite length_app in Hexactlyonce.
                 destruct (decide (h ∈ vars_of_to_l2r a)).
                 {
                     rewrite elem_of_app. left. assumption.
@@ -1322,7 +1322,7 @@ Proof.
         destruct H2x0 as [j Hj].
         apply take_drop_middle in Hj.
         rewrite <- Hj.
-        rewrite app_length.
+        rewrite length_app.
         rewrite sum_list_with_app.
         rewrite map_app.
         rewrite sum_list_with_app.
@@ -1332,7 +1332,7 @@ Proof.
         rewrite map_app in Hexactlyonce. simpl in Hexactlyonce.
         rewrite concat_app in Hexactlyonce. simpl in Hexactlyonce.
         do 2 (rewrite filter_app in Hexactlyonce).
-        do 2 (rewrite app_length in Hexactlyonce).
+        do 2 (rewrite length_app in Hexactlyonce).
         simpl in Hexactlyonce.
         
         assert(Hnotintake: forall x2, x2 ∈ take j l -> h ∉ vars_of_to_l2r x2).
@@ -1353,14 +1353,14 @@ Proof.
                 rewrite filter_app.
                 simpl.
                 rewrite filter_app.
-                rewrite app_length.
-                rewrite app_length.
+                rewrite length_app.
+                rewrite length_app.
                 rewrite elem_of_list_lookup in HContra.
                 destruct HContra as [k Hk].
                 apply take_drop_middle in Hk.
                 rewrite <- Hk.
                 rewrite filter_app.
-                rewrite app_length.
+                rewrite length_app.
                 rewrite filter_cons.
                 destruct (decide (h = h))>[|ltac1:(contradiction)].
                 simpl.
@@ -1371,7 +1371,7 @@ Proof.
             rewrite filter_app in Hexactlyonce.
             rewrite filter_cons in Hexactlyonce.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
-            rewrite app_length in Hexactlyonce.
+            rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
             unfold TermOver in *.
             ltac1:(lia).
@@ -1395,14 +1395,14 @@ Proof.
                 rewrite filter_app.
                 simpl.
                 rewrite filter_app.
-                rewrite app_length.
-                rewrite app_length.
+                rewrite length_app.
+                rewrite length_app.
                 rewrite elem_of_list_lookup in HContra.
                 destruct HContra as [k Hk].
                 apply take_drop_middle in Hk.
                 rewrite <- Hk.
                 rewrite filter_app.
-                rewrite app_length.
+                rewrite length_app.
                 rewrite filter_cons.
                 destruct (decide (h = h))>[|ltac1:(contradiction)].
                 simpl.
@@ -1413,7 +1413,7 @@ Proof.
             rewrite filter_app in Hexactlyonce.
             rewrite filter_cons in Hexactlyonce.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
-            rewrite app_length in Hexactlyonce.
+            rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
             unfold TermOver in *.
             ltac1:(lia).
@@ -1538,7 +1538,7 @@ Proof.
         rewrite H.
         assert (Htmp1 := TermOver_size_not_zero x0).
         unfold TermOver in *.
-        rewrite app_length.
+        rewrite length_app.
         simpl.
         rewrite drop_length.
         rewrite length_take.
@@ -1604,8 +1604,8 @@ Proof.
             rewrite filter_app in HH.
             rewrite filter_cons in HH.
             destruct (decide (P x))>[|ltac1:(contradiction)].
-            rewrite app_length in HH. simpl in HH.
-            rewrite app_length in HH. simpl in HH.
+            rewrite length_app in HH. simpl in HH.
+            rewrite length_app in HH. simpl in HH.
             ltac1:(lia).
         }
     }
@@ -1640,13 +1640,13 @@ Proof.
         rewrite filter_cons.
         destruct (decide (h ∈ a)) as [Hin|Hnotin].
         {
-            simpl. rewrite app_length in HH.
+            simpl. rewrite length_app in HH.
             assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
             ltac1:(exfalso).
             ltac1:(lia).
         }
         {
-            simpl. rewrite app_length in HH.
+            simpl. rewrite length_app in HH.
             apply IHl. ltac1:(lia).
         }
     }
@@ -1671,7 +1671,7 @@ Proof.
         {
             rewrite filter_cons.
             rewrite filter_app in HH.
-            rewrite app_length in HH.
+            rewrite length_app in HH.
             destruct (decide (h ∈ a)) as [Hin|Hnotin].
             {
                 assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
@@ -1912,8 +1912,8 @@ Proof.
             rewrite concat_cons in H'inφ.
             rewrite filter_app in H'inφ.
             rewrite filter_app in H'inφ.
-            rewrite app_length in H'inφ.
-            rewrite app_length in H'inφ.
+            rewrite length_app in H'inφ.
+            rewrite length_app in H'inφ.
             assert (Hfil1 : length (filter (eq h) (concat (vars_of_to_l2r <$> la1))) = 0).
             {
                 rewrite list_filter_Forall_not.
@@ -2328,7 +2328,7 @@ Proof.
         }
         {
             apply lookup_ge_None in Heq.
-            rewrite app_length in HH2. simpl in HH2.
+            rewrite length_app in HH2. simpl in HH2.
             ltac1:(lia).
         }
     }

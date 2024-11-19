@@ -330,8 +330,8 @@ Proof.
                     (*
                     split.
                     {
-                        rewrite app_length.
-                        rewrite app_length.
+                        rewrite length_app.
+                        rewrite length_app.
                         rewrite length_replicate.
                         ltac1:(lia).
                     }
@@ -365,8 +365,8 @@ Proof.
                     }
                 }
                 {
-                    rewrite (app_length).
-                    rewrite (app_length).
+                    rewrite (length_app).
+                    rewrite (length_app).
                     ltac1:(rewrite length_replicate).
                     ltac1:(congruence).
                 }
@@ -511,8 +511,8 @@ Proof.
                     (*
                     split.
                     {
-                        rewrite app_length.
-                        rewrite app_length.
+                        rewrite length_app.
+                        rewrite length_app.
                         rewrite H4.
                         rewrite H0.
                         reflexivity.
@@ -546,8 +546,8 @@ Proof.
                     }
                 }
                 {
-                    rewrite app_length.
-                    rewrite app_length.
+                    rewrite length_app.
+                    rewrite length_app.
                     ltac1:(congruence).
                 }
             }
@@ -587,8 +587,8 @@ Proof.
                             inversion Heq.
                         }
                         inversion Heq; subst; clear Heq.
-                        rewrite app_length in H3.
-                        rewrite app_length in H3.
+                        rewrite length_app in H3.
+                        rewrite length_app in H3.
                         rewrite length_replicate in H3.
                         ltac1:(lia).
                     }
@@ -604,8 +604,8 @@ Proof.
                     {
                         simpl in HH2.
 
-                        rewrite app_length in H3.
-                        rewrite app_length in H3.
+                        rewrite length_app in H3.
+                        rewrite length_app in H3.
                         rewrite length_replicate in H3.
                         simpl in H3. simpl in Heq.
                         destruct pv'.
@@ -646,8 +646,8 @@ Proof.
                 }
                 {
                     simpl.
-                    rewrite app_length in H3.
-                    rewrite app_length in H3.
+                    rewrite length_app in H3.
+                    rewrite length_app in H3.
                     rewrite length_replicate in H3.
                     simpl in H3.
                     destruct pv'.
@@ -679,8 +679,8 @@ Proof.
                     split.
                     {
                         inversion Heq; subst; clear Heq.
-                        rewrite app_length in H3.
-                        rewrite app_length in H3.
+                        rewrite length_app in H3.
+                        rewrite length_app in H3.
                         assert ((length pv') = (length vs)).
                         {
                             simpl.

@@ -455,7 +455,7 @@ Proof.
                     rewrite zip_with_length.
                     ltac1:(lia).
                 }
-                rewrite app_length.
+                rewrite length_app.
                 rewrite length_take.
                 simpl.
                 rewrite zip_with_length.
