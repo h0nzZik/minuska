@@ -2329,6 +2329,7 @@ Proof.
         {
             apply lookup_ge_None in Heq.
             rewrite length_app in HH2. simpl in HH2.
+            unfold TermOver in *.
             ltac1:(lia).
         }
     }
