@@ -1335,7 +1335,7 @@ Proof.
             ltac1:(rename H1 into l1).
             split.
             {
-                apply list_collect_Some_length in Heqo0.
+                apply length_list_collect_Some in Heqo0.
                 rewrite length_fmap in Heqo0.
                 rewrite length_map in Heqo0.
                 symmetry. assumption.
