@@ -1253,7 +1253,7 @@ Proof.
         rewrite sum_list_with_compose.
         unfold compose.
         do 2 (rewrite sum_list_with_S).
-        do 2 (rewrite length_map).
+        do 2 (rewrite map_length).
         do 2 (rewrite sum_list_fmap).
         rewrite length_fmap.
 
@@ -1426,7 +1426,7 @@ Proof.
         {
             apply sum_list_with_eq_pairwise.
             {
-                rewrite length_map.
+                rewrite map_length.
                 reflexivity.
             }
             {
@@ -1459,7 +1459,7 @@ Proof.
         {
             apply sum_list_with_eq_pairwise.
             {
-                rewrite length_map.
+                rewrite map_length.
                 reflexivity.
             }
             {
@@ -2175,7 +2175,7 @@ Proof.
             unfold satisfies; simpl.
             ltac1:(simp sat2B).
             split>[reflexivity|].
-            rewrite length_map in H2.
+            rewrite map_length in H2.
             unfold TermOver in *.
             split>[ltac1:(lia)|].
             intros.

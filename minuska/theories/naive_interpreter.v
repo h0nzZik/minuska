@@ -1337,7 +1337,7 @@ Proof.
             {
                 apply length_list_collect_Some in Heqo0.
                 rewrite length_fmap in Heqo0.
-                rewrite length_map in Heqo0.
+                rewrite map_length in Heqo0.
                 symmetry. assumption.
             }
             {
