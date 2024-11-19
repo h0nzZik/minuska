@@ -1227,7 +1227,7 @@ Proof.
                     rewrite insert_take_drop.
                     simpl. reflexivity.
                     {
-                        rewrite drop_length.
+                        rewrite length_drop.
                         ltac1:(lia).
                     }
                 }

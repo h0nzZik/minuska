@@ -460,8 +460,8 @@ Proof.
                 simpl.
                 rewrite zip_with_length.
                 rewrite zip_with_length.
-                rewrite drop_length.
-                rewrite drop_length.
+                rewrite length_drop.
+                rewrite length_drop.
                 unfold Valuation2,TermOver in *.
                 apply lookup_lt_Some in HHφ'.
                 ltac1:(lia).

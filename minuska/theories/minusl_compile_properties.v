@@ -872,7 +872,7 @@ Proof.
                 assert (Hlen: length lγ' = length l2).
                 {
                     subst.
-                    rewrite drop_length.
+                    rewrite length_drop.
                     ltac1:(lia).
                 }
                 clear -Hlen H6 H5.
@@ -1491,7 +1491,7 @@ Proof.
         remember (sum_list_with TermOver_size (take j l) ) as N1.
         remember (sum_list_with TermOver_size (drop (S j) l) ) as N2.
         rewrite length_take.
-        rewrite drop_length.
+        rewrite length_drop.
 
         rewrite Forall_forall in H.
         specialize (H x0 H2x0' Hnotinψ).
@@ -1540,7 +1540,7 @@ Proof.
         unfold TermOver in *.
         rewrite length_app.
         simpl.
-        rewrite drop_length.
+        rewrite length_drop.
         rewrite length_take.
         ltac1:(lia).
     }
