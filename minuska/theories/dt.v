@@ -332,7 +332,7 @@ Proof.
                     {
                         rewrite app_length.
                         rewrite app_length.
-                        rewrite replicate_length.
+                        rewrite length_replicate.
                         ltac1:(lia).
                     }
                     *)
@@ -344,7 +344,7 @@ Proof.
                         rewrite Harity in Hrep.
                         ltac1:(rewrite lookup_app_l in Hrep).
                         {
-                            rewrite replicate_length.
+                            rewrite length_replicate.
                             assumption.
                         }
                         rewrite lookup_replicate in Hrep.
@@ -357,17 +357,17 @@ Proof.
                         rewrite Harity in Hrep.
                         ltac1:(rewrite lookup_app_r in Hrep).
                         {
-                            rewrite replicate_length.
+                            rewrite length_replicate.
                             ltac1:(lia).
                         }
-                        rewrite replicate_length in Hrep.
+                        rewrite length_replicate in Hrep.
                         eapply H2'pv with (i := S((i - length ws))); assumption.
                     }
                 }
                 {
                     rewrite (app_length).
                     rewrite (app_length).
-                    ltac1:(rewrite replicate_length).
+                    ltac1:(rewrite length_replicate).
                     ltac1:(congruence).
                 }
             }
@@ -589,7 +589,7 @@ Proof.
                         inversion Heq; subst; clear Heq.
                         rewrite app_length in H3.
                         rewrite app_length in H3.
-                        rewrite replicate_length in H3.
+                        rewrite length_replicate in H3.
                         ltac1:(lia).
                     }
                     *)
@@ -606,7 +606,7 @@ Proof.
 
                         rewrite app_length in H3.
                         rewrite app_length in H3.
-                        rewrite replicate_length in H3.
+                        rewrite length_replicate in H3.
                         simpl in H3. simpl in Heq.
                         destruct pv'.
                         {
@@ -617,10 +617,10 @@ Proof.
                         specialize (H2 (i0 + (arity c)) p v).
                         ltac1:(rewrite lookup_app_r in H2).
                         {
-                            rewrite replicate_length.
+                            rewrite length_replicate.
                             ltac1:(lia).
                         }
-                        rewrite replicate_length in H2.
+                        rewrite length_replicate in H2.
                         ltac1:(ospecialize (H2 _)).
                         {
                             ltac1:(cut (i0 = i0 + arity c - arity c)).
@@ -648,7 +648,7 @@ Proof.
                     simpl.
                     rewrite app_length in H3.
                     rewrite app_length in H3.
-                    rewrite replicate_length in H3.
+                    rewrite length_replicate in H3.
                     simpl in H3.
                     destruct pv'.
                     {
