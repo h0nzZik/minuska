@@ -7,8 +7,8 @@ From Minuska Require Import
 .
 
 
-Import default_builtin.
-Export default_builtin.Notations.
+(* Import default_builtin.
+Export default_builtin.Notations. *)
 
 Arguments e_fun {Σ} f l%_list_scope.
 

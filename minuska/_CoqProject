@@ -33,3 +33,7 @@ theories/textbook_unification.v
 theories/symex_spec.v
 theories/symex.v
 theories/pval_ocaml_binding.v
+
+theories/builtin/empty.v
+theories/builtin/klike.v
+
