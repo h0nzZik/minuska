@@ -1,30 +1,7 @@
 open Core
 open Syntax
 
-let builtins_alist =
-  [ "bool.neg", "b_bool_neg";
-    "bool.and", "b_and";
-    "bool.or", "b_or";
-    "bool.eq", "b_eq";
-    "bool.false", "b_false";
-    "bool.true", "b_true";
-    "bool.is", "b_isBool";
-    "term.same_symbol", "b_have_same_symbol";
-    "z.minus", "b_Z_minus";
-    "z.plus", "b_Z_plus";
-    "z.is", "b_isZ";
-    "z.eq", "b_eq";
-    "z.le", "b_Z_isLe";
-    "z.lt", "b_Z_isLt";
-    "string.is", "b_isString";
-    "map.hasKey", "b_map_hasKey";
-    "map.lookup", "b_map_lookup";
-    "map.size", "b_map_size";
-    "map.empty", "b_map_empty";
-    "map.update", "b_map_update";
-  ]
-
-let builtins_map = Map.of_alist_exn (module String) builtins_alist
+type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
 
 let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
     let ln = List.length l in
@@ -105,7 +82,12 @@ let print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
   print_pattern_w_hole oux p None
 
 
-let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string option) : unit =
+let rec print_expr_w_hole
+  (my_builtins_map : builtins_map_t)
+  (oux : Out_channel.t)
+  (e : Syntax.expr)
+  (hole : string option)
+  : unit =
   match e with
   | `EVar (`Var s) -> (
         match hole with
@@ -122,31 +104,42 @@ let rec print_expr_w_hole (oux : Out_channel.t) (e : Syntax.expr) (hole : string
     fprintf oux ")"
 
   | `ECall (`Id s, es) ->
-    let name0 = Map.find builtins_map s in
+    let name0 = Map.find my_builtins_map s in
     match name0 with
     | None -> failwith (String.append "Unknown builtin: " s)
     | Some name1 ->
         let name = (name1) in
         fprintf oux "(e_fun %s [" name;
-        myiter (fun x -> print_expr_w_hole oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+        myiter (fun x -> print_expr_w_hole my_builtins_map oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
         fprintf oux "])"
 
 
 
-let print_expr (oux : Out_channel.t) (e : Syntax.expr) : unit =
-  print_expr_w_hole oux e None
+let print_expr
+  (my_builtins_map : builtins_map_t)
+  (oux : Out_channel.t)
+  (e : Syntax.expr)
+  : unit =
+  print_expr_w_hole my_builtins_map oux e None
 
-let rec print_exprterm (oux : Out_channel.t) (p : Syntax.exprterm) : unit =
+let rec print_exprterm
+  (my_builtins_map : builtins_map_t)
+  (oux : Out_channel.t)
+  (p : Syntax.exprterm)
+  : unit =
   match p with
-  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; print_expr oux e; fprintf oux ")";
+  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr my_builtins_map) oux e; fprintf oux ")";
   | `ETerm (`Id s, ps) ->
     fprintf oux "(@t_term symbol Expression2 \"%s\" [" s;
-    myiter (fun x -> print_exprterm oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
+    myiter (fun x -> print_exprterm my_builtins_map oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 
 
-let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
+let print_rule
+  (my_builtins_map : builtins_map_t)
+  (oux : Out_channel.t)
+  (r : Syntax.rule) : unit =
     fprintf oux "(";
     (
       match (r.frame) with
@@ -158,9 +151,9 @@ let print_rule (oux : Out_channel.t) (r : Syntax.rule) : unit =
     
     print_pattern oux (r.lhs);
     fprintf oux " ";
-    print_exprterm oux (r.rhs);
+    print_exprterm my_builtins_map oux (r.rhs);
     fprintf oux " ";
-    print_expr oux (r.cond);
+    print_expr my_builtins_map oux (r.cond);
     fprintf oux ")\n";
     ()
 
@@ -188,14 +181,16 @@ let print_mycontext oux ctx =
   ()  
 
 
-let print_definition def oux =
+let print_definition
+  (my_builtins_map : builtins_map_t)
+  def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
     print_mycontext oux (def.context);
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_expr_w_hole oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
+    print_expr_w_hole my_builtins_map oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     fprintf oux "%s\n" output_part_2;
     List.iter ~f:(fun fr -> print_frame oux fr) (def.frames);
@@ -207,7 +202,7 @@ let print_definition def oux =
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_strict oux x; ()) (fun () -> fprintf oux ";" ; ()) (def.Syntax.strictness) ;
     fprintf oux "%s" "] ++ [\n";
-    myiter (fun x -> print_rule oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
+    myiter (fun x -> print_rule my_builtins_map oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
     

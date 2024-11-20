@@ -7,6 +7,7 @@ From Minuska Require Import
     notations
     default_static_model
     BuiltinValue
+    pval_ocaml_binding
 .
 
 From Coq Require Import ZArith.
@@ -621,3 +622,28 @@ Definition isAppliedSymbol (s:string) (e : @Expression2 (default_model (default_
         ]
     )
 .
+
+Definition builtins_binding : BuiltinsBinding := {|
+    bb_function_names := [
+        ("bool.neg", "b_bool_neg");
+        ("bool.and", "b_and");
+        ("bool.or", "b_or");
+        ("bool.eq", "b_eq");
+        ("bool.false", "b_false");
+        ("bool.true", "b_true");
+        ("bool.is", "b_isBool");
+        ("term.same_symbol", "b_have_same_symbol");
+        ("z.minus", "b_Z_minus");
+        ("z.plus", "b_Z_plus");
+        ("z.is", "b_isZ");
+        ("z.eq", "b_eq");
+        ("z.le", "b_Z_isLe");
+        ("z.lt", "b_Z_isLt");
+        ("string.is", "b_isString");
+        ("map.hasKey", "b_map_hasKey");
+        ("map.lookup", "b_map_lookup");
+        ("map.size", "b_map_size");
+        ("map.empty", "b_map_empty");
+        ("map.update", "b_map_update")
+    ];
+|}.

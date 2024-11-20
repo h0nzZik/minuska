@@ -14,7 +14,9 @@ Require Extraction.
 Extraction Language OCaml.
 Require Export
   Coq.extraction.Extraction
-  Coq.extraction.ExtrOcamlBasic
+  Coq.extraction.ExtrOcamlBasic(*
+  Coq.extraction.ExtrOcamlChar
+  Coq.extraction.ExtrOcamlString*)
   Coq.extraction.ExtrOcamlZBigInt
   Coq.extraction.ExtrOcamlNatBigInt
 .
@@ -87,3 +89,4 @@ Definition framed_rule
 
 Definition global_naive_interpreter := @naive_interpreter DSM Act.
 Definition global_naive_interpreter_sound := @naive_interpreter_sound DSM Act.
+Definition builtins_binding := Minuska.builtins.builtins_binding.

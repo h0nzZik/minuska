@@ -5,11 +5,18 @@ open Sexplib.Std
 open Libminuska
 module Syntax = Libminuska.Syntax
 
+type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
+
+let builtins_binding_coq = Libminuska.Extracted.builtins_binding ;;
+let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq ;;
+
+let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding ;;
+
 
 let parse_and_print lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition value oux
+    Micoqprint.print_definition builtins_map value oux
   | None -> ()
 
 

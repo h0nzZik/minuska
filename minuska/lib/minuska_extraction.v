@@ -15,6 +15,7 @@ Extraction
     default_everything.gt_term
     default_everything.gt_over
     default_everything.global_naive_interpreter
+    default_everything.builtins_binding
     (*
       Error:
 The informative inductive type prod has a Prop instance
