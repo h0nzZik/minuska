@@ -434,8 +434,8 @@ Proof.
                 
                 simpl in HHρ'.
                 rewrite lookup_app_r in HHρ'.
-                rewrite take_length in HHρ'.
-                rewrite zip_with_length in HHρ'.
+                rewrite length_take in HHρ'.
+                rewrite length_zip_with in HHρ'.
                 unfold Valuation2,TermOver in *.
                 rewrite e0 in HHρ'.
                 unfold Valuation2,TermOver in *.
@@ -451,25 +451,25 @@ Proof.
                 ltac1:(simplify_eq/=).
                 assumption.
                 {
-                    rewrite take_length.
-                    rewrite zip_with_length.
+                    rewrite length_take.
+                    rewrite length_zip_with.
                     ltac1:(lia).
                 }
-                rewrite app_length.
-                rewrite take_length.
+                rewrite length_app.
+                rewrite length_take.
                 simpl.
-                rewrite zip_with_length.
-                rewrite zip_with_length.
-                rewrite drop_length.
-                rewrite drop_length.
+                rewrite length_zip_with.
+                rewrite length_zip_with.
+                rewrite length_drop.
+                rewrite length_drop.
                 unfold Valuation2,TermOver in *.
                 apply lookup_lt_Some in HHφ'.
                 ltac1:(lia).
             }
             {
                 unfold Valuation2,TermOver in *.
-                rewrite take_length.
-                rewrite take_length.
+                rewrite length_take.
+                rewrite length_take.
                 ltac1:(lia).
             }
         }
@@ -1331,12 +1331,12 @@ Proof.
             ltac1:(simplify_option_eq).
             ltac1:(simp sat2E).
             split>[reflexivity|].
-            rewrite fmap_length.
+            rewrite length_fmap.
             ltac1:(rename H1 into l1).
             split.
             {
-                apply list_collect_Some_length in Heqo0.
-                rewrite fmap_length in Heqo0.
+                apply length_list_collect_Some in Heqo0.
+                rewrite length_fmap in Heqo0.
                 rewrite map_length in Heqo0.
                 symmetry. assumption.
             }

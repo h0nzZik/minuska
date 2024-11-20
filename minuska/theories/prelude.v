@@ -556,7 +556,7 @@ Definition list_collect
     foldr (fun ox ol => x ← ox; l' ← ol; Some (x::l')) (Some []) l
 .
 
-Lemma list_collect_Some_length
+Lemma length_list_collect_Some
     {A : Type}
     (l : list (option A))
     (l' : list A)

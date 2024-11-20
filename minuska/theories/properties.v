@@ -1059,14 +1059,15 @@ Proof.
         destruct (analyze_list_from_end l0) as [He|He].
         {
             subst l0.
-            rewrite app_length in H2.
+            rewrite length_app in H2.
             simpl in H2.
             ltac1:(lia).
         }
         destruct He as [l' [x' Hl0]].
         subst l0.
-        do 2 (rewrite app_length in H2).
+        do 2 (rewrite length_app in H2).
         simpl in H2.
+        unfold TermOver in *.
         assert (length l' = length l) by ltac1:(lia).
         clear H2.
         specialize (H3 (length l) x' x) as H3'.
@@ -1105,7 +1106,7 @@ Proof.
         exists (lγ ++ [x']).
         (repeat split).
         {
-            do 2 (rewrite app_length).
+            do 2 (rewrite length_app).
             simpl.
             ltac1:(lia).
         }
@@ -1183,14 +1184,15 @@ Proof.
         destruct (analyze_list_from_end l0) as [He|He].
         {
             subst l0.
-            rewrite app_length in H2.
+            rewrite length_app in H2.
             simpl in H2.
             ltac1:(lia).
         }
         destruct He as [l' [x' Hl0]].
         subst l0.
-        do 2 (rewrite app_length in H2).
+        do 2 (rewrite length_app in H2).
         simpl in H2.
+        unfold TermOver in *.
         assert (length l' = length l) by ltac1:(lia).
         clear H2.
         specialize (H3 (length l) x' x) as H3'.
@@ -1229,7 +1231,7 @@ Proof.
         exists (lγ ++ [x']).
         (repeat split).
         {
-            do 2 (rewrite app_length).
+            do 2 (rewrite length_app).
             simpl.
             ltac1:(lia).
         }

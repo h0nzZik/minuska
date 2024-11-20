@@ -593,7 +593,7 @@ Proof.
         rewrite sum_list_with_compose.
         unfold compose.
         repeat (rewrite sum_list_with_S).
-        repeat (rewrite fmap_length).
+        repeat (rewrite length_fmap).
         repeat (rewrite sum_list_fmap).
         ltac1:(lia).
     }

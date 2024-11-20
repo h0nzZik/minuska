@@ -1847,8 +1847,8 @@ induction Hfail.
     rewrite sub_app_term in H1s0.
     ltac1:(simplify_eq/=).
     apply (f_equal length) in H0.
-    rewrite fmap_length in H0.
-    rewrite fmap_length in H0.
+    rewrite length_fmap in H0.
+    rewrite length_fmap in H0.
     ltac1:(simplify_eq/=).
 }
 {
@@ -1857,8 +1857,8 @@ induction Hfail.
     rewrite sub_app_term in H1s0.
     ltac1:(simplify_eq/=).
     apply (f_equal length) in H1s0 as H1s0'.
-    rewrite fmap_length in H1s0'.
-    rewrite fmap_length in H1s0'.
+    rewrite length_fmap in H1s0'.
+    rewrite length_fmap in H1s0'.
     apply IHHfail.
     exists s0.
     rewrite is_unifier_of_app.
