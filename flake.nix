@@ -18,6 +18,20 @@
 
         pkgs = nixpkgs.legacyPackages.${system};
         
+        # The appimagetool-wrapper is there to ensure that invocations of `appimagetool` from the `minuska` exacutable,
+        # when building an interpreter from a parser and extracted Coq/OCaml Minuska interpreter,
+        # use a runtime that does not depend on Nix paths (to /nix/store) for FUSE, but looks it up in some standard paths.
+        runtime = pkgs.runCommand "appimage-runtime" {} ''
+            mkdir -p $out/bin/
+            mkdir -p $out/libexec/
+            ln -s ${nix-appimage.outputs.packages.${system}.appimage-runtimes.appimage-type2-runtime} $out/libexec/appimage-runtime
+          ''
+        ;
+        appimagetool-wrapper = pkgs.writeShellScriptBin "appimagetool" ''
+	      export PATH="${pkgs.appimagekit}/bin:$PATH"
+          ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
+        '';
+
         minuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
            let stdpp = coqPackages.stdpp; in
@@ -50,7 +64,8 @@
             nativeBuildInputs = [
               pkgs.makeWrapper
               pkgs.dune_3
-              pkgs.appimagekit
+              appimagetool-wrapper
+              #pkgs.appimagekit
               coqPackages.coq.ocamlPackages.menhir
               coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
