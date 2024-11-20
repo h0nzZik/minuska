@@ -82,80 +82,28 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-  package-docker:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      packages: write
-    steps:
-      - name: Download a single artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: 'minuska-docker-image'
-#          path: './result-minuska-docker'
+#   package-docker:
+#     if: github.ref == 'refs/heads/main'
+#     runs-on: ubuntu-latest
+#     needs: build
+#     permissions:
+#       packages: write
+#     steps:
+#       - name: Download a single artifact
+#         uses: actions/download-artifact@v4
+#         with:
+#           name: 'minuska-docker-image'
+# #          path: './result-minuska-docker'
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+#       - name: Log in to the Container registry
+#         uses: docker/login-action@v2
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Push Docker image'
-        run: |
-          ls
-          docker image import ./result-minuska-docker ghcr.io/h0nzzik/minuska:${GITHUB_SHA}
-          docker image push ghcr.io/h0nzzik/minuska:${GITHUB_SHA}
-
-
-  package-rpm:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v9
-    - name: Setup Magic Nix Cache
-      uses: DeterminateSystems/magic-nix-cache-action@main
-    - name: Build RPM package
-      run: nix build -L '.#minuska-bundle-rpm' --out-link './result-minuska-rpm'
-    - name: Upload .rpm package as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.rpm
-        path: ./result-minuska-rpm/*.rpm
-
-
-  package-deb:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v9
-    - name: Setup Magic Nix Cache
-      uses: DeterminateSystems/magic-nix-cache-action@main
-    - name: Build DEB package
-      run: nix build -L '.#minuska-bundle-deb' --out-link './result-minuska-deb'
-    - name: Upload .deb package as artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.deb
-        path: ./result-minuska-deb/*.deb
-
-  release:
-    if: github.ref == 'refs/heads/main'
-    name: Create release with all assets
-    needs: [package-rpm, package-deb]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download cached rpm, deb, and tar.gz artifacts
-        uses: actions/download-artifact@v3
-
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.rpm/**/*.rpm
-            ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.deb/**/*.deb
+#       - name: 'Push Docker image'
+#         run: |
+#           ls
+#           docker image import ./result-minuska-docker ghcr.io/h0nzzik/minuska:${GITHUB_SHA}
+#           docker image push ghcr.io/h0nzzik/minuska:${GITHUB_SHA}
