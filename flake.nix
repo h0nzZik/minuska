@@ -7,9 +7,11 @@
     nix-appimage.url = "github:ralismark/nix-appimage";
     nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
     nix-appimage.inputs.flake-utils.follows = "flake-utils";
+    bundlers.url = "github:NixOS/bundlers";
+    bundlers.inputs.nixpkgs.follows = "nixpkgs";
    };
 
-  outputs = { self, nixpkgs, flake-utils, nix-appimage }: (
+  outputs = { self, nixpkgs, flake-utils, nix-appimage, bundlers }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
 
@@ -52,14 +54,12 @@
               coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
 
-            #buildInputs = [] ++ bothNativeAndOtherInputs;
-
-            #propagatedBuildInputs = [ coqPackages.coq ] ++ coqLibraries;
+            meta.mainProgram = "minuska";
 
             passthru = {
               inherit coqPackages;
               inherit coqLibraries;
-	    };
+	          };
 
 
             postPatch = ''
@@ -181,6 +181,11 @@
           };
         };
 
+        packages.minuska-bundle-rpm
+        = bundlers.bundlers.${system}.toRPM self.outputs.packages.${system}.minuska;
+
+        packages.minuska-bundle-deb
+        = bundlers.bundlers.${system}.toDEB self.outputs.packages.${system}.minuska;
 
         packages.default = self.outputs.packages.${system}.minuska;
         
