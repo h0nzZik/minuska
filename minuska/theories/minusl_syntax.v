@@ -4,8 +4,6 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    properties
-    varsof
 .
 
 Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=

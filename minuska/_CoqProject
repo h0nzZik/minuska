@@ -8,7 +8,6 @@ theories/properties.v
 theories/spec_syntax.v
 theories/varsof.v
 theories/syntax_properties.v
-theories/semantics_properties.v
 theories/spec_interpreter.v
 theories/valuation_merge.v
 

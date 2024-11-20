@@ -492,3 +492,18 @@ Proof.
     }
 Qed.
 
+Lemma map_uglify'_inj
+    {Σ : StaticModel}
+    {T : Type}
+    (l1 l2 : list (TermOver T))
+    :
+    map uglify' l1 = map uglify' l2 ->
+    l1 = l2
+.
+Proof.
+    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+    intros H.
+    apply list_fmap_eq_inj in H.
+    exact H.
+    apply cancel_inj.
+Qed.
