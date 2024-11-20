@@ -184,6 +184,8 @@
         packages.minuska-bundle-rpm
         = bundlers.bundlers.${system}.toRPM self.outputs.packages.${system}.minuska;
 
+        packages.minuska-bundle-deb
+        = bundlers.bundlers.${system}.toDEB self.outputs.packages.${system}.minuska;
 
         packages.default = self.outputs.packages.${system}.minuska;
         
