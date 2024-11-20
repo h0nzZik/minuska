@@ -4,8 +4,6 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    lowlang
-    syntax_properties
     properties
     varsof
 .

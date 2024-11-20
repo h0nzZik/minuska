@@ -2,11 +2,8 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    lowlang
     properties
     basic_matching
-    varsof
-    syntax_properties
     minusl_syntax
 .
 
