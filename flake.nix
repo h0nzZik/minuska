@@ -5,8 +5,9 @@
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     nix-appimage.url = "github:ralismark/nix-appimage";
-    nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
-    nix-appimage.inputs.flake-utils.follows = "flake-utils";
+    # We cannot use newer nixpkgs because nix-appimage uses `lzma` instead of `xz`.
+    #nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
+    #nix-appimage.inputs.flake-utils.follows = "flake-utils";
     bundlers.url = "github:NixOS/bundlers";
     bundlers.inputs.nixpkgs.follows = "nixpkgs";
    };
@@ -186,6 +187,9 @@
 
         packages.minuska-bundle-deb
         = bundlers.bundlers.${system}.toDEB self.outputs.packages.${system}.minuska;
+
+        packages.minuska-bundle-appimage
+        = nix-appimage.bundlers.${system}.default self.outputs.packages.${system}.minuska;
 
         packages.default = self.outputs.packages.${system}.minuska;
         
