@@ -3,7 +3,6 @@ From Minuska Require Import
     spec
     basic_properties
     lowlang
-    syntax_properties
     notations
     default_static_model
     BuiltinValue

@@ -3,8 +3,6 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    varsof
-    syntax_properties
     properties
     spec_interpreter
     valuation_merge

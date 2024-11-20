@@ -3,7 +3,6 @@ From Minuska Require Import
     spec
     basic_properties
     properties
-    (* syntax_properties *)
     minusl_compile
     minusl_syntax
     minusl_semantics
