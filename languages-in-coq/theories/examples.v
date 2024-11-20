@@ -12,7 +12,6 @@ From Minuska Require Import
     naive_interpreter
     interpreter_results
     default_static_model
-    lowlang
     notations
     frontend
     interp_loop
