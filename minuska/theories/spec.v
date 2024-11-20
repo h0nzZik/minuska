@@ -71,11 +71,11 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
     builtin_value_eqdec
         :: EqDecision builtin_value ;
     
-
     builtin_function_symbol
         : Type ;
     builtin_function_symbol_eqdec
         :: EqDecision builtin_function_symbol ;
+    
     (* I make the function interpretation total, and it is up to the concrete model
        to decide what does applying functions with invalid arguments mean.
        *)
@@ -84,6 +84,21 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
         -> NondetValue
         -> list (@TermOver' symbol builtin_value)
         -> @TermOver' symbol builtin_value ;
+    
+    builtin_predicate_symbol
+        : Type ;
+    builtin_predicate_symbol_eqdec
+        :: EqDecision builtin_predicate_symbol ;
+    
+    (* I make the predicate interpretation total, and it is up to the concrete model
+       to decide what does applying predicates with invalid arguments mean.
+       *)
+    builtin_predicate_interp
+        : builtin_predicate_symbol
+        -> NondetValue
+        -> list (@TermOver' symbol builtin_value)
+        -> bool ;
+    
 }.
 
 Set Primitive Projections.
@@ -252,17 +267,10 @@ Record SideCondition2
     {Σ : StaticModel}
     :=
 mkSideCondition2 {
-    sc_left: Expression2 ;
-    sc_right: Expression2 ;
+    sc_pred : builtin_predicate_symbol ;
+    sc_args : list Expression2 ;
 }.
 
-#[export]
-Instance VarsOf_SideCondition2
-    {Σ : StaticModel}
-    : VarsOf SideCondition2 variable
-:= {|
-    vars_of := fun c => vars_of (sc_left c) ∪ vars_of (sc_right c) ; 
-|}.
 
 #[export]
 Program Instance VarsOf_list_something
@@ -272,6 +280,14 @@ Program Instance VarsOf_list_something
     : VarsOf (list A) variable
 := {|
     vars_of := fun scs => ⋃ (vars_of <$> scs)
+|}.
+
+#[export]
+Instance VarsOf_SideCondition2
+    {Σ : StaticModel}
+    : VarsOf SideCondition2 variable
+:= {|
+    vars_of := fun c => vars_of (sc_args c) ; 
 |}.
 
 Record RewritingRule2
@@ -528,9 +544,12 @@ Instance Satisfies_SideCondition2
         variable
 := {|
     satisfies := fun ρ nv sc =>
-        match (Expression2_evaluate ρ (sc_left sc)),(Expression2_evaluate ρ (sc_right sc)) with
-        | Some v1, Some v2 => v1 nv = v2 nv
-        | _, _ => False
+        let ts' := Expression2_evaluate ρ <$> (sc_args sc) in
+        match list_collect ts' with
+        | None => False
+        | Some nts => 
+            let ts := (fun nt => nt nv) <$> nts in
+            builtin_predicate_interp (sc_pred sc) nv ts = true
         end
 |}.
 

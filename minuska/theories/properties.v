@@ -922,6 +922,329 @@ Lemma SideCondition_satisfies_strip
 Proof.
     unfold satisfies; simpl.
     intros HH.
+
+
+    ltac1:(repeat case_match).
+    {
+        assert (Htmp: l0 = l).
+        {
+            destruct c as [p args]; simpl in *.
+            clear HH.
+            revert l l0 H H0.
+            induction args; intros l1 l2 H1 H2; simpl in *.
+            {
+                ltac1:(simplify_eq/=).
+                reflexivity.
+            }
+            {
+                rewrite bind_Some in H1.
+                rewrite bind_Some in H2.
+                destruct H1 as [x1 [H1x1 H2x1]].
+                destruct H2 as [x2 [H1x2 H2x2]].
+                rewrite bind_Some in H2x1.
+                rewrite bind_Some in H2x2.
+                destruct H2x1 as [y1 [H1y1 H2y1]].
+                destruct H2x2 as [y2 [H1y2 H2y2]].
+                ltac1:(simplify_eq/=).
+                simpl in *.
+                (* 
+                destruct (decide (vars_of a ⊆ vars_of ρ)) as [Hsubyes|Hsubno].
+                {
+
+                }
+                {
+                    ltac1:(exfalso).
+                    clear - Hsubno H1x2
+                } *)
+                f_equal.
+                {
+                    apply Expression2_evalute_strip in H1x1.
+                    eapply Expression2_evaluate_extensive_Some in H1x1.
+                    rewrite H1x1 in H1x2.
+                    {
+                        ltac1:(simplify_eq/=). reflexivity.
+                    }
+                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite map_subseteq_spec).
+                    intros v t Hvt.
+                    ltac1:(rewrite map_lookup_filter).
+                    ltac1:(rewrite map_lookup_filter in Hvt).
+                    rewrite bind_Some in Hvt.
+                    rewrite bind_Some.
+                    destruct Hvt as [g [H1g H2g]].
+                    ltac1:(simplify_option_eq).
+                    {
+                        exists t.
+                        split>[assumption|reflexivity].
+                    }
+                    {
+                        unfold vars_of in H1; simpl in H1.
+                        unfold vars_of in H1; simpl in H1.
+                        clear - H0 H1.
+                        ltac1:(set_solver).
+                    }
+                }
+                {
+                    symmetry.
+                    apply IHargs.
+                    {
+                        assert(HH2: Forall (λ u : option (NondetValue → TermOver builtin_value), u)
+                            (list_fmap Expression2 (option (NondetValue → TermOver builtin_value))
+                            (Expression2_evaluate
+                            (filter
+                            (λ kv : variable * TermOver builtin_value,
+                            kv.1 ∈ vars_of {| sc_pred := p; sc_args := args |})
+                            ρ))
+                            args) 
+                        ).
+                        {
+                            apply list_collect_inv in H1y2.
+                            rewrite Forall_forall.
+                            rewrite Forall_forall in H1y2.
+                            intros o Ho.
+                            specialize (H1y2 o).
+                            apply H1y2.
+                            clear H1y2.
+                            rewrite elem_of_list_fmap.
+                            rewrite elem_of_list_fmap in Ho.
+                            destruct Ho as [e [He1 He2]].
+                            exists e.
+                            split>[|exact He2].
+                            
+                            destruct o.
+                            {
+                                symmetry in He1.
+                                symmetry.
+                                eapply Expression2_evaluate_extensive_Some in He1.
+                                apply He1.
+                                ltac1:(rewrite map_subseteq_spec).
+                                intros v' t' Hv't'.
+                                ltac1:(rewrite map_lookup_filter).
+                                ltac1:(rewrite map_lookup_filter in Hv't').
+                                rewrite bind_Some in Hv't'.
+                                rewrite bind_Some.
+                                destruct Hv't' as [g [H1g H2g]].
+                                ltac1:(simplify_option_eq).
+                                {
+                                    exists t'.
+                                    split>[assumption|reflexivity].
+                                }
+                                {
+                                    ltac1:(exfalso).
+                                    apply H1. clear H1.
+                                    unfold vars_of; simpl.
+                                    unfold vars_of; simpl.
+                                    unfold vars_of in H; simpl in H.
+                                    unfold vars_of in H; simpl in H.
+                                    clear -H.
+                                    ltac1:(set_solver).
+                                }
+                            }
+                            {
+                                ltac1:(exfalso).
+                                clear - He1 He2 H1y1.
+                                apply list_collect_inv in H1y1.
+                                rewrite Forall_fmap in H1y1.
+                                rewrite Forall_forall in H1y1.
+                                specialize (H1y1 e He2).
+                                simpl in H1y1.
+                                unfold isSome in H1y1.
+                                destruct (Expression2_evaluate ρ e) eqn:Heq.
+                                {
+                                    symmetry in He1.
+                                    eapply eq_None_ne_Some_1 with (x := t) in He1.
+                                    apply He1. clear He1.
+                                    eapply Expression2_evalute_strip in Heq.
+                                    eapply Expression2_evaluate_extensive_Some in Heq.
+                                    apply Heq.
+                                    ltac1:(rewrite map_subseteq_spec).
+                                    intros x g Hxg.
+                                    ltac1:(rewrite map_lookup_filter in Hxg).
+                                    ltac1:(rewrite map_lookup_filter).
+                                    rewrite bind_Some in Hxg.
+                                    rewrite bind_Some.
+                                    destruct Hxg as [g' [Hg' H'g']].
+                                    ltac1:(simplify_option_eq).
+                                    {
+                                        exists g.
+                                        split>[assumption|reflexivity].
+                                    }
+                                    {
+                                        ltac1:(exfalso).
+                                        apply H1. clear H1.
+                                        unfold vars_of; simpl.
+                                        unfold vars_of; simpl.
+                                        rewrite elem_of_union_list.
+                                        exists (vars_of e).
+                                        rewrite elem_of_list_fmap.
+                                        split>[|assumption].
+                                        exists e.
+                                        split>[reflexivity|exact He2].
+                                    }
+                                }
+                                {
+                                    inversion H1y1.
+                                }
+                            }
+                        }
+                        apply list_collect_Forall in HH2.
+                        destruct HH2 as [l_out [H1l_out H2l_out]].
+                        simpl in *.
+                        clear IHargs.
+                        clear H1x2.
+                        rewrite <- H1y2.
+                        apply f_equal.
+                        apply list_eq.
+                        intros i.
+                        rewrite list_lookup_fmap.
+                        rewrite list_lookup_fmap.
+                        destruct (args !! i) eqn:Hi; simpl in *.
+                        {
+                            apply f_equal.
+                            destruct (Expression2_evaluate ρ e) eqn:Heq; simpl in *.
+                            {
+                                apply Expression2_evalute_strip in Heq.
+                                eapply Expression2_evaluate_extensive_Some in Heq.
+                                symmetry.
+                                apply Heq.
+                                ltac1:(rewrite map_subseteq_spec).
+                                intros i0 g Hg.
+                                rewrite map_loo
+                            }
+                            {
+
+                            }
+                        }
+                        {
+                            reflexivity.
+                        }
+                    }
+                    { apply H1y1. }
+                    {
+                        simpl in *.
+                        apply Expression2_evaluate_total_1 in H1x2 as Ha.
+                        Search Expression2_evaluate Some.
+                        apply list_collect_inv in H1y2 as HH.
+                        assert(HH2: Forall (λ u : option (NondetValue → TermOver builtin_value), u)
+                            (list_fmap Expression2 (option (NondetValue → TermOver builtin_value))
+                            (Expression2_evaluate
+                            (filter
+                            (λ kv : variable * TermOver builtin_value,
+                            kv.1 ∈ vars_of {| sc_pred := p; sc_args := args |})
+                            ρ))
+                            args) 
+                        ).
+                        {
+                            rewrite Forall_forall.
+                            rewrite Forall_forall in HH.
+                            intros o Ho.
+                            specialize (HH o).
+                            apply HH.
+                            clear HH.
+                            rewrite elem_of_list_fmap.
+                            rewrite elem_of_list_fmap in Ho.
+                            destruct Ho as [e [He1 He2]].
+                            exists e.
+                            split>[|exact He2].
+                            
+                            destruct o.
+                            {
+                                symmetry in He1.
+                                symmetry.
+                                eapply Expression2_evaluate_extensive_Some in He1.
+                                apply He1.
+                                ltac1:(rewrite map_subseteq_spec).
+                                intros v' t' Hv't'.
+                                ltac1:(rewrite map_lookup_filter).
+                                ltac1:(rewrite map_lookup_filter in Hv't').
+                                rewrite bind_Some in Hv't'.
+                                rewrite bind_Some.
+                                destruct Hv't' as [g [H1g H2g]].
+                                ltac1:(simplify_option_eq).
+                                {
+                                    exists t'.
+                                    split>[assumption|reflexivity].
+                                }
+                                {
+                                    unfold vars_of in H1; simpl in H1.
+                                    unfold vars_of in H1; simpl in H1.
+                                    clear - H0 H1.
+                                    ltac1:(set_solver).
+                                }
+                            }
+                            {
+                                symmetry in He1.
+                                symmetry.
+                                eapply eq_None_ne_Some_2.
+                                intros nt.
+                                intros HContra.
+                                apply eq_None_ne_Some_1 with (x := nt) in He1.
+                                (* apply He1. clear He1. *)
+                                eapply Expression2_evaluate_extensive_Some in HContra.
+                                {
+                                    rewrite HContra in He1.
+                                    ltac1:(contradiction He1).
+                                    reflexivity.
+                                }
+                                {
+                                    ltac1:(rewrite map_subseteq_spec).
+                                    intros v' t' Hv't'.
+                                    ltac1:(rewrite map_lookup_filter).
+                                    ltac1:(rewrite map_lookup_filter in Hv't').
+                                    rewrite bind_Some in Hv't'.
+                                    rewrite bind_Some.
+                                    destruct Hv't' as [g [H1g H2g]].
+                                    rewrite bind_Some in H2g.
+                                    destruct H2g as [y [H1y H2y]].
+                                    simpl in *.
+                                    ltac1:(simplify_eq/=).
+                                    unfold vars_of in y; simpl in y.
+                                    clear H1y.
+                                    unfold vars_of in y; simpl in y.
+                                    exists t'.
+                                    split>[assumption|].
+                                    rewrite bind_Some.
+                                    unfold vars_of in y; simpl in y.
+                                    unfold vars_of; simpl.
+                                    ltac1:(simplify_option_eq).
+                                    {
+                                        exists t'.
+                                        split>[assumption|reflexivity].
+                                    }
+                                    {
+                                        unfold vars_of in H0; simpl in H0.
+                                        unfold vars_of in H0; simpl in H0.
+                                        ltac1:(exfalso).
+                                        apply H1. clear H1.
+                                        unfold vars_of; simpl.
+                                        ltac1:(set_solver).
+                                    }
+                                }
+
+                            }
+                            rewrite He1.
+                            Check Expression2_evalute_strip.
+                        }
+                        Search list_collect.
+                    }
+                }
+            }
+        }
+        apply list_collect_inv in H0 as H0'.
+        rewrite Forall_fmap in H0'.
+        Search list_collect.
+    }
+    {
+
+    }
+    {
+
+    }
+    {
+
+    }
+
+
     destruct (Expression2_evaluate ρ (sc_left c)) eqn:HH1>[|ltac1:(contradiction)].
     destruct (Expression2_evaluate ρ (sc_right c)) eqn:HH2>[|ltac1:(contradiction)].
     unfold is_true in *.
