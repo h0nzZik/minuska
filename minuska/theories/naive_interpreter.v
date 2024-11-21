@@ -602,19 +602,8 @@ Proof.
 
         apply sc_satisfies_insensitive with (v2 := ρ1) in H2x.
         {
-            unfold satisfies in H2x. simpl in H2x. unfold evaluate_sc.
-            
-            ltac1:(repeat case_match; destruct_and?; simplify_eq/=).
-            {
-                apply bool_decide_eq_true.
-                assumption.
-            }
-            {
-                destruct H2x.
-            }
-            {
-                destruct H2x.
-            }
+            unfold satisfies in H2x. simpl in H2x.
+            assumption.
         }
         {
             unfold Valuation2_restrict.
@@ -888,20 +877,10 @@ Proof.
     rewrite elem_of_list_In in Hx.
     specialize (HH Hx).
     
-    unfold evaluate_sc in HH.
     unfold satisfies; simpl.
     ltac1:(repeat case_match).
     {
-        apply bool_decide_eq_true in HH.
-        subst.
-        (repeat split).
-        { assumption. }
-    }
-    {
-        inversion HH.
-    }
-    {
-        inversion HH.
+        assumption.
     }
 Qed.
 
