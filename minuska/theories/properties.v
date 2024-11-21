@@ -1335,22 +1335,89 @@ Proof.
     intros Hrhos.
     unfold satisfies; simpl.
     intros HH.
-    destruct (Expression2_evaluate ρ1 (sc_left c) ) eqn:HH1>[|ltac1:(contradiction)].
-    destruct (Expression2_evaluate ρ1 (sc_right c) ) eqn:HH2>[|ltac1:(contradiction)].
-    
-    unfold is_true in *.
-    unfold isSome in *.
-    (destruct (Expression2_evaluate ρ1 (sc_left c)) as [g1|] eqn:Heq1)>[|ltac1:(congruence)].
-    symmetry in HH1.
-    eapply Expression2_evaluate_extensive_Some in Heq1 as Heq1'.
-    rewrite Heq1'.
-    eapply Expression2_evaluate_extensive_Some in HH2 as HH2'.
-    rewrite HH2'.
-    ltac1:(simplify_eq/=).
-    assumption.
-    assumption.
-    assumption.
+    ltac1:(repeat case_match); try (solve [ltac1:(contradiction)]).
+    {
+        assert (l0 = l).
+        {
+            clear HH.
+            destruct c as [p args].
+            revert l l0 H H0.
+            simpl.
+            clear p.
+            induction args; intros l1 l2 H1 H2.
+            {
+                simpl in *. ltac1:(simplify_eq/=). reflexivity.
+            }
+            {
+                simpl in *.
+                rewrite bind_Some in H1.
+                rewrite bind_Some in H2.
+                destruct H1 as [x1 [H1x1 H2x1]].
+                destruct H2 as [x2 [H1x2 H2x2]].
+                rewrite bind_Some in H2x1.
+                rewrite bind_Some in H2x2.
+                destruct H2x1 as [ll1 [H1ll1 H2ll1]].
+                destruct H2x2 as [ll2 [H1ll2 H2ll2]].
+                simpl in *.
+                ltac1:(simplify_eq/=).
+                eapply Expression2_evaluate_extensive_Some in H1x1.
+                {
+                    rewrite H1x1 in H1x2.
+                    ltac1:(simplify_eq/=).
+                    f_equal.
+                    apply IHargs; assumption.
+                }
+                {
+                    assumption.
+                }
+            }
+        }
+        rewrite H1.
+        exact HH.
+    }
+    {
+        clear HH.
+        revert l H H0.
+        destruct c as [p args]. simpl in *.
+        induction args; intros l HH1 HH2; simpl in *.
+        {
+            ltac1:(simplify_eq/=).
+        }
+        {
+            simpl in *.
+            rewrite bind_Some in HH1.
+            rewrite bind_None in HH2.
+            destruct HH1 as [x1 [H1x1 H2x1]].
+            rewrite bind_Some in H2x1.
+            destruct H2x1 as [ll1 [H1ll1 H2ll1]].
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            destruct HH2 as [HH2|HH2].
+            {
+                eapply Expression2_evaluate_extensive_Some in H1x1.
+                {
+                    rewrite H1x1 in HH2.
+                    inversion HH2.
+                }
+                { assumption. }
+            }
+            {
+                destruct HH2 as [x2 [H1x2 H2x2]].
+                rewrite bind_None in H2x2.
+                specialize (IHargs _ H1ll1).
+                destruct H2x2 as [H2x2 | H2x2].
+                {
+                    exact (IHargs H2x2).
+                }
+                {
+                    destruct H2x2 as [x [H1x H2x]].
+                    inversion H2x.
+                }
+            }
+        }
+    }
 Qed.
+
 
 
 Lemma satisfies_term_bov_inv
