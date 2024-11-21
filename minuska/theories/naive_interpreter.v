@@ -49,19 +49,6 @@ Fixpoint try_match_new
     end
 .
 
-Definition evaluate_sc
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    (nv : NondetValue)
-    (sc : SideCondition2)
-    : bool
-:=
-    match Expression2_evaluate ρ (sc_left sc), Expression2_evaluate ρ (sc_right sc) with
-    | Some l, Some r => bool_decide (l nv = r nv)
-    | _, _ => false
-    end
-.
-
 Definition evaluate_scs
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -69,7 +56,7 @@ Definition evaluate_scs
     (scs : list SideCondition2)
     : bool
 :=
-    forallb (evaluate_sc ρ nv) scs
+    forallb (SideCondition2_evaluate ρ nv) scs
 .
 
 Definition try_match_lhs_with_sc

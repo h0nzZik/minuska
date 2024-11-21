@@ -923,6 +923,7 @@ Proof.
     unfold satisfies; simpl.
     intros HH.
 
+    unfold SideCondition2_evaluate in *.
 
     ltac1:(repeat case_match).
     {
@@ -1211,6 +1212,7 @@ Proof.
         (* apply list_collect_inv in H as H'.
         rewrite Forall_fmap in H'. *)
         apply eq_None_ne_Some_1 with (x := l) in H0.
+        ltac1:(exfalso).
         apply H0. clear H0.
         
         destruct c as [? args]; simpl in *.
@@ -1335,6 +1337,7 @@ Proof.
     intros Hrhos.
     unfold satisfies; simpl.
     intros HH.
+    unfold SideCondition2_evaluate in *.
     ltac1:(repeat case_match); try (solve [ltac1:(contradiction)]).
     {
         assert (l0 = l).
@@ -1415,6 +1418,12 @@ Proof.
                 }
             }
         }
+    }
+    {
+        inversion HH.
+    }
+    {
+        inversion HH.
     }
 Qed.
 

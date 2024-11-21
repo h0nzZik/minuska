@@ -534,6 +534,22 @@ Instance Satisfies_TermOverBuiltin_TermOverExpression2
     satisfies := fun ρ tgnv ts => sat2E ρ tgnv.2 ts tgnv.1 ;
 |}.
 
+Definition SideCondition2_evaluate
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (sc : SideCondition2)
+    : bool
+:=
+    let ts' := Expression2_evaluate ρ <$> (sc_args sc) in
+    match list_collect ts' with
+    | None => false
+    | Some nts => 
+        let ts := (fun nt => nt nv) <$> nts in
+        builtin_predicate_interp (sc_pred sc) nv ts
+    end
+.
+
 #[export]
 Instance Satisfies_SideCondition2
     {Σ : StaticModel}
@@ -544,13 +560,7 @@ Instance Satisfies_SideCondition2
         variable
 := {|
     satisfies := fun ρ nv sc =>
-        let ts' := Expression2_evaluate ρ <$> (sc_args sc) in
-        match list_collect ts' with
-        | None => False
-        | Some nts => 
-            let ts := (fun nt => nt nv) <$> nts in
-            builtin_predicate_interp (sc_pred sc) nv ts = true
-        end
+        SideCondition2_evaluate ρ nv sc = true
 |}.
 
 
