@@ -2351,9 +2351,10 @@ Definition eject
     option (bool+(Z+(string+unit)))%type
     :=
     match v with
-    | bv_bool b => (inl b)
-    | bv_Z z => (inr (inl Z))
-    | bv_string s => (inr (inr (inl s)))
-    | bv_error => (inr (inr (inr ())))
+    | bv_bool b => Some (inl b)
+    | bv_Z z => Some (inr (inl z))
+    | bv_str s => Some (inr (inr (inl s)))
+    | bv_error => Some (inr (inr (inr ())))
+    | _ => None
     end 
 .

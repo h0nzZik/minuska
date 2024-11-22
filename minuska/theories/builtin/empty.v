@@ -66,3 +66,12 @@ Definition inject_string
     option Emptyset :=
     None
 .
+
+Definition eject
+    {symbol : Type}
+    (v : Emptyset)
+    :
+    option (bool+(Z+(string+unit)))%type
+    :=
+    None
+.
