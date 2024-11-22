@@ -7,24 +7,18 @@ module Syntax = Libminuska.Syntax
 
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
 
-(* let builtins_binding_coq = Libminuska.Extracted.builtins_binding ;;
-let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq ;;
-
-let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding ;;
- *)
-
-let parse_and_print (builtins_map : builtins_map_t) lexbuf oux =
+let parse_and_print (builtins_map : builtins_map_t) (name_of_builtins : string) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition builtins_map value oux
+    Micoqprint.print_definition builtins_map name_of_builtins value oux
   | None -> ()
 
 
-let append_definition (builtins_map : builtins_map_t) input_filename output_channel =
+let append_definition (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename output_channel =
   let inx = In_channel.create input_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print builtins_map lexbuf output_channel;
+  parse_and_print builtins_map name_of_builtins lexbuf output_channel;
   In_channel.close inx;
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := global_naive_interpreter (fst T).|};
@@ -56,9 +50,9 @@ let append_definition (builtins_map : builtins_map_t) input_filename output_chan
   |} ;
   ()
 
-let transform (builtins_map : builtins_map_t) input_filename output_filename () =
+let transform (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename output_filename () =
   let oux = Out_channel.create output_filename in
-  append_definition builtins_map input_filename oux;
+  append_definition builtins_map name_of_builtins input_filename oux;
   Out_channel.close oux;
   ()
 
@@ -94,14 +88,14 @@ let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let compile (builtins_map : builtins_map_t) input_filename interpreter_name oparserexe parser_builder () =
+let compile (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename interpreter_name oparserexe parser_builder () =
   (* let real_interpreter_name = Filename_unix.realpath interpreter_name in *)
   let real_interpreter_name = interpreter_name in
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
   let appdir = Filename.concat mldir "interpreter.AppDir" in
-  transform builtins_map input_filename coqfile ();
+  transform builtins_map name_of_builtins input_filename coqfile ();
   (* generate/build/refresh the parser*)
   ( match parser_builder with
   | Some command -> let _ = run [command] in ()
@@ -113,7 +107,7 @@ let compile (builtins_map : builtins_map_t) input_filename interpreter_name opar
   ) in
   (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
-  append_definition builtins_map input_filename oux_coqfile;
+  append_definition builtins_map name_of_builtins input_filename oux_coqfile;
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
@@ -176,8 +170,21 @@ type languagedescr = {
 } [@@deriving sexp]
 
 let get_builtins_map (static_model : string) : builtins_map_t =
-  match static_model with
+  (* let builtins_binding_coq = Libminuska.Extracted.builtins_binding ;;
+let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq ;;
+
+let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding ;;
+ *)
+
+  let builtins_binding_coq = (
+    match static_model with
+    | "klike" -> Libminuska.Extracted.builtins_klike
+    | "empty" -> Libminuska.Extracted.builtins_empty
     | _ -> failwith "Unknown static model specified"
+  ).bi_bindings in
+  let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq in
+  let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding in
+  builtins_map
 
 let generate_interpreter scm_filename () =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
@@ -190,7 +197,7 @@ let generate_interpreter scm_filename () =
     | None -> None
   ) in
   let builtins_map : builtins_map_t = (get_builtins_map (cfg.static_model)) in
-  compile builtins_map mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
+  compile builtins_map cfg.static_model mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
   ()
 
 let command_generate =
@@ -202,7 +209,7 @@ let command_generate =
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
      in
-     fun () -> transform (get_builtins_map "klike") input_filename output_filename ())
+     fun () -> transform (get_builtins_map "klike") ("klike") input_filename output_filename ())
 
 
 let command_groundterm2coq =
@@ -225,7 +232,7 @@ let command_compile =
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("interpreter" %: Filename_unix.arg_type))
      in
-     fun () -> compile (get_builtins_map "klike") input_filename output_filename None None ())
+     fun () -> compile (get_builtins_map "klike") "klike" input_filename output_filename None None ())
 
 let command_generate_interpreter =
 Command.basic

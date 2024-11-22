@@ -654,3 +654,8 @@ Definition rewrites_to_thy
 
 }
 .
+
+Record BuiltinsBinding := {
+    bb_function_names : list (string * string) ;
+}.
+

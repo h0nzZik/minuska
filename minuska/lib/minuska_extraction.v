@@ -4,40 +4,6 @@ From Minuska Require Export
     default_everything
     pval_ocaml_binding
 .
-From Minuska Require Import
-    builtin.empty
-    builtin.klike
-.
-
-
-Record BuiltinInterface (NondetValue : Type) := {
-    bi_beta : Builtin (NondetValue : Type) ;
-    bi_bindings : BuiltinsBinding ;
-    bi_inject_bool : bool -> option (@builtin_value _ _ NondetValue bi_beta) ;
-    bi_inject_Z : Z -> option (@builtin_value _ _ NondetValue bi_beta) ;
-    bi_inject_string : string -> option (@builtin_value _ _ NondetValue bi_beta) ;
-    bi_eject : (@builtin_value _ _ NondetValue bi_beta) -> option (bool+(Z+(string+unit)))%type ;
-}.
-
-Definition builtins_empty : BuiltinInterface MyUnit := {|
-    bi_beta := builtin.empty.β ;
-    bi_bindings := builtin.empty.builtins_binding ;
-    bi_inject_bool := @builtin.empty.inject_bool string;
-    bi_inject_Z := @builtin.empty.inject_Z string;
-    bi_inject_string := @builtin.empty.inject_string string;
-    bi_eject := @builtin.empty.eject string;
-|}.
-
-Definition builtins_klike : BuiltinInterface MyUnit := {|
-    bi_beta := builtin.klike.β ;
-    bi_bindings := builtin.klike.builtins_binding ;
-    bi_inject_bool := fun b => @builtin.klike.inject_bool string b;
-    bi_inject_Z := fun z => @builtin.klike.inject_Z string z;
-    bi_inject_string := fun s => @builtin.klike.inject_string string s;
-    bi_eject := @builtin.klike.eject string;
-|}.
-
-
 Extraction
     "Dsm.ml"
     BuiltinInterface

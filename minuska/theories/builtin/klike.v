@@ -6,7 +6,6 @@ From Minuska Require Import
     notations
     default_static_model
     BuiltinValue
-    pval_ocaml_binding
 .
 
 From Minuska Require Import

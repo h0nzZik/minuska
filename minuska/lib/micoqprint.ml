@@ -10,7 +10,7 @@ let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
 
 
 let output_part_1 = {|
-Require Import Minuska.default_everything.
+Require Import Minuska.pval_ocaml_binding Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike.
 Existing Instance default_everything.DSM.
 |}
 
@@ -183,9 +183,12 @@ let print_mycontext oux ctx =
 
 let print_definition
   (my_builtins_map : builtins_map_t)
+  (name_of_builtins : string)
   def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
+    fprintf oux "Definition mybeta := (bi_beta builtins_%s).\n" name_of_builtins;
+    fprintf oux "#[global] Existing Instance mybeta.\n";
     print_mycontext oux (def.context);
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
