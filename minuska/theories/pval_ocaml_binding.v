@@ -10,9 +10,9 @@ From Coq Require Import String ZArith.
 Record BuiltinInterface (NondetValue : Type) := {
     bi_beta : Builtin (NondetValue : Type) ;
     bi_bindings : BuiltinsBinding ;
-    bi_inject_bool : bool -> option (@builtin_value _ _ NondetValue bi_beta) ;
-    bi_inject_Z : Z -> option (@builtin_value _ _ NondetValue bi_beta) ;
-    bi_inject_string : string -> option (@builtin_value _ _ NondetValue bi_beta) ;
+    bi_inject_bool : forall (Fret : option (@builtin_value _ _ NondetValue bi_beta) -> (@builtin_value _ _ NondetValue bi_beta)), bool -> (@builtin_value _ _ NondetValue bi_beta) ;
+    bi_inject_Z : forall (Fret : option (@builtin_value _ _ NondetValue bi_beta) -> (@builtin_value _ _ NondetValue bi_beta)), Z -> (@builtin_value _ _ NondetValue bi_beta) ;
+    bi_inject_string : forall (Fret : option (@builtin_value _ _ NondetValue bi_beta) -> (@builtin_value _ _ NondetValue bi_beta)), string -> (@builtin_value _ _ NondetValue bi_beta) ;
     bi_eject : (@builtin_value _ _ NondetValue bi_beta) -> option (bool+(Z+(string+unit)))%type ;
 }.
 

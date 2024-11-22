@@ -39,23 +39,27 @@ let translate_name
         let name = (name1) in
         name
 
-let builtin2str b =
+let builtin2str (iface : 'a Dsm.builtinInterface) (name_of_builtins : string) b =
+  (* This is only to throw error if we cannot convert it *)
+  let _ = Miskeleton.convert_builtin iface b in
   match b with
-  | `BuiltinInt n -> "(bi_inject_Z _ (" ^ (string_of_int n) ^ ")%Z)"
-  | `BuiltinString s -> "(bi_inject_string _ \"" ^ s ^ "\")"
+  | `BuiltinInt n -> "(bi_inject_Z _ builtins_"^name_of_builtins^" (" ^ (string_of_int n) ^ ")%Z)"
+  | `BuiltinString s -> "(bi_inject_string _ builtins_"^name_of_builtins^" \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm
   (oux : Out_channel.t)
+  (iface : 'a Dsm.builtinInterface)
+  (name_of_builtins : string)
   (g : Syntax.groundterm) : unit =
   match g with
   | `GTb b ->
       fprintf oux "(@t_over symbol builtin_value ";
-      fprintf oux "%s" (builtin2str b);
+      fprintf oux "%s" (builtin2str iface name_of_builtins b);
       fprintf oux ")";
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
-    myiter (fun x -> print_groundterm oux x; ()) (fun () -> fprintf oux "; "; ()) gs;
+    myiter (fun x -> print_groundterm oux iface name_of_builtins x; ()) (fun () -> fprintf oux "; "; ()) gs;
     fprintf oux "])"
 
 
@@ -99,7 +103,9 @@ let print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
   print_pattern_w_hole oux p None
 
 let rec print_expr_w_hole
+  (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (name_of_builtins : string)
   (oux : Out_channel.t)
   (e : Syntax.expr)
   (hole : string option)
@@ -116,38 +122,44 @@ let rec print_expr_w_hole
         )
   | `EGround g ->
     fprintf oux "(e_ground ";
-    print_groundterm oux g;
+    print_groundterm oux iface name_of_builtins g;
     fprintf oux ")"
 
   | `ECall (`Id s, es) ->
     let name = translate_name my_builtins_map s in
     fprintf oux "(e_fun %s [" name;
-    myiter (fun x -> print_expr_w_hole my_builtins_map oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+    myiter (fun x -> print_expr_w_hole iface my_builtins_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
     fprintf oux "])"
 
 
 
 let print_expr
+  (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (name_of_builtins : string)
   (oux : Out_channel.t)
   (e : Syntax.expr)
   : unit =
-  print_expr_w_hole my_builtins_map oux e None
+  print_expr_w_hole iface my_builtins_map name_of_builtins oux e None
 
 let rec print_exprterm
+  (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (name_of_builtins : string)
   (oux : Out_channel.t)
   (p : Syntax.exprterm)
   : unit =
   match p with
-  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr my_builtins_map) oux e; fprintf oux ")";
+  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr iface my_builtins_map name_of_builtins) oux e; fprintf oux ")";
   | `ETerm (`Id s, ps) ->
     fprintf oux "(@t_term symbol Expression2 \"%s\" [" s;
-    myiter (fun x -> print_exprterm my_builtins_map oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
+    myiter (fun x -> print_exprterm iface my_builtins_map name_of_builtins oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 let print_cond_w_hole
+  (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (name_of_builtins : string)
   (oux : Out_channel.t)
   (c : Syntax.condition)
   (hole : string option)
@@ -155,13 +167,15 @@ let print_cond_w_hole
   match c with
   | `Cond (`Id s, es) ->
       fprintf oux "(mkSideCondition2 _ %s [" (translate_name my_builtins_map s);
-      myiter (fun x -> print_expr_w_hole my_builtins_map oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+      myiter (fun x -> print_expr_w_hole iface my_builtins_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
       fprintf oux "])"
 
 
 
 let print_rule
+  (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (name_of_builtins : string)
   (oux : Out_channel.t)
   (r : Syntax.rule) : unit =
     fprintf oux "(";
@@ -175,10 +189,10 @@ let print_rule
     
     print_pattern oux (r.lhs);
     fprintf oux " ";
-    print_exprterm my_builtins_map oux (r.rhs);
+    print_exprterm iface my_builtins_map name_of_builtins oux (r.rhs);
     fprintf oux " ";
     fprintf oux "[";
-    myiter (fun x -> print_cond_w_hole my_builtins_map oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond);
+    myiter (fun x -> print_cond_w_hole iface my_builtins_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond);
     fprintf oux "]";
     fprintf oux ")\n";
     ()
@@ -208,6 +222,7 @@ let print_mycontext oux ctx =
 
 
 let print_definition
+  (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (name_of_builtins : string)
   def oux =
@@ -220,13 +235,13 @@ let print_definition
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_cond_w_hole my_builtins_map oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
+    print_cond_w_hole iface my_builtins_map name_of_builtins oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     
     fprintf oux "Definition isNonValue (";
     fprintf oux "%s" (match (fst (def.Syntax.nonvalue)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_cond_w_hole my_builtins_map oux (snd (def.Syntax.nonvalue)) (Some (match (fst (def.Syntax.nonvalue)) with `Var s -> s));
+    print_cond_w_hole iface my_builtins_map (name_of_builtins : string) oux (snd (def.Syntax.nonvalue)) (Some (match (fst (def.Syntax.nonvalue)) with `Var s -> s));
     fprintf oux ".\n";
     
     fprintf oux "%s\n" output_part_2;
@@ -239,7 +254,7 @@ let print_definition
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_strict oux x; ()) (fun () -> fprintf oux ";" ; ()) (def.Syntax.strictness) ;
     fprintf oux "%s" "] ++ [\n";
-    myiter (fun x -> print_rule my_builtins_map oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
+    myiter (fun x -> print_rule iface my_builtins_map (name_of_builtins : string) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
     

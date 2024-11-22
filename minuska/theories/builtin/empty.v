@@ -44,26 +44,29 @@ Definition builtins_binding : BuiltinsBinding := {|
 
 Definition inject_bool
     {symbol : Type}
+    (Fret : option Emptyset -> Emptyset)
     (b : bool)
     :
-    option Emptyset :=
-    None
+    Emptyset :=
+    Fret None
 .
 
 Definition inject_Z
     {symbol : Type}
+    (Fret : option Emptyset -> Emptyset)
     (z : Z)
     :
-    option Emptyset :=
-    None
+    Emptyset :=
+    Fret None
 .
 
 Definition inject_string
     {symbol : Type}
+    (Fret : option Emptyset -> Emptyset)
     (s : string)
     :
-    option Emptyset :=
-    None
+    Emptyset :=
+    Fret None
 .
 
 Definition eject

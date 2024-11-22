@@ -1,22 +1,17 @@
 open Core
 open Printf
 
+let __ = let rec f _ = Obj.repr f in Obj.repr f
+
 let convert_builtin (iface : 'a Dsm.builtinInterface) (b : Syntax.builtin)  : ((string, 'a) Dsm.builtin_value)  =
   match b with
   | `BuiltinInt n -> (
-    match (iface.bi_inject_Z (Z.of_int n)) with
-      | Some v -> v
-      | None -> failwith "The chosen builtin model does not support integers (Z)"
-    )
+    iface.bi_inject_Z (fun a -> match a with | None -> failwith "The chosen builtin model does not support integers (Z)" | Some b -> b) (Z.of_int n))
   | `BuiltinString s ->(
-     match (iface.bi_inject_string (Stringutils.explode s)) with
-      | Some v -> v
-      | None -> failwith "The chosen builtin model does not support strings"  
+     iface.bi_inject_string (fun a -> match a with | None -> failwith "The chosen builtin model does not support strings" | Some b -> b) (Stringutils.explode s)
     )
   | `BuiltinBool b -> (
-    match (iface.bi_inject_bool b) with
-      | Some v -> v
-      | None -> failwith "The chosen builtin model does not support bools"
+      iface.bi_inject_bool (fun a -> match a with | None -> failwith "The chosen builtin model does not support bools" | Some b -> b) b
     )
   | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Dsm.Bv_error *)
   | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"

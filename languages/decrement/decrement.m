@@ -1,12 +1,13 @@
 @frames: [];
-@value(X): (bool.false()) ;
+@value(X): (is_true(bool.false())) ;
+@nonvalue(X): (is_true(bool.true())) ;
 @context(HOLE): u_cfg [ HOLE ];
 @strictness: [];
 
 
-@rule [init]: builtin.init[X] => X where bool.true() ;
+@rule [init]: builtin.init[X] => X where [] ;
 
-@rule [decrement]: succ[X] => X where bool.true() ;
+@rule [decrement]: succ[X] => X where [] ;
 
 
 

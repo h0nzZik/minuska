@@ -1,12 +1,13 @@
 @frames: [];
-@value(X): (bool.false()) ;
+@value(X): (is_true(bool.false())) ;
+@nonvalue(X): (is_true(bool.true())) ;
 @context(HOLE): cfg [ HOLE ];
 @strictness: [];
 
-@rule [init]: builtin.init[X] => cfg[X] where bool.true() ;
+@rule [init]: builtin.init[X] => cfg[X] where [] ;
 
 @rule [decrement]:
-	cfg[X] => cfg[z.minus(X, [(@builtin-int 1)])] where bool.true()
+	cfg[X] => cfg[z.minus(X, [(@builtin-int 1)])] where []
     ;
 
 
