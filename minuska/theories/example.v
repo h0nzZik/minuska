@@ -10,6 +10,7 @@ From Minuska Require Import
     notations
     frontend
     interp_loop
+    builtin.klike
 .
 
 

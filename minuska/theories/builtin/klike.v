@@ -1673,37 +1673,46 @@ Inductive FunctionSymbol : Set :=
 | b_list_empty        (* list *)
 | b_map_empty         (* map *)
 (* unary *)
-| b_isBuiltin         (* 'a -> bool *)
-| b_isError           (* 'a -> bool *)
-| b_isBool            (* 'a -> bool *)
-| b_isZ               (* 'a -> bool *)
-| b_isString          (* 'a -> bool *)
-| b_isList            (* 'a -> bool *)
-| b_isMap             (* 'a -> bool *)
 | b_bool_neg          (* bool -> bool *)
 | b_map_size          (* map -> Z *)
 (* binary *)
-| b_eq                (* 'a -> 'b -> bool *)
-| b_and               (* bool -> bool -> bool *)
-| b_or                (* bool -> bool -> bool *)
-| b_iff               (* bool -> bool -> bool *)
-| b_xor               (* bool -> bool -> bool *)
-| b_Z_isLe            (* Z -> Z -> bool *)
-| b_Z_isLt            (* Z -> Z -> bool *)
 | b_Z_plus            (* Z -> Z -> Z *)
 | b_Z_minus           (* Z -> Z -> Z *)
 | b_Z_times           (* Z -> Z -> Z *)
 | b_Z_div             (* Z -> Z -> Z *)
-| b_map_hasKey        (* map -> 'a -> bool *)
 | b_map_lookup        (* map -> 'a -> 'b *)
-| b_is_applied_symbol (* string -> 'a -> bool*)
-| b_have_same_symbol  (* term -> term -> bool*)
 (* ternary*)
 | b_map_update        (* map -> 'a -> 'b -> map  *)
 .
 
 #[export]
 Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
+Proof. ltac1:(solve_decision). Defined.
+
+Inductive PredicateSymbol : Set :=
+| b_isBuiltin              (* 'a -> Prop *)
+| b_isError                (* 'a -> Prop *)
+| b_isBool                 (* 'a -> Prop *)
+| b_isZ                    (* 'a -> Prop *)
+| b_isString               (* 'a -> Prop *)
+| b_isList                 (* 'a -> Prop *)
+| b_isMap                  (* 'a -> Prop *)
+| b_bool_and               (* bool -> bool -> Prop *)
+| b_bool_or                (* bool -> bool -> Prop *)
+| b_bool_iff               (* bool -> bool -> Prop *)
+| b_bool_xor               (* bool -> bool -> Prop *)
+| b_Z_isLe                 (* Z -> Z -> Prop *)
+| b_Z_isLt                 (* Z -> Z -> Prop *)
+| b_bool_eq                (* bool -> bool -> Prop *)
+| b_Z_eq                   (* Z -> Z -> Prop *)
+| b_map_hasKey             (* map -> 'a -> Prop *)
+| b_is_applied_symbol      (* string -> 'a -> Prop *)
+| b_have_same_symbol       (* term -> term -> Prop *)
+.
+
+
+#[export]
+Instance PredicateSymbol_eqDec : EqDecision PredicateSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 Section sec.
@@ -1835,7 +1844,7 @@ Section sec.
         x y
     .
 
-    Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue.BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue.BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue.BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
+    Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
 
 
     Definition liftNulary
