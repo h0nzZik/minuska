@@ -9,8 +9,8 @@ From Minuska Require Import
     builtin.klike
 .
 
-Set Printing All.
-Class BuiltinInterface (NondetValue : Type) := {
+
+Record BuiltinInterface (NondetValue : Type) := {
     bi_beta : Builtin (NondetValue : Type) ;
     bi_bindings : BuiltinsBinding ;
     bi_inject_bool : bool -> option (@builtin_value _ _ NondetValue bi_beta) ;
