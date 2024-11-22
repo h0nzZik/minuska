@@ -50,9 +50,9 @@ Definition basic_rule
     (name : string)
     (l : TermOver BuiltinOrVar)
     (r : TermOver Expression2)
-    (cond : SideCondition2) : Declaration
+    (conds : list SideCondition2) : Declaration
 :=
-    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [cond] default_act)))
+    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r conds default_act)))
 .
 
 
@@ -73,7 +73,7 @@ Definition framed_rule
     (name : string)
     (l : TermOver BuiltinOrVar)
     (r : TermOver Expression2)
-    (cond : Expression2) : Declaration
+    (conds : list SideCondition2) : Declaration
 :=
     (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act
         (TermOverBoV_subst frame.2 frame.1 l)

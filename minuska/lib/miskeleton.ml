@@ -133,7 +133,7 @@ let command_run (iface : 'a Dsm.builtinInterface) (path_to_parser : string optio
      in
      fun () -> (parse_first iface bench path_to_parser program (fun iface fname -> run iface step fname depth output_file bench ()) ))
 
-let main (iface : 'a Dsm.builtinInterface) (path_to_parser : string option) step =
+let main (path_to_parser : string option) (iface : 'a Dsm.builtinInterface) step =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.3" (command_run iface path_to_parser step)) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;

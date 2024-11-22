@@ -20,7 +20,7 @@ let append_definition (builtins_map : builtins_map_t) (name_of_builtins : string
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
   parse_and_print builtins_map name_of_builtins lexbuf output_channel;
   In_channel.close inx;
-  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act Lang_Decls)). |};
+  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := global_naive_interpreter (fst T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
@@ -120,7 +120,7 @@ let compile (builtins_map : builtins_map_t) (name_of_builtins : string) input_fi
   let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
   (* compile the main ocaml file (after adding an entry command) *)
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s lang_interpreter)\n" oparseexestr) in
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter)\n" oparseexestr name_of_builtins) in
   (*let _ = run [ "env" ] in*)
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [
