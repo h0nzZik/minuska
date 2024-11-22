@@ -53,7 +53,8 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_arity : nat ;
     cd_position : nat ;
     cd_positions_to_wait_for : list nat ;
-    cd_isValue : Expression2 -> Expression2 ;
+    cd_isValue : Expression2 -> SideCondition2 ;
+    cd_isNonValue : Expression2 -> SideCondition2 ;
     cd_cseq_context : ContextTemplate;
 }.
 
@@ -62,7 +63,8 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_sym : symbol ;
     sd_arity : nat ;
     sd_positions : list nat ;
-    sd_isValue : Expression2 -> Expression2 ;
+    sd_isValue : Expression2 -> SideCondition2 ;
+    sd_isNonValue : Expression2 -> SideCondition2 ;
     sd_cseq_context : ContextTemplate ;
 }.
 
@@ -88,6 +90,7 @@ Class Defaults {Σ : StaticModel} := {
     default_empty_cseq_name : string ;
     default_context_template : ContextTemplate ;
     default_isValue : Expression2 -> Expression2 ;
+    default_isNonValue : Expression2 -> Expression2 ;
 }.
 
 Notation
@@ -121,6 +124,7 @@ Definition strictness_to_contexts
             cd_position := position ;
             cd_positions_to_wait_for := (firstn idx (sd_positions sd));
             cd_isValue := sd_isValue sd ;
+            cd_isNonValue := sd_isNonValue sd ;
             cd_cseq_context := @sd_cseq_context Σ sd ;
         |})
         (sd_positions sd)
@@ -153,7 +157,7 @@ Notation "'rule' '[' n ']:' l '~>{' a '}' r"
 
 Notation "'rule' '[' n ']:' l '~>{' a '}' r 'where' s"
     := ((mkRuleDeclaration
-        n (rule (l) ~>{a} (r) requires (cons ((mkSideCondition2 _ ((e_fun b_true [])) (s))) nil))
+        n (rule (l) ~>{a} (r) requires s)
     ))
     (at level 200)
 .
@@ -206,15 +210,12 @@ Section wsm.
         (Act : Set)
         (default_act : Act)
     .
-(*
     Context
-        {Σ : StaticModel}
-        (to_var : string -> variable)
-        (to_sym : string -> symbol)
+        (β : Builtin MyUnit)
     .
-*)
+
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.β).
+    Instance Σ : StaticModel := default_model β.
 
     Definition to_var := fun x:string => x.
     Definition to_sym := fun x:string => x.
@@ -247,7 +248,8 @@ Section wsm.
         (arity : nat)
         (positions_to_wait_for : list nat)
         (position : nat)
-        (isValue : Expression2 -> Expression2)
+        (isValue : Expression2 -> SideCondition2)
+        (isNonValue : Expression2 -> SideCondition2)
         (cseq_context : ContextTemplate)
         : RuleDeclaration Act
     :=
@@ -264,8 +266,8 @@ Section wsm.
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
-        let side_condition : Expression2
-            := foldr (fun a b => (a && b)%rs) (true)%rs (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
+        let side_condition : list SideCondition2
+            := (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
         rule [lbl]:
             cseq_context _ _ (cseq ([
                 (t_term sym lhs_vars);
@@ -278,7 +280,7 @@ Section wsm.
                     (t_over (bov_variable REST_SEQ))
                 ])%list
             ])%list)))
-            where (( ~~ (isValue (e_variable selected_var)) ) && side_condition )
+            where ([(isNonValue (e_variable selected_var))] ++ side_condition)
     .
 
 
@@ -289,7 +291,7 @@ Section wsm.
         (sym : symbol)
         (arity : nat)
         (position : nat)
-        (isValue : Expression2 -> Expression2)
+        (isValue : Expression2 -> SideCondition2)
         (cseq_context : ContextTemplate)
         : RuleDeclaration Act
     :=
@@ -319,7 +321,7 @@ Section wsm.
                 (t_term sym lhs_vars);
                 (t_over (bov_variable REST_SEQ))
             ])%list))
-            where (isValue (e_variable selected_var))
+            where [(isValue (e_variable selected_var))]
     .
 
     Definition process_context_declaration
@@ -337,6 +339,7 @@ Section wsm.
                     (cd_positions_to_wait_for c)
                     (cd_position c)
                     (cd_isValue c)
+                    (cd_isNonValue c)
                     (@cd_cseq_context Σ c)
             in
         let cr : RuleDeclaration Act
