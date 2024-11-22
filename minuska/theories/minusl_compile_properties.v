@@ -2115,18 +2115,20 @@ Lemma in_compile_inv
                 (h
                 :: vars_of_to_l2r c ++
                 elements (vars_of scs) ++
-                elements (vars_of (mlld_isValue_scs Act D))))
+                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
                 (fresh
                 (h
                 :: fresh
                 (h
                 :: vars_of_to_l2r c ++
                 elements (vars_of scs) ++
-                elements (vars_of (mlld_isValue_scs Act D)))
+                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D))))
                 :: vars_of_to_l2r c ++
                 elements (vars_of scs) ++
-                elements (vars_of (mlld_isValue_scs Act D))))
-                (MinusL_isValue Act D) c h
+                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
+                (MinusL_isValue Act D)
+                (MinusL_isNonValue Act D)
+                c h
                 scs
             \/
             r =
@@ -2135,19 +2137,21 @@ Lemma in_compile_inv
             (h
             :: vars_of_to_l2r c ++
             elements (vars_of scs) ++
-            elements (vars_of (mlld_isValue_scs Act D))))
+            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
             (fresh
             (h
             :: fresh
             (h
             :: vars_of_to_l2r c ++
             elements (vars_of scs) ++
-            elements (vars_of (mlld_isValue_scs Act D)))
+            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D))))
             :: vars_of_to_l2r c ++
             elements (vars_of scs) ++
-            elements (vars_of (mlld_isValue_scs Act D))))
-            (MinusL_isValue Act D) c
-          h
+            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
+            (MinusL_isValue Act D)
+            (MinusL_isNonValue Act D)
+            c
+            h
         )
         }}}
     )
