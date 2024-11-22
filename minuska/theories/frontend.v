@@ -89,8 +89,8 @@ Class Defaults {Σ : StaticModel} := {
     default_cseq_name : string ;
     default_empty_cseq_name : string ;
     default_context_template : ContextTemplate ;
-    default_isValue : Expression2 -> Expression2 ;
-    default_isNonValue : Expression2 -> Expression2 ;
+    default_isValue : Expression2 -> SideCondition2 ;
+    default_isNonValue : Expression2 -> SideCondition2 ;
 }.
 
 Notation

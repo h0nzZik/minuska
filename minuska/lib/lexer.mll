@@ -27,6 +27,7 @@ rule read =
   | '['          { BRACKET_SQUARE_LEFT }
   | ']'          { BRACKET_SQUARE_RIGHT }
   | "@value"      { KEYWORD_VALUE }
+  | "@nonvalue"      { KEYWORD_NONVALUE }
   | "@strictness" { KEYWORD_STRICTNESS }
   | "@frames"       { KEYWORD_FRAMES }
   | "@rule"       { KEYWORD_RULE }
