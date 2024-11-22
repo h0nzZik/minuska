@@ -187,7 +187,7 @@ let print_definition
   def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
-    fprintf oux "Definition mybeta := (bi_beta builtins_%s).\n" name_of_builtins;
+    fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
     fprintf oux "#[global] Existing Instance mybeta.\n";
     print_mycontext oux (def.context);
     fprintf oux "Definition isValue (";
