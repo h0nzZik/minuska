@@ -26,7 +26,7 @@ Module example_1.
 
     #[local]
     Instance Σ : StaticModel :=
-        default_model (default_builtin.β)
+        default_model (builtin.klike.β)
     .
     
     Definition X : variable := "X".
@@ -46,7 +46,7 @@ Module example_1.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string)
-        := Eval vm_compute in (to_theory Act (process_declarations Act default_act (Decls))).
+        := Eval vm_compute in (to_theory Act (process_declarations Act default_act _ (Decls))).
 
     Definition interp :=
         naive_interpreter Γ.1
