@@ -4,13 +4,13 @@
 @value(X): (is_true (bool.or(
    z.is(X),                            bool.or(
    bool.is(X),                         bool.or(
-   term.same_symbol(X, [unitValue[]]), 
+   bool.and(sym.is(X), term.same_symbol(X, [unitValue[]])), 
    string.is(X)
 ))))) ;
 @nonvalue(X): (is_true (bool.neg(bool.or(
    z.is(X),                            bool.or(
    bool.is(X),                         bool.or(
-   term.same_symbol(X, [unitValue[]]), 
+   bool.and(sym.is(X), term.same_symbol(X, [unitValue[]])), 
    string.is(X)
 )))))) ;
 @context(HOLE): c[HOLE, STATE];
@@ -45,7 +45,7 @@
 @rule/simple [bexpr.lt]: lt[X, Y] => z.lt(X, Y) where [is_true(z.is(X)), is_true(z.is(Y))] ;
 @rule/simple [bexpr.neg]: not[X] => bool.neg(X) where [is_true(bool.is(X))] ;
 
-@rule/simple [stmt.ite.true]: ite[B, X, Y] => X where [is_true(bool.is(B)), is_true(B)] ;
+@rule/simple [stmt.ite.true]: ite[B, X, Y] => X where [is_true(bool.is(B)), is_true(bool.eq(B, bool.true()))] ;
 @rule/simple [stmt.ite.false]: ite[B, X, Y] => Y where [is_true(bool.is(B)), is_true(bool.eq(B, bool.false()))] ;
 
 @rule/simple [while.unfold]: while[B, S] => ite[B, seq[S, while[B, S]], unitValue[]] where [] ;

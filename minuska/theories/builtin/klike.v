@@ -1685,6 +1685,7 @@ Inductive FunctionSymbol : Set :=
 | b_isBuiltin              (* 'a -> Prop *)
 | b_isError                (* 'a -> Prop *)
 | b_isBool                 (* 'a -> Prop *)
+| b_isSymbol                 (* 'a -> Prop *)
 | b_isZ                    (* 'a -> Prop *)
 | b_isString               (* 'a -> Prop *)
 | b_isList                 (* 'a -> Prop *)
@@ -1723,11 +1724,6 @@ Section sec.
     Definition err
     :=
         @t_over symbol BuiltinValue bv_error
-    .
-
-    Definition impl_isBuiltin (bv : BuiltinValue) : BuiltinValue
-    :=
-        (bv_bool true)
     .
 
     Definition impl_isError (bv : BuiltinValue) : bool
@@ -1960,9 +1956,10 @@ Section sec.
             := fun p =>
             match p with
             (* nulary *)
-            | b_false => liftNulary (
+            | b_false => fun _ l => t_over (bv_bool false)
+            (* | b_false => liftNulary (
                     fun _ => t_over (bv_bool false)
-                )
+                ) *)
             | b_true => liftNulary (
                     fun _ => t_over (bv_bool true)
                 )
@@ -2083,6 +2080,14 @@ Section sec.
                 | _ => t_over (bv_bool false)
                 end
             )
+
+            | b_isSymbol => liftUnary (
+                fun _ v =>
+                match v with
+                | t_term _ _ => t_over (bv_bool (true))
+                | _ => t_over (bv_bool false)
+                end
+            )
    
             | b_isString => liftUnary (
                 fun _ v =>
@@ -2119,11 +2124,11 @@ Section sec.
 
             | b_Z_isLe => liftBinary (
                 fun _ v1 v2 =>
-                t_over (bv_bool (bfmap_Z_Z__Prop Z.leb v1 v2))
+                ((bfmap_Z_Z__bool Z.leb v1 v2))
             )
             | b_Z_isLt => liftBinary (
                 fun _ v1 v2 =>
-                t_over (bv_bool (bfmap_Z_Z__Prop Z.ltb v1 v2))
+                ((bfmap_Z_Z__bool Z.ltb v1 v2))
             )
 
             | b_map_hasKey => liftBinary (
@@ -2168,10 +2173,12 @@ Section sec.
             builtin_predicate_interp
             := fun p =>
             match p with
-            | b_isTrue => liftUnaryP (
-                fun _ v1 => bool_decide (v1 = t_over (bv_bool true))
-            )
-            
+            | b_isTrue =>
+                fun nv l =>
+                match l with
+                | [t_over (bv_bool true)] => true
+                | _ => false
+                end            
             end ;
     |}.
 
@@ -2294,6 +2301,7 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("bool.false", "b_false");
         ("bool.true", "b_true");
         ("bool.is", "b_isBool");
+        ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
         ("z.minus", "b_Z_minus");
         ("z.plus", "b_Z_plus");
