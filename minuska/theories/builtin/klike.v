@@ -2319,3 +2319,41 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("map.update", "b_map_update")
     ];
 |}.
+
+Definition inject_bool
+    {symbol : Type}
+    (b : bool)
+    :
+    option (@BuiltinValue0 symbol) :=
+    Some (bv_bool b)
+.
+
+Definition inject_Z
+    {symbol : Type}
+    (z : Z)
+    :
+    option (@BuiltinValue0 symbol) :=
+    Some (bv_Z z)
+.
+
+Definition inject_string
+    {symbol : Type}
+    (s : string)
+    :
+    option (@BuiltinValue0 symbol) :=
+    Some (bv_str s)
+.
+
+Definition eject
+    {symbol : Type}
+    (v : @BuiltinValue0 symbol)
+    :
+    option (bool+(Z+(string+unit)))%type
+    :=
+    match v with
+    | bv_bool b => (inl b)
+    | bv_Z z => (inr (inl Z))
+    | bv_string s => (inr (inr (inl s)))
+    | bv_error => (inr (inr (inr ())))
+    end 
+.

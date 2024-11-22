@@ -1,25 +1,37 @@
 open Core
 open Printf
 
-let convert_builtin (b : Syntax.builtin) : (Dsm.myBuiltinType) =
+let convert_builtin (iface : 'a Dsm.builtinInterface) (b : Syntax.builtin)  : ((string, 'a) Dsm.builtin_value)  =
   match b with
-  | `BuiltinInt n -> (Dsm.Bv_Z (Z.of_int n))
-  | `BuiltinString s -> (Dsm.Bv_str (Stringutils.explode s))
-  | `BuiltinBool b -> (Dsm.Bv_bool b)
-  | `BuiltinError -> (Dsm.Bv_error)
+  | `BuiltinInt n -> (
+    match (iface.bi_inject_Z (Z.of_int n)) with
+      | Some v -> v
+      | None -> failwith "The chosen builtin model does not support integers (Z)"
+    )
+  | `BuiltinString s ->(
+     match (iface.bi_inject_string (Stringutils.explode s)) with
+      | Some v -> v
+      | None -> failwith "The chosen builtin model does not support strings"  
+    )
+  | `BuiltinBool b -> (
+    match (iface.bi_inject_bool b) with
+      | Some v -> v
+      | None -> failwith "The chosen builtin model does not support bools"
+    )
+  | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Dsm.Bv_error *)
   | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"
 
-let rec convert_groundterm (g : Syntax.groundterm) : Dsm.gT =
+let rec convert_groundterm (iface : 'a Dsm.builtinInterface) (g : Syntax.groundterm): Dsm.gT =
   match g with
   | `GTb b ->
-    Dsm.gt_over (convert_builtin b)
+    Dsm.gt_over iface.bi_beta (convert_builtin iface b)
   | `GTerm (`Id s, gs) ->
-    Dsm.T_term ((Stringutils.explode s),(List.map ~f:convert_groundterm gs))
+    Dsm.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm iface) gs))
 
 let wrap_init (g : Dsm.gT) : Dsm.gT =
   Dsm.T_term ((Stringutils.explode "builtin.init"), [g])
 
-let convert_builtin_back (b : Dsm.myBuiltinType) : Syntax.builtin =
+let convert_builtin_back (iface : 'a Dsm.builtinInterface) (b : (string, 'a) Dsm.builtin_value) : Syntax.builtin =
   match b with
   | Dsm.Bv_Z n -> `BuiltinInt (Z.to_int n)
   | Dsm.Bv_str s -> `BuiltinString (Stringutils.implode s)
@@ -27,14 +39,14 @@ let convert_builtin_back (b : Dsm.myBuiltinType) : Syntax.builtin =
   | Dsm.Bv_error -> `BuiltinError
   | _ -> `OpaqueBuiltin
 
-let rec convert_groundterm_back (g : Dsm.gT) : Syntax.groundterm =
+let rec convert_groundterm_back (iface : 'a Dsm.builtinInterface) (g : Dsm.gT) : Syntax.groundterm =
   match g with
   | Dsm.T_over b ->
     `GTb (convert_builtin_back b)
   | Dsm.T_term (s, gs) ->
     `GTerm (`Id (Stringutils.implode s),(List.map ~f:convert_groundterm_back gs))
 
-let rec run_n_steps step max_depth curr_depth gterm =
+let rec run_n_steps (iface : 'a Dsm.builtinInterface) step max_depth curr_depth gterm =
   if curr_depth >= max_depth then (curr_depth, gterm)
   else (
     let ogterm2 = step gterm in
@@ -44,7 +56,7 @@ let rec run_n_steps step max_depth curr_depth gterm =
         run_n_steps step max_depth (curr_depth + 1) gterm2
   )
 
-let parse_gt_and_run lexbuf oux step depth output_file bench =
+let parse_gt_and_run (iface : 'a Dsm.builtinInterface) lexbuf oux step depth output_file bench =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gterm ->
     (* fprintf oux "%s\n" (Miunparse.groundterm_to_string gterm); *)

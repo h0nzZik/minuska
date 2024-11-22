@@ -38,3 +38,31 @@ Section sec.
     |}.
 
 End sec.
+
+Definition builtins_binding : BuiltinsBinding := {|
+    bb_function_names := [] ;
+|}.
+
+Definition inject_bool
+    {symbol : Type}
+    (b : bool)
+    :
+    option Emptyset :=
+    None
+.
+
+Definition inject_Z
+    {symbol : Type}
+    (z : Z)
+    :
+    option Emptyset :=
+    None
+.
+
+Definition inject_string
+    {symbol : Type}
+    (s : string)
+    :
+    option Emptyset :=
+    None
+.
