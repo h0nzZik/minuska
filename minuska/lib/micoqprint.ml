@@ -43,8 +43,8 @@ let builtin2str (iface : 'a Dsm.builtinInterface) (name_of_builtins : string) b 
   (* This is only to throw error if we cannot convert it *)
   let _ = Miskeleton.convert_builtin iface b in
   match b with
-  | `BuiltinInt n -> "(bi_inject_Z _ builtins_"^name_of_builtins^" (" ^ (string_of_int n) ^ ")%Z)"
-  | `BuiltinString s -> "(bi_inject_string _ builtins_"^name_of_builtins^" \"" ^ s ^ "\")"
+  | `BuiltinInt n -> "(bi_inject_Z _ builtins_"^name_of_builtins^" (fun a => match a with Some b => b | None => bv_error end) (" ^ (string_of_int n) ^ ")%Z)"
+  | `BuiltinString s -> "(bi_inject_string _ builtins_"^name_of_builtins^" (fun a => match a with Some b => b | None => bv_error end) \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm
