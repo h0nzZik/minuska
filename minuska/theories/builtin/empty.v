@@ -29,7 +29,11 @@ Section sec.
             := Emptyset ;
         builtin_function_symbol
             := Emptyset ;
+        builtin_predicate_symbol
+            := Emptyset ;
         builtin_function_interp
+            := fun p => match p with end ;
+        builtin_predicate_interp
             := fun p => match p with end ;
     |}.
 
