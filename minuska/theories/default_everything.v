@@ -79,7 +79,7 @@ Definition framed_rule
     (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act
         (TermOverBoV_subst frame.2 frame.1 l)
         (TermOverBoV_subst_expr2 frame.2 frame.1 r)
-        [] default_act)))
+        conds default_act)))
 .
 
 Definition global_naive_interpreter {β : Builtin MyUnit} := @naive_interpreter DSM Act.

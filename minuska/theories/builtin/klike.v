@@ -1704,7 +1704,7 @@ Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 Inductive PredicateSymbol : Set :=
-| b_isTrue                 (* bool -> Prop *)
+| b_cond_is_true                 (* bool -> Prop *)
 .
 
 
@@ -2293,7 +2293,7 @@ End Notations.
 
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
-        ("is_true", "b_isTrue");
+        ("is_true", "b_cond_is_true");
         ("bool.neg", "b_bool_neg");
         ("bool.and", "b_bool_and");
         ("bool.or", "b_bool_or");
