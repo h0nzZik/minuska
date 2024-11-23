@@ -46,7 +46,7 @@
 @rule/simple [bexpr.neg]: not[X] => bool.neg(X) where [is_true(bool.is(X))] ;
 
 @rule/simple [stmt.ite.true]: ite[B, X, Y] => X where [is_true(bool.is(B)), is_true(bool.eq(B, bool.true()))] ;
-@rule/simple [stmt.ite.false]: ite[B, X, Y] => Y where [is_true(bool.false())] ;
+@rule/simple [stmt.ite.false]: ite[B, X, Y] => Y where [is_true(bool.is(B)), is_true(bool.eq(B, bool.false()))] ;
 
 @rule/simple [while.unfold]: while[B, S] => ite[B, seq[S, while[B, S]], unitValue[]] where [] ;
 
