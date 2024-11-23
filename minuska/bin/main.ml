@@ -67,10 +67,15 @@ let write_gterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : stri
   | Some gt ->
     let oux = Out_channel.create outname in
     fprintf oux "%s" {|
-      From Minuska Require Export
-        prelude
-        default_everything
-      .
+    From Minuska Require Export
+      prelude
+      default_everything
+    .
+    |};
+    fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
+    fprintf oux "#[global] Existing Instance mybeta.\n";
+
+    fprintf oux "%s" {|
       Definition given_groundterm := 
     |};
     Micoqprint.print_groundterm oux iface name_of_builtins (wrap_init gt);
@@ -233,7 +238,7 @@ let command_groundterm2coq =
     ~summary:"Generate a Coq (*.v) file from a ground term (e.g., a program)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-        name_of_builtins = anon(("builtins" %: string)) and
+        name_of_builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
