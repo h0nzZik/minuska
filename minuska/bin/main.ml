@@ -7,27 +7,23 @@ module Syntax = Libminuska.Syntax
 
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
 
-let builtins_binding_coq = Libminuska.Extracted.builtins_binding ;;
-let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq ;;
-
-let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding ;;
-
-
-let parse_and_print lexbuf oux =
+let parse_and_print (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition builtins_map value oux
+    Micoqprint.print_definition iface builtins_map name_of_builtins value oux
   | None -> ()
 
 
-let append_definition input_filename output_channel =
+let append_definition (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename output_channel =
   let inx = In_channel.create input_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print lexbuf output_channel;
+  parse_and_print iface builtins_map name_of_builtins lexbuf output_channel;
   In_channel.close inx;
-  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act Lang_Decls)). |};
+  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := global_naive_interpreter (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext : StepT_ext := global_naive_interpreter_ext (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
     Lemma language_well_formed: isSome(RewritingTheory2_wf_heuristics (fst T)).
@@ -56,9 +52,9 @@ let append_definition input_filename output_channel =
   |} ;
   ()
 
-let transform input_filename output_filename () =
+let transform (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename output_filename () =
   let oux = Out_channel.create output_filename in
-  append_definition input_filename oux;
+  append_definition iface builtins_map name_of_builtins input_filename oux;
   Out_channel.close oux;
   ()
 
@@ -66,42 +62,52 @@ let transform input_filename output_filename () =
 let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
   `GTerm ((`Id "builtin.init"), [g])
 
-let write_gterm lexbuf outname =
+let write_gterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : string) lexbuf outname =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gt ->
     let oux = Out_channel.create outname in
     fprintf oux "%s" {|
-      From Minuska Require Export
-        prelude
-        default_everything
-      .
+    From Minuska Require Export
+      prelude
+      default_everything
+      pval_ocaml_binding
+    .
+    From Minuska Require Import
+      builtin.empty
+      builtin.klike
+    .
+    |};
+    fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
+    fprintf oux "#[global] Existing Instance mybeta.\n";
+
+    fprintf oux "%s" {|
       Definition given_groundterm := 
     |};
-    Micoqprint.print_groundterm oux (wrap_init gt);
+    Micoqprint.print_groundterm oux iface name_of_builtins (wrap_init gt);
     fprintf oux " .\n";
     Out_channel.close oux;
     ()
   | None -> ()
 
-let transform_groundterm input_fname output_fname () =
+let transform_groundterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : string) input_fname output_fname () =
   let inx = In_channel.create input_fname in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-  write_gterm lexbuf output_fname;
+  write_gterm iface name_of_builtins lexbuf output_fname;
   In_channel.close(inx)
 
 let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let compile input_filename interpreter_name oparserexe parser_builder () =
+let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename interpreter_name oparserexe parser_builder () =
   (* let real_interpreter_name = Filename_unix.realpath interpreter_name in *)
   let real_interpreter_name = interpreter_name in
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
   let appdir = Filename.concat mldir "interpreter.AppDir" in
-  transform input_filename coqfile ();
+  transform iface builtins_map name_of_builtins input_filename coqfile ();
   (* generate/build/refresh the parser*)
   ( match parser_builder with
   | Some command -> let _ = run [command] in ()
@@ -113,9 +119,28 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   ) in
   (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
-  append_definition input_filename oux_coqfile;
+  append_definition iface builtins_map name_of_builtins input_filename oux_coqfile;
+  fprintf oux_coqfile "%s" {|
+    Require Import Ascii.
+    Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
+    Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
+    Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
+    Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
+    Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
+    Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
+    Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
+    Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.mkBuiltin" ].
+    Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
+    Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
+    Extract Constant DSM => "Libminuska.Extracted.dSM".
+    Extract Constant GT => "Libminuska.Extracted.gT".
+    Extract Constant gt_term => "Libminuska.Extracted.gt_term".
+    Extract Constant gt_over => "Libminuska.Extracted.gt_over".
+    Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
+    Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
+  |};
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
-  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
+  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
   (* extract coq into ocaml *)
   let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) in
@@ -126,7 +151,7 @@ let compile input_filename interpreter_name oparserexe parser_builder () =
   let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
   (* compile the main ocaml file (after adding an entry command) *)
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s lang_interpreter)\n" oparseexestr) in
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" oparseexestr name_of_builtins) in
   (*let _ = run [ "env" ] in*)
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [
@@ -172,7 +197,20 @@ type languagedescr = {
   semantics          : string ;
   parser_exe     : string ;
   parser_builder : string option [@sexp.option];
+  static_model : string ;
 } [@@deriving sexp]
+
+let get_iface (static_model : string) =  
+  match static_model with
+  | "klike" -> Libminuska.Extracted.builtins_klike
+  | "empty" -> Libminuska.Extracted.builtins_empty
+  | _ -> failwith "Unknown static model specified"
+
+let get_builtins_map (static_model : string) : builtins_map_t =
+  let builtins_binding_coq = (get_iface static_model).bi_bindings in
+  let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq in
+  let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding in
+  builtins_map
 
 let generate_interpreter scm_filename () =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
@@ -184,7 +222,8 @@ let generate_interpreter scm_filename () =
     | Some command -> Some ("cd " ^ dir ^ "; " ^ command)
     | None -> None
   ) in
-  compile mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
+  let builtins_map : builtins_map_t = (get_builtins_map (cfg.static_model)) in
+  compile (get_iface cfg.static_model) builtins_map cfg.static_model mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
   ()
 
 let command_generate =
@@ -196,7 +235,7 @@ let command_generate =
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
      in
-     fun () -> transform input_filename output_filename ())
+     fun () -> transform (get_iface "klike") (get_builtins_map "klike") ("klike") input_filename output_filename ())
 
 
 let command_groundterm2coq =
@@ -204,11 +243,12 @@ let command_groundterm2coq =
     ~summary:"Generate a Coq (*.v) file from a ground term (e.g., a program)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
+        name_of_builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
      in
-     fun () -> transform_groundterm input_filename output_filename ())
+     fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins input_filename output_filename ())
 
 
 let command_compile =
@@ -216,10 +256,11 @@ let command_compile =
     ~summary:"Generate an interpreter from a Minuska (*.m) file"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
+        name_of_builtins = anon(("builtins" %: string)) and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("interpreter" %: Filename_unix.arg_type))
      in
-     fun () -> compile input_filename output_filename None None ())
+     fun () -> compile (get_iface name_of_builtins) (get_builtins_map name_of_builtins) name_of_builtins input_filename output_filename None None ())
 
 let command_generate_interpreter =
 Command.basic

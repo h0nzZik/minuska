@@ -2,11 +2,7 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    lowlang
     properties
-    basic_matching
-    varsof
-    syntax_properties
     minusl_syntax
 .
 
@@ -23,7 +19,8 @@ Definition ctx_heat
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
-    (isValue : Expression2 -> (list SideCondition2))
+    (isValue : Expression2 -> SideCondition2)
+    (isNonValue : Expression2 -> SideCondition2)
     (c : TermOver BuiltinOrVar)
     (h : variable) (* occurs once in `c` *)
     (scs : list SideCondition2)
@@ -59,7 +56,8 @@ Definition ctx_cool
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
-    (isValue : Expression2 -> (list SideCondition2))
+    (isValue : Expression2 -> SideCondition2)
+    (isNonValue : Expression2 -> SideCondition2)
     (c : TermOver BuiltinOrVar)
     (h : variable)
     :
@@ -84,7 +82,7 @@ Definition ctx_cool
         t_over (e_variable dataVariable)])
     );
 
-    r_scs := isValue (e_variable h);
+    r_scs := [isValue (e_variable h)];
 
     r_act := invisible_act ;
 |}.
@@ -154,7 +152,8 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
-    (isValue : Expression2 -> (list SideCondition2))
+    (isValue : Expression2 -> SideCondition2)
+    (isNonValue : Expression2 -> SideCondition2)
     (avoid : gset variable)
     (d : MinusL_Decl Act)
     : (list (RewritingRule2 Act))
@@ -180,6 +179,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
                 topSymbol cseqSymbol holeSymbol
                 contVariable dataVariable
                 isValue
+                isNonValue
                 c h scs
             );
             (ctx_cool
@@ -187,6 +187,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
                 topSymbol cseqSymbol holeSymbol
                 contVariable dataVariable
                 isValue
+                isNonValue
                 c h
             )
         ]
@@ -207,6 +208,11 @@ Definition compile {Σ : StaticModel}
             holeSymbol
             continuationVariable
             (MinusL_isValue Act D)
-            (vars_of (mlld_isValue_scs Act D))
+            (MinusL_isNonValue Act D)
+            (
+                (vars_of (mlld_isValue_c Act D))
+                ∪
+                (vars_of (mlld_isNonValue_c Act D))
+            )
         ) (mlld_decls Act D))
 .

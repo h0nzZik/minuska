@@ -23,18 +23,18 @@ testInCoq() {
   
   echo "Generating *.v files"
   minuska def2coq ./languages/imp/imp.m coqfiles/imp.v
-  minuska gt2coq ./imp-ast/count-1.imp coqfiles/count1.v
-  minuska gt2coq ./imp-ast/count-2.imp coqfiles/count2.v
-  minuska gt2coq ./imp-ast/count-3.imp coqfiles/count3.v
-  minuska gt2coq ./imp-ast/count-4.imp coqfiles/count4.v
-  minuska gt2coq ./imp-ast/count-5.imp coqfiles/count5.v
-  minuska gt2coq ./imp-ast/count-6.imp coqfiles/count6.v
-  minuska gt2coq ./imp-ast/count-7.imp coqfiles/count7.v
+  minuska gt2coq --builtins klike ./imp-ast/count-1.imp coqfiles/count1.v
+  minuska gt2coq --builtins klike ./imp-ast/count-2.imp coqfiles/count2.v
+  minuska gt2coq --builtins klike ./imp-ast/count-3.imp coqfiles/count3.v
+  minuska gt2coq --builtins klike ./imp-ast/count-4.imp coqfiles/count4.v
+  minuska gt2coq --builtins klike ./imp-ast/count-5.imp coqfiles/count5.v
+  minuska gt2coq --builtins klike ./imp-ast/count-6.imp coqfiles/count6.v
+  minuska gt2coq --builtins klike ./imp-ast/count-7.imp coqfiles/count7.v
   minuska def2coq ./languages/two-counters/two-counters.m coqfiles/twocounters.v
-  minuska gt2coq ./tc-ast/tc10.ast coqfiles/tc10.v
-  minuska gt2coq ./tc-ast/tc20.ast coqfiles/tc20.v
-  minuska gt2coq ./tc-ast/tc50.ast coqfiles/tc50.v
-  minuska gt2coq ./tc-ast/tc100.ast coqfiles/tc100.v
+  minuska gt2coq --builtins klike ./tc-ast/tc10.ast coqfiles/tc10.v
+  minuska gt2coq --builtins klike ./tc-ast/tc20.ast coqfiles/tc20.v
+  minuska gt2coq --builtins klike ./tc-ast/tc50.ast coqfiles/tc50.v
+  minuska gt2coq --builtins klike ./tc-ast/tc100.ast coqfiles/tc100.v
 
 
 

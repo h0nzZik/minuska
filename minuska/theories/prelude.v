@@ -829,6 +829,198 @@ Proof.
     }
 Qed.
 
+Lemma list_filter_Forall_not
+    {T : Type}
+    (P : T -> Prop)
+    {_dP : forall x, Decision (P x)}
+    (l : list T)
+    :
+    Forall (fun x => not (P x)) l ->
+    filter P l = []
+.
+Proof.
+    induction l; simpl; intros H.
+    {
+        reflexivity.
+    }
+    {
+        apply Forall_cons in H.
+        destruct H as [H1 H2].
+        specialize (IHl H2). clear H2.
+        rewrite filter_cons.
+        destruct (decide (P a)).
+        {
+            ltac1:(contradiction).
+        }
+        apply IHl.
+    }
+Qed.
+
+
+Lemma length_filter_eq__eq__length_filter_in__zero
+    {T : Type}
+    {_edT: EqDecision T}
+    (h : T)
+    (l : list (list T))
+    :
+    length (filter (eq h) (concat l)) = 0 ->
+    length (filter (elem_of h) l) = 0
+.
+Proof.
+    induction l; simpl; intros HH.
+    {
+        ltac1:(lia).
+    }
+    {
+        rewrite filter_app in HH.
+        rewrite filter_cons.
+        destruct (decide (h ∈ a)) as [Hin|Hnotin].
+        {
+            simpl. rewrite length_app in HH.
+            assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
+            ltac1:(exfalso).
+            ltac1:(lia).
+        }
+        {
+            simpl. rewrite length_app in HH.
+            apply IHl. ltac1:(lia).
+        }
+    }
+Qed.
+
+Lemma length_filter_eq__eq__length_filter_in__one
+    {T : Type}
+    {_edT: EqDecision T}
+    (h : T)
+    (l : list (list T))
+    :
+    length (filter (eq h) (concat l)) = 1 ->
+    length (filter (elem_of h) l) = 1
+.
+Proof.
+    {
+        induction l; simpl; intros HH.
+        {
+            ltac1:(lia).
+        }
+        {
+            rewrite filter_cons.
+            rewrite filter_app in HH.
+            rewrite length_app in HH.
+            destruct (decide (h ∈ a)) as [Hin|Hnotin].
+            {
+                assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
+                simpl in *.
+                assert (length (filter (eq h) (concat l)) = 0).
+                {
+                    ltac1:(lia).
+                }
+                apply length_filter_eq__eq__length_filter_in__zero in H.
+                rewrite H.
+                reflexivity.                
+            }
+            {
+                apply IHl. clear IHl.
+                assert (length (filter (eq h) a) = 0).
+                {
+                    clear -Hnotin.
+                    induction a.
+                    {
+                        simpl. reflexivity.
+                    }
+                    {
+                        rewrite elem_of_cons in Hnotin.
+                        apply Decidable.not_or in Hnotin.
+                        destruct Hnotin as [Hnotin1 Hnotin2].
+                        rewrite filter_cons.
+                        destruct (decide (h = a))>[ltac1:(subst;contradiction)|].
+                        apply IHa. exact Hnotin2.
+                    }
+                }
+                ltac1:(lia).
+            }
+        }
+    }
+Qed.
+
+Lemma filter_fmap
+    {T1 T2: Type}
+    (f : T1 -> T2)
+    (P : T2 -> Prop)
+    {_decP : forall x, Decision (P x)}
+    {_decfP : forall x, Decision ((P ∘ f) x)}
+    (l : list T1)
+    :
+    filter P (f <$> l) = f <$> (filter (P ∘ f) l)
+.
+Proof.
+    induction l.
+    {
+        simpl. rewrite filter_nil. reflexivity.
+    }
+    {
+        rewrite filter_cons.
+        rewrite fmap_cons.
+        rewrite filter_cons.
+        rewrite IHl.
+        unfold compose.
+        simpl in *.
+        ltac1:(repeat case_match); try (ltac1:(contradiction)).
+        {
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
+
+Lemma on_a_shared_prefix
+    {T : Type}
+    (_edT : EqDecision T)
+    (b : T)
+    (l1 l2 l1' l2' : list T)
+    :
+    b ∉ l1 ->
+    b ∉ l1' ->
+    l1 ++ b::l2 = l1' ++ b::l2' ->
+    l1 = l1'
+.
+Proof.
+    revert l1'.
+    induction l1; simpl; intros l1' H1 H2 H3.
+    {
+        destruct l1'; simpl in *.
+        { reflexivity. }
+        {
+            ltac1:(exfalso).
+            inversion H3; subst; clear H3.
+            apply H2. clear H2.
+            rewrite elem_of_cons. left. reflexivity.
+        }
+    }
+    {
+        destruct l1'.
+        {
+            ltac1:(exfalso).
+            inversion H3; subst; clear H3.
+            apply H1. clear H1.
+            rewrite elem_of_cons. left. reflexivity.
+        }
+        {
+            rewrite elem_of_cons in H1.
+            rewrite elem_of_cons in H2.
+            apply Decidable.not_or in H1.
+            apply Decidable.not_or in H2.
+            destruct H1 as [H11 H12].
+            destruct H2 as [H21 H22].
+            simpl in H3. inversion H3; subst; clear H3.
+            specialize (IHl1 l1' H12 H22 H1).
+            subst l1'.
+            reflexivity.
+        }
+    }
+Qed.
 
 Inductive MyUnit := mytt.
 

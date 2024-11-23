@@ -2,9 +2,6 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    (*properties*)
-    minusl_syntax
-    syntax_properties
     unification_interface
     textbook_unification_alg
 .

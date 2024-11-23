@@ -9,7 +9,18 @@ From Minuska Require Import
     notations
     frontend
     interp_loop
+    pval_ocaml_binding
 .
+
+
+From Minuska Require Import
+    builtin.klike
+.
+
+Import builtin.klike.Notations.
+
+Definition mybeta := (bi_beta MyUnit builtins_klike).
+Existing Instance mybeta.
 
 Variant Act := default_act | invisible_act.
 
@@ -23,7 +34,7 @@ Module unary_nat.
 
     #[local]
     Instance Σ : StaticModel :=
-        default_model (default_builtin.β)
+        default_model (mybeta)
     .
     
     Definition X : variable := "$X".
@@ -53,8 +64,15 @@ Module unary_nat.
     Definition nat_zero {_br : BasicResolver} := (@t_term _ operand_type "nat_zero").
     Arguments nat_zero {_br} _%_rs.
 
-    Definition isValue :=  fun x =>
-          ((isAppliedSymbol "nat_zero" x) || (isAppliedSymbol "nat_succ" x))%rs.
+    Definition isValueE :=  fun x =>
+          (
+            (e_fun b_have_same_symbol [(e_ground (t_term "nat_zero" [])); x])
+            ||
+            (e_fun b_have_same_symbol [(e_ground (t_term "nat_succ" [])); x]))%rs.
+
+    Definition isNonValueE := fun x => (e_fun b_bool_neg [(isValueE x)]).
+
+    Definition isValue := fun x => mkSideCondition2 _ b_cond_is_true [isValueE x].
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -64,6 +82,7 @@ Module unary_nat.
             := (context-template u_cfg ([ HOLE ]) with HOLE) ;
 
         default_isValue := isValue ;
+        default_isNonValue := fun x => mkSideCondition2 _ b_cond_is_true [isNonValueE x] ;
     |}.
 
     (* Operations *)
@@ -82,20 +101,21 @@ Module unary_nat.
         decl_rule (rule [ s ]:
             u_cfg [ u_cseq [ l; t_over ($REST_SEQ) ] ]
          ~>{default_act} u_cfg [ u_cseq [ r; t_over ($REST_SEQ) ] ]
+         where []
         )
     ) (at level 90).
 
     Definition Decls_nat_add : list Declaration := [
-        decl_strict (symbol "nat_add" of arity 2 strict in [0;1]);
+        
         decl_simple_rule ["nat-add-0"]:
             nat_add [nat_zero []; t_over ($Y) ] ~> t_over ($Y)
-            always
+            where []
         ;
 
         decl_simple_rule ["nat-add-S"]:
             nat_add [nat_succ [ t_over ($X) ]; t_over ($Y) ]
             ~> nat_add [t_over ($X); nat_succ [t_over ($Y)] ]
-            always
+            where []
         
     ].
 
@@ -108,7 +128,7 @@ Module unary_nat.
         decl_simple_rule ["nat-sub-0"]:
             nat_sub [t_over ($X); nat_zero [] ]
             ~> t_over ($X)
-            where (isValue ($X))
+            where [(isValue ($X))]
         ;
         decl_simple_rule ["nat-sub-S"]:
             nat_add [ nat_succ [ t_over ($X) ]; nat_succ [ t_over ($Y) ] ]
@@ -125,13 +145,13 @@ Module unary_nat.
         decl_simple_rule ["nat-mul-0"]:
             nat_mul [nat_zero []; t_over ($Y) ]
             ~> nat_zero []
-            where (isValue ($Y))
+            where [(isValue ($Y))]
         ;
         
         decl_simple_rule ["nat-mul-S"]:
             nat_mul [ nat_succ [ t_over ($X) ]; t_over ($Y) ]
             ~> nat_add [t_over ($Y); nat_mul[ t_over ($X); t_over ($Y)] ]
-                where (isValue ($Y))
+                where [(isValue ($Y))]
     ].
 
 
@@ -149,22 +169,22 @@ Module unary_nat.
         decl_simple_rule ["nat-fact"]:
             nat_fact [ t_over ($X) ]
             ~> nat_fact' [ t_over ($X); nat_succ [nat_zero []] ]
-            where (isValue ($X))
+            where [(isValue ($X))]
         ;
         
         decl_simple_rule ["nat-fact'-0"]:
             nat_fact' [ nat_zero []; t_over ($Y) ]
             ~> t_over ($Y)
-            where (isValue ($Y))
+            where [(isValue ($Y))]
         ;
         decl_simple_rule ["nat-fact'-S"]:
             nat_fact' [ nat_succ [ t_over ($X) ]; t_over ($Y) ]
             ~> nat_fact' [ t_over ($X); nat_mul [ nat_succ [ t_over ($X) ]; t_over ($Y) ]  ]
-            where (isValue ($Y))
+            where [(isValue ($Y))]
     ].
 
     Definition Γfact : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
 
     Definition initial_expr (x : TermOver builtin_value) :=
         (ground (
@@ -243,7 +263,7 @@ Module unary_nat.
         decl_simple_rule ["step"]:
             nat_fib' [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
             ~> nat_fib' [ t_over ($Tgt); nat_succ [ t_over ($Curr) ]; nat_add [t_over ($X); t_over ($Y)]; t_over ($X) ]
-            where (~~ ($Curr ==Gen $Tgt))
+            where [mkSideCondition2 _ b_cond_is_true [(~~ ($Curr ==Term $Tgt))]]
         ;
         
         decl_simple_rule ["result"]:
@@ -253,7 +273,7 @@ Module unary_nat.
     ].
 
     Definition Γfib : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act (Decls_nat_fib ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ (Decls_nat_fib ++ Decls_nat_add))).
 
     Definition initial_fib (n : nat) := initial_expr (
         (ground (nat_fib [(nat_to_unary n)]))

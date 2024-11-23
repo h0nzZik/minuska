@@ -2,11 +2,7 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    lowlang
     properties
-    semantics_properties
-    varsof
-    syntax_properties
     minusl_compile
     minusl_syntax
     minusl_semantics
@@ -88,179 +84,6 @@ Proof.
 Qed.
 
 
-Lemma weird_lemma
-    {T1 T2 : Type}
-    l s:
-(fix go (pt : PreTerm' T1 T2) :
-    list (@TermOver' T1 T2) :=
-  match pt with
-| pt_operator _ => []
-| pt_app_operand x y => go x ++ [t_over y]
-| pt_app_ao x y => go x ++ [prettify' y]
-end)
-  (fold_left helper'' (map uglify' l) (pt_operator s)) =
-l
-.
-Proof.
-    induction l using rev_ind.
-    {
-        reflexivity.
-    }
-    {
-        rewrite map_app.
-        rewrite fold_left_app.
-        simpl.
-        unfold helper.
-        destruct (uglify' x) eqn:Hux.
-        {
-            apply (f_equal prettify) in Hux.
-            rewrite (cancel prettify uglify') in Hux.
-            subst x.
-            simpl.
-            f_equal.
-            {
-                apply IHl.
-            }
-        }
-        {
-            apply (f_equal prettify) in Hux.
-            rewrite (cancel prettify uglify') in Hux.
-            subst x.
-            simpl.
-            f_equal.
-            {
-                apply IHl.
-            }
-        }
-    }
-Qed.
-
-
-
-
-Lemma to_preterm_is_pt_operator_inv
-    {T0 T : Type}
-    (s s' : T0)
-    (l : list (Term' T0 T)):
-    pt_operator s' = to_PreTerm'' s l ->
-    s' = s /\ l = []
-.
-Proof.
-    revert s s'.
-    destruct l using rev_ind; intros s s' H1.
-    {
-        inversion H1. subst. split; reflexivity.
-    }
-    {
-        unfold to_PreTerm'' in H1.
-        
-        rewrite fold_left_app in H1. simpl in H1.
-        unfold helper in H1; simpl in H1.
-        destruct x.
-        {
-            inversion H1.
-        }
-        {
-            inversion H1.
-        }
-    }
-Qed.
-
-Lemma to_preterm_eq_inv
-    {T0 T : Type}
-    (s1 s2 : T0)
-    (l1 l2 : list (Term' T0 T))
-    :
-    to_PreTerm'' s1 l1 = to_PreTerm'' s2 l2
-    -> s1 = s2 /\ l1 = l2
-.
-Proof.
-    revert l2.
-    induction l1 using rev_ind; intros l2 HH; destruct l2 using rev_ind.
-    {
-        inversion HH. subst. repeat split.
-    }
-    {
-        unfold to_PreTerm'' in *.
-        rewrite fold_left_app in HH. simpl in HH.
-        destruct l2 using rev_ind.
-        {
-            simpl in HH. unfold helper in HH.
-            destruct x.
-            {
-                inversion HH.
-            }
-            {
-                inversion HH.
-            }
-        }
-        {
-            rewrite fold_left_app in HH. simpl in HH.
-            unfold helper in HH.
-            destruct x; inversion HH.
-        }
-    }
-    {
-        unfold to_PreTerm'' in *.
-        rewrite fold_left_app in HH. simpl in HH.
-        destruct l1 using rev_ind.
-        {
-            simpl in HH. unfold helper in HH.
-            destruct x.
-            {
-                inversion HH.
-            }
-            {
-                inversion HH.
-            }
-        }
-        {
-            rewrite fold_left_app in HH. simpl in HH.
-            unfold helper in HH.
-            destruct x; inversion HH.
-        }
-    }
-    {
-        unfold to_PreTerm'' in *.
-        rewrite fold_left_app in HH.
-        rewrite fold_left_app in HH.
-        simpl in HH.
-        unfold helper in HH.
-        destruct x,x0; simpl in *; inversion HH; subst; clear HH.
-        {
-            simpl in *.
-            specialize (IHl1 l2 H0). clear H0.
-            destruct IHl1 as [IH1 IH2].
-            subst.
-            split>[reflexivity|].
-            reflexivity.
-        }
-        {
-            simpl in *.
-            specialize (IHl1 l2 H0). clear H0.
-            destruct IHl1 as [IH1 IH2].
-            subst.
-            split>[reflexivity|].
-            reflexivity.
-        }
-    }
-Qed.
-
-Lemma map_uglify'_inj
-    {Σ : StaticModel}
-    {T : Type}
-    (l1 l2 : list (TermOver T))
-    :
-    map uglify' l1 = map uglify' l2 ->
-    l1 = l2
-.
-Proof.
-    ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
-    intros H.
-    apply list_fmap_eq_inj in H.
-    exact H.
-    apply cancel_inj.
-Qed.
 
 Lemma forall_satisfies_inv'
     {Σ : StaticModel}
@@ -600,42 +423,6 @@ Proof.
         apply lookup_lt_Some in Hi.
         unfold Valuation2,TermOver in *.
         ltac1:(lia).
-    }
-Qed.
-
-
-Lemma vars_of_apply_symbol
-    {Σ : StaticModel}
-    {T0 : Type}
-    (s : T0)
-    (l : list (Term' T0 BuiltinOrVar))
-    :
-    vars_of (apply_symbol'' s l) = union_list (fmap vars_of l)
-.
-Proof.
-    induction l using rev_ind.
-    {
-        simpl. reflexivity.
-    }
-    {
-        rewrite fmap_app.
-        rewrite union_list_app_L.
-        unfold apply_symbol'' in *; simpl in *.
-        unfold vars_of in *; simpl in *.
-        unfold to_PreTerm'' in *.
-        rewrite fold_left_app.
-        simpl.
-        rewrite <- IHl. clear IHl.
-        unfold helper''.
-        ltac1:(repeat case_match); subst; simpl in *.
-        {
-            unfold vars_of; simpl.
-            ltac1:(set_solver).
-        }
-        {
-            unfold vars_of; simpl.
-            ltac1:(set_solver).
-        }
     }
 Qed.
 
@@ -1056,132 +843,6 @@ Proof.
 Qed.
 
 
-Lemma subst_notin_2
-    {Σ : StaticModel}
-    (h : variable)
-    (φ ψ : TermOver BuiltinOrVar)
-    :
-    h ∉ vars_of (uglify' ψ) ->
-    h ∉ vars_of (uglify' (TermOverBoV_subst φ h ψ))
-.
-Proof.
-    induction φ; intros HH; simpl in *.
-    {
-        destruct a.
-        {
-            simpl. unfold vars_of; simpl. unfold vars_of; simpl.
-            ltac1:(set_solver).
-        }
-        {
-            destruct (decide (h = x)).
-            {
-                subst. apply HH.
-            }
-            {
-                unfold vars_of; simpl.
-                unfold vars_of; simpl.
-                ltac1:(set_solver).
-            }
-        }
-    }
-    {
-        intros HContra. apply HH. clear HH.
-        unfold apply_symbol'' in HContra; simpl in HContra.
-        unfold to_PreTerm'' in HContra; simpl in HContra.
-        unfold vars_of in HContra; simpl in HContra.
-        revert s ψ  H HContra.
-        induction l using rev_ind; intros s ψ HH HContra.
-        {
-            simpl in *. inversion HContra.
-        }
-        {
-            rewrite Forall_app in HH.
-            rewrite map_app in HContra.
-            rewrite map_app in HContra.
-            rewrite fold_left_app in HContra.
-            simpl in HContra.
-            destruct HH as [HH1 HH2].
-            rewrite Forall_cons in HH2.
-            destruct HH2 as [HH2 _].
-            specialize (IHl s ψ HH1).
-            simpl in *.
-            unfold helper in HContra.
-            destruct (uglify' (TermOverBoV_subst x h ψ)) eqn:Hugl.
-            {
-                unfold vars_of in HContra; simpl in HContra.
-                rewrite elem_of_union in HContra.
-                destruct HContra as [HContra|HContra].
-                {
-                    specialize (IHl HContra).
-                    apply IHl.
-                }
-                {
-                    destruct (decide (h ∈ vars_of (uglify' ψ))) as [Hyes|Hno].
-                    {
-                        assumption.
-                    }
-                    {
-                        specialize (HH2 Hno). clear Hno. ltac1:(exfalso).
-                        unfold vars_of in HH2; simpl in HH2.
-                        unfold vars_of in HH2; simpl in HH2.
-                        apply HH2. exact HContra.
-                    }
-                }
-            }
-            {
-                unfold vars_of in HContra; simpl in HContra.
-                rewrite elem_of_union in HContra.
-                destruct HContra as [HContra|HContra].
-                {
-                    simpl in *.
-                    destruct (decide (h ∈ vars_of (uglify' ψ))) as [Hyes|Hno].
-                    {
-                        assumption.
-                    }
-                    {
-                        specialize (HH2 Hno). clear Hno. ltac1:(exfalso).
-                        unfold vars_of in HH2; simpl in HH2.
-                        unfold vars_of in HH2; simpl in HH2.
-                        apply HH2. exact HContra.
-                    }
-                }
-                {
-
-                    specialize (IHl HContra).
-                    apply IHl.
-                }
-            }
-        }
-    }
-Qed.
-
-
-Lemma list_filter_Forall_not
-    {T : Type}
-    (P : T -> Prop)
-    {_dP : forall x, Decision (P x)}
-    (l : list T)
-    :
-    Forall (fun x => not (P x)) l ->
-    filter P l = []
-.
-Proof.
-    induction l; simpl; intros H.
-    {
-        reflexivity.
-    }
-    {
-        apply Forall_cons in H.
-        destruct H as [H1 H2].
-        specialize (IHl H2). clear H2.
-        rewrite filter_cons.
-        destruct (decide (P a)).
-        {
-            ltac1:(contradiction).
-        }
-        apply IHl.
-    }
-Qed.
 
 
 Lemma list_filter_Forall_all
@@ -1226,7 +887,7 @@ Lemma TermOverBoV_subst_once_size
     (h : variable)
     (φ ψ : TermOver BuiltinOrVar)
     :
-    h ∉ vars_of (uglify' ψ) ->
+    h ∉ vars_of ψ ->
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
     TermOver_size (TermOverBoV_subst φ h ψ) = Nat.pred (TermOver_size φ + TermOver_size ψ)
 .
@@ -1621,171 +1282,7 @@ Proof.
     }
 Qed.
 
-Lemma length_filter_eq__eq__length_filter_in__zero
-    {T : Type}
-    {_edT: EqDecision T}
-    (h : T)
-    (l : list (list T))
-    :
-    length (filter (eq h) (concat l)) = 0 ->
-    length (filter (elem_of h) l) = 0
-.
-Proof.
-    induction l; simpl; intros HH.
-    {
-        ltac1:(lia).
-    }
-    {
-        rewrite filter_app in HH.
-        rewrite filter_cons.
-        destruct (decide (h ∈ a)) as [Hin|Hnotin].
-        {
-            simpl. rewrite length_app in HH.
-            assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
-            ltac1:(exfalso).
-            ltac1:(lia).
-        }
-        {
-            simpl. rewrite length_app in HH.
-            apply IHl. ltac1:(lia).
-        }
-    }
-Qed.
 
-
-Lemma length_filter_eq__eq__length_filter_in__one
-    {T : Type}
-    {_edT: EqDecision T}
-    (h : T)
-    (l : list (list T))
-    :
-    length (filter (eq h) (concat l)) = 1 ->
-    length (filter (elem_of h) l) = 1
-.
-Proof.
-    {
-        induction l; simpl; intros HH.
-        {
-            ltac1:(lia).
-        }
-        {
-            rewrite filter_cons.
-            rewrite filter_app in HH.
-            rewrite length_app in HH.
-            destruct (decide (h ∈ a)) as [Hin|Hnotin].
-            {
-                assert(Htmp := h_in_l_impl_length_filter_l_gt_1 (eq h) a h Hin eq_refl).
-                simpl in *.
-                assert (length (filter (eq h) (concat l)) = 0).
-                {
-                    ltac1:(lia).
-                }
-                apply length_filter_eq__eq__length_filter_in__zero in H.
-                rewrite H.
-                reflexivity.                
-            }
-            {
-                apply IHl. clear IHl.
-                assert (length (filter (eq h) a) = 0).
-                {
-                    clear -Hnotin.
-                    induction a.
-                    {
-                        simpl. reflexivity.
-                    }
-                    {
-                        rewrite elem_of_cons in Hnotin.
-                        apply Decidable.not_or in Hnotin.
-                        destruct Hnotin as [Hnotin1 Hnotin2].
-                        rewrite filter_cons.
-                        destruct (decide (h = a))>[ltac1:(subst;contradiction)|].
-                        apply IHa. exact Hnotin2.
-                    }
-                }
-                ltac1:(lia).
-            }
-        }
-    }
-Qed.
-
-Lemma filter_fmap
-    {T1 T2: Type}
-    (f : T1 -> T2)
-    (P : T2 -> Prop)
-    {_decP : forall x, Decision (P x)}
-    {_decfP : forall x, Decision ((P ∘ f) x)}
-    (l : list T1)
-    :
-    filter P (f <$> l) = f <$> (filter (P ∘ f) l)
-.
-Proof.
-    induction l.
-    {
-        simpl. rewrite filter_nil. reflexivity.
-    }
-    {
-        rewrite filter_cons.
-        rewrite fmap_cons.
-        rewrite filter_cons.
-        rewrite IHl.
-        unfold compose.
-        simpl in *.
-        ltac1:(repeat case_match); try (ltac1:(contradiction)).
-        {
-            reflexivity.
-        }
-        {
-            reflexivity.
-        }
-    }
-Qed.
-
-Lemma on_a_shared_prefix
-    {T : Type}
-    (_edT : EqDecision T)
-    (b : T)
-    (l1 l2 l1' l2' : list T)
-    :
-    b ∉ l1 ->
-    b ∉ l1' ->
-    l1 ++ b::l2 = l1' ++ b::l2' ->
-    l1 = l1'
-.
-Proof.
-    revert l1'.
-    induction l1; simpl; intros l1' H1 H2 H3.
-    {
-        destruct l1'; simpl in *.
-        { reflexivity. }
-        {
-            ltac1:(exfalso).
-            inversion H3; subst; clear H3.
-            apply H2. clear H2.
-            rewrite elem_of_cons. left. reflexivity.
-        }
-    }
-    {
-        destruct l1'.
-        {
-            ltac1:(exfalso).
-            inversion H3; subst; clear H3.
-            apply H1. clear H1.
-            rewrite elem_of_cons. left. reflexivity.
-        }
-        {
-            rewrite elem_of_cons in H1.
-            rewrite elem_of_cons in H2.
-            apply Decidable.not_or in H1.
-            apply Decidable.not_or in H2.
-            destruct H1 as [H11 H12].
-            destruct H2 as [H21 H22].
-            simpl in H3. inversion H3; subst; clear H3.
-            specialize (IHl1 l1' H12 H22 H1).
-            subst l1'.
-            reflexivity.
-        }
-    }
-Qed.
 
 Lemma vars_of_to_l2r_subst
     {Σ : StaticModel}
@@ -2094,26 +1591,6 @@ Proof.
     }
 Qed.
 *)
-
-Lemma val_elem_of_dom_1
-    {Σ : StaticModel}
-    (ρ : gmap variable GroundTerm)
-    (x : variable)
-    :
-    x ∈ dom ρ -> isSome (ρ !! x) = true
-.
-Proof.
-    rewrite elem_of_dom.
-    destruct (ρ!!x); simpl.
-    {
-        intros _. reflexivity.
-    }
-    {
-        intros H. unfold is_Some in H.
-        destruct H as [x0 Hx0].
-        inversion Hx0.
-    }
-Qed.
 
 
 Lemma satisfies_TermOverBoV_to_TermOverExpr
@@ -2638,18 +2115,20 @@ Lemma in_compile_inv
                 (h
                 :: vars_of_to_l2r c ++
                 elements (vars_of scs) ++
-                elements (vars_of (mlld_isValue_scs Act D))))
+                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
                 (fresh
                 (h
                 :: fresh
                 (h
                 :: vars_of_to_l2r c ++
                 elements (vars_of scs) ++
-                elements (vars_of (mlld_isValue_scs Act D)))
+                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D))))
                 :: vars_of_to_l2r c ++
                 elements (vars_of scs) ++
-                elements (vars_of (mlld_isValue_scs Act D))))
-                (MinusL_isValue Act D) c h
+                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
+                (MinusL_isValue Act D)
+                (MinusL_isNonValue Act D)
+                c h
                 scs
             \/
             r =
@@ -2658,19 +2137,21 @@ Lemma in_compile_inv
             (h
             :: vars_of_to_l2r c ++
             elements (vars_of scs) ++
-            elements (vars_of (mlld_isValue_scs Act D))))
+            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
             (fresh
             (h
             :: fresh
             (h
             :: vars_of_to_l2r c ++
             elements (vars_of scs) ++
-            elements (vars_of (mlld_isValue_scs Act D)))
+            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D))))
             :: vars_of_to_l2r c ++
             elements (vars_of scs) ++
-            elements (vars_of (mlld_isValue_scs Act D))))
-            (MinusL_isValue Act D) c
-          h
+            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
+            (MinusL_isValue Act D)
+            (MinusL_isNonValue Act D)
+            c
+            h
         )
         }}}
     )

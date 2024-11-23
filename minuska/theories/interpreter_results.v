@@ -3,8 +3,6 @@ From Minuska Require Import
     spec
     properties
     basic_properties
-    syntax_properties
-    semantics_properties
     spec_interpreter
 .
 

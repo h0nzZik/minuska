@@ -2,6 +2,7 @@ type token =
   | ID of string
   | VAR of string
   | INT of int
+  | KEYWORD_NONVALUE
   | KEYWORD_VALUE
   | KEYWORD_BUILTIN_INT
   | KEYWORD_BUILTIN_STRING
@@ -55,6 +56,10 @@ type expr =
   | `ECall of (id*(expr list)) 
   ]
 
+type condition =
+  [ `Cond of (id*(expr list)) 
+  ]
+
 type exprterm =
   [ `EExpr of expr
   | `ETerm of (id*(exprterm list))
@@ -66,7 +71,7 @@ type rule =
     name : string ;
     lhs : pattern ;
     rhs : exprterm ;
-    cond : expr ;
+    cond : condition list ;
   }
 
 type framedecl =
@@ -92,7 +97,8 @@ type strictdecl =
 type definition =
   {
     frames     : (framedecl list) ;
-    value      : (vari*expr) ;
+    value      : (vari*condition) ;
+    nonvalue      : (vari*condition) ;
     context    : contextdecl ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;

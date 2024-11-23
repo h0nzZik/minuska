@@ -2,20 +2,20 @@
 From Minuska Require Export
     prelude
     default_everything
+    pval_ocaml_binding
 .
-
-
 Extraction
     "Dsm.ml"
-    default_everything.myBuiltinType
-    default_everything.dmyBuiltin
-    default_everything.myBuiltin
+    mkRewritingRule2
+    BuiltinInterface
+    builtins_empty
+    builtins_klike
     default_everything.DSM
     default_everything.GT
     default_everything.gt_term
     default_everything.gt_over
     default_everything.global_naive_interpreter
-    default_everything.builtins_binding
+    default_everything.global_naive_interpreter_ext
     (*
       Error:
 The informative inductive type prod has a Prop instance

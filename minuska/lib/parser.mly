@@ -2,6 +2,7 @@
 %token <string> ID
 %token <string> VAR
 %token KEYWORD_VALUE
+%token KEYWORD_NONVALUE
 %token KEYWORD_STRICTNESS
 %token KEYWORD_BUILTIN_INT
 %token KEYWORD_BUILTIN_STRING
@@ -114,6 +115,14 @@ expr:
     { `ECall ((`Id s),es) }
   ;
 
+condition:
+  | p = ID
+    BRACKET_ROUND_LEFT
+    es = separated_list(COMMA, expr)
+    BRACKET_ROUND_RIGHT
+    { `Cond ((`Id p), es) }
+  ;
+
 exprterm:
   | e = expr
     { `EExpr e }
@@ -131,10 +140,23 @@ valuedecl:
     BRACKET_ROUND_RIGHT
     COLON 
     BRACKET_ROUND_LEFT
-    e = expr
+    c = condition
     BRACKET_ROUND_RIGHT
     SEMICOLON
-    { (x,e) }
+    { (x,c) }
+  ;
+
+nonvaluedecl:
+  | KEYWORD_NONVALUE
+    BRACKET_ROUND_LEFT
+    x = VAR 
+    BRACKET_ROUND_RIGHT
+    COLON 
+    BRACKET_ROUND_LEFT
+    c = condition
+    BRACKET_ROUND_RIGHT
+    SEMICOLON
+    { (x,c) }
   ;
 
 framedecl:
@@ -174,18 +196,21 @@ rule:
     ARROW
     r = exprterm
     KEYWORD_WHERE
-    c = expr
+    BRACKET_SQUARE_LEFT
+    cs = separated_list(COMMA, condition);
+    BRACKET_SQUARE_RIGHT
     SEMICOLON
-    { {frame = a; name = n; lhs = l; rhs = r; cond = c }  }
+    { {frame = a; name = n; lhs = l; rhs = r; cond = cs }  }
   ;
 
 definition:
   | fs = framesdecl
     v = valuedecl
+    nv = nonvaluedecl
     c = contextdecl
     sall = strictnessall
     rs = list(rule)
-    { { context = c; value = (`Var (fst v), (snd v)); frames = fs; strictness = sall; rules = rs } }
+    { { context = c; value = (`Var (fst v), (snd v)); nonvalue = (`Var (fst nv), (snd nv)); frames = fs; strictness = sall; rules = rs } }
   ;
 
 option_definition:

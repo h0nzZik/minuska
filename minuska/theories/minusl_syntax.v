@@ -4,10 +4,6 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
-    lowlang
-    syntax_properties
-    properties
-    varsof
 .
 
 Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
@@ -51,7 +47,8 @@ Record MinusL_LangDef
     (Act : Set)
     : Type
  := mkMinusL_LangDef {
-    mlld_isValue_scs : list SideCondition2 ;
+    mlld_isValue_c : SideCondition2 ;
+    mlld_isNonValue_c : SideCondition2 ;
     mlld_isValue_var : variable ;
     mlld_decls : list (MinusL_Decl Act) ;
 }.
@@ -62,7 +59,9 @@ Definition MinusL_LangDef_wf
     (D : MinusL_LangDef Act)
     : Prop
 :=
-    vars_of (mlld_isValue_scs Act D) = {[ mlld_isValue_var Act D ]}
+    vars_of (mlld_isValue_c Act D) = {[ mlld_isValue_var Act D ]}
+    /\
+    vars_of (mlld_isNonValue_c Act D) = {[ mlld_isValue_var Act D ]}
     /\ (
         ∀ c h scs,
         (mld_context Act c h scs) ∈ (mlld_decls Act D) ->
@@ -77,32 +76,42 @@ Definition MinusL_LangDef_wf
         h ∉ vars_of (mlld_isValue_scs Act D)
 .
 *)
-Print SideCondition2.
 Definition MinusL_isValue
     {Σ : StaticModel}
     (Act : Set)
     (D : MinusL_LangDef Act)
     :
-    Expression2 -> list SideCondition2
+    Expression2 -> SideCondition2
 :=
     let x := (mlld_isValue_var Act D) in
+    let p := (sc_pred (mlld_isValue_c Act D)) in
+    let args := (sc_args (mlld_isValue_c Act D)) in
     fun e =>
-    (fun sc =>
-        @mkSideCondition2 Σ
-        (
-            Expression2_subst
-                (sc_left sc)
-                x
-                e
-        ) (
-            Expression2_subst
-                (sc_right sc)
-                x
-                e
-        )
-    )
-     <$> (mlld_isValue_scs Act D)
+    let args' := (fun arg => Expression2_subst arg x e) <$> args in
+    {|
+        sc_pred := p;
+        sc_args := args';
+    |}
 .
+
+Definition MinusL_isNonValue
+    {Σ : StaticModel}
+    (Act : Set)
+    (D : MinusL_LangDef Act)
+    :
+    Expression2 -> SideCondition2
+:=
+    let x := (mlld_isValue_var Act D) in
+    let p := (sc_pred (mlld_isNonValue_c Act D)) in
+    let args := (sc_args (mlld_isNonValue_c Act D)) in
+    fun e =>
+    let args' := (fun arg => Expression2_subst arg x e) <$> args in
+    {|
+        sc_pred := p;
+        sc_args := args';
+    |}
+.
+
 
 
 Definition actions_of_ldef

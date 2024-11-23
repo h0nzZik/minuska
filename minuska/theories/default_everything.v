@@ -33,33 +33,27 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
-Definition myBuiltinType : Type := @BuiltinValue.BuiltinValue0 string.
-Module dmyBuiltin := builtins.default_builtin.
-Export dmyBuiltin.
-Definition myBuiltin := dmyBuiltin.β.
-
 #[export]
-Instance DSM : StaticModel :=
-    default_model (myBuiltin)
+Instance DSM {β : Builtin MyUnit} : StaticModel :=
+    default_model β
 .
 
-Definition GT := @TermOver' string myBuiltinType.
+Definition GT {β : Builtin MyUnit} := @TermOver' string (builtin_value).
 
-Definition StepT := NondetValue -> GT -> option GT.
+Definition StepT {β : Builtin MyUnit} := NondetValue -> GT -> option GT.
+Definition StepT_ext {β : Builtin MyUnit} := NondetValue -> GT -> option (GT*nat).
 
-Definition gt_over (b : myBuiltinType) : GT := @t_over string myBuiltinType b.
-Definition gt_term (s : string) (l : list GT) : GT := @t_term string myBuiltinType s l.
-(*
-Definition gt_over b := term_over b.
-*)
+Definition gt_over {β : Builtin MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
+Definition gt_term {β : Builtin MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
 
 Definition basic_rule
+    {β : Builtin MyUnit}
     (name : string)
     (l : TermOver BuiltinOrVar)
     (r : TermOver Expression2)
-    (cond : Expression2) : Declaration
+    (conds : list SideCondition2) : Declaration
 :=
-    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_fun builtins.default_builtin.b_true []) cond)] default_act)))
+    (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r conds default_act)))
 .
 
 
@@ -75,18 +69,20 @@ Definition BoV_to_Expr2
 .
 
 Definition framed_rule
+    {β : Builtin MyUnit}
     (frame : (variable*(TermOver BuiltinOrVar)))
     (name : string)
     (l : TermOver BuiltinOrVar)
     (r : TermOver Expression2)
-    (cond : Expression2) : Declaration
+    (conds : list SideCondition2) : Declaration
 :=
     (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act
         (TermOverBoV_subst frame.2 frame.1 l)
         (TermOverBoV_subst_expr2 frame.2 frame.1 r)
-        [(mkSideCondition2 _ (e_fun builtins.default_builtin.b_true []) cond)] default_act)))
+        conds default_act)))
 .
 
-Definition global_naive_interpreter := @naive_interpreter DSM Act.
-Definition global_naive_interpreter_sound := @naive_interpreter_sound DSM Act.
-Definition builtins_binding := Minuska.builtins.builtins_binding.
+Definition global_naive_interpreter {β : Builtin MyUnit} := @naive_interpreter DSM Act.
+Definition global_naive_interpreter_ext {β : Builtin MyUnit} := @naive_interpreter_ext DSM Act.
+Definition global_naive_interpreter_sound {β : Builtin MyUnit} := @naive_interpreter_sound DSM Act.
+(* Definition builtins_binding {β : Builtin MyUnit} := Minuska.builtins.builtins_binding. *)
