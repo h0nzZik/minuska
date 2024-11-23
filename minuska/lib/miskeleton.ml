@@ -75,6 +75,7 @@ let parse_gt_and_run
   oux
   (step : Dsm.gT -> Dsm.gT option)
   (step_ext : Dsm.gT -> (Dsm.gT*int) option)
+  (lang_debug_info : string list)
   depth
   output_file
   bench
@@ -99,7 +100,11 @@ let parse_gt_and_run
       | true -> (
           (
             step_ext, (
-            (fun _ -> "TODO debug info\n"),
+            (fun indices ->
+              let names = List.mapi ~f:(fun step_number rule_idx -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
+              let log = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
+              log
+            ),
             []
             )
           )
@@ -116,7 +121,7 @@ let parse_gt_and_run
     match res with
     | (actual_depth,result, info) ->
       fprintf oux "Taken %d steps\n" actual_depth;
-      (if with_trace then (fprintf oux "%s" info) else ());
+      (if with_trace then (fprintf oux "Trace:\n%s\n" info) else ());
       let cfgoux = (match output_file with Some name -> Out_channel.create name | None -> oux) in
       fprintf cfgoux "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back iface result));
       (match output_file with Some _ -> () | None -> Out_channel.close cfgoux; ());
@@ -131,6 +136,7 @@ let run
   (iface : 'a Dsm.builtinInterface)
   (step : Dsm.gT -> Dsm.gT option)
   (step_ext : Dsm.gT -> (Dsm.gT*int) option)
+  (lang_debug_info : string list)
   (with_trace : bool)
   input_filename
   depth
@@ -141,7 +147,7 @@ let run
   let inx = In_channel.create input_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_gt_and_run iface with_trace lexbuf stdout step step_ext depth output_file bench;
+  parse_gt_and_run iface with_trace lexbuf stdout step step_ext lang_debug_info depth output_file bench;
   In_channel.close inx;
   ()
 
@@ -181,6 +187,7 @@ let command_run
   (path_to_parser : string option)
   (step : Dsm.gT -> Dsm.gT option)
   (step_ext : Dsm.gT -> (Dsm.gT*int) option)
+  (lang_debug_info : string list)
   =
   Command.basic
     ~summary:"An interpreter"
@@ -192,15 +199,23 @@ let command_run
         output_file = flag "--output-file" (optional string) ~doc:"filename to put the final configuration to" and
         with_trace = flag "--trace" (no_arg) ~doc:"Trace execution steps"
      in
-     fun () -> (parse_first iface bench path_to_parser program (fun iface fname -> run iface step step_ext with_trace fname depth output_file bench ()) ))
+     fun () -> (parse_first iface bench path_to_parser program (fun iface fname -> run iface step step_ext lang_debug_info with_trace fname depth output_file bench ()) ))
 
 let main
   (path_to_parser : string option)
   (iface : 'a Dsm.builtinInterface)
   (step : Dsm.gT -> Dsm.gT option)
   (step_ext : Dsm.gT -> (Dsm.gT*int) option)
+  (lang_debug_info : Dsm.string list)
   =
   Printexc.record_backtrace true;
-    try (Command_unix.run ~version:"0.3" (command_run iface path_to_parser step step_ext)) with
+    try (Command_unix.run ~version:"0.3" (command_run
+      iface
+      path_to_parser 
+      step
+      step_ext
+      (* lang_debug_info *)
+      (List.map lang_debug_info ~f:Stringutils.implode)
+      )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
