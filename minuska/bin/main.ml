@@ -70,6 +70,11 @@ let write_gterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : stri
     From Minuska Require Export
       prelude
       default_everything
+      pval_ocaml_binding
+    .
+    From Minuska Require Import
+      builtin.empty
+      builtin.klike
     .
     |};
     fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
