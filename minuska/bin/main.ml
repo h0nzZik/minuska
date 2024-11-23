@@ -114,6 +114,20 @@ let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map
     Require Import Ascii.
     Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
     Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
+    Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
+    Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
+    Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
+    Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
+    Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
+    Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.mkBuiltin" ].
+    Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
+    Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
+    Extract Constant DSM => "Libminuska.Extracted.dSM".
+    Extract Constant GT => "Libminuska.Extracted.gT".
+    Extract Constant gt_term => "Libminuska.Extracted.gt_term".
+    Extract Constant gt_over => "Libminuska.Extracted.gt_over".
+    Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
+    Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
   |};
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info.\n" ("interpreter.ml");

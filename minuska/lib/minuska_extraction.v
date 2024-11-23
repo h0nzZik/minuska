@@ -6,6 +6,7 @@ From Minuska Require Export
 .
 Extraction
     "Dsm.ml"
+    mkRewritingRule2
     BuiltinInterface
     builtins_empty
     builtins_klike
