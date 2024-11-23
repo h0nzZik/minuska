@@ -4,13 +4,13 @@
 @value(X): (is_true (bool.or(
    z.is(X),                            bool.or(
    bool.is(X),                         bool.or(
-   bool.and(sym.is(X), term.same_symbol(X, [unitValue[]])), 
+    term.same_symbol(X, [unitValue[]]), 
    string.is(X)
 ))))) ;
 @nonvalue(X): (is_true (bool.neg(bool.or(
    z.is(X),                            bool.or(
    bool.is(X),                         bool.or(
-   bool.and(sym.is(X), term.same_symbol(X, [unitValue[]])), 
+   term.same_symbol(X, [unitValue[]]), 
    string.is(X)
 )))))) ;
 @context(HOLE): c[HOLE, STATE];
