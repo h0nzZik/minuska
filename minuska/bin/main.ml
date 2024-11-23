@@ -22,6 +22,7 @@ let append_definition (iface : 'a Extracted.builtinInterface) (builtins_map : bu
   In_channel.close inx;
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := global_naive_interpreter (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext : StepT_ext := global_naive_interpreter_ext (fst T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
     Lemma language_well_formed: isSome(RewritingTheory2_wf_heuristics (fst T)).
@@ -109,7 +110,7 @@ let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map
   let oux_coqfile = Out_channel.create coqfile in
   append_definition iface builtins_map name_of_builtins input_filename oux_coqfile;
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
-  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter.\n" ("interpreter.ml");
+  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
   (* extract coq into ocaml *)
   let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) in
@@ -120,7 +121,7 @@ let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map
   let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
   (* compile the main ocaml file (after adding an entry command) *)
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter)\n" oparseexestr name_of_builtins) in
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext)\n" oparseexestr name_of_builtins) in
   (*let _ = run [ "env" ] in*)
   (*let _ = run ["cat "; mlfile] in*)
   let _ = run [

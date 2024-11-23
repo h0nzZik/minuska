@@ -41,6 +41,7 @@ Instance DSM {β : Builtin MyUnit} : StaticModel :=
 Definition GT {β : Builtin MyUnit} := @TermOver' string (builtin_value).
 
 Definition StepT {β : Builtin MyUnit} := NondetValue -> GT -> option GT.
+Definition StepT_ext {β : Builtin MyUnit} := NondetValue -> GT -> option (GT*nat).
 
 Definition gt_over {β : Builtin MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
 Definition gt_term {β : Builtin MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
@@ -82,5 +83,6 @@ Definition framed_rule
 .
 
 Definition global_naive_interpreter {β : Builtin MyUnit} := @naive_interpreter DSM Act.
+Definition global_naive_interpreter_ext {β : Builtin MyUnit} := @naive_interpreter_ext DSM Act.
 Definition global_naive_interpreter_sound {β : Builtin MyUnit} := @naive_interpreter_sound DSM Act.
 (* Definition builtins_binding {β : Builtin MyUnit} := Minuska.builtins.builtins_binding. *)

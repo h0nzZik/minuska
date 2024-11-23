@@ -31,6 +31,15 @@ Definition Interpreter
     := NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
 .
 
+Definition Interpreter_ext
+    {Σ : StaticModel}
+    {Act : Set}
+    (Γ : list (RewritingRule2 Act))
+    : Type
+    := NondetValue -> TermOver builtin_value -> option ((TermOver builtin_value)*nat)
+.
+
+
 Definition Interpreter_sound'
     {Σ : StaticModel}
     {Act : Set}
