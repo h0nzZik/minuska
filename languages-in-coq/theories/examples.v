@@ -15,7 +15,17 @@ From Minuska Require Import
     frontend
     interp_loop
     example
+    pval_ocaml_binding
 .
+
+From Minuska Require Import
+    builtin.klike
+.
+Import builtin.klike.Notations.
+
+Definition mybeta := (bi_beta MyUnit builtins_klike).
+Existing Instance mybeta.
+
 
 Variant Act := default_act | invisible_act.
 
@@ -28,7 +38,7 @@ Defined.
 Module two_counters.
 
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.β).
+    Instance Σ : StaticModel := default_model (mybeta).
 
     Definition M : variable := "M".
     Definition N : variable := "N".
@@ -43,7 +53,7 @@ Module two_counters.
     Arguments s {_br} _%_rs.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
-    Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ ([
         decl_rule (
             rule ["my-rule"]:
                 cfg [ state [ s [ t_over ($M) ]; t_over ($N) ] ]
@@ -110,8 +120,7 @@ End two_counters.
 
 Module two_counters_Z.
 #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.β).
-    Import default_builtin.
+    Instance Σ : StaticModel := default_model (mybeta).
 
     Definition M : variable := "M".
     Definition N : variable := "N".
@@ -122,7 +131,7 @@ Module two_counters_Z.
     (* Coercion Z_to_builtin (x : Z) := (e_ground (t_over (bv_Z x))). *)
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
-    Eval vm_compute in (to_theory Act (process_declarations Act default_act ([
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ ([
         decl_rule (
             rule ["my-rule"]:
                state [ t_over ($M) ; t_over ($N) ]
@@ -130,7 +139,7 @@ Module two_counters_Z.
                 t_over ((($M)) -Z (e_ground (t_over (bv_Z 1%Z))));
                 t_over (($N) +Z (($M)))
                 ]
-            where ($M >Z (e_ground (t_over (bv_Z 0%Z))))
+            where [mkSideCondition2 _ b_cond_is_true [($M >Z (e_ground (t_over (bv_Z 0%Z))))]]
         )
     ]))).
     
@@ -164,12 +173,8 @@ End two_counters_Z.
 (* Check "End two counters". *)
 Module arith.
 
-    Import default_builtin.
-    Import default_builtin.Notations.
-
-
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.β).
+    Instance Σ : StaticModel := default_model (mybeta).
 
     Definition X : variable := "X".
     Definition Y : variable := "Y".
@@ -226,7 +231,9 @@ Module arith.
         default_context_template
             := (context-template cfg [ HOLE ] with HOLE) ;
 
-        default_isValue := fun x => (isZ x) ;
+        default_isValue := fun x => mkSideCondition2 _ b_cond_is_true [(isZ x)] ;
+        default_isNonValue := fun x => mkSideCondition2 _ b_cond_is_true [e_fun b_bool_neg [(isZ x)]] ;
+        
     |}.
 
     Definition Decls : list Declaration := [
@@ -235,11 +242,11 @@ Module arith.
             rule ["plus-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) + t_over ($Y) ); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X +Z $Y) ; t_over ($REST_SEQ) ] ]
-                where (
+                where [mkSideCondition2 _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
-                )
+                )]]
         );
         decl_strict (symbol "plus" of arity 2 strict in [0;1]);
         (* minus *)
@@ -247,11 +254,11 @@ Module arith.
             rule ["minus-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) - t_over ($Y)); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X -Z $Y) ; t_over ($REST_SEQ) ] ]
-                where (
+                where [mkSideCondition2 _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
-                )
+                )]]
         );
         decl_strict (symbol "minus" of arity 2 strict in [0;1]);
         (* times *)
@@ -259,11 +266,11 @@ Module arith.
             rule ["times-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) * t_over ($Y)); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X *Z $Y) ; t_over ($REST_SEQ) ] ]
-                where (
+                where [mkSideCondition2 _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
-                )
+                    )]]
         );
         decl_strict (symbol "times" of arity 2 strict in [0;1]);
         (* div *)
@@ -271,17 +278,17 @@ Module arith.
             rule ["div-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) / t_over ($Y)); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X /Z $Y) ; t_over ($REST_SEQ) ] ]
-                where (
+                where [mkSideCondition2 _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
-                )
+                )]]
         );
         decl_strict (symbol "div" of arity 2 strict in [0;1])
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act (Decls))).
+    (to_theory Act (process_declarations Act default_act _ (Decls))).
 
 
     (*
@@ -373,7 +380,7 @@ Module fib_native.
     Import default_builtin.Notations.
 
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.β).
+    Instance Σ : StaticModel := default_model (default_builtin.mybeta).
 
     Check builtin_value.
 
@@ -540,7 +547,7 @@ Module imp.
     Import default_builtin.Notations.
 
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.β).
+    Instance Σ : StaticModel := default_model (default_builtin.mybeta).
 
 
     Definition B : variable := "$B".

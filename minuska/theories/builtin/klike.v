@@ -1693,6 +1693,7 @@ Inductive FunctionSymbol : Set :=
 | b_Z_isLe                 (* Z -> Z -> Prop *)
 | b_Z_isLt                 (* Z -> Z -> Prop *)
 | b_bool_eq                (* bool -> bool -> Prop *)
+| b_term_eq                (* term -> term -> Prop *)
 | b_Z_eq                   (* Z -> Z -> Prop *)
 | b_map_hasKey             (* map -> 'a -> Prop *)
 | b_is_applied_symbol      (* string -> 'a -> Prop *)
@@ -2050,6 +2051,10 @@ Section sec.
                 end
             )
 
+            | b_term_eq => liftBinary (
+                fun _ v1 v2 =>
+                t_over (bv_bool (bool_decide (v1 = v2)))
+            )
 
             | b_bool_eq => liftBinary (
                 fun _ v1 v2 =>
@@ -2279,6 +2284,10 @@ Module Notations.
         ((e_fun b_Z_isLt [(x); (y)]))
     .
 
+    Notation "'(' x '==Term' y ')'" :=
+        ((e_fun b_term_eq [(x); (y)]))
+    .
+
     Notation "'(' x '==Z' y ')'" :=
         ((e_fun b_Z_eq [(x); (y)]))
     .
@@ -2294,6 +2303,7 @@ End Notations.
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
         ("is_true", "b_cond_is_true");
+        ("term.eq", "b_term_eq"),
         ("bool.neg", "b_bool_neg");
         ("bool.and", "b_bool_and");
         ("bool.or", "b_bool_or");

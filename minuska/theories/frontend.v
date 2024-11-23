@@ -70,7 +70,7 @@ Record StrictnessDeclaration {Σ : StaticModel}
 
 
 Notation
-    "( 'symbol' s 'of' 'arity' a 'strict' 'in' l 'with-result' r 'by-template' t )"
+    "( 'symbol' s 'of' 'arity' a 'strict' 'in' l 'with-result' r 'with-nonvalue' nr 'by-template' t )"
     :=
     (
         (
@@ -79,6 +79,7 @@ Notation
                 sd_arity := a ;
                 sd_positions := l ;
                 sd_isValue := r ;
+                sd_isNonValue := nr ;
                 sd_cseq_context := t ;
             |}
         )
@@ -103,6 +104,7 @@ Notation
                 sd_arity := a ;
                 sd_positions := l ;
                 sd_isValue := default_isValue ;
+                sd_isNonValue := default_isNonValue ;
                 sd_cseq_context := default_context_template ;
             |}
         )
