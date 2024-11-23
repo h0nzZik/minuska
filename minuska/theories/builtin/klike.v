@@ -2303,7 +2303,7 @@ End Notations.
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
         ("is_true", "b_cond_is_true");
-        ("term.eq", "b_term_eq"),
+        ("term.eq", "b_term_eq");
         ("bool.neg", "b_bool_neg");
         ("bool.and", "b_bool_and");
         ("bool.or", "b_bool_or");

@@ -263,7 +263,7 @@ Module unary_nat.
         decl_simple_rule ["step"]:
             nat_fib' [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
             ~> nat_fib' [ t_over ($Tgt); nat_succ [ t_over ($Curr) ]; nat_add [t_over ($X); t_over ($Y)]; t_over ($X) ]
-            where (~~ ($Curr ==Term $Tgt))
+            where [mkSideCondition2 _ b_cond_is_true [(~~ ($Curr ==Term $Tgt))]]
         ;
         
         decl_simple_rule ["result"]:
@@ -273,7 +273,7 @@ Module unary_nat.
     ].
 
     Definition Γfib : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act (Decls_nat_fib ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ (Decls_nat_fib ++ Decls_nat_add))).
 
     Definition initial_fib (n : nat) := initial_expr (
         (ground (nat_fib [(nat_to_unary n)]))

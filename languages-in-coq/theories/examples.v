@@ -376,11 +376,8 @@ Check "End arith".
 
 Module fib_native.
 
-    Import default_builtin.
-    Import default_builtin.Notations.
-
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.mybeta).
+    Instance Σ : StaticModel := default_model (mybeta).
 
     Check builtin_value.
 
@@ -419,25 +416,25 @@ Module fib_native.
                 t_over (e_ground (t_over  (bv_Z 1)));
                 t_over (e_ground (t_over  (bv_Z 1))) 
                ]
-            where ((~~ ($Tgt ==Z (e_ground (t_over (bv_Z 0)))))
-                && (~~ ($Tgt ==Z (e_ground (t_over (bv_Z 1))))))
+            where [mkSideCondition2 _ b_cond_is_true [((~~ ($Tgt ==Z (e_ground (t_over (bv_Z 0)))))
+                && (~~ ($Tgt ==Z (e_ground (t_over (bv_Z 1))))))]]
         );
         decl_rule (
             rule ["step"]:
                state [ t_over ($Tgt); t_over  ($Curr); t_over ($X); t_over ($Y) ]
             ~>{default_act} state [ t_over ($Tgt); t_over (($Curr) +Z (e_ground (t_over  (bv_Z 1)))); t_over ($X +Z $Y); t_over ($X) ]
-            where (~~ ((($Curr)) ==Z (($Tgt))))
+            where [mkSideCondition2 _ b_cond_is_true [(~~ ((($Curr)) ==Z (($Tgt))))]]
         );
         decl_rule (
             rule ["result"]:
                state [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
             ~>{default_act} resultState [ t_over ($X) ]
-                where (($Curr ==Z $Tgt))
+                where [mkSideCondition2 _ b_cond_is_true [(($Curr ==Z $Tgt))]]
         )
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act (Decls))).
+    (to_theory Act (process_declarations Act default_act _ (Decls))).
 
 
     Definition interp_from (fuel : nat) from
@@ -543,11 +540,8 @@ End fib_native.
 
 Module imp.
 
-    Import default_builtin.
-    Import default_builtin.Notations.
-
     #[local]
-    Instance Σ : StaticModel := default_model (default_builtin.mybeta).
+    Instance Σ : StaticModel := default_model (mybeta).
 
 
     Definition B : variable := "$B".
@@ -647,9 +641,13 @@ Module imp.
         : LangImpScope
     .
 
-    Definition isValue (x : Expression2) : Expression2 :=
-         ((isZ x) || (isBool x) || (isAppliedSymbol "unitValue" x))%rs
+    Definition isValueE (x : Expression2) : Expression2 :=
+         ((isZ x) || (isBool x) || (e_fun b_have_same_symbol [e_ground (t_term "unitValue" []); x]))%rs
     .
+
+    Definition isNonValueE := fun x => (e_fun b_bool_neg [(isValueE x)]).
+
+    Definition isValue := fun x => mkSideCondition2 _ b_cond_is_true [isValueE x].
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -659,6 +657,7 @@ Module imp.
             := (context-template u_cfg ([ u_state [HOLE; (t_over ($X)) ] ]) with HOLE) ;
 
         default_isValue := isValue ;
+        default_isNonValue := fun x => mkSideCondition2 _ b_cond_is_true [isNonValueE x] ;
     |}.
 
 
@@ -680,113 +679,113 @@ Module imp.
     ) (at level 90).
 
     Definition Decls : list Declaration := [
-        decl_strict (symbol "arith_plus" of arity 2 strict in [0;1]);
-        decl_strict (symbol "arith_minus" of arity 2 strict in [0;1]);
-        decl_strict (symbol "arith_times" of arity 2 strict in [0;1]);
-        decl_strict (symbol "arith_div" of arity 2 strict in [0;1]);
+        (decl_strict (symbol "arith_plus" of arity 2 strict in [0;1]));
+        (decl_strict (symbol "arith_minus" of arity 2 strict in [0;1]));
+        (decl_strict (symbol "arith_times" of arity 2 strict in [0;1]));
+        (decl_strict (symbol "arith_div" of arity 2 strict in [0;1]));
         (* plus *)
-        decl_simple_rule ["plus-Z-Z"]: (t_over ($X) + t_over ($Y)) ~> t_over ($X +Z $Y) where ((isZ ($X)) && (isZ ($Y)));
+        (decl_simple_rule ["plus-Z-Z"]: (t_over ($X) + t_over ($Y)) ~> t_over ($X +Z $Y) where [mkSideCondition2 _ b_cond_is_true [((isZ ($X)) && (isZ ($Y)))]]);
         (* minus *)
-        decl_simple_rule ["minus-Z-Z"]:
+        (decl_simple_rule ["minus-Z-Z"]:
                (t_over ($X) - t_over ($Y))
             ~> t_over ($X -Z $Y)
-                where (
+                where [mkSideCondition2 _ b_cond_is_true[(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
-                )
+                )]])
         ;
         (* times *)
-        decl_simple_rule ["times-Z-Z"]:
+        (decl_simple_rule ["times-Z-Z"]:
                (t_over ($X) * t_over ($Y))
             ~> t_over ($X *Z $Y)
-                where (
+                where [mkSideCondition2 _ b_cond_is_true[(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
-                )
+                )]])
         ;
         (* div *)
-        decl_simple_rule ["div-Z-Z"]:
+        (decl_simple_rule ["div-Z-Z"]:
                 (t_over($X) / t_over($Y))
             ~> t_over($X /Z $Y)
-                where (
+                where [mkSideCondition2 _ b_cond_is_true[(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
                     (* TODO test that $Y is not 0*)
-                )
+                )]])
         ;
         
-        decl_strict (symbol "stmt_assign" of arity 2 strict in [1]);
+        (decl_strict (symbol "stmt_assign" of arity 2 strict in [1]));
 
-        decl_rule (
+        (decl_rule (
             rule ["assign-value"]:
                 u_cfg [ u_state [ u_cseq [ (var [t_over ($X)]) <:= t_over ($Y); t_over ($REST_SEQ)]; t_over ($VALUES) ] ]
             ~>{default_act} u_cfg [ u_state [
                     u_cseq [unitValue[]; t_over ($REST_SEQ)];
                     t_over (e_fun b_map_update [($VALUES); ($X); ($Y)])
                 ] ]
-                where ((isString ($X)) && (isValue ($Y)))
-        );
-        decl_rule (
+                where [mkSideCondition2 _ b_cond_is_true [((isString ($X)) && (isValueE ($Y)))]]
+        ));
+        (decl_rule (
             rule ["var-lookup"]:
                 u_cfg [ u_state [ u_cseq [ var [t_over ($X) ]; t_over ($REST_SEQ)]; t_over ($VALUES)]]
             ~>{default_act} u_cfg [ u_state [
                 u_cseq [t_over (e_fun b_map_lookup [($VALUES); ($X)]); t_over ($REST_SEQ)];
                 t_over ($VALUES)
             ]]
-        );
+        ));
         (* TODO stmt_seq does not have to be strict in the second argument, and the following rule does not need to check the value-ness of the second argument*)
-        decl_simple_rule ["seq-unit-value"]:
+        (decl_simple_rule ["seq-unit-value"]:
                 stmt_seq [unitValue []; t_over ($X) ]
             ~> t_over ($X)
-            where ((isValue ($X)))
+            where [mkSideCondition2 _ b_cond_is_true[((isValueE ($X)))]])
         ;
-        decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]);
+        (decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]));
 
-        decl_strict (symbol "bexpr_eq" of arity 2 strict in [0;1]);
-        decl_strict (symbol "bexpr_negb" of arity 1 strict in [0]);
-        decl_strict (symbol "bexpr_le" of arity 2 strict in [0;1]);
-        decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]);
+        (decl_strict (symbol "bexpr_eq" of arity 2 strict in [0;1]));
+        (decl_strict (symbol "bexpr_negb" of arity 1 strict in [0]));
+        (decl_strict (symbol "bexpr_le" of arity 2 strict in [0;1]));
+        (decl_strict (symbol "bexpr_lt" of arity 2 strict in [0;1]));
 
-        decl_simple_rule ["bexpr-eq-Z-Z"]:
+        (decl_simple_rule ["bexpr-eq-Z-Z"]:
                 bexpr_eq [ t_over ($X); t_over ($Y) ]
-            ~> (t_over (e_fun b_eq [($X); ($Y)]))
-            where ((isValue ($X)) && (isValue ($Y)))
+            ~> (t_over (e_fun b_bool_eq [($X); ($Y)]))
+            where [mkSideCondition2 _ b_cond_is_true[((isValueE ($X)) && (isValueE ($Y)))]])
         ;
-        decl_simple_rule ["bexpr-le-Z-Z"]:
+        (decl_simple_rule ["bexpr-le-Z-Z"]:
                 bexpr_le [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_fun b_Z_isLe [($X); ($Y)]))
-            where ((isZ ($X)) && (isZ ($Y)))
+            where [mkSideCondition2 _ b_cond_is_true[((isZ ($X)) && (isZ ($Y)))]])
         ;
-        decl_simple_rule ["bexpr-lt-Z-Z"]:
+        (decl_simple_rule ["bexpr-lt-Z-Z"]:
                bexpr_lt [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_fun b_Z_isLt [($X); ($Y)]))
-            where ((isZ ($X)) && (isZ ($Y)))
+            where [mkSideCondition2 _ b_cond_is_true[((isZ ($X)) && (isZ ($Y)))]])
         ;
-        decl_simple_rule ["bexpr-negb-bool"]:
+        (decl_simple_rule ["bexpr-negb-bool"]:
                bexpr_negb [t_over ($X) ]
             ~> t_over (e_fun b_bool_neg [($X)])
-            where ((isBool ($X)))
+            where [mkSideCondition2 _ b_cond_is_true[((isBool ($X)))]])
         ;
-        decl_strict (symbol "stmt_ite" of arity 3 strict in [0]) ;
-        decl_simple_rule ["stmt-ite-true"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($X) where ($B) ;
-        decl_simple_rule ["stmt-ite-false"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($Y) where ($B ==Bool false) ;
+        (decl_strict (symbol "stmt_ite" of arity 3 strict in [0]) );
+        (decl_simple_rule ["stmt-ite-true"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($X) where [mkSideCondition2 _ b_cond_is_true[($B)]]) ;
+        (decl_simple_rule ["stmt-ite-false"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($Y) where [mkSideCondition2 _ b_cond_is_true[($B ==Bool false)]]) ;
         (* (* sugared *)
         decl_simple_rule ["while-unfold"]:
             stmt_while [$B, $X]
             ~> (if ($B) then (($X); then stmt_while [$B, $X]) else (unitValue []))
             always
         *)
-        decl_simple_rule ["while-unfold"]:
+        (decl_simple_rule ["while-unfold"]:
             stmt_while [t_over ($B) ; t_over ($X)]
             ~> stmt_ite [t_over ($B) ; stmt_seq [t_over ($X); stmt_while [t_over ($B); t_over ($X)]]; unitValue [] ]
-            where (true)
+            where [])
     ]%limp.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act (Decls))).
+    (to_theory Act (process_declarations Act default_act _ (Decls))).
 
     (* Compute (length (Γ.1)). *)
 
