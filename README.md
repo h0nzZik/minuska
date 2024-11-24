@@ -59,4 +59,4 @@ This needs to be done e.g., in Docker, or when running on Github-hosted runners.
 
 # Papers
 
-An extended version of the preliminary 'Minuska: Towards a Formally Verified Programming Language Framework' paper is available [here](h0nzzik.github.io/papers/minuska-extended.pdf).
+An extended version of the SEFM'24 paper titled 'Minuska: Towards a Formally Verified Programming Language Framework' is available [on Arxiv](https://arxiv.org/abs/2409.11530).
