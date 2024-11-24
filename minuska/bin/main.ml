@@ -7,6 +7,13 @@ module Syntax = Libminuska.Syntax
 
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
 
+let coqc_command = "coqc" ;;
+let ocamlfind_command = "ocamlfind" ;;
+let minuska_contrib_dir = "/coq/user-contrib/Minuska" ;;
+
+let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) ;;
+let minuska_dir = libdir ^ minuska_contrib_dir ;;
+
 let parse_and_print (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
@@ -143,22 +150,18 @@ let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map
   fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
   (* extract coq into ocaml *)
-  let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) in
-  let minuska_dir = libdir ^ "/coq/user-contrib/Minuska" in
-  let coq_minuska_dir = libdir ^ "/coq-minuska" in
-  let _ = coq_minuska_dir in
-  (* fprintf stdout "libdir: %s" libdir; *)
-  let rv = run ["cd "; mldir; "; coqc "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
-  (if rv <> 0 then failwith "`coqc` failed. Is the language definition well-formed?");
+  let rv = run ["cd "; mldir; "; "; coqc_command; " "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
+  (if rv <> 0 then failwith ("`"^ coqc_command ^ "` failed. Is the language definition well-formed?"));
   (* compile the main ocaml file (after adding an entry command) *)
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" oparseexestr name_of_builtins) in
   (*let _ = run [ "env" ] in*)
   (*let _ = run ["cat "; mlfile] in*)
-  let _ = run [
+  let rv = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
-          "ocamlfind ocamlopt -thread -package libminuska -package zarith -linkpkg -g -o ";
+          ocamlfind_command; " ocamlopt -thread -package libminuska -package zarith -linkpkg -g -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
+  (if rv <> 0 then failwith ("Internal error: `ocamlopt` failed."));
   (* Filename.dirname Sys.argv.(0) ^ "../lib" *)
   let _ = Core_unix.mkdir_p appdir in
   let _ = Core_unix.mkdir_p (Filename.concat appdir "bin") in
@@ -270,7 +273,56 @@ Command.basic
       scm_filename = anon (("lang.scm" %: Filename_unix.arg_type))
     in
     fun () -> generate_interpreter scm_filename ())
+
+let command_print_coqbin =
+  Command.basic
+    ~summary:"Prints path to Coq's bin directory"
+    ~readme:(fun () -> "TODO")
+    (Command.Param.return
+      (fun () -> (
+          if (Sys_unix.file_exists_exn coqc_command) then
+            printf "%s" (Filename.dirname coqc_command)
+          else (
+            let _ = Sys_unix.command (String.concat ["which "; coqc_command]) in ()
+          )
+        ); ())
+    )
+
+let command_print_coqflags =
+  Command.basic
+  ~summary:"Prints coq flags"
+  ~readme:(fun () -> "TODO")
+  (Command.Param.return
+    (fun () -> printf "%s" ("-R " ^ minuska_dir ^ " Minuska"))
+  )
+
+let command_run =
+  Command.basic
+    ~summary:"Run a command in a Coq-friendly environment"
+    ~readme:(fun () -> "TODO")
+    (let%map_open.Command
+        command_to_run = anon (("bash" %: string))
+      in
+      fun () -> 
+        if (Sys_unix.file_exists_exn coqc_command) then
+        (let _ = run ["env PATH=\""; (Filename.dirname coqc_command); "\":$PATH COQPATH=\""; minuska_dir; "\":$COQPATH "; command_to_run] in
+          ()
+        ) else (
+          let _ = run ["env COQPATH=\""; minuska_dir; "\":$COQPATH "; command_to_run] in
+          ()
+        )
+      )
     
+
+let command_info =
+  Command.group
+    ~summary:"Information about Minuska installation"
+    [
+      "coqbin", command_print_coqbin;
+      "coqflags", command_print_coqflags;
+      "run", command_run
+    ]
+
 
 let command =
   Command.group
@@ -278,7 +330,9 @@ let command =
     ["generate-interpreter", command_generate_interpreter;
      "compile", command_compile;
      "def2coq", command_generate;
-     "gt2coq", command_groundterm2coq]
+     "gt2coq", command_groundterm2coq;
+     "info", command_info
+     ]
 
-let () = Command_unix.run ~version:"0.2" command
+let () = Command_unix.run ~version:"0.5" command
 

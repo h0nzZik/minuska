@@ -80,9 +80,9 @@
 
             postPatch = ''
               substituteInPlace bin/main.ml \
-                --replace-fail "/coq/user-contrib/Minuska" "/coq/${coqVersion}/user-contrib/Minuska" \
-                --replace-fail "ocamlfind" "${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind" \
-                --replace-fail "coqc" "${coqPackages.coq}/bin/coqc"
+                --replace-fail "\"/coq/user-contrib/Minuska\"" "\"/coq/${coqVersion}/user-contrib/Minuska\"" \
+                --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
+                --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
             '';
 
 
