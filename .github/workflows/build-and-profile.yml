@@ -51,16 +51,16 @@ jobs:
     - name: 'Run Coq benchmarks'
       run: nix develop -L '.#bench-coq' --command ./bench-coq/build-and-profile.sh
 
-    - name: 'Build Docker image'
-      run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
-
-    - name: 'Archive Docker image'
-      uses: actions/upload-artifact@v4
-      with:
-        name: 'minuska-docker-image'
-        path: |
-          ./result-minuska-docker
-        retention-days: 5
+#    - name: 'Build Docker image'
+#      run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
+#
+#    - name: 'Archive Docker image'
+#      uses: actions/upload-artifact@v4
+#      with:
+#        name: 'minuska-docker-image'
+#        path: |
+#          ./result-minuska-docker
+#        retention-days: 5
       
     - name: Setup Pages
       uses: actions/configure-pages@v4
