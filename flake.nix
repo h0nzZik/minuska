@@ -114,6 +114,17 @@
           wrapped
        );
 
+       # The parsers in `languages/*` depend on these.
+       example_languages_parser_deps = [
+            pkgs.dune_3
+            pkgs.ocamlPackages.menhir
+            pkgs.ocamlPackages.findlib
+            pkgs.ocamlPackages.core
+            pkgs.ocamlPackages.core_unix
+            pkgs.ocamlPackages.ppx_jane
+            pkgs.ocaml
+        ];
+
       in {
         packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
@@ -144,18 +155,7 @@
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
-            pkgs.ocaml
-            pkgs.dune_3
-            pkgs.ocamlPackages.menhir
-            pkgs.ocamlPackages.findlib
-            pkgs.ocamlPackages.core
-            pkgs.ocamlPackages.core_unix
-            pkgs.ocamlPackages.ppx_jane
-          ];
-          #buildInputs = [
-          #  pkgs.fuse
-          #  pkgs.strace
-          #];
+          ] ++ example_languages_parser_deps;
         };
 
         packages.bench-hybrid
@@ -165,8 +165,7 @@
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
             pkgs.time
-          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
-           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+          ] ++ example_languages_parser_deps;
         };
 
         packages.bench-coq
@@ -252,15 +251,6 @@
                 packages = [
                   examples-coq.coqPackages.coq-lsp
                 ];
-              };
-
-          bench-standalone =
-            let
-              bench-standalone = self.outputs.packages.${system}.bench-standalone;
-            in
-              pkgs.mkShell {
-                inputsFrom = [bench-standalone];
-                packages = [];
               };
 
           bench-coq =

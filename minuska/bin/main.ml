@@ -301,14 +301,15 @@ let command_run =
     ~summary:"Run a command in a Coq-friendly environment"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-        command_to_run = anon (("bash" %: string))
+        cmd = flag "--" escape ~doc:("Command to run")
       in
       fun () -> 
+	let command_to_run = (match cmd with Some x -> x | None -> []) in 
         if (Sys_unix.file_exists_exn coqc_command) then
-        (let _ = run ["env PATH=\""; (Filename.dirname coqc_command); "\":$PATH COQPATH=\""; minuska_dir; "\":$COQPATH "; command_to_run] in
+        (let _ = Sys_unix.command ((String.concat ["env PATH=\""; (Filename.dirname coqc_command); ":$PATH\" COQPATH=\""; (Filename.dirname minuska_dir); ":$COQPATH\" "]) ^ (String.concat ~sep:" " command_to_run)) in
           ()
         ) else (
-          let _ = run ["env COQPATH=\""; minuska_dir; "\":$COQPATH "; command_to_run] in
+          let _ = Sys_unix.command ((String.concat ["env COQPATH=\""; (Filename.dirname minuska_dir); ":$COQPATH\" "]) ^ (String.concat ~sep:" " command_to_run)) in
           ()
         )
       )

@@ -16,7 +16,6 @@ if [[ -n "$VERBOSE" ]]; then
   LOGFILEERR=/dev/stderr
 fi
 
-
 testInCoq() {
   rm -rf coqfiles
   mkdir -p coqfiles
@@ -38,12 +37,11 @@ testInCoq() {
 
 
 
-
   echo "Compiling *.v files"
   pushd coqfiles > /dev/null
   for vfile in *.v; do
     echo "Compiling $vfile" > "$LOGFILEOUT"
-    coqc -R . Test "$vfile" > "$LOGFILEOUT" 2>"$LOGFILEERR"
+    minuska info run -- coqc -R . Test "$vfile" > "$LOGFILEOUT" 2>"$LOGFILEERR"
   done 
   popd > /dev/null
   cp test-imp/testCount*.v ./coqfiles/
@@ -51,7 +49,7 @@ testInCoq() {
   pushd coqfiles > /dev/null
   for testvfile in test*.v; do
     echo "coqc $testvfile"
-    "$TIME" --output "$testvfile.time" --format "%e" coqc -R . Test "$testvfile" 2> "$LOGFILEERR" | grep 'Finished transaction'
+    "$TIME" --output "$testvfile.time" --format "%e" minuska info run -- coqc -R . Test "$testvfile" 2> "$LOGFILEERR" | grep 'Finished transaction'
     cat "$testvfile.time"
   done
   popd > /dev/null
