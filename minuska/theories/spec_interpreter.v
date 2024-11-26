@@ -8,18 +8,20 @@ Definition not_stuck
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
+    (program : ProgramT)
     (e : TermOver builtin_value) : Type
 :=
-    { e' : _ & { nv : NondetValue & rewriting_relation Γ nv e e' } }
+    { e' : _ & { nv : NondetValue & rewriting_relation Γ program nv e e' } }
 .
 
 Definition stuck
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
+    (program : ProgramT)
     (e : TermOver builtin_value) : Type
 :=
-    notT (not_stuck Γ e)
+    notT (not_stuck Γ program e)
 .
 
 
@@ -28,7 +30,7 @@ Definition Interpreter
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
     : Type
-    := NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
+    := ProgramT -> NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
 .
 
 Definition Interpreter_ext
@@ -36,7 +38,7 @@ Definition Interpreter_ext
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
     : Type
-    := NondetValue -> TermOver builtin_value -> option ((TermOver builtin_value)*nat)
+    := ProgramT -> NondetValue -> TermOver builtin_value -> option ((TermOver builtin_value)*nat)
 .
 
 
@@ -47,16 +49,16 @@ Definition Interpreter_sound'
     (interpreter : Interpreter Γ)
     : Type
     := ((
-        forall e1 e2 nv,
-            interpreter nv e1 = Some e2 ->
-            rewriting_relation Γ nv e1 e2
+        forall program e1 e2 nv,
+            interpreter program nv e1 = Some e2 ->
+            rewriting_relation Γ program nv e1 e2
     )
     *
-    (forall e,
-        stuck Γ e -> forall nv, interpreter nv e = None)
-    * (forall e,
-        not_stuck Γ e ->
-        exists e' (nv : NondetValue), interpreter nv e = Some e')
+    (forall program e,
+        stuck Γ program e -> forall nv, interpreter program nv e = None)
+    * (forall program e,
+        not_stuck Γ program e ->
+        exists e' (nv : NondetValue), interpreter program nv e = Some e')
     )%type
 .
 
@@ -91,11 +93,11 @@ Definition RewritingRule2_wf2
     (r : RewritingRule2 Act)
     : Type
 := 
-    forall (g : TermOver builtin_value) (ρ : Valuation2) (nv : NondetValue),
+    forall (g : TermOver builtin_value) (ρ : Valuation2) (program : ProgramT) (nv : NondetValue),
         satisfies ρ g (r_from r) ->
-        satisfies ρ nv (r_scs r) ->
+        satisfies ρ (program, nv) (r_scs r) ->
         { g' : (TermOver builtin_value) &
-            satisfies ρ (nv,g') (r_to r)
+            satisfies ρ (program, (nv,g')) (r_to r)
         }
 .
 
