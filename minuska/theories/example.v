@@ -22,11 +22,27 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+Inductive MyQuerySymbol : Set := .
+
+#[global]
+Instance MyQuerySymbol_eqdec : EqDecision MyQuerySymbol.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+Inductive MyProgramT : Set := my_program .
+
 Module example_1.
+
+    Definition pi : @ProgramInfo string MySymbols MyUnit (builtin.klike.β) := {|
+        QuerySymbol := MyQuerySymbol ;
+        ProgramT := MyProgramT ;
+        pi_symbol_interp := fun prog sym => match sym with end ;
+    |}.
 
     #[local]
     Instance Σ : StaticModel :=
-        default_model (builtin.klike.β)
+        default_model (builtin.klike.β) pi
     .
     
     Definition X : variable := "X".
@@ -46,13 +62,13 @@ Module example_1.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string)
-        := Eval vm_compute in (to_theory Act (process_declarations Act default_act _ (Decls))).
+        := Eval vm_compute in (to_theory Act (process_declarations Act default_act _ program_info (Decls))).
 
     Definition interp :=
-        naive_interpreter Γ.1
+        naive_interpreter Γ.1 my_program
     .
 
-    Compute (naive_interpreter Γ.1 (nondet_gen 0) (t_term "S" [t_term "S" [t_term "0" nil]])).
+    Compute (naive_interpreter Γ.1 my_program (nondet_gen 0) (t_term "S" [t_term "S" [t_term "0" nil]])).
 
     Fixpoint my_number' (n : nat) : TermOver builtin_value  :=
     match n with
@@ -113,7 +129,7 @@ Module example_1.
 
     Definition interp_loop_number (fuel : nat) := 
         fun n : nat =>
-        let fg' := (((interp_in_from Γ nondet_gen) fuel) ∘ my_number) n in
+        let fg' := (((interp_in_from my_program Γ nondet_gen) fuel) ∘ my_number) n in
         my_number_inv fg'.1.2
     .
 

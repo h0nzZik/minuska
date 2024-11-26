@@ -34,11 +34,12 @@ Qed.
 
 Lemma satisfies_var_expr
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (nv : NondetValue)
     x γ:
     ρ !! x = Some (γ) ->
-    satisfies ρ (nv,γ) (t_over (e_variable x))
+    satisfies ρ (program, (nv,γ)) (t_over (e_variable x))
 .
 Proof.
     intros H.
@@ -63,17 +64,18 @@ Qed.
 
 Lemma satisfies_var_expr_inv
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (nv : NondetValue)
     x γ:
-    satisfies ρ (nv,γ) (t_over (e_variable x)) ->
+    satisfies ρ (program, (nv,γ)) (t_over (e_variable x)) ->
     ρ !! x = Some (γ)
 .
 Proof.
     unfold satisfies; simpl.
     ltac1:(simp sat2E).
     intros H.
-        destruct (Expression2_evaluate ρ (e_variable x)) eqn:Heq>[|ltac1:(contradiction)].
+        destruct (Expression2_evaluate program ρ (e_variable x)) eqn:Heq>[|ltac1:(contradiction)].
     simpl in Heq.
     destruct (ρ !! x) eqn:Heq2.
     {
@@ -1595,12 +1597,13 @@ Qed.
 
 Lemma satisfies_TermOverBoV_to_TermOverExpr
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (γ : TermOver builtin_value)
     (φ : TermOver BuiltinOrVar)
     (nv : NondetValue)
     :
-    satisfies ρ (nv,γ) (TermOverBoV_to_TermOverExpr2 φ)
+    satisfies ρ (program, (nv,γ)) (TermOverBoV_to_TermOverExpr2 φ)
     ->
     satisfies ρ γ φ
 .
@@ -2032,39 +2035,6 @@ Proof.
     }
 Qed.
 
-Lemma map_lookup_Some
-    {A B : Type}
-    (f : A -> B)
-    (l : list A)
-    (i : nat)
-    (y : B)
-    :
-    (map f l) !! i = Some y ->
-    {x : A & (l !! i = Some x /\ y = f x)}
-.
-Proof.
-    revert i.
-    induction l; simpl; intros i HH.
-    {
-        rewrite lookup_nil in HH. inversion HH.
-    }
-    {
-        destruct i.
-        {
-            simpl in HH. inversion HH; subst; clear HH.
-            exists a. split; reflexivity.
-        }
-        {
-            simpl in HH.
-            specialize (IHl _ HH).
-            destruct IHl as [x [H1x H2x]].
-            subst y.
-            exists x.
-            simpl.
-            split>[assumption|reflexivity].
-        }
-    }
-Qed.
 
 Lemma in_compile_inv
     {Σ : StaticModel}

@@ -89,7 +89,7 @@ Proof.
     intros H.
     unfold RewritingRule2_wf2' in H.
     unfold RewritingRule2_wf2.
-    intros g ρ nv Hfrom Hscs.
+    intros g ρ program nv Hfrom Hscs.
     clear Hscs.
     
     unfold satisfies in Hfrom; simpl in Hfrom.
@@ -99,7 +99,7 @@ Proof.
         eapply transitivity>[apply H|]. apply Hfrom.
     }
     clear H Hfrom.
-    apply TermOverExpression2_evalute_total_2 with (nv := nv) in Hvtρ.
+    apply TermOverExpression2_evalute_total_2 with (program := program) (nv := nv) in Hvtρ.
     exact Hvtρ.
 Qed.
 

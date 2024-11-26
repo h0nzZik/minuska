@@ -48,12 +48,13 @@ Definition interp_in_from'
         {Σ : StaticModel}
         {Act : Set}
         (Γ : (list (RewritingRule2 Act))*(list string))
+        (program : ProgramT)
         (nvs : nat -> NondetValue)
         (fuel : nat)
         (from : (TermOver builtin_value))
         :  nat * (TermOver builtin_value) * list (option string)
     :=
-        let res := interp_loop_ext nvs 0 (naive_interpreter_ext Γ.1)
+        let res := interp_loop_ext nvs 0 (naive_interpreter_ext Γ.1 program)
             fuel
             from
             nil
@@ -77,12 +78,13 @@ Definition concat_list_option_str
 Definition interp_in_from
         {Σ : StaticModel}
         {Act : Set}
+        (program : ProgramT)
         (Γ : (list (RewritingRule2 Act))*(list string))
         (nvs : nat -> NondetValue)
         (fuel : nat)
         (from : (TermOver builtin_value))
         :  nat * (TermOver builtin_value) * string
 :=
-    let r := interp_in_from' Γ nvs fuel from in
+    let r := interp_in_from' Γ program nvs fuel from in
     (r.1, concat_list_option_str r.2)
 .

@@ -1053,6 +1053,40 @@ Proof.
     ltac1:(naive_solver).
 Qed.
 
+Lemma map_lookup_Some
+    {A B : Type}
+    (f : A -> B)
+    (l : list A)
+    (i : nat)
+    (y : B)
+    :
+    (map f l) !! i = Some y ->
+    {x : A & (l !! i = Some x /\ y = f x)}
+.
+Proof.
+    revert i.
+    induction l; simpl; intros i HH.
+    {
+        rewrite lookup_nil in HH. inversion HH.
+    }
+    {
+        destruct i.
+        {
+            simpl in HH. inversion HH; subst; clear HH.
+            exists a. split; reflexivity.
+        }
+        {
+            simpl in HH.
+            specialize (IHl _ HH).
+            destruct IHl as [x [H1x H2x]].
+            subst y.
+            exists x.
+            simpl.
+            split>[assumption|reflexivity].
+        }
+    }
+Qed.
+
 Inductive MyUnit := mytt.
 
 

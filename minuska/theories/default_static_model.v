@@ -10,6 +10,7 @@ Instance MySymbols : Symbols string := Build_Symbols _ _ _.
 Section default_model.
     Context
         (β : Builtin MyUnit)
+        (my_program_info : ProgramInfo)
     .
 
     CoFixpoint trivial_stream : Stream MyUnit
@@ -21,6 +22,7 @@ Section default_model.
         symbols :=  MySymbols;
         variables := StringVariables ;
         builtin := β ;
+        program_info := my_program_info ;
         (* nondet_stream := trivial_stream; *)
         nondet_gen := fun _ => mytt ;
     |}.

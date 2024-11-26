@@ -110,7 +110,7 @@ Notation
         )
     )
 .
-Check imap.
+
 Definition strictness_to_contexts
     {Σ : StaticModel}
     (sym_to_str : symbol -> string)
@@ -214,10 +214,11 @@ Section wsm.
     .
     Context
         (β : Builtin MyUnit)
+        (my_program_info : ProgramInfo)
     .
 
     #[local]
-    Instance Σ : StaticModel := default_model β.
+    Instance Σ : StaticModel := default_model β my_program_info.
 
     Definition to_var := fun x:string => x.
     Definition to_sym := fun x:string => x.
