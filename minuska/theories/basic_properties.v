@@ -243,6 +243,45 @@ Section custom_induction_principle_2.
                     end
                 | _ => right _
                 end
+            | e_query q1 l1 => (
+                match e2 with
+                | e_query q2 l2 => (
+                    match (decide (q1 = q2)) with
+                    | right _ => right _
+                    | left _ => (
+                        let tmp := (
+                            fix go' (l1' l2' : list Expression2) : {l1' = l2'} + {l1' <> l2'} :=
+                            match l1' with
+                            | [] =>
+                                match l2' with
+                                | [] => left _
+                                | _::_ => right _
+                                end
+                            | x1::xs1 =>
+                                match l2' with
+                                | [] => right _
+                                | x2::xs2 =>
+                                    match (go x1 x2) with
+                                    | left _ =>
+                                        match (go' xs1 xs2) with
+                                        | left _ => left _
+                                        | right _ => right _
+                                        end
+                                    | right _ => right _
+                                    end
+                                end
+                            end
+                            ) l1 l2 in
+                        match tmp with
+                        | left _ => left _
+                        | right _ => right _
+                        end
+                    )
+                    end
+                )
+                | _ => right _
+                end
+            )
             | e_fun f1 l1 => (
                 match e2 with
                 | e_fun f2 l2 => (
@@ -297,6 +336,13 @@ Section custom_induction_principle_2.
                 (forall x, x ∈ l -> P x) ->
                 P (e_fun f l)
         )
+        (preserved_by_query :
+            forall
+                (q : QuerySymbol)
+                (l : list Expression2),
+                (forall x, x ∈ l -> P x) ->
+                P (e_query q l)
+        )
         (e : Expression2)
     :
         P e :=
@@ -310,7 +356,22 @@ Section custom_induction_principle_2.
             | nil => fun pf' => match not_elem_of_nil _ pf' with end
             | y::ys => 
                 match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun y) x (eq_sym e)) 
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query y) x (eq_sym e)) 
+                | right n => fun pf' =>
+                    let H := @elem_of_next _ _ _ _ n pf' in
+                    go ys H
+                end
+            end
+            ) l pf
+        )
+    | e_query q l => preserved_by_query q l
+        (fun x pf => 
+            (fix go (l' : list Expression2) : x ∈ l' -> P x :=
+            match l' as l'0 return x ∈ l'0 -> P x with
+            | nil => fun pf' => match not_elem_of_nil _ pf' with end
+            | y::ys => 
+                match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query y) x (eq_sym e)) 
                 | right n => fun pf' =>
                     let H := @elem_of_next _ _ _ _ n pf' in
                     go ys H
@@ -402,6 +463,7 @@ match e with
 | e_variable y =>
     if (decide (y = x)) then e' else (e_variable y)
 | e_fun f l => e_fun f ((fun e1 => Expression2_subst e1 x e') <$> l)
+| e_query q l => e_query q ((fun e1 => Expression2_subst e1 x e') <$> l)
 end
 .
 

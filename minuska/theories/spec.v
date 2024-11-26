@@ -98,13 +98,29 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
         -> NondetValue
         -> list (@TermOver' symbol builtin_value)
         -> bool ;
-    
 }.
 
 Set Primitive Projections.
 CoInductive Stream (A : Type) : Type := Seq {
     hd : A;
     tl : Stream A ;
+}.
+
+Class ProgramInfo
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {NondetValue : Type}
+    {builtin : Builtin NondetValue}
+    : Type
+    := {
+    QuerySymbol : Type ;
+    QuerySymbol_eqdec :: EqDecision QuerySymbol ;
+    ProgramT : Type ;
+    pi_symbol_interp :
+        ProgramT -> 
+        QuerySymbol -> 
+        list (@TermOver' symbol builtin_value) ->
+        (@TermOver' symbol builtin_value) ;
 }.
 
 Class StaticModel := {
@@ -114,6 +130,7 @@ Class StaticModel := {
     NondetValue : Type ;
     builtin :: Builtin NondetValue;
     variables :: MVariables variable ;
+    program_info :: ProgramInfo ;
     nondet_gen : nat -> NondetValue ;
     (* nondet_stream : Stream NondetValue ; *)
 }.
@@ -174,6 +191,7 @@ Inductive Expression2
 | e_ground (e : @TermOver' (symbol) builtin_value)
 | e_variable (x : variable)
 | e_fun (f : builtin_function_symbol) (l : list Expression2)
+| e_query (q : QuerySymbol) (l : list Expression2)
 .
 Set Elimination Schemes.
 
@@ -191,6 +209,13 @@ Section custom_induction_principle.
                 Forall P l ->
                 P (e_fun f l)
         )
+        (preserved_by_query :
+            forall
+                (q : QuerySymbol)
+                (l : list Expression2),
+                Forall P l ->
+                P (e_query q l)
+        )
     .
 
     Fixpoint Expression2_ind (e : Expression2) : P e :=
@@ -198,6 +223,7 @@ Section custom_induction_principle.
     | e_ground g => true_for_ground g
     | e_variable x => true_for_var x
     | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2_ind)
+    | e_query q l => preserved_by_query q l (Forall_true P l Expression2_ind)
     end.
 
 End custom_induction_principle.
@@ -211,6 +237,7 @@ match t with
 | e_ground _ => ∅
 | e_variable x => {[x]}
 | e_fun _ l => ⋃ (fmap vars_of_Expression2 l)
+| e_query _ l => ⋃ (fmap vars_of_Expression2 l)
 end.
 
 
@@ -468,6 +495,7 @@ Defined.
 
 Fixpoint Expression2_evaluate
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (t : Expression2)
     : option (NondetValue -> TermOver builtin_value) :=
@@ -478,8 +506,16 @@ match t with
     | Some v => Some (fun _ => v)
     | None => None
     end
+| e_query q l =>
+    let es' := Expression2_evaluate program ρ <$> l in
+    es ← list_collect es';
+    Some (
+        fun nv =>
+        let args := (fun x => x nv) <$> es in
+        pi_symbol_interp program q args
+    )
 | e_fun f l =>
-    let es' := Expression2_evaluate ρ <$> l in
+    let es' := Expression2_evaluate program ρ <$> l in
     es ← list_collect es';
     Some (
         fun nv =>
@@ -491,6 +527,7 @@ end.
 
 Equations? sat2E
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (t : TermOver builtin_value)
     (φ : TermOver Expression2)
@@ -498,17 +535,17 @@ Equations? sat2E
     : Prop
     by wf (TermOver_size φ) lt
 :=
-    sat2E ρ t (t_over e) nv :=
-        match Expression2_evaluate ρ e with 
+    sat2E program ρ t (t_over e) nv :=
+        match Expression2_evaluate program ρ e with 
         | Some f => f nv = t
         | None => False
         end ;
-    sat2E ρ (t_over a) (t_term s l) _ := False ;
-    sat2E ρ (t_term s' l') (t_term s l) nv := 
+    sat2E program ρ (t_over a) (t_term s l) _ := False ;
+    sat2E program ρ (t_term s' l') (t_term s l) nv := 
         s' = s /\
         length l' = length l /\
         forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
-            sat2E ρ t' φ' nv
+            sat2E program ρ t' φ' nv
     ;
 .
 Proof.
@@ -527,21 +564,22 @@ Instance Satisfies_TermOverBuiltin_TermOverExpression2
     {Σ : StaticModel}
     : Satisfies
         Valuation2
-        (NondetValue*(TermOver builtin_value))
+        (ProgramT*(NondetValue*(TermOver builtin_value)))
         (TermOver Expression2)
         variable
 := {|
-    satisfies := fun ρ tgnv ts => sat2E ρ tgnv.2 ts tgnv.1 ;
+    satisfies := fun ρ tgnv ts => sat2E tgnv.1 ρ (tgnv.2.2) ts (tgnv.2.1) ;
 |}.
 
 Definition SideCondition2_evaluate
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideCondition2)
     : bool
 :=
-    let ts' := Expression2_evaluate ρ <$> (sc_args sc) in
+    let ts' := Expression2_evaluate program ρ <$> (sc_args sc) in
     match list_collect ts' with
     | None => false
     | Some nts => 
@@ -555,12 +593,12 @@ Instance Satisfies_SideCondition2
     {Σ : StaticModel}
     : Satisfies
         Valuation2
-        NondetValue
+        (ProgramT*NondetValue)
         SideCondition2
         variable
 := {|
-    satisfies := fun ρ nv sc =>
-        SideCondition2_evaluate ρ nv sc = true
+    satisfies := fun ρ pgnv sc =>
+        SideCondition2_evaluate pgnv.1 ρ pgnv.2 sc = true
 |}.
 
 
@@ -569,11 +607,11 @@ Instance Satisfies_Valuation2_scs2
     {Σ : StaticModel}
     : Satisfies
         Valuation2
-        NondetValue
+        (ProgramT*NondetValue)
         (list SideCondition2)
         variable
 := {|
-    satisfies := fun ρ nv l => forall x, x ∈ l -> satisfies ρ nv x;
+    satisfies := fun ρ pgnv l => forall x, x ∈ l -> satisfies ρ pgnv x;
 |}.
 
 #[export]
@@ -591,6 +629,7 @@ Instance Satisfies_Valuation2_TermOverBuiltin_TermOverBoV
 Definition rewrites_in_valuation_under_to
     {Σ : StaticModel}
     {Act : Set}
+    (program : ProgramT)
     (ρ : Valuation2)
     (r : RewritingRule2 Act)
     (from : TermOver builtin_value)
@@ -599,8 +638,8 @@ Definition rewrites_in_valuation_under_to
     (to : TermOver builtin_value)
     : Type
 := ((satisfies ρ from (r_from r))
-* (satisfies ρ (nv,to) (r_to r))
-* (satisfies ρ nv (r_scs r))
+* (satisfies ρ (program,(nv,to)) (r_to r))
+* (satisfies ρ (program,nv) (r_scs r))
 * (under = r_act r)
 )%type
 .
@@ -608,6 +647,7 @@ Definition rewrites_in_valuation_under_to
 Definition rewrites_to
     {Σ : StaticModel}
     {Act : Set}
+    (program : ProgramT)
     (r : RewritingRule2 Act)
     (from : TermOver builtin_value)
     (under : Act)
@@ -615,7 +655,7 @@ Definition rewrites_to
     (to : TermOver builtin_value)
     : Type
 := { ρ : Valuation2 &
-        rewrites_in_valuation_under_to ρ r from under nv to
+        rewrites_in_valuation_under_to program ρ r from under nv to
    }
 .
 
@@ -623,34 +663,37 @@ Definition rewriting_relation
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
+    (program : ProgramT)
     (nv : NondetValue)
     : TermOver builtin_value -> TermOver builtin_value -> Type
     := fun from to =>
-        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to r from a nv to)%type}}
+        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program r from a nv to)%type}}
 .
 
 Definition rewrites_to_nondet
     {Σ : StaticModel}
     {Act : Set}
+    (program : ProgramT)
     (r : RewritingRule2 Act)
     (from : TermOver builtin_value)
     (under : Act)
     (to : TermOver builtin_value)
     : Type
 := { nv : NondetValue &
-        rewrites_to r from under nv to
+        rewrites_to program r from under nv to
    }
 .
 
 Definition rewrites_to_thy
     {Σ : StaticModel}
     {Act : Set}
+    (program : ProgramT)
     (Γ : RewritingTheory2 Act)
     (from : TermOver builtin_value)
     (under : Act)
     (to : TermOver builtin_value)
 := { r : RewritingRule2 Act &
-    ((r ∈ Γ)*(rewrites_to_nondet r from under to))%type
+    ((r ∈ Γ)*(rewrites_to_nondet program r from under to))%type
 
 }
 .
