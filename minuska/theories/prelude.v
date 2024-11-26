@@ -1022,6 +1022,37 @@ Proof.
     }
 Qed.
 
+
+Lemma set_filter_pred_impl
+    {A B : Type}
+    {_EA : EqDecision A}
+    {_Elo : ElemOf A B}
+    {_Els : Elements A B}
+    {_Em : Empty B}
+    {_Sg : Singleton A B}
+    {_IB : Intersection B}
+    {_DB : Difference B}
+    {_U : Union B}
+    {_FS : @FinSet A B _Elo _Em _Sg _U _IB _DB _Els _EA}
+    (P1 P2 : A -> Prop)
+    {_DP1 : ∀ (x : A), Decision (P1 x)}
+    {_DP2 : ∀ (x : A), Decision (P2 x)}
+    (thing : B)
+    :
+    (forall (x : A), P1 x -> P2 x) ->
+    @filter A B (set_filter) P1 _ thing ⊆ @filter A B (set_filter) P2 _ thing
+.
+Proof.
+    intros Himpl.
+    unfold subseteq.
+    ltac1:(apply (proj2 (@elem_of_subseteq A B _ (@filter A B _ P1 _DP1 thing) (@filter A B _ P2 _DP2 thing)))).
+    intros x.
+    intros Hx.
+    ltac1:(apply (proj1 (elem_of_filter P1 thing x)) in Hx).
+    ltac1:(apply (proj2 (elem_of_filter P2 thing x))).
+    ltac1:(naive_solver).
+Qed.
+
 Inductive MyUnit := mytt.
 
 

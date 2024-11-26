@@ -35,13 +35,14 @@ Qed.
 
 Lemma Expression2_evaluate_extensive_Some
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ1 ρ2 : Valuation2)
     (t : Expression2)
     (gt : NondetValue -> TermOver builtin_value)
     :
     ρ1 ⊆ ρ2 ->
-    Expression2_evaluate ρ1 t = Some gt ->
-    Expression2_evaluate ρ2 t = Some gt.
+    Expression2_evaluate program ρ1 t = Some gt ->
+    Expression2_evaluate program ρ2 t = Some gt.
 Proof.
     intros Hρ1ρ2.
     revert gt.
@@ -84,7 +85,7 @@ Proof.
         destruct HH as [x [H1x H2x]].
         injection H2x as H2x.
         apply list_collect_inv in H1x as H3x.
-        assert (HSome : Forall isSome (Expression2_evaluate ρ2 <$> l)).
+        assert (HSome : Forall isSome (Expression2_evaluate program ρ2 <$> l)).
         {
             rewrite Forall_forall.
             rewrite Forall_forall in H3x.
@@ -97,7 +98,92 @@ Proof.
             subst.
             exists e.
             split; try assumption.
-            destruct (Expression2_evaluate ρ1 e) eqn:Heq.
+            destruct (Expression2_evaluate program ρ1 e) eqn:Heq.
+            {
+                ltac1:(naive_solver).
+            }
+            {
+                clear H.
+                specialize (H3x None).
+                ltac1:(ospecialize (H3x _)).
+                {
+                    rewrite elem_of_list_fmap.
+                    exists e. ltac1:(naive_solver).
+                }
+                inversion H3x.
+            }
+        }
+        apply list_collect_Forall in HSome.
+        destruct HSome as [l_out [H1l_out H2l_out]].
+        exists l_out.
+        split>[exact H1l_out|].
+        apply f_equal.
+        rewrite <- H2x. clear H2x.
+        apply functional_extensionality.
+        intros nv.
+        assert (H0: Some l_out = Some x).
+        {
+            rewrite <- H1x.
+            rewrite <- H1l_out.
+            apply f_equal.
+            clear - H H3x gt.
+            revert H H3x.
+            induction l; intros H H3x.
+            {
+                simpl. reflexivity.
+            }
+            {
+                rewrite fmap_cons.
+                rewrite fmap_cons.
+                rewrite fmap_cons in H3x.
+                rewrite Forall_cons in H3x.
+                destruct H3x as [HH1 HH2].
+                rewrite Forall_cons in H.
+                destruct H as [H1 H2].
+                specialize (IHl H2).
+                f_equal.
+                {
+                    
+                    unfold isSome in HH1.
+                    ltac1:(case_match).
+                    {
+                        ltac1:(specialize (H1 t erefl)).
+                        exact H1.
+                    }
+                    {
+                        inversion HH1.
+                    }
+                }
+                {
+                    apply IHl.
+                    apply HH2.
+                }
+            }
+        }
+        inversion H0; subst; clear H0.
+        reflexivity.
+    }
+    {
+        intros HH.
+        rewrite bind_Some in HH.
+        rewrite bind_Some.
+        destruct HH as [x [H1x H2x]].
+        injection H2x as H2x.
+        apply list_collect_inv in H1x as H3x.
+        assert (HSome : Forall isSome (Expression2_evaluate program ρ2 <$> l)).
+        {
+            rewrite Forall_forall.
+            rewrite Forall_forall in H3x.
+            rewrite Forall_forall in H.
+            intros ox Hox.
+            apply H3x.
+            rewrite elem_of_list_fmap.
+            rewrite elem_of_list_fmap in Hox.
+            destruct Hox as [e [H1e H2e]].
+            subst.
+            exists e.
+            split; try assumption.
+            destruct (Expression2_evaluate program ρ1 e) eqn:Heq.
             {
                 ltac1:(naive_solver).
             }
@@ -166,11 +252,12 @@ Qed.
 
 Lemma Expression2_evaluate_total_1
     {Σ : StaticModel}
+    (program : ProgramT)
     (e : Expression2)
     (ρ : Valuation2)
     (ng : NondetValue -> TermOver builtin_value)
 :
-    Expression2_evaluate ρ e = Some ng ->
+    Expression2_evaluate program ρ e = Some ng ->
     ( vars_of e ⊆ vars_of ρ )
 .
 Proof.
@@ -224,16 +311,50 @@ Proof.
             inversion H1x'.
         }
     }
+    {
+        simpl in Hb.
+        rewrite bind_Some in Hb.
+        destruct Hb as [x [H1x H2x]].
+        injection H2x as H2x.
+        unfold vars_of; simpl.
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        rewrite elem_of_union_list in Hx0.
+        destruct Hx0 as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [e [H1e H2e]].
+        subst X.
+        rewrite Forall_forall in H.
+        apply list_collect_inv in H1x as H1x'.
+        unfold isSome in H1x'.
+        rewrite Forall_fmap in H1x'.
+        rewrite Forall_forall in H1x'.
+        specialize (H1x' e H2e).
+        simpl in H1x'.
+        ltac1:(case_match).
+        {
+            clear H1x'.
+            eapply (H _ H2e); clear H.
+            { apply H0. }
+            {
+                exact H2X.
+            }
+        }
+        {
+            inversion H1x'.
+        }
+    }
 Qed.
 
 Lemma Expression2Term_matches_enough
     {Σ : StaticModel}
+    (program : ProgramT)
     (t : TermOver Expression2)
     (ρ : Valuation2)
     (g : TermOver builtin_value)
     (nv : NondetValue)
 :
-    satisfies ρ (nv,g) t ->
+    satisfies ρ (program,(nv,g)) t ->
     vars_of t ⊆ vars_of ρ
 .
 Proof.
@@ -295,11 +416,12 @@ Qed.
 
 Lemma Expression2_evaluate_Some_enough_inv
     {Σ : StaticModel}
+    (program : ProgramT)
     (e : Expression2)
     (ρ : Valuation2)
     :
     vars_of e ⊆ vars_of ρ ->
-    { g : _ & Expression2_evaluate ρ e = Some g }
+    { g : _ & Expression2_evaluate program ρ e = Some g }
 .
 Proof.
     induction e; intros Hsub.
@@ -329,7 +451,49 @@ Proof.
     }
     {
         simpl.
-        assert (H1 : Forall isSome (Expression2_evaluate ρ <$> l)).
+        assert (H1 : Forall isSome (Expression2_evaluate program ρ <$> l)).
+        {
+            rewrite Forall_fmap.
+            rewrite Forall_forall.
+            intros e He.
+            specialize (X e He).
+            simpl.
+            unfold isSome.
+            ltac1:(case_match).
+            { reflexivity. }
+            ltac1:(exfalso).
+            unfold vars_of in Hsub; simpl in Hsub.
+            ltac1:(ospecialize (X _)).
+            {
+                clear X.
+                rewrite elem_of_subseteq in Hsub.
+                rewrite elem_of_subseteq.
+                intros x Hx.
+                specialize (Hsub x).
+                rewrite elem_of_union_list in Hsub.
+                ltac1:(ospecialize (Hsub _)).
+                {
+                    clear Hsub.
+                    exists (vars_of e).
+                    rewrite elem_of_list_fmap.
+                    split>[|assumption].
+                    exists e.
+                    split>[|assumption].
+                    reflexivity.
+                }
+                exact Hsub.
+            }
+            destruct X as [g Hcontra].
+            inversion Hcontra.
+        }
+        apply list_collect_Forall_T in H1.
+        destruct H1 as [l_out [H1l_out H2l_out]].
+        rewrite H1l_out. simpl.
+        eexists. reflexivity.
+    }
+    {
+        simpl.
+        assert (H1 : Forall isSome (Expression2_evaluate program ρ <$> l)).
         {
             rewrite Forall_fmap.
             rewrite Forall_forall.
@@ -373,19 +537,20 @@ Qed.
 
 Lemma TermOverExpression2_evalute_total_2
     {Σ : StaticModel}
+    (program : ProgramT)
     (t : TermOver Expression2)
     (ρ : Valuation2)
     (nv : NondetValue)
     :
     ( vars_of t ⊆ vars_of ρ ) ->
-    {e : TermOver builtin_value & sat2E ρ e t nv}
+    {e : TermOver builtin_value & sat2E program ρ e t nv}
 .
 Proof.
     revert ρ.
     ltac1:(induction t using TermOver_rect; intros ρ Hρ).
     {
         unfold vars_of in Hρ; simpl in Hρ.
-        apply Expression2_evaluate_Some_enough_inv in Hρ.
+        apply Expression2_evaluate_Some_enough_inv with (program := program) in Hρ.
         destruct Hρ as [g Hg].
         exists (g nv).
         ltac1:(simp sat2E).
@@ -395,13 +560,13 @@ Proof.
     {
         unfold Valuation2,TermOver in *.
         rewrite vars_of_t_term_e in Hρ.
-        assert(X' : forall ρ0 x, x ∈ l -> vars_of x ⊆ vars_of ρ0 -> {e : TermOver' builtin_value & sat2E ρ0 e x nv}).
+        assert(X' : forall ρ0 x, x ∈ l -> vars_of x ⊆ vars_of ρ0 -> {e : TermOver' builtin_value & sat2E program ρ0 e x nv}).
         {
             ltac1:(naive_solver).
         }
         clear X.
         specialize (X' ρ).
-        assert(X'' : forall x, x ∈ l -> {e : TermOver' builtin_value & sat2E ρ e x nv}).
+        assert(X'' : forall x, x ∈ l -> {e : TermOver' builtin_value & sat2E program ρ e x nv}).
         {
             intros. apply X'. assumption.
             rewrite elem_of_subseteq in Hρ.
@@ -435,7 +600,7 @@ Proof.
             injection Hli as Hli.
             rewrite <- Hli.
             lazy_match! goal with
-            | [|- sat2E _ _ (` ?p) _] => pose(p := $p)
+            | [|- sat2E _ _ _ (` ?p) _] => pose(p := $p)
             end.
             assert (HH2 := pfmap_lookup_Some_1 l (λ (x : TermOver' Expression2) (pf : x ∈ l), projT1 (X'' x pf)) i  t' Hpf).
             simpl in HH2.
@@ -462,14 +627,15 @@ Qed.
 
 Lemma TermOverExpression2_satisfies_extensive
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ1 ρ2 : Valuation2)
     (t : TermOver Expression2)
     (gt : TermOver builtin_value)
     (nv : NondetValue)
     :
     ρ1 ⊆ ρ2 ->
-    satisfies ρ1 (nv,gt) t ->
-    satisfies ρ2 (nv,gt) t
+    satisfies ρ1 (program, (nv,gt)) t ->
+    satisfies ρ2 (program, (nv,gt)) t
 .
 Proof.
     revert gt ρ1 ρ2.
@@ -514,13 +680,14 @@ Qed.
 
 Lemma TermOverExpression2_satisfies_injective
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (t : TermOver Expression2)
     (nv : NondetValue)
     (g1 g2 : TermOver builtin_value)
 :
-    satisfies ρ (nv,g1) t ->
-    satisfies ρ (nv,g2) t ->
+    satisfies ρ (program, (nv,g1)) t ->
+    satisfies ρ (program, (nv,g2)) t ->
     g1 = g2
 .
 Proof.
@@ -596,83 +763,15 @@ Proof.
     }
 Qed.
 
-Lemma set_filter_pred_impl
-    {A B : Type}
-    {_EA : EqDecision A}
-    {_Elo : ElemOf A B}
-    {_Els : Elements A B}
-    {_Em : Empty B}
-    {_Sg : Singleton A B}
-    {_IB : Intersection B}
-    {_DB : Difference B}
-    {_U : Union B}
-    {_FS : @FinSet A B _Elo _Em _Sg _U _IB _DB _Els _EA}
-    (P1 P2 : A -> Prop)
-    {_DP1 : ∀ (x : A), Decision (P1 x)}
-    {_DP2 : ∀ (x : A), Decision (P2 x)}
-    (thing : B)
-    :
-    (forall (x : A), P1 x -> P2 x) ->
-    @filter A B (set_filter) P1 _ thing ⊆ @filter A B (set_filter) P2 _ thing
-.
-Proof.
-    intros Himpl.
-    unfold subseteq.
-    ltac1:(apply (proj2 (@elem_of_subseteq A B _ (@filter A B _ P1 _DP1 thing) (@filter A B _ P2 _DP2 thing)))).
-    intros x.
-    intros Hx.
-    ltac1:(apply (proj1 (elem_of_filter P1 thing x)) in Hx).
-    ltac1:(apply (proj2 (elem_of_filter P2 thing x))).
-    ltac1:(naive_solver).
-Qed.
-
-(*
-Lemma map_filter_pred_impl
-    {K : Type}
-    {M : Type → Type}
-    {H0 : ∀ A : Type, Lookup K A (M A)}
-    {A : Type} 
-    {_PA : PartialAlter K A (M A)}
-    {_ME : Empty (M A) }
-    {_EA : EqDecision K}
-    (P1 P2 : (K*A) -> Prop)
-    {_DP1 : ∀ (x : K*A), Decision (P1 x)}
-    {_DP2 : ∀ (x : K*A), Decision (P2 x)}
-    (thing : M A)
-    :
-    (forall x, P1 x -> P2 x) ->
-    (filter  P1 thing) ⊆ filter P2 thing
-.
-Proof.
-
-    About map_filter.
-    intros Himpl.
-    ltac1:(rewrite map_subseteq_spec).
-    intros i x Hx.
-    Set Typeclasses Debug.
-    Set Printing All.
-    ltac1:(rewrite -> map_lookup_filter in Hx).
-    Search filter lookup.
-    Check (proj2 (@elem_of_subseteq _ _ _ (@filter _ _ _ P1 _DP1 thing) (@filter _ _ _ P2 _DP2 thing))).
-    ltac1:(apply (proj2 (@elem_of_subseteq _ _ _ (@filter _ _ _ P1 _DP1 thing) (@filter _ _ _ P2 _DP2 thing)))).
-    intros x.
-    intros Hx.
-    Locate elem_of_filter.
-    Set Printing All.
-    Check @elem_of_filter.
-    ltac1:(apply (proj1 (elem_of_filter P1 thing x)) in Hx).
-    ltac1:(apply (proj2 (elem_of_filter P2 thing x))).
-    ltac1:(naive_solver).
-Qed.
-*)
 Lemma Expression2_evalute_strip
     {Σ : StaticModel}
+    (program : ProgramT)
     (e : Expression2)
     (g : NondetValue -> TermOver builtin_value)
     (ρ : Valuation2)
 :
-    Expression2_evaluate ρ e = Some g ->
-    Expression2_evaluate (filter (fun kv => kv.1 ∈ vars_of e) ρ) e = Some g
+    Expression2_evaluate program ρ e = Some g ->
+    Expression2_evaluate program (filter (fun kv => kv.1 ∈ vars_of e) ρ) e = Some g
 .
 Proof.
     intros HH.
@@ -696,7 +795,7 @@ Proof.
         simpl.
         apply Hx.
     }
-    apply Expression2_evaluate_Some_enough_inv in HH2 as HH3.
+    apply Expression2_evaluate_Some_enough_inv with (program := program) in HH2 as HH3.
     destruct HH3 as [g0 Hg0].
     eapply Expression2_evaluate_extensive_Some with (ρ2 := ρ) in Hg0 as H1g0.
     {
@@ -722,13 +821,14 @@ Qed.
 
 Lemma TermOverExpression2_satisfies_strip
     {Σ : StaticModel}
+    (program : ProgramT)
     (t : TermOver Expression2)
     (g : TermOver builtin_value)
     (ρ : Valuation2)
     (nv : NondetValue)
 :
-    satisfies ρ (nv,g) t ->
-    satisfies (filter (fun kv => kv.1 ∈ vars_of t) ρ) (nv,g) t
+    satisfies ρ (program, (nv,g)) t ->
+    satisfies (filter (fun kv => kv.1 ∈ vars_of t) ρ) (program, (nv,g)) t
 .
 Proof.
     revert ρ g.
@@ -912,12 +1012,13 @@ Qed.
 
 Lemma SideCondition_satisfies_strip
     {Σ : StaticModel}
+    (program : ProgramT)
     (c : SideCondition2)
     (ρ : Valuation2)
     (nv : NondetValue)
 :
-    satisfies ρ nv c ->
-    satisfies (filter (fun kv => kv.1 ∈ vars_of c) ρ) nv c
+    satisfies ρ (program, nv) c ->
+    satisfies (filter (fun kv => kv.1 ∈ vars_of c) ρ) (program, nv) c
 .
 Proof.
     unfold satisfies; simpl.
@@ -980,7 +1081,7 @@ Proof.
                     symmetry.
                     assert(HH2: Forall (λ u : option (NondetValue → TermOver builtin_value), u)
                             (list_fmap Expression2 (option (NondetValue → TermOver builtin_value))
-                            (Expression2_evaluate
+                            (Expression2_evaluate program
                             (filter
                             (λ kv : variable * TermOver builtin_value,
                             kv.1 ∈ vars_of {| sc_pred := p; sc_args := args |})
@@ -1039,7 +1140,7 @@ Proof.
                             specialize (H1y1 e He2).
                             simpl in H1y1.
                             unfold isSome in H1y1.
-                            destruct (Expression2_evaluate ρ e) eqn:Heq.
+                            destruct (Expression2_evaluate program ρ e) eqn:Heq.
                             {
                                 symmetry in He1.
                                 eapply eq_None_ne_Some_1 with (x := t) in He1.
@@ -1094,7 +1195,7 @@ Proof.
                         destruct (args !! i) eqn:Hi; simpl in *.
                         {
                             apply f_equal.
-                            destruct (Expression2_evaluate ρ e) eqn:Heq; simpl in *.
+                            destruct (Expression2_evaluate program ρ e) eqn:Heq; simpl in *.
                             {
                                 apply Expression2_evalute_strip in Heq.
                                 eapply Expression2_evaluate_extensive_Some in Heq.
@@ -1325,13 +1426,14 @@ Qed.
 
 Lemma SideCondition_satisfies_extensive
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ1 ρ2 : Valuation2)
     (c : SideCondition2)
     (nv : NondetValue)
     :
     ρ1 ⊆ ρ2 ->
-    satisfies ρ1 nv c ->
-    satisfies ρ2 nv c
+    satisfies ρ1 (program, nv) c ->
+    satisfies ρ2 (program, nv) c
 .
 Proof.
     intros Hrhos.
@@ -1555,20 +1657,21 @@ Qed.
 
 Lemma satisfies_term_expr_inv
     {Σ : StaticModel}
+    (program : ProgramT)
     (ρ : Valuation2)
     (nv : NondetValue)
     (γ : TermOver builtin_value)
     (s : symbol)
     (l : list (TermOver Expression2))
     :
-    satisfies ρ (nv,γ) (t_term s l) ->
+    satisfies ρ (program, (nv,γ)) (t_term s l) ->
     { lγ : list (TermOver builtin_value) &
         ((γ = (t_term s lγ)) *
         (length l = length lγ) *
         ( forall (i : nat) γ e,
             lγ !! i = Some γ ->
             l !! i = Some e ->
-            satisfies ρ (nv,γ) e
+            satisfies ρ (program, (nv,γ)) e
         )
         )%type
     }
