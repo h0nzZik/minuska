@@ -26,6 +26,10 @@ let rec convert_groundterm (iface : 'a Dsm.builtinInterface) (g : Syntax.groundt
 let wrap_init (g : Dsm.gT) : Dsm.gT =
   Dsm.T_term ((Stringutils.explode "builtin.init"), [g])
 
+let wrap_init0 : Dsm.gT =
+  Dsm.T_term ((Stringutils.explode "builtin.init"), [])
+  
+
 let convert_builtin_back (iface : 'a Dsm.builtinInterface) (b : (string, 'a) Dsm.builtin_value) : Syntax.builtin =
   let b2 = iface.bi_eject b in
   match b2 with
@@ -68,125 +72,26 @@ let rec run_n_steps
           gterm2
   )
 
-let parse_gt_and_run
-  (iface : 'a Dsm.builtinInterface)
-  (with_trace : bool)
-  lexbuf
-  oux
-  (step : Dsm.gT -> Dsm.gT option)
-  (step_ext : Dsm.gT -> (Dsm.gT*int) option)
-  (lang_debug_info : string list)
-  depth
-  output_file
-  bench
-  =
-  match Miparse.parse_groundterm_with_error lexbuf with
-  | Some gterm ->
-    (* fprintf oux "%s\n" (Miunparse.groundterm_to_string gterm); *)
+let with_bench (f : unit -> 'a) =
+  let t0 = Benchmark.make 0L in
+  let r = f () in
+  let b = Benchmark.sub (Benchmark.make 0L) t0 in
+  (r,b)
+(* 
+let och_with_open_text (name : string) (f : Out_channel.t -> 'a) =
+  let oux = Out_channel.open_text in
+  try (f oux) with *)
 
-
-    let t0 = Benchmark.make 0L in
-    let cg = (convert_groundterm iface gterm) in
-    let my_step = (
-      match with_trace with
-      | false -> (
-          (
-            (fun g -> (match step g with None -> None | Some g' -> Some (g', -1))), (
-            (fun _ -> "No debug info."),
-            []
-            )
-          )
-      )
-      | true -> (
-          (
-            step_ext, (
-            (fun indices ->
-              let names = List.mapi ~f:(fun step_number rule_idx -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
-              let log = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
-              log
-            ),
-            []
-            )
-          )
-      )
-    ) in
-    let res = run_n_steps (fst my_step) (fst (snd my_step)) (snd (snd my_step)) depth 0 (wrap_init cg) in (
-    let b = Benchmark.sub (Benchmark.make 0L) t0 in
-    if bench then (
-      fprintf stderr "Execution wall clock time: %.02f\n" (b.wall);
-      (*fprintf oux "Execution times:\n";
-      fprintf oux "%s\n" (Benchmark.to_string b);*)
-      ()
-    ) else ();
-    match res with
-    | (actual_depth,result, info) ->
-      fprintf oux "Taken %d steps\n" actual_depth;
-      (if with_trace then (fprintf oux "Trace:\n%s\n" info) else ());
-      let cfgoux = (match output_file with Some name -> Out_channel.create name | None -> oux) in
-      fprintf cfgoux "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back iface result));
-      (match output_file with Some _ -> () | None -> Out_channel.close cfgoux; ());
-      ()
-    )
-  | None ->
-    fprintf stderr "%s\n" "Cannot parse";
-    exit (-1)
-
-
-let run
-  (iface : 'a Dsm.builtinInterface)
-  (step : Dsm.gT -> Dsm.gT option)
-  (step_ext : Dsm.gT -> (Dsm.gT*int) option)
-  (lang_debug_info : string list)
-  (with_trace : bool)
-  input_filename
-  depth
-  output_file
-  bench
-  ()
-  =
-  let inx = In_channel.create input_filename in
-  let lexbuf = Lexing.from_channel inx in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_gt_and_run iface with_trace lexbuf stdout step step_ext lang_debug_info depth output_file bench;
-  In_channel.close inx;
-  ()
-
-
-(* TODO cleanup after execution *)
-let parse_first
-  (iface : 'a Dsm.builtinInterface)
-  bench
-  (path_to_parser : string option)
-  input_file
-  (f : 'a Dsm.builtinInterface -> string -> unit)
-  : unit
-  =
-  match path_to_parser with
-  | Some s -> (
-      let astdir = (Filename_unix.temp_dir "language-interpreter" ".minuska") in
-      let astfile = Filename.concat astdir "input.ast" in
-      let c = (s ^ " " ^ input_file ^ " " ^ astfile) in
-      let t0 = Benchmark.make 0L in
-      let _ = Sys_unix.command c in
-      let b = Benchmark.sub (Benchmark.make 0L) t0 in
-      if bench then (
-        fprintf stderr "Parsing wall clock time: %.02f\n" (b.wall);
-        (*fprintf oux "Execution times:\n";
-        fprintf oux "%s\n" (Benchmark.to_string b);*)
-        ()
-      ) else ();
-
-      (*fprintf stderr "command: %s" c;*)
-      
-      (f iface astfile)
-    )
-  | None -> (f iface input_file)
+let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a) =
+  match fname with
+  | Some name -> Out_channel.with_file name ~f:(f)
+  | None -> f stdout
 
 let command_run
+  (parser : string -> 'programT)
   (iface : 'a Dsm.builtinInterface)
-  (path_to_parser : string option)
-  (step : Dsm.gT -> Dsm.gT option)
-  (step_ext : Dsm.gT -> (Dsm.gT*int) option)
+  (step : 'programT -> Dsm.gT -> Dsm.gT option)
+  (step_ext : 'programT -> Dsm.gT -> (Dsm.gT*int) option)
   (lang_debug_info : string list)
   =
   Command.basic
@@ -199,22 +104,66 @@ let command_run
         output_file = flag "--output-file" (optional string) ~doc:"filename to put the final configuration to" and
         with_trace = flag "--trace" (no_arg) ~doc:"Trace execution steps"
      in
-     fun () -> (parse_first iface bench path_to_parser program (fun iface fname -> run iface step step_ext lang_debug_info with_trace fname depth output_file bench ()) ))
+     (
+      fun () ->
+        In_channel.with_file program ~f:(fun f_in ->
+          let s = In_channel.input_all f_in in
+          let program = parser s in
+          let res0 = with_bench (fun () -> (
+            let my_step = (
+              match with_trace with
+              | false -> (
+                  (
+                    (fun g -> (match step program g with None -> None | Some g' -> Some (g', -1))), (
+                    (fun _ -> "No debug info."),
+                    []
+                    )
+                  )
+              )
+              | true -> (
+                  (
+                    (step_ext program), (
+                    (fun indices ->
+                      let names = List.mapi ~f:(fun step_number rule_idx -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
+                      let log = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
+                      log
+                    ),
+                    []
+                    )
+                  )
+              )
+            ) in
+            let res0 = run_n_steps (fst my_step) (fst (snd my_step)) (snd (snd my_step)) depth 0 wrap_init0 in
+            res0
+          )) in
+          let res = fst res0 in
+          let bench_result = snd res0 in
+          if bench then (fprintf stderr "Execution wall clock time: %.02f\n" (bench_result.wall); ());
+          let (actual_depth,result, info) = res in
+          fprintf stdout "Taken %d steps\n" actual_depth;
+          (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
+          with_output_file_or_stdout output_file (fun f_out -> 
+            fprintf f_out "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back iface result));
+            ()
+          );
+          ()
+        )
+     )
+    )
 
 let main
-  (path_to_parser : string option)
   (iface : 'a Dsm.builtinInterface)
-  (step : Dsm.gT -> Dsm.gT option)
-  (step_ext : Dsm.gT -> (Dsm.gT*int) option)
+  (parser : string -> 'programT)
+  (step : 'programT -> Dsm.gT -> Dsm.gT option)
+  (step_ext : 'programT -> Dsm.gT -> (Dsm.gT*int) option)
   (lang_debug_info : Dsm.string list)
   =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.5" (command_run
+      parser
       iface
-      path_to_parser 
       step
       step_ext
-      (* lang_debug_info *)
       (List.map lang_debug_info ~f:Stringutils.implode)
       )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;

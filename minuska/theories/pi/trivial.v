@@ -33,4 +33,4 @@ Definition my_binding : list (string*string) := [
     ("program.ast", "qs_program")
 ].
 
-Print Grammar.
+(* Print Grammar. *)
