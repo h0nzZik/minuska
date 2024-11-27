@@ -43,8 +43,8 @@ Instance DSM
 
 Definition GT {β : Builtin MyUnit} := @TermOver' string (builtin_value).
 
-Definition StepT {β : Builtin MyUnit} (program_info : ProgramInfo) := NondetValue -> GT -> option GT.
-Definition StepT_ext {β : Builtin MyUnit} (program_info : ProgramInfo) := NondetValue -> GT -> option (GT*nat).
+Definition StepT {β : Builtin MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT.
+Definition StepT_ext {β : Builtin MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat).
 
 Definition gt_over {β : Builtin MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
 Definition gt_term {β : Builtin MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.

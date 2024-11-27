@@ -11,7 +11,6 @@ let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
 
 let output_part_1 = {|
 Require Import Minuska.pval_ocaml_binding Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike.
-Existing Instance default_everything.DSM.
 |}
 
 let output_part_2 = {delimiter|
@@ -182,9 +181,9 @@ let print_rule
     (
       match (r.frame) with
       | None -> 
-        fprintf oux "basic_rule \"%s\" " (r.name)
+        fprintf oux "basic_rule my_program_info \"%s\" " (r.name)
       | Some (`Id s) ->
-        fprintf oux "framed_rule frame_%s \"%s\" " s (r.name)
+        fprintf oux "framed_rule my_program_info frame_%s \"%s\" " s (r.name)
     );
     
     print_pattern oux (r.lhs);
@@ -206,7 +205,7 @@ let print_frame oux fr =
   ()
 
 let print_strict oux str =
-  fprintf oux "(decl_strict (mkStrictnessDeclaration DSM \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
+  fprintf oux "(decl_strict (mkStrictnessDeclaration _ \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
   fprintf oux "[";
   myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux "; "; ()) (str.strict_places);
   fprintf oux "] isValue isNonValue myContext";
@@ -225,11 +224,15 @@ let print_definition
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (name_of_builtins : string)
+  (name_of_pi : string)
   def oux =
     let _ = def in
     fprintf oux "%s" output_part_1;
     fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
     fprintf oux "#[global] Existing Instance mybeta.\n";
+    fprintf oux "Definition my_program_info := %s.MyProgramInfo.\n" name_of_pi;
+    fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
+    fprintf oux "Existing Instance mysigma.\n";
     print_mycontext oux (def.context);
     
     fprintf oux "Definition isValue (";

@@ -35,4 +35,5 @@ theories/pval_ocaml_binding.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v
+theories/pi/trivial.v
 

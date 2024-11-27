@@ -3,6 +3,7 @@ From Minuska Require Import spec default_everything.
 From Minuska Require Import
     builtin.empty
     builtin.klike
+    pi.trivial
 .
 
 From Coq Require Import String ZArith.
@@ -33,3 +34,21 @@ Definition builtins_klike : BuiltinInterface MyUnit := {|
     bi_inject_string := fun s => @builtin.klike.inject_string string s;
     bi_eject := @builtin.klike.eject string;
 |}.
+(* 
+Record PI_interface := {
+    pii_program_info : 
+        forall
+        {symbol : Type}
+        {symbols : Symbols symbol}
+        {NondetValue : Type}
+        {builtin : Builtin NondetValue},
+        @ProgramInfo symbol symbols NondetValue builtin
+        ;
+    
+    pii_binding : list (string*string) ;
+}.
+
+Definition pi_trivial : PI_interface := {
+    pii_program_info : trivial.MyProgramInfo ;
+}. *)
+

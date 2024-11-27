@@ -5,7 +5,35 @@ open Sexplib.Std
 open Libminuska
 module Syntax = Libminuska.Syntax
 
+type coqModule = 
+  | User_module of string
+  | Std_module of string
+  [@@deriving sexp]
+
+type languagedescr = {
+  language           : string      ;
+  semantics          : string      ;
+  (* coq_modules        : string list ;
+  ocaml_modules      : string list ; *)
+  parser_exe     : string ;
+  parser_builder : string option [@sexp.option];
+  static_model : string ;
+  program_info : coqModule ;
+} [@@deriving sexp]
+
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
+
+let get_iface (static_model : string) =  
+  match static_model with
+  | "klike" -> Libminuska.Extracted.builtins_klike
+  | "empty" -> Libminuska.Extracted.builtins_empty
+  | _ -> failwith "Unknown static model specified"
+
+let get_builtins_map (static_model : string) : builtins_map_t =
+  let builtins_binding_coq = (get_iface static_model).bi_bindings in
+  let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq in
+  let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding in
+  builtins_map
 
 let coqc_command = "coqc" ;;
 let ocamlfind_command = "ocamlfind" ;;
@@ -14,22 +42,22 @@ let minuska_contrib_dir = "/coq/user-contrib/Minuska" ;;
 let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) ;;
 let minuska_dir = libdir ^ minuska_contrib_dir ;;
 
-let parse_and_print (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) lexbuf oux =
+let parse_and_print (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition iface builtins_map name_of_builtins value oux
+    Micoqprint.print_definition iface builtins_map name_of_builtins name_of_pi value oux
   | None -> ()
 
 
-let append_definition (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename output_channel =
+let append_definition (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) input_filename output_channel =
   let inx = In_channel.create input_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print iface builtins_map name_of_builtins lexbuf output_channel;
+  parse_and_print iface builtins_map name_of_builtins name_of_pi lexbuf output_channel;
   In_channel.close inx;
-  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta Lang_Decls)). |};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter : StepT := global_naive_interpreter (fst T).|};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext : StepT_ext := global_naive_interpreter_ext (fst T).|};
+  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). |};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter : (StepT my_program_info) := global_naive_interpreter my_program_info (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext : (StepT_ext my_program_info) := global_naive_interpreter_ext my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
@@ -58,12 +86,12 @@ let append_definition (iface : 'a Extracted.builtinInterface) (builtins_map : bu
     *)
   |} ;
   ()
-
-let transform (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename output_filename () =
+(* 
+let transform (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) input_filename output_filename () =
   let oux = Out_channel.create output_filename in
-  append_definition iface builtins_map name_of_builtins input_filename oux;
+  append_definition iface builtins_map name_of_builtins name_of_pi input_filename oux;
   Out_channel.close oux;
-  ()
+  () *)
 
 
 let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
@@ -96,37 +124,27 @@ let write_gterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : stri
     ()
   | None -> ()
 
-let transform_groundterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : string) input_fname output_fname () =
-  let inx = In_channel.create input_fname in
-  let lexbuf = Lexing.from_channel inx in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-  write_gterm iface name_of_builtins lexbuf output_fname;
-  In_channel.close(inx)
+
 
 let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) input_filename interpreter_name oparserexe parser_builder () =
-  (* let real_interpreter_name = Filename_unix.realpath interpreter_name in *)
-  let real_interpreter_name = interpreter_name in
-  let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
-  let coqfile = Filename.concat mldir "interpreter.v" in
-  let mlfile = Filename.concat mldir "interpreter.ml" in
-  let appdir = Filename.concat mldir "interpreter.AppDir" in
-  transform iface builtins_map name_of_builtins input_filename coqfile ();
-  (* generate/build/refresh the parser*)
-  ( match parser_builder with
-  | Some command -> let _ = run [command] in ()
-  | None -> ()
-  );
-  let oparseexestr = (match oparserexe with
-  | Some _ -> "(Some ((Filename.dirname Sys_unix.executable_name) ^ \"/../libexec/parser\") )"
-  | None -> "None"
+let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (output_ml : string) =
+  let iface = (get_iface cfg.static_model) in
+  let builtins_map = (get_builtins_map (cfg.static_model)) in
+  let name_of_builtins = cfg.static_model in
+  let name_of_pi = (
+    match cfg.program_info with
+    | User_module _ -> failwith "User 'program info' modules are not supported yet"
+    | Std_module name -> name
   ) in
+  let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
+  let mlfile = Filename.concat mldir "interpreter.ml" in
+  let coqfile = Filename.concat mldir "interpreter.v" in
   (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
-  append_definition iface builtins_map name_of_builtins input_filename oux_coqfile;
+  append_definition iface builtins_map name_of_builtins name_of_pi input_filename oux_coqfile;
   fprintf oux_coqfile "%s" {|
     Require Import Ascii.
     Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
@@ -152,17 +170,44 @@ let compile (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map
   (* extract coq into ocaml *)
   let rv = run ["cd "; mldir; "; "; coqc_command; " "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith ("`"^ coqc_command ^ "` failed. Is the language definition well-formed?"));
-  (* compile the main ocaml file (after adding an entry command) *)
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" oparseexestr name_of_builtins) in
-  (*let _ = run [ "env" ] in*)
-  (*let _ = run ["cat "; mlfile] in*)
+  let _ = run ["cp '"; mlfile; "' '"; output_ml; "'"] in
+  let _ = run ["cp '"; mlfile; "i' '"; output_ml; "i'"] in
+  ()
+
+let transform_groundterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : string) input_fname output_fname () =
+  let inx = In_channel.create input_fname in
+  let lexbuf = Lexing.from_channel inx in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
+  write_gterm iface name_of_builtins lexbuf output_fname;
+  In_channel.close(inx)
+
+let refresh_parser parser_builder =
+  ( match parser_builder with
+  | Some command -> let _ = run [command] in ()
+  | None -> ()
+  );
+  ()
+
+let compile (cfg : languagedescr) input_filename interpreter_name oparserexe =
+  let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
+  let mlfile = Filename.concat mldir "interpreter.ml" in
+  let oparseexestr = (match oparserexe with
+  | Some _ -> "(Some ((Filename.dirname Sys_unix.executable_name) ^ \"/../libexec/parser\") )"
+  | None -> "None"
+  ) in
+  let _ = generate_interpreter_ml_internal cfg input_filename mlfile in
+  (* Add an entry command *)
+  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> 
+    fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" oparseexestr (cfg.static_model)
+  ) in
   let rv = run [
           "cd "; mldir; "; ";
           "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
           ocamlfind_command; " ocamlopt -thread -package libminuska -package zarith -linkpkg -g -o ";
           "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
   (if rv <> 0 then failwith ("Internal error: `ocamlopt` failed."));
-  (* Filename.dirname Sys.argv.(0) ^ "../lib" *)
+  let appdir = Filename.concat mldir "interpreter.AppDir" in
+  let real_interpreter_name = interpreter_name in
   let _ = Core_unix.mkdir_p appdir in
   let _ = Core_unix.mkdir_p (Filename.concat appdir "bin") in
   let _ = Core_unix.mkdir_p (Filename.concat appdir "libexec") in
@@ -187,33 +232,17 @@ exec -a "$ARGV0" $(dirname "$0")/bin/interpreter $@
 |};
   Out_channel.close apprun_oux;
   let _ = run ["chmod +x "; ((Filename.concat appdir "AppRun"))] in
-  (*let _ = run ["ln -s "; (Filename.concat appdir "bin/interpreter"); " "; (Filename.concat appdir "AppRun")] in*)
   let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
-  (* let _ = run ["mv "; mldir; "/interpreter.exe"; " "; real_interpreter_name] in *)
   let _ = input_filename in
-  fprintf stdout "Hello, interpreter!\n";
   ()
 
-
-type languagedescr = {
-  language           : string ;
-  semantics          : string ;
-  parser_exe     : string ;
-  parser_builder : string option [@sexp.option];
-  static_model : string ;
-} [@@deriving sexp]
-
-let get_iface (static_model : string) =  
-  match static_model with
-  | "klike" -> Libminuska.Extracted.builtins_klike
-  | "empty" -> Libminuska.Extracted.builtins_empty
-  | _ -> failwith "Unknown static model specified"
-
-let get_builtins_map (static_model : string) : builtins_map_t =
-  let builtins_binding_coq = (get_iface static_model).bi_bindings in
-  let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq in
-  let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding in
-  builtins_map
+let generate_interpreter_ml scm_filename (out_ml_file : string) =
+  let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
+  let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
+  let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
+  generate_interpreter_ml_internal cfg mfile out_ml_file;
+  ()
+  
 
 let generate_interpreter scm_filename () =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
@@ -225,20 +254,21 @@ let generate_interpreter scm_filename () =
     | Some command -> Some ("cd " ^ dir ^ "; " ^ command)
     | None -> None
   ) in
-  let builtins_map : builtins_map_t = (get_builtins_map (cfg.static_model)) in
-  compile (get_iface cfg.static_model) builtins_map cfg.static_model mfile (cfg.language ^ "-interpreter") (Some parserfile) parser_builder ();
+  refresh_parser parser_builder;
+  compile cfg mfile (cfg.language ^ "-interpreter") (Some parserfile);
   ()
-
+(* 
 let command_generate =
   Command.basic
     ~summary:"Generate a Coq (*.v) file from a Minuska (*.m) file"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
+        builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
      in
-     fun () -> transform (get_iface "klike") (get_builtins_map "klike") ("klike") input_filename output_filename ())
+     fun () -> transform (get_iface builtins) (get_builtins_map builtins) builtins input_filename output_filename ()) *)
 
 
 let command_groundterm2coq =
@@ -253,7 +283,7 @@ let command_groundterm2coq =
      in
      fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins input_filename output_filename ())
 
-
+(* 
 let command_compile =
   Command.basic
     ~summary:"Generate an interpreter from a Minuska (*.m) file"
@@ -263,7 +293,7 @@ let command_compile =
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("interpreter" %: Filename_unix.arg_type))
      in
-     fun () -> compile (get_iface name_of_builtins) (get_builtins_map name_of_builtins) name_of_builtins input_filename output_filename None None ())
+     fun () -> compile (get_iface name_of_builtins) (get_builtins_map name_of_builtins) name_of_builtins input_filename output_filename None) *)
 
 let command_generate_interpreter =
 Command.basic
@@ -273,6 +303,17 @@ Command.basic
       scm_filename = anon (("lang.scm" %: Filename_unix.arg_type))
     in
     fun () -> generate_interpreter scm_filename ())
+
+let command_generate_interpreter_ml =
+  Command.basic
+    ~summary:"Generate an interpreter *.ml file from a Minuska project file (*.scm)"
+    ~readme:(fun () -> "TODO")
+    (let%map_open.Command
+        scm_filename = anon (("lang.scm" %: Filename_unix.arg_type)) and
+        out_ml_file = anon (("lang.ml" %: Filename_unix.arg_type))
+      in
+      fun () -> generate_interpreter_ml scm_filename out_ml_file)
+      
 
 let command_print_coqbin =
   Command.basic
@@ -328,11 +369,13 @@ let command_info =
 let command =
   Command.group
     ~summary:"A verified semantic framework"
-    ["generate-interpreter", command_generate_interpreter;
-     "compile", command_compile;
-     "def2coq", command_generate;
-     "gt2coq", command_groundterm2coq;
-     "info", command_info
+    [
+      "generate-interpreter", command_generate_interpreter;
+      "generate-interpreter-ml", command_generate_interpreter_ml;
+      (* "compile", command_compile; *)
+      (* "def2coq", command_generate; *) (* TODO replace this with something*)
+      "gt2coq", command_groundterm2coq;
+      "info", command_info
      ]
 
 let () = Command_unix.run ~version:"0.5" command
