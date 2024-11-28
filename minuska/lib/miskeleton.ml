@@ -88,7 +88,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (parser : string -> 'programT)
+  (parser : Lexing.lexbuf -> 'programT)
   (iface : 'a Dsm.builtinInterface)
   (step : 'programT -> Dsm.gT -> Dsm.gT option)
   (step_ext : 'programT -> Dsm.gT -> (Dsm.gT*int) option)
@@ -98,7 +98,7 @@ let command_run
     ~summary:"An interpreter"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-        program = anon (("program" %: Filename_unix.arg_type)) and
+        program_name = anon (("program" %: Filename_unix.arg_type)) and
         depth = flag "--depth" (required int) ~doc:"maximal number of steps to execute" and
         bench = flag "--bench" (no_arg) ~doc:"measure the time to parse and execute the program" and
         output_file = flag "--output-file" (optional string) ~doc:"filename to put the final configuration to" and
@@ -106,9 +106,11 @@ let command_run
      in
      (
       fun () ->
-        In_channel.with_file program ~f:(fun f_in ->
+        In_channel.with_file program_name ~f:(fun f_in ->
           let s = In_channel.input_all f_in in
-          let program = parser s in
+          let lexbuf = Lexing.from_channel f_in in
+          lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = program_name };
+          let program = parser lexbuf in
           let res0 = with_bench (fun () -> (
             let my_step = (
               match with_trace with
@@ -153,7 +155,7 @@ let command_run
 
 let main
   (iface : 'a Dsm.builtinInterface)
-  (parser : string -> 'programT)
+  (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> Dsm.gT -> Dsm.gT option)
   (step_ext : 'programT -> Dsm.gT -> (Dsm.gT*int) option)
   (lang_debug_info : Dsm.string list)

@@ -1,0 +1,24 @@
+(lang dune 3.16)
+(using menhir 3.0)
+
+(name minuska_imp)
+
+(generate_opam_files false)
+
+(source
+ (github h0nzZik/minuska))
+
+(authors "Jan Tušil <jenda.tusil@gmail.com>")
+
+(maintainers "Jan Tušil <jenda.tusil@gmail.com>")
+
+(license MIT)
+
+(package
+ (name minuska_imp)
+ (synopsis "A simple IMPerative language")
+ (description "A simple IMPerative programming language to test Minuska")
+ (depends ocaml dune menhir)
+ (tags
+  ("operational semantics" interpreters)))
+

@@ -15,8 +15,8 @@ type languagedescr = {
   semantics          : string      ;
   (* coq_modules        : string list ;
   ocaml_modules      : string list ; *)
-  parser_exe     : string ;
-  parser_builder : string option [@sexp.option];
+  (* parser_exe     : string ;
+  parser_builder : string option [@sexp.option]; *)
   static_model : string ;
   program_info : coqModule ;
 } [@@deriving sexp]
@@ -36,7 +36,7 @@ let get_builtins_map (static_model : string) : builtins_map_t =
   builtins_map
 
 let coqc_command = "coqc" ;;
-let ocamlfind_command = "ocamlfind" ;;
+(* let ocamlfind_command = "ocamlfind" ;; *)
 let minuska_contrib_dir = "/coq/user-contrib/Minuska" ;;
 
 let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) ;;
@@ -180,25 +180,14 @@ let transform_groundterm (iface : 'a Extracted.builtinInterface) (name_of_builti
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
   write_gterm iface name_of_builtins lexbuf output_fname;
   In_channel.close(inx)
-
-let refresh_parser parser_builder =
-  ( match parser_builder with
-  | Some command -> let _ = run [command] in ()
-  | None -> ()
-  );
-  ()
-
-let compile (cfg : languagedescr) input_filename interpreter_name oparserexe =
+(* 
+let compile (cfg : languagedescr) input_filename interpreter_name =
   let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
   let mlfile = Filename.concat mldir "interpreter.ml" in
-  let oparseexestr = (match oparserexe with
-  | Some _ -> "(Some ((Filename.dirname Sys_unix.executable_name) ^ \"/../libexec/parser\") )"
-  | None -> "None"
-  ) in
   let _ = generate_interpreter_ml_internal cfg input_filename mlfile in
   (* Add an entry command *)
   let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> 
-    fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" oparseexestr (cfg.static_model)
+    fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" (cfg.static_model)
   ) in
   let rv = run [
           "cd "; mldir; "; ";
@@ -221,10 +210,6 @@ Categories=Utility;
 Terminal=true|};
   Out_channel.close desktop_oux;
   let _ = run ["mv "; mldir; "/interpreter.exe"; " "; (Filename.concat appdir "bin/interpreter")] in
-  let _ = (match oparserexe with
-  | Some parserexe -> let _ = run ["cp "; parserexe; " "; ((Filename.concat appdir "libexec/parser"))] in ()
-  | None -> ()
-  ) in
   let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska-256x256.png"); " "; (Filename.concat appdir "interpreter.png")] in
   let apprun_oux = Out_channel.create (Filename.concat appdir "AppRun") in
   fprintf apprun_oux "%s" {|#!/usr/bin/env bash
@@ -234,7 +219,7 @@ exec -a "$ARGV0" $(dirname "$0")/bin/interpreter $@
   let _ = run ["chmod +x "; ((Filename.concat appdir "AppRun"))] in
   let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
   let _ = input_filename in
-  ()
+  () *)
 
 let generate_interpreter_ml scm_filename (out_ml_file : string) =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
@@ -243,20 +228,13 @@ let generate_interpreter_ml scm_filename (out_ml_file : string) =
   generate_interpreter_ml_internal cfg mfile out_ml_file;
   ()
   
-
+(* 
 let generate_interpreter scm_filename () =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  let parserfile = if (Filename.is_relative cfg.parser_exe) then (Filename.concat dir cfg.parser_exe) else (cfg.parser_exe) in
-  let parser_builder = (
-    match cfg.parser_builder with
-    | Some command -> Some ("cd " ^ dir ^ "; " ^ command)
-    | None -> None
-  ) in
-  refresh_parser parser_builder;
-  compile cfg mfile (cfg.language ^ "-interpreter") (Some parserfile);
-  ()
+  compile cfg mfile (cfg.language ^ "-interpreter");
+  () *)
 (* 
 let command_generate =
   Command.basic
@@ -295,14 +273,14 @@ let command_compile =
      in
      fun () -> compile (get_iface name_of_builtins) (get_builtins_map name_of_builtins) name_of_builtins input_filename output_filename None) *)
 
-let command_generate_interpreter =
+(* let command_generate_interpreter =
 Command.basic
   ~summary:"Generate an interpreter from a Minuska project file (*.scm)"
   ~readme:(fun () -> "TODO")
   (let%map_open.Command
       scm_filename = anon (("lang.scm" %: Filename_unix.arg_type))
     in
-    fun () -> generate_interpreter scm_filename ())
+    fun () -> generate_interpreter scm_filename ()) *)
 
 let command_generate_interpreter_ml =
   Command.basic
@@ -370,7 +348,7 @@ let command =
   Command.group
     ~summary:"A verified semantic framework"
     [
-      "generate-interpreter", command_generate_interpreter;
+      (* "generate-interpreter", command_generate_interpreter; *)
       "generate-interpreter-ml", command_generate_interpreter_ml;
       (* "compile", command_compile; *)
       (* "def2coq", command_generate; *) (* TODO replace this with something*)

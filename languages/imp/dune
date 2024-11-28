@@ -1,0 +1,24 @@
+(executable
+ (public_name run_imp)
+ (package minuska_imp)
+ (name runimp)
+ (libraries
+    libminuska
+    imp
+ )
+ (modules runimp)
+)
+
+(library
+  (name imp)
+  (public_name minuska_imp)
+  (libraries libminuska)
+  (modules intImp)
+)
+
+(rule
+ (targets intImp.ml intImp.mli)
+ (deps lang.scm imp.m)
+ (action
+  (chdir %{workspace_root}
+    (run minuska generate-interpreter-ml lang.scm intImp.ml))))

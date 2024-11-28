@@ -21,7 +21,7 @@
 (library
  (name libminuska)
  (public_name libminuska)
- (modules stringutils syntax parser lexer miparse micoqprint miunparse miskeleton libminuska dsm)
+ (modules stringutils syntax parser lexer miparse micoqprint miunparse miskeleton libminuska dsm programparser)
  (libraries
     benchmark
     core
