@@ -8,5 +8,5 @@
 (install
  (package coq-minuska)
  (section share)
- (files Dsm.ml)
+ (files Dsm.ml Dsm.mli)
 )

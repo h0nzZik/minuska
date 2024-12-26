@@ -161,7 +161,7 @@ let main
   (lang_debug_info : Dsm.string list)
   =
   Printexc.record_backtrace true;
-    try (Command_unix.run ~version:"0.5" (command_run
+    try (Command_unix.run ~version:"0.6" (command_run
       parser
       iface
       step

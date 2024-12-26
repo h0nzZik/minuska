@@ -20,7 +20,6 @@
  (name minuska)
  (depends
     benchmark
-    coq
     menhir
     core
     zarith

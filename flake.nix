@@ -47,7 +47,7 @@
 
             useDune = true; 
             pname = "minuska";
-            version = "0.2";
+            version = "0.6.0";
             src = ./coq-minuska;
             duneVersion = "3";
  
@@ -70,93 +70,95 @@
           wrapped
        );
 
-       libminuskaSrcFun = { coqPackages }: (
-        let
-          coqMinuska = (coqMinuskaFun { inherit coqPackages; } );
-        in
-        pkgs.symlinkJoin {
+      # OCaml sources
+      libminuskaSrcFun = { coqPackages }: (
+      let
+        coqMinuska = (coqMinuskaFun { inherit coqPackages; } );
+      in
+        pkgs.stdenv.mkDerivation {
           name = "libminuska-src";
-          paths = [
+          src =
             (pkgs.lib.fileset.toSource {
               root = ./minuska;
               fileset = ./minuska;
-            })
-          ];
-          postBuild = ''
-            ls -R ${coqMinuska}/.
-            cp ${coqMinuska}/share/coq-minuska/Dsm.ml $out/lib/
+            });
+          buildPhase = ''
+            mkdir -p $out
+            mkdir -p $out/bin
+            mkdir -p $out/lib
+            cp dune-project $out/
+            cp bin/* $out/bin
+            cp lib/* $out/lib
+            cp ${coqMinuska}/share/coq-minuska/Dsm.ml ${coqMinuska}/share/coq-minuska/Dsm.mli $out/lib/
+            ls -R $out
           '';
         }
-        
        );
 
        minuskaFun = { coqPackages }: (
-          let coqVersion = coqPackages.coq.coq-version; in
-           let coqMinuska = (coqMinuskaFun coqPackages); in
-           let bothNativeAndOtherInputs = [
-              coqPackages.coq.ocaml
-              coqPackages.coq.ocamlPackages.findlib
-              coqPackages.coq.ocamlPackages.zarith
-              coqPackages.coq.ocamlPackages.core
-              coqPackages.coq.ocamlPackages.core_unix
-              coqPackages.coq.ocamlPackages.ppx_jane
-              coqPackages.coq.ocamlPackages.ppx_sexp_conv
-              coqPackages.coq.ocamlPackages.base_quickcheck
-              coqPackages.coq.ocamlPackages.benchmark
-           ] ; in
-           let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
+        let coqVersion = coqPackages.coq.coq-version; in
+        let minuskaSrc = libminuskaSrcFun { inherit coqPackages; }; in
+        ## For now, we need to use the same OCaml as used by Coq.
+        #let ocamlPackages = coqPackages.coq.ocamlPackages; in
+        let ocamlPackages = pkgs.ocamlPackages; in
+        let bothNativeAndOtherInputs = with pkgs; [
+          ocaml
+          ocamlPackages.findlib
+          ocamlPackages.zarith
+          ocamlPackages.core
+          ocamlPackages.core_unix
+          ocamlPackages.ppx_jane
+          ocamlPackages.ppx_sexp_conv
+          ocamlPackages.base_quickcheck
+          ocamlPackages.benchmark
+        ] ; in
+        let wrapped = ocamlPackages.buildDunePackage {
+          pname = "minuska";
+          version = "0.6.0";
+          src = minuskaSrc;
+          #duneVersion = "3";
 
-            useDune = true; 
-            pname = "minuska";
-            version = "0.2";
-            src = ./minuska;
-            duneVersion = "3";
- 
-            nativeBuildInputs = [
-              pkgs.makeWrapper
-              pkgs.dune_3
-              appimagetool-wrapper
-              #pkgs.appimagekit
-              coqPackages.coq.ocamlPackages.menhir
-              coqPackages.coq.ocamlPackages.odoc
-            ] ++ bothNativeAndOtherInputs;
+          nativeBuildInputs = [
+            ocamlPackages.menhir
+          ];
 
-            meta.mainProgram = "minuska";
+          buildInputs = [
+            ocamlPackages.ocaml
+            pkgs.makeWrapper
+            pkgs.dune_3
+            appimagetool-wrapper
+            #pkgs.appimagekit
+          ] ++ bothNativeAndOtherInputs;
 
-            postPatch = ''
-              substituteInPlace bin/main.ml \
-                --replace-fail "\"/coq/user-contrib/Minuska\"" "\"/coq/${coqVersion}/user-contrib/Minuska\"" \
-                --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
-                --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
-            '';
+          meta.mainProgram = "minuska";
+
+          postPatch = ''
+            substituteInPlace bin/main.ml \
+              --replace-fail "\"/coq/user-contrib/Minuska\"" "\"/coq/${coqVersion}/user-contrib/Minuska\"" \
+              --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
+              --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
+          '';
 
 
-            buildPhase = ''
-              runHook preBuild
-              dune build @all theories/Minuska.html ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
-              runHook postBuild
-            '';
+          buildPhase = ''
+            runHook preBuild
+            dune build @all ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
+            runHook postBuild
+          '';
 
-            #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
+          #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
-            #installPhase = ''
-            #  mkdir -p $out
-            #  runHook preInstall
-            #  dune install --prefix $out
-            #  runHook postInstall
-            #'';
-
-            postInstall = ''
-              dune install --prefix $out libminuska
-              wrapProgram $out/bin/minuska \
-                --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
-                --set OCAMLPATH $OCAMLPATH \
-                --set COQPATH $COQPATH \
-                --set PATH $PATH \
-                --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
-            '';
-          } ) { };  in
-          wrapped
+          # postInstall = ''
+          #   dune install --prefix $out
+          #   wrapProgram $out/bin/minuska \
+          #     --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
+          #     --set OCAMLPATH $OCAMLPATH \
+          #     --set COQPATH $COQPATH \
+          #     --set PATH $PATH \
+          #     --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
+          # '';
+        }; in
+        wrapped
        );
 
        # The parsers in `languages/*` depend on these.

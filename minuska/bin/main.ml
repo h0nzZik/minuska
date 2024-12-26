@@ -356,5 +356,5 @@ let command =
       "info", command_info
      ]
 
-let () = Command_unix.run ~version:"0.5" command
+let () = Command_unix.run ~version:"0.6" command
 
