@@ -3,6 +3,15 @@
   (dev
     (flags (:standard -warn-error -A))))
 
+(ocamllex
+  (modules lexer)
+)
+
+(menhir
+  (modules parser)
+  (flags -la 2)
+)
+
 (executable
  (public_name run_imp)
  (package minuska_imp)
@@ -18,12 +27,12 @@
   (name imp)
   (public_name minuska_imp)
   (libraries minuska)
-  (modules intImp)
+  (modules internal transform syntax parser lexer)
 )
 
 (rule
- (targets intImp.ml intImp.mli)
+ (targets internal.ml internal.mli)
  (deps lang.scm imp.m)
  (action
   (chdir %{workspace_root}
-    (run minuska generate-interpreter-ml lang.scm intImp.ml))))
+    (run minuska generate-interpreter-ml lang.scm internal.ml))))
