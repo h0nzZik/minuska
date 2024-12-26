@@ -3,7 +3,7 @@ open Printf
 
 
 let main () =
-  printf stdout "hello";
+  fprintf stdout "hello";
   ()
 
 let _ = main ()

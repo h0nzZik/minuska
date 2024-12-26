@@ -1,9 +1,14 @@
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
+
 (executable
  (public_name run_imp)
  (package minuska_imp)
  (name runimp)
  (libraries
-    libminuska
+    minuska
     imp
  )
  (modules runimp)
@@ -12,7 +17,7 @@
 (library
   (name imp)
   (public_name minuska_imp)
-  (libraries libminuska)
+  (libraries minuska)
   (modules intImp)
 )
 

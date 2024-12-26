@@ -103,22 +103,28 @@
        minuskaFun = { coqPackages, ocamlPackages }: (
         let coqVersion = coqPackages.coq.coq-version; in
         let minuskaSrc = libminuskaSrcFun { inherit coqPackages; }; in
+        let ocamlLibraries = with pkgs.ocamlPackages; [
+          findlib
+          zarith
+          core
+          core_unix
+          ppx_jane
+          ppx_sexp_conv
+          base_quickcheck
+          benchmark
+        ]; in
+
         let bothNativeAndOtherInputs = with pkgs; [
           ocaml
-          ocamlPackages.findlib
-          ocamlPackages.zarith
-          ocamlPackages.core
-          ocamlPackages.core_unix
-          ocamlPackages.ppx_jane
-          ocamlPackages.ppx_sexp_conv
-          ocamlPackages.base_quickcheck
-          ocamlPackages.benchmark
-        ] ; in
+        ]; in
+        
         let wrapped = ocamlPackages.buildDunePackage {
           pname = "minuska";
           version = "0.6.0";
           src = minuskaSrc;
           #duneVersion = "3";
+
+          propagatedBuildInputs = ocamlLibraries;
 
           nativeBuildInputs = [
             coqPackages.coq
@@ -207,6 +213,7 @@
           src = ./languages-in-coq;
 
           buildInputs = [
+            self.outputs.packages.${system}.coq-minuska
             self.outputs.packages.${system}.minuska
             #coq.ocamlPackages.menhir
           ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]

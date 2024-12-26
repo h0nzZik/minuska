@@ -163,6 +163,8 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
     Extract Constant GT => "Libminuska.Extracted.gT".
     Extract Constant gt_term => "Libminuska.Extracted.gt_term".
     Extract Constant gt_over => "Libminuska.Extracted.gt_over".
+    Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.pi_symbol_interp = d; })" ].
+    Extract Constant program_info => "Libminuska.Extracted.programInfo".
     Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
     Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
   |};
