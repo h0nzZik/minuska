@@ -37,10 +37,12 @@ let get_builtins_map (static_model : string) : builtins_map_t =
 
 let coqc_command = "coqc" ;;
 (* let ocamlfind_command = "ocamlfind" ;; *)
-let minuska_contrib_dir = "/coq/user-contrib/Minuska" ;;
+(* let minuska_contrib_dir = "/coq/user-contrib/Minuska" ;; *)
 
-let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) ;;
-let minuska_dir = libdir ^ minuska_contrib_dir ;;
+(* let libdir = (Filename_unix.realpath (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../lib")) ;;
+let minuska_dir = libdir ^ minuska_contrib_dir ;; *)
+
+let minuska_dir = "/usr/lib/coq/user-contrib/Minuska" ;;
 
 let parse_and_print (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with

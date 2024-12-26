@@ -92,15 +92,17 @@
             cp ${coqMinuska}/share/coq-minuska/Dsm.ml ${coqMinuska}/share/coq-minuska/Dsm.mli $out/lib/
             ls -R $out
           '';
+
+          passthru = {
+            inherit coqPackages;
+            inherit coqMinuska;
+          };
         }
        );
 
-       minuskaFun = { coqPackages }: (
+       minuskaFun = { coqPackages, ocamlPackages }: (
         let coqVersion = coqPackages.coq.coq-version; in
         let minuskaSrc = libminuskaSrcFun { inherit coqPackages; }; in
-        ## For now, we need to use the same OCaml as used by Coq.
-        #let ocamlPackages = coqPackages.coq.ocamlPackages; in
-        let ocamlPackages = pkgs.ocamlPackages; in
         let bothNativeAndOtherInputs = with pkgs; [
           ocaml
           ocamlPackages.findlib
@@ -119,10 +121,12 @@
           #duneVersion = "3";
 
           nativeBuildInputs = [
+            coqPackages.coq
             ocamlPackages.menhir
           ];
 
           buildInputs = [
+            minuskaSrc.coqMinuska.coqLibraries
             ocamlPackages.ocaml
             pkgs.makeWrapper
             pkgs.dune_3
@@ -134,7 +138,7 @@
 
           postPatch = ''
             substituteInPlace bin/main.ml \
-              --replace-fail "\"/coq/user-contrib/Minuska\"" "\"/coq/${coqVersion}/user-contrib/Minuska\"" \
+              --replace-fail "\"/usr/lib/coq/user-contrib/Minuska\"" "\"${minuskaSrc.coqMinuska}/lib/coq/${coqVersion}/user-contrib/Minuska\"" \
               --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
               --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
           '';
@@ -148,15 +152,20 @@
 
           #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
-          # postInstall = ''
-          #   dune install --prefix $out
-          #   wrapProgram $out/bin/minuska \
-          #     --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
-          #     --set OCAMLPATH $OCAMLPATH \
-          #     --set COQPATH $COQPATH \
-          #     --set PATH $PATH \
-          #     --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
-          # '';
+          postInstall = ''
+            dune install --prefix $out
+            wrapProgram $out/bin/minuska \
+              --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
+              --set OCAMLPATH $OCAMLPATH \
+              --set COQPATH $COQPATH \
+              --set PATH $PATH \
+              --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
+          '';
+
+          passthru = {
+            inherit coqPackages;
+            inherit ocamlPackages;
+          };
         }; in
         wrapped
        );
@@ -173,9 +182,22 @@
         ];
 
       in {
-        packages.coq-minuska = coqMinuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
-        packages.libminuska-src = libminuskaSrcFun { coqPackages = pkgs.coqPackages_8_19; } ;
-        packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
+        # Contains compiled Coq sources of Minuska
+        packages.coq-minuska = coqMinuskaFun {
+          coqPackages = pkgs.coqPackages_8_19;
+        };
+        
+        # Contains OCaml sources of Minuska,
+        # including those extracted from Coq
+        packages.libminuska-src = libminuskaSrcFun {
+          coqPackages = pkgs.coqPackages_8_19;
+        };
+
+        # Contains compiled Minuska executable
+        packages.minuska = minuskaFun { 
+          coqPackages = pkgs.coqPackages_8_19;
+          ocamlPackages = pkgs.ocamlPackages;
+        };
 
         packages.languages-in-coq
         = pkgs.coqPackages_8_19.callPackage 
@@ -184,11 +206,11 @@
           name = "languages-in-coq";
           src = ./languages-in-coq;
 
-          propagatedBuildInputs = [
+          buildInputs = [
             self.outputs.packages.${system}.minuska
             #coq.ocamlPackages.menhir
           ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
-           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+            ++ self.outputs.packages.${system}.minuska.coqLibraries ;
 
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
