@@ -1,6 +1,6 @@
 (executable
  (public_name minuska)
- (package libminuska)
+ (package minuska)
  (name main)
  (modules main)
  (libraries

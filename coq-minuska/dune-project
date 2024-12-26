@@ -1,0 +1,26 @@
+(lang dune 3.14)
+(using coq 0.8)
+
+
+(name coq-minuska)
+(version 0.2)
+
+(generate_opam_files true)
+
+(source
+ (github h0nzZik/minuska))
+
+(authors "Jan Tušil <jenda.tusil@gmail.com>")
+
+(maintainers "Jan Tušil <jenda.tusil@gmail.com>")
+
+(license MIT)
+
+(package
+  (name coq-minuska)
+  (depends
+     cpq
+  )
+)
+
+; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

@@ -1,0 +1,12 @@
+(coq.extraction
+ (prelude minuska_extraction)
+ (extracted_modules Dsm)
+ (theories Minuska stdpp Ltac2 Equations)
+ (plugins coq-equations)
+)
+
+(install
+ (package coq-minuska)
+ (section share)
+ (files Dsm.ml)
+)

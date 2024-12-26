@@ -32,7 +32,7 @@
           ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
         '';
 
-        minuskaFun = { coqPackages }: (
+        coqMinuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
            let stdpp = coqPackages.stdpp; in
            let coqLibraries = [
@@ -42,7 +42,58 @@
            ]; in
            let bothNativeAndOtherInputs = [
               coqPackages.coq
+           ] ++ coqLibraries ; in
+           let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
+            useDune = true; 
+            pname = "minuska";
+            version = "0.2";
+            src = ./coq-minuska;
+            duneVersion = "3";
+ 
+            nativeBuildInputs = [
+              pkgs.dune_3
+            ] ++ bothNativeAndOtherInputs;
+
+            passthru = {
+              inherit coqPackages;
+              inherit coqLibraries;
+	          };
+
+            buildPhase = ''
+              runHook preBuild
+              dune build @all theories/Minuska.html ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
+              runHook postBuild
+            '';
+
+          } ) { };  in
+          wrapped
+       );
+
+       libminuskaSrcFun = { coqPackages }: (
+        let
+          coqMinuska = (coqMinuskaFun { inherit coqPackages; } );
+        in
+        pkgs.symlinkJoin {
+          name = "libminuska-src";
+          paths = [
+            (pkgs.lib.fileset.toSource {
+              root = ./minuska;
+              fileset = ./minuska;
+            })
+          ];
+          postBuild = ''
+            ls -R ${coqMinuska}/.
+            cp ${coqMinuska}/share/coq-minuska/Dsm.ml $out/lib/
+          '';
+        }
+        
+       );
+
+       minuskaFun = { coqPackages }: (
+          let coqVersion = coqPackages.coq.coq-version; in
+           let coqMinuska = (coqMinuskaFun coqPackages); in
+           let bothNativeAndOtherInputs = [
               coqPackages.coq.ocaml
               coqPackages.coq.ocamlPackages.findlib
               coqPackages.coq.ocamlPackages.zarith
@@ -52,7 +103,7 @@
               coqPackages.coq.ocamlPackages.ppx_sexp_conv
               coqPackages.coq.ocamlPackages.base_quickcheck
               coqPackages.coq.ocamlPackages.benchmark
-           ] ++ coqLibraries ; in
+           ] ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
             useDune = true; 
@@ -71,12 +122,6 @@
             ] ++ bothNativeAndOtherInputs;
 
             meta.mainProgram = "minuska";
-
-            passthru = {
-              inherit coqPackages;
-              inherit coqLibraries;
-	          };
-
 
             postPatch = ''
               substituteInPlace bin/main.ml \
@@ -126,6 +171,8 @@
         ];
 
       in {
+        packages.coq-minuska = coqMinuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
+        packages.libminuska-src = libminuskaSrcFun { coqPackages = pkgs.coqPackages_8_19; } ;
         packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
 
         packages.languages-in-coq
