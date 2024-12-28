@@ -152,7 +152,7 @@ let command_run
      )
     )
 
-let main
+let main0
   (iface : 'a Dsm.builtinInterface)
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> Dsm.gT -> Dsm.gT option)
@@ -181,3 +181,12 @@ let wrap_interpreter_ext iface interpreter_ext =
       Some ((fst v), (Z.to_int (snd v)))
     | None -> None
   )
+
+
+let main iface parser interpreter interpreter_ext debug_info  =
+  main0
+    iface
+    parser
+    (wrap_interpreter iface interpreter)
+    (wrap_interpreter_ext iface interpreter_ext)
+    (debug_info)
