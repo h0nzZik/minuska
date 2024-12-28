@@ -226,27 +226,86 @@ let generate_interpreter_ml scm_filename (out_ml_file : string) =
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
   generate_interpreter_ml_internal cfg mfile out_ml_file;
   ()
-  
-(* 
-let generate_interpreter scm_filename () =
-  let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
-  let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
-  let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  compile cfg mfile (cfg.language ^ "-interpreter");
-  () *)
-(* 
-let command_generate =
+
+let initialize_project project_name name_of_builtins name_of_program_info =
+  let _ = Sys_unix.command (sprintf "dune init project %s ." project_name) in
+  Out_channel.with_file "lang.scm" ~f:(fun oux ->
+    fprintf oux {|
+      (
+        (language %s)
+        (semantics def.m)
+        (static_model "%s")
+        (program_info (std_module "%s"))
+      )
+    |} project_name name_of_builtins name_of_program_info;
+  );
+  Out_channel.with_file "dune" ~f:(fun oux ->
+    fprintf oux {|
+    (env (dev (flags (:standard -warn-error -A))))
+    
+    (executable
+      (public_name run)
+      (package %s)
+      (name run)
+      (libraries
+          minuska
+      )
+      (modules run internal)
+    )
+
+    (rule
+      (targets internal.ml internal.mli)
+      (deps lang.scm def.m)
+      (action
+      (chdir %%{workspace_root}
+      (run minuska generate-interpreter-ml lang.scm internal.ml)))
+    )
+    |} project_name
+  );
+  Out_channel.with_file "def.m" ~f:(fun oux ->
+    fprintf oux {|
+      @frames: [
+        simple(X): c[builtin.cseq [X,REST]]
+      ];
+      @value(X): (is_true(bool.false())) ;
+      @nonvalue(X): (is_true(bool.false())) ;
+      @context(HOLE): c[HOLE];
+      @strictness: [];
+
+      @rule [init]: builtin.init[] => c[builtin.cseq[program.ast(), builtin.empty_cseq[]], map.empty()] where [];
+      @rule/simple [plus]: plus[X,Y] => z.plus(X, Y) where [is_true(z.is(X)), is_true(z.is(Y))] ;
+    |}
+  );
+  Out_channel.with_file "run.ml" ~f:(fun oux ->
+    fprintf oux {|
+      open Core
+      open Printf
+
+      let main () =
+        Libminuska.Miskeleton.main
+          Internal.chosen_builtins
+          (fun _ -> failwith "Parser not implemented.")
+          Internal.lang_interpreter
+          Internal.lang_interpreter_ext
+          Internal.lang_debug_info
+        
+      let _ = main ()
+    |}
+  );
+  ()
+
+let command_init =
   Command.basic
-    ~summary:"Generate a Coq (*.v) file from a Minuska (*.m) file"
+    ~summary:"Generate a Minuska project (`lang.scm`, `lang.m`, `run.ml`, `dune-project`, `dune`) in the current directory."
     ~readme:(fun () -> "TODO")
-    (let%map_open.Command
-        builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
-        input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
-        output_filename = anon (("filename_out" %: Filename_unix.arg_type))
-
-     in
-     fun () -> transform (get_iface builtins) (get_builtins_map builtins) builtins input_filename output_filename ()) *)
-
+    (
+      let%map_open.Command
+        project_name = flag "--name" (required string) ~doc:"project name" and
+        name_of_builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
+        name_of_program_info = flag "--program-info" (required string) ~doc:"program info to use"
+      in
+      fun () -> initialize_project project_name name_of_builtins name_of_program_info
+    )
 
 let command_groundterm2coq =
   Command.basic
@@ -260,27 +319,6 @@ let command_groundterm2coq =
 
      in
      fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins name_of_program_info input_filename output_filename ())
-
-(* 
-let command_compile =
-  Command.basic
-    ~summary:"Generate an interpreter from a Minuska (*.m) file"
-    ~readme:(fun () -> "TODO")
-    (let%map_open.Command
-        name_of_builtins = anon(("builtins" %: string)) and
-        input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
-        output_filename = anon (("interpreter" %: Filename_unix.arg_type))
-     in
-     fun () -> compile (get_iface name_of_builtins) (get_builtins_map name_of_builtins) name_of_builtins input_filename output_filename None) *)
-
-(* let command_generate_interpreter =
-Command.basic
-  ~summary:"Generate an interpreter from a Minuska project file (*.scm)"
-  ~readme:(fun () -> "TODO")
-  (let%map_open.Command
-      scm_filename = anon (("lang.scm" %: Filename_unix.arg_type))
-    in
-    fun () -> generate_interpreter scm_filename ()) *)
 
 let command_generate_interpreter_ml =
   Command.basic
@@ -348,6 +386,7 @@ let command =
   Command.group
     ~summary:"A verified semantic framework"
     [
+      "init", command_init;
       (* "generate-interpreter", command_generate_interpreter; *)
       "generate-interpreter-ml", command_generate_interpreter_ml;
       (* "compile", command_compile; *)
