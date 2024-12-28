@@ -260,9 +260,10 @@
           propagatedBuildInputs = [
             pkgs.time
             pkgs.python312
+            self.outputs.packages.${system}.coq-minuska
             self.outputs.packages.${system}.languages-in-coq
-            #self.outputs.packages.${system}.examples-coq.coqPackages.coq
-          ];
+            self.outputs.packages.${system}.languages-in-coq.coqPackages.coq
+          ] ++ self.outputs.packages.${system}.coq-minuska.coqLibraries;
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
