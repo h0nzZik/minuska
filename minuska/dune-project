@@ -1,8 +1,6 @@
 (lang dune 3.14)
-(using coq 0.8)
 
-
-(name libminuska)
+(name minuska)
 (version 0.2)
 
 (using menhir 3.0)
@@ -19,17 +17,9 @@
 (license MIT)
 
 (package
-  (name coq-minuska)
-  (depends
-     cpq
-  )
-)
-
-(package
- (name libminuska)
+ (name minuska)
  (depends
     benchmark
-    coq
     menhir
     core
     zarith
@@ -41,4 +31,4 @@
  (tags
   ("operational semantics" interpreters)))
 
-; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
+

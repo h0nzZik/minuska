@@ -36,6 +36,9 @@ jobs:
     - name: Setup Magic Nix Cache
       uses: DeterminateSystems/magic-nix-cache-action@main
 
+    - name: 'Build coq-minuska'
+      run: nix build -L '.#coq-minuska' --out-link ./result-coq-minuska
+
     - name: 'Build Minuska'
       run: nix build -L '.#minuska' --out-link ./result-minuska
 
@@ -67,7 +70,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path:  'result-minuska/share/coq-minuska/Minuska.html/'
+        path:  'result-coq-minuska/share/coq-minuska/Minuska.html/'
 
 
   deploy-pages:

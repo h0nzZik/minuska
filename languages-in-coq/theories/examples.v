@@ -20,11 +20,16 @@ From Minuska Require Import
 
 From Minuska Require Import
     builtin.klike
+    pi.trivial
 .
 Import builtin.klike.Notations.
 
 Definition mybeta := (bi_beta MyUnit builtins_klike).
 Existing Instance mybeta.
+
+Definition mypi := pi.trivial.MyProgramInfo.
+#[local]
+Existing Instance mypi.
 
 
 Variant Act := default_act | invisible_act.
@@ -38,7 +43,7 @@ Defined.
 Module two_counters.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta).
+    Instance Σ : StaticModel := default_model (mybeta) mypi.
 
     Definition M : variable := "M".
     Definition N : variable := "N".
@@ -53,7 +58,7 @@ Module two_counters.
     Arguments s {_br} _%_rs.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
-    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ ([
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ mypi ([
         decl_rule (
             rule ["my-rule"]:
                 cfg [ state [ s [ t_over ($M) ]; t_over ($N) ] ]
@@ -101,7 +106,7 @@ Module two_counters.
 
     Definition interp_loop_number fuel := 
         fun (m n : nat) =>
-        let fg' := ((interp_loop nondet_gen 0 interp fuel) ∘ pair_to_state) (m,n) in
+        let fg' := ((interp_loop nondet_gen 0 (interp (t_over bv_error)) fuel) ∘ pair_to_state) (m,n) in
         state_to_pair fg'.2
     .
     Compute (interp_loop_number 100 10 10).
@@ -120,7 +125,7 @@ End two_counters.
 
 Module two_counters_Z.
 #[local]
-    Instance Σ : StaticModel := default_model (mybeta).
+    Instance Σ : StaticModel := default_model (mybeta) mypi.
 
     Definition M : variable := "M".
     Definition N : variable := "N".
@@ -131,7 +136,7 @@ Module two_counters_Z.
     (* Coercion Z_to_builtin (x : Z) := (e_ground (t_over (bv_Z x))). *)
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
-    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ ([
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ mypi ([
         decl_rule (
             rule ["my-rule"]:
                state [ t_over ($M) ; t_over ($N) ]
@@ -164,7 +169,7 @@ Module two_counters_Z.
 
     Definition interp_loop_number (fuel : nat) := 
         fun (m n : Z) =>
-        let fg' := (((interp_in_from Γ nondet_gen fuel)) ∘ pair_to_state) (m,n) in
+        let fg' := (((interp_in_from (t_over bv_error) Γ nondet_gen fuel)) ∘ pair_to_state) (m,n) in
         state_to_pair fg'.1.2
     .
 
@@ -174,7 +179,7 @@ End two_counters_Z.
 Module arith.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta).
+    Instance Σ : StaticModel := default_model (mybeta) mypi.
 
     Definition X : variable := "X".
     Definition Y : variable := "Y".
@@ -288,7 +293,7 @@ Module arith.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ (Decls))).
+    (to_theory Act (process_declarations Act default_act _ mypi (Decls))).
 
 
     (*
@@ -319,7 +324,7 @@ Module arith.
     .
 
     Definition interp_from (fuel : nat) from
-        := interp_in_from Γ nondet_gen fuel from
+        := interp_in_from (t_over bv_error) Γ nondet_gen fuel from
     .
 
     Definition interp_list (fuel : nat) (x : Z) (ly : list Z)
@@ -377,7 +382,7 @@ Check "End arith".
 Module fib_native.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta).
+    Instance Σ : StaticModel := default_model (mybeta) mypi.
 
     Check builtin_value.
 
@@ -434,11 +439,11 @@ Module fib_native.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ (Decls))).
+    (to_theory Act (process_declarations Act default_act _ mypi (Decls))).
 
 
     Definition interp_from (fuel : nat) from
-        := interp_in_from Γ nondet_gen fuel from
+        := interp_in_from (t_over bv_error) Γ nondet_gen fuel from
     .
 
     Definition initial0 (x : TermOver builtin_value) :=
@@ -448,7 +453,7 @@ Module fib_native.
     .
 
     Definition fib_interp_from (fuel : nat) (from : Z)
-        := interp_in_from Γ nondet_gen fuel (ground (initial0
+        := interp_in_from (t_over bv_error) Γ nondet_gen fuel (ground (initial0
                 (t_over (bv_Z from))))
     .
 
@@ -541,7 +546,7 @@ End fib_native.
 Module imp.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta).
+    Instance Σ : StaticModel := default_model (mybeta) mypi.
 
 
     Definition B : variable := "$B".
@@ -785,7 +790,7 @@ Module imp.
     ]%limp.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ (Decls))).
+    (to_theory Act (process_declarations Act default_act _ mypi (Decls))).
 
     (* Compute (length (Γ.1)). *)
 
@@ -796,7 +801,7 @@ Module imp.
         ))
     .
 
-    About RewritingTheory2_wf_heuristics.
+    (* About RewritingTheory2_wf_heuristics. *)
     Lemma interp_sound:
         Interpreter_sound'
         (Γ.1)
@@ -814,7 +819,7 @@ Module imp.
     Qed.
 
     Definition imp_interp_from (fuel : nat) (from : (TermOver builtin_value))
-        := interp_loop nondet_gen 1 (naive_interpreter Γ.1) fuel (ground (initial0 from))
+        := interp_loop nondet_gen 1 (naive_interpreter Γ.1 (t_over bv_error)) fuel (ground (initial0 from))
     .
 
     (*  

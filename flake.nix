@@ -32,7 +32,7 @@
           ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
         '';
 
-        minuskaFun = { coqPackages }: (
+        coqMinuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
            let stdpp = coqPackages.stdpp; in
            let coqLibraries = [
@@ -42,49 +42,23 @@
            ]; in
            let bothNativeAndOtherInputs = [
               coqPackages.coq
-
-              coqPackages.coq.ocaml
-              coqPackages.coq.ocamlPackages.findlib
-              coqPackages.coq.ocamlPackages.zarith
-              coqPackages.coq.ocamlPackages.core
-              coqPackages.coq.ocamlPackages.core_unix
-              coqPackages.coq.ocamlPackages.ppx_jane
-              coqPackages.coq.ocamlPackages.ppx_sexp_conv
-              coqPackages.coq.ocamlPackages.base_quickcheck
-              coqPackages.coq.ocamlPackages.benchmark
            ] ++ coqLibraries ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
             useDune = true; 
             pname = "minuska";
-            version = "0.2";
-            src = ./minuska;
+            version = "0.6.0";
+            src = ./coq-minuska;
             duneVersion = "3";
  
             nativeBuildInputs = [
-              pkgs.makeWrapper
               pkgs.dune_3
-              appimagetool-wrapper
-              #pkgs.appimagekit
-              coqPackages.coq.ocamlPackages.menhir
-              coqPackages.coq.ocamlPackages.odoc
             ] ++ bothNativeAndOtherInputs;
-
-            meta.mainProgram = "minuska";
 
             passthru = {
               inherit coqPackages;
               inherit coqLibraries;
 	          };
-
-
-            postPatch = ''
-              substituteInPlace bin/main.ml \
-                --replace-fail "\"/coq/user-contrib/Minuska\"" "\"/coq/${coqVersion}/user-contrib/Minuska\"" \
-                --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
-                --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
-            '';
-
 
             buildPhase = ''
               runHook preBuild
@@ -92,26 +66,116 @@
               runHook postBuild
             '';
 
-            #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
-
-            #installPhase = ''
-            #  mkdir -p $out
-            #  runHook preInstall
-            #  dune install --prefix $out
-            #  runHook postInstall
-            #'';
-
-            postInstall = ''
-              dune install --prefix $out libminuska
-              wrapProgram $out/bin/minuska \
-                --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
-                --set OCAMLPATH $OCAMLPATH \
-                --set COQPATH $COQPATH \
-                --set PATH $PATH \
-                --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
-            '';
           } ) { };  in
           wrapped
+       );
+
+      # OCaml sources
+      libminuskaSrcFun = { coqPackages }: (
+      let
+        coqMinuska = (coqMinuskaFun { inherit coqPackages; } );
+      in
+        pkgs.stdenv.mkDerivation {
+          name = "libminuska-src";
+          src =
+            (pkgs.lib.fileset.toSource {
+              root = ./minuska;
+              fileset = ./minuska;
+            });
+          buildPhase = ''
+            mkdir -p $out
+            mkdir -p $out/bin
+            mkdir -p $out/lib
+            cp dune-project $out/
+            cp bin/* $out/bin
+            cp lib/* $out/lib
+            cp ${coqMinuska}/share/coq-minuska/Dsm.ml ${coqMinuska}/share/coq-minuska/Dsm.mli $out/lib/
+            ls -R $out
+          '';
+
+          passthru = {
+            inherit coqPackages;
+            inherit coqMinuska;
+            coqLibraries = coqMinuska.coqLibraries;
+          };
+        }
+       );
+
+       minuskaFun = { coqPackages, ocamlPackages }: (
+        let coqVersion = coqPackages.coq.coq-version; in
+        let minuskaSrc = libminuskaSrcFun { inherit coqPackages; }; in
+        let ocamlLibraries = with pkgs.ocamlPackages; [
+          findlib
+          zarith
+          core
+          core_unix
+          ppx_jane
+          ppx_sexp_conv
+          base_quickcheck
+          benchmark
+        ]; in
+
+        let bothNativeAndOtherInputs = with pkgs; [
+          ocaml
+        ]; in
+        
+        let wrapped = ocamlPackages.buildDunePackage {
+          pname = "minuska";
+          version = "0.6.0";
+          src = minuskaSrc;
+          #duneVersion = "3";
+
+          propagatedBuildInputs = ocamlLibraries;
+
+          nativeBuildInputs = [
+            coqPackages.coq
+            ocamlPackages.menhir
+          ];
+
+          buildInputs = [
+            minuskaSrc.coqMinuska.coqLibraries
+            ocamlPackages.ocaml
+            pkgs.makeWrapper
+            pkgs.dune_3
+            appimagetool-wrapper
+            #pkgs.appimagekit
+          ] ++ bothNativeAndOtherInputs;
+
+          meta.mainProgram = "minuska";
+
+          postPatch = ''
+            substituteInPlace bin/main.ml \
+              --replace-fail "\"/usr/lib/coq/user-contrib/Minuska\"" "\"${minuskaSrc.coqMinuska}/lib/coq/${coqVersion}/user-contrib/Minuska\"" \
+              --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
+              --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
+          '';
+
+
+          buildPhase = ''
+            runHook preBuild
+            dune build @all ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
+            runHook postBuild
+          '';
+
+          #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
+
+          postInstall = ''
+            dune install --prefix $out
+            wrapProgram $out/bin/minuska \
+              --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
+              --set OCAMLPATH $OCAMLPATH \
+              --set COQPATH $COQPATH \
+              --set PATH $PATH \
+              --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
+          '';
+
+          passthru = {
+            inherit coqPackages;
+            inherit ocamlPackages;
+            coqLibraries = minuskaSrc.coqLibraries;
+          };
+        }; in
+        wrapped
        );
 
        # The parsers in `languages/*` depend on these.
@@ -126,7 +190,22 @@
         ];
 
       in {
-        packages.minuska = minuskaFun { coqPackages = pkgs.coqPackages_8_19; } ;
+        # Contains compiled Coq sources of Minuska
+        packages.coq-minuska = coqMinuskaFun {
+          coqPackages = pkgs.coqPackages_8_19;
+        };
+        
+        # Contains OCaml sources of Minuska,
+        # including those extracted from Coq
+        packages.libminuska-src = libminuskaSrcFun {
+          coqPackages = pkgs.coqPackages_8_19;
+        };
+
+        # Contains compiled Minuska executable
+        packages.minuska = minuskaFun { 
+          coqPackages = pkgs.coqPackages_8_19;
+          ocamlPackages = pkgs.ocamlPackages;
+        };
 
         packages.languages-in-coq
         = pkgs.coqPackages_8_19.callPackage 
@@ -135,11 +214,12 @@
           name = "languages-in-coq";
           src = ./languages-in-coq;
 
-          propagatedBuildInputs = [
-            self.outputs.packages.${system}.minuska
+          buildInputs = [
+            self.outputs.packages.${system}.coq-minuska
+            # self.outputs.packages.${system}.minuska
             #coq.ocamlPackages.menhir
-          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
-           ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+          ] ++ [self.outputs.packages.${system}.coq-minuska.coqPackages.coq]
+            ++ self.outputs.packages.${system}.coq-minuska.coqLibraries ;
 
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
@@ -154,6 +234,7 @@
           src = ./bench-standalone;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
+            pkgs.dune_3
             pkgs.time
           ] ++ example_languages_parser_deps;
         };
@@ -164,6 +245,7 @@
           src = ./bench-hybrid;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
+            pkgs.dune_3
             pkgs.time
           ] ++ example_languages_parser_deps;
         };
@@ -178,9 +260,10 @@
           propagatedBuildInputs = [
             pkgs.time
             pkgs.python312
+            self.outputs.packages.${system}.coq-minuska
             self.outputs.packages.${system}.languages-in-coq
-            #self.outputs.packages.${system}.examples-coq.coqPackages.coq
-          ];
+            self.outputs.packages.${system}.languages-in-coq.coqPackages.coq
+          ] ++ self.outputs.packages.${system}.coq-minuska.coqLibraries;
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 

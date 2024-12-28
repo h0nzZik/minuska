@@ -15,12 +15,17 @@ From Minuska Require Import
 
 From Minuska Require Import
     builtin.klike
+    pi.trivial
 .
 
 Import builtin.klike.Notations.
 
 Definition mybeta := (bi_beta MyUnit builtins_klike).
 Existing Instance mybeta.
+
+Definition mypi := pi.trivial.MyProgramInfo.
+#[local]
+Existing Instance mypi.
 
 Variant Act := default_act | invisible_act.
 
@@ -34,7 +39,7 @@ Module unary_nat.
 
     #[local]
     Instance Σ : StaticModel :=
-        default_model (mybeta)
+        default_model (mybeta) mypi
     .
     
     Definition X : variable := "$X".
@@ -184,7 +189,7 @@ Module unary_nat.
     ].
 
     Definition Γfact : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ mypi (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
 
     Definition initial_expr (x : TermOver builtin_value) :=
         (ground (
@@ -219,7 +224,7 @@ Module unary_nat.
     .
 
     Definition interp_fact(fuel : nat) (from : nat)
-    := let r := interp_loop nondet_gen 1 (naive_interpreter Γfact.1) fuel (initial_fact from) in
+    := let r := interp_loop nondet_gen 1 (naive_interpreter Γfact.1 (t_over bv_error)) fuel (initial_fact from) in
         (r.1, (final r.2))
     .
     (* Time Compute ((interp_fact 500 4)). *)
@@ -273,7 +278,7 @@ Module unary_nat.
     ].
 
     Definition Γfib : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ (Decls_nat_fib ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ mypi (Decls_nat_fib ++ Decls_nat_add))).
 
     Definition initial_fib (n : nat) := initial_expr (
         (ground (nat_fib [(nat_to_unary n)]))
@@ -281,7 +286,7 @@ Module unary_nat.
 
     Definition interp_fib (fuel : nat) (from : nat)
     := 
-        let r := interp_loop nondet_gen 1 (naive_interpreter Γfib.1) fuel ((initial_fib from)) in
+        let r := interp_loop nondet_gen 1  (naive_interpreter Γfib.1 (t_over bv_error)) fuel ((initial_fib from)) in
         (r.1, (final r.2))
     .
 

@@ -1,0 +1,21 @@
+
+    (env (dev (flags (:standard -warn-error -A))))
+    
+    (executable
+      (public_name run)
+      (package fail_invalid)
+      (name run)
+      (libraries
+          minuska
+      )
+      (modules run internal)
+    )
+
+    (rule
+      (targets internal.ml internal.mli)
+      (deps lang.scm def.m)
+      (action
+      (chdir %{workspace_root}
+      (run minuska generate-interpreter-ml lang.scm internal.ml)))
+    )
+    
