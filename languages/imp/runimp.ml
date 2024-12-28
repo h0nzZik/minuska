@@ -6,7 +6,8 @@ let main () =
   Libminuska.Miskeleton.main
     (Libminuska.Extracted.builtins_klike) (*TODO we should infer this semi-automatically*)
     (Imp.Transform.parse)
-    (fun a b -> Imp.Internal.lang_interpreter (Obj.magic a) b)
+    (Imp.Internal.lang_interpreter)
+    (* (fun a b -> Imp.Internal.lang_interpreter (Obj.magic a) b) *)
     (fun a b -> 
       let r = Imp.Internal.lang_interpreter_ext (Obj.magic a) b in
       match r with

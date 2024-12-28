@@ -38,10 +38,6 @@ Arguments pt_operator {operator operand}%_type_scope s.
 Arguments pt_app_operand {operator operand}%_type_scope aps b.
 Arguments pt_app_ao {operator operand}%_type_scope aps x.
 
-Definition GroundTerm {Σ : StaticModel}
-    := Term' symbol builtin_value
-.
-
 
 Definition to_Term'
     {Σ : StaticModel}
@@ -534,16 +530,6 @@ Section eqdec.
     .
     Proof.
         ltac1:(solve_decision).
-    Defined.
-
-    #[export]
-    Instance GroundTerm_eqdec {Σ : StaticModel}
-        : EqDecision GroundTerm
-    .
-    Proof.
-        intros e1 e2.
-        apply Term'_eqdec.
-        apply builtin_value_eqdec.
     Defined.
 
 End eqdec.

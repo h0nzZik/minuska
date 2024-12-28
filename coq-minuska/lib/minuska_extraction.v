@@ -10,6 +10,7 @@ Extraction
     BuiltinInterface
     builtins_empty
     builtins_klike
+    pi_trivial
     default_everything.DSM
     default_everything.GT
     default_everything.gt_term

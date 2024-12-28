@@ -27,7 +27,7 @@
 ];
 
 
-@rule [init]: builtin.init[X] => c[builtin.cseq[X, builtin.empty_cseq[]], map.empty()] where [];
+@rule [init]: builtin.init[] => c[builtin.cseq[program.ast(), builtin.empty_cseq[]], map.empty()] where [];
 
 @rule/simple [aexpr.plus]: plus[X,Y] => z.plus(X, Y) where [is_true(z.is(X)), is_true(z.is(Y))] ;
 @rule/simple [aexpr.minus]: minus[X,Y] => z.minus(X, Y) where [is_true(z.is(X)), is_true(z.is(Y))] ;

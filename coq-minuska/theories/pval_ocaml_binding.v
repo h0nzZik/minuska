@@ -34,6 +34,9 @@ Definition builtins_klike : BuiltinInterface MyUnit := {|
     bi_inject_string := fun s => @builtin.klike.inject_string string s;
     bi_eject := @builtin.klike.eject string;
 |}.
+
+Definition pi_trivial := (@pi.trivial.MyProgramInfo, @pi.trivial.my_binding).
+
 (* 
 Record PI_interface := {
     pii_program_info : 

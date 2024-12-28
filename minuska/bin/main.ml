@@ -13,21 +13,34 @@ type coqModule =
 type languagedescr = {
   language           : string      ;
   semantics          : string      ;
-  (* coq_modules        : string list ;
-  ocaml_modules      : string list ; *)
-  (* parser_exe     : string ;
-  parser_builder : string option [@sexp.option]; *)
   static_model : string ;
   program_info : coqModule ;
 } [@@deriving sexp]
 
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
+type query_map_t = (string, string, String.comparator_witness) Map.t ;;
+
+let get_pi (m : coqModule) =
+  match m with
+  | Std_module name ->(
+    match name with
+    | "trivial" -> Libminuska.Extracted.pi_trivial
+    | _ -> failwith "Unknown program info specified"
+    )
+  | User_module _ -> (
+    failwith "User-provided program infos are not supported yet"
+  )
 
 let get_iface (static_model : string) =  
   match static_model with
   | "klike" -> Libminuska.Extracted.builtins_klike
   | "empty" -> Libminuska.Extracted.builtins_empty
   | _ -> failwith "Unknown static model specified"
+
+let transform_map m =
+  let binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) m in
+  let m2 = Map.of_alist_exn (module String) binding in
+  m2
 
 let get_builtins_map (static_model : string) : builtins_map_t =
   let builtins_binding_coq = (get_iface static_model).bi_bindings in
@@ -44,22 +57,35 @@ let minuska_dir = libdir ^ minuska_contrib_dir ;; *)
 
 let minuska_dir = "/usr/lib/coq/user-contrib/Minuska" ;;
 
-let parse_and_print (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) lexbuf oux =
+let parse_and_print
+  (iface : 'a Extracted.builtinInterface)
+  (builtins_map : builtins_map_t)
+  (query_map : query_map_t)
+  (name_of_builtins : string) (name_of_pi : string) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition iface builtins_map name_of_builtins name_of_pi value oux
+    Micoqprint.print_definition iface builtins_map query_map name_of_builtins name_of_pi value oux
   | None -> ()
 
 
-let append_definition (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) input_filename output_channel =
+let append_definition
+  (iface : 'a Extracted.builtinInterface)
+  (builtins_map : builtins_map_t)
+  (query_map : query_map_t)
+  (name_of_builtins : string)
+  (name_of_pi : string)
+  input_filename
+  output_channel =
   let inx = In_channel.create input_filename in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print iface builtins_map name_of_builtins name_of_pi lexbuf output_channel;
+  parse_and_print iface builtins_map query_map name_of_builtins name_of_pi lexbuf output_channel;
   In_channel.close inx;
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). |};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter : (StepT my_program_info) := global_naive_interpreter my_program_info (fst T).|};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext : (StepT_ext my_program_info) := global_naive_interpreter_ext my_program_info (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
+  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).|};
+  fprintf output_channel "%s\n" {|Check global_naive_interpreter.|};
+  fprintf output_channel "%s\n" {|Check lang_interpreter.|};
   fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
@@ -99,7 +125,11 @@ let transform (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_m
 let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
   `GTerm ((`Id "builtin.init"), [g])
 
-let write_gterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : string) lexbuf outname =
+let write_gterm
+  (iface : 'a Extracted.builtinInterface)
+  (name_of_builtins : string)
+  (name_of_pi : string)
+  lexbuf outname =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gt ->
     let oux = Out_channel.create outname in
@@ -112,10 +142,13 @@ let write_gterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : stri
     From Minuska Require Import
       builtin.empty
       builtin.klike
+      (* pi.trivial *)
     .
     |};
+    let _ = name_of_pi in
     fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
     fprintf oux "#[global] Existing Instance mybeta.\n";
+    (* fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi; *)
 
     fprintf oux "%s" {|
       Definition given_groundterm := 
@@ -141,12 +174,14 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
     | User_module _ -> failwith "User 'program info' modules are not supported yet"
     | Std_module name -> name
   ) in
+  let pi = get_pi cfg.program_info in
+  let query_map = transform_map (snd pi) in
   let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
   let mlfile = Filename.concat mldir "interpreter.ml" in
   let coqfile = Filename.concat mldir "interpreter.v" in
   (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
-  append_definition iface builtins_map name_of_builtins name_of_pi input_filename oux_coqfile;
+  append_definition iface builtins_map query_map name_of_builtins name_of_pi input_filename oux_coqfile;
   fprintf oux_coqfile "%s" {|
     Require Import Ascii.
     Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
@@ -154,11 +189,13 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
     Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
     Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
     Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
+    Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
     Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
     Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
     Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.mkBuiltin" ].
     Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
     Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
+    Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".
     Extract Constant DSM => "Libminuska.Extracted.dSM".
     Extract Constant GT => "Libminuska.Extracted.gT".
     Extract Constant gt_term => "Libminuska.Extracted.gt_term".
@@ -178,11 +215,15 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
   let _ = run ["cp '"; mlfile; "i' '"; output_ml; "i'"] in
   ()
 
-let transform_groundterm (iface : 'a Extracted.builtinInterface) (name_of_builtins : string) input_fname output_fname () =
+let transform_groundterm
+  (iface : 'a Extracted.builtinInterface)
+  (name_of_builtins : string)
+  (name_of_pi : string)
+  input_fname output_fname () =
   let inx = In_channel.create input_fname in
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-  write_gterm iface name_of_builtins lexbuf output_fname;
+  write_gterm iface name_of_builtins name_of_pi lexbuf output_fname;
   In_channel.close(inx)
 (* 
 let compile (cfg : languagedescr) input_filename interpreter_name =
@@ -259,11 +300,12 @@ let command_groundterm2coq =
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
         name_of_builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
+        name_of_program_info = flag "--program-info" (required string) ~doc:"program info to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
      in
-     fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins input_filename output_filename ())
+     fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins name_of_program_info input_filename output_filename ())
 
 (* 
 let command_compile =

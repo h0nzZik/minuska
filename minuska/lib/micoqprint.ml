@@ -2,6 +2,7 @@ open Core
 open Syntax
 
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
+type query_map_t = (string, string, String.comparator_witness) Map.t ;;
 
 let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
     let ln = List.length l in
@@ -10,7 +11,7 @@ let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
 
 
 let output_part_1 = {|
-Require Import Minuska.pval_ocaml_binding Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike.
+Require Import Minuska.pval_ocaml_binding Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike Minuska.pi.trivial.
 |}
 
 let output_part_2 = {delimiter|
@@ -28,15 +29,24 @@ Instance LangDefaults : Defaults := {|
 
 let translate_name
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name : string)
-  : string
+  : (string*string)
   =
   let name0 = Map.find my_builtins_map name in
     match name0 with
-    | None -> failwith (String.append "Unknown builtin: " name)
+    | None ->  (
+      let name1 = Map.find my_query_map name in
+      match name1 with
+      | None ->
+        failwith (String.append "Unknown builtin: " name)
+      | Some name2 ->
+        let name = (name2) in
+        ("e_query", name)
+    )
     | Some name1 ->
         let name = (name1) in
-        name
+        ("e_fun", name)
 
 let builtin2str (iface : 'a Dsm.builtinInterface) (name_of_builtins : string) b =
   (* This is only to throw error if we cannot convert it *)
@@ -104,6 +114,7 @@ let print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
 let rec print_expr_w_hole
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name_of_builtins : string)
   (oux : Out_channel.t)
   (e : Syntax.expr)
@@ -125,9 +136,9 @@ let rec print_expr_w_hole
     fprintf oux ")"
 
   | `ECall (`Id s, es) ->
-    let name = translate_name my_builtins_map s in
-    fprintf oux "(e_fun %s [" name;
-    myiter (fun x -> print_expr_w_hole iface my_builtins_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+    let (k, name) = translate_name my_builtins_map my_query_map s in
+    fprintf oux "(%s %s [" k name;
+    myiter (fun x -> print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
     fprintf oux "])"
 
 
@@ -135,29 +146,32 @@ let rec print_expr_w_hole
 let print_expr
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name_of_builtins : string)
   (oux : Out_channel.t)
   (e : Syntax.expr)
   : unit =
-  print_expr_w_hole iface my_builtins_map name_of_builtins oux e None
+  print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux e None
 
 let rec print_exprterm
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name_of_builtins : string)
   (oux : Out_channel.t)
   (p : Syntax.exprterm)
   : unit =
   match p with
-  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr iface my_builtins_map name_of_builtins) oux e; fprintf oux ")";
+  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr iface my_builtins_map my_query_map name_of_builtins) oux e; fprintf oux ")";
   | `ETerm (`Id s, ps) ->
     fprintf oux "(@t_term symbol Expression2 \"%s\" [" s;
-    myiter (fun x -> print_exprterm iface my_builtins_map name_of_builtins oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
+    myiter (fun x -> print_exprterm iface my_builtins_map my_query_map name_of_builtins oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 let print_cond_w_hole
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name_of_builtins : string)
   (oux : Out_channel.t)
   (c : Syntax.condition)
@@ -165,8 +179,8 @@ let print_cond_w_hole
   : unit =
   match c with
   | `Cond (`Id s, es) ->
-      fprintf oux "(mkSideCondition2 _ %s [" (translate_name my_builtins_map s);
-      myiter (fun x -> print_expr_w_hole iface my_builtins_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+      fprintf oux "(mkSideCondition2 _ %s [" (snd (translate_name my_builtins_map my_query_map s));
+      myiter (fun x -> print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
       fprintf oux "])"
 
 
@@ -174,6 +188,7 @@ let print_cond_w_hole
 let print_rule
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name_of_builtins : string)
   (oux : Out_channel.t)
   (r : Syntax.rule) : unit =
@@ -188,10 +203,10 @@ let print_rule
     
     print_pattern oux (r.lhs);
     fprintf oux " ";
-    print_exprterm iface my_builtins_map name_of_builtins oux (r.rhs);
+    print_exprterm iface my_builtins_map my_query_map name_of_builtins oux (r.rhs);
     fprintf oux " ";
     fprintf oux "[";
-    myiter (fun x -> print_cond_w_hole iface my_builtins_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond);
+    myiter (fun x -> print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond);
     fprintf oux "]";
     fprintf oux ")\n";
     ()
@@ -223,6 +238,7 @@ let print_mycontext oux ctx =
 let print_definition
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
+  (my_query_map : query_map_t)
   (name_of_builtins : string)
   (name_of_pi : string)
   def oux =
@@ -233,18 +249,19 @@ let print_definition
     fprintf oux "Definition my_program_info := %s.MyProgramInfo.\n" name_of_pi;
     fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
     fprintf oux "Existing Instance mysigma.\n";
+    fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi;
     print_mycontext oux (def.context);
     
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_cond_w_hole iface my_builtins_map name_of_builtins oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
+    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     
     fprintf oux "Definition isNonValue (";
     fprintf oux "%s" (match (fst (def.Syntax.nonvalue)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_cond_w_hole iface my_builtins_map (name_of_builtins : string) oux (snd (def.Syntax.nonvalue)) (Some (match (fst (def.Syntax.nonvalue)) with `Var s -> s));
+    print_cond_w_hole iface my_builtins_map my_query_map (name_of_builtins : string) oux (snd (def.Syntax.nonvalue)) (Some (match (fst (def.Syntax.nonvalue)) with `Var s -> s));
     fprintf oux ".\n";
     
     fprintf oux "%s\n" output_part_2;
@@ -257,7 +274,7 @@ let print_definition
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_strict oux x; ()) (fun () -> fprintf oux ";" ; ()) (def.Syntax.strictness) ;
     fprintf oux "%s" "] ++ [\n";
-    myiter (fun x -> print_rule iface my_builtins_map (name_of_builtins : string) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
+    myiter (fun x -> print_rule iface my_builtins_map my_query_map (name_of_builtins : string) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
     

@@ -107,10 +107,10 @@ let command_run
      (
       fun () ->
         In_channel.with_file program_name ~f:(fun f_in ->
-          (* let s = In_channel.input_all f_in in *)
           let lexbuf = Lexing.from_channel f_in in
           lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = program_name };
           let program = parser lexbuf in
+          printf "Program: %s" (Miunparse.groundterm_to_string program);
           let res0 = with_bench (fun () -> (
             let my_step = (
               match with_trace with
