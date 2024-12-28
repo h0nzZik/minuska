@@ -75,12 +75,13 @@ let append_definition
   (name_of_builtins : string)
   (name_of_pi : string)
   input_filename
-  output_channel =
-  let inx = In_channel.create input_filename in
-  let lexbuf = Lexing.from_channel inx in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-  parse_and_print iface builtins_map query_map name_of_builtins name_of_pi lexbuf output_channel;
-  In_channel.close inx;
+  output_channel
+  =
+  In_channel.with_file input_filename ~f:(fun inx ->
+    let lexbuf = Lexing.from_channel inx in
+    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
+    parse_and_print iface builtins_map query_map name_of_builtins name_of_pi lexbuf output_channel;  
+  );
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).|};
@@ -112,13 +113,6 @@ let append_definition
     *)
   |} ;
   ()
-(* 
-let transform (iface : 'a Extracted.builtinInterface) (builtins_map : builtins_map_t) (name_of_builtins : string) (name_of_pi : string) input_filename output_filename () =
-  let oux = Out_channel.create output_filename in
-  append_definition iface builtins_map name_of_builtins name_of_pi input_filename oux;
-  Out_channel.close oux;
-  () *)
-
 
 let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
   `GTerm ((`Id "builtin.init"), [g])
@@ -130,30 +124,30 @@ let write_gterm
   lexbuf outname =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gt ->
-    let oux = Out_channel.create outname in
-    fprintf oux "%s" {|
-    From Minuska Require Export
-      prelude
-      default_everything
-      pval_ocaml_binding
-    .
-    From Minuska Require Import
-      builtin.empty
-      builtin.klike
-      (* pi.trivial *)
-    .
-    |};
-    let _ = name_of_pi in
-    fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
-    fprintf oux "#[global] Existing Instance mybeta.\n";
-    (* fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi; *)
-
-    fprintf oux "%s" {|
-      Definition given_groundterm := 
-    |};
-    Micoqprint.print_groundterm oux iface name_of_builtins (wrap_init gt);
-    fprintf oux " .\n";
-    Out_channel.close oux;
+    Out_channel.with_file outname ~f:(fun oux ->
+      fprintf oux "%s" {|
+      From Minuska Require Export
+        prelude
+        default_everything
+        pval_ocaml_binding
+      .
+      From Minuska Require Import
+        builtin.empty
+        builtin.klike
+        (* pi.trivial *)
+      .
+      |};
+      let _ = name_of_pi in
+      fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
+      fprintf oux "#[global] Existing Instance mybeta.\n";
+      (* fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi; *)
+  
+      fprintf oux "%s" {|
+        Definition given_groundterm := 
+      |};
+      Micoqprint.print_groundterm oux iface name_of_builtins (wrap_init gt);
+      fprintf oux " .\n";
+    );
     ()
   | None -> ()
 
