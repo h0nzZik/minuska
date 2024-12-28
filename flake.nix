@@ -232,6 +232,7 @@
           src = ./bench-standalone;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
+            pkgs.dune_3
             pkgs.time
           ] ++ example_languages_parser_deps;
         };

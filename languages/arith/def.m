@@ -10,7 +10,7 @@
 ];
 
 
-@rule [init]: builtin.init[X] => c[builtin.cseq[X, builtin.empty_cseq[]]] where [];
+@rule [init]: builtin.init[] => c[builtin.cseq[program.ast(), builtin.empty_cseq[]]] where [];
 @rule [finish]: c[builtin.cseq[X, builtin.empty_cseq[]]] => builtin.result[X] where [is_true(z.is(X))] ;
 
 @rule/simple [plus]: plus[X,Y] => z.plus(X, Y) where [is_true(z.is(X)), is_true(z.is(Y))] ;

@@ -1,8 +1,6 @@
 open Core
 open Printf
 
-
-
 let print_position lexbuf =
   let pos = lexbuf.Lexing.lex_curr_p in
   sprintf "%s:%d:%d" pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)

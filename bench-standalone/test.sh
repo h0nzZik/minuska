@@ -56,11 +56,13 @@ runCase() {
 doCompile() {
   local lang="$1"
   echo "Compiling $lang" 
-  mkdir -p interpreters
-  pushd interpreters > /dev/null
-  minuska generate-interpreter ../languages/$lang/lang.scm 2>>"$LOGFILEERR" >>"$LOGFILEOUT" #&& echo "Compilation finished."
+  pushd ../languages/$lang/ > /dev/null
+  dune build
   local state=$?
-  popd > /dev/null
+  dune install --prefix ./install-dir
+  popd
+  mkdir -p interpreters
+  ln -s ../languages/$lang/install-dir/bin/run ./interpreters/$lang
   return $state
 }
 
