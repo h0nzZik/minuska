@@ -9,15 +9,14 @@
   (flags -la 2)
 )
 
-
 (executable
   (public_name run)
-  (package arith)
+  (package decrement)
   (name run)
   (libraries
       minuska
   )
-  (modules syntax run internal parser lexer transform )
+  (modules run syntax internal parser lexer transform)
 )
 
 (rule

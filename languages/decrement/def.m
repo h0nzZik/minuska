@@ -5,7 +5,7 @@
 @strictness: [];
 
 
-@rule [init]: builtin.init[X] => X where [] ;
+@rule [init]: builtin.init[] => program.ast() where [] ;
 
 @rule [decrement]: succ[X] => X where [] ;
 
