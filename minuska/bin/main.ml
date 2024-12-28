@@ -178,35 +178,35 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
   let mlfile = Filename.concat mldir "interpreter.ml" in
   let coqfile = Filename.concat mldir "interpreter.v" in
   (* create coqfile *)
-  let oux_coqfile = Out_channel.create coqfile in
-  append_definition iface builtins_map query_map name_of_builtins name_of_pi input_filename oux_coqfile;
-  fprintf oux_coqfile "Definition chosen_builtins := builtins_%s.\n" name_of_builtins;
-  fprintf oux_coqfile "%s" {|
-    Require Import Ascii.
-    Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
-    Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
-    Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
-    Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
-    Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
-    Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-    Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
-    Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
-    Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.mkBuiltin" ].
-    Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
-    Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
-    Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".
-    Extract Constant DSM => "Libminuska.Extracted.dSM".
-    Extract Constant GT => "Libminuska.Extracted.gT".
-    Extract Constant gt_term => "Libminuska.Extracted.gt_term".
-    Extract Constant gt_over => "Libminuska.Extracted.gt_over".
-    Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.pi_symbol_interp = d; })" ].
-    Extract Constant program_info => "Libminuska.Extracted.programInfo".
-    Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
-    Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
-  |};
-  fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
-  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
-  Out_channel.close oux_coqfile;
+  Out_channel.with_file coqfile ~f:(fun oux_coqfile ->
+    append_definition iface builtins_map query_map name_of_builtins name_of_pi input_filename oux_coqfile;
+    fprintf oux_coqfile "Definition chosen_builtins := builtins_%s.\n" name_of_builtins;
+    fprintf oux_coqfile "%s" {|
+      Require Import Ascii.
+      Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
+      Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
+      Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
+      Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
+      Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
+      Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
+      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
+      Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
+      Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.mkBuiltin" ].
+      Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
+      Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
+      Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".
+      Extract Constant DSM => "Libminuska.Extracted.dSM".
+      Extract Constant GT => "Libminuska.Extracted.gT".
+      Extract Constant gt_term => "Libminuska.Extracted.gt_term".
+      Extract Constant gt_over => "Libminuska.Extracted.gt_over".
+      Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.pi_symbol_interp = d; })" ].
+      Extract Constant program_info => "Libminuska.Extracted.programInfo".
+      Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
+      Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
+    |};
+    fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
+    fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
+  );
   (* extract coq into ocaml *)
   let rv = run ["cd "; mldir; "; "; coqc_command; " "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith ("`"^ coqc_command ^ "` failed. Is the language definition well-formed?"));
@@ -219,11 +219,12 @@ let transform_groundterm
   (name_of_builtins : string)
   (name_of_pi : string)
   input_fname output_fname () =
-  let inx = In_channel.create input_fname in
-  let lexbuf = Lexing.from_channel inx in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-  write_gterm iface name_of_builtins name_of_pi lexbuf output_fname;
-  In_channel.close(inx)
+  In_channel.with_file input_fname ~f:(fun inx ->
+    let lexbuf = Lexing.from_channel inx in
+    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
+    write_gterm iface name_of_builtins name_of_pi lexbuf output_fname;  
+  );
+  ()
 
 let generate_interpreter_ml scm_filename (out_ml_file : string) =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
