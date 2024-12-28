@@ -84,8 +84,6 @@ let append_definition
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).|};
-  fprintf output_channel "%s\n" {|Check global_naive_interpreter.|};
-  fprintf output_channel "%s\n" {|Check lang_interpreter.|};
   fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
@@ -182,6 +180,7 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
   (* create coqfile *)
   let oux_coqfile = Out_channel.create coqfile in
   append_definition iface builtins_map query_map name_of_builtins name_of_pi input_filename oux_coqfile;
+  fprintf oux_coqfile "Definition chosen_builtins := builtins_%s.\n" name_of_builtins;
   fprintf oux_coqfile "%s" {|
     Require Import Ascii.
     Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
@@ -206,7 +205,7 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
     Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
   |};
   fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
-  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info.\n" ("interpreter.ml");
+  fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
   Out_channel.close oux_coqfile;
   (* extract coq into ocaml *)
   let rv = run ["cd "; mldir; "; "; coqc_command; " "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
@@ -225,46 +224,6 @@ let transform_groundterm
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
   write_gterm iface name_of_builtins name_of_pi lexbuf output_fname;
   In_channel.close(inx)
-(* 
-let compile (cfg : languagedescr) input_filename interpreter_name =
-  let mldir = (Filename_unix.temp_dir "interpreter" ".minuska") in
-  let mlfile = Filename.concat mldir "interpreter.ml" in
-  let _ = generate_interpreter_ml_internal cfg input_filename mlfile in
-  (* Add an entry command *)
-  let _ = Out_channel.with_file ~append:true mlfile ~f:(fun outc -> 
-    fprintf outc "let _ = (Libminuska.Miskeleton.main %s Libminuska__.Dsm.builtins_%s lang_interpreter lang_interpreter_ext lang_debug_info)\n" (cfg.static_model)
-  ) in
-  let rv = run [
-          "cd "; mldir; "; ";
-          "env OCAMLPATH="; libdir; ":$OCAMLPATH ";
-          ocamlfind_command; " ocamlopt -thread -package libminuska -package zarith -linkpkg -g -o ";
-          "interpreter.exe"; " "; (String.append mlfile "i"); " "; mlfile] in
-  (if rv <> 0 then failwith ("Internal error: `ocamlopt` failed."));
-  let appdir = Filename.concat mldir "interpreter.AppDir" in
-  let real_interpreter_name = interpreter_name in
-  let _ = Core_unix.mkdir_p appdir in
-  let _ = Core_unix.mkdir_p (Filename.concat appdir "bin") in
-  let _ = Core_unix.mkdir_p (Filename.concat appdir "libexec") in
-  let desktop_oux = Out_channel.create (Filename.concat appdir "interpreter.desktop") in
-  fprintf desktop_oux "%s" {|[Desktop Entry]
-Name=Interpreter
-Exec=interpreter
-Icon=interpreter
-Type=Application
-Categories=Utility;
-Terminal=true|};
-  Out_channel.close desktop_oux;
-  let _ = run ["mv "; mldir; "/interpreter.exe"; " "; (Filename.concat appdir "bin/interpreter")] in
-  let _ = run ["cp "; (Filename.dirname (Filename_unix.realpath (Sys_unix.executable_name)) ^ "/../share/coq-minuska/minuska-256x256.png"); " "; (Filename.concat appdir "interpreter.png")] in
-  let apprun_oux = Out_channel.create (Filename.concat appdir "AppRun") in
-  fprintf apprun_oux "%s" {|#!/usr/bin/env bash
-exec -a "$ARGV0" $(dirname "$0")/bin/interpreter $@
-|};
-  Out_channel.close apprun_oux;
-  let _ = run ["chmod +x "; ((Filename.concat appdir "AppRun"))] in
-  let _ = run ["appimagetool "; appdir; " "; real_interpreter_name] in
-  let _ = input_filename in
-  () *)
 
 let generate_interpreter_ml scm_filename (out_ml_file : string) =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in

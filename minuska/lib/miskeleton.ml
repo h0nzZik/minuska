@@ -169,3 +169,15 @@ let main
       )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
+
+let wrap_interpreter iface interpreter =
+  (fun a b -> Obj.magic (interpreter (Obj.magic (convert_groundterm iface a)) (Obj.magic b)))
+
+let wrap_interpreter_ext iface interpreter_ext =
+  (fun a b -> 
+    let r = Obj.magic (interpreter_ext (Obj.magic (convert_groundterm iface a)) (Obj.magic b)) in
+    match r with
+    | Some v ->
+      Some ((fst v), (Z.to_int (snd v)))
+    | None -> None
+  )
