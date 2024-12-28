@@ -96,6 +96,7 @@
           passthru = {
             inherit coqPackages;
             inherit coqMinuska;
+            coqLibraries = coqMinuska.coqLibraries;
           };
         }
        );
@@ -171,6 +172,7 @@
           passthru = {
             inherit coqPackages;
             inherit ocamlPackages;
+            coqLibraries = minuskaSrc.coqLibraries;
           };
         }; in
         wrapped
@@ -214,10 +216,10 @@
 
           buildInputs = [
             self.outputs.packages.${system}.coq-minuska
-            self.outputs.packages.${system}.minuska
+            # self.outputs.packages.${system}.minuska
             #coq.ocamlPackages.menhir
-          ] ++ [self.outputs.packages.${system}.minuska.coqPackages.coq]
-            ++ self.outputs.packages.${system}.minuska.coqLibraries ;
+          ] ++ [self.outputs.packages.${system}.coq-minuska.coqPackages.coq]
+            ++ self.outputs.packages.${system}.coq-minuska.coqLibraries ;
 
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
