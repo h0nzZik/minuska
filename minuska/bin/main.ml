@@ -137,11 +137,11 @@ let write_gterm
         (* pi.trivial *)
       .
       |};
-      let _ = name_of_pi in
       fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
       fprintf oux "#[global] Existing Instance mybeta.\n";
-      (* fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi; *)
-  
+      fprintf oux "Definition my_program_info := %s.MyProgramInfo.\n" name_of_pi;
+      fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
+      fprintf oux "Existing Instance mysigma.\n";
       fprintf oux "%s" {|
         Definition given_groundterm := 
       |};
@@ -157,7 +157,7 @@ let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (output_ml : string) =
+let generate_interpreter_coq_internal (cfg : languagedescr) input_filename (output_coq : string) =
   let iface = (get_iface cfg.static_model) in
   let builtins_map = (get_builtins_map (cfg.static_model)) in
   let name_of_builtins = cfg.static_model in
@@ -168,13 +168,20 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
   ) in
   let pi = get_pi cfg.program_info in
   let query_map = transform_map (snd pi) in
-  let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
-  let mlfile = Filename.concat mldir "interpreter.ml" in
-  let coqfile = Filename.concat mldir "interpreter.v" in
   (* create coqfile *)
-  Out_channel.with_file coqfile ~f:(fun oux_coqfile ->
+  Out_channel.with_file output_coq ~f:(fun oux_coqfile ->
     append_definition iface builtins_map query_map name_of_builtins name_of_pi input_filename oux_coqfile;
     fprintf oux_coqfile "Definition chosen_builtins := builtins_%s.\n" name_of_builtins;
+    ()
+  )
+
+let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (output_ml : string) =
+  let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
+  let coqfile = Filename.concat mldir "interpreter.v" in
+  let mlfile = Filename.concat mldir "interpreter.ml" in
+  let _ = generate_interpreter_coq_internal cfg input_filename coqfile in
+  (* append to coqfile *)
+  Out_channel.with_file coqfile ~append:(true) ~f:(fun oux_coqfile ->
     fprintf oux_coqfile "%s" {|
       Require Import Ascii.
       Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
@@ -225,6 +232,13 @@ let generate_interpreter_ml scm_filename (out_ml_file : string) =
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
   generate_interpreter_ml_internal cfg mfile out_ml_file;
+  ()
+
+let generate_interpreter_coq scm_filename (out_coq_file : string) =
+  let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
+  let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
+  let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
+  generate_interpreter_coq_internal cfg mfile out_coq_file;
   ()
 
 let initialize_project project_name name_of_builtins name_of_program_info =
@@ -313,12 +327,22 @@ let command_groundterm2coq =
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
         name_of_builtins = flag "--builtins" (required string) ~doc:"builtins to use" and
-        name_of_program_info = flag "--program-info" (required string) ~doc:"program info to use" and
+        name_of_pi = flag "--program-info" (required string) ~doc:"program info to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
 
      in
-     fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins name_of_program_info input_filename output_filename ())
+     fun () -> transform_groundterm (get_iface name_of_builtins) name_of_builtins name_of_pi input_filename output_filename ())
+
+let command_generate_interpreter_coq =
+  Command.basic
+    ~summary:"Generate an interpreter *.v file from a Minuska project file (*.scm)"
+    ~readme:(fun () -> "TODO")
+    (let%map_open.Command
+        scm_filename = anon (("lang.scm" %: Filename_unix.arg_type)) and
+        out_ml_file = anon (("lang.ml" %: Filename_unix.arg_type))
+      in
+      fun () -> generate_interpreter_coq scm_filename out_ml_file)
 
 let command_generate_interpreter_ml =
   Command.basic
@@ -329,7 +353,7 @@ let command_generate_interpreter_ml =
         out_ml_file = anon (("lang.ml" %: Filename_unix.arg_type))
       in
       fun () -> generate_interpreter_ml scm_filename out_ml_file)
-      
+
 
 let command_print_coqbin =
   Command.basic
@@ -389,6 +413,7 @@ let command =
       "init", command_init;
       (* "generate-interpreter", command_generate_interpreter; *)
       "generate-interpreter-ml", command_generate_interpreter_ml;
+      "generate-interpreter-coq", command_generate_interpreter_coq;
       (* "compile", command_compile; *)
       (* "def2coq", command_generate; *) (* TODO replace this with something*)
       "gt2coq", command_groundterm2coq;

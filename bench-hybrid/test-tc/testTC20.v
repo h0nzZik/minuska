@@ -11,10 +11,10 @@ Import Ascii.
 
 Time Compute (let steps := 10000 in
   @interp_loop.interp_loop
-    default_everything.DSM
+    _
     spec.nondet_gen
     0
-    twocounters.lang_interpreter
+    (twocounters.lang_interpreter tc20.given_groundterm)
     steps
     tc20.given_groundterm
 ).
