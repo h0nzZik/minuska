@@ -13,14 +13,14 @@
 )
 
 (executable
- (public_name run_imp)
+ (public_name run)
  (package minuska_imp)
- (name runimp)
+ (name run)
  (libraries
     minuska
     imp
  )
- (modules runimp)
+ (modules run)
 )
 
 (library
