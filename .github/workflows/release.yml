@@ -47,7 +47,23 @@ jobs:
       with:
         name: ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.deb
         path: ./result-minuska-deb/*.deb
-
+        
+  package-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v9
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Build Docker image
+        run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}-docker.tar.gz
+          path: ./result-minuska-docker
+          
   release:
     #if: github.ref == 'refs/heads/main'
     name: Create release with all assets
@@ -63,3 +79,4 @@ jobs:
           files: |
             ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.rpm/**/*.rpm
             ${{ vars.PKG_NAME }}-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.deb/**/*.deb
+            */*-docker.tar.gz
