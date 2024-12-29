@@ -22,13 +22,9 @@ concurrency:
 
 
 jobs:
-  build:
-
+  build-ubuntu:
     runs-on: ubuntu-24.04
-
     steps:
-    - run: echo "APPIMAGE_EXTRACT_AND_RUN=1" >> $GITHUB_ENV
-
     - uses: actions/checkout@v4
 
     - name: Install Nix
@@ -84,6 +80,36 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v9
+    - name: Setup Magic Nix Cache
+      uses: DeterminateSystems/magic-nix-cache-action@main
+
+    - name: 'Build coq-minuska'
+      run: nix build -L '.#coq-minuska' --out-link ./result-coq-minuska
+
+    - name: 'Build Minuska'
+      run: nix build -L '.#minuska' --out-link ./result-minuska
+
+    - name: 'Run standalone benchmarks'
+      run: nix develop -L '.#bench-standalone' --command ./bench-standalone/test.sh
+
+    - name: 'Run hybrid benchmarks'
+      run: nix develop -L '.#bench-hybrid' --command ./bench-hybrid/test.sh
+
+    - name: 'Build Coq language examples'
+      run: nix build -L '.#languages-in-coq'
+
+    - name: 'Run Coq benchmarks'
+      run: nix develop -L '.#bench-coq' --command ./bench-coq/build-and-profile.sh
+
 
 #   package-docker:
 #     if: github.ref == 'refs/heads/main'
