@@ -4,9 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    # We cannot use newer nixpkgs because nix-appimage uses `lzma` instead of `xz`.
-    #nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
-    #nix-appimage.inputs.flake-utils.follows = "flake-utils";
     bundlers.url = "github:NixOS/bundlers";
     bundlers.inputs.nixpkgs.follows = "nixpkgs";
    };
