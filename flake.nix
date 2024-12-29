@@ -4,7 +4,6 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    nix-appimage.url = "github:ralismark/nix-appimage";
     # We cannot use newer nixpkgs because nix-appimage uses `lzma` instead of `xz`.
     #nix-appimage.inputs.nixpkgs.follows = "nixpkgs";
     #nix-appimage.inputs.flake-utils.follows = "flake-utils";
@@ -12,26 +11,12 @@
     bundlers.inputs.nixpkgs.follows = "nixpkgs";
    };
 
-  outputs = { self, nixpkgs, flake-utils, nix-appimage, bundlers }: (
+  outputs = { self, nixpkgs, flake-utils, bundlers }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
 
         pkgs = nixpkgs.legacyPackages.${system};
         
-        # The appimagetool-wrapper is there to ensure that invocations of `appimagetool` from the `minuska` exacutable,
-        # when building an interpreter from a parser and extracted Coq/OCaml Minuska interpreter,
-        # use a runtime that does not depend on Nix paths (to /nix/store) for FUSE, but looks it up in some standard paths.
-        runtime = pkgs.runCommand "appimage-runtime" {} ''
-            mkdir -p $out/bin/
-            mkdir -p $out/libexec/
-            ln -s ${nix-appimage.outputs.packages.${system}.appimage-runtimes.appimage-type2-runtime} $out/libexec/appimage-runtime
-          ''
-        ;
-        appimagetool-wrapper = pkgs.writeShellScriptBin "appimagetool" ''
-	      export PATH="${pkgs.appimagekit}/bin:$PATH"
-          ${pkgs.appimagekit}/bin/appimagetool --runtime-file "${runtime}/libexec/appimage-runtime" $@
-        '';
-
         coqMinuskaFun = { coqPackages }: (
            let coqVersion = coqPackages.coq.coq-version; in
            let stdpp = coqPackages.stdpp; in
@@ -137,8 +122,6 @@
             ocamlPackages.ocaml
             pkgs.makeWrapper
             pkgs.dune_3
-            appimagetool-wrapper
-            #pkgs.appimagekit
           ] ++ bothNativeAndOtherInputs;
 
           meta.mainProgram = "minuska";
@@ -284,9 +267,6 @@
 
         packages.minuska-bundle-deb
         = bundlers.bundlers.${system}.toDEB self.outputs.packages.${system}.minuska;
-
-        packages.minuska-bundle-appimage
-        = nix-appimage.bundlers.${system}.default self.outputs.packages.${system}.minuska;
 
         packages.default = self.outputs.packages.${system}.minuska;
         
