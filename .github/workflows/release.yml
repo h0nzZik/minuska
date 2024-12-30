@@ -67,7 +67,7 @@ jobs:
   release:
     #if: github.ref == 'refs/heads/main'
     name: Create release with all assets
-    needs: [package-rpm, package-deb]
+    needs: [package-rpm, package-deb, package-docker]
     runs-on: ubuntu-latest
     steps:
       - name: Download cached rpm, deb, and tar.gz artifacts
