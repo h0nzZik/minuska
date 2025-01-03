@@ -77,6 +77,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            minuska.rpm/**/*.rpm
-            minuska.deb/**/*.deb
-            minuska-docker.tar.gz/**/*.tar.gz
+            minuska.rpm
+            minuska.deb
+            minuska-docker.tar.gz
