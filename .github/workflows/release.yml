@@ -15,7 +15,10 @@ concurrency:
 jobs:
   package-rpm:
     #if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v4
     - name: Install Nix
@@ -24,16 +27,18 @@ jobs:
       uses: DeterminateSystems/magic-nix-cache-action@main
     - name: Build RPM package
       run: nix build -L '.#minuska-bundle-rpm' --out-link './result-minuska-rpm'
-    - name: Upload .rpm package as artifact
-      uses: actions/upload-artifact@v4
+    - name: Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: minuska.rpm
-        path: ./result-minuska-rpm/*.rpm
-
+        files: |
+          result-minuska-rpm/*.rpm
 
   package-deb:
     #if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v4
     - name: Install Nix
@@ -42,14 +47,17 @@ jobs:
       uses: DeterminateSystems/magic-nix-cache-action@main
     - name: Build DEB package
       run: nix build -L '.#minuska-bundle-deb' --out-link './result-minuska-deb'
-    - name: Upload .deb package as artifact
-      uses: actions/upload-artifact@v4
+    - name: Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: minuska.deb
-        path: ./result-minuska-deb/*.deb
+        files: |
+          result-minuska-deb/*.deb
         
   package-docker:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
@@ -58,25 +66,11 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build Docker image
         run: nix build -L '.#minuska-docker' --out-link ./result-minuska-docker
-      - name: Upload Docker image as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: minuska-docker.tar.gz
-          path: ./result-minuska-docker
-          
-  release:
-    #if: github.ref == 'refs/heads/main'
-    name: Create release with all assets
-    needs: [package-rpm, package-deb, package-docker]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download cached rpm, deb, and tar.gz artifacts
-        uses: actions/download-artifact@v4
-
+      - name: Rename the image
+        run: mv ./result-minuska-docker minuska-${{runner.arch}}-docker.tar.gz
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            **/*.rpm
-            **/*.deb
-            **/*.tar.gz
+            minuska-*-docker.tar.gz
+
