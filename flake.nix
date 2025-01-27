@@ -270,15 +270,15 @@
         devShells = {
           
           # For developing Minuska
-          minuska =
+          coq-minuska =
             let
-              minuska = self.outputs.packages.${system}.minuska;
+              coq-minuska = self.outputs.packages.${system}.coq-minuska;
             in
               pkgs.mkShell {
-                inputsFrom = [minuska];
+                inputsFrom = [coq-minuska];
                 packages = [
-                  minuska.coqPackages.coq-lsp 
-                  minuska.coqPackages.coqide 
+                  coq-minuska.coqPackages.coq-lsp 
+                  coq-minuska.coqPackages.coqide 
                 ];
               };
 

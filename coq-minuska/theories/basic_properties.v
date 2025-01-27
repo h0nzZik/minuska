@@ -387,9 +387,9 @@ End custom_induction_principle_2.
 Existing Instance Expression2_eqdec.
 
 #[export]
-Instance SideCondition2_eqdec
+Instance SideCondition_eqdec
     {Σ : StaticModel}
-    : EqDecision (SideCondition2)
+    : EqDecision (SideCondition)
 .
 Proof. ltac1:(solve_decision). Defined.
 

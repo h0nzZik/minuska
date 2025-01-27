@@ -1682,22 +1682,6 @@ Inductive FunctionSymbol : Set :=
 | b_Z_div             (* Z -> Z -> Z *)
 | b_map_lookup        (* map -> 'a -> 'b *)
 | b_map_update        (* map -> 'a -> 'b -> map  *)
-| b_isBuiltin              (* 'a -> Prop *)
-| b_isError                (* 'a -> Prop *)
-| b_isBool                 (* 'a -> Prop *)
-| b_isSymbol                 (* 'a -> Prop *)
-| b_isZ                    (* 'a -> Prop *)
-| b_isString               (* 'a -> Prop *)
-| b_isList                 (* 'a -> Prop *)
-| b_isMap                  (* 'a -> Prop *)
-| b_Z_isLe                 (* Z -> Z -> Prop *)
-| b_Z_isLt                 (* Z -> Z -> Prop *)
-| b_bool_eq                (* bool -> bool -> Prop *)
-| b_term_eq                (* term -> term -> Prop *)
-| b_Z_eq                   (* Z -> Z -> Prop *)
-| b_map_hasKey             (* map -> 'a -> Prop *)
-| b_is_applied_symbol      (* string -> 'a -> Prop *)
-| b_have_same_symbol       (* term -> term -> Prop *)
 .
 
 #[export]
@@ -1705,7 +1689,37 @@ Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 Inductive PredicateSymbol : Set :=
-| b_cond_is_true                 (* bool -> Prop *)
+| b_isBuiltin              (* 'a -> Prop *)
+| b_isNotBuiltin           (* 'a -> Prop *)
+| b_isError                (* 'a -> Prop *)
+| b_isNotError             (* 'a -> Prop *)
+| b_isBool                 (* 'a -> Prop *)
+| b_isNotBool              (* 'a -> Prop *)
+| b_isSymbol               (* 'a -> Prop *)
+| b_isNotSymbol            (* 'a -> Prop *)
+| b_isZ                    (* 'a -> Prop *)
+| b_isNotZ                 (* 'a -> Prop *)
+| b_isString               (* 'a -> Prop *)
+| b_isNotString            (* 'a -> Prop *)
+| b_isList                 (* 'a -> Prop *)
+| b_isNotList              (* 'a -> Prop *)
+| b_isMap                  (* 'a -> Prop *)
+| b_isNotMap               (* 'a -> Prop *)
+| b_Z_isLe                 (* Z -> Z -> Prop *)
+| b_Z_isLt                 (* Z -> Z -> Prop *)
+| b_Z_isGe                 (* Z -> Z -> Prop *)
+| b_Z_isGt                 (* Z -> Z -> Prop *)
+| b_bool_eq                (* bool -> bool -> Prop *)
+| b_bool_neq               (* bool -> bool -> Prop *)
+| b_term_eq                (* term -> term -> Prop *)
+| b_Z_eq                   (* Z -> Z -> Prop *)
+| b_Z_neq                  (* Z -> Z -> Prop *)
+| b_map_hasKey             (* map -> 'a -> Prop *)
+| b_is_applied_symbol      (* string -> 'a -> Prop *)
+| b_is_not_applied_symbol  (* string -> 'a -> Prop *)
+| b_have_same_symbol       (* term -> term -> Prop *)
+| b_not_have_same_symbol   (* term -> term -> Prop *)
+
 .
 
 
@@ -2050,140 +2064,208 @@ Section sec.
                 | _ => err
                 end
             )
-
-            | b_term_eq => liftBinary (
-                fun _ v1 v2 =>
-                t_over (bv_bool (bool_decide (v1 = v2)))
-            )
-
-            | b_bool_eq => liftBinary (
-                fun _ v1 v2 =>
-                t_over (bv_bool (bool_decide (v1 = v2)))
-            )
-            | b_Z_eq => liftBinary (
-                fun _ v1 v2 =>
-                t_over (bv_bool (bool_decide (v1 = v2)))
-            )
-            | b_isBuiltin => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over b => t_over (bv_bool true)
-                | t_term _ _ => t_over (bv_bool false)
-                end
-            ) 
-            | b_isError => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isError x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-            | b_isBool => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isBool x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-
-            | b_isSymbol => liftUnary (
-                fun _ v =>
-                match v with
-                | t_term _ _ => t_over (bv_bool (true))
-                | _ => t_over (bv_bool false)
-                end
-            )
-   
-            | b_isString => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isString x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-            | b_isList => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isList x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-            | b_isMap => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isMap x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-
-            | b_isZ => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isZ x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-
-            | b_Z_isLe => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.leb v1 v2))
-            )
-            | b_Z_isLt => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.ltb v1 v2))
-            )
-
-            | b_map_hasKey => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_pmap m) =>
-                    let p := my_encode (v2) in
-                    match m !! p with
-                    | Some _ => t_over (bv_bool true)
-                    | None => t_over (bv_bool false)
-                    end
-                | _ => t_over (bv_bool false)
-                end
-            )
-
-            | b_have_same_symbol => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_term s1 _ =>
-                    match v2 with
-                    | t_term s2 _ => t_over (bv_bool (bool_decide (s1 = s2)))
-                    | _ => t_over (bv_bool false)
-                    end
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-            | b_is_applied_symbol => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_sym s) =>
-                    match v2 with
-                    | t_term s' _ => t_over (bv_bool (bool_decide (s' = s)))
-                    | _ => t_over (bv_bool false)
-                    end
-                | _ => t_over (bv_bool false)
-                end
-            )
-
             end ;
 
             builtin_predicate_interp
             := fun p =>
             match p with
-            | b_isTrue =>
+            | b_term_eq => liftBinaryP (
+                fun _ v1 v2 =>
+                (bool_decide (v1 = v2))
+            )
+
+            | b_bool_eq => liftBinaryP (
+                fun _ v1 v2 =>
+                (bool_decide (v1 = v2))
+            )
+            | b_Z_eq => liftBinaryP (
+                fun _ v1 v2 =>
+                (bool_decide (v1 = v2))
+            )
+            | b_isBuiltin => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over b => true
+                | t_term _ _ => false
+                end
+            )
+            | b_isNotBuiltin => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over b => false
+                | t_term _ _ => true
+                end
+            ) 
+            | b_isError => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isError x)
+                | _ => false
+                end
+            )
+            | b_isNotError => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isError x)
+                | _ => false
+                end
+            )
+            | b_isBool => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isBool x)
+                | _ => false
+                end
+            )
+            | b_isNotBool => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isBool x)
+                | _ => false
+                end
+            )
+
+            | b_isSymbol => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_term _ _ => true
+                | _ => false
+                end
+            )
+
+            | b_isNotSymbol => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_term _ _ => false
+                | _ => true
+                end
+            )
+   
+            | b_isString => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isString x)
+                | _ => false
+                end
+            )
+
+            | b_isNotString => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isString x)
+                | _ => true
+                end
+            )
+                
+            | b_isList => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isList x)
+                | _ => false
+                end
+            )
+
+            | b_isNotList => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isList x)
+                | _ => true
+                end
+            )
+                
+            | b_isMap => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isMap x)
+                | _ => false
+                end
+            )
+
+            | b_isNotMap => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isMap x)
+                | _ => true
+                end
+            )
+
+            | b_isZ => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isZ x)
+                | _ => false
+                end
+            )
+
+            | b_isNotZ => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isZ x)
+                | _ => true
+                end
+            )    
+
+            | b_Z_isLe => liftBinaryP (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__Prop Z.leb v1 v2))
+            )
+
+            | b_Z_isLt => liftBinaryP (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__Prop Z.ltb v1 v2))
+            )
+
+            | b_Z_isGe => liftBinaryP (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__Prop Z.geb v1 v2))
+            )
+
+            | b_Z_isGt => liftBinaryP (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__Prop Z.gtb v1 v2))
+            )
+
+            | b_map_hasKey => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_over (bv_pmap m) =>
+                    let p := my_encode (v2) in
+                    match m !! p with
+                    | Some _ => true
+                    | None => false
+                    end
+                | _ => false
+                end
+            )
+
+            | b_have_same_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_term s1 _ =>
+                    match v2 with
+                    | t_term s2 _ => (bool_decide (s1 = s2))
+                    | _ => false
+                    end
+                | _ => false
+                end
+            )
+            | b_is_applied_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_over (bv_sym s) =>
+                    match v2 with
+                    | t_term s' _ => (bool_decide (s' = s))
+                    | _ => false
+                    end
+                | _ => false
+                end
+            )
+            (* | b_isTrue =>
                 fun nv l =>
                 match l with
                 | [t_over (bv_bool true)] => true
                 | _ => false
-                end            
+                end             *)
             end ;
     |}.
 
