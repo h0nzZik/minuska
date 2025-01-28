@@ -1010,6 +1010,138 @@ Proof.
     }
 Qed.
 
+
+Lemma SideCondition_satisfies_extensive
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (ρ1 ρ2 : Valuation2)
+    (c : SideCondition)
+    (nv : NondetValue)
+    :
+    ρ1 ⊆ ρ2 ->
+    satisfies ρ1 (program, nv) c ->
+    satisfies ρ2 (program, nv) c
+.
+Proof.
+    intros Hrhos.
+    unfold satisfies; simpl.
+    induction c; intros HH; simpl in *.
+    {
+        ltac1:(repeat case_match); try (solve [ltac1:(contradiction)]).
+        {
+            assert (l0 = l).
+            {
+                clear HH.
+                (* destruct c as [p args]. *)
+                revert l l0 H H0.
+                simpl.
+                clear p.
+                induction args; intros l1 l2 H1 H2.
+                {
+                    simpl in *. ltac1:(simplify_eq/=). reflexivity.
+                }
+                {
+                    simpl in *.
+                    rewrite bind_Some in H1.
+                    rewrite bind_Some in H2.
+                    destruct H1 as [x1 [H1x1 H2x1]].
+                    destruct H2 as [x2 [H1x2 H2x2]].
+                    rewrite bind_Some in H2x1.
+                    rewrite bind_Some in H2x2.
+                    destruct H2x1 as [ll1 [H1ll1 H2ll1]].
+                    destruct H2x2 as [ll2 [H1ll2 H2ll2]].
+                    simpl in *.
+                    ltac1:(simplify_eq/=).
+                    eapply Expression2_evaluate_extensive_Some in H1x1.
+                    {
+                        rewrite H1x1 in H1x2.
+                        ltac1:(simplify_eq/=).
+                        f_equal.
+                        apply IHargs; assumption.
+                    }
+                    {
+                        assumption.
+                    }
+                }
+            }
+            rewrite H1.
+            exact HH.
+        }
+        {
+            clear HH.
+            revert l H H0.
+            simpl in *.
+            induction args; intros l HH1 HH2; simpl in *.
+            {
+                ltac1:(simplify_eq/=).
+            }
+            {
+                simpl in *.
+                rewrite bind_Some in HH1.
+                rewrite bind_None in HH2.
+                destruct HH1 as [x1 [H1x1 H2x1]].
+                rewrite bind_Some in H2x1.
+                destruct H2x1 as [ll1 [H1ll1 H2ll1]].
+                simpl in *.
+                ltac1:(simplify_eq/=).
+                destruct HH2 as [HH2|HH2].
+                {
+                    eapply Expression2_evaluate_extensive_Some in H1x1.
+                    {
+                        rewrite H1x1 in HH2.
+                        inversion HH2.
+                    }
+                    { assumption. }
+                }
+                {
+                    destruct HH2 as [x2 [H1x2 H2x2]].
+                    rewrite bind_None in H2x2.
+                    specialize (IHargs _ H1ll1).
+                    destruct H2x2 as [H2x2 | H2x2].
+                    {
+                        exact (IHargs H2x2).
+                    }
+                    {
+                        destruct H2x2 as [x [H1x H2x]].
+                        inversion H2x.
+                    }
+                }
+            }
+        }
+        {
+            inversion HH.
+        }
+        {
+            inversion HH.
+        }
+    }
+    {
+        apply andb_prop in HH.
+        destruct HH as [HH1 HH2].
+        specialize (IHc1 HH1).
+        specialize (IHc2 HH2).
+        rewrite IHc1.
+        rewrite IHc2.
+        reflexivity.
+    }
+    {
+        apply orb_prop in HH.
+        destruct HH as [HH1|HH2].
+        {
+            specialize (IHc1 HH1).
+            rewrite IHc1.
+            simpl.
+            reflexivity.
+        }
+        {
+            specialize (IHc2 HH2).
+            rewrite IHc2.
+            apply orb_true_r.
+        }
+    }
+Qed.
+
+
 Lemma SideCondition_satisfies_strip
     {Σ : StaticModel}
     (program : ProgramT)
@@ -1023,14 +1155,16 @@ Lemma SideCondition_satisfies_strip
 Proof.
     unfold satisfies; simpl.
     intros HH.
-    revert HH.
-    induction c; intros HH; simpl in *.
+    remember (vars_of c) as vc.
+    assert (Hvc: vars_of c ⊆ vc) by (clear - Heqvc; ltac1:(set_solver)).
+    clear Heqvc.
+    revert HH vc Hvc.
+    induction c; intros HH vc Hvc; simpl in *.
     {
         ltac1:(repeat case_match).
         {
             assert (Htmp: l0 = l).
             {
-                (* destruct c as [p args]; simpl in *. *)
                 clear HH.
                 revert l l0 H H0.
                 induction args; intros l1 l2 H1 H2; simpl in *.
@@ -1071,9 +1205,12 @@ Proof.
                             split>[assumption|reflexivity].
                         }
                         {
-                            unfold vars_of in H1; simpl in H1.
-                            unfold vars_of in H1; simpl in H1.
-                            clear - H0 H1.
+                            unfold vars_of in Hvc; simpl in Hvc.
+                            unfold vars_of in Hvc; simpl in Hvc.
+                            clear - H H1 Hvc.
+                            ltac1:(exfalso).
+                            unfold Valuation2 in *.
+                            apply H1. clear H1.
                             ltac1:(set_solver).
                         }
                     }
@@ -1122,12 +1259,9 @@ Proof.
                                 }
                                 {
                                     ltac1:(exfalso).
-                                    apply H1. clear H1.
-                                    unfold vars_of; simpl.
-                                    unfold vars_of; simpl.
-                                    unfold vars_of in H; simpl in H.
-                                    unfold vars_of in H; simpl in H.
-                                    clear -H.
+                                    unfold vars_of in Hvc; simpl in Hvc.
+                                    unfold vars_of in Hvc; simpl in Hvc.
+                                    clear - Hvc H0 H1.
                                     ltac1:(set_solver).
                                 }
                             }
@@ -1181,6 +1315,12 @@ Proof.
                         
                         apply IHargs.
                         {
+                            unfold vars_of in Hvc; simpl in Hvc.
+                            unfold vars_of in Hvc; simpl in Hvc.
+                            clear - Hvc.
+                            ltac1:(set_solver).
+                        }
+                        {
                             apply list_collect_Forall in HH2 as HH2'.
                             destruct HH2' as [l_out [H1l_out H2l_out]].    
                             simpl in *.
@@ -1218,19 +1358,18 @@ Proof.
                                         apply H1. clear H1.
                                         unfold vars_of; simpl.
                                         unfold vars_of; simpl.
-                                        rewrite elem_of_union.
-                                        right.
+                                        unfold vars_of in Hvc; simpl in Hvc.
+                                        unfold vars_of in Hvc; simpl in Hvc.
+                                        eapply elem_of_weaken>[apply H0|].
                                         apply take_drop_middle in Hi.
-                                        rewrite <- Hi.
-                                        rewrite fmap_app.
-                                        rewrite union_list_app.
-                                        rewrite elem_of_union.
-                                        right.
+                                        rewrite <- Hi in Hvc.
+                                        rewrite fmap_app in Hvc.
+                                        rewrite union_list_app in Hvc.
+                                        eapply transitivity>[|apply Hvc].
                                         rewrite fmap_cons.
                                         rewrite union_list_cons.
-                                        rewrite elem_of_union.
-                                        left.
-                                        assumption.
+                                        clear.
+                                        ltac1:(set_solver).
                                     }
                                 }
                                 {
@@ -1266,7 +1405,7 @@ Proof.
                         }
                         {
                             unfold fmap.
-                            rewrite <- H1y1.
+                            rewrite <- H1y1. clear H1y1.
 
 
                             apply list_collect_Forall in HH2 as HH2'.
@@ -1276,9 +1415,28 @@ Proof.
                             intros i.
                             rewrite list_lookup_fmap.
                             rewrite list_lookup_fmap.
+                            (* clear IHargs. *)
                             destruct (args !! i) eqn:Hai; simpl in *.
                             {
                                 apply f_equal.
+
+                                assert (Hvargs : vars_of args ⊆ vc).
+                                {
+                                    unfold vars_of in Hvc; simpl in Hvc.
+                                    unfold vars_of in Hvc; simpl in Hvc.
+                                    clear - Hvc.
+                                    unfold vars_of; simpl.
+                                    unfold fmap; simpl.
+                                    ltac1:(set_solver).
+                                }
+                                ltac1:(ospecialize (IHargs _)).
+                                {
+                                    unfold vars_of; simpl.
+                                    exact Hvargs.
+                                }
+                                rewrite H2l_out in H1l_out.
+                                Print list_collect.
+                                Search list_collect.
                                 apply take_drop_middle in Hai.
                                 rewrite Forall_fmap in HH2.
                                 rewrite <- Hai in HH2.
@@ -1288,6 +1446,33 @@ Proof.
                                 unfold isSome in Hmy. simpl in Hmy.
                                 ltac1:(case_match)>[|inversion Hmy].
                                 clear Hmy.
+                                rewrite Hai in H.
+                                
+                                eapply transitivity.
+                                {
+                                    
+                                }
+                                {
+
+                                }
+                                rewrite Hai in H.
+                                unfold Valuation2 in *.
+                                apply Expression2_evaluate_extensive_Some with (ρ2 := ρ) in H>[|
+                                    apply map_filter_subseteq
+                                ].
+                                eapply Expression2_evalute_strip in H.
+                                rewrite H.
+                                Search Expression2_evaluate.
+                                eapply Expression2_evaluate_extensive_Some in H1x2.
+                                {
+                                    rewrite H1x2 in H1x1.
+                                    ltac1:(simplify_eq/=).
+                                }
+                                {
+                                    apply map_filter_subseteq.
+                                }
+                                (* eapply Expression2_evaluate_extensive_Some in H as H'. *)
+                                (* { rewrite H' in H1x2. } *)
                                 rewrite <- Hai.
                                 unfold vars_of; simpl.
                                 rewrite H.
@@ -1317,7 +1502,6 @@ Proof.
             ltac1:(exfalso).
             apply H0. clear H0.
             
-            destruct c as [? args]; simpl in *.
             revert l H.
             induction args; simpl; intros l HH.
             {
@@ -1424,110 +1608,13 @@ Proof.
             inversion HH.
         }
     }
-Qed.
-
-Lemma SideCondition_satisfies_extensive
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (ρ1 ρ2 : Valuation2)
-    (c : SideCondition2)
-    (nv : NondetValue)
-    :
-    ρ1 ⊆ ρ2 ->
-    satisfies ρ1 (program, nv) c ->
-    satisfies ρ2 (program, nv) c
-.
-Proof.
-    intros Hrhos.
-    unfold satisfies; simpl.
-    intros HH.
-    unfold SideCondition2_evaluate in *.
-    ltac1:(repeat case_match); try (solve [ltac1:(contradiction)]).
     {
-        assert (l0 = l).
-        {
-            clear HH.
-            destruct c as [p args].
-            revert l l0 H H0.
-            simpl.
-            clear p.
-            induction args; intros l1 l2 H1 H2.
-            {
-                simpl in *. ltac1:(simplify_eq/=). reflexivity.
-            }
-            {
-                simpl in *.
-                rewrite bind_Some in H1.
-                rewrite bind_Some in H2.
-                destruct H1 as [x1 [H1x1 H2x1]].
-                destruct H2 as [x2 [H1x2 H2x2]].
-                rewrite bind_Some in H2x1.
-                rewrite bind_Some in H2x2.
-                destruct H2x1 as [ll1 [H1ll1 H2ll1]].
-                destruct H2x2 as [ll2 [H1ll2 H2ll2]].
-                simpl in *.
-                ltac1:(simplify_eq/=).
-                eapply Expression2_evaluate_extensive_Some in H1x1.
-                {
-                    rewrite H1x1 in H1x2.
-                    ltac1:(simplify_eq/=).
-                    f_equal.
-                    apply IHargs; assumption.
-                }
-                {
-                    assumption.
-                }
-            }
-        }
-        rewrite H1.
-        exact HH.
-    }
-    {
-        clear HH.
-        revert l H H0.
-        destruct c as [p args]. simpl in *.
-        induction args; intros l HH1 HH2; simpl in *.
-        {
-            ltac1:(simplify_eq/=).
-        }
-        {
-            simpl in *.
-            rewrite bind_Some in HH1.
-            rewrite bind_None in HH2.
-            destruct HH1 as [x1 [H1x1 H2x1]].
-            rewrite bind_Some in H2x1.
-            destruct H2x1 as [ll1 [H1ll1 H2ll1]].
-            simpl in *.
-            ltac1:(simplify_eq/=).
-            destruct HH2 as [HH2|HH2].
-            {
-                eapply Expression2_evaluate_extensive_Some in H1x1.
-                {
-                    rewrite H1x1 in HH2.
-                    inversion HH2.
-                }
-                { assumption. }
-            }
-            {
-                destruct HH2 as [x2 [H1x2 H2x2]].
-                rewrite bind_None in H2x2.
-                specialize (IHargs _ H1ll1).
-                destruct H2x2 as [H2x2 | H2x2].
-                {
-                    exact (IHargs H2x2).
-                }
-                {
-                    destruct H2x2 as [x [H1x H2x]].
-                    inversion H2x.
-                }
-            }
-        }
-    }
-    {
-        inversion HH.
-    }
-    {
-        inversion HH.
+        apply andb_prop in HH.
+        destruct HH as [HH1 HH2].
+        specialize (IHc1 HH1).
+        specialize (IHc2 HH2).
+        simpl in *.
+        ltac1:(rewrite IHc1).
     }
 Qed.
 
