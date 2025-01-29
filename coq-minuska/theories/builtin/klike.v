@@ -93,7 +93,7 @@ Section sec.
     (* TODO make parametric in a user type *)
     Inductive BuiltinValue0 :=
     | bv_error
-    | bv_bool (b : bool)
+    (* | bv_bool (b : bool) *)
     (* | bv_nat (n : nat) *)
     | bv_Z (z : Z)
     | bv_sym (s : symbol)
@@ -165,7 +165,7 @@ Section sec.
         S (my_pmapne_size m)
     | bv_pmap (PEmpty) => 1
     | bv_error => 1
-    | bv_bool _ => 1
+    (* | bv_bool _ => 1 *)
     (* | bv_nat _ => 1 *)
     | bv_sym _ => 1
     | bv_str _ => 1
@@ -192,7 +192,7 @@ Section sec.
                 try (solve [left; reflexivity]);
                 right; ltac1:(discriminate).
             }
-            {
+            (* {
                 destruct y;
                 try (solve [left; reflexivity]);
                 try (solve [right;ltac1:(discriminate)]).
@@ -203,7 +203,7 @@ Section sec.
                 {
                     right; ltac1:(abstract congruence).
                 }
-            }
+            } *)
             (*
             {
                 destruct y;
@@ -935,7 +935,7 @@ Section sec.
 
     Inductive BVLeaf :=
     | bvl_error
-    | bvl_bool (b : bool)
+    (* | bvl_bool (b : bool) *)
     (* | bvl_nat (n : nat) *)
     | bvl_Z (z : Z)
     | bvl_str (s : string)
@@ -953,7 +953,7 @@ Section sec.
     match t with
     | ((GenNode 1 nil)) => Some (bv_pmap (PEmpty))
     | (GenLeaf bvl_error)      => Some (bv_error)  
-    | (GenLeaf (bvl_bool b))   => Some (bv_bool b) 
+    (* | (GenLeaf (bvl_bool b))   => Some (bv_bool b)  *)
     (* | (GenLeaf (bvl_nat n))    => Some (bv_nat n)  *)
     | (GenLeaf (bvl_Z z))      => Some (bv_Z z) 
     | (GenLeaf (bvl_str s))      => Some (bv_str s) 
@@ -1139,7 +1139,7 @@ Section sec.
     match r with
     | (bv_pmap (PEmpty)) => (GenNode 1 nil)
     | (bv_error)         => (GenLeaf bvl_error)
-    | (bv_bool b)        => (GenLeaf (bvl_bool b))
+    (* | (bv_bool b)        => (GenLeaf (bvl_bool b)) *)
     (* | (bv_nat n)         => (GenLeaf (bvl_nat n)) *)
     | (bv_Z z)           => (GenLeaf (bvl_Z z))
     | (bv_sym s)           => (GenLeaf (bvl_sym s))
@@ -1573,7 +1573,7 @@ induction ao; try reflexivity.
     )).
     {
         ltac1:(unshelve(eapply gen_tree_countable)).
-        remember (unit+bool+(*nat+*)Z+string+symbol)%type as MyT.
+        remember (unit+(*bool+*)(*nat+*)Z+string+symbol)%type as MyT.
         ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
         {
             subst MyT. apply _.
@@ -1582,15 +1582,8 @@ induction ao; try reflexivity.
             subst.
             intros bvl. destruct bvl.
             {
-                left. left. left. left. exact ().
+                left. left. left. exact ().
             }
-            {
-                left. left. left. right. exact b.
-            }
-            (*
-            {
-                left. left. left. right. exact n.
-            }*)
             {
                 left. left. right. exact z.
             }
@@ -1610,26 +1603,8 @@ induction ao; try reflexivity.
                 {
                     destruct t1 as [t1|t2].
                     {
-                        (*
-                        destruct t1 as [t1|t2].
-                        {*)
-                            destruct t1 as [t1|t2].
-                            {
-                                apply Some.
-                                apply bvl_error.
-                            }
-                            {
-                                apply Some.
-                                apply bvl_bool.
-                                apply t2.
-                            }
-                        (*}*)
-                        (*
-                        {
-                            apply Some.
-                            apply bvl_nat.
-                            apply t2.                                
-                        }*)
+                        apply Some.
+                        apply bvl_error.
                     }
                     {
                         apply Some.
@@ -1665,17 +1640,10 @@ induction ao; try reflexivity.
 End sec.
 
 Inductive FunctionSymbol : Set :=
-| b_false             (* bool *)
-| b_true              (* bool *)
 | b_zero              (* Z *)
 | b_list_empty        (* list *)
 | b_map_empty         (* map *)
-| b_bool_neg          (* bool -> bool *)
 | b_map_size          (* map -> Z *)
-| b_bool_and               (* bool -> bool -> bool *)
-| b_bool_or                (* bool -> bool -> bool *)
-| b_bool_iff               (* bool -> bool -> bool *)
-| b_bool_xor               (* bool -> bool -> bool *)
 | b_Z_plus            (* Z -> Z -> Z *)
 | b_Z_minus           (* Z -> Z -> Z *)
 | b_Z_times           (* Z -> Z -> Z *)
@@ -1689,12 +1657,11 @@ Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 Inductive PredicateSymbol : Set :=
+| b_tt                     (* Prop *)
 | b_isBuiltin              (* 'a -> Prop *)
 | b_isNotBuiltin           (* 'a -> Prop *)
 | b_isError                (* 'a -> Prop *)
 | b_isNotError             (* 'a -> Prop *)
-| b_isBool                 (* 'a -> Prop *)
-| b_isNotBool              (* 'a -> Prop *)
 | b_isSymbol               (* 'a -> Prop *)
 | b_isNotSymbol            (* 'a -> Prop *)
 | b_isZ                    (* 'a -> Prop *)
@@ -1709,8 +1676,6 @@ Inductive PredicateSymbol : Set :=
 | b_Z_isLt                 (* Z -> Z -> Prop *)
 | b_Z_isGe                 (* Z -> Z -> Prop *)
 | b_Z_isGt                 (* Z -> Z -> Prop *)
-| b_bool_eq                (* bool -> bool -> Prop *)
-| b_bool_neq               (* bool -> bool -> Prop *)
 | b_term_eq                (* term -> term -> Prop *)
 | b_Z_eq                   (* Z -> Z -> Prop *)
 | b_Z_neq                  (* Z -> Z -> Prop *)
@@ -1744,11 +1709,6 @@ Section sec.
     Definition impl_isError (bv : BuiltinValue) : bool
     :=
         match bv with bv_error => true | _ => false end
-    .
-
-    Definition impl_isBool (bv : BuiltinValue) : bool
-    :=
-        match bv with bv_bool _ => true | _ => false end
     .
 
     Definition impl_isZ (bv : BuiltinValue) : bool
@@ -1801,36 +1761,6 @@ Section sec.
     | _,_ => false
     end.
 
-    Definition bfmap_bool__bool
-        (f : bool -> bool)
-        (x : @TermOver' symbol BuiltinValue)
-        : @TermOver' symbol BuiltinValue
-    :=
-    bfmap1
-        (fun x' =>
-        match x' with
-        | bv_bool x'' => bv_bool (f x'')
-        | _ => bv_error
-        end
-        )
-        x
-    .
-
-    Definition bfmap_bool_bool__bool
-        (f : bool -> bool -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
-        : @TermOver' symbol BuiltinValue
-    :=
-    bfmap2
-        (fun x' y' =>
-        match x', y' with
-        | bv_bool x'', bv_bool y'' => bv_bool (f x'' y'')
-        | _, _ => bv_error
-        end
-        )
-        x y
-    .
-
     Definition bfmap_Z_Z__Z
         (f : Z -> Z -> Z)
         (x y : @TermOver' symbol BuiltinValue)
@@ -1840,21 +1770,6 @@ Section sec.
         (fun x' y' =>
         match x', y' with
         | bv_Z x'', bv_Z y'' => bv_Z (f x'' y'')
-        | _, _ => bv_error
-        end
-        )
-        x y
-    .
-
-    Definition bfmap_Z_Z__bool
-        (f : Z -> Z -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
-        : @TermOver' symbol BuiltinValue
-    :=
-    bfmap2
-        (fun x' y' =>
-        match x', y' with
-        | bv_Z x'', bv_Z y'' => bv_bool (f x'' y'')
         | _, _ => bv_error
         end
         )
@@ -1887,6 +1802,17 @@ Section sec.
         match l with
         | [] => f nv
         | _::_ => @t_over symbol BuiltinValue (bv_error)
+        end
+    .
+
+    Definition liftNularyP
+        (f : MyUnit -> bool)
+        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> bool)
+    :=
+        fun nv l =>
+        match l with
+        | [] => f nv
+        | _::_ => false
         end
     .
 
@@ -1971,13 +1897,6 @@ Section sec.
             := fun p =>
             match p with
             (* nulary *)
-            | b_false => fun _ l => t_over (bv_bool false)
-            (* | b_false => liftNulary (
-                    fun _ => t_over (bv_bool false)
-                ) *)
-            | b_true => liftNulary (
-                    fun _ => t_over (bv_bool true)
-                )
             | b_zero => liftNulary (
                     fun _ => t_over (bv_Z 0)
                 )
@@ -1988,12 +1907,6 @@ Section sec.
                     fun _ => (t_over (bv_pmap ∅))
                 )
             (* unary *)            
-
-            | b_bool_neg => liftUnary (
-                fun _ v =>
-                bfmap_bool__bool negb v
-            )
-            
             
             | b_map_size => liftUnary (
                 fun _ v =>
@@ -2001,25 +1914,6 @@ Section sec.
                 | t_over (bv_pmap m) => (t_over (bv_Z (Z.of_nat (size m))))
                 | _ => err
                 end
-            )
-
-            (* binary *)
-            | b_bool_and => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool andb v1 v2
-            )
-                
-            | b_bool_or => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool orb v1 v2
-            )
-            | b_bool_iff => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool eqb v1 v2
-            )
-            | b_bool_xor => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool xorb v1 v2
             )
             | b_Z_plus => liftBinary (
                 fun _ v1 v2 =>
@@ -2069,19 +1963,25 @@ Section sec.
             builtin_predicate_interp
             := fun p =>
             match p with
+            | b_tt => liftNularyP (
+                fun _ =>
+                true
+            )
             | b_term_eq => liftBinaryP (
                 fun _ v1 v2 =>
                 (bool_decide (v1 = v2))
             )
 
-            | b_bool_eq => liftBinaryP (
-                fun _ v1 v2 =>
-                (bool_decide (v1 = v2))
-            )
             | b_Z_eq => liftBinaryP (
                 fun _ v1 v2 =>
                 (bool_decide (v1 = v2))
             )
+
+            | b_Z_neq => liftBinaryP (
+                fun _ v1 v2 =>
+                negb (bool_decide (v1 = v2))
+            )
+
             | b_isBuiltin => liftUnaryP (
                 fun _ v =>
                 match v with
@@ -2107,20 +2007,6 @@ Section sec.
                 fun _ v =>
                 match v with
                 | t_over x => negb (impl_isError x)
-                | _ => false
-                end
-            )
-            | b_isBool => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => (impl_isBool x)
-                | _ => false
-                end
-            )
-            | b_isNotBool => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => negb (impl_isBool x)
                 | _ => false
                 end
             )
@@ -2249,6 +2135,19 @@ Section sec.
                 | _ => false
                 end
             )
+
+            | b_not_have_same_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_term s1 _ =>
+                    match v2 with
+                    | t_term s2 _ => negb (bool_decide (s1 = s2))
+                    | _ => true
+                    end
+                | _ => true
+                end
+            )
+
             | b_is_applied_symbol => liftBinaryP (
                 fun _ v1 v2 =>
                 match v1 with
@@ -2260,13 +2159,23 @@ Section sec.
                 | _ => false
                 end
             )
-            (* | b_isTrue =>
-                fun nv l =>
-                match l with
-                | [t_over (bv_bool true)] => true
-                | _ => false
-                end             *)
+
+            | b_is_not_applied_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_over (bv_sym s) =>
+                    match v2 with
+                    | t_term s' _ => negb (bool_decide (s' = s))
+                    | _ => true
+                    end
+                | _ => true
+                end
+            )
             end ;
+
+            builtin_predicate_true := b_tt ;
+
+            builtin_predicate_true_holds := fun _ => eq_refl ;
     |}.
 
 End sec.
@@ -2274,42 +2183,6 @@ End sec.
 
 Module Notations.
     
-    
-    Notation "'true'" := ( (e_fun b_true []))
-        : RuleScope
-    .
-
-    Notation "'false'" := ( (e_fun b_false []))
-        : RuleScope
-    .
-
-    Notation "b1 '&&' b2" :=
-        ( (e_fun b_bool_and
-            [b1;
-            b2]
-        ))
-        : RuleScope
-    .
-
-    Notation "b1 '||' b2" :=
-        ( (e_fun b_bool_or
-            [b1; b2]
-        ))
-        : RuleScope
-    .
-
-    Notation "~~ b" :=
-        ( (e_fun b_bool_neg [b]))
-    .
-
-    Notation "'isBool' t" :=
-        ( (e_fun
-            b_isBool
-            [(t)]
-        ))
-        (at level 90)
-    .        
-
     Notation "'isZ' t" :=
         ((e_fun
             b_isZ
@@ -2374,10 +2247,6 @@ Module Notations.
         ((e_fun b_Z_eq [(x); (y)]))
     .
 
-    Notation "'(' x '==Bool' y ')'" :=
-        ((e_fun b_bool_eq [(x); (y)]))
-    .
-
     Notation "<opaque map>" := (bv_pmap (PNodes _)) (only printing).
 
 End Notations.
@@ -2386,13 +2255,6 @@ Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
         ("is_true", "b_cond_is_true");
         ("term.eq", "b_term_eq");
-        ("bool.neg", "b_bool_neg");
-        ("bool.and", "b_bool_and");
-        ("bool.or", "b_bool_or");
-        ("bool.eq", "b_bool_eq");
-        ("bool.false", "b_false");
-        ("bool.true", "b_true");
-        ("bool.is", "b_isBool");
         ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
         ("z.minus", "b_Z_minus");
@@ -2409,15 +2271,6 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("map.update", "b_map_update")
     ];
 |}.
-
-Definition inject_bool
-    {symbol : Type}
-    (Fret : option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
-    (b : bool)
-    :
-    (@BuiltinValue0 symbol) :=
-    Fret (Some (bv_bool b))
-.
 
 Definition inject_Z
     {symbol : Type}
@@ -2444,7 +2297,7 @@ Definition eject
     option (bool+(Z+(string+unit)))%type
     :=
     match v with
-    | bv_bool b => Some (inl b)
+    (* | bv_bool b => Some (inl b) *)
     | bv_Z z => Some (inr (inl z))
     | bv_str s => Some (inr (inr (inl s)))
     | bv_error => Some (inr (inr (inr ())))

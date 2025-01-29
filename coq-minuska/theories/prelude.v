@@ -1319,6 +1319,50 @@ Proof.
     }
 Qed.
 
+Lemma flat_map_lookup_Some
+    {A B : Type}
+    (f : A -> list B)
+    (l : list A)
+    (i : nat)
+    (y : B)
+    :
+    (flat_map f l) !! i = Some y ->
+    { j : nat & { x : A & { k : nat & l !! j = Some x /\ (f x) !! k = Some y } } }
+.
+Proof.
+    revert i.
+    induction l; simpl; intros i HH.
+    {
+        rewrite lookup_nil in HH.
+        inversion HH.
+    }
+    {
+        destruct (decide (i < length (f a))) as [Hlt|Hgeq].
+        {
+            rewrite lookup_app_l in HH>[|exact Hlt].
+            exists 0.
+            exists a.
+            exists i.
+            simpl.
+            split>[reflexivity|].
+            exact HH.            
+        }
+        {
+            rewrite lookup_app_r in HH.
+            specialize (IHl _ HH).
+            destruct IHl as [j [x [k [H1 H2]]]].
+            exists (S j).
+            exists x.
+            exists k.
+            simpl.
+            split>[apply H1|].
+            exact H2.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+
 Inductive MyUnit := mytt.
 
 

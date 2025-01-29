@@ -3097,3 +3097,198 @@ Proof.
         }
     }
 Qed.
+
+
+
+Equations? TermOverBoV_eval
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (φ : TermOver BuiltinOrVar)
+    (pf : vars_of φ ⊆ vars_of ρ)
+    : TermOver builtin_value
+    by wf (TermOver_size φ) lt
+:=
+
+    TermOverBoV_eval ρ (t_over (bov_builtin b)) pf := t_over b
+    ;
+
+    TermOverBoV_eval ρ (t_over (bov_variable x)) pf with (inspect (ρ !! x)) => {
+        | (@exist _ _ (Some t) pf') := t;
+        | (@exist _ _ None pf') := _ ;
+    }
+    ;
+
+    
+    TermOverBoV_eval ρ (t_term s l) pf :=
+        t_term s (pfmap l (fun φ' pf' => TermOverBoV_eval ρ φ' _))
+    ;
+.
+Proof.
+    {
+        ltac1:(exfalso).        
+        abstract(
+            rewrite elem_of_subseteq in pf;
+            specialize (pf x);
+            unfold vars_of in pf; simpl in pf;
+            unfold vars_of in pf; simpl in pf;
+            unfold vars_of in pf; simpl in pf;
+            rewrite elem_of_singleton in pf;
+            specialize (pf eq_refl);
+            unfold Valuation2 in *;
+            rewrite elem_of_dom in pf;
+            ltac1:(rewrite pf' in pf);
+            eapply is_Some_None;
+            apply pf
+        ).
+    }
+    {
+        unfold TermOver in *.
+        intros. subst.
+        apply elem_of_list_split in pf'.
+        destruct pf' as [l1 [l2 Hl1l2]].
+        subst l.
+        rewrite vars_of_t_term in pf.
+        rewrite fmap_app in pf. rewrite fmap_cons in pf.
+        rewrite union_list_app_L in pf.
+        rewrite union_list_cons in pf.
+        ltac1:(set_solver).        
+    }
+    {
+        intros. subst. simpl.
+        apply elem_of_list_split in pf'.
+        destruct pf' as [l1 [l2 Hl1l2]].
+        subst l.
+        rewrite sum_list_with_app.
+        simpl.
+        ltac1:(lia).
+    }
+Defined.
+
+
+Lemma satisfies_TermOverBoV__impl__vars_subseteq
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (c : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    satisfies ρ c φ ->
+    vars_of φ ⊆ vars_of ρ
+.
+Proof.
+    revert ρ c.
+    induction φ; intros ρ c HH.
+    {
+        unfold satisfies in HH; simpl in HH.
+        ltac1:(simp sat2B in HH).
+        destruct a; simpl in HH; subst.
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        rewrite elem_of_subseteq.
+        intros x' Hx'.
+        rewrite elem_of_singleton in Hx'.
+        subst x'.
+        unfold Valuation2 in *.
+        rewrite elem_of_dom.
+        exists (c).
+        exact HH.
+    }
+    {
+        unfold satisfies in HH; simpl in HH.
+        destruct c; ltac1:(simp sat2B in HH).
+        { destruct HH. }
+        destruct HH as [HH1 [HH2 HH3]].
+        unfold TermOver in *.
+        rewrite vars_of_t_term.
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        rewrite elem_of_union_list in Hx.
+        destruct Hx as [X [HX Hx]].
+        rewrite elem_of_list_fmap in HX.
+        destruct HX as [y [HX Hy]].
+        subst X.
+        apply elem_of_list_split in Hy.
+        destruct Hy as [l1 [l2 Hy]].
+        subst l.
+        rewrite Forall_app in H.
+        rewrite Forall_cons in H.
+        destruct H as [H1 [H2 H3]].
+        
+        subst s0.
+        destruct (l0 !! length l1) eqn:Heq.
+        {
+            specialize (HH3 (length l1) t y).
+            rewrite lookup_app_r in HH3>[|unfold TermOver in *; ltac1:(lia)].
+            rewrite Nat.sub_diag in HH3. simpl in HH3.
+            specialize (HH3 erefl Heq).
+            specialize (H2 _ _ HH3).
+            clear -H2 Hx.
+            ltac1:(set_solver).
+        }
+        {
+            apply lookup_ge_None in Heq.
+            rewrite length_app in HH2. simpl in HH2.
+            unfold TermOver in *.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+
+Lemma vars_of__TermOverBoV_subst__varless
+    {Σ : StaticModel} c x v
+    :
+    vars_of v = ∅ ->
+    vars_of (TermOverBoV_subst c x v) = vars_of c ∖ {[x]}
+.
+Proof.
+    induction c; simpl in *; intros HH.
+    {
+        destruct a.
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+        }
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            destruct (decide (x = x0)).
+            {
+                subst.
+                ltac1:(set_solver).
+            }
+            {
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+        }
+    }
+    {
+        unfold TermOver in *.
+        rewrite vars_of_t_term.
+        rewrite vars_of_t_term.
+        apply set_eq.
+        revert HH H.
+        induction l; intros HH H.
+        {
+            intros x0. simpl. ltac1:(set_solver).
+        }
+        {
+            intros x0.
+            specialize (IHl HH).
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2). clear H2.
+            specialize (H1 HH).
+            ltac1:(set_solver).
+        }
+    }
+Qed.
