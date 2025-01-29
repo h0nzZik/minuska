@@ -144,7 +144,7 @@ Module two_counters_Z.
                 t_over ((($M)) -Z (e_ground (t_over (bv_Z 1%Z))));
                 t_over (($N) +Z (($M)))
                 ]
-            where [mkSideCondition2 _ b_cond_is_true [($M >Z (e_ground (t_over (bv_Z 0%Z))))]]
+            where [mkSideCondition _ b_cond_is_true [($M >Z (e_ground (t_over (bv_Z 0%Z))))]]
         )
     ]))).
     
@@ -236,8 +236,8 @@ Module arith.
         default_context_template
             := (context-template cfg [ HOLE ] with HOLE) ;
 
-        default_isValue := fun x => mkSideCondition2 _ b_cond_is_true [(isZ x)] ;
-        default_isNonValue := fun x => mkSideCondition2 _ b_cond_is_true [e_fun b_bool_neg [(isZ x)]] ;
+        default_isValue := fun x => mkSideCondition _ b_cond_is_true [(isZ x)] ;
+        default_isNonValue := fun x => mkSideCondition _ b_cond_is_true [e_fun b_bool_neg [(isZ x)]] ;
         
     |}.
 
@@ -247,7 +247,7 @@ Module arith.
             rule ["plus-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) + t_over ($Y) ); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X +Z $Y) ; t_over ($REST_SEQ) ] ]
-                where [mkSideCondition2 _ b_cond_is_true [(
+                where [mkSideCondition _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -259,7 +259,7 @@ Module arith.
             rule ["minus-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) - t_over ($Y)); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X -Z $Y) ; t_over ($REST_SEQ) ] ]
-                where [mkSideCondition2 _ b_cond_is_true [(
+                where [mkSideCondition _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -271,7 +271,7 @@ Module arith.
             rule ["times-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) * t_over ($Y)); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X *Z $Y) ; t_over ($REST_SEQ) ] ]
-                where [mkSideCondition2 _ b_cond_is_true [(
+                where [mkSideCondition _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -283,7 +283,7 @@ Module arith.
             rule ["div-nat-nat"]:
                 cfg [ u_cseq [ (t_over ($X) / t_over ($Y)); t_over ($REST_SEQ) ] ]
             ~>{default_act} cfg [ u_cseq [ t_over ($X /Z $Y) ; t_over ($REST_SEQ) ] ]
-                where [mkSideCondition2 _ b_cond_is_true [(
+                where [mkSideCondition _ b_cond_is_true [(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -421,20 +421,20 @@ Module fib_native.
                 t_over (e_ground (t_over  (bv_Z 1)));
                 t_over (e_ground (t_over  (bv_Z 1))) 
                ]
-            where [mkSideCondition2 _ b_cond_is_true [((~~ ($Tgt ==Z (e_ground (t_over (bv_Z 0)))))
+            where [mkSideCondition _ b_cond_is_true [((~~ ($Tgt ==Z (e_ground (t_over (bv_Z 0)))))
                 && (~~ ($Tgt ==Z (e_ground (t_over (bv_Z 1))))))]]
         );
         decl_rule (
             rule ["step"]:
                state [ t_over ($Tgt); t_over  ($Curr); t_over ($X); t_over ($Y) ]
             ~>{default_act} state [ t_over ($Tgt); t_over (($Curr) +Z (e_ground (t_over  (bv_Z 1)))); t_over ($X +Z $Y); t_over ($X) ]
-            where [mkSideCondition2 _ b_cond_is_true [(~~ ((($Curr)) ==Z (($Tgt))))]]
+            where [mkSideCondition _ b_cond_is_true [(~~ ((($Curr)) ==Z (($Tgt))))]]
         );
         decl_rule (
             rule ["result"]:
                state [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
             ~>{default_act} resultState [ t_over ($X) ]
-                where [mkSideCondition2 _ b_cond_is_true [(($Curr ==Z $Tgt))]]
+                where [mkSideCondition _ b_cond_is_true [(($Curr ==Z $Tgt))]]
         )
     ].
 
@@ -652,7 +652,7 @@ Module imp.
 
     Definition isNonValueE := fun x => (e_fun b_bool_neg [(isValueE x)]).
 
-    Definition isValue := fun x => mkSideCondition2 _ b_cond_is_true [isValueE x].
+    Definition isValue := fun x => mkSideCondition _ b_cond_is_true [isValueE x].
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -662,7 +662,7 @@ Module imp.
             := (context-template u_cfg ([ u_state [HOLE; (t_over ($X)) ] ]) with HOLE) ;
 
         default_isValue := isValue ;
-        default_isNonValue := fun x => mkSideCondition2 _ b_cond_is_true [isNonValueE x] ;
+        default_isNonValue := fun x => mkSideCondition _ b_cond_is_true [isNonValueE x] ;
     |}.
 
 
@@ -689,12 +689,12 @@ Module imp.
         (decl_strict (symbol "arith_times" of arity 2 strict in [0;1]));
         (decl_strict (symbol "arith_div" of arity 2 strict in [0;1]));
         (* plus *)
-        (decl_simple_rule ["plus-Z-Z"]: (t_over ($X) + t_over ($Y)) ~> t_over ($X +Z $Y) where [mkSideCondition2 _ b_cond_is_true [((isZ ($X)) && (isZ ($Y)))]]);
+        (decl_simple_rule ["plus-Z-Z"]: (t_over ($X) + t_over ($Y)) ~> t_over ($X +Z $Y) where [mkSideCondition _ b_cond_is_true [((isZ ($X)) && (isZ ($Y)))]]);
         (* minus *)
         (decl_simple_rule ["minus-Z-Z"]:
                (t_over ($X) - t_over ($Y))
             ~> t_over ($X -Z $Y)
-                where [mkSideCondition2 _ b_cond_is_true[(
+                where [mkSideCondition _ b_cond_is_true[(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -704,7 +704,7 @@ Module imp.
         (decl_simple_rule ["times-Z-Z"]:
                (t_over ($X) * t_over ($Y))
             ~> t_over ($X *Z $Y)
-                where [mkSideCondition2 _ b_cond_is_true[(
+                where [mkSideCondition _ b_cond_is_true[(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -714,7 +714,7 @@ Module imp.
         (decl_simple_rule ["div-Z-Z"]:
                 (t_over($X) / t_over($Y))
             ~> t_over($X /Z $Y)
-                where [mkSideCondition2 _ b_cond_is_true[(
+                where [mkSideCondition _ b_cond_is_true[(
                     (isZ ($X))
                     &&
                     (isZ ($Y))
@@ -731,7 +731,7 @@ Module imp.
                     u_cseq [unitValue[]; t_over ($REST_SEQ)];
                     t_over (e_fun b_map_update [($VALUES); ($X); ($Y)])
                 ] ]
-                where [mkSideCondition2 _ b_cond_is_true [((isString ($X)) && (isValueE ($Y)))]]
+                where [mkSideCondition _ b_cond_is_true [((isString ($X)) && (isValueE ($Y)))]]
         ));
         (decl_rule (
             rule ["var-lookup"]:
@@ -745,7 +745,7 @@ Module imp.
         (decl_simple_rule ["seq-unit-value"]:
                 stmt_seq [unitValue []; t_over ($X) ]
             ~> t_over ($X)
-            where [mkSideCondition2 _ b_cond_is_true[((isValueE ($X)))]])
+            where [mkSideCondition _ b_cond_is_true[((isValueE ($X)))]])
         ;
         (decl_strict (symbol "stmt_seq" of arity 2 strict in [0;1]));
 
@@ -757,26 +757,26 @@ Module imp.
         (decl_simple_rule ["bexpr-eq-Z-Z"]:
                 bexpr_eq [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_fun b_bool_eq [($X); ($Y)]))
-            where [mkSideCondition2 _ b_cond_is_true[((isValueE ($X)) && (isValueE ($Y)))]])
+            where [mkSideCondition _ b_cond_is_true[((isValueE ($X)) && (isValueE ($Y)))]])
         ;
         (decl_simple_rule ["bexpr-le-Z-Z"]:
                 bexpr_le [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_fun b_Z_isLe [($X); ($Y)]))
-            where [mkSideCondition2 _ b_cond_is_true[((isZ ($X)) && (isZ ($Y)))]])
+            where [mkSideCondition _ b_cond_is_true[((isZ ($X)) && (isZ ($Y)))]])
         ;
         (decl_simple_rule ["bexpr-lt-Z-Z"]:
                bexpr_lt [ t_over ($X); t_over ($Y) ]
             ~> (t_over (e_fun b_Z_isLt [($X); ($Y)]))
-            where [mkSideCondition2 _ b_cond_is_true[((isZ ($X)) && (isZ ($Y)))]])
+            where [mkSideCondition _ b_cond_is_true[((isZ ($X)) && (isZ ($Y)))]])
         ;
         (decl_simple_rule ["bexpr-negb-bool"]:
                bexpr_negb [t_over ($X) ]
             ~> t_over (e_fun b_bool_neg [($X)])
-            where [mkSideCondition2 _ b_cond_is_true[((isBool ($X)))]])
+            where [mkSideCondition _ b_cond_is_true[((isBool ($X)))]])
         ;
         (decl_strict (symbol "stmt_ite" of arity 3 strict in [0]) );
-        (decl_simple_rule ["stmt-ite-true"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($X) where [mkSideCondition2 _ b_cond_is_true[($B)]]) ;
-        (decl_simple_rule ["stmt-ite-false"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($Y) where [mkSideCondition2 _ b_cond_is_true[($B ==Bool false)]]) ;
+        (decl_simple_rule ["stmt-ite-true"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($X) where [mkSideCondition _ b_cond_is_true[($B)]]) ;
+        (decl_simple_rule ["stmt-ite-false"]: stmt_ite [t_over ($B); t_over ($X); t_over ($Y)] ~> t_over ($Y) where [mkSideCondition _ b_cond_is_true[($B ==Bool false)]]) ;
         (* (* sugared *)
         decl_simple_rule ["while-unfold"]:
             stmt_while [$B, $X]

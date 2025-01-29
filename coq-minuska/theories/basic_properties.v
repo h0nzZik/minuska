@@ -467,6 +467,19 @@ match e with
 end
 .
 
+Fixpoint SideCondition_subst
+    {Σ : StaticModel}
+    (c : SideCondition)
+    (x : variable)
+    (e' : Expression2)
+    : SideCondition
+:=
+    match c with
+    | sc_atom p es => sc_atom p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_and l r => sc_and (SideCondition_subst l x e') (SideCondition_subst r x e')
+    | sc_or l r => sc_or (SideCondition_subst l x e') (SideCondition_subst r x e')
+    end
+.
 
 Fixpoint vars_of_to_l2r
     {Σ : StaticModel}

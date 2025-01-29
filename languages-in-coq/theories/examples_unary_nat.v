@@ -77,7 +77,7 @@ Module unary_nat.
 
     Definition isNonValueE := fun x => (e_fun b_bool_neg [(isValueE x)]).
 
-    Definition isValue := fun x => mkSideCondition2 _ b_cond_is_true [isValueE x].
+    Definition isValue := fun x => mkSideCondition _ b_cond_is_true [isValueE x].
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -87,7 +87,7 @@ Module unary_nat.
             := (context-template u_cfg ([ HOLE ]) with HOLE) ;
 
         default_isValue := isValue ;
-        default_isNonValue := fun x => mkSideCondition2 _ b_cond_is_true [isNonValueE x] ;
+        default_isNonValue := fun x => mkSideCondition _ b_cond_is_true [isNonValueE x] ;
     |}.
 
     (* Operations *)
@@ -268,7 +268,7 @@ Module unary_nat.
         decl_simple_rule ["step"]:
             nat_fib' [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
             ~> nat_fib' [ t_over ($Tgt); nat_succ [ t_over ($Curr) ]; nat_add [t_over ($X); t_over ($Y)]; t_over ($X) ]
-            where [mkSideCondition2 _ b_cond_is_true [(~~ ($Curr ==Term $Tgt))]]
+            where [mkSideCondition _ b_cond_is_true [(~~ ($Curr ==Term $Tgt))]]
         ;
         
         decl_simple_rule ["result"]:

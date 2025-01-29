@@ -20,71 +20,6 @@ From Equations Require Export Equations.
 #[global]
 Set Equations Transparent.
 
-Lemma satisfies_var
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    x γ:
-    ρ !! x = Some (γ) ->
-    satisfies ρ γ (t_over (bov_variable x))
-.
-Proof.
-    intros H.
-    destruct γ; (repeat constructor); assumption.
-Qed.
-
-Lemma satisfies_var_expr
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (ρ : Valuation2)
-    (nv : NondetValue)
-    x γ:
-    ρ !! x = Some (γ) ->
-    satisfies ρ (program, (nv,γ)) (t_over (e_variable x))
-.
-Proof.
-    intros H.
-    unfold satisfies; simpl.
-    destruct γ; ltac1:(simp sat2E); simpl;
-        rewrite H; reflexivity.
-Qed.
-
-
-Lemma satisfies_var_inv
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    x γ:
-    satisfies ρ γ (t_over (bov_variable x)) ->
-    ρ !! x = Some (γ)
-.
-Proof.
-    unfold satisfies; simpl.
-    ltac1:(simp sat2B). simpl.
-    intros H; exact H.
-Qed.
-
-Lemma satisfies_var_expr_inv
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (ρ : Valuation2)
-    (nv : NondetValue)
-    x γ:
-    satisfies ρ (program, (nv,γ)) (t_over (e_variable x)) ->
-    ρ !! x = Some (γ)
-.
-Proof.
-    unfold satisfies; simpl.
-    ltac1:(simp sat2E).
-    intros H.
-        destruct (Expression2_evaluate program ρ (e_variable x)) eqn:Heq>[|ltac1:(contradiction)].
-    simpl in Heq.
-    destruct (ρ !! x) eqn:Heq2.
-    {
-        inversion Heq; subst; clear Heq.
-        reflexivity.
-    }
-    { inversion Heq. }
-Qed.
-
 
 
 Lemma forall_satisfies_inv'
@@ -2056,7 +1991,7 @@ Lemma in_compile_inv
         { a : Act &
         { rc : TermOver Expression2 &
         { rd : TermOver Expression2 &
-        { scs : list SideCondition2 &
+        { scs : list SideCondition &
             mld_rewrite Act lc ld a rc rd scs ∈ mlld_decls Act D /\
             r =
             {|
@@ -2077,7 +2012,7 @@ Lemma in_compile_inv
     ) + (
         { c : _ &
         { h : variable &
-        { scs : list SideCondition2 &
+        { scs : list SideCondition &
         mld_context Act c h scs ∈ mlld_decls Act D /\
         (
             r = ctx_heat invisible_act topSymbol cseqSymbol holeSymbol

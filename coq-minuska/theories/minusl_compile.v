@@ -19,11 +19,11 @@ Definition ctx_heat
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
-    (isValue : Expression2 -> SideCondition2)
-    (isNonValue : Expression2 -> SideCondition2)
+    (isValue : Expression2 -> SideCondition)
+    (isNonValue : Expression2 -> SideCondition)
     (c : TermOver BuiltinOrVar)
     (h : variable) (* occurs once in `c` *)
-    (scs : list SideCondition2)
+    (cond : SideCondition)
     :
     RewritingRule2 Act
 := {|
@@ -46,7 +46,7 @@ Definition ctx_heat
         ]);
         t_over (e_variable dataVariable)])
     );
-    r_scs := scs;
+    r_scs := cond;
     r_act := invisible_act ;
 |}.
 
@@ -56,8 +56,8 @@ Definition ctx_cool
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
-    (isValue : Expression2 -> SideCondition2)
-    (isNonValue : Expression2 -> SideCondition2)
+    (isValue : Expression2 -> SideCondition)
+    (isNonValue : Expression2 -> SideCondition)
     (c : TermOver BuiltinOrVar)
     (h : variable)
     :
@@ -82,7 +82,7 @@ Definition ctx_cool
         t_over (e_variable dataVariable)])
     );
 
-    r_scs := [isValue (e_variable h)];
+    r_scs := isValue (e_variable h);
 
     r_act := invisible_act ;
 |}.
@@ -152,18 +152,18 @@ Definition compile' {Σ : StaticModel} {Act : Set}
     (invisible_act : Act)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
-    (isValue : Expression2 -> SideCondition2)
-    (isNonValue : Expression2 -> SideCondition2)
+    (isValue : Expression2 -> SideCondition)
+    (isNonValue : Expression2 -> SideCondition)
     (avoid : gset variable)
     (d : MinusL_Decl Act)
     : (list (RewritingRule2 Act))
 :=
     match d with
-    | mld_rewrite _ lc ld a rc rd scs => [
+    | mld_rewrite _ lc ld a rc rd cond => [
         ({|
             r_from := (down2 topSymbol cseqSymbol continuationVariable lc ld) ;
             r_to := (down2E topSymbol cseqSymbol continuationVariable rc rd) ;
-            r_scs := scs ;
+            r_scs := cond ;
             r_act := a;
         |})
         ]
