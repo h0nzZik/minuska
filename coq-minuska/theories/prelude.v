@@ -1087,6 +1087,23 @@ Proof.
     }
 Qed.
 
+Lemma fmap_Some_T_1 (A B : Type) (f : A → B) (mx : option A) (y : B):
+  f <$> mx = Some y ->
+  {x : A & mx = Some x ∧ y = f x }
+.
+Proof.
+    intros H.
+    destruct mx; simpl in *.
+    {
+        inversion H; subst; clear H.
+        exists a.
+        split;reflexivity.
+    }
+    {
+        inversion H.
+    }
+Qed.
+
 Inductive MyUnit := mytt.
 
 

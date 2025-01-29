@@ -49,17 +49,6 @@ Fixpoint try_match_new
     end
 .
 
-Definition evaluate_scs
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (ρ : Valuation2)
-    (nv : NondetValue)
-    (scs : list SideCondition2)
-    : bool
-:=
-    forallb (SideCondition2_evaluate program ρ nv) scs
-.
-
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
     {Act : Set}
@@ -70,7 +59,7 @@ Definition try_match_lhs_with_sc
     : option Valuation2
 :=
     ρ ← try_match_new g (r_from r);
-    if evaluate_scs program ρ nv (r_scs r)
+    if SideCondition_evaluate program ρ nv (r_scs r)
     then (Some ρ)
     else None
 .
@@ -526,7 +515,7 @@ Lemma sc_satisfies_insensitive
     (program : ProgramT)
     (nv : NondetValue)
     :
-    ∀ (v1 v2 : Valuation2) (b : SideCondition2),
+    ∀ (v1 v2 : Valuation2) (b : SideCondition),
             Valuation2_restrict v1 (vars_of b) = Valuation2_restrict v2 (vars_of b) ->
             satisfies v1 (program, nv) b -> satisfies v2 (program, nv) b
 .
@@ -599,75 +588,54 @@ Proof.
         ltac1:(case_match).
         { reflexivity. }
         unfold satisfies in H2; simpl in H2.
-        unfold evaluate_scs in H.
         rewrite <- not_true_iff_false in H.
         ltac1:(exfalso).
         apply H. clear H.
-        rewrite forallb_forall.
-        intros x Hx.
-        rewrite <- elem_of_list_In in Hx.
-        specialize (H2 x Hx) as H2x.
-
-        apply sc_satisfies_insensitive with (v2 := ρ1) in H2x.
+        eapply sc_satisfies_insensitive>[|apply H2].
+        unfold Valuation2_restrict.
+        unfold Valuation2 in *.
+        apply map_eq.
+        intros i.
+        rewrite map_lookup_filter.
+        rewrite map_lookup_filter.
+        ltac1:(simplify_option_eq).
         {
-            unfold satisfies in H2x. simpl in H2x.
-            assumption.
+            unfold mbind,option_bind.
+            destruct (ρ !! i) as [y|] eqn:Hρi, (ρ1 !! i) as [z|] eqn:Hρ1i.
+            {
+                eapply lookup_weaken in Hρ1i.
+                rewrite Hρi in Hρ1i.
+                exact Hρ1i.
+                exact H2ρ1.     
+            }
+            {
+                ltac1:(exfalso).
+                unfold vars_of in H1ρ1; simpl in H1ρ1.
+                assert (Htmp : i ∉ dom ρ1).
+                {
+                    intros HContra.
+                    rewrite elem_of_dom in HContra.
+                    destruct HContra as [zz Hzz].
+                    ltac1:(simplify_eq/=).
+                }
+                unfold Valuation2 in *.
+                rewrite H1ρ1 in Htmp.
+                clear - Htmp Hn Hx H.
+                unfold vars_of in Hn; simpl in Hn.
+                ltac1:(set_solver).
+            }
+            {
+                ltac1:(exfalso).
+                eapply lookup_weaken in Hρ1i>[|apply H2ρ1].
+                rewrite Hρi in Hρ1i.
+                inversion Hρ1i.
+            }
+            { reflexivity. }
         }
         {
-            unfold Valuation2_restrict.
-            unfold Valuation2 in *.
-            apply map_eq.
-            intros i.
-            rewrite map_lookup_filter.
-            rewrite map_lookup_filter.
-            ltac1:(simplify_option_eq).
-            {
-                unfold mbind,option_bind.
-                destruct (ρ !! i) as [y|] eqn:Hρi, (ρ1 !! i) as [z|] eqn:Hρ1i.
-                {
-                    eapply lookup_weaken in Hρ1i.
-                    rewrite Hρi in Hρ1i.
-                    exact Hρ1i.
-                    exact H2ρ1.     
-                }
-                {
-                    ltac1:(exfalso).
-                    unfold vars_of in H1ρ1; simpl in H1ρ1.
-                    assert (Htmp : i ∉ dom ρ1).
-                    {
-                        intros HContra.
-                        rewrite elem_of_dom in HContra.
-                        destruct HContra as [zz Hzz].
-                        ltac1:(simplify_eq/=).
-                    }
-                    unfold Valuation2 in *.
-                    rewrite H1ρ1 in Htmp.
-                    clear - Htmp Hn Hx H.
-                    rewrite elem_of_list_lookup in Hx.
-                    destruct Hx as [j Hj].
-                    apply take_drop_middle in Hj.
-                    rewrite <- Hj in Hn. clear Hj.
-                    unfold vars_of in Hn; simpl in Hn.
-                    rewrite fmap_app in Hn.
-                    rewrite union_list_app in Hn.
-                    rewrite fmap_cons in Hn.
-                    rewrite union_list_cons in Hn.
-                    ltac1:(set_solver).
-                }
-                {
-                    ltac1:(exfalso).
-                    eapply lookup_weaken in Hρ1i>[|apply H2ρ1].
-                    rewrite Hρi in Hρ1i.
-                    inversion Hρ1i.
-                }
-                { reflexivity. }
-            }
-            {
-                destruct (ρ !! i) as [y|] eqn:Hρi, (ρ1 !! i) as [z|] eqn:Hρ1i;
-                    ltac1:(simplify_option_eq);
-                    reflexivity.
-            }
-            
+            destruct (ρ !! i) as [y|] eqn:Hρi, (ρ1 !! i) as [z|] eqn:Hρ1i;
+                ltac1:(simplify_option_eq);
+                reflexivity.
         }
     }
 Qed.
@@ -798,31 +766,21 @@ Proof.
         ltac1:(ospecialize (Hc _)).
         {
             unfold satisfies; simpl.
-            intros x Hx.
             eapply sc_satisfies_insensitive in Hsat2 as Hsat2'. apply Hsat2'.
             assert (Htmp := valuation_restrict_vars_of_self ρ' ρ H2).
             eapply Valuation2_restrict_eq_subseteq in Htmp.
             symmetry. apply Htmp.
-            {
-                rewrite H1.
-                
-                unfold is_true in wfΓ.
-                specialize (wfΓ r).
-                specialize (wfΓ Hin).
-                unfold RewritingRule2_wf in *.
-                destruct wfΓ as [wf1 wf2].
-                unfold RewritingRule2_wf1 in *.
-                unfold RewritingRule2_wf2 in *.
-                eapply transitivity>[|apply wf1].
-                unfold vars_of; simpl.
-                rewrite elem_of_list_lookup in Hx.
-                destruct Hx as [i Hi].
-                apply take_drop_middle in Hi.
-                rewrite <- Hi.
-                ltac1:(rewrite fmap_app fmap_cons union_list_app union_list_cons).
-                ltac1:(set_solver).
-            }
-            { exact Hx. }
+            rewrite H1.   
+            unfold is_true in wfΓ.
+            specialize (wfΓ r).
+            specialize (wfΓ Hin).
+            unfold RewritingRule2_wf in *.
+            destruct wfΓ as [wf1 wf2].
+            unfold RewritingRule2_wf1 in *.
+            unfold RewritingRule2_wf2 in *.
+            eapply transitivity>[|apply wf1].
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
         }
         destruct Hc as [ρ'' [H1ρ'' [H2ρ'' H3ρ'']]].
 
@@ -848,31 +806,13 @@ Proof.
         reflexivity.
     }
 Qed.
-
-
-Lemma fmap_Some_T_1 (A B : Type) (f : A → B) (mx : option A) (y : B):
-  f <$> mx = Some y ->
-  {x : A & mx = Some x ∧ y = f x }
-.
-Proof.
-    intros H.
-    destruct mx; simpl in *.
-    {
-        inversion H; subst; clear H.
-        exists a.
-        split;reflexivity.
-    }
-    {
-        inversion H.
-    }
-Qed.
-
+(* 
 Lemma evaluate_scs_correct
     {Σ : StaticModel}
     (program : ProgramT)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (scs : list SideCondition2)
+    (scs : list SideCondition)
     :
     evaluate_scs program ρ nv scs = true ->
     satisfies ρ (program, nv) scs
@@ -892,7 +832,7 @@ Proof.
     {
         assumption.
     }
-Qed.
+Qed. *)
 
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
@@ -946,11 +886,11 @@ Proof.
                 unfold try_match_lhs_with_sc in HTM.
                 apply bind_Some_T_1 in HTM.
                 destruct HTM as [x [H1x H2x]].
-                destruct (evaluate_scs program x nv (r_scs r)) eqn:Heq.
+                apply try_match_new_correct in H1x.
+                destruct (SideCondition_evaluate program x nv (r_scs r)) eqn:Heq.
                 {
                     inversion H2x; subst; clear H2x.
-                    apply try_match_new_correct in H1x.
-                    assumption.
+                    apply H1x.
                 }
                 {
                     inversion H2x.
@@ -966,10 +906,9 @@ Proof.
             unfold try_match_lhs_with_sc in HTM.
             apply bind_Some_T_1 in HTM.
             destruct HTM as [x [H1x H2x]].
-            destruct (evaluate_scs program x nv (r_scs r)) eqn:Heq.
+            destruct (SideCondition_evaluate program x nv (r_scs r)) eqn:Heq.
             {
                 inversion H2x; subst; clear H2x.
-                apply evaluate_scs_correct in Heq.
                 exact Heq.
             }
             {
