@@ -2008,3 +2008,1092 @@ Proof.
     { inversion Heq. }
 Qed.
 
+
+
+
+Lemma forall_satisfies_inv'
+    {Σ : StaticModel}
+    (sz : nat)
+    (ρ : Valuation2)
+    (γ1 γ2 : list (TermOver builtin_value))
+    (l : list (TermOver BuiltinOrVar))
+    :
+    sum_list_with (S ∘ TermOver_size) l < sz ->
+    length γ1 = length l ->
+    length γ2 = length l ->
+    (forall idx a b, γ1 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
+    (forall idx a b, γ2 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
+    γ1 = γ2
+with satisfies_inv'
+    {Σ : StaticModel}
+    (sz : nat)
+    (ρ : Valuation2)
+    (x y : TermOver builtin_value)
+    (z : TermOver BuiltinOrVar)
+    :
+    TermOver_size z < sz ->
+    satisfies ρ x z ->
+    satisfies ρ y z ->
+    x = y
+.
+Proof.
+    {
+        intros Hsz H1 H2 H3.
+        destruct sz.
+        {
+            ltac1:(lia).
+        }
+
+        intros H4.
+        apply list_eq.
+        intros i.
+        destruct
+            (γ1 !! i) eqn:Hγ1i,
+            (γ2 !! i) eqn:Hγ2i.
+        {
+            destruct (l !! i) eqn:Hli.
+            {
+                specialize (H3 i t t1 Hγ1i Hli).
+                specialize (H4 i t0 t1 Hγ2i Hli).
+                clear -H3 H4 satisfies_inv' sz Hsz Hli.
+                f_equal.
+                specialize (satisfies_inv' Σ sz ρ t t0 t1).
+                apply satisfies_inv'; try assumption.
+                apply take_drop_middle in Hli.
+                rewrite <- Hli in Hsz.
+
+                rewrite sum_list_with_app in Hsz.
+                simpl in Hsz.
+                ltac1:(lia).
+            }
+            {
+                apply lookup_lt_Some in Hγ1i.
+                apply lookup_ge_None in Hli.
+                ltac1:(lia).
+            }
+        }
+        {
+            apply lookup_lt_Some in Hγ1i.
+            apply lookup_ge_None in Hγ2i.
+            ltac1:(lia).
+        }
+        {
+            apply lookup_lt_Some in Hγ2i.
+            apply lookup_ge_None in Hγ1i.
+            ltac1:(lia).
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        intros Hsz H1 H2.
+
+        destruct sz.
+        {
+            ltac1:(lia).
+        }
+
+        destruct
+            x as [ax|cx lx],
+            y as [ay|cy ly],
+            z as [az|cz lz]
+            .
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=); reflexivity.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            simpl in H1.
+            destruct H1.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=).
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct H1.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=).
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct H2.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            destruct az; simpl in *; ltac1:(simplify_eq/=).
+            reflexivity.
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            ltac1:(simp sat2B in H1).
+            ltac1:(simp sat2B in H2).
+            simpl in *.
+            ltac1:(destruct_and!).
+            ltac1:(simplify_eq/=).
+            f_equal.
+            eapply forall_satisfies_inv' with (l := lz)(sz := sz).
+            ltac1:(lia).
+            unfold TermOver in *;
+                ltac1:(lia).
+            unfold TermOver in *;
+                ltac1:(lia).
+            intros.
+            eapply H5.
+            apply H0.
+            apply H.
+            intros.
+            eapply H3.
+            apply H0.
+            apply H.
+        }
+    }
+Qed.
+
+Lemma forall_satisfies_inv
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (γ1 γ2 : list (TermOver builtin_value))
+    (l : list (TermOver BuiltinOrVar))
+    :
+    length γ1 = length l ->
+    length γ2 = length l ->
+    (forall idx a b, γ1 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
+    (forall idx a b, γ2 !! idx = Some a -> l !! idx = Some b -> satisfies ρ a b) ->
+    γ1 = γ2
+.
+Proof.
+    intros.
+    eapply forall_satisfies_inv' with (l := l)(ρ := ρ) (sz := S (sum_list_with (S ∘ TermOver_size) l));
+        try assumption.
+    ltac1:(lia).
+Qed.
+
+Lemma satisfies_inv
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (x y : TermOver builtin_value)
+    (z : TermOver BuiltinOrVar)
+    :
+    satisfies ρ x z ->
+    satisfies ρ y z ->
+    x = y
+.
+Proof.
+    intros.
+    apply satisfies_inv' with (ρ := ρ) (z := z) (sz := S (TermOver_size z));
+        try assumption.
+    ltac1:(lia).
+Qed.
+
+
+
+Lemma satisfies_in_size
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (x : variable)
+    (t t' : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    x ∈ vars_of (φ) ->
+    ρ !! x = Some (t') ->
+    satisfies ρ t φ ->
+    TermOver_size t' <= TermOver_size t
+.
+Proof.
+    revert t.
+    induction φ; intros t Hin Hsome Hsat.
+    {
+        destruct a.
+        {
+            unfold satisfies in *; simpl in *.
+            destruct t; ltac1:(simp sat2B in Hsat);
+                simpl in *; ltac1:(simplify_eq/=).
+            ltac1:(exfalso).
+            unfold vars_of in Hin; simpl in Hin.
+            unfold vars_of in Hin; simpl in Hin.
+            ltac1:(set_solver).
+        }
+        {
+            unfold satisfies in *; simpl in *.
+            destruct t; ltac1:(simp sat2B in Hsat);
+                simpl in *; ltac1:(simplify_eq/=).
+            {
+                unfold vars_of in Hin; simpl in Hin.
+                unfold vars_of in Hin; simpl in Hin.
+                rewrite elem_of_singleton in Hin. subst x0.
+                ltac1:(simplify_eq/=).
+                ltac1:(lia).
+            }
+            {
+                unfold vars_of in Hin; simpl in Hin.
+                unfold vars_of in Hin; simpl in Hin.
+                rewrite elem_of_singleton in Hin. subst x0.
+                ltac1:(simplify_eq/=).
+                ltac1:(lia).
+            }
+        }
+    }
+    {
+        apply satisfies_term_bov_inv in Hsat.
+        destruct Hsat as [lγ [[H1 H2] H3]].
+        subst.
+        simpl.
+        simpl in Hin.
+        rewrite vars_of_t_term in Hin.
+        clear s.
+        revert l H Hin H2 H3; induction lγ; intros l H Hin H2 H3.
+        {
+            simpl in *.
+            destruct l; simpl in *; try ltac1:(lia).
+            ltac1:(exfalso; clear -Hin; set_solver).
+        }
+        {
+            simpl in *.
+            destruct l; simpl in *; try ltac1:(lia).
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            
+            rewrite elem_of_union in Hin.
+            destruct Hin as [Hin|Hin].
+            {
+                specialize (H3 0 a t erefl erefl) as H3'.
+                specialize (IH1 _ Hin Hsome H3').
+                ltac1:(lia).
+            }
+            {
+                specialize (IHlγ _ IH2 Hin ltac:(lia)).
+                ltac1:(ospecialize (IHlγ _)).
+                {
+                    intros. apply H3 with (i := S i); simpl; assumption.
+                }
+                ltac1:(lia).
+            }
+        }
+    }
+Qed.
+
+
+Lemma double_satisfies_contradiction
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (ay : BuiltinOrVar)
+    (cz cx : symbol)
+    (lx : list (TermOver builtin_value))
+    (lz : list (TermOver BuiltinOrVar))
+    :
+    vars_of ((t_over ay)) = vars_of ((t_term cz lz)) ->
+    satisfies ρ (t_term cx lx) (t_over ay) ->
+    satisfies ρ (t_term cx lx) (t_term cz lz) ->
+    False
+.
+Proof.
+    intros Hvars H1 H2.
+    unfold satisfies in *; simpl in *.
+    ltac1:(simp sat2B in H1).
+    ltac1:(simp sat2B in H2).
+    destruct ay; simpl in *;
+        ltac1:(destruct_and?; simplify_eq/=).
+    rewrite vars_of_t_term in Hvars.
+    assert (H: x ∈ vars_of lz).
+    {
+        unfold vars_of; simpl.
+        rewrite <- Hvars.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        ltac1:(set_solver).
+    }
+    unfold vars_of in H; simpl in H.
+    rewrite elem_of_union_list in H.
+    destruct H as [X [H1X H2X]].
+    rewrite elem_of_list_fmap in H1X.
+    destruct H1X as [y [H1y H2y]].
+    subst.
+    rewrite elem_of_list_lookup in H2y.
+    destruct H2y as [i Hi].
+    destruct (lx !! i) eqn:Hlxi.
+    {
+        specialize (H3 i _ _ Hi Hlxi).
+        assert (Htmp1 := satisfies_in_size ρ x t (t_term cz lx) y H2X H1 H3).
+        simpl in Htmp1.
+        apply take_drop_middle in Hlxi.
+        rewrite <- Hlxi in Htmp1.
+        rewrite sum_list_with_app in Htmp1.
+        simpl in Htmp1.
+        ltac1:(lia).
+    }
+    {
+        apply lookup_ge_None in Hlxi.
+        apply lookup_lt_Some in Hi.
+        unfold Valuation2,TermOver in *.
+        ltac1:(lia).
+    }
+Qed.
+
+
+Definition size_of_var_in_val
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (x : variable)
+    : nat
+:=
+    match ρ!!x with
+    | None => 0
+    | Some g => pred (TermOver_size (g))
+    end
+.
+
+Definition delta_in_val
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (ψ : TermOver BuiltinOrVar)
+    : nat
+:=
+    sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ)
+.
+
+
+
+Lemma concrete_is_larger_than_symbolic
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (γ : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    :
+    satisfies ρ γ φ ->
+    TermOver_size γ = TermOver_size φ + delta_in_val ρ φ
+.
+Proof.
+    revert φ.
+    induction γ; intros φ H1.
+    {
+        unfold satisfies in H1; simpl in H1.
+        destruct φ; ltac1:(simp sat2B in H1);
+            simpl in H1.
+        {
+            destruct a0; simpl in *;
+                ltac1:(simplify_eq/=);
+                unfold delta_in_val,vars_of_to_l2r;
+                simpl.
+            {
+                reflexivity.
+            }
+            {
+                unfold size_of_var_in_val; simpl.
+                unfold Valuation2,TermOver in *.
+                rewrite H1.
+                simpl. reflexivity.
+            }
+        }
+        { destruct H1. }
+    }
+    {
+        simpl.
+        destruct φ.
+        {
+            destruct a.
+            {
+                unfold satisfies in H1; simpl in H1.
+                ltac1:(simp sat2B in H1).
+                simpl in H1.
+                inversion H1.
+            }
+            {
+                unfold satisfies in H1; simpl in H1.
+                ltac1:(simp sat2B in H1).
+                simpl in H1.
+                simpl.
+                unfold delta_in_val. simpl.
+                unfold size_of_var_in_val.
+                unfold Valuation2,TermOver in *.
+                rewrite H1. simpl.
+                unfold TermOver in *.
+                apply f_equal.            
+                simpl. ltac1:(lia).
+            }
+        }
+        {
+            apply satisfies_term_bov_inv in H1.
+            destruct H1 as [lγ [[H2 H3] H4]].
+            inversion H2; subst; clear H2.
+            simpl.
+            revert l0 H3 H4.
+            induction lγ; intros l0 H3 H4.
+            {
+                destruct l0.
+                {
+                    simpl. unfold delta_in_val. simpl. ltac1:(lia).
+                }
+                {
+                    simpl in H3. ltac1:(lia).
+                }
+            }
+            {
+                destruct l0.
+                {
+                    simpl in *. ltac1:(lia).
+                }
+                {
+                    simpl in *.
+                    rewrite Forall_cons in H.
+                    destruct H as [H H'].
+                    specialize (IHlγ H').
+                    specialize (IHlγ l0 ltac:(lia)).
+                    ltac1:(ospecialize (IHlγ _)).
+                    {
+                        intros. eapply H4 with (i := S i); simpl; assumption.
+                    }
+                    simpl in *.
+                    specialize (H _ (H4 0 a t eq_refl eq_refl)).
+                    unfold delta_in_val. simpl.
+                    rewrite sum_list_with_app.
+                    rewrite H.
+                    unfold delta_in_val in IHlγ.
+                    simpl in IHlγ.
+                    injection H3 as H3.
+                    injection IHlγ as IHlγ.
+                    rewrite IHlγ.
+                    unfold delta_in_val.
+                    ltac1:(lia).
+                }
+            }
+        }
+    }
+Qed.
+
+Lemma enveloping_preserves_or_increases_delta
+    {Σ : StaticModel}
+    (ρ : Valuation2)
+    (γ1 γ2 : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    (s : symbol)
+    (l1 l2 : list (TermOver BuiltinOrVar))
+    (d : nat)
+    :
+    satisfies ρ γ1 φ ->
+    satisfies ρ γ2 (t_term s (l1 ++ φ::l2)) ->
+    TermOver_size γ1 = TermOver_size φ + d ->
+    TermOver_size γ2 >= TermOver_size (t_term s (l1 ++ φ::l2)) + d
+.
+Proof.
+    intros H1 H2 H3.
+    simpl.
+    apply satisfies_term_bov_inv in H2.
+    destruct H2 as [lγ [[h4 H5] H6]].
+    subst γ2. simpl in *.
+    rewrite sum_list_with_app. simpl.
+    rewrite length_app in H5. simpl in H5.
+
+    destruct (lγ !! (length l1)) eqn:Hγ.
+    {
+        apply take_drop_middle in Hγ.
+        rewrite <- Hγ in H6.
+        {
+            assert (t = γ1).
+            {
+                eapply satisfies_inv.
+                {
+                    apply H6 with (i := length l1).
+                    {
+                        rewrite lookup_app_r.
+                        {
+                            rewrite length_take.
+                            ltac1:(replace ((length l1 - length l1 `min` length lγ)) with 0 by lia).
+                            simpl. reflexivity.
+                        }
+                        {
+                            rewrite length_take.
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        rewrite lookup_app_r.
+                        {
+                            rewrite Nat.sub_diag. simpl.
+                            reflexivity.
+                        }
+                        {
+                            ltac1:(lia).
+                        }
+                    }
+                }
+                {
+                    apply H1.
+                }
+            }
+            subst t.
+            simpl in *.
+            rewrite <- Hγ.
+            rewrite sum_list_with_app.
+            simpl.
+            rewrite H3.
+            clear H3.
+            clear Hγ.
+            assert (sum_list_with (S ∘ TermOver_size) (take (length l1) lγ) >= sum_list_with (S ∘ TermOver_size) l1).
+            {
+                assert (Hineq: length lγ >= length l1) by ltac1:(lia).
+                clear -H6 Hineq.
+                revert lγ H6 Hineq.
+                induction l1; intros lγ H6 Hineq.
+                {
+                    simpl. ltac1:(lia).
+                }
+                {
+                    destruct lγ.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        assert (Hsat := H6 0 t a eq_refl eq_refl).
+                        apply concrete_is_larger_than_symbolic in Hsat.
+                        specialize (IHl1 lγ).
+                        ltac1:(ospecialize (IHl1 _)).
+                        {
+                            intros. eapply H6 with (i := S i); simpl. apply H. assumption.
+                        }
+                        simpl in *.
+                        specialize (IHl1 ltac:(lia)).
+                        ltac1:(lia).
+                    }
+                }
+            }
+            assert (((sum_list_with (S ∘ TermOver_size) (drop (S (length l1)) lγ))) >= (sum_list_with (S ∘ TermOver_size) l2)).
+            {
+                remember ((drop (S (length l1)) lγ)) as lγ'.
+                assert (Hlen: length lγ' = length l2).
+                {
+                    subst.
+                    rewrite length_drop.
+                    ltac1:(lia).
+                }
+                clear -Hlen H6 H5.
+                assert (H7: ∀ i γ e, lγ' !! i = Some γ -> l2 !! i = Some e -> satisfies ρ γ e).
+                {
+                    intros.
+                    specialize (H6 (i + (length (l1 ++ [φ]))) γ e).
+                    ltac1:(
+                        replace (take (length l1) lγ ++ γ1 :: lγ')
+                        with ((take (length l1) lγ ++ [γ1]) ++ lγ')
+                        in H6
+                        by (rewrite <- app_assoc; reflexivity)
+                    ).
+                    rewrite lookup_app_r in H6.
+                    {
+                        rewrite length_app in H6.
+                        rewrite length_app in H6.
+                        rewrite length_take in H6.
+                        simpl in H6.
+                        ltac1:(
+                            replace (i + (length l1 + 1) - (length l1 `min` length lγ + 1))
+                            with (i)
+                            in H6
+                            by lia
+                        ).
+                        specialize (H6 ltac:(assumption)).
+                        ltac1:(
+                            replace (l1 ++ (φ :: l2))
+                            with ((l1 ++ [φ]) ++ l2)
+                            in H6
+                            by (rewrite <- app_assoc; reflexivity)
+                        ).
+                        rewrite lookup_app_r in H6.
+                        {
+                            rewrite length_app in H6.
+                            simpl in H6.
+                            ltac1:(
+                                replace ((i + (length l1 + 1) - (length l1 + 1)))
+                                with (i)
+                                in H6
+                                by lia
+                            ).
+                            specialize (H6 ltac:(assumption)).
+                            apply H6.
+                        }
+                        {
+                            rewrite length_app. simpl.
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        rewrite length_app.
+                        rewrite length_app.
+                        rewrite length_take.
+                        simpl.
+                        ltac1:(lia).
+                    }
+                }
+                clear H6.
+                clear H5 lγ.
+                revert l2 Hlen H7.
+                induction lγ'; intros l2 Hlen H8.
+                {
+                    destruct l2.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                }
+                {
+                    destruct l2.
+                    {
+                        simpl in *. ltac1:(lia).
+                    }
+                    {
+                        simpl in *.
+                        assert (H1 := H8 (0) a t eq_refl eq_refl). simpl in H1.
+                        apply concrete_is_larger_than_symbolic in H1.
+                        specialize (IHlγ' l2 ltac:(lia)).
+                        ltac1:(ospecialize (IHlγ' _)).
+                        {
+                            intros.
+                            exact (H8 (S i) γ e ltac:(assumption) ltac:(assumption)).
+                        }
+                        ltac1:(lia).
+                    }
+                }
+            }
+            
+            ltac1:(lia).
+        }
+    }
+    {
+        apply lookup_ge_None_1 in Hγ.
+        ltac1:(lia).
+    }
+Qed.
+
+
+
+Lemma TermOverBoV_subst_once_size
+    {Σ : StaticModel}
+    (h : variable)
+    (φ ψ : TermOver BuiltinOrVar)
+    :
+    h ∉ vars_of ψ ->
+    length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
+    TermOver_size (TermOverBoV_subst φ h ψ) = Nat.pred (TermOver_size φ + TermOver_size ψ)
+.
+Proof.
+    induction φ; simpl; intros Hnotinψ Hexactlyonce.
+    {
+        destruct a.
+        {
+            simpl in *. ltac1:(lia).
+        }
+        {
+            rewrite filter_cons in Hexactlyonce.
+            destruct (decide (h = x)).
+            {
+                simpl in *. reflexivity.
+            }
+            {
+                simpl in *. ltac1:(lia).
+            }
+        }
+    }
+    {
+        simpl in *.
+        rewrite sum_list_with_compose.
+        unfold compose.
+        do 2 (rewrite sum_list_with_S).
+        do 2 (rewrite map_length).
+        do 2 (rewrite sum_list_fmap).
+        rewrite length_fmap.
+
+        assert (Hconcat: h ∈ concat (map vars_of_to_l2r l)).
+        {
+            clear -Hexactlyonce.
+            induction l; simpl in *.
+            { ltac1:(lia). }
+            {
+                rewrite filter_app in Hexactlyonce.
+                rewrite length_app in Hexactlyonce.
+                destruct (decide (h ∈ vars_of_to_l2r a)).
+                {
+                    rewrite elem_of_app. left. assumption.
+                }
+                {
+                    ltac1:(ospecialize (IHl _)).
+                    {
+                        ltac1:(cut(length (filter (eq h) (vars_of_to_l2r a)) = 0)).
+                        {
+                            intros HH. ltac1:(lia).
+                        }
+                        rewrite length_zero_iff_nil.
+                        remember (vars_of_to_l2r a) as l'.
+                        clear Heql'.
+                        clear -n.
+                        induction l'.
+                        {
+                            reflexivity.
+                        }
+                        {
+                            rewrite elem_of_cons in n.
+                            apply Decidable.not_or in n.
+                            destruct n as [H1 H2].
+                            specialize (IHl' H2).
+                            rewrite filter_cons.
+                            destruct (decide (h = a)).
+                            {
+                                subst. ltac1:(contradiction).
+                            }
+                            {
+                                apply IHl'.
+                            }
+                        }
+                    }
+                    {
+                        rewrite elem_of_app. right. apply IHl.
+                    }
+                }
+            }
+        }
+        rewrite elem_of_list_In in Hconcat.
+        rewrite in_concat in Hconcat.
+        destruct Hconcat as [x [H1x H2x]].
+        rewrite in_map_iff in H1x.
+        destruct H1x as [x0 [H1x0 H2x0]].
+        subst.
+
+        rewrite <- elem_of_list_In in H2x.
+        rewrite elem_of_list_lookup in H2x.
+        destruct H2x as [i Hi].
+
+        rewrite <- elem_of_list_In in H2x0.
+        assert (H2x0' := H2x0).
+        rewrite elem_of_list_lookup in H2x0.
+        destruct H2x0 as [j Hj].
+        apply take_drop_middle in Hj.
+        rewrite <- Hj.
+        rewrite length_app.
+        rewrite sum_list_with_app.
+        rewrite map_app.
+        rewrite sum_list_with_app.
+        simpl.
+
+        rewrite <- Hj in Hexactlyonce.
+        rewrite map_app in Hexactlyonce. simpl in Hexactlyonce.
+        rewrite concat_app in Hexactlyonce. simpl in Hexactlyonce.
+        do 2 (rewrite filter_app in Hexactlyonce).
+        do 2 (rewrite length_app in Hexactlyonce).
+        simpl in Hexactlyonce.
+        
+        assert(Hnotintake: forall x2, x2 ∈ take j l -> h ∉ vars_of_to_l2r x2).
+        {
+            intros x2 Hx2.
+            intros HContra.
+            
+            assert(Htmp: 1 <= length (filter (eq h) (concat (map vars_of_to_l2r (take j l))))).
+            {
+                rewrite elem_of_list_lookup in Hx2.
+                destruct Hx2 as [i0 Hx2].
+                
+                assert (Heq' := Hx2).
+                apply take_drop_middle in Heq'.
+                rewrite <- Heq'.
+                rewrite map_app.
+                rewrite concat_app.
+                rewrite filter_app.
+                simpl.
+                rewrite filter_app.
+                rewrite length_app.
+                rewrite length_app.
+                rewrite elem_of_list_lookup in HContra.
+                destruct HContra as [k Hk].
+                apply take_drop_middle in Hk.
+                rewrite <- Hk.
+                rewrite filter_app.
+                rewrite length_app.
+                rewrite filter_cons.
+                destruct (decide (h = h))>[|ltac1:(contradiction)].
+                simpl.
+                ltac1:(lia).
+            }
+            apply take_drop_middle in Hi.
+            rewrite <- Hi in Hexactlyonce.
+            rewrite filter_app in Hexactlyonce.
+            rewrite filter_cons in Hexactlyonce.
+            destruct (decide (h=h))>[|ltac1:(contradiction)].
+            rewrite length_app in Hexactlyonce.
+            simpl in Hexactlyonce.
+            unfold TermOver in *.
+            ltac1:(lia).
+        }
+
+        assert(Hnotindrop: forall x2, x2 ∈ drop (S j) l -> h ∉ vars_of_to_l2r x2).
+        {
+            intros x2 Hx2.
+            intros HContra.
+            simpl in Hexactlyonce.
+            assert(Htmp: 1 <= length (filter (eq h) (concat (map vars_of_to_l2r (drop (S j) l))))).
+            {
+                rewrite elem_of_list_lookup in Hx2.
+                destruct Hx2 as [i0 Hx2].
+                
+                assert (Heq' := Hx2).
+                apply take_drop_middle in Heq'.
+                rewrite <- Heq'.
+                rewrite map_app.
+                rewrite concat_app.
+                rewrite filter_app.
+                simpl.
+                rewrite filter_app.
+                rewrite length_app.
+                rewrite length_app.
+                rewrite elem_of_list_lookup in HContra.
+                destruct HContra as [k Hk].
+                apply take_drop_middle in Hk.
+                rewrite <- Hk.
+                rewrite filter_app.
+                rewrite length_app.
+                rewrite filter_cons.
+                destruct (decide (h = h))>[|ltac1:(contradiction)].
+                simpl.
+                ltac1:(lia).
+            }
+            apply take_drop_middle in Hi.
+            rewrite <- Hi in Hexactlyonce.
+            rewrite filter_app in Hexactlyonce.
+            rewrite filter_cons in Hexactlyonce.
+            destruct (decide (h=h))>[|ltac1:(contradiction)].
+            rewrite length_app in Hexactlyonce.
+            simpl in Hexactlyonce.
+            unfold TermOver in *.
+            ltac1:(lia).
+        }
+
+        assert (HH1: (sum_list_with TermOver_size
+                (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ)
+                (take j l))  )
+                = sum_list_with TermOver_size (take j l) ).
+        {
+            apply sum_list_with_eq_pairwise.
+            {
+                rewrite map_length.
+                reflexivity.
+            }
+            {
+                intros i0 x1 x2 Hx1 Hx2.
+                ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
+                rewrite list_lookup_fmap in Hx1.
+                unfold TermOver in *.
+                rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
+                rewrite subst_notin.
+                {
+                    reflexivity.
+                }
+                {
+                    intros HContra.
+                    specialize (Hnotintake x2).
+                    ltac1:(ospecialize (Hnotintake _)).
+                    {
+                        rewrite elem_of_list_lookup.
+                        exists i0. exact Hx2.
+                    }
+                    apply Hnotintake. apply HContra.
+                }
+            }
+        }
+
+        assert (HH2: (sum_list_with TermOver_size
+                (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ)
+                (drop (S j) l))  )
+                = sum_list_with TermOver_size (drop (S j) l) ).
+        {
+            apply sum_list_with_eq_pairwise.
+            {
+                rewrite map_length.
+                reflexivity.
+            }
+            {
+                intros i0 x1 x2 Hx1 Hx2.
+                unfold TermOver in *.
+                ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
+                rewrite list_lookup_fmap in Hx1.
+                rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
+                rewrite subst_notin.
+                {
+                    reflexivity.
+                }
+                {
+
+                    intros HContra.
+                    specialize (Hnotindrop x2).
+                    ltac1:(ospecialize (Hnotindrop _)).
+                    {
+                        rewrite elem_of_list_lookup.
+                        exists i0. exact Hx2.
+                    }
+                    apply Hnotindrop. apply HContra.
+                }
+            }
+        }
+        unfold TermOver in *.
+        rewrite HH1. clear HH1.
+        rewrite HH2. clear HH2.
+        remember (sum_list_with TermOver_size (take j l) ) as N1.
+        remember (sum_list_with TermOver_size (drop (S j) l) ) as N2.
+        rewrite length_take.
+        rewrite length_drop.
+
+        rewrite Forall_forall in H.
+        specialize (H x0 H2x0' Hnotinψ).
+
+        assert (Hnotintake': length (filter (eq h) (concat (map vars_of_to_l2r (take j l)))) = 0).
+        {
+            rewrite length_zero_iff_nil.
+            apply list_filter_Forall_not.
+            rewrite Forall_forall.
+            intros x Hx HContra.
+            subst x.
+            rewrite elem_of_list_In in Hx.
+            rewrite in_concat in Hx.
+            destruct Hx as [x [H1x H2x]].
+            rewrite in_map_iff in H1x.
+            destruct H1x as [x1 [H1x1 H2x1]].
+            rewrite <- elem_of_list_In in H2x.
+            subst x.
+            rewrite <- elem_of_list_In in H2x1.
+            specialize (Hnotintake _ H2x1).
+            apply Hnotintake. apply H2x.
+        }
+
+        assert (Hnotindrop': length (filter (eq h) (concat (map vars_of_to_l2r (drop (S j) l)))) = 0).
+        {
+            rewrite length_zero_iff_nil.
+            apply list_filter_Forall_not.
+            rewrite Forall_forall.
+            intros x Hx HContra.
+            subst x.
+            rewrite elem_of_list_In in Hx.
+            rewrite in_concat in Hx.
+            destruct Hx as [x [H1x H2x]].
+            rewrite in_map_iff in H1x.
+            destruct H1x as [x1 [H1x1 H2x1]].
+            rewrite <- elem_of_list_In in H2x.
+            subst x.
+            rewrite <- elem_of_list_In in H2x1.
+            specialize (Hnotindrop _ H2x1).
+            apply Hnotindrop. apply H2x.
+        }
+        unfold TermOver in *.
+        specialize (H ltac:(lia)).
+        rewrite H.
+        assert (Htmp1 := TermOver_size_not_zero x0).
+        unfold TermOver in *.
+        rewrite length_app.
+        simpl.
+        rewrite length_drop.
+        rewrite length_take.
+        ltac1:(lia).
+    }
+Qed.
+
+
+Lemma satisfies_TermOverBoV_to_TermOverExpr
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (ρ : Valuation2)
+    (γ : TermOver builtin_value)
+    (φ : TermOver BuiltinOrVar)
+    (nv : NondetValue)
+    :
+    satisfies ρ (program, (nv,γ)) (TermOverBoV_to_TermOverExpr2 φ)
+    ->
+    satisfies ρ γ φ
+.
+Proof.
+    revert γ.
+    ltac1:(induction φ using TermOver_rect); intros γ.
+    {
+        simpl.
+        intros H.
+        {
+            destruct a; simpl in *.
+            {
+                unfold satisfies in *; simpl in *.
+                unfold TermOverBoV_to_TermOverExpr2 in H.
+                simpl in *.
+                ltac1:(simp sat2E in H).
+                ltac1:(simp sat2B).
+                simpl.
+                ltac1:(case_match; try contradiction);
+                    subst; simpl in *;
+                    ltac1:(simplify_eq/=).
+                reflexivity.  
+            }
+            {
+                unfold satisfies in *; simpl in *.
+                unfold TermOverBoV_to_TermOverExpr2 in H.
+                simpl in *.
+                ltac1:(simp sat2E in H).
+                ltac1:(simp sat2B).
+                simpl.
+                ltac1:(case_match; try contradiction);
+                    subst; simpl in *;
+                    ltac1:(simplify_eq/=).
+                ltac1:(case_match; try contradiction);
+                    subst; simpl in *;
+                    ltac1:(simplify_eq/=).
+                inversion H; subst; clear H.
+                reflexivity.
+            }
+        }
+    }
+    {
+        intros HH.
+        {
+            simpl in HH.
+            apply satisfies_term_expr_inv in HH.
+            destruct HH as [lγ [[H1 H2] H3]].
+            subst γ.
+            unfold satisfies; simpl.
+            ltac1:(simp sat2B).
+            split>[reflexivity|].
+            rewrite map_length in H2.
+            unfold TermOver in *.
+            split>[ltac1:(lia)|].
+            intros.
+            apply X.
+            {
+                rewrite elem_of_list_lookup.
+                exists i. assumption.
+            }
+            eapply H3.
+            { apply pf2. }
+            {
+                ltac1:(replace map with (@fmap _ list_fmap) by reflexivity).
+                rewrite list_lookup_fmap.
+                rewrite pf1.
+                simpl.      
+                reflexivity.              
+            }
+        }
+    }
+Qed.

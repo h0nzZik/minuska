@@ -825,3 +825,15 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma TermOver_size_not_zero
+    {Σ : StaticModel}
+    {A : Type}
+    (t : TermOver A)
+    : TermOver_size t <> 0
+.
+Proof.
+    destruct t; simpl; ltac1:(lia).
+Qed.
+

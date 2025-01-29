@@ -1104,6 +1104,221 @@ Proof.
     }
 Qed.
 
+
+Lemma sum_list_with_pairwise
+    {T1 T2 : Type}
+    (f1 : T1 -> nat)
+    (f2 : T2 -> nat)
+    (l1 : list T1)
+    (l2 : list T2)
+    :
+    length l1 = length l2 ->
+    (forall i x1 x2, l1!!i = Some x1 -> l2!!i = Some x2 -> f1 x1 >= f2 x2) ->
+    sum_list_with f1 l1 >= sum_list_with f2 l2
+.
+Proof.
+    revert l2.
+    induction l1; intros l2 Hlen H; destruct l2; simpl in *; try ltac1:(lia).
+    {
+        specialize (IHl1 l2 ltac:(lia)).
+        assert (H' := H 0 a t eq_refl eq_refl).
+        ltac1:(cut (sum_list_with f1 l1 ≥ sum_list_with f2 l2)).
+        {
+            intros HH. ltac1:(lia).
+        }
+        apply IHl1. intros.
+        specialize (H (S i) x1 x2 H0 H1).
+        apply H.
+    }
+Qed.
+
+Lemma sum_list_with_eq_pairwise
+    {T1 T2 : Type}
+    (f1 : T1 -> nat)
+    (f2 : T2 -> nat)
+    (l1 : list T1)
+    (l2 : list T2)
+    :
+    length l1 = length l2 ->
+    (forall i x1 x2, l1!!i = Some x1 -> l2!!i = Some x2 -> f1 x1 = f2 x2) ->
+    sum_list_with f1 l1 = sum_list_with f2 l2
+.
+Proof.
+    revert l2.
+    induction l1; intros l2 Hlen H; destruct l2; simpl in *; try ltac1:(lia).
+    {
+        specialize (IHl1 l2 ltac:(lia)).
+        assert (H' := H 0 a t eq_refl eq_refl).
+        ltac1:(cut (sum_list_with f1 l1 = sum_list_with f2 l2)).
+        {
+            intros HH. ltac1:(lia).
+        }
+        apply IHl1. intros.
+        specialize (H (S i) x1 x2 H0 H1).
+        apply H.
+    }
+Qed.
+
+Lemma sum_list_with_eq_plus_pairwise
+    {T1 T2 : Type}
+    (f1 : T1 -> nat)
+    (f2 : T2 -> nat)
+    (g : T2 -> nat)
+    (l1 : list T1)
+    (l2 : list T2)
+    :
+    length l1 = length l2 ->
+    (forall i x1 x2, l1!!i = Some x1 -> l2!!i = Some x2 -> f1 x1 = f2 x2 + g x2) ->
+    sum_list_with f1 l1 = sum_list_with f2 l2 + sum_list_with g l2
+.
+Proof.
+    revert l2.
+    induction l1; intros l2 Hlen H; destruct l2; simpl in *; try ltac1:(lia).
+    {
+        specialize (IHl1 l2 ltac:(lia)).
+        assert (H' := H 0 a t eq_refl eq_refl).
+        ltac1:(cut (sum_list_with f1 l1 = sum_list_with f2 l2 + sum_list_with g l2)).
+        {
+            intros HH. ltac1:(lia).
+        }
+        apply IHl1. intros.
+        specialize (H (S i) x1 x2 H0 H1).
+        apply H.
+    }
+Qed.
+
+
+
+
+Lemma list_filter_Forall_all
+    {T : Type}
+    (P : T -> Prop)
+    {_dP : forall x, Decision (P x)}
+    (l : list T)
+    :
+    Forall P l ->
+    filter P l = l
+.
+Proof.
+    induction l; simpl; intros H.
+    {
+        reflexivity.
+    }
+    {
+        apply Forall_cons in H.
+        destruct H as [H1 H2].
+        specialize (IHl H2). clear H2.
+        rewrite filter_cons.
+        destruct (decide (P a)).
+        {
+            rewrite IHl. reflexivity.
+        }
+        ltac1:(contradiction).
+    }
+Qed.
+
+
+Lemma count_one_split
+    {T : Type}
+    (P : T -> Prop)
+    (_dP : forall x, Decision (P x))
+    (l : list T)
+    :
+    length (filter P l) = 1 ->
+    exists (la : list T) (b : T) (lc : list T),
+    l = la ++ b::lc
+    /\ P b
+    /\ Forall (fun x => not (P x)) la
+    /\ Forall (fun x => not (P x)) lc
+.
+Proof.
+    remember (list_find P l) as lf.
+    destruct lf.
+    {
+        symmetry in Heqlf.
+        destruct p.
+        apply list_find_Some in Heqlf.
+        intros HH.
+        destruct Heqlf as [H1 [H2 H3]].
+        apply take_drop_middle in H1.
+        exists (take n l).
+        exists t.
+        exists (drop (S n) l).
+        split.
+        {
+            symmetry. exact H1.
+        }
+        split>[exact H2|].
+        split.
+        {
+            rewrite Forall_forall.
+            intros x Hx.
+            rewrite elem_of_list_lookup in Hx.
+            destruct Hx as [i Hi].
+            rewrite lookup_take_Some in Hi.
+            destruct Hi as [Hi H'i].
+            eapply H3.
+            { apply Hi. }
+            { apply H'i. }
+        }
+        {
+            rewrite Forall_forall.
+            intros x Hx HContra.
+            rewrite elem_of_list_lookup in Hx.
+            destruct Hx as [i Hi].
+            apply take_drop_middle in Hi.
+            rewrite <- Hi in H1.
+            rewrite <- H1 in HH.
+            clear H1 Hi.
+            rewrite filter_app in HH.
+            rewrite filter_cons in HH.
+            destruct (decide (P t))>[|ltac1:(contradiction)].
+            rewrite filter_app in HH.
+            rewrite filter_cons in HH.
+            destruct (decide (P x))>[|ltac1:(contradiction)].
+            rewrite length_app in HH. simpl in HH.
+            rewrite length_app in HH. simpl in HH.
+            ltac1:(lia).
+        }
+    }
+    {
+        symmetry in Heqlf.
+        apply list_find_None in Heqlf.
+        intros Hlength.
+        apply length_filter_l_1_impl_h_in_l' in Hlength.
+        destruct Hlength as [h [H1h H2h]].
+        rewrite Forall_forall in Heqlf.
+        ltac1:(exfalso).
+        ltac1:(naive_solver).
+    }
+Qed.
+
+
+Lemma sum_list_with_perm
+    {T : Type}
+    (f : T -> nat)
+    (l1 l2 : list T)
+    :
+    l1 ≡ₚ l2 ->
+    sum_list_with f l1 = sum_list_with f l2
+.
+Proof.
+    intros H.
+    induction H.
+    {
+        reflexivity.
+    }
+    {
+        simpl. rewrite IHPermutation. reflexivity.
+    }
+    {
+        simpl. ltac1:(lia).
+    }
+    {
+        ltac1:(congruence).
+    }
+Qed.
+
 Inductive MyUnit := mytt.
 
 
