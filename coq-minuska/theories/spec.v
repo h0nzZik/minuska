@@ -98,6 +98,12 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
         -> NondetValue
         -> list (@TermOver' symbol builtin_value)
         -> bool ;
+
+    builtin_predicate_true
+        : builtin_predicate_symbol ;
+
+    builtin_predicate_true_holds
+        : forall nv, builtin_predicate_interp builtin_predicate_true nv [] = true ;
 }.
 
 Set Primitive Projections.
