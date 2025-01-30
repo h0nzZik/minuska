@@ -152,7 +152,7 @@ Inductive Declaration {Σ : StaticModel} {Act : Set} :=
 
 Notation "'rule' '[' n ']:' l '~>{' a '}' r"
     := ((mkRuleDeclaration
-        n (rule (l) ~>{ (a) } (r) requires nil)
+        n (rule (l) ~>{ (a) } (r) requires (sc_atom builtin_predicate_true []))
     ))
     (at level 200)
 .
