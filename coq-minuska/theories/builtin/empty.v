@@ -87,7 +87,7 @@ Definition eject
     {symbol : Type}
     (v : Emptyset)
     :
-    option ((*bool+*)(Z+(string+unit)))%type
+    option (bool+(Z+(string+unit)))%type
     :=
     None
 .

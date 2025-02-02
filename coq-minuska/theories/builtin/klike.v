@@ -1659,6 +1659,13 @@ Inductive FunctionSymbol : Set :=
 | b_Z_minus           (* Z -> Z -> Z *)
 | b_Z_times           (* Z -> Z -> Z *)
 | b_Z_div             (* Z -> Z -> Z *)
+| b_Z_isLe                 (* Z -> Z -> bool *)
+| b_Z_isLt                 (* Z -> Z -> bool *)
+| b_Z_isGe                 (* Z -> Z -> bool *)
+| b_Z_isGt                 (* Z -> Z -> bool *)
+| b_Z_eq                   (* Z -> Z -> bool *)
+| b_Z_neq                  (* Z -> Z -> bool *)
+| b_bool_neg          (* bool -> bool *)
 | b_map_lookup        (* map -> 'a -> 'b *)
 | b_map_update        (* map -> 'a -> 'b -> map  *)
 .
@@ -1683,19 +1690,13 @@ Inductive PredicateSymbol : Set :=
 | b_isNotList              (* 'a -> Prop *)
 | b_isMap                  (* 'a -> Prop *)
 | b_isNotMap               (* 'a -> Prop *)
-| b_Z_isLe                 (* Z -> Z -> Prop *)
-| b_Z_isLt                 (* Z -> Z -> Prop *)
-| b_Z_isGe                 (* Z -> Z -> Prop *)
-| b_Z_isGt                 (* Z -> Z -> Prop *)
+| b_bool_is_true      (* bool -> Prop *)
 | b_term_eq                (* term -> term -> Prop *)
-| b_Z_eq                   (* Z -> Z -> Prop *)
-| b_Z_neq                  (* Z -> Z -> Prop *)
 | b_map_hasKey             (* map -> 'a -> Prop *)
 | b_is_applied_symbol      (* string -> 'a -> Prop *)
 | b_is_not_applied_symbol  (* string -> 'a -> Prop *)
 | b_have_same_symbol       (* term -> term -> Prop *)
 | b_not_have_same_symbol   (* term -> term -> Prop *)
-
 .
 
 
@@ -1797,6 +1798,21 @@ Section sec.
         match x', y' with
         | bv_Z x'', bv_Z y'' => f x'' y''
         | _, _ => false
+        end
+        )
+        x y
+    .
+
+    Definition bfmap_Z_Z__bool
+        (f : Z -> Z -> bool)
+        (x y : @TermOver' symbol BuiltinValue)
+        : @TermOver' symbol BuiltinValue
+    :=
+    bfmap2
+        (fun x' y' =>
+        match x', y' with
+        | bv_Z x'', bv_Z y'' => bv_bool (f x'' y'')
+        | _, _ => bv_bool false
         end
         )
         x y
@@ -1918,7 +1934,13 @@ Section sec.
                     fun _ => (t_over (bv_pmap ∅))
                 )
             (* unary *)            
-            
+            | b_bool_neg => liftUnary (
+                fun _ v =>
+                match v with
+                | t_over (bv_bool b) => t_over (bv_bool (negb b))
+                | _ => err
+                end
+            )
             | b_map_size => liftUnary (
                 fun _ v =>
                 match v with
@@ -1945,6 +1967,37 @@ Section sec.
                 | _ => bfmap_Z_Z__Z Z.div v1 v2
                 end
             )
+
+            | b_Z_eq => liftBinary (
+                fun _ v1 v2 =>
+                t_over (bv_bool (bool_decide (v1 = v2)))
+            )
+
+            | b_Z_neq => liftBinary (
+                fun _ v1 v2 =>
+                t_over (bv_bool (negb (bool_decide (v1 = v2))))
+            )
+
+            | b_Z_isLe => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.leb v1 v2))
+            )
+
+            | b_Z_isLt => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.ltb v1 v2))
+            )
+
+            | b_Z_isGe => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.geb v1 v2))
+            )
+
+            | b_Z_isGt => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.gtb v1 v2))
+            )
+
             | b_map_lookup => liftBinary (
                 fun _ v1 v2 =>
                 match v1 with
@@ -1983,14 +2036,12 @@ Section sec.
                 (bool_decide (v1 = v2))
             )
 
-            | b_Z_eq => liftBinaryP (
-                fun _ v1 v2 =>
-                (bool_decide (v1 = v2))
-            )
-
-            | b_Z_neq => liftBinaryP (
-                fun _ v1 v2 =>
-                negb (bool_decide (v1 = v2))
+            | b_bool_is_true => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over (bv_bool b) => eqb b true
+                | _ => false
+                end
             )
 
             | b_isBuiltin => liftUnaryP (
@@ -2101,26 +2152,6 @@ Section sec.
                 | _ => true
                 end
             )    
-
-            | b_Z_isLe => liftBinaryP (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__Prop Z.leb v1 v2))
-            )
-
-            | b_Z_isLt => liftBinaryP (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__Prop Z.ltb v1 v2))
-            )
-
-            | b_Z_isGe => liftBinaryP (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__Prop Z.geb v1 v2))
-            )
-
-            | b_Z_isGt => liftBinaryP (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__Prop Z.gtb v1 v2))
-            )
 
             | b_map_hasKey => liftBinaryP (
                 fun _ v1 v2 =>
@@ -2268,6 +2299,8 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("term.eq", "b_term_eq");
         ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
+        ("b.neg", "b_bool_neg");
+        ("b.is_true", "b_bool_is_true");
         ("z.minus", "b_Z_minus");
         ("z.plus", "b_Z_plus");
         ("z.is", "b_isZ");
@@ -2290,6 +2323,15 @@ Definition inject_Z
     :
     (@BuiltinValue0 symbol) :=
     Fret (Some (bv_Z z))
+.
+
+Definition inject_bool
+    {symbol : Type}
+    (Fret :  option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
+    (b : bool)
+    :
+    (@BuiltinValue0 symbol) :=
+    Fret (Some (bv_bool b))
 .
 
 Definition inject_string
