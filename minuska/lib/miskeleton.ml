@@ -10,9 +10,9 @@ let convert_builtin (iface : 'a Dsm.builtinInterface) (b : Syntax.builtin)  : ((
   | `BuiltinString s ->(
      iface.bi_inject_string (fun a -> match a with | None -> failwith "The chosen builtin model does not support strings" | Some b -> b) (Stringutils.explode s)
     )
-  (* | `BuiltinBool b -> (
+  | `BuiltinBool b -> (
       iface.bi_inject_bool (fun a -> match a with | None -> failwith "The chosen builtin model does not support bools" | Some b -> b) b
-    ) *)
+    )
   | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Dsm.Bv_error *)
   | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"
 
@@ -35,10 +35,10 @@ let convert_builtin_back (iface : 'a Dsm.builtinInterface) (b : (string, 'a) Dsm
   match b2 with
   | Some b3 -> (
     match b3 with
-    (* | Inl x -> `BuiltinBool x *)
-    | (*Inr*) (Inl x) -> `BuiltinInt (Z.to_int x)
-    | (*Inr*) (Inr (Inl x)) -> `BuiltinString (Stringutils.implode x)
-    | (*Inr*) (Inr (Inr _)) -> `BuiltinError
+    | Inl x -> `BuiltinBool x
+    | Inr (Inl x) -> `BuiltinInt (Z.to_int x)
+    | Inr (Inr (Inl x)) -> `BuiltinString (Stringutils.implode x)
+    | Inr (Inr (Inr _)) -> `BuiltinError
   )
   | None -> `OpaqueBuiltin
 

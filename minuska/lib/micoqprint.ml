@@ -217,9 +217,10 @@ let print_rule
     fprintf oux " ";
     print_exprterm iface my_builtins_map my_query_map name_of_builtins oux (r.rhs);
     fprintf oux " ";
-    fprintf oux "[";
-    myiter (fun x -> print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond);
-    fprintf oux "]";
+    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux r.cond None;
+    (* fprintf oux "["; *)
+    (* myiter (fun x -> print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond); *)
+    (* fprintf oux "]"; *)
     fprintf oux ")\n";
     ()
 

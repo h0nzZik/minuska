@@ -2299,8 +2299,8 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("term.eq", "b_term_eq");
         ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
-        ("b.neg", "b_bool_neg");
-        ("b.is_true", "b_bool_is_true");
+        ("bool.neg", "b_bool_neg");
+        ("bool.is_true", "b_bool_is_true");
         ("z.minus", "b_Z_minus");
         ("z.plus", "b_Z_plus");
         ("z.is", "b_isZ");

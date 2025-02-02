@@ -41,7 +41,7 @@ type pattern =
 type builtin =
   [ `BuiltinInt of int
   | `BuiltinString of string
-  (* | `BuiltinBool of bool *)
+  | `BuiltinBool of bool
   | `BuiltinError
   | `OpaqueBuiltin
   ]
@@ -74,7 +74,7 @@ type rule =
     name : string ;
     lhs : pattern ;
     rhs : exprterm ;
-    cond : condition list ;
+    cond : condition ;
   }
 
 type framedecl =

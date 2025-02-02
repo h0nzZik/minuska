@@ -198,11 +198,12 @@ rule:
     ARROW
     r = exprterm
     KEYWORD_WHERE
-    BRACKET_SQUARE_LEFT
-    cs = separated_list(COMMA, condition);
-    BRACKET_SQUARE_RIGHT
+    // BRACKET_SQUARE_LEFT
+    c = condition
+    // cs = separated_list(COMMA, condition);
+    // BRACKET_SQUARE_RIGHT
     SEMICOLON
-    { {frame = a; name = n; lhs = l; rhs = r; cond = cs }  }
+    { {frame = a; name = n; lhs = l; rhs = r; cond = c }  }
   ;
 
 definition:
