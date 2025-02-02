@@ -2,7 +2,6 @@
 %token <string> ID
 %token <string> VAR
 %token KEYWORD_VALUE
-%token KEYWORD_NONVALUE
 %token KEYWORD_STRICTNESS
 %token KEYWORD_BUILTIN_INT
 %token KEYWORD_BUILTIN_STRING
@@ -12,6 +11,8 @@
 %token KEYWORD_IN
 %token KEYWORD_WHERE
 %token KEYWORD_CONTEXT
+%token KEYWORD_AND
+%token KEYWORD_OR
 %token BRACKET_ROUND_LEFT
 %token BRACKET_ROUND_RIGHT
 %token BRACKET_SQUARE_LEFT
@@ -120,7 +121,21 @@ condition:
     BRACKET_ROUND_LEFT
     es = separated_list(COMMA, expr)
     BRACKET_ROUND_RIGHT
-    { `Cond ((`Id p), es) }
+    { `CondAtomic ((`Id p), es) }
+  | KEYWORD_OR
+    BRACKET_ROUND_LEFT
+    c1 = condition
+    COMMA
+    c2 = condition
+    BRACKET_ROUND_RIGHT
+    { `CondOr (c1, c2) }
+  | KEYWORD_AND
+    BRACKET_ROUND_LEFT
+    c1 = condition
+    COMMA
+    c2 = condition
+    BRACKET_ROUND_RIGHT
+    { `CondAnd (c1, c2) }
   ;
 
 exprterm:
@@ -139,22 +154,9 @@ valuedecl:
     x = VAR 
     BRACKET_ROUND_RIGHT
     COLON 
-    BRACKET_ROUND_LEFT
+    // BRACKET_ROUND_LEFT
     c = condition
-    BRACKET_ROUND_RIGHT
-    SEMICOLON
-    { (x,c) }
-  ;
-
-nonvaluedecl:
-  | KEYWORD_NONVALUE
-    BRACKET_ROUND_LEFT
-    x = VAR 
-    BRACKET_ROUND_RIGHT
-    COLON 
-    BRACKET_ROUND_LEFT
-    c = condition
-    BRACKET_ROUND_RIGHT
+    // BRACKET_ROUND_RIGHT
     SEMICOLON
     { (x,c) }
   ;
@@ -206,11 +208,10 @@ rule:
 definition:
   | fs = framesdecl
     v = valuedecl
-    nv = nonvaluedecl
     c = contextdecl
     sall = strictnessall
     rs = list(rule)
-    { { context = c; value = (`Var (fst v), (snd v)); nonvalue = (`Var (fst nv), (snd nv)); frames = fs; strictness = sall; rules = rs } }
+    { { context = c; value = (`Var (fst v), (snd v)); frames = fs; strictness = sall; rules = rs } }
   ;
 
 option_definition:

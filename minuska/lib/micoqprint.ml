@@ -168,7 +168,7 @@ let rec print_exprterm
     myiter (fun x -> print_exprterm iface my_builtins_map my_query_map name_of_builtins oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
-let print_cond_w_hole
+let rec print_cond_w_hole
   (iface : 'a Dsm.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
@@ -178,10 +178,22 @@ let print_cond_w_hole
   (hole : string option)
   : unit =
   match c with
-  | `Cond (`Id s, es) ->
-      fprintf oux "(mkSideCondition2 _ %s [" (snd (translate_name my_builtins_map my_query_map s));
+  | `CondAtomic (`Id s, es) ->
+      fprintf oux "(sc_atom %s [" (snd (translate_name my_builtins_map my_query_map s));
       myiter (fun x -> print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
       fprintf oux "])"
+  | `CondAnd (c1, c2) -> (
+    fprintf oux "(sc_and ";
+    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c1 hole;
+    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c2 hole;
+    fprintf oux ")";
+  )
+  | `CondOr (c1, c2) -> (
+      fprintf oux "(sc_or ";
+      print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c1 hole;
+      print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c2 hole;
+      fprintf oux ")";
+  )
 
 
 
@@ -259,9 +271,11 @@ let print_definition
     fprintf oux ".\n";
     
     fprintf oux "Definition isNonValue (";
-    fprintf oux "%s" (match (fst (def.Syntax.nonvalue)) with `Var s -> s);
+    fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_cond_w_hole iface my_builtins_map my_query_map (name_of_builtins : string) oux (snd (def.Syntax.nonvalue)) (Some (match (fst (def.Syntax.nonvalue)) with `Var s -> s));
+    fprintf oux "(nsc_negate ";
+    print_cond_w_hole iface my_builtins_map my_query_map (name_of_builtins : string) oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
+    fprintf oux ")";
     fprintf oux ".\n";
     
     fprintf oux "%s\n" output_part_2;

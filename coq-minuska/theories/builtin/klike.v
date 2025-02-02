@@ -93,7 +93,7 @@ Section sec.
     (* TODO make parametric in a user type *)
     Inductive BuiltinValue0 :=
     | bv_error
-    (* | bv_bool (b : bool) *)
+    | bv_bool (b : bool)
     (* | bv_nat (n : nat) *)
     | bv_Z (z : Z)
     | bv_sym (s : symbol)
@@ -165,7 +165,7 @@ Section sec.
         S (my_pmapne_size m)
     | bv_pmap (PEmpty) => 1
     | bv_error => 1
-    (* | bv_bool _ => 1 *)
+    | bv_bool _ => 1
     (* | bv_nat _ => 1 *)
     | bv_sym _ => 1
     | bv_str _ => 1
@@ -192,7 +192,7 @@ Section sec.
                 try (solve [left; reflexivity]);
                 right; ltac1:(discriminate).
             }
-            (* {
+            {
                 destruct y;
                 try (solve [left; reflexivity]);
                 try (solve [right;ltac1:(discriminate)]).
@@ -203,7 +203,7 @@ Section sec.
                 {
                     right; ltac1:(abstract congruence).
                 }
-            } *)
+            }
             (*
             {
                 destruct y;
@@ -935,7 +935,7 @@ Section sec.
 
     Inductive BVLeaf :=
     | bvl_error
-    (* | bvl_bool (b : bool) *)
+    | bvl_bool (b : bool)
     (* | bvl_nat (n : nat) *)
     | bvl_Z (z : Z)
     | bvl_str (s : string)
@@ -953,7 +953,7 @@ Section sec.
     match t with
     | ((GenNode 1 nil)) => Some (bv_pmap (PEmpty))
     | (GenLeaf bvl_error)      => Some (bv_error)  
-    (* | (GenLeaf (bvl_bool b))   => Some (bv_bool b)  *)
+    | (GenLeaf (bvl_bool b))   => Some (bv_bool b)
     (* | (GenLeaf (bvl_nat n))    => Some (bv_nat n)  *)
     | (GenLeaf (bvl_Z z))      => Some (bv_Z z) 
     | (GenLeaf (bvl_str s))      => Some (bv_str s) 
@@ -1139,7 +1139,7 @@ Section sec.
     match r with
     | (bv_pmap (PEmpty)) => (GenNode 1 nil)
     | (bv_error)         => (GenLeaf bvl_error)
-    (* | (bv_bool b)        => (GenLeaf (bvl_bool b)) *)
+    | (bv_bool b)        => (GenLeaf (bvl_bool b))
     (* | (bv_nat n)         => (GenLeaf (bvl_nat n)) *)
     | (bv_Z z)           => (GenLeaf (bvl_Z z))
     | (bv_sym s)           => (GenLeaf (bvl_sym s))
@@ -1573,7 +1573,7 @@ induction ao; try reflexivity.
     )).
     {
         ltac1:(unshelve(eapply gen_tree_countable)).
-        remember (unit+(*bool+*)(*nat+*)Z+string+symbol)%type as MyT.
+        remember (unit+bool+(*nat+*)Z+string+symbol)%type as MyT.
         ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
         {
             subst MyT. apply _.
@@ -1582,7 +1582,10 @@ induction ao; try reflexivity.
             subst.
             intros bvl. destruct bvl.
             {
-                left. left. left. exact ().
+                left. left. left. left. exact ().
+            }
+            {
+                left. left. left. right. exact b.
             }
             {
                 left. left. right. exact z.
@@ -1603,8 +1606,16 @@ induction ao; try reflexivity.
                 {
                     destruct t1 as [t1|t2].
                     {
-                        apply Some.
-                        apply bvl_error.
+                        destruct t1 as [t1|t2].
+                        {
+                            apply Some.
+                            apply bvl_error.
+                        }
+                        {
+                            apply Some.
+                            apply bvl_bool.
+                            apply t2.
+                        }
                     }
                     {
                         apply Some.
@@ -2253,7 +2264,7 @@ End Notations.
 
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
-        ("is_true", "b_cond_is_true");
+        ("true", "b_tt");
         ("term.eq", "b_term_eq");
         ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
@@ -2297,10 +2308,10 @@ Definition eject
     option (bool+(Z+(string+unit)))%type
     :=
     match v with
-    (* | bv_bool b => Some (inl b) *)
-    | bv_Z z => Some (inr (inl z))
-    | bv_str s => Some (inr (inr (inl s)))
-    | bv_error => Some (inr (inr (inr ())))
+    | bv_bool b => Some (inl b)
+    | bv_Z z => Some (inr(inl z))
+    | bv_str s => Some (inr(inr (inl s)))
+    | bv_error => Some (inr(inr (inr ())))
     | _ => None
     end 
 .

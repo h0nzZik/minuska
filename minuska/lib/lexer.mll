@@ -27,13 +27,14 @@ rule read =
   | '['          { BRACKET_SQUARE_LEFT }
   | ']'          { BRACKET_SQUARE_RIGHT }
   | "@value"      { KEYWORD_VALUE }
-  | "@nonvalue"      { KEYWORD_NONVALUE }
   | "@strictness" { KEYWORD_STRICTNESS }
   | "@frames"       { KEYWORD_FRAMES }
   | "@rule"       { KEYWORD_RULE }
   | "@context"       { KEYWORD_CONTEXT }
   | "@builtin-int"       { KEYWORD_BUILTIN_INT }
   | "@builtin-string"       { KEYWORD_BUILTIN_STRING }
+  | "@and"       { KEYWORD_AND }
+  | "@or"        { KEYWORD_OR }
   | "of_arity"         { KEYWORD_OF_ARITY }
   | "in"         { KEYWORD_IN }
   | "where"      { KEYWORD_WHERE }

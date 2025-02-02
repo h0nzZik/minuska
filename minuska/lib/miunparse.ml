@@ -10,7 +10,7 @@ let builtin_to_string (b : Syntax.builtin) : string =
   match b with
   | `BuiltinInt n -> "(@builtin-int " ^ (string_of_int n) ^ ")"
   | `BuiltinString s -> "(@builtin-string \"" ^ s ^ "\")"
-  | `BuiltinBool b -> "(@builtin-bool " ^ (if b then "true" else "false") ^ "\")"
+  (* | `BuiltinBool b -> "(@builtin-bool " ^ (if b then "true" else "false") ^ "\")" *)
   | `BuiltinError -> "(@builtin-error)"
   | `OpaqueBuiltin -> "(@opaque_builtin)"
 

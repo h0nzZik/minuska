@@ -1,18 +1,8 @@
 @frames: [
   simple(X): c[builtin.cseq [X,REST], STATE]
 ];
-@value(X): (is_true (bool.or(
-   z.is(X),                            bool.or(
-   bool.is(X),                         bool.or(
-    term.same_symbol(X, [unitValue[]]), 
-   string.is(X)
-))))) ;
-@nonvalue(X): (is_true (bool.neg(bool.or(
-   z.is(X),                            bool.or(
-   bool.is(X),                         bool.or(
-   term.same_symbol(X, [unitValue[]]), 
-   string.is(X)
-)))))) ;
+@value(X): @or(z.is(X), @or(bool.is(X), @or(term.same_symbol(X, [unitValue[]]), string.is(X))));
+
 @context(HOLE): c[HOLE, STATE];
 @strictness: [
   plus of_arity 2 in [0,1],

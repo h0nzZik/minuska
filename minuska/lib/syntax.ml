@@ -2,7 +2,6 @@ type token =
   | ID of string
   | VAR of string
   | INT of int
-  | KEYWORD_NONVALUE
   | KEYWORD_VALUE
   | KEYWORD_BUILTIN_INT
   | KEYWORD_BUILTIN_STRING
@@ -12,6 +11,8 @@ type token =
   | KEYWORD_CONTEXT
   | KEYWORD_OF_ARITY
   | KEYWORD_IN
+  | KEYWORD_AND
+  | KEYWORD_OR
   | KEYWORD_WHERE
   | BRACKET_ROUND_LEFT
   | BRACKET_ROUND_RIGHT
@@ -40,7 +41,7 @@ type pattern =
 type builtin =
   [ `BuiltinInt of int
   | `BuiltinString of string
-  | `BuiltinBool of bool
+  (* | `BuiltinBool of bool *)
   | `BuiltinError
   | `OpaqueBuiltin
   ]
@@ -57,7 +58,9 @@ type expr =
   ]
 
 type condition =
-  [ `Cond of (id*(expr list)) 
+  [ `CondAtomic of (id*(expr list)) 
+  | `CondAnd of (condition*condition)
+  | `CondOr of (condition*condition)
   ]
 
 type exprterm =
@@ -98,7 +101,6 @@ type definition =
   {
     frames     : (framedecl list) ;
     value      : (vari*condition) ;
-    nonvalue      : (vari*condition) ;
     context    : contextdecl ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;
