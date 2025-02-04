@@ -1702,7 +1702,7 @@ Inductive PredicateSymbol : Set :=
 Instance PredicateSymbol_eqDec : EqDecision PredicateSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
-Section sec.
+Section sec2.
 
     Context
         {symbol : Type}
@@ -2247,7 +2247,7 @@ Section sec.
             builtin_predicate_true_holds := fun _ => eq_refl ;
     |}.
 
-End sec.
+End sec2.
 
 
 Module Notations.
@@ -2387,39 +2387,79 @@ Definition eject
     end 
 .
 
-Program Definition Negable_isZ symbol
+Section negations.
+    Context
+        (symbol : Type)
+        (variable : Type)
+        (symbols : Symbols symbol)
+        (variables : MVariables variable)
+        (program_info : @ProgramInfo symbol symbols MyUnit (@β symbol symbols))
+        (nondet_gen : nat -> MyUnit)
+    .
+
+    (* #[local] *)
+    Definition Σ := (mkStaticModel
+        symbol
         variable
         symbols
+        MyUnit
+        (@β symbol symbols)
         variables
         program_info
         nondet_gen
-    := @mkNegablePredicateSymbol
-    ({|
-        symbol := symbol ;
-        variable := variable ;
-        symbols := symbols;
-        NondetValue := MyUnit ;
-        variables := variables ;
-        builtin := @β symbol symbols ;
-        program_info := program_info ;
-        nondet_gen := nondet_gen ;
-    |}) b_isZ 1 b_isNotZ id _
-.
-Next Obligation.
-    unfold liftUnaryP.
-    ltac1:(repeat (destruct args; simpl in *; try lia)).
-    ltac1:(repeat (case_match; simpl in *; simplify_option_eq; try reflexivity)).
-    ltac1:(exfalso).
-    unfold vars_of in H0; simpl in H0.
-    ltac1:(apply (@Expression2_evaluate_None_inv {|
-        symbol := symbol ;
-        variable := variable ;
-        symbols := symbols;
-        NondetValue := MyUnit ;
-        variables := variables ;
-        builtin := @β symbol symbols ;
-        program_info := program_info ;
-        nondet_gen := nondet_gen ;
-    |} p) in Heqo).
-    ltac1:(set_solver).
-Qed.
+    ).
+
+    Ltac2 case_on_length () :=
+        repeat(
+            simpl in *;
+            match! goal with
+            | [h: ((length ?args) = (S _)) |- _] =>
+                destruct $args; simpl in $h; try ltac1:(lia)
+            | [h: ((length ?args) = O) |- _] =>
+                destruct $args; simpl in $h; try ltac1:(lia)
+            | [h: ((S _) = (S _)) |- _] =>
+                apply Nat.succ_inj in $h
+            end
+        )
+    .
+
+    Ltac2 simplify_negable () :=
+        case_on_length ();
+        ltac1:(repeat (case_match; simpl in *; simplify_option_eq; try reflexivity));
+        repeat (match! goal with
+        | [ h: (Expression2_evaluate _ _ _ = None) |- _ ] =>
+            apply (@Expression2_evaluate_None_inv Σ) in $h
+        end);
+        unfold vars_of in *; simpl in *
+    .
+
+    Ltac2 solve_negable () := simplify_negable (); ltac1:(set_solver) .
+
+    #[export]
+    Program Instance Negable_isZ : @NegablePredicateSymbol Σ b_isZ 1
+        := {|
+            nps_negate_sym := b_isNotZ;
+            nps_negate_args := id;
+        |}
+    .
+    Next Obligation. solve_negable (). Qed. Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isNotZ : @NegablePredicateSymbol Σ b_isNotZ 1
+        := {|
+            nps_negate_sym := b_isZ;
+            nps_negate_args := id;
+        |}
+    .
+    Next Obligation.
+        simplify_negable ().
+        {
+            rewrite negb_involutive. reflexivity.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+End negations.
