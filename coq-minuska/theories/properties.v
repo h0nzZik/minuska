@@ -809,6 +809,24 @@ Proof.
     }
 Qed.
 
+
+Lemma Expression2_evaluate_None_inv
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (e : Expression2)
+    (ρ : Valuation2)
+:
+    Expression2_evaluate program ρ e = None ->
+    ~( vars_of e ⊆ vars_of ρ )
+.
+Proof.
+    intros H1 HContra.
+    assert(H2 := Expression2_evaluate_Some_enough_inv program e ρ HContra).
+    destruct H2 as [g Hg].
+    rewrite H1 in Hg.
+    inversion Hg.
+Qed.
+
 Lemma vars_of_t_over_expr
     {Σ : StaticModel}
     (e : Expression2)

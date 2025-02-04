@@ -2410,5 +2410,16 @@ Next Obligation.
     ltac1:(repeat (destruct args; simpl in *; try lia)).
     ltac1:(repeat (case_match; simpl in *; simplify_option_eq; try reflexivity)).
     ltac1:(exfalso).
-    Search Expression2_evaluate .
+    unfold vars_of in H0; simpl in H0.
+    ltac1:(apply (@Expression2_evaluate_None_inv {|
+        symbol := symbol ;
+        variable := variable ;
+        symbols := symbols;
+        NondetValue := MyUnit ;
+        variables := variables ;
+        builtin := @β symbol symbols ;
+        program_info := program_info ;
+        nondet_gen := nondet_gen ;
+    |} p) in Heqo).
+    ltac1:(set_solver).
 Qed.
