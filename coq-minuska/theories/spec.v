@@ -129,7 +129,7 @@ Class ProgramInfo
         (@TermOver' symbol builtin_value) ;
 }.
 
-Class StaticModel := {
+Class StaticModel := mkStaticModel {
     symbol : Type ;
     variable : Type ;
     symbols :: Symbols symbol ;
@@ -710,22 +710,27 @@ Record BuiltinsBinding := {
     bb_function_names : list (string * string) ;
 }.
 
-Class NegablePredicateSymbol {Σ : StaticModel} (sym : builtin_predicate_symbol) := {
-    nps_arity : nat ;
+Class NegablePredicateSymbol
+    {Σ : StaticModel}
+    (sym : builtin_predicate_symbol)
+    (ar : nat)
+    := mkNegablePredicateSymbol {
     nps_negate_sym : builtin_predicate_symbol ;
     nps_negate_args : list Expression2 -> list Expression2 ;
     nps_negate_correct : forall ρ args pgnv,
+        length args = ar ->
+        vars_of args ⊆ vars_of ρ ->
         SideCondition_evaluate pgnv.1 ρ pgnv.2 (sc_atom nps_negate_sym (nps_negate_args args))
         = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 (sc_atom sym args))
 }.
 
-Arguments nps_arity {Σ} sym {NegablePredicateSymbol}.
-Arguments nps_negate_sym {Σ} sym {NegablePredicateSymbol}.
-Arguments nps_negate_args {Σ} sym {NegablePredicateSymbol} args.
+Arguments nps_negate_sym {Σ} sym ar {NegablePredicateSymbol}.
+Arguments nps_negate_args {Σ} sym ar {NegablePredicateSymbol} args.
 
 Class NegableSideCondition {Σ : StaticModel} (sc : SideCondition) := {
     nsc_negate : SideCondition ;
     nsc_negate_correct : forall ρ pgnv,
+        vars_of sc ⊆ vars_of ρ ->
         SideCondition_evaluate pgnv.1 ρ pgnv.2 nsc_negate 
         = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 sc) ;
 }.
@@ -740,13 +745,13 @@ Program Instance NegableSideCondition_atomic
     {Σ : StaticModel}
     (sym : builtin_predicate_symbol)
     (args : list Expression2)
-    (nps : NegablePredicateSymbol sym)
+    (nps : NegablePredicateSymbol sym (length args))
     : NegableSideCondition (sc_atom sym args) := 
 {|
-    nsc_negate := sc_atom (nps_negate_sym sym) (nps_negate_args sym args) ;
+    nsc_negate := sc_atom (nps_negate_sym sym (length args)) (nps_negate_args sym (length args) args) ;
 |}.
 Next Obligation.
-    abstract(intros; apply nps_negate_correct).
+    intros; apply nps_negate_correct>[reflexivity|apply H].
 Defined.
 Fail Next Obligation.
 
@@ -765,7 +770,8 @@ Next Obligation.
     abstract(
         intros;
         simpl;
-        do 2 (rewrite nsc_negate_correct);
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
         rewrite negb_and;
         reflexivity
     ).
@@ -787,7 +793,8 @@ Next Obligation.
     abstract(
         intros;
         simpl;
-        do 2 (rewrite nsc_negate_correct);
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
         rewrite negb_or;
         reflexivity
     ).

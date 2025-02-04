@@ -2,16 +2,11 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
+    properties
     lowlang
     notations
     default_static_model
     BuiltinValue
-.
-
-From Minuska Require Import
-    prelude
-    spec
-    lowlang (* TODO get rid of this dependency *)
 .
 
 From Coq Require Import ZArith.
@@ -1684,6 +1679,8 @@ Inductive PredicateSymbol : Set :=
 | b_isNotSymbol            (* 'a -> Prop *)
 | b_isZ                    (* 'a -> Prop *)
 | b_isNotZ                 (* 'a -> Prop *)
+| b_isBool                    (* 'a -> Prop *)
+| b_isNotBool                    (* 'a -> Prop *)
 | b_isString               (* 'a -> Prop *)
 | b_isNotString            (* 'a -> Prop *)
 | b_isList                 (* 'a -> Prop *)
@@ -1691,6 +1688,7 @@ Inductive PredicateSymbol : Set :=
 | b_isMap                  (* 'a -> Prop *)
 | b_isNotMap               (* 'a -> Prop *)
 | b_bool_is_true      (* bool -> Prop *)
+| b_bool_is_false      (* bool -> Prop *)
 | b_term_eq                (* term -> term -> Prop *)
 | b_map_hasKey             (* map -> 'a -> Prop *)
 | b_is_applied_symbol      (* string -> 'a -> Prop *)
@@ -1707,7 +1705,7 @@ Proof. ltac1:(solve_decision). Defined.
 Section sec.
 
     Context
-        {symbol : Set}
+        {symbol : Type}
         {symbols : Symbols symbol}
     .
 
@@ -1731,6 +1729,11 @@ Section sec.
     Definition impl_isString (bv : BuiltinValue) : bool
     :=
         match bv with bv_str _ => true | _ => false end
+    .
+
+    Definition impl_isBool (bv : BuiltinValue) : bool
+    :=
+        match bv with bv_bool _ => true | _ => false end
     .
 
     Definition impl_isList (bv : BuiltinValue) : bool
@@ -2044,6 +2047,14 @@ Section sec.
                 end
             )
 
+            | b_bool_is_false => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over (bv_bool b) => eqb b false
+                | _ => false
+                end
+            )
+
             | b_isBuiltin => liftUnaryP (
                 fun _ v =>
                 match v with
@@ -2118,6 +2129,22 @@ Section sec.
                 match v with
                 | t_over x => negb (impl_isList x)
                 | _ => true
+                end
+            )
+
+            | b_isBool => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isBool x)
+                | _ => false
+                end
+            )
+
+            | b_isNotBool => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isBool x)
+                | _ => false
                 end
             )
                 
@@ -2299,8 +2326,10 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("term.eq", "b_term_eq");
         ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
+        ("bool.is", "b_isBool");
         ("bool.neg", "b_bool_neg");
         ("bool.is_true", "b_bool_is_true");
+        ("bool.is_false", "b_bool_is_false");
         ("z.minus", "b_Z_minus");
         ("z.plus", "b_Z_plus");
         ("z.is", "b_isZ");
@@ -2357,3 +2386,29 @@ Definition eject
     | _ => None
     end 
 .
+
+Program Definition Negable_isZ symbol
+        variable
+        symbols
+        variables
+        program_info
+        nondet_gen
+    := @mkNegablePredicateSymbol
+    ({|
+        symbol := symbol ;
+        variable := variable ;
+        symbols := symbols;
+        NondetValue := MyUnit ;
+        variables := variables ;
+        builtin := @β symbol symbols ;
+        program_info := program_info ;
+        nondet_gen := nondet_gen ;
+    |}) b_isZ 1 b_isNotZ id _
+.
+Next Obligation.
+    unfold liftUnaryP.
+    ltac1:(repeat (destruct args; simpl in *; try lia)).
+    ltac1:(repeat (case_match; simpl in *; simplify_option_eq; try reflexivity)).
+    ltac1:(exfalso).
+    Search Expression2_evaluate .
+Qed.

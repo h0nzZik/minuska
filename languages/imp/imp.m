@@ -35,9 +35,9 @@
 @rule/simple [bexpr.lt]: lt[X, Y] => z.lt(X, Y) where @and(z.is(X), z.is(Y)) ;
 @rule/simple [bexpr.neg]: not[X] => bool.neg(X) where bool.is(X) ;
 
-@rule/simple [stmt.ite.true]:  ite[B, X, Y] => X where @and(bool.is(B), bool.eq(B, bool.true()))] ;
-@rule/simple [stmt.ite.false]: ite[B, X, Y] => Y where @and(bool.is(B), bool.eq(B, bool.false()))] ;
+@rule/simple [stmt.ite.true]:  ite[B, X, Y] => X where @and(bool.is(B), bool.is_true(B)) ;
+@rule/simple [stmt.ite.false]: ite[B, X, Y] => Y where @and(bool.is(B), bool.is_false(B)) ;
 
-@rule/simple [while.unfold]: while[B, S] => ite[B, seq[S, while[B, S]], unitValue[]] where [] ;
+@rule/simple [while.unfold]: while[B, S] => ite[B, seq[S, while[B, S]], unitValue[]] where true() ;
 
 
