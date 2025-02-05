@@ -2144,7 +2144,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => negb (impl_isBool x)
-                | _ => false
+                | _ => true
                 end
             )
                 
@@ -2211,9 +2211,9 @@ Section sec2.
                 | t_term s1 _ =>
                     match v2 with
                     | t_term s2 _ => negb (bool_decide (s1 = s2))
-                    | _ => true
+                    | _ => false
                     end
-                | _ => true
+                | _ => false
                 end
             )
 
@@ -2324,9 +2324,12 @@ Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
         ("true", "b_tt");
         ("term.eq", "b_term_eq");
-        ("sym.is", "b_isSymbol");
         ("term.same_symbol", "b_have_same_symbol");
+        ("term.different_symbol", "b_not_have_same_symbol");
+        ("sym.is", "b_isSymbol");
+        ("sym.isNot", "b_isNotSymbol");
         ("bool.is", "b_isBool");
+        ("bool.isNot", "b_isNotBool");
         ("bool.neg", "b_bool_neg");
         ("bool.is_true", "b_bool_is_true");
         ("bool.is_false", "b_bool_is_false");
@@ -2425,6 +2428,7 @@ Section negations.
 
     Ltac2 simplify_negable () :=
         case_on_length ();
+        unfold liftUnaryP,liftNularyP,liftBinaryP;
         ltac1:(repeat (case_match; simpl in *; simplify_option_eq; try reflexivity));
         repeat (match! goal with
         | [ h: (Expression2_evaluate _ _ _ = None) |- _ ] =>
@@ -2438,8 +2442,7 @@ Section negations.
     #[export]
     Program Instance Negable_isZ : @NegablePredicateSymbol Σ b_isZ 1
         := {|
-            nps_negate_sym := b_isNotZ;
-            nps_negate_args := id;
+            nps_negate := fun args => sc_atom b_isNotZ args;
         |}
     .
     Next Obligation. solve_negable (). Qed. Fail Next Obligation.
@@ -2447,8 +2450,7 @@ Section negations.
     #[export]
     Program Instance Negable_isNotZ : @NegablePredicateSymbol Σ b_isNotZ 1
         := {|
-            nps_negate_sym := b_isZ;
-            nps_negate_args := id;
+            nps_negate := fun args => sc_atom b_isZ args;
         |}
     .
     Next Obligation.
@@ -2459,6 +2461,130 @@ Section negations.
         {
             ltac1:(set_solver).
         }
+    Qed.
+    Fail Next Obligation.
+
+
+
+    #[export]
+    Program Instance Negable_isBool : @NegablePredicateSymbol Σ b_isBool 1
+        := {|
+            nps_negate := fun args => sc_atom b_isNotBool args;
+        |}
+    .
+    Next Obligation. solve_negable (). Qed. Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isNotBool : @NegablePredicateSymbol Σ b_isNotBool 1
+        := {|
+            nps_negate := fun args => sc_atom b_isBool args;
+        |}
+    .
+    Next Obligation.
+        simplify_negable ().
+        {
+            rewrite negb_involutive. reflexivity.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_b_bool_is_true : @NegablePredicateSymbol Σ b_bool_is_true 1
+    := {|
+        nps_negate := fun args => sc_or (sc_atom b_bool_is_false args) (sc_atom b_isNotBool args);
+    |}.
+    Next Obligation.
+        simplify_negable ().
+        {
+            rewrite orb_false_r.
+            destruct b; simpl; reflexivity.
+        }
+        {
+            unfold vars_of in *; simpl in *.
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_b_bool_is_false : @NegablePredicateSymbol Σ b_bool_is_false 1
+    := {|
+        nps_negate := fun args => sc_or (sc_atom b_bool_is_true args) (sc_atom b_isNotBool args);
+    |}.
+    Next Obligation.
+        simplify_negable ().
+        {
+            rewrite orb_false_r.
+            destruct b; simpl; reflexivity.
+        }
+        {
+            unfold vars_of in *; simpl in *.
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+    Definition slice {A : Type} {_eqA : EqDecision A} (from : nat) (to : nat) (l : list A) :=
+        take (to - from) (drop from l)
+    .
+
+    (* Check fmap_cons_inv. *)
+    Ltac2 simplify_fmap_eq () :=
+        repeat (
+            match! goal with
+            | [h: ([] = (_ <$> _)) |- _] =>
+                symmetry in $h
+            | [h: (_::_ = (_ <$> _)) |- _] =>
+                symmetry in $h
+            | [h: ((?f <$> ?l) = []) |- _] =>
+                apply fmap_nil_inv in $h; subst
+            | [h: ((?f <$> ?l) = (?x::?xs)) |- _] =>
+                apply fmap_cons_inv in $h;
+                Std.destruct
+                    false
+                    [{
+                        Std.indcl_arg := Std.ElimOnIdent(h);
+                        Std.indcl_eqn := None;
+                        Std.indcl_as := Some(Std.IntroAndPattern(
+                            [
+                                Std.IntroNaming(Std.IntroAnonymous);
+                                Std.IntroAction(
+                                    Std.IntroOrAndPattern(Std.IntroAndPattern([
+                                        Std.IntroNaming(Std.IntroAnonymous);
+                                        Std.IntroNaming(Std.IntroAnonymous)
+                                    ]))
+                                )
+                            ]
+                            )) ;
+                        Std.indcl_in := None;
+                    }]
+                    None;
+                ltac1:(destruct_and?);
+                subst; simpl in *;
+                ()
+            end
+        )
+    .
+
+    #[export]
+    Program Instance Negable_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_same_symbol 1
+    := {|
+        nps_negate := fun args => sc_or (sc_or (sc_atom b_not_have_same_symbol args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
+    |}.
+    Next Obligation.
+        unfold slice.
+        simplify_negable (); simplify_fmap_eq ().
+        {
+            admit.
+        }
+        {
+            Search list_collect Some.
+        }
+        (* . *)
+        Check fmap_nil_inv.
     Qed.
     Fail Next Obligation.
 

@@ -715,17 +715,15 @@ Class NegablePredicateSymbol
     (sym : builtin_predicate_symbol)
     (ar : nat)
     := mkNegablePredicateSymbol {
-    nps_negate_sym : builtin_predicate_symbol ;
-    nps_negate_args : list Expression2 -> list Expression2 ;
+    nps_negate : list Expression2 -> SideCondition ;
     nps_negate_correct : forall ρ args pgnv,
         length args = ar ->
         vars_of args ⊆ vars_of ρ ->
-        SideCondition_evaluate pgnv.1 ρ pgnv.2 (sc_atom nps_negate_sym (nps_negate_args args))
+        SideCondition_evaluate pgnv.1 ρ pgnv.2 (nps_negate args)
         = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 (sc_atom sym args))
 }.
 
-Arguments nps_negate_sym {Σ} sym ar {NegablePredicateSymbol}.
-Arguments nps_negate_args {Σ} sym ar {NegablePredicateSymbol} args.
+Arguments nps_negate {Σ} sym ar {NegablePredicateSymbol} args.
 
 Class NegableSideCondition {Σ : StaticModel} (sc : SideCondition) := {
     nsc_negate : SideCondition ;
@@ -748,7 +746,7 @@ Program Instance NegableSideCondition_atomic
     (nps : NegablePredicateSymbol sym (length args))
     : NegableSideCondition (sc_atom sym args) := 
 {|
-    nsc_negate := sc_atom (nps_negate_sym sym (length args)) (nps_negate_args sym (length args) args) ;
+    nsc_negate := (nps_negate sym (length args) args) ;
 |}.
 Next Obligation.
     intros; apply nps_negate_correct>[reflexivity|apply H].
