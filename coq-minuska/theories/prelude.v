@@ -614,6 +614,103 @@ Qed.
 (* About ipfmap_lookup_Some_lt. *)
 (* Arguments ipfmap_lookup_Some_lt {A B}%_type_scope {l}%_list_scope {f}%_function_scope {i}%_nat_scope {y} _. *)
 
+
+
+Program Fixpoint ipflookup
+    {A : Type}
+    (l : list A)
+    (i : nat)
+    (pflt : i < length l)
+    : { x : A | l !! i = Some x}
+:=
+match l with
+| [] => _
+| x::xs =>
+    match i with
+    | 0 => (exist _ x _ )
+    | S i' =>
+        let tmp := ipflookup xs i' _ in
+        let x' := proj1_sig tmp in
+        let pf := proj2_sig tmp in
+        (exist _ x' _)
+    end
+end.
+Next Obligation.
+    intros; subst; simpl in *; ltac1:(lia).
+Defined.
+Next Obligation.
+    intros; subst; reflexivity.
+Defined.
+Next Obligation.
+    intros; subst; simpl in *; ltac1:(lia).
+Defined.
+Next Obligation.
+    intros; subst; simpl in *; rewrite pf; reflexivity.
+Defined.
+Fail Next Obligation.
+
+
+Lemma my_helper {A : Type} (i : nat) (l1 l2 : list A):
+    i < length l2 ->
+    i < length (l1 ++ l2)
+.
+Proof.
+    intros H.
+    rewrite app_length.
+    ltac1:(lia).
+Qed.
+
+Lemma ipfmap'_lookup_Some_1
+    {A B : Type}
+    (r l : list A)
+    (f : forall (i : nat) (x : A) (pf : (rev r ++ l) !! i = Some x), B)
+    (i : nat)
+    (y : B)
+    (pf : ipfmap' r l f !! i = Some y)
+    :
+    let pflt : i < length l := @ipfmap'_lookup_Some_lt A B r l f i  y pf in
+    y = (let xpf := (ipflookup (rev r ++ l) i (my_helper _ _ _ pflt)) in
+        let tmp := proj2_sig xpf in
+    (f i (proj1_sig xpf) tmp))
+.
+Proof.
+    simpl.
+    revert i y r f pf.
+    induction l; intros i y r f pf; simpl in *.
+    {
+        ltac1:(exfalso).
+        rewrite lookup_nil in pf.
+        inversion pf.
+    }
+    {
+        destruct i; simpl in *.
+        {
+            inversion pf; subst; simpl in *.
+            f_equal.
+            unfold eq_ind_r.
+            ltac1:(case_match).
+        }
+    }
+
+Qed.
+
+Lemma ipfmap_lookup_Some_1
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    (i : nat)
+    (y : B)
+    (pf : ipfmap l f !! i = Some y)
+    :
+    let pflt : i < length l := @ipfmap_lookup_Some_lt A B l f i  y pf in
+    y = (let xpf := (ipflookup l i pflt) in
+        let tmp := proj2_sig xpf in
+    (f i (proj1_sig xpf) tmp))
+.
+Proof.
+    simpl.
+Qed.
+
 Lemma bind_Some_T_1
     (A B : Type)
     (f : A -> option B)
@@ -1550,4 +1647,3 @@ Ltac2 simplify_take_drop () :=
         end
     )
 .
-
