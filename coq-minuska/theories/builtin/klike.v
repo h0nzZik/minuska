@@ -9,8 +9,11 @@ From Minuska Require Import
     BuiltinValue
 .
 
-From Coq Require Import ZArith.
+From Coq Require Import ZArith Ring.
 
+(* TODO eventually, move this into prelude *)
+#[local]
+Obligation Tactic := idtac.
 
 Section sec.
 
@@ -1694,7 +1697,7 @@ Inductive PredicateSymbol : Set :=
 | b_is_applied_symbol      (* string -> 'a -> Prop *)
 | b_is_not_applied_symbol  (* string -> 'a -> Prop *)
 | b_have_same_symbol       (* term -> term -> Prop *)
-| b_not_have_same_symbol   (* term -> term -> Prop *)
+| b_have_different_symbols   (* term -> term -> Prop *)
 .
 
 
@@ -2205,7 +2208,7 @@ Section sec2.
                 end
             )
 
-            | b_not_have_same_symbol => liftBinaryP (
+            | b_have_different_symbols => liftBinaryP (
                 fun _ v1 v2 =>
                 match v1 with
                 | t_term s1 _ =>
@@ -2325,7 +2328,7 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("true", "b_tt");
         ("term.eq", "b_term_eq");
         ("term.same_symbol", "b_have_same_symbol");
-        ("term.different_symbol", "b_not_have_same_symbol");
+        ("term.different_symbol", "b_have_different_symbols");
         ("sym.is", "b_isSymbol");
         ("sym.isNot", "b_isNotSymbol");
         ("bool.is", "b_isBool");
@@ -2445,7 +2448,7 @@ Section negations.
             nps_negate := fun args => sc_atom b_isNotZ args;
         |}
     .
-    Next Obligation. solve_negable (). Qed. Fail Next Obligation.
+    Next Obligation. intros. solve_negable (). Qed. Fail Next Obligation.
 
     #[export]
     Program Instance Negable_isNotZ : @NegablePredicateSymbol Σ b_isNotZ 1
@@ -2454,7 +2457,7 @@ Section negations.
         |}
     .
     Next Obligation.
-        simplify_negable ().
+        intros. simplify_negable ().
         {
             rewrite negb_involutive. reflexivity.
         }
@@ -2472,7 +2475,7 @@ Section negations.
             nps_negate := fun args => sc_atom b_isNotBool args;
         |}
     .
-    Next Obligation. solve_negable (). Qed. Fail Next Obligation.
+    Next Obligation. intros. solve_negable (). Qed. Fail Next Obligation.
 
     #[export]
     Program Instance Negable_isNotBool : @NegablePredicateSymbol Σ b_isNotBool 1
@@ -2481,7 +2484,7 @@ Section negations.
         |}
     .
     Next Obligation.
-        simplify_negable ().
+        intros. simplify_negable ().
         {
             rewrite negb_involutive. reflexivity.
         }
@@ -2497,7 +2500,7 @@ Section negations.
         nps_negate := fun args => sc_or (sc_atom b_bool_is_false args) (sc_atom b_isNotBool args);
     |}.
     Next Obligation.
-        simplify_negable ().
+        intros. simplify_negable ().
         {
             rewrite orb_false_r.
             destruct b; simpl; reflexivity.
@@ -2515,7 +2518,7 @@ Section negations.
         nps_negate := fun args => sc_or (sc_atom b_bool_is_true args) (sc_atom b_isNotBool args);
     |}.
     Next Obligation.
-        simplify_negable ().
+        intros. simplify_negable ().
         {
             rewrite orb_false_r.
             destruct b; simpl; reflexivity.
@@ -2527,64 +2530,16 @@ Section negations.
     Qed.
     Fail Next Obligation.
 
-    Definition slice {A : Type} {_eqA : EqDecision A} (from : nat) (to : nat) (l : list A) :=
-        take (to - from) (drop from l)
-    .
-
-    (* Check fmap_cons_inv. *)
-    Ltac2 simplify_fmap_eq () :=
-        repeat (
-            match! goal with
-            | [h: ([] = (_ <$> _)) |- _] =>
-                symmetry in $h
-            | [h: (_::_ = (_ <$> _)) |- _] =>
-                symmetry in $h
-            | [h: ((?f <$> ?l) = []) |- _] =>
-                apply fmap_nil_inv in $h; subst
-            | [h: ((?f <$> ?l) = (?x::?xs)) |- _] =>
-                apply fmap_cons_inv in $h;
-                Std.destruct
-                    false
-                    [{
-                        Std.indcl_arg := Std.ElimOnIdent(h);
-                        Std.indcl_eqn := None;
-                        Std.indcl_as := Some(Std.IntroAndPattern(
-                            [
-                                Std.IntroNaming(Std.IntroAnonymous);
-                                Std.IntroAction(
-                                    Std.IntroOrAndPattern(Std.IntroAndPattern([
-                                        Std.IntroNaming(Std.IntroAnonymous);
-                                        Std.IntroNaming(Std.IntroAnonymous)
-                                    ]))
-                                )
-                            ]
-                            )) ;
-                        Std.indcl_in := None;
-                    }]
-                    None;
-                ltac1:(destruct_and?);
-                subst; simpl in *;
-                ()
-            end
-        )
-    .
-
+  
     #[export]
-    Program Instance Negable_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_same_symbol 1
+    Program Instance Negable_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_same_symbol 2
     := {|
-        nps_negate := fun args => sc_or (sc_or (sc_atom b_not_have_same_symbol args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
+        nps_negate := fun args => sc_or (sc_or (sc_atom b_have_different_symbols args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
     |}.
     Next Obligation.
+        intros. simpl.
         unfold slice.
-        simplify_negable (); simplify_fmap_eq ().
-        {
-            admit.
-        }
-        {
-            Search list_collect Some.
-        }
-        (* . *)
-        Check fmap_nil_inv.
+        simplify_negable (); unfold vars_of in *; simpl in *; ltac1:(set_solver).
     Qed.
     Fail Next Obligation.
 

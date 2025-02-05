@@ -1366,3 +1366,64 @@ Qed.
 Inductive MyUnit := mytt.
 
 
+Definition slice {A : Type} {_eqA : EqDecision A} (from : nat) (to : nat) (l : list A) :=
+    take (to - from) (drop from l)
+.
+
+Ltac2 simplify_fmap_eq () :=
+    repeat (
+        match! goal with
+        | [h: ([] = (_ <$> _)) |- _] =>
+            symmetry in $h
+        | [h: (_::_ = (_ <$> _)) |- _] =>
+            symmetry in $h
+        | [h: ((?f <$> ?l) = []) |- _] =>
+            apply fmap_nil_inv in $h; subst
+        | [h: ((?f <$> ?l) = (?x::?xs)) |- _] =>
+            apply fmap_cons_inv in $h;
+            Std.destruct
+                false
+                [{
+                    Std.indcl_arg := Std.ElimOnIdent(h);
+                    Std.indcl_eqn := None;
+                    Std.indcl_as := Some(Std.IntroAndPattern(
+                        [
+                            Std.IntroNaming(Std.IntroAnonymous);
+                            Std.IntroAction(
+                                Std.IntroOrAndPattern(Std.IntroAndPattern([
+                                    Std.IntroNaming(Std.IntroAnonymous);
+                                    Std.IntroNaming(Std.IntroAnonymous)
+                                ]))
+                            )
+                        ]
+                        )) ;
+                    Std.indcl_in := None;
+                }]
+                None;
+            ltac1:(destruct_and?);
+            subst; simpl in *;
+            ()
+        end
+    )
+.
+
+Search drop S.
+Ltac2 simplify_take_drop () :=
+    repeat (
+        match! goal with
+        | [h: context c [take 0 _] |- _] =>
+            rewrite take_0 in $h
+        | [h: context c [drop 0 _] |- _] =>
+            rewrite drop_0 in $h
+        | [h: context c [take (S _) (_::_)] |- _] =>
+            rewrite firstn_cons in $h; simpl in *
+        | [h: context c [take (S _) ?l] |- _] =>
+            destruct $l; simpl in *
+        | [h: context c [drop (S _) (_::_)] |- _] =>
+            rewrite skipn_cons in $h; simpl in *
+        | [h: context c [drop (S _) ?l] |- _] =>
+            destruct $l; simpl in *
+        end
+    )
+.
+
