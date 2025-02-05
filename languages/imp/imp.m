@@ -1,7 +1,7 @@
 @frames: [
   simple(X): c[builtin.cseq [X,REST], STATE]
 ];
-@value(X): @or(z.is(X),  @or(term.same_symbol(X, [unitValue[]]), string.is(X)));
+@value(X): @or(z.is(X), @or(string.is(X), @or(bool.is(X), term.same_symbol(X, [unitValue[]]))));
 
 @context(HOLE): c[HOLE, STATE];
 @strictness: [
