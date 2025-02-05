@@ -282,7 +282,6 @@ let initialize_project project_name name_of_builtins name_of_program_info =
         simple(X): c[builtin.cseq [X,REST]]
       ];
       @value(X): (is_true(bool.false())) ;
-      @nonvalue(X): (is_true(bool.false())) ;
       @context(HOLE): c[HOLE];
       @strictness: [];
 

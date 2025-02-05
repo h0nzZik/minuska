@@ -11,11 +11,11 @@ Variant MinusL_Decl {Σ : StaticModel} (Act : Set) :=
     (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
     (a : Act)
     (rc : TermOver Expression2) (rd : TermOver Expression2)
-    (scs : list SideCondition2)
+    (scs : SideCondition)
 | mld_context
-    (c : TermOver BuiltinOrVar)
+    (ctx : TermOver BuiltinOrVar)
     (h : variable)
-    (scs : list SideCondition2)
+    (c : SideCondition)
 .
 
 #[export]
@@ -47,8 +47,8 @@ Record MinusL_LangDef
     (Act : Set)
     : Type
  := mkMinusL_LangDef {
-    mlld_isValue_c : SideCondition2 ;
-    mlld_isNonValue_c : SideCondition2 ;
+    mlld_isValue_c : SideCondition ;
+    mlld_isNonValue_c : SideCondition ;
     mlld_isValue_var : variable ;
     mlld_decls : list (MinusL_Decl Act) ;
 }.
@@ -81,17 +81,11 @@ Definition MinusL_isValue
     (Act : Set)
     (D : MinusL_LangDef Act)
     :
-    Expression2 -> SideCondition2
+    Expression2 -> SideCondition
 :=
     let x := (mlld_isValue_var Act D) in
-    let p := (sc_pred (mlld_isValue_c Act D)) in
-    let args := (sc_args (mlld_isValue_c Act D)) in
-    fun e =>
-    let args' := (fun arg => Expression2_subst arg x e) <$> args in
-    {|
-        sc_pred := p;
-        sc_args := args';
-    |}
+    let c := mlld_isValue_c Act D in
+    fun e => SideCondition_subst c x e
 .
 
 Definition MinusL_isNonValue
@@ -99,20 +93,12 @@ Definition MinusL_isNonValue
     (Act : Set)
     (D : MinusL_LangDef Act)
     :
-    Expression2 -> SideCondition2
+    Expression2 -> SideCondition
 :=
     let x := (mlld_isValue_var Act D) in
-    let p := (sc_pred (mlld_isNonValue_c Act D)) in
-    let args := (sc_args (mlld_isNonValue_c Act D)) in
-    fun e =>
-    let args' := (fun arg => Expression2_subst arg x e) <$> args in
-    {|
-        sc_pred := p;
-        sc_args := args';
-    |}
+    let c := mlld_isNonValue_c Act D in
+    fun e => SideCondition_subst c x e
 .
-
-
 
 Definition actions_of_ldef
     {Σ : StaticModel}

@@ -21,6 +21,7 @@ Section sec.
         {symbols : Symbols symbol}
     .
 
+
     #[local]
     Instance β
         : Builtin MyUnit := {|

@@ -2,7 +2,6 @@ type token =
   | ID of string
   | VAR of string
   | INT of int
-  | KEYWORD_NONVALUE
   | KEYWORD_VALUE
   | KEYWORD_BUILTIN_INT
   | KEYWORD_BUILTIN_STRING
@@ -12,6 +11,10 @@ type token =
   | KEYWORD_CONTEXT
   | KEYWORD_OF_ARITY
   | KEYWORD_IN
+  | KEYWORD_TRUE
+  | KEYWORD_FALSE
+  | KEYWORD_AND
+  | KEYWORD_OR
   | KEYWORD_WHERE
   | BRACKET_ROUND_LEFT
   | BRACKET_ROUND_RIGHT
@@ -57,7 +60,11 @@ type expr =
   ]
 
 type condition =
-  [ `Cond of (id*(expr list)) 
+  [ `CondAtomic of (id*(expr list)) 
+  | `CondAnd of (condition*condition)
+  | `CondOr of (condition*condition)
+  | `CondTrue
+  | `CondFalse
   ]
 
 type exprterm =
@@ -71,7 +78,7 @@ type rule =
     name : string ;
     lhs : pattern ;
     rhs : exprterm ;
-    cond : condition list ;
+    cond : condition ;
   }
 
 type framedecl =
@@ -98,7 +105,6 @@ type definition =
   {
     frames     : (framedecl list) ;
     value      : (vari*condition) ;
-    nonvalue      : (vari*condition) ;
     context    : contextdecl ;
     strictness : (strictdecl list) ;
     rules      : (rule list) ;

@@ -55,9 +55,9 @@ Definition basic_rule
     (name : string)
     (l : TermOver BuiltinOrVar)
     (r : TermOver Expression2)
-    (conds : list SideCondition2) : Declaration
+    (cond : SideCondition) : Declaration
 :=
-    (decl_rule (@mkRuleDeclaration (DSM program_info) Act name (@mkRewritingRule2 (DSM program_info) Act l r conds default_act)))
+    (decl_rule (@mkRuleDeclaration (DSM program_info) Act name (@mkRewritingRule2 (DSM program_info) Act l r cond default_act)))
 .
 
 
@@ -79,12 +79,12 @@ Definition framed_rule
     (name : string)
     (l : TermOver BuiltinOrVar)
     (r : TermOver Expression2)
-    (conds : list SideCondition2) : Declaration
+    (cond : SideCondition) : Declaration
 :=
     (decl_rule (@mkRuleDeclaration (DSM program_info) Act name (@mkRewritingRule2 (DSM program_info) Act
         (TermOverBoV_subst frame.2 frame.1 l)
         (TermOverBoV_subst_expr2 frame.2 frame.1 r)
-        conds default_act)))
+        cond default_act)))
 .
 
 Definition global_naive_interpreter

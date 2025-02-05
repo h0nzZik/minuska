@@ -123,7 +123,7 @@ Class ProgramInfo
         (@TermOver' symbol builtin_value) ;
 }.
 
-Class StaticModel := {
+Class StaticModel := mkStaticModel {
     symbol : Type ;
     variable : Type ;
     symbols :: Symbols symbol ;
@@ -290,17 +290,17 @@ Definition TermOverBuiltin_to_TermOverBoV
     TermOver_map bov_builtin t
 .
 
-Record SideCondition2
-    {Σ : StaticModel}
-    :=
-mkSideCondition2 {
-    sc_pred : builtin_predicate_symbol ;
-    sc_args : list Expression2 ;
-}.
 
+Inductive SideCondition {Σ : StaticModel} :=
+| sc_true
+| sc_false
+| sc_atom (pred : builtin_predicate_symbol) (args : list Expression2)
+| sc_and (left : SideCondition) (right : SideCondition)
+| sc_or (left : SideCondition) (right : SideCondition)
+.
 
 #[export]
-Program Instance VarsOf_list_something
+Instance VarsOf_list_something
     {Σ : StaticModel}
     {A : Type}
     {_VA: VarsOf A variable}
@@ -309,12 +309,22 @@ Program Instance VarsOf_list_something
     vars_of := fun scs => ⋃ (vars_of <$> scs)
 |}.
 
+Fixpoint vars_of_sc {Σ : StaticModel} (sc : SideCondition) : gset variable :=
+match sc with
+| sc_true => ∅
+| sc_false => ∅
+| sc_atom _ args => vars_of args
+| sc_and l r => vars_of_sc l ∪ vars_of_sc r
+| sc_or l r => vars_of_sc l ∪ vars_of_sc r
+end
+.
+
 #[export]
-Instance VarsOf_SideCondition2
+Instance  VarsOf_sc
     {Σ : StaticModel}
-    : VarsOf SideCondition2 variable
+    : VarsOf SideCondition variable
 := {|
-    vars_of := fun c => vars_of (sc_args c) ; 
+    vars_of := vars_of_sc ;
 |}.
 
 Record RewritingRule2
@@ -324,7 +334,7 @@ Record RewritingRule2
 {
     r_from : TermOver BuiltinOrVar ;
     r_to : TermOver Expression2 ;
-    r_scs : list SideCondition2 ;
+    r_scs : SideCondition ;
     r_act : Act ;
 }.
 
@@ -571,47 +581,45 @@ Instance Satisfies_TermOverBuiltin_TermOverExpression2
     satisfies := fun ρ tgnv ts => sat2E tgnv.1 ρ (tgnv.2.2) ts (tgnv.2.1) ;
 |}.
 
-Definition SideCondition2_evaluate
+Definition SideCondition_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (sc : SideCondition2)
+    (sc : SideCondition)
     : bool
 :=
-    let ts' := Expression2_evaluate program ρ <$> (sc_args sc) in
-    match list_collect ts' with
-    | None => false
-    | Some nts => 
-        let ts := (fun nt => nt nv) <$> nts in
-        builtin_predicate_interp (sc_pred sc) nv ts
-    end
+    (
+        fix go (sc : SideCondition) : bool :=
+        match sc with
+        | sc_true => true
+        | sc_false => false
+        | sc_atom pred args => (
+            let ts' := Expression2_evaluate program ρ <$> args in
+            match list_collect ts' with
+            | None => false
+            | Some nts => 
+                let ts := (fun nt => nt nv) <$> nts in
+                builtin_predicate_interp pred nv ts
+            end
+        )
+        | sc_and l r => andb (go l) (go r)
+        | sc_or l r => orb (go l) (go r)
+        end
+    ) sc
 .
 
 #[export]
-Instance Satisfies_SideCondition2
+Instance Satisfies_SideCondition
     {Σ : StaticModel}
     : Satisfies
         Valuation2
         (ProgramT*NondetValue)
-        SideCondition2
+        SideCondition
         variable
 := {|
     satisfies := fun ρ pgnv sc =>
-        SideCondition2_evaluate pgnv.1 ρ pgnv.2 sc = true
-|}.
-
-
-#[export]
-Instance Satisfies_Valuation2_scs2
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (ProgramT*NondetValue)
-        (list SideCondition2)
-        variable
-:= {|
-    satisfies := fun ρ pgnv l => forall x, x ∈ l -> satisfies ρ pgnv x;
+        SideCondition_evaluate pgnv.1 ρ pgnv.2 sc = true
 |}.
 
 #[export]
@@ -701,4 +709,117 @@ Definition rewrites_to_thy
 Record BuiltinsBinding := {
     bb_function_names : list (string * string) ;
 }.
+
+Class NegablePredicateSymbol
+    {Σ : StaticModel}
+    (sym : builtin_predicate_symbol)
+    (ar : nat)
+    := mkNegablePredicateSymbol {
+    nps_negate : list Expression2 -> SideCondition ;
+    nps_negate_correct : forall ρ args pgnv,
+        length args = ar ->
+        vars_of args ⊆ vars_of ρ ->
+        SideCondition_evaluate pgnv.1 ρ pgnv.2 (nps_negate args)
+        = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 (sc_atom sym args))
+}.
+
+Arguments nps_negate {Σ} sym ar {NegablePredicateSymbol} args.
+
+Class NegableSideCondition {Σ : StaticModel} (sc : SideCondition) := {
+    nsc_negate : SideCondition ;
+    nsc_negate_correct : forall ρ pgnv,
+        vars_of sc ⊆ vars_of ρ ->
+        SideCondition_evaluate pgnv.1 ρ pgnv.2 nsc_negate 
+        = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 sc) ;
+}.
+
+Arguments nsc_negate {Σ} sc {NegableSideCondition}.
+
+#[local]
+Obligation Tactic := idtac.
+
+
+#[export]
+Program Instance NegableSideCondition_false
+    {Σ : StaticModel}
+    : NegableSideCondition sc_false :=
+{|
+    nsc_negate := sc_true ;
+|}.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed. Fail Next Obligation.
+
+
+#[export]
+Program Instance NegableSideCondition_true
+    {Σ : StaticModel}
+    : NegableSideCondition sc_true :=
+{|
+    nsc_negate := sc_false ;
+|}.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed. Fail Next Obligation.
+
+#[export]
+Program Instance NegableSideCondition_atomic
+    {Σ : StaticModel}
+    (sym : builtin_predicate_symbol)
+    (args : list Expression2)
+    (nps : NegablePredicateSymbol sym (length args))
+    : NegableSideCondition (sc_atom sym args) := 
+{|
+    nsc_negate := (nps_negate sym (length args) args) ;
+|}.
+Next Obligation.
+    intros; apply nps_negate_correct>[reflexivity|apply H].
+Qed.
+Fail Next Obligation.
+
+#[export]
+Program Instance NegableSideCondition_and
+    {Σ : StaticModel}
+    (l r : SideCondition)
+    (nl : NegableSideCondition l)
+    (nr : NegableSideCondition r)
+    :
+    NegableSideCondition (sc_and l r) :=
+{|
+    nsc_negate := sc_or (nsc_negate l) (nsc_negate r) ;
+|}.
+Next Obligation.
+    abstract(
+        intros;
+        simpl;
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
+        rewrite negb_and;
+        reflexivity
+    ).
+Qed.
+Fail Next Obligation.
+
+#[export]
+Program Instance NegableSideCondition_or
+    {Σ : StaticModel}
+    (l r : SideCondition)
+    (nl : NegableSideCondition l)
+    (nr : NegableSideCondition r)
+    :
+    NegableSideCondition (sc_or l r) :=
+{|
+    nsc_negate := sc_and (nsc_negate l) (nsc_negate r) ;
+|}.
+Next Obligation.
+    abstract(
+        intros;
+        simpl;
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
+        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
+        rewrite negb_or;
+        reflexivity
+    ).
+Qed.
+Fail Next Obligation.
 

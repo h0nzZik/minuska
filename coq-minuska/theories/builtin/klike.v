@@ -2,20 +2,18 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
+    properties
     lowlang
     notations
     default_static_model
     BuiltinValue
 .
 
-From Minuska Require Import
-    prelude
-    spec
-    lowlang (* TODO get rid of this dependency *)
-.
+From Coq Require Import ZArith Ring.
 
-From Coq Require Import ZArith.
-
+(* TODO eventually, move this into prelude *)
+#[local]
+Obligation Tactic := idtac.
 
 Section sec.
 
@@ -953,7 +951,7 @@ Section sec.
     match t with
     | ((GenNode 1 nil)) => Some (bv_pmap (PEmpty))
     | (GenLeaf bvl_error)      => Some (bv_error)  
-    | (GenLeaf (bvl_bool b))   => Some (bv_bool b) 
+    | (GenLeaf (bvl_bool b))   => Some (bv_bool b)
     (* | (GenLeaf (bvl_nat n))    => Some (bv_nat n)  *)
     | (GenLeaf (bvl_Z z))      => Some (bv_Z z) 
     | (GenLeaf (bvl_str s))      => Some (bv_str s) 
@@ -1587,10 +1585,6 @@ induction ao; try reflexivity.
             {
                 left. left. left. right. exact b.
             }
-            (*
-            {
-                left. left. left. right. exact n.
-            }*)
             {
                 left. left. right. exact z.
             }
@@ -1610,26 +1604,16 @@ induction ao; try reflexivity.
                 {
                     destruct t1 as [t1|t2].
                     {
-                        (*
                         destruct t1 as [t1|t2].
-                        {*)
-                            destruct t1 as [t1|t2].
-                            {
-                                apply Some.
-                                apply bvl_error.
-                            }
-                            {
-                                apply Some.
-                                apply bvl_bool.
-                                apply t2.
-                            }
-                        (*}*)
-                        (*
                         {
                             apply Some.
-                            apply bvl_nat.
-                            apply t2.                                
-                        }*)
+                            apply bvl_error.
+                        }
+                        {
+                            apply Some.
+                            apply bvl_bool.
+                            apply t2.
+                        }
                     }
                     {
                         apply Some.
@@ -1665,39 +1649,23 @@ induction ao; try reflexivity.
 End sec.
 
 Inductive FunctionSymbol : Set :=
-| b_false             (* bool *)
-| b_true              (* bool *)
 | b_zero              (* Z *)
 | b_list_empty        (* list *)
 | b_map_empty         (* map *)
-| b_bool_neg          (* bool -> bool *)
 | b_map_size          (* map -> Z *)
-| b_bool_and               (* bool -> bool -> bool *)
-| b_bool_or                (* bool -> bool -> bool *)
-| b_bool_iff               (* bool -> bool -> bool *)
-| b_bool_xor               (* bool -> bool -> bool *)
 | b_Z_plus            (* Z -> Z -> Z *)
 | b_Z_minus           (* Z -> Z -> Z *)
 | b_Z_times           (* Z -> Z -> Z *)
 | b_Z_div             (* Z -> Z -> Z *)
+| b_Z_isLe                 (* Z -> Z -> bool *)
+| b_Z_isLt                 (* Z -> Z -> bool *)
+| b_Z_isGe                 (* Z -> Z -> bool *)
+| b_Z_isGt                 (* Z -> Z -> bool *)
+| b_Z_eq                   (* Z -> Z -> bool *)
+| b_Z_neq                  (* Z -> Z -> bool *)
+| b_bool_neg          (* bool -> bool *)
 | b_map_lookup        (* map -> 'a -> 'b *)
 | b_map_update        (* map -> 'a -> 'b -> map  *)
-| b_isBuiltin              (* 'a -> Prop *)
-| b_isError                (* 'a -> Prop *)
-| b_isBool                 (* 'a -> Prop *)
-| b_isSymbol                 (* 'a -> Prop *)
-| b_isZ                    (* 'a -> Prop *)
-| b_isString               (* 'a -> Prop *)
-| b_isList                 (* 'a -> Prop *)
-| b_isMap                  (* 'a -> Prop *)
-| b_Z_isLe                 (* Z -> Z -> Prop *)
-| b_Z_isLt                 (* Z -> Z -> Prop *)
-| b_bool_eq                (* bool -> bool -> Prop *)
-| b_term_eq                (* term -> term -> Prop *)
-| b_Z_eq                   (* Z -> Z -> Prop *)
-| b_map_hasKey             (* map -> 'a -> Prop *)
-| b_is_applied_symbol      (* string -> 'a -> Prop *)
-| b_have_same_symbol       (* term -> term -> Prop *)
 .
 
 #[export]
@@ -1705,7 +1673,31 @@ Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 Inductive PredicateSymbol : Set :=
-| b_cond_is_true                 (* bool -> Prop *)
+| b_tt                     (* Prop *)
+| b_isBuiltin              (* 'a -> Prop *)
+| b_isNotBuiltin           (* 'a -> Prop *)
+| b_isError                (* 'a -> Prop *)
+| b_isNotError             (* 'a -> Prop *)
+| b_isSymbol               (* 'a -> Prop *)
+| b_isNotSymbol            (* 'a -> Prop *)
+| b_isZ                    (* 'a -> Prop *)
+| b_isNotZ                 (* 'a -> Prop *)
+| b_isBool                    (* 'a -> Prop *)
+| b_isNotBool                    (* 'a -> Prop *)
+| b_isString               (* 'a -> Prop *)
+| b_isNotString            (* 'a -> Prop *)
+| b_isList                 (* 'a -> Prop *)
+| b_isNotList              (* 'a -> Prop *)
+| b_isMap                  (* 'a -> Prop *)
+| b_isNotMap               (* 'a -> Prop *)
+| b_bool_is_true      (* bool -> Prop *)
+| b_bool_is_false      (* bool -> Prop *)
+| b_term_eq                (* term -> term -> Prop *)
+| b_map_hasKey             (* map -> 'a -> Prop *)
+| b_is_applied_symbol      (* string -> 'a -> Prop *)
+| b_is_not_applied_symbol  (* string -> 'a -> Prop *)
+| b_have_same_symbol       (* term -> term -> Prop *)
+| b_have_different_symbols   (* term -> term -> Prop *)
 .
 
 
@@ -1713,10 +1705,10 @@ Inductive PredicateSymbol : Set :=
 Instance PredicateSymbol_eqDec : EqDecision PredicateSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
-Section sec.
+Section sec2.
 
     Context
-        {symbol : Set}
+        {symbol : Type}
         {symbols : Symbols symbol}
     .
 
@@ -1732,11 +1724,6 @@ Section sec.
         match bv with bv_error => true | _ => false end
     .
 
-    Definition impl_isBool (bv : BuiltinValue) : bool
-    :=
-        match bv with bv_bool _ => true | _ => false end
-    .
-
     Definition impl_isZ (bv : BuiltinValue) : bool
     :=
         match bv with bv_Z _ => true | _ => false end
@@ -1745,6 +1732,11 @@ Section sec.
     Definition impl_isString (bv : BuiltinValue) : bool
     :=
         match bv with bv_str _ => true | _ => false end
+    .
+
+    Definition impl_isBool (bv : BuiltinValue) : bool
+    :=
+        match bv with bv_bool _ => true | _ => false end
     .
 
     Definition impl_isList (bv : BuiltinValue) : bool
@@ -1787,36 +1779,6 @@ Section sec.
     | _,_ => false
     end.
 
-    Definition bfmap_bool__bool
-        (f : bool -> bool)
-        (x : @TermOver' symbol BuiltinValue)
-        : @TermOver' symbol BuiltinValue
-    :=
-    bfmap1
-        (fun x' =>
-        match x' with
-        | bv_bool x'' => bv_bool (f x'')
-        | _ => bv_error
-        end
-        )
-        x
-    .
-
-    Definition bfmap_bool_bool__bool
-        (f : bool -> bool -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
-        : @TermOver' symbol BuiltinValue
-    :=
-    bfmap2
-        (fun x' y' =>
-        match x', y' with
-        | bv_bool x'', bv_bool y'' => bv_bool (f x'' y'')
-        | _, _ => bv_error
-        end
-        )
-        x y
-    .
-
     Definition bfmap_Z_Z__Z
         (f : Z -> Z -> Z)
         (x y : @TermOver' symbol BuiltinValue)
@@ -1826,21 +1788,6 @@ Section sec.
         (fun x' y' =>
         match x', y' with
         | bv_Z x'', bv_Z y'' => bv_Z (f x'' y'')
-        | _, _ => bv_error
-        end
-        )
-        x y
-    .
-
-    Definition bfmap_Z_Z__bool
-        (f : Z -> Z -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
-        : @TermOver' symbol BuiltinValue
-    :=
-    bfmap2
-        (fun x' y' =>
-        match x', y' with
-        | bv_Z x'', bv_Z y'' => bv_bool (f x'' y'')
         | _, _ => bv_error
         end
         )
@@ -1862,6 +1809,21 @@ Section sec.
         x y
     .
 
+    Definition bfmap_Z_Z__bool
+        (f : Z -> Z -> bool)
+        (x y : @TermOver' symbol BuiltinValue)
+        : @TermOver' symbol BuiltinValue
+    :=
+    bfmap2
+        (fun x' y' =>
+        match x', y' with
+        | bv_Z x'', bv_Z y'' => bv_bool (f x'' y'')
+        | _, _ => bv_bool false
+        end
+        )
+        x y
+    .
+
     Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
 
 
@@ -1873,6 +1835,17 @@ Section sec.
         match l with
         | [] => f nv
         | _::_ => @t_over symbol BuiltinValue (bv_error)
+        end
+    .
+
+    Definition liftNularyP
+        (f : MyUnit -> bool)
+        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> bool)
+    :=
+        fun nv l =>
+        match l with
+        | [] => f nv
+        | _::_ => false
         end
     .
 
@@ -1957,13 +1930,6 @@ Section sec.
             := fun p =>
             match p with
             (* nulary *)
-            | b_false => fun _ l => t_over (bv_bool false)
-            (* | b_false => liftNulary (
-                    fun _ => t_over (bv_bool false)
-                ) *)
-            | b_true => liftNulary (
-                    fun _ => t_over (bv_bool true)
-                )
             | b_zero => liftNulary (
                     fun _ => t_over (bv_Z 0)
                 )
@@ -1974,38 +1940,19 @@ Section sec.
                     fun _ => (t_over (bv_pmap ∅))
                 )
             (* unary *)            
-
             | b_bool_neg => liftUnary (
                 fun _ v =>
-                bfmap_bool__bool negb v
+                match v with
+                | t_over (bv_bool b) => t_over (bv_bool (negb b))
+                | _ => err
+                end
             )
-            
-            
             | b_map_size => liftUnary (
                 fun _ v =>
                 match v with
                 | t_over (bv_pmap m) => (t_over (bv_Z (Z.of_nat (size m))))
                 | _ => err
                 end
-            )
-
-            (* binary *)
-            | b_bool_and => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool andb v1 v2
-            )
-                
-            | b_bool_or => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool orb v1 v2
-            )
-            | b_bool_iff => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool eqb v1 v2
-            )
-            | b_bool_xor => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_bool_bool__bool xorb v1 v2
             )
             | b_Z_plus => liftBinary (
                 fun _ v1 v2 =>
@@ -2026,6 +1973,37 @@ Section sec.
                 | _ => bfmap_Z_Z__Z Z.div v1 v2
                 end
             )
+
+            | b_Z_eq => liftBinary (
+                fun _ v1 v2 =>
+                t_over (bv_bool (bool_decide (v1 = v2)))
+            )
+
+            | b_Z_neq => liftBinary (
+                fun _ v1 v2 =>
+                t_over (bv_bool (negb (bool_decide (v1 = v2))))
+            )
+
+            | b_Z_isLe => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.leb v1 v2))
+            )
+
+            | b_Z_isLt => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.ltb v1 v2))
+            )
+
+            | b_Z_isGe => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.geb v1 v2))
+            )
+
+            | b_Z_isGt => liftBinary (
+                fun _ v1 v2 =>
+                ((bfmap_Z_Z__bool Z.gtb v1 v2))
+            )
+
             | b_map_lookup => liftBinary (
                 fun _ v1 v2 =>
                 match v1 with
@@ -2050,184 +2028,229 @@ Section sec.
                 | _ => err
                 end
             )
-
-            | b_term_eq => liftBinary (
-                fun _ v1 v2 =>
-                t_over (bv_bool (bool_decide (v1 = v2)))
-            )
-
-            | b_bool_eq => liftBinary (
-                fun _ v1 v2 =>
-                t_over (bv_bool (bool_decide (v1 = v2)))
-            )
-            | b_Z_eq => liftBinary (
-                fun _ v1 v2 =>
-                t_over (bv_bool (bool_decide (v1 = v2)))
-            )
-            | b_isBuiltin => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over b => t_over (bv_bool true)
-                | t_term _ _ => t_over (bv_bool false)
-                end
-            ) 
-            | b_isError => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isError x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-            | b_isBool => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isBool x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-
-            | b_isSymbol => liftUnary (
-                fun _ v =>
-                match v with
-                | t_term _ _ => t_over (bv_bool (true))
-                | _ => t_over (bv_bool false)
-                end
-            )
-   
-            | b_isString => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isString x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-            | b_isList => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isList x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-            | b_isMap => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isMap x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-
-            | b_isZ => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over x => t_over (bv_bool (impl_isZ x))
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-
-            | b_Z_isLe => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.leb v1 v2))
-            )
-            | b_Z_isLt => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.ltb v1 v2))
-            )
-
-            | b_map_hasKey => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_pmap m) =>
-                    let p := my_encode (v2) in
-                    match m !! p with
-                    | Some _ => t_over (bv_bool true)
-                    | None => t_over (bv_bool false)
-                    end
-                | _ => t_over (bv_bool false)
-                end
-            )
-
-            | b_have_same_symbol => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_term s1 _ =>
-                    match v2 with
-                    | t_term s2 _ => t_over (bv_bool (bool_decide (s1 = s2)))
-                    | _ => t_over (bv_bool false)
-                    end
-                | _ => t_over (bv_bool false)
-                end
-            )
-                
-            | b_is_applied_symbol => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_sym s) =>
-                    match v2 with
-                    | t_term s' _ => t_over (bv_bool (bool_decide (s' = s)))
-                    | _ => t_over (bv_bool false)
-                    end
-                | _ => t_over (bv_bool false)
-                end
-            )
-
             end ;
 
             builtin_predicate_interp
             := fun p =>
             match p with
-            | b_isTrue =>
-                fun nv l =>
-                match l with
-                | [t_over (bv_bool true)] => true
+            | b_tt => liftNularyP (
+                fun _ =>
+                true
+            )
+            | b_term_eq => liftBinaryP (
+                fun _ v1 v2 =>
+                (bool_decide (v1 = v2))
+            )
+
+            | b_bool_is_true => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over (bv_bool b) => eqb b true
                 | _ => false
-                end            
+                end
+            )
+
+            | b_bool_is_false => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over (bv_bool b) => eqb b false
+                | _ => false
+                end
+            )
+
+            | b_isBuiltin => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over b => true
+                | t_term _ _ => false
+                end
+            )
+            | b_isNotBuiltin => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over b => false
+                | t_term _ _ => true
+                end
+            ) 
+            | b_isError => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isError x)
+                | _ => false
+                end
+            )
+            | b_isNotError => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isError x)
+                | _ => false
+                end
+            )
+
+            | b_isSymbol => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_term _ _ => true
+                | _ => false
+                end
+            )
+
+            | b_isNotSymbol => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_term _ _ => false
+                | _ => true
+                end
+            )
+   
+            | b_isString => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isString x)
+                | _ => false
+                end
+            )
+
+            | b_isNotString => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isString x)
+                | _ => true
+                end
+            )
+                
+            | b_isList => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isList x)
+                | _ => false
+                end
+            )
+
+            | b_isNotList => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isList x)
+                | _ => true
+                end
+            )
+
+            | b_isBool => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isBool x)
+                | _ => false
+                end
+            )
+
+            | b_isNotBool => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isBool x)
+                | _ => true
+                end
+            )
+                
+            | b_isMap => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isMap x)
+                | _ => false
+                end
+            )
+
+            | b_isNotMap => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isMap x)
+                | _ => true
+                end
+            )
+
+            | b_isZ => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => (impl_isZ x)
+                | _ => false
+                end
+            )
+
+            | b_isNotZ => liftUnaryP (
+                fun _ v =>
+                match v with
+                | t_over x => negb (impl_isZ x)
+                | _ => true
+                end
+            )    
+
+            | b_map_hasKey => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_over (bv_pmap m) =>
+                    let p := my_encode (v2) in
+                    match m !! p with
+                    | Some _ => true
+                    | None => false
+                    end
+                | _ => false
+                end
+            )
+
+            | b_have_same_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_term s1 _ =>
+                    match v2 with
+                    | t_term s2 _ => (bool_decide (s1 = s2))
+                    | _ => false
+                    end
+                | _ => false
+                end
+            )
+
+            | b_have_different_symbols => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_term s1 _ =>
+                    match v2 with
+                    | t_term s2 _ => negb (bool_decide (s1 = s2))
+                    | _ => false
+                    end
+                | _ => false
+                end
+            )
+
+            | b_is_applied_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_over (bv_sym s) =>
+                    match v2 with
+                    | t_term s' _ => (bool_decide (s' = s))
+                    | _ => false
+                    end
+                | _ => false
+                end
+            )
+
+            | b_is_not_applied_symbol => liftBinaryP (
+                fun _ v1 v2 =>
+                match v1 with
+                | t_over (bv_sym s) =>
+                    match v2 with
+                    | t_term s' _ => negb (bool_decide (s' = s))
+                    | _ => true
+                    end
+                | _ => true
+                end
+            )
             end ;
     |}.
 
-End sec.
+End sec2.
 
 
 Module Notations.
     
-    
-    Notation "'true'" := ( (e_fun b_true []))
-        : RuleScope
-    .
-
-    Notation "'false'" := ( (e_fun b_false []))
-        : RuleScope
-    .
-
-    Notation "b1 '&&' b2" :=
-        ( (e_fun b_bool_and
-            [b1;
-            b2]
-        ))
-        : RuleScope
-    .
-
-    Notation "b1 '||' b2" :=
-        ( (e_fun b_bool_or
-            [b1; b2]
-        ))
-        : RuleScope
-    .
-
-    Notation "~~ b" :=
-        ( (e_fun b_bool_neg [b]))
-    .
-
-    Notation "'isBool' t" :=
-        ( (e_fun
-            b_isBool
-            [(t)]
-        ))
-        (at level 90)
-    .        
-
     Notation "'isZ' t" :=
         ((e_fun
             b_isZ
@@ -2292,34 +2315,33 @@ Module Notations.
         ((e_fun b_Z_eq [(x); (y)]))
     .
 
-    Notation "'(' x '==Bool' y ')'" :=
-        ((e_fun b_bool_eq [(x); (y)]))
-    .
-
     Notation "<opaque map>" := (bv_pmap (PNodes _)) (only printing).
 
 End Notations.
 
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
-        ("is_true", "b_cond_is_true");
-        ("term.eq", "b_term_eq");
-        ("bool.neg", "b_bool_neg");
-        ("bool.and", "b_bool_and");
-        ("bool.or", "b_bool_or");
-        ("bool.eq", "b_bool_eq");
-        ("bool.false", "b_false");
-        ("bool.true", "b_true");
-        ("bool.is", "b_isBool");
+        (* Sort predicates *)
         ("sym.is", "b_isSymbol");
-        ("term.same_symbol", "b_have_same_symbol");
-        ("z.minus", "b_Z_minus");
-        ("z.plus", "b_Z_plus");
+        ("sym.isNot", "b_isNotSymbol");
+        ("bool.is", "b_isBool");
+        ("bool.isNot", "b_isNotBool");
+        ("string.is", "b_isString");
+        ("string.isNot", "b_isNotString");
         ("z.is", "b_isZ");
+        ("z.isNot", "b_isZNot");
+
+        ("bool.neg", "b_bool_neg");
+        ("bool.is_true", "b_bool_is_true");
+        ("bool.is_false", "b_bool_is_false");
+        
+        ("term.eq", "b_term_eq");
+        ("term.same_symbol", "b_have_same_symbol");
+        ("term.different_symbol", "b_have_different_symbols");        ("z.minus", "b_Z_minus");
+        ("z.plus", "b_Z_plus");
         ("z.eq", "b_Z_eq");
         ("z.le", "b_Z_isLe");
         ("z.lt", "b_Z_isLt");
-        ("string.is", "b_isString");
         ("map.hasKey", "b_map_hasKey");
         ("map.lookup", "b_map_lookup");
         ("map.size", "b_map_size");
@@ -2328,15 +2350,6 @@ Definition builtins_binding : BuiltinsBinding := {|
     ];
 |}.
 
-Definition inject_bool
-    {symbol : Type}
-    (Fret : option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
-    (b : bool)
-    :
-    (@BuiltinValue0 symbol) :=
-    Fret (Some (bv_bool b))
-.
-
 Definition inject_Z
     {symbol : Type}
     (Fret :  option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
@@ -2344,6 +2357,15 @@ Definition inject_Z
     :
     (@BuiltinValue0 symbol) :=
     Fret (Some (bv_Z z))
+.
+
+Definition inject_bool
+    {symbol : Type}
+    (Fret :  option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
+    (b : bool)
+    :
+    (@BuiltinValue0 symbol) :=
+    Fret (Some (bv_bool b))
 .
 
 Definition inject_string
@@ -2363,9 +2385,197 @@ Definition eject
     :=
     match v with
     | bv_bool b => Some (inl b)
-    | bv_Z z => Some (inr (inl z))
-    | bv_str s => Some (inr (inr (inl s)))
-    | bv_error => Some (inr (inr (inr ())))
+    | bv_Z z => Some (inr(inl z))
+    | bv_str s => Some (inr(inr (inl s)))
+    | bv_error => Some (inr(inr (inr ())))
     | _ => None
     end 
 .
+
+Section negations.
+    Context
+        (symbol : Type)
+        (variable : Type)
+        (symbols : Symbols symbol)
+        (variables : MVariables variable)
+        (program_info : @ProgramInfo symbol symbols MyUnit (@β symbol symbols))
+        (nondet_gen : nat -> MyUnit)
+    .
+
+    (* #[local] *)
+    Definition Σ := (mkStaticModel
+        symbol
+        variable
+        symbols
+        MyUnit
+        (@β symbol symbols)
+        variables
+        program_info
+        nondet_gen
+    ).
+
+    Ltac2 case_on_length () :=
+        repeat(
+            simpl in *;
+            match! goal with
+            | [h: ((length ?args) = (S _)) |- _] =>
+                destruct $args; simpl in $h; try ltac1:(lia)
+            | [h: ((length ?args) = O) |- _] =>
+                destruct $args; simpl in $h; try ltac1:(lia)
+            | [h: ((S _) = (S _)) |- _] =>
+                apply Nat.succ_inj in $h
+            end
+        )
+    .
+
+    Ltac2 simplify_negable () :=
+        case_on_length ();
+        unfold liftUnaryP,liftNularyP,liftBinaryP;
+        ltac1:(repeat (case_match; simpl in *; simplify_option_eq; try reflexivity));
+        repeat (match! goal with
+        | [ h: (Expression2_evaluate _ _ _ = None) |- _ ] =>
+            apply (@Expression2_evaluate_None_inv Σ) in $h
+        end);
+        unfold vars_of in *; simpl in *
+    .
+
+    Ltac2 solve_negable () := simplify_negable (); ltac1:(set_solver) .
+
+    #[export]
+    Program Instance Negable_isZ : @NegablePredicateSymbol Σ b_isZ 1
+        := {|
+            nps_negate := fun args => sc_atom b_isNotZ args;
+        |}
+    .
+    Next Obligation. intros. solve_negable (). Qed. Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isNotZ : @NegablePredicateSymbol Σ b_isNotZ 1
+        := {|
+            nps_negate := fun args => sc_atom b_isZ args;
+        |}
+    .
+    Next Obligation.
+        intros. simplify_negable ().
+        {
+            rewrite negb_involutive. reflexivity.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+
+    #[export]
+    Program Instance Negable_isString : @NegablePredicateSymbol Σ b_isString 1
+        := {|
+            nps_negate := fun args => sc_atom b_isNotString args;
+        |}
+    .
+    Next Obligation. intros. solve_negable (). Qed. Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isNotString : @NegablePredicateSymbol Σ b_isNotString 1
+        := {|
+            nps_negate := fun args => sc_atom b_isString args;
+        |}
+    .
+    Next Obligation.
+        intros. simplify_negable ().
+        {
+            rewrite negb_involutive. reflexivity.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isBool : @NegablePredicateSymbol Σ b_isBool 1
+        := {|
+            nps_negate := fun args => sc_atom b_isNotBool args;
+        |}
+    .
+    Next Obligation. intros. solve_negable (). Qed. Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isNotBool : @NegablePredicateSymbol Σ b_isNotBool 1
+        := {|
+            nps_negate := fun args => sc_atom b_isBool args;
+        |}
+    .
+    Next Obligation.
+        intros. simplify_negable ().
+        {
+            rewrite negb_involutive. reflexivity.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_b_bool_is_true : @NegablePredicateSymbol Σ b_bool_is_true 1
+    := {|
+        nps_negate := fun args => sc_or (sc_atom b_bool_is_false args) (sc_atom b_isNotBool args);
+    |}.
+    Next Obligation.
+        intros. simplify_negable ().
+        {
+            rewrite orb_false_r.
+            destruct b; simpl; reflexivity.
+        }
+        {
+            unfold vars_of in *; simpl in *.
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_b_bool_is_false : @NegablePredicateSymbol Σ b_bool_is_false 1
+    := {|
+        nps_negate := fun args => sc_or (sc_atom b_bool_is_true args) (sc_atom b_isNotBool args);
+    |}.
+    Next Obligation.
+        intros. simplify_negable ().
+        {
+            rewrite orb_false_r.
+            destruct b; simpl; reflexivity.
+        }
+        {
+            unfold vars_of in *; simpl in *.
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
+
+  
+    #[export]
+    Program Instance Negable_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_same_symbol 2
+    := {|
+        nps_negate := fun args => sc_or (sc_or (sc_atom b_have_different_symbols args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
+    |}.
+    Next Obligation.
+        intros. simpl.
+        unfold slice.
+        simplify_negable (); unfold vars_of in *; simpl in *; ltac1:(set_solver).
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_not_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_different_symbols 2
+    := {|
+        nps_negate := fun args => sc_or (sc_or (sc_atom b_have_same_symbol args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
+    |}.
+    Next Obligation.
+        intros. simpl.
+        unfold slice.
+        simplify_negable (); unfold vars_of in *; simpl in *; ltac1:(set_solver).
+    Qed.
+    Fail Next Obligation.
+
+End negations.

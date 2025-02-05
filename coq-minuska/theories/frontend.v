@@ -53,8 +53,8 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_arity : nat ;
     cd_position : nat ;
     cd_positions_to_wait_for : list nat ;
-    cd_isValue : Expression2 -> SideCondition2 ;
-    cd_isNonValue : Expression2 -> SideCondition2 ;
+    cd_isValue : Expression2 -> SideCondition ;
+    cd_isValue_neg : forall e, NegableSideCondition (cd_isValue e) ;
     cd_cseq_context : ContextTemplate;
 }.
 
@@ -63,14 +63,14 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_sym : symbol ;
     sd_arity : nat ;
     sd_positions : list nat ;
-    sd_isValue : Expression2 -> SideCondition2 ;
-    sd_isNonValue : Expression2 -> SideCondition2 ;
+    sd_isValue : Expression2 -> SideCondition ;
+    sd_isValue_neg : forall e, NegableSideCondition (sd_isValue e) ;
     sd_cseq_context : ContextTemplate ;
 }.
 
 
 Notation
-    "( 'symbol' s 'of' 'arity' a 'strict' 'in' l 'with-result' r 'with-nonvalue' nr 'by-template' t )"
+    "( 'symbol' s 'of' 'arity' a 'strict' 'in' l 'with-result' r 'by-template' t )"
     :=
     (
         (
@@ -79,7 +79,7 @@ Notation
                 sd_arity := a ;
                 sd_positions := l ;
                 sd_isValue := r ;
-                sd_isNonValue := nr ;
+                sd_isValue_neg := _;
                 sd_cseq_context := t ;
             |}
         )
@@ -90,8 +90,8 @@ Class Defaults {Σ : StaticModel} := {
     default_cseq_name : string ;
     default_empty_cseq_name : string ;
     default_context_template : ContextTemplate ;
-    default_isValue : Expression2 -> SideCondition2 ;
-    default_isNonValue : Expression2 -> SideCondition2 ;
+    default_isValue : Expression2 -> SideCondition ;
+    default_isValue_neg : forall e, NegableSideCondition (default_isValue e) ;
 }.
 
 Notation
@@ -104,7 +104,7 @@ Notation
                 sd_arity := a ;
                 sd_positions := l ;
                 sd_isValue := default_isValue ;
-                sd_isNonValue := default_isNonValue ;
+                sd_isValue_neg := default_isValue_neg ;
                 sd_cseq_context := default_context_template ;
             |}
         )
@@ -126,7 +126,7 @@ Definition strictness_to_contexts
             cd_position := position ;
             cd_positions_to_wait_for := (firstn idx (sd_positions sd));
             cd_isValue := sd_isValue sd ;
-            cd_isNonValue := sd_isNonValue sd ;
+            cd_isValue_neg := sd_isValue_neg sd ;
             cd_cseq_context := @sd_cseq_context Σ sd ;
         |})
         (sd_positions sd)
@@ -152,7 +152,7 @@ Inductive Declaration {Σ : StaticModel} {Act : Set} :=
 
 Notation "'rule' '[' n ']:' l '~>{' a '}' r"
     := ((mkRuleDeclaration
-        n (rule (l) ~>{ (a) } (r) requires nil)
+        n (rule (l) ~>{ (a) } (r) requires (sc_true))
     ))
     (at level 200)
 .
@@ -251,8 +251,8 @@ Section wsm.
         (arity : nat)
         (positions_to_wait_for : list nat)
         (position : nat)
-        (isValue : Expression2 -> SideCondition2)
-        (isNonValue : Expression2 -> SideCondition2)
+        (isValue : Expression2 -> SideCondition)
+        (isValue_neg : forall e, NegableSideCondition (isValue e))
         (cseq_context : ContextTemplate)
         : RuleDeclaration Act
     :=
@@ -269,8 +269,8 @@ Section wsm.
         let force_cseq_context
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
-        let side_condition : list SideCondition2
-            := (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
+        let side_condition : SideCondition
+            := foldr  sc_and (sc_true) (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
         rule [lbl]:
             cseq_context _ _ (cseq ([
                 (t_term sym lhs_vars);
@@ -283,7 +283,7 @@ Section wsm.
                     (t_over (bov_variable REST_SEQ))
                 ])%list
             ])%list)))
-            where ([(isNonValue (e_variable selected_var))] ++ side_condition)
+            where (sc_and (nsc_negate (isValue (e_variable selected_var))) side_condition)
     .
 
 
@@ -294,7 +294,7 @@ Section wsm.
         (sym : symbol)
         (arity : nat)
         (position : nat)
-        (isValue : Expression2 -> SideCondition2)
+        (isValue : Expression2 -> SideCondition)
         (cseq_context : ContextTemplate)
         : RuleDeclaration Act
     :=
@@ -324,7 +324,7 @@ Section wsm.
                 (t_term sym lhs_vars);
                 (t_over (bov_variable REST_SEQ))
             ])%list))
-            where [(isValue (e_variable selected_var))]
+            where (isValue (e_variable selected_var))
     .
 
     Definition process_context_declaration
@@ -342,7 +342,7 @@ Section wsm.
                     (cd_positions_to_wait_for c)
                     (cd_position c)
                     (cd_isValue c)
-                    (cd_isNonValue c)
+                    (cd_isValue_neg c)
                     (@cd_cseq_context Σ c)
             in
         let cr : RuleDeclaration Act
