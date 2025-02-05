@@ -55,7 +55,6 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_positions_to_wait_for : list nat ;
     cd_isValue : Expression2 -> SideCondition ;
     cd_isValue_neg : forall e, NegableSideCondition (cd_isValue e) ;
-    (* cd_isNonValue : Expression2 -> SideCondition ; *)
     cd_cseq_context : ContextTemplate;
 }.
 
@@ -66,7 +65,6 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_positions : list nat ;
     sd_isValue : Expression2 -> SideCondition ;
     sd_isValue_neg : forall e, NegableSideCondition (sd_isValue e) ;
-    (* sd_isNonValue : Expression2 -> SideCondition ; *)
     sd_cseq_context : ContextTemplate ;
 }.
 

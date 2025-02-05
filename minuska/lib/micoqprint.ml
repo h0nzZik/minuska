@@ -235,7 +235,7 @@ let print_strict oux str =
   fprintf oux "(decl_strict (mkStrictnessDeclaration _ \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
   fprintf oux "[";
   myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux "; "; ()) (str.strict_places);
-  fprintf oux "] isValue myContext";
+  fprintf oux "] isValue _ myContext";
   fprintf oux "))\n";
   ()
 
