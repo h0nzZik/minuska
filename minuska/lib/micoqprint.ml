@@ -23,7 +23,6 @@ Instance LangDefaults : Defaults := {|
     default_context_template := myContext ;
 
     default_isValue := isValue ;
-    default_isNonValue := isNonValue ;
 |}.
 |delimiter}
 
@@ -236,7 +235,7 @@ let print_strict oux str =
   fprintf oux "(decl_strict (mkStrictnessDeclaration _ \"%s\" %d " (match str.symbol with `Id s -> s) (str.arity) ;
   fprintf oux "[";
   myiter (fun x -> fprintf oux "%d" x; ()) (fun () -> fprintf oux "; "; ()) (str.strict_places);
-  fprintf oux "] isValue isNonValue myContext";
+  fprintf oux "] isValue myContext";
   fprintf oux "))\n";
   ()
 
@@ -271,13 +270,7 @@ let print_definition
     print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     
-    fprintf oux "Definition isNonValue (";
-    fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
-    fprintf oux " : Expression2) := ";
-    fprintf oux "(nsc_negate ";
-    print_cond_w_hole iface my_builtins_map my_query_map (name_of_builtins : string) oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
-    fprintf oux ")";
-    fprintf oux ".\n";
+    fprintf oux "#[export] Instance isValue_nsc (X : Expression2) : NegableSideCondition (isValue X) := ltac:(intros; unfold isValue in *; apply _).\n";
     
     fprintf oux "%s\n" output_part_2;
     List.iter ~f:(fun fr -> print_frame oux fr) (def.frames);

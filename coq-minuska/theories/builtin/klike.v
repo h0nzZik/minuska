@@ -2325,24 +2325,29 @@ End Notations.
 
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
+        (* an 'always true' predicate *)
         ("true", "b_tt");
-        ("term.eq", "b_term_eq");
-        ("term.same_symbol", "b_have_same_symbol");
-        ("term.different_symbol", "b_have_different_symbols");
+        (* Sort predicates *)
         ("sym.is", "b_isSymbol");
         ("sym.isNot", "b_isNotSymbol");
         ("bool.is", "b_isBool");
         ("bool.isNot", "b_isNotBool");
+        ("string.is", "b_isString");
+        ("string.isNot", "b_isNotString");
+        ("z.is", "b_isZ");
+        ("z.isNot", "b_isZNot");
+
         ("bool.neg", "b_bool_neg");
         ("bool.is_true", "b_bool_is_true");
         ("bool.is_false", "b_bool_is_false");
-        ("z.minus", "b_Z_minus");
+        
+        ("term.eq", "b_term_eq");
+        ("term.same_symbol", "b_have_same_symbol");
+        ("term.different_symbol", "b_have_different_symbols");        ("z.minus", "b_Z_minus");
         ("z.plus", "b_Z_plus");
-        ("z.is", "b_isZ");
         ("z.eq", "b_Z_eq");
         ("z.le", "b_Z_isLe");
         ("z.lt", "b_Z_isLt");
-        ("string.is", "b_isString");
         ("map.hasKey", "b_map_hasKey");
         ("map.lookup", "b_map_lookup");
         ("map.size", "b_map_size");
@@ -2468,6 +2473,30 @@ Section negations.
     Fail Next Obligation.
 
 
+    #[export]
+    Program Instance Negable_isString : @NegablePredicateSymbol Σ b_isString 1
+        := {|
+            nps_negate := fun args => sc_atom b_isNotString args;
+        |}
+    .
+    Next Obligation. intros. solve_negable (). Qed. Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_isNotString : @NegablePredicateSymbol Σ b_isNotString 1
+        := {|
+            nps_negate := fun args => sc_atom b_isString args;
+        |}
+    .
+    Next Obligation.
+        intros. simplify_negable ().
+        {
+            rewrite negb_involutive. reflexivity.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    Qed.
+    Fail Next Obligation.
 
     #[export]
     Program Instance Negable_isBool : @NegablePredicateSymbol Σ b_isBool 1
@@ -2535,6 +2564,18 @@ Section negations.
     Program Instance Negable_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_same_symbol 2
     := {|
         nps_negate := fun args => sc_or (sc_or (sc_atom b_have_different_symbols args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
+    |}.
+    Next Obligation.
+        intros. simpl.
+        unfold slice.
+        simplify_negable (); unfold vars_of in *; simpl in *; ltac1:(set_solver).
+    Qed.
+    Fail Next Obligation.
+
+    #[export]
+    Program Instance Negable_not_have_same_symbol_symbol : @NegablePredicateSymbol Σ b_have_different_symbols 2
+    := {|
+        nps_negate := fun args => sc_or (sc_or (sc_atom b_have_same_symbol args) (sc_atom b_isBuiltin (slice 0 1 args))) (sc_atom b_isBuiltin (slice 1 2 args)) ;
     |}.
     Next Obligation.
         intros. simpl.
