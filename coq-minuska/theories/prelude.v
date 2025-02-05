@@ -17,6 +17,7 @@ From stdpp Require Export
     strings
     tactics
     list
+    listset
     list_numbers
     numbers
     pmap
@@ -309,27 +310,6 @@ Proof.
     }
 Qed.
 
-
-Program Fixpoint pfmap
-    {A B : Type}
-    (l : list A)
-    (f : forall (x : A), x ∈ l -> B)
-    : list B
-:=
-match l with
-| nil => nil
-| x::xs => (f x _)::(pfmap xs (fun (x' : A) (pf' : x' ∈ xs) => f x' _))
-end
-.
-Next Obligation.
-    intros. subst. rewrite elem_of_cons. left. reflexivity.
-Defined.
-Next Obligation.
-    intros. subst. rewrite elem_of_cons. right. exact pf'.
-Defined.
-Fail Next Obligation.
-
-
 Program Fixpoint pflookup
     {A : Type}
     (l : list A)
@@ -393,6 +373,25 @@ Proof.
     }
 Qed.
 
+Program Fixpoint pfmap
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A), x ∈ l -> B)
+    : list B
+:=
+match l with
+| nil => nil
+| x::xs => (f x _)::(pfmap xs (fun (x' : A) (pf' : x' ∈ xs) => f x' _))
+end
+.
+Next Obligation.
+    intros. subst. rewrite elem_of_cons. left. reflexivity.
+Defined.
+Next Obligation.
+    intros. subst. rewrite elem_of_cons. right. exact pf'.
+Defined.
+Fail Next Obligation.
+
 Lemma length_pfmap
     {A B : Type}
     (l : list A)
@@ -407,6 +406,7 @@ Proof.
         rewrite IHl. reflexivity.
     }
 Qed.
+
 
 Lemma pfmap_lookup_Some_lt
     {A B : Type}
@@ -441,6 +441,7 @@ Proof.
 Qed.
 
 Arguments pfmap_lookup_Some_lt {A B}%_type_scope {l}%_list_scope {f}%_function_scope {i}%_nat_scope {y} _.
+
 
 Lemma pfmap_lookup_Some_1
     {A B : Type}
@@ -489,6 +490,129 @@ Proof.
     }
 Qed.
 
+Program Definition ipfmap'
+    {A B : Type}
+:=
+(fix go (rev_first l : list A)
+    (f : forall (i : nat) (x : A) (pf : (rev rev_first ++ l) !! i = Some x), B) :=
+match l with
+| nil => nil
+| x::xs => (f (length rev_first) x _)::(go (x::rev_first) xs _)
+end
+ )
+.
+Next Obligation.
+    intros. subst.
+    rewrite lookup_app.
+    ltac1:(case_match).
+    {
+        abstract(
+            rewrite <- rev_length in H;
+            apply lookup_lt_Some in H;
+            ltac1:(lia)
+        ).
+    }
+    {
+        abstract(
+            rewrite rev_length;
+            rewrite Nat.sub_diag;
+            reflexivity
+        ).
+    }
+Defined.
+Next Obligation.
+    intros. subst.
+    simpl in *.
+    rewrite <- app_assoc in pf.
+    apply (f _ _ pf).
+Defined.
+Fail Next Obligation.
+
+
+Lemma length_ipfmap'
+    {A B : Type}
+    (r l : list A) f
+    :
+    @length B (ipfmap' r l f) = @length A l
+.
+Proof.
+    revert r f.
+    induction l; intros r f.
+    {
+        simpl. reflexivity.
+    }
+    {
+        simpl in *.
+        apply f_equal.
+        rewrite IHl.
+        reflexivity.
+    }
+Qed.
+  
+
+Definition ipfmap
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    : list B
+:= ipfmap' [] l f
+.
+
+Lemma length_ipfmap
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    :
+    length (ipfmap l f) = length l
+.
+Proof.
+    unfold ipfmap.
+    rewrite length_ipfmap'.
+    reflexivity.
+Qed.
+
+
+Lemma ipfmap'_lookup_Some_lt
+    {A B : Type}
+    (r l : list A)
+    (f : forall (i : nat) (x : A), ((rev r) ++ l) !! i = Some x -> B)
+    (i : nat)
+    (y : B)
+    :
+    ipfmap' r l f !! i = Some y ->
+    i < length l
+.
+Proof.
+    induction l; simpl; intros HH.
+    { apply lookup_lt_Some in HH. apply HH. }
+    {
+        apply lookup_lt_Some in HH.
+        simpl in HH.
+        rewrite length_ipfmap' in HH.
+        apply HH.
+    }
+Qed.
+
+
+Lemma ipfmap_lookup_Some_lt
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A), l !! i = Some x -> B)
+    (i : nat)
+    (y : B)
+    :
+    ipfmap l f !! i = Some y ->
+    i < length l
+.
+Proof.
+    unfold ipfmap.
+    intros HH.
+    eapply ipfmap'_lookup_Some_lt.
+    apply HH.
+Qed.
+
+(* About ipfmap_lookup_Some_lt. *)
+(* Arguments ipfmap_lookup_Some_lt {A B}%_type_scope {l}%_list_scope {f}%_function_scope {i}%_nat_scope {y} _. *)
 
 Lemma bind_Some_T_1
     (A B : Type)
