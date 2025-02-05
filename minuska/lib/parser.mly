@@ -11,6 +11,8 @@
 %token KEYWORD_IN
 %token KEYWORD_WHERE
 %token KEYWORD_CONTEXT
+%token KEYWORD_TRUE
+%token KEYWORD_FALSE
 %token KEYWORD_AND
 %token KEYWORD_OR
 %token BRACKET_ROUND_LEFT
@@ -117,6 +119,10 @@ expr:
   ;
 
 condition:
+  | KEYWORD_TRUE
+    { `CondTrue }
+  | KEYWORD_FALSE
+    { `CondFalse }
   | p = ID
     BRACKET_ROUND_LEFT
     es = separated_list(COMMA, expr)

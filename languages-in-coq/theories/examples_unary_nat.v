@@ -69,15 +69,10 @@ Module unary_nat.
     Definition nat_zero {_br : BasicResolver} := (@t_term _ operand_type "nat_zero").
     Arguments nat_zero {_br} _%_rs.
 
-    Definition isValueE :=  fun x =>
-          (
-            (e_fun b_have_same_symbol [(e_ground (t_term "nat_zero" [])); x])
-            ||
-            (e_fun b_have_same_symbol [(e_ground (t_term "nat_succ" [])); x]))%rs.
-
-    Definition isNonValueE := fun x => (e_fun b_bool_neg [(isValueE x)]).
-
-    Definition isValue := fun x => mkSideCondition _ b_cond_is_true [isValueE x].
+    Definition isValue := fun x =>
+          (sc_or
+            (sc_atom b_have_same_symbol [(e_ground (t_term "nat_zero" [])); x])
+            (sc_atom b_have_same_symbol [(e_ground (t_term "nat_succ" [])); x]))%rs.
 
     #[local]
     Instance ImpDefaults : Defaults := {|
@@ -87,7 +82,6 @@ Module unary_nat.
             := (context-template u_cfg ([ HOLE ]) with HOLE) ;
 
         default_isValue := isValue ;
-        default_isNonValue := fun x => mkSideCondition _ b_cond_is_true [isNonValueE x] ;
     |}.
 
     (* Operations *)
@@ -106,7 +100,7 @@ Module unary_nat.
         decl_rule (rule [ s ]:
             u_cfg [ u_cseq [ l; t_over ($REST_SEQ) ] ]
          ~>{default_act} u_cfg [ u_cseq [ r; t_over ($REST_SEQ) ] ]
-         where []
+         where (sc_atom b_tt [])
         )
     ) (at level 90).
 
@@ -114,13 +108,13 @@ Module unary_nat.
         
         decl_simple_rule ["nat-add-0"]:
             nat_add [nat_zero []; t_over ($Y) ] ~> t_over ($Y)
-            where []
+            where(sc_atom b_tt [])
         ;
 
         decl_simple_rule ["nat-add-S"]:
             nat_add [nat_succ [ t_over ($X) ]; t_over ($Y) ]
             ~> nat_add [t_over ($X); nat_succ [t_over ($Y)] ]
-            where []
+            where (sc_atom b_tt [])
         
     ].
 
@@ -133,7 +127,7 @@ Module unary_nat.
         decl_simple_rule ["nat-sub-0"]:
             nat_sub [t_over ($X); nat_zero [] ]
             ~> t_over ($X)
-            where [(isValue ($X))]
+            where (isValue ($X))
         ;
         decl_simple_rule ["nat-sub-S"]:
             nat_add [ nat_succ [ t_over ($X) ]; nat_succ [ t_over ($Y) ] ]
@@ -150,13 +144,13 @@ Module unary_nat.
         decl_simple_rule ["nat-mul-0"]:
             nat_mul [nat_zero []; t_over ($Y) ]
             ~> nat_zero []
-            where [(isValue ($Y))]
+            where (isValue ($Y))
         ;
         
         decl_simple_rule ["nat-mul-S"]:
             nat_mul [ nat_succ [ t_over ($X) ]; t_over ($Y) ]
             ~> nat_add [t_over ($Y); nat_mul[ t_over ($X); t_over ($Y)] ]
-                where [(isValue ($Y))]
+                where (isValue ($Y))
     ].
 
 
@@ -174,18 +168,18 @@ Module unary_nat.
         decl_simple_rule ["nat-fact"]:
             nat_fact [ t_over ($X) ]
             ~> nat_fact' [ t_over ($X); nat_succ [nat_zero []] ]
-            where [(isValue ($X))]
+            where (isValue ($X))
         ;
         
         decl_simple_rule ["nat-fact'-0"]:
             nat_fact' [ nat_zero []; t_over ($Y) ]
             ~> t_over ($Y)
-            where [(isValue ($Y))]
+            where (isValue ($Y))
         ;
         decl_simple_rule ["nat-fact'-S"]:
             nat_fact' [ nat_succ [ t_over ($X) ]; t_over ($Y) ]
             ~> nat_fact' [ t_over ($X); nat_mul [ nat_succ [ t_over ($X) ]; t_over ($Y) ]  ]
-            where [(isValue ($Y))]
+            where (isValue ($Y))
     ].
 
     Definition Γfact : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
@@ -268,7 +262,7 @@ Module unary_nat.
         decl_simple_rule ["step"]:
             nat_fib' [ t_over ($Tgt); t_over ($Curr); t_over ($X); t_over ($Y) ]
             ~> nat_fib' [ t_over ($Tgt); nat_succ [ t_over ($Curr) ]; nat_add [t_over ($X); t_over ($Y)]; t_over ($X) ]
-            where [mkSideCondition _ b_cond_is_true [(~~ ($Curr ==Term $Tgt))]]
+            where (sc_atom b_term_eq [($Curr);($Tgt)])
         ;
         
         decl_simple_rule ["result"]:

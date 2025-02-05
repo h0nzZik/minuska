@@ -11,6 +11,8 @@ type token =
   | KEYWORD_CONTEXT
   | KEYWORD_OF_ARITY
   | KEYWORD_IN
+  | KEYWORD_TRUE
+  | KEYWORD_FALSE
   | KEYWORD_AND
   | KEYWORD_OR
   | KEYWORD_WHERE
@@ -61,6 +63,8 @@ type condition =
   [ `CondAtomic of (id*(expr list)) 
   | `CondAnd of (condition*condition)
   | `CondOr of (condition*condition)
+  | `CondTrue
+  | `CondFalse
   ]
 
 type exprterm =

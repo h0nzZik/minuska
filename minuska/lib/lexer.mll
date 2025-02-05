@@ -33,6 +33,8 @@ rule read =
   | "@context"       { KEYWORD_CONTEXT }
   | "@builtin-int"       { KEYWORD_BUILTIN_INT }
   | "@builtin-string"       { KEYWORD_BUILTIN_STRING }
+  | "@true"       { KEYWORD_TRUE }
+  | "@false"       { KEYWORD_FALSE }
   | "@and"       { KEYWORD_AND }
   | "@or"        { KEYWORD_OR }
   | "of_arity"         { KEYWORD_OF_ARITY }

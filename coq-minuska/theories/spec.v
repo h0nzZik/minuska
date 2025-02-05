@@ -98,12 +98,6 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
         -> NondetValue
         -> list (@TermOver' symbol builtin_value)
         -> bool ;
-
-    builtin_predicate_true
-        : builtin_predicate_symbol ;
-
-    builtin_predicate_true_holds
-        : forall nv, builtin_predicate_interp builtin_predicate_true nv [] = true ;
 }.
 
 Set Primitive Projections.
@@ -298,6 +292,8 @@ Definition TermOverBuiltin_to_TermOverBoV
 
 
 Inductive SideCondition {Σ : StaticModel} :=
+| sc_true
+| sc_false
 | sc_atom (pred : builtin_predicate_symbol) (args : list Expression2)
 | sc_and (left : SideCondition) (right : SideCondition)
 | sc_or (left : SideCondition) (right : SideCondition)
@@ -315,6 +311,8 @@ Instance VarsOf_list_something
 
 Fixpoint vars_of_sc {Σ : StaticModel} (sc : SideCondition) : gset variable :=
 match sc with
+| sc_true => ∅
+| sc_false => ∅
 | sc_atom _ args => vars_of args
 | sc_and l r => vars_of_sc l ∪ vars_of_sc r
 | sc_or l r => vars_of_sc l ∪ vars_of_sc r
@@ -594,6 +592,8 @@ Definition SideCondition_evaluate
     (
         fix go (sc : SideCondition) : bool :=
         match sc with
+        | sc_true => true
+        | sc_false => false
         | sc_atom pred args => (
             let ts' := Expression2_evaluate program ρ <$> args in
             match list_collect ts' with

@@ -475,6 +475,8 @@ Fixpoint SideCondition_subst
     : SideCondition
 :=
     match c with
+    | sc_true => sc_true
+    | sc_false => sc_false
     | sc_atom p es => sc_atom p ((fun e1 => Expression2_subst e1 x e') <$> es)
     | sc_and l r => sc_and (SideCondition_subst l x e') (SideCondition_subst r x e')
     | sc_or l r => sc_or (SideCondition_subst l x e') (SideCondition_subst r x e')

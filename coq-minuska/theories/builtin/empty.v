@@ -21,16 +21,6 @@ Section sec.
         {symbols : Symbols symbol}
     .
 
-    Variant PredicateSymbol :=
-    | ps_true
-    .
-
-    #[export]
-    Instance PredicateSymbol_eqdec : EqDecision PredicateSymbol.
-    Proof.
-        ltac1:(solve_decision).
-    Defined.
-
 
     #[local]
     Instance β
@@ -40,14 +30,11 @@ Section sec.
         builtin_function_symbol
             := Emptyset ;
         builtin_predicate_symbol
-            := PredicateSymbol ;
+            := Emptyset ;
         builtin_function_interp
             := fun p => match p with end ;
         builtin_predicate_interp
-            := fun p => match p with | ps_true => fun _ _ => true end ;
-        
-        builtin_predicate_true := ps_true ;
-        builtin_predicate_true_holds := fun _ => eq_refl ;
+            := fun p => match p with end ;
     |}.
 
 End sec.

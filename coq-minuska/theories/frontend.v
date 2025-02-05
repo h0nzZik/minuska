@@ -152,7 +152,7 @@ Inductive Declaration {Σ : StaticModel} {Act : Set} :=
 
 Notation "'rule' '[' n ']:' l '~>{' a '}' r"
     := ((mkRuleDeclaration
-        n (rule (l) ~>{ (a) } (r) requires (sc_atom builtin_predicate_true []))
+        n (rule (l) ~>{ (a) } (r) requires (sc_true))
     ))
     (at level 200)
 .
@@ -270,7 +270,7 @@ Section wsm.
             := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
         (* all operands on the left are already evaluated *)
         let side_condition : SideCondition
-            := foldr  sc_and (sc_atom builtin_predicate_true []) (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
+            := foldr  sc_and (sc_true) (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
         rule [lbl]:
             cseq_context _ _ (cseq ([
                 (t_term sym lhs_vars);

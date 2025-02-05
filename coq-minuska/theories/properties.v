@@ -1040,12 +1040,19 @@ Lemma SideCondition_satisfies_extensive
     satisfies ρ2 (program, nv) c
 .
 Proof.
-    induction c.
-    {
-        intros Hrhos.
-        unfold satisfies; simpl.
-        intros HH.
+    induction c;
+        intros Hrhos;
+        simpl;
+        intros HH;
         unfold SideCondition_evaluate in *.
+    {
+        reflexivity.
+    }
+    {
+        inversion HH.
+    }
+    {
+        unfold satisfies in *; simpl in *.
         ltac1:(repeat case_match); try (solve [ltac1:(contradiction)]).
         {
             assert (l0 = l).
@@ -1135,9 +1142,7 @@ Proof.
         }
     }
     {
-        intros Hrhos.
         unfold satisfies; simpl.
-        intros HH.
         apply andb_prop in HH.
         destruct HH as [HH1 HH2].
         specialize (IHc1 Hrhos).
@@ -1151,9 +1156,7 @@ Proof.
         reflexivity.
     }
     {
-        intros Hrhos.
         unfold satisfies; simpl.
-        intros HH.
         apply orb_prop in HH.
         destruct HH as [HH1|HH2].
         {
@@ -1186,11 +1189,18 @@ Lemma SideCondition_satisfies_strip
 .
 Proof.
     revert ρ.
-    induction c; intros ρ.
-    {
-        unfold satisfies; simpl.
+        induction c;
+        intros ρ;
+        unfold satisfies;
+        simpl;
         intros HH.
-
+    {
+        reflexivity.
+    }
+    {
+        exact HH.
+    }
+    {    
         unfold SideCondition_evaluate in *.
 
         ltac1:(repeat case_match).
@@ -1603,7 +1613,7 @@ Proof.
         }
     }
     {
-        intros HH. unfold satisfies in HH; simpl in HH.
+        unfold satisfies in HH; simpl in HH.
         apply andb_prop in HH. destruct HH as [HH1 HH2].
         specialize (IHc1 ρ HH1).
         specialize (IHc2 ρ HH2).
@@ -1636,7 +1646,7 @@ Proof.
         }
     }
     {
-        intros HH. unfold satisfies in HH; simpl in HH.
+        unfold satisfies in HH; simpl in HH.
         apply orb_prop in HH.
         unfold satisfies; simpl.
         rewrite orb_true_iff.

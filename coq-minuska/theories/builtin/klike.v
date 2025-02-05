@@ -2244,10 +2244,6 @@ Section sec2.
                 end
             )
             end ;
-
-            builtin_predicate_true := b_tt ;
-
-            builtin_predicate_true_holds := fun _ => eq_refl ;
     |}.
 
 End sec2.
@@ -2325,8 +2321,6 @@ End Notations.
 
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
-        (* an 'always true' predicate *)
-        ("true", "b_tt");
         (* Sort predicates *)
         ("sym.is", "b_isSymbol");
         ("sym.isNot", "b_isNotSymbol");
