@@ -738,6 +738,30 @@ Arguments nsc_negate {Σ} sc {NegableSideCondition}.
 #[local]
 Obligation Tactic := idtac.
 
+
+#[export]
+Program Instance NegableSideCondition_false
+    {Σ : StaticModel}
+    : NegableSideCondition sc_false :=
+{|
+    nsc_negate := sc_true ;
+|}.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed. Fail Next Obligation.
+
+
+#[export]
+Program Instance NegableSideCondition_true
+    {Σ : StaticModel}
+    : NegableSideCondition sc_true :=
+{|
+    nsc_negate := sc_false ;
+|}.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed. Fail Next Obligation.
+
 #[export]
 Program Instance NegableSideCondition_atomic
     {Σ : StaticModel}
@@ -750,7 +774,7 @@ Program Instance NegableSideCondition_atomic
 |}.
 Next Obligation.
     intros; apply nps_negate_correct>[reflexivity|apply H].
-Defined.
+Qed.
 Fail Next Obligation.
 
 #[export]
@@ -773,7 +797,7 @@ Next Obligation.
         rewrite negb_and;
         reflexivity
     ).
-Defined.
+Qed.
 Fail Next Obligation.
 
 #[export]
@@ -796,6 +820,6 @@ Next Obligation.
         rewrite negb_or;
         reflexivity
     ).
-Defined.
+Qed.
 Fail Next Obligation.
 

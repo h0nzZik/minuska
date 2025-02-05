@@ -186,12 +186,22 @@ let rec print_cond_w_hole
     print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c1 hole;
     print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c2 hole;
     fprintf oux ")";
+    ()
   )
   | `CondOr (c1, c2) -> (
       fprintf oux "(sc_or ";
       print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c1 hole;
       print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c2 hole;
       fprintf oux ")";
+      ()
+  )
+  | `CondTrue -> (
+    fprintf oux "sc_true";
+    ()
+  )
+  | `CondFalse -> (
+    fprintf oux "sc_false";
+    ()
   )
 
 
