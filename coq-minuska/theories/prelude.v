@@ -310,6 +310,7 @@ Proof.
     }
 Qed.
 
+
 Program Fixpoint pflookup
     {A : Type}
     (l : list A)
@@ -385,8 +386,8 @@ match l with
 end
 .
 Next Obligation.
-    intros. subst. rewrite elem_of_cons. left. reflexivity.
-Defined.
+    abstract(intros; subst; rewrite elem_of_cons; left; reflexivity).
+Qed.
 Next Obligation.
     intros. subst. rewrite elem_of_cons. right. exact pf'.
 Defined.
@@ -507,17 +508,20 @@ Definition ipfmap'_wrapg {A B : Type} (l1 l2 : list A) (pf: l1 = l2)
 Proof.
     intros. rewrite <- pf in H. exact (f _ _ H).
 Defined.
-(* 
-Definition ipfmap'_unwrap {A B : Type} (r l : list A) (a : A)
-    (f : (forall (i0 : nat) (x : A), ((rev r ++ [a]) ++ l) !! i0 = Some x -> B))
-    : ∀ (i0 : nat) (x : A), (rev r ++ a :: l) !! i0 = Some x → B 
+
+Lemma ipfmap'_wrapg_nice {A B : Type} (l1 l2 : list A) (pf: l1 = l2)
+    (f : ∀ (i0 : nat) (x : A), l1 !! i0 = Some x → B)
+    :
+    forall x y z z',
+    
+    ipfmap'_wrapg l1 l2 pf f x y z = f x y z'
 .
 Proof.
-    intros i1 x1 H1.
-    rewrite <- app_assoc in f.
-    exact (f i1 x1 H1).
-Defined. *)
-
+  unfold ipfmap'_wrapg.
+  intros x y z z'.
+  f_equal.
+  apply proof_irrelevance.
+Qed.
 
 Program Definition ipfmap'
     {A B : Type}
@@ -574,10 +578,12 @@ Proof.
         simpl. reflexivity.
     }
     {
-        simpl in *.
-        apply f_equal.
-        rewrite IHl.
-        reflexivity.
+        abstract(
+          simpl in *;
+          apply f_equal;
+          rewrite IHl;
+          reflexivity
+        ).
     }
 Qed.
   
@@ -668,19 +674,48 @@ match l with
     end
 end.
 Next Obligation.
-    intros; subst; simpl in *; ltac1:(lia).
-Defined.
+    abstract(intros; subst; simpl in *; ltac1:(lia)).
+Qed.
 Next Obligation.
     intros; subst; reflexivity.
 Defined.
 Next Obligation.
-    intros; subst; simpl in *; ltac1:(lia).
-Defined.
+    abstract(intros; subst; simpl in *; ltac1:(lia)).
+Qed.
 Next Obligation.
     intros; subst; simpl in *; rewrite pf; reflexivity.
 Defined.
 Fail Next Obligation.
 
+
+Lemma ipflookup_spec
+    {A : Type}
+    (l : list A)
+    (i : nat)
+    (pflt : i < length l)
+    :
+    Some (proj1_sig (ipflookup l i pflt)) = l !! i
+.
+Proof.
+    revert i pflt.
+    induction l; intros i pflt.
+    {
+        abstract(simpl in pflt; ltac1:(lia)).
+    }
+    {
+        destruct i;
+            simpl in *.
+        {
+            reflexivity.
+        }
+        {
+            apply IHl.
+        }
+    }
+Qed.
+
+#[global]
+Opaque ipflookup_spec.
 
 Lemma my_helper {A : Type} (i : nat) (l1 l2 : list A):
     i < length l2 ->
@@ -689,10 +724,11 @@ Lemma my_helper {A : Type} (i : nat) (l1 l2 : list A):
 Proof.
     intros H.
     rewrite app_length.
-    ltac1:(lia).
+    abstract(ltac1:(lia)).
 Qed.
 
-
+#[global]
+Opaque my_helper.
 
 Lemma ipfmap'_helper_1
     {A B}
@@ -709,6 +745,9 @@ Proof.
     exact HH.
 Qed.
 
+#[global]
+Opaque ipfmap'_helper_1.
+
 Lemma ipfmap_helper_1 {A B} (l : list A) (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B) (i : nat) (y : B) :
     ipfmap l f !! i = Some y ->
     i < length l
@@ -720,6 +759,11 @@ Proof.
     exact HH.
 Qed.
 
+#[global]
+Opaque ipfmap_helper_1.
+
+Print Strategies.
+
 Lemma ipfmap'_lookup_Some_1
     {A B : Type}
     (r l : list A)
@@ -729,7 +773,7 @@ Lemma ipfmap'_lookup_Some_1
     (pf1: (ipfmap' r l f) !! i = Some y)
     pf2
     :
-    y = f i (proj1_sig (pflookup l i (ipfmap'_helper_1 r l f i y pf1) )) pf2
+    y = f i (proj1_sig (ipflookup l i (ipfmap'_helper_1 r l f i y pf1) )) pf2
 .
 Proof.
     revert i (*y*) r f pf1 pf2.
@@ -746,7 +790,7 @@ Proof.
             subst.
             assert (pf2' := pf2).
             rewrite lookup_app in pf2'.
-            rewrite lookup_ge_None_2 in pf2'>[|ltac1:(lia)].
+            rewrite lookup_ge_None_2 in pf2'>[|abstract(ltac1:(lia))].
             rewrite Nat.sub_diag in pf2'.
             simpl in pf2'.
             inversion pf2'; subst; clear pf2'.
@@ -769,10 +813,181 @@ Proof.
                     apply proof_irrelevance.
                 }
                 {
-                    ltac1:(lia).
+                    abstract(ltac1:(lia)).
                 }
             }
             {
+                simpl in pf1.                    
+                apply lookup_lt_Some in pf1 as pf1'.
+                match! (Constr.type (Control.hyp @pf1')) with
+                | (_ < ?idx) =>
+                  remember $idx as idx in *;
+                  ()
+                end.
+                destruct (l !! (length r)) eqn:Hmyeq.
+                {
+                  (* a0 comes from l *)
+                  simpl in Heqidx.
+                  rewrite length_ipfmap' in Heqidx.
+                  destruct r; simpl in Hnzero.
+                  {
+                    abstract(ltac1:(lia)).
+                  }
+                  clear Hnzero.
+                  simpl in Hmyeq.
+                  subst idx.
+                  simpl in pf1'.
+                  simpl.
+                  revert H0.
+                  simpl.
+                  intros H0.
+                  simpl in pf2.
+                  assert (pf2' := pf2).
+                  rewrite lookup_app in pf2'.
+                  rewrite lookup_ge_None_2 in pf2'.
+                  {
+                    simpl in pf2'.
+                    rewrite app_length in pf2'.
+                    rewrite rev_length in pf2'.
+                    simpl in pf2'.
+                    rewrite Nat.add_comm in pf2'.
+                    simpl in pf2'.
+                    rewrite Nat.sub_diag in pf2'.
+                    simpl in pf2'.
+                    rewrite ipflookup_spec in pf2'.
+                    assert(pf1'' := pf1).
+                    simpl in pf1''.
+                    specialize (IHl ((length r))).
+                    ltac1:(move: pf2);
+                      rewrite <- H0;
+                      intros pf2.
+                    ltac1:(unshelve(erewrite (IHl (a::(r ++ [a1])) (ipfmap'_wrapg _ _ _ f)))).
+                    {
+                      simpl.
+                      abstract(
+                        simpl;
+                        repeat (rewrite <- app_assoc);
+                        reflexivity
+                      ).
+                    }
+                    {
+                      simpl in *.
+                      match! goal with
+                      | [|- (((@ipfmap' _ _ _ _ ?x) !! _) = _)] =>
+                        
+                        match! (Constr.type (Control.hyp @pf1'')) with
+                        | (((@ipfmap' _ _ _ _ ?y) !! _) = _) =>
+                          assert (Hxy: $x = $y)
+                        end;
+                        ()
+                      end.
+                      {
+                        simpl.
+                        apply functional_extensionality_dep.
+                        intros n.
+                        apply functional_extensionality_dep.
+                        intros a'.
+                        apply functional_extensionality_dep.
+                        intros pf42.
+                        erewrite ipfmap'_wrapg_nice.
+                        erewrite ipfmap'_wrapg_nice.
+                        reflexivity.
+                      }
+                      rewrite Hxy.
+                      rewrite pf1''.
+                      reflexivity.
+                    }
+                    {
+                      simpl.
+                      rewrite ipflookup_spec.
+                      (rewrite <- (@app_assoc A)).
+                      simpl.
+                      rewrite lookup_app.
+                      rewrite lookup_app.
+                      rewrite rev_length.
+                      rewrite app_length.
+                      rewrite Nat.sub_diag.
+                      simpl.
+                      rewrite lookup_ge_None_2.
+                      {
+                        simpl.
+                        clear pf2.
+                        simpl in pf1.
+                        Search a1.
+                      }
+                      
+                    }
+                    (*specialize (IHl ((a1 :: r))).*)
+                    (*specialize (IHl _ _ _ pf1'').*)
+                    erewrite ipfmap'_wrapg_nice.
+                    remember (f (S (length r))) as f'.
+                    revert pf2.
+                    erewrite <- (@ipflookup_spec A l (S (length r)) (ipfmap'_helper_1 _ _ _ _ _ _)) in Hmyeq.
+                    apply (inj Some) in Hmyeq.
+                    
+                    intros pf2.
+                    rewrite Hmyeq.
+                    intros pf2.
+                    rewrite Hmyeq.
+                    erewrite Hmyeq.
+                                        erewrite Hmyeq.
+                    Search ipflookup.
+                    ltac1:(setoid_rewrite (f_equal (f' a))).
+                    erewrite (f_equal_dep2 f')>[|reflexivity].
+                    erewrite f_equal.
+                    Locate f_equal.
+                    apply f_equal_dep2.
+                    eapply f_equal3.
+                    Search "f_equal".
+                    erewrite ipfmap'_wrapg_nice.
+                     with (z := pf2).
+                    f_equal.
+
+                    assert(pf2'' := pf2).
+                    simpl in pf2''.
+                    simpl in IHl.
+                    specialize (IHl pf2).
+                    ltac1:(move: pf2).
+                    rewrite <- H0.
+                    intros pf2.
+                    Search ipflookup.
+                    clear H0.
+                  }
+                  {
+                    rewrite app_length.
+                    rewrite rev_length.
+                    simpl.
+                    ltac1:(lia).
+                  }
+                  symmetry in Hmyeq.
+                  eapply ipflookup_spec in Hmyeq.
+                  admit.
+                }
+                {
+                  apply lookup_ge_None in Hmyeq.
+                  simpl in *.
+                  rewrite length_ipfmap' in Heqidx.
+                  subst idx.
+                  assert (length l = length r) by ltac1:(lia).
+                  destruct (length r) eqn:Hlr in |-.
+                  {
+                    ltac1:(lia).
+                  }
+                  {
+                    destruct r; simpl in *.
+                    { ltac1:(lia). }
+                    {
+                      apply (f_equal Some) in H0.
+                      rewrite ipflookup_spec in H0.
+                      symmetry in H0.
+                      apply lookup_lt_Some in H0.
+                      ltac1:(lia).
+                    }
+                  }
+                }
+                apply lookup_lt_Some in pf1'.
+                rewrite length_ipfmap' in pf1'.
+                    
                 destruct r; simpl in *.
                 {
                     ltac1:(lia).
@@ -783,42 +998,63 @@ Proof.
                     intros pf2.
                     clear H0.
                     clear Hnzero.
-                    simpl in pf1.
-                    (* remember (ipfmap'_unwrap _ _ _ f) as uf. *)
-                    (* remember (ipfmap'_wrap _ _ _ f) as wf. *)
-                    (* Check @ipfmap'_wrap. *)
-                    specialize (IHl ((length r)) (*y*) (a::a0::r)).
-                    simpl in IHl.
-                    assert (Htmp2: ((rev r ++ [a0]) ++ a :: l) = ((rev r ++ [a0]) ++ [a]) ++ l).
+                    destruct (l !! (length r)) eqn:Hmyeq.
                     {
-                        simpl. rewrite <- app_assoc.
-                        simpl. rewrite <- app_assoc.
-                        simpl. rewrite <- app_assoc.
-                        reflexivity.
+                      specialize (IHl ((length r)) (*y*) (a::a1::r)).
+                      simpl in IHl.
+                      assert (Htmp2: ((rev r ++ [a1]) ++ a :: l) = ((rev r ++ [a1]) ++ [a]) ++ l).
+                      {
+                          simpl. rewrite <- app_assoc.
+                          simpl. rewrite <- app_assoc.
+                          simpl. rewrite <- app_assoc.
+                          reflexivity.
+                      }
+                      ltac1:(specialize (IHl (@ipfmap'_wrapg A B _ _ Htmp2 f))).
+                      ltac1:(unshelve(ospecialize (IHl _))).
+                      {
+                          rewrite <- pf1.
+                          ltac1:(repeat f_equal).
+                          unfold ipfmap'_wrapg.
+                          clear.
+                          intros.
+                          simpl.
+                          repeat (
+                              apply functional_extensionality_dep;
+                              intros
+                          ).
+                          f_equal.
+                          apply proof_irrelevance.
+                      }
+                      ltac1:(unshelve (ospecialize (IHl _))).
+                      {
+                          f_equal.
+                          ltac1:(rewrite <- (@app_assoc A (rev r ++ [a0]) [a] l) at 1).
+                          rewrite lookup_app.
+                          rewrite lookup_app.
+                          rewrite lookup_ge_None_2>[|ltac1:(rewrite rev_length; lia)].
+                          rewrite rev_length.
+                          rewrite Nat.sub_diag.
+                          simpl.
+                          rewrite ipflookup_spec.
+                          apply lookup_lt_Some in pf1.
+                          rewrite length_ipfmap' in pf1.
+                          rewrite ipflookup_spec in pf1.
+                          apply (f_equal Some) in pf1 as pf1'.
+                          Search pflookup.
+
+                          apply f_equal.
+                          Search ipflookup.
+                          
+                          (* apply functional_extensionality_dep. *)
+                          (* apply proof_irrelevance. *)
+                      }  
                     }
-                    ltac1:(specialize (IHl (@ipfmap'_wrapg A B _ _ Htmp2 f))).
-                    ltac1:(unshelve(ospecialize (IHl _))).
                     {
-                        rewrite <- pf1.
-                        ltac1:(repeat f_equal).
-                        unfold ipfmap'_wrapg.
-                        clear.
-                        intros.
-                        simpl.
-                        repeat (
-                            apply functional_extensionality_dep;
-                            intros
-                        ).
-                        f_equal.
-                        apply proof_irrelevance.
+                      apply lookup_ge_None in Hmyeq.
+                      ltac1:(lia).
                     }
-                    ltac1:(unshelve (ospecialize (IHl _))).
-                    {
-                        f_equal.
-                        rewrite <- app_assoc.
-                        (* apply functional_extensionality_dep. *)
-                        (* apply proof_irrelevance. *)
-                    }
+                    
+                    
                 }
             }
             Search pflookup.
