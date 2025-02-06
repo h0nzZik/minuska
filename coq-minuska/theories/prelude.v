@@ -489,6 +489,35 @@ Proof.
         }
     }
 Qed.
+(* 
+Definition ipfmap'_wrap {A B : Type} (r l : list A) (a : A)
+    (f : ∀ (i0 : nat) (x : A), (rev r ++ a :: l) !! i0 = Some x → B)
+    : (forall (i0 : nat) (x : A), ((rev r ++ [a]) ++ l) !! i0 = Some x -> B)
+.
+Proof.
+    intros i1 x1 H1.
+    rewrite <- app_assoc in H1.
+    exact (f i1 x1 H1).
+Defined. *)
+
+Definition ipfmap'_wrapg {A B : Type} (l1 l2 : list A) (pf: l1 = l2)
+    (f : ∀ (i0 : nat) (x : A), l1 !! i0 = Some x → B)
+    : (forall (i0 : nat) (x : A), l2 !! i0 = Some x -> B)
+.
+Proof.
+    intros. rewrite <- pf in H. exact (f _ _ H).
+Defined.
+(* 
+Definition ipfmap'_unwrap {A B : Type} (r l : list A) (a : A)
+    (f : (forall (i0 : nat) (x : A), ((rev r ++ [a]) ++ l) !! i0 = Some x -> B))
+    : ∀ (i0 : nat) (x : A), (rev r ++ a :: l) !! i0 = Some x → B 
+.
+Proof.
+    intros i1 x1 H1.
+    rewrite <- app_assoc in f.
+    exact (f i1 x1 H1).
+Defined. *)
+
 
 Program Definition ipfmap'
     {A B : Type}
@@ -523,8 +552,11 @@ Defined.
 Next Obligation.
     intros. subst.
     simpl in *.
+    eapply ipfmap'_wrapg in f.
+    exact f.
+    reflexivity.
     rewrite <- app_assoc in pf.
-    apply (f _ _ pf).
+    apply pf.
 Defined.
 Fail Next Obligation.
 
@@ -660,6 +692,168 @@ Proof.
     ltac1:(lia).
 Qed.
 
+
+
+Lemma ipfmap'_helper_1
+    {A B}
+    (r l : list A)
+    (f : forall (i : nat) (x : A) (pf : (rev r ++ l) !! i = Some x), B)
+    (i : nat) (y : B) :
+    ipfmap' r l f !! i = Some y ->
+    i < length l
+.
+Proof.
+    intros HH.
+    apply lookup_lt_Some in HH.
+    rewrite length_ipfmap' in HH.
+    exact HH.
+Qed.
+
+Lemma ipfmap_helper_1 {A B} (l : list A) (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B) (i : nat) (y : B) :
+    ipfmap l f !! i = Some y ->
+    i < length l
+.
+Proof.
+    intros HH.
+    apply lookup_lt_Some in HH.
+    rewrite length_ipfmap in HH.
+    exact HH.
+Qed.
+
+Lemma ipfmap'_lookup_Some_1
+    {A B : Type}
+    (r l : list A)
+    (f : forall (i : nat) (x : A) (pf : (rev r ++ l) !! i = Some x), B)
+    (i : nat)
+    (y : B)
+    (pf1: (ipfmap' r l f) !! i = Some y)
+    pf2
+    :
+    y = f i (proj1_sig (pflookup l i (ipfmap'_helper_1 r l f i y pf1) )) pf2
+.
+Proof.
+    revert i (*y*) r f pf1 pf2.
+    induction l; intros i (*y*) r f pf1 pf2.
+    {
+        simpl in *.
+        assert (pf1' := pf1).
+        rewrite lookup_nil in pf1'.
+        inversion pf1'.
+    }
+    {
+        destruct (decide (i = length (rev r))).
+        {
+            subst.
+            assert (pf2' := pf2).
+            rewrite lookup_app in pf2'.
+            rewrite lookup_ge_None_2 in pf2'>[|ltac1:(lia)].
+            rewrite Nat.sub_diag in pf2'.
+            simpl in pf2'.
+            inversion pf2'; subst; clear pf2'.
+
+            ltac1:(move: pf1 pf2 H0).
+            ltac1:(rewrite (@rev_length A)).
+            intros pf1 pf2 H0. 
+            destruct (decide (length r = 0)) as [Hzero|Hnzero].
+            {
+                revert pf1 pf2 H0.
+                rewrite Hzero.
+                simpl.
+                intros pf1 pf2 H0.
+                inversion pf1; subst; clear pf1.
+                destruct r; simpl in *.
+                {
+                    revert pf2.
+                    simpl. intros pf3.
+                    f_equal.
+                    apply proof_irrelevance.
+                }
+                {
+                    ltac1:(lia).
+                }
+            }
+            {
+                destruct r; simpl in *.
+                {
+                    ltac1:(lia).
+                }
+                {
+                    revert pf2.
+                    rewrite <- H0.
+                    intros pf2.
+                    clear H0.
+                    clear Hnzero.
+                    simpl in pf1.
+                    (* remember (ipfmap'_unwrap _ _ _ f) as uf. *)
+                    (* remember (ipfmap'_wrap _ _ _ f) as wf. *)
+                    (* Check @ipfmap'_wrap. *)
+                    specialize (IHl ((length r)) (*y*) (a::a0::r)).
+                    simpl in IHl.
+                    assert (Htmp2: ((rev r ++ [a0]) ++ a :: l) = ((rev r ++ [a0]) ++ [a]) ++ l).
+                    {
+                        simpl. rewrite <- app_assoc.
+                        simpl. rewrite <- app_assoc.
+                        simpl. rewrite <- app_assoc.
+                        reflexivity.
+                    }
+                    ltac1:(specialize (IHl (@ipfmap'_wrapg A B _ _ Htmp2 f))).
+                    ltac1:(unshelve(ospecialize (IHl _))).
+                    {
+                        rewrite <- pf1.
+                        ltac1:(repeat f_equal).
+                        unfold ipfmap'_wrapg.
+                        clear.
+                        intros.
+                        simpl.
+                        repeat (
+                            apply functional_extensionality_dep;
+                            intros
+                        ).
+                        f_equal.
+                        apply proof_irrelevance.
+                    }
+                    ltac1:(unshelve (ospecialize (IHl _))).
+                    {
+                        f_equal.
+                        rewrite <- app_assoc.
+                        (* apply functional_extensionality_dep. *)
+                        (* apply proof_irrelevance. *)
+                    }
+                }
+            }
+            Search pflookup.
+            (* simpl in *. *)
+            (* ltac1:(rewrite {1}(@rev_length A)). *)
+            Search length rev.
+            (* rewrite lookup_ge_None in pf2'. *)
+            (* simpl in *. *)
+        }
+        {
+
+        }
+        specialize (IHl i y (a::r) (ipfmap'_wrap _ _ _ f)).
+        simpl in *.
+    }
+
+Qed.
+
+
+Lemma ipfmap'_lookup_Some_1
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    (i : nat)
+    (y : B)
+    (pf1: (ipfmap l f) !! i = Some y)
+    pf2
+    :
+    y = f i (proj1_sig (pflookup l i (ipfmap_helper_1 l f i y pf1) )) pf2
+.
+Proof.
+
+
+Qed.
+
 Lemma ipfmap'_lookup_Some_1
     {A B : Type}
     (r l : list A)
@@ -667,6 +861,8 @@ Lemma ipfmap'_lookup_Some_1
     (i : nat)
     (y : B)
     (pf : ipfmap' r l f !! i = Some y)
+    :
+    f i x 
     :
     let pflt : i < length l := @ipfmap'_lookup_Some_lt A B r l f i  y pf in
     y = (let xpf := (ipflookup (rev r ++ l) i (my_helper _ _ _ pflt)) in
@@ -686,6 +882,7 @@ Proof.
         destruct i; simpl in *.
         {
             inversion pf; subst; simpl in *.
+            erewrite IHl.
             f_equal.
             unfold eq_ind_r.
             ltac1:(case_match).
