@@ -719,6 +719,29 @@ Proof.
     }
 Qed.
 
+(* Lemma elem_of_ipmap_1
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    (b : B)
+    :
+    b ∈ ipmap l f ->
+    ∃ (a : A) pf, a ∈ l /\ b = 
+.
+Proof.
+    intros H1.
+    rewrite elem_of_list_lookup in H1.
+    destruct H1 as [i Hi].
+    destruct (l !! i) eqn:Heq.
+    {
+        eapply ipmap_lookup in Heq.
+        erewrite Hi in Heq.
+        destruct Heq as [b' [H1b' H2b']].
+        apply (inj Some) in H1b'.
+        subst b'.
+    }
+Qed. *)
+
 
 Lemma bind_Some_T_1
     (A B : Type)

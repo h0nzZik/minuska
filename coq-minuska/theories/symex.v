@@ -111,3 +111,70 @@ Proof.
         }
     }
 Qed.
+
+Lemma decoupled_uses_only_original_vars
+    {Σ : StaticModel}
+    et avoid φ σ x e:
+    (φ, σ) = (decouple et avoid) ->
+    (x,e) ∈ σ ->
+    vars_of e ⊆ vars_of et
+.
+Proof.
+    ltac1:(funelim (decouple et avoid)).
+    {
+        intros H1 H2.
+        ltac1:(simp decouple in H1).
+        simpl in H1.
+        inversion H1; subst; clear H1.
+        rewrite elem_of_singleton in H2.
+        inversion H2; subst; clear H2.
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        apply reflexivity.
+    }
+    {
+        intros H1 H2.
+        (* unfold vars_of; simpl. *)
+        ltac1:(simp decouple in H1).
+        simpl in H1.
+        inversion H1; subst; clear H1.
+        rewrite elem_of_union_list in H2.
+        destruct H2 as [X [H1X H2X]].
+        simpl in H1X.
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        subst X.
+        rewrite elem_of_list_lookup in H2y.
+        destruct H2y as [i Hi].
+        destruct (l !! i) eqn:Hli.
+        {
+            eapply ipmap_lookup in Hli as Hli'.
+            rewrite Hi in Hli'.
+            destruct Hli' as [b [H1b H2b]].
+            apply (inj Some) in H1b.
+            subst y.
+            specialize (H2b Hli).
+            destruct b as [φ σ].
+            specialize (H i t Hli Σ t (avoid ∪ ⋃ (vars_of <$> take i l)) φ σ x e eq_refl eq_refl H2b H2X).
+            eapply transitivity>[apply H|].
+            eapply take_drop_middle in Hli as Hli'.
+            rewrite <- Hli'. clear Hli'.
+            simpl.
+            rewrite vars_of_t_term_e.
+            rewrite fmap_app.
+            rewrite fmap_cons.
+            rewrite union_list_app.
+            rewrite union_list_cons.
+            clear.
+            ltac1:(set_solver).
+        }
+        {
+            ltac1:(exfalso).
+            apply lookup_ge_None in Hli.
+            apply lookup_lt_Some in Hi.
+            rewrite ipmap_length in Hi.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
