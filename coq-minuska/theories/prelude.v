@@ -523,6 +523,148 @@ Proof.
   apply proof_irrelevance.
 Qed.
 
+Program Fixpoint pfseq0 (total_len : nat) (start len : nat) (pf : start + len <= total_len ) : list {x : nat | x < total_len}
+:=
+    match len with
+    | 0 =>  []
+    | S len' => let tmp := pfseq0 total_len (S start) len' _ in
+        (exist _ start _)::tmp
+    end
+.
+Next Obligation.
+    abstract(intros; subst; ltac1:(lia)).
+Defined.
+Next Obligation.
+    intros; subst; abstract(ltac1:(lia)).
+Defined.
+Fail Next Obligation.
+
+Program Definition pfseqn (n : nat) := pfseq0 n 0 n _.
+Next Obligation.
+    abstract(intros; simpl; apply reflexivity).
+Defined.
+Fail Next Obligation.
+
+Lemma length_pfseq0 (total_len : nat) (start len : nat) (pf : start + len <= total_len ):
+    length (pfseq0 total_len start len pf) = len
+.
+Proof.
+    revert total_len start pf.
+    induction len; intros total_len start pf; simpl in *.
+    { reflexivity. }
+    {
+        rewrite IHlen. reflexivity.
+    }
+Qed.
+
+Lemma length_pfseqn (n : nat):
+    length (pfseqn n) = n
+.
+Proof.
+    unfold pfseqn.
+    apply length_pfseq0.
+Qed.
+
+Lemma pfseq0_lookup (total_len start len : nat) (pf : start + len <= total_len) (idx : nat) p:
+    (pfseq0 total_len start len pf) !! idx = Some p ->
+    proj1_sig p = (start + idx)
+.
+Proof.
+    revert total_len start pf idx p.
+    induction len; intros total_len start pf idx p H; simpl in *.
+    {
+        rewrite lookup_nil in H.
+        inversion H.
+    }
+    {
+        destruct p as [v pf'].
+        simpl in *.
+        destruct idx; simpl in *.
+        {
+            apply (inj Some) in H.
+            ltac1:(inversion_sigma H).
+            ltac1:(lia).
+        }
+        {
+            specialize (IHlen total_len (S start)).
+            simpl in IHlen.
+            assert(pf'' := pf).
+            rewrite Nat.add_succ_r in pf''.
+            specialize (IHlen pf'' idx).
+            specialize (IHlen (exist _ v pf')).
+            ltac1:(erewrite proof_irrelevance in H at 1).
+            erewrite H in IHlen.
+            specialize (IHlen eq_refl).
+            simpl in IHlen.
+            clear - IHlen.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
+Lemma pfseqn_lookup (n idx : nat) v:
+    (pfseqn n !! idx = Some v) ->
+    proj1_sig v = idx
+.
+Proof.
+    intros H.
+    unfold pfseqn in H.
+    apply pfseq0_lookup in H.
+    simpl in H.
+    exact H.
+Qed.
+(* 
+Check pfmap.
+Search pfmap.
+Definition with_proof_of_membership
+    {A : Type}
+    (l : list A)
+    : list { ix : (nat*A) | l !! (ix.1) = Some (ix.2)  }
+:=
+    let l1 := imap (fun i x => (i,x)) l in
+    let l2 := pfmap l1 (fun (ix : (nat*A)) (pf : ix ∈ l1) =>
+        let i := ix.1 in
+        let x := ix.2 in
+        x
+    ) in
+    0
+. *)
+
+Check @fmap.
+Definition ipmap
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    : list B
+:=
+    let s := pfseqn (length l) in
+    map (
+        fun ipf =>
+        let i : nat := (proj1_sig ipf) in
+        let pf : i < (length l) := (proj2_sig ipf) in
+        let prod : {y : A | y ∈ l } := pflookup l i pf in
+        let pf0 := pflookup_spec l i pf in
+        f i (proj1_sig prod) (eq_sym pf0)
+    ) s
+.
+
+Lemma ipmap_length
+    {A B : Type}
+    (l : list A)
+    (f : forall (i : nat) (x : A) (pf : l !! i = Some x), B)
+    :
+    length (ipmap l f) = length l
+.
+Proof.
+    unfold ipmap.
+    rewrite map_length.
+    rewrite length_pfseqn.
+    reflexivity.
+Qed.
+
+
+(* 
+
 Program Definition ipfmap'
     {A B : Type}
 :=
@@ -1142,7 +1284,7 @@ Lemma ipfmap_lookup_Some_1
 .
 Proof.
     simpl.
-Qed.
+Qed. *)
 
 Lemma bind_Some_T_1
     (A B : Type)
