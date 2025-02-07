@@ -26,7 +26,7 @@ Equations? decouple
         (t_over (bov_variable y), singleton (y,e))
     ;
     decouple (t_term s l) avoid :=
-        let l'' := ipfmap l (fun (i : nat) (x : TermOver Expression2) (pf : l !! i = Some x) =>
+        let l'' := ipmap l (fun (i : nat) (x : TermOver Expression2) (pf : l !! i = Some x) =>
             let avoidi := avoid ∪ (union_list (vars_of <$> (take i l))) in
             let pi_sigmai := decouple x avoidi in
             pi_sigmai
@@ -83,7 +83,31 @@ Proof.
         rewrite fmap_Some in Hi.
         destruct Hi as [[t ls][HH1 HH2]].
         simpl in *; subst.
-        apply ipfmap_lookup_Some_lt in HH1.
-        simpl in *.
+        destruct (l !! i) eqn:Heq.
+        {
+            eapply ipmap_lookup in Heq as Heq'.
+            ltac1:(setoid_rewrite HH1 in Heq').
+            destruct Heq' as [b [H1b H2b]].
+            specialize (H2b Heq).
+            apply (inj Some) in H1b.
+            subst b.
+            specialize (H _ _ Heq Σ t0).
+            simpl in H.
+            match! (Constr.type (Control.hyp ident:(H2b))) with
+            | ( _ = decouple _ ?a) =>
+                specialize (H $a)
+            end.
+            specialize (H eq_refl).
+            specialize (H eq_refl).
+            rewrite <- H2b in H.
+            simpl in H.
+            ltac1:(set_solver).
+        }
+        {
+            apply lookup_lt_Some in HH1 as HH1'.
+            rewrite ipmap_length in HH1'.
+            apply lookup_ge_None in Heq.
+            ltac1:(lia).
+        }
     }
 Qed.
