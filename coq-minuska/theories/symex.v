@@ -134,7 +134,6 @@ Proof.
     }
     {
         intros H1 H2.
-        (* unfold vars_of; simpl. *)
         ltac1:(simp decouple in H1).
         simpl in H1.
         inversion H1; subst; clear H1.
@@ -177,4 +176,85 @@ Proof.
         }
     }
 Qed.
+
+Lemma decouple_does_not_lose_variables
+    {Σ : StaticModel}
+    et avoid φ σ:
+    (φ, σ) = (decouple et avoid) ->
+    ∀ (x : variable),
+        x ∈ vars_of φ ->
+        ∃ (e : Expression2),
+            (x,e) ∈ σ
+.
+Proof.
+    ltac1:(funelim (decouple et avoid)).
+    {
+        intros H1 x Hx.
+        ltac1:(simp decouple in H1).
+        simpl in H1.
+        inversion H1; subst; clear H1.
+        unfold vars_of in Hx; simpl in Hx.
+        unfold vars_of in Hx; simpl in Hx.
+        rewrite elem_of_singleton in Hx.
+        subst x.
+        exists e.
+        rewrite elem_of_singleton.
+        reflexivity.
+    }
+    {
+        intros H1 x Hx.
+        ltac1:(simp decouple in H1).
+        simpl in H1.
+        inversion H1; subst; clear H1.
+        rewrite vars_of_t_term in Hx.
+        rewrite elem_of_union_list in Hx.
+        destruct Hx as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        subst X.
+        rewrite elem_of_list_fmap in H2y.
+        destruct H2y as [y' [H1y' H2y']].
+        subst y.
+        rewrite elem_of_list_lookup in H2y'.
+        destruct H2y' as [i Hi].
+        destruct (l !! i) eqn:Heq.
+        {
+            eapply ipmap_lookup in Heq as Heq'.
+            rewrite Hi in Heq'.
+            destruct Heq' as [[φ σ][H1 H2]].
+            specialize (H2 Heq).
+            apply (inj Some) in H1.
+            subst y'.
+            specialize (H i t Heq Σ t (avoid ∪ ⋃ (vars_of <$> take i l)) φ σ eq_refl eq_refl).
+            specialize (H H2 x H2X).
+            destruct H as [e He].
+            exists e.
+            ltac1:(setoid_rewrite elem_of_union_list).
+            ltac1:(setoid_rewrite elem_of_list_fmap).
+            ltac1:(setoid_rewrite elem_of_list_lookup at 1).
+            exists σ.
+            split.
+            {
+                exists (φ, σ).
+                split.
+                { reflexivity. }
+                {
+                    exists i.
+                    apply Hi.
+                }
+            }
+            {
+                exact He.
+            }
+        }
+        {
+            ltac1:(exfalso).
+            apply lookup_ge_None in Heq.
+            apply lookup_lt_Some in Hi.
+            rewrite ipmap_length in Hi.
+            ltac1:(lia).
+        }
+    }
+Qed.
+
 
