@@ -1641,10 +1641,124 @@ Ltac2 simplify_take_drop () :=
 .
 
 
-Lemma union_list_lookup
-    {K V : Type}
-    (l : list V)
+Definition pairwise
+    {A : Type}
+    (R : relation A)
+    (l : list A)
+:= forall (i j : nat) (ai aj : A),
+    i<>j ->
+    l !! i = Some ai ->
+    l !! j = Some aj ->
+    R ai aj
+.
+Lemma pairwise_cons
+    {A : Type}
+    (R : relation A)
+    {_SR : Symmetric R}
+    (x : A)
+    (l : list A)
+    :
+    pairwise R (x::l) <-> (Forall (R x) l  /\ pairwise R l)
+.
+Proof.
+    unfold pairwise.
+    rewrite Forall_forall.
+    setoid_rewrite lookup_cons.
+    split; intros H.
+    {
+        split.
+        {
+            intros a Ha.
+            rewrite elem_of_list_lookup in Ha.
+            destruct Ha as [i Hi].
+            eapply (H 0 (S i)).
+            { ltac1:(discriminate). }
+            { reflexivity. }
+            { exact Hi. }
+        }
+        {
+            intros i j.
+            specialize (H (S i) (S j)).
+            simpl in H.
+            ltac1:(naive_solver).
+        }
+    }
+    {
+        destruct H as [H1 H2].
+        intros i j ai aj H3 H4 H5.
+        destruct i; destruct j; simpl in *; ltac1:(simplify_eq/=).
+        {
+            apply H1.
+            rewrite elem_of_list_lookup.
+            exists j. assumption.
+        }
+        {
+            symmetry.
+            apply H1.
+            rewrite elem_of_list_lookup.
+            exists i. assumption.
+        }
+        {
+            apply (H2 i j).
+            {
+                ltac1:(lia).
+            }
+            { exact H4. }
+            { exact H5. }
+        }
+    }
+Qed.
+
+Lemma union_list_lookup_inv
+    {K : Type}
+    {_EDK : EqDecision K}
+    {M : Type → Type}
+    {_FH : FMap M}
+    {V : Type}
+    {_D : Disjoint (M V)}
+    {_EV : forall A, Empty (M A)}
+    (* {_UV : forall A, Union (M A)} *)
+    {_L : forall A, Lookup K A (M A)}
+    {_PA : forall A : Type, PartialAlter K A (M A)}
+    {_OM : OMap M}
+    {_MM : Merge M}
+    {_MF : forall A, MapFold K A (M A)}
+    {_FM : FinMap K M}
+    (l : list (M V))
     (k : K)
     (v : V)
     :
-    ()
+    pairwise disjoint l ->
+    (union_list l) !! k = Some v ->
+    ∃ i s, l !! i = Some s /\ s !! k = Some v
+.
+Proof.
+    intros H0 H1.
+    unfold union_list in H1.
+    revert k v H0 H1.
+    induction l; intros k v H0 H1; simpl in *.
+    {
+        rewrite lookup_empty in H1.
+        inversion H1.
+    }
+    {
+        rewrite lookup_union_Some in H1.
+        destruct H1 as [H1|H1].
+        {
+            exists 0.
+            exists a.
+            split>[reflexivity|].
+            exact H1.
+        }
+        {
+            specialize (IHl k v H1).
+            destruct IHl as [i [s [H2 H3]]].
+            exists (S i).
+            exists s.
+            simpl.
+            split>[exact H2|exact H3].
+        }
+        
+    }
+
+Qed.
