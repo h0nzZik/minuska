@@ -1709,13 +1709,48 @@ Proof.
     }
 Qed.
 
+Lemma map_disjoint_union_list_1
+    {K : Type} {M : Type → Type}
+    {_ : EqDecision K}
+    {_ : FMap M}
+    {_ : OMap M}
+    {_ : Merge M}
+    {_ : forall (A : Type), Lookup K A (M A)}
+    {_ : forall (A : Type), PartialAlter K A (M A)}
+    {_ : forall (A : Type), MapFold K A (M A)}
+    {A : Type}
+    {_ : forall A, Empty (M A)}
+    {_ : FinMap K M}
+    (a : M A) (l : list (M A)):
+
+    Forall (@map_disjoint K M _ A a) l -> 
+    map_disjoint a (union_list l)
+.
+Proof.
+    revert a.
+    induction l; simpl; intros a'.
+    {
+        rewrite Forall_nil.
+        intros _.
+        apply map_disjoint_empty_r.
+    }
+    {
+        rewrite Forall_cons.
+        intros [HH1 HH2].
+        specialize (IHl _ HH2).
+        apply map_disjoint_union_r.
+        split; assumption.
+    }
+Qed.
+
 Lemma union_list_lookup_inv
     {K : Type}
     {_EDK : EqDecision K}
     {M : Type → Type}
     {_FH : FMap M}
     {V : Type}
-    {_D : Disjoint (M V)}
+    {_ElV : ElemOf V (M V)}
+    (* {_D : Disjoint (M V)} *)
     {_EV : forall A, Empty (M A)}
     (* {_UV : forall A, Union (M A)} *)
     {_L : forall A, Lookup K A (M A)}
@@ -1724,11 +1759,14 @@ Lemma union_list_lookup_inv
     {_MM : Merge M}
     {_MF : forall A, MapFold K A (M A)}
     {_FM : FinMap K M}
+    {_Sd : @Symmetric (M V) (@map_disjoint K M _ V)}
+    {_SGL : Singleton V (M V)}
+    {_SS : SemiSet V (M V)}
     (l : list (M V))
     (k : K)
     (v : V)
     :
-    pairwise disjoint l ->
+    pairwise map_disjoint l ->
     (union_list l) !! k = Some v ->
     ∃ i s, l !! i = Some s /\ s !! k = Some v
 .
@@ -1742,23 +1780,30 @@ Proof.
         inversion H1.
     }
     {
+        (* Set Printing All. *)
+        rewrite pairwise_cons in H0>[|apply _Sd].
+        destruct H0 as [H2 H3].
         rewrite lookup_union_Some in H1.
-        destruct H1 as [H1|H1].
         {
-            exists 0.
-            exists a.
-            split>[reflexivity|].
-            exact H1.
+            destruct H1 as [H1|H1].
+            {
+                exists 0.
+                exists a.
+                split>[reflexivity|].
+                exact H1.
+            }
+            {
+                specialize (IHl k v H3 H1).
+                destruct IHl as [i [s [H4 H5]]].
+                exists (S i).
+                exists s.
+                simpl.
+                split>[exact H4|exact H5].
+            }
         }
         {
-            specialize (IHl k v H1).
-            destruct IHl as [i [s [H2 H3]]].
-            exists (S i).
-            exists s.
-            simpl.
-            split>[exact H2|exact H3].
+            apply map_disjoint_union_list_1 in H2.
+            apply H2.
         }
-        
     }
-
 Qed.
