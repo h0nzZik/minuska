@@ -272,6 +272,179 @@ Proof.
     exact H2.
 Qed.
 
+Lemma zip_lookup_snd
+    {A B : Type} (l : list A) (l0 : list B) (i : nat) (x : (A*B)):
+    length l = length l0 ->
+    zip l l0 !! i = Some x ->
+    l0 !! i = Some x.2
+.
+Proof.
+    intros.
+    apply lookup_zip_with_Some in H0.
+    destruct H0 as [x0 [y [H1 [H2 H3]]]].
+    subst x.
+    simpl.
+    exact H3.
+Qed.
+
+Lemma vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid
+    {Σ : StaticModel}
+    (l : list (TermOver Expression2))
+    (i : nat)
+    (et : TermOver Expression2)
+    (avoid : gset variable)
+    :
+    ⋃ (vars_of <$> l) ⊆ avoid ->
+    l !! i = Some et ->
+    vars_of et ⊆ avoid
+.
+Proof.
+    intros H1 H2.
+    apply take_drop_middle in H2.
+    rewrite <- H2 in H1. clear H2.
+    rewrite fmap_app in H1.
+    rewrite fmap_cons in H1.
+    rewrite union_list_app in H1.
+    rewrite union_list_cons in H1.
+    ltac1:(set_solver).
+Qed.
+
+(* 
+Definition some_weird_function
+    {Σ : StaticModel}
+    (l : list (TermOver Expression2))
+    (l0 : list(TermOver builtin_value))
+    (avoid : gset variable)
+    (p : ProgramT) o
+    (δ : Valuation2)
+    (Hvars : vars_of δ ⊆ avoid)
+    (Hlength : length l0 = length l)
+    (Hvet : ⋃ (vars_of <$> l) ⊆ avoid)
+    (Hsat3: ∀ (i : nat) (t' : TermOver builtin_value) (φ' : TermOver Expression2),
+        l !! i = Some φ' → l0 !! i = Some t' → sat2E p δ t' φ' o
+    )
+    (X : ∀ (i : nat) (x : TermOver Expression2),
+        l !! i = Some x
+        → ∀ (Σ0 : StaticModel) (et : TermOver Expression2) (avoid0 : gset
+        variable) (φ : TermOver
+        BuiltinOrVar) (σ : listset
+        (variable *
+        Expression2)),
+        vars_of et ⊆ avoid0
+        → ∀ eqargs : {|
+        pr1 := Σ;
+        pr2 :=
+        {|
+        pr1 := x;
+        pr2 := avoid ∪ ⋃ (vars_of <$> take i l)
+        |}
+        |} =
+        {|
+        pr1 := Σ0;
+        pr2 := {| pr1 := et; pr2 := avoid0 |}
+        |},
+        eq_rect
+        {|
+        pr1 := Σ;
+        pr2 :=
+        {|
+        pr1 := x;
+        pr2 := avoid ∪ ⋃ (vars_of <$> take i l)
+        |}
+        |}
+        (λ projs : sigma
+        (λ Σ : StaticModel,
+        sigma
+        (λ _ : TermOver Expression2,
+        gset variable)),
+        (TermOver BuiltinOrVar *
+        listset (variable * Expression2))%type)
+        (decouple x (avoid ∪ ⋃ (vars_of <$> take i l)))
+        {| pr1 := Σ0; pr2 := {| pr1 := et; pr2 := avoid0 |} |}
+        eqargs =
+        decouple et avoid0
+        → (φ, σ) = decouple et avoid0
+        → ∀ (δ : Valuation2) (t : TermOver builtin_value) (p : ProgramT) (o : NondetValue),
+        satisfies δ (p, (o, t)) et
+        → vars_of δ ⊆ avoid0
+        → {δ' : gmap variable (TermOver builtin_value) &
+        (satisfies δ' t φ *
+        ∀ (x0 : variable) (e : Expression2),
+        (x0, e) ∈ σ
+        → {ot
+        : NondetValue → TermOver builtin_value &
+        (Expression2_evaluate p δ e = Some ot) *
+        (δ' !! x0 = Some (ot o))})%type}
+    )
+    :=
+    fun (i : nat) (arg : ((TermOver' Expression2 * TermOver' builtin_value))%type) (pf : (zip l l0) !! i = Some arg) =>
+                let et := arg.1 in
+                let t := arg.2 in
+                let pf' := (proj1 (lookup_zip_with_Some pair l l0 i arg) pf) in
+                let pfet : l !! i = Some et := (zip_lookup_fst l l0 i arg (eq_sym Hlength) pf) in
+                let pft : l0 !! i = Some t := (zip_lookup_snd l l0 i arg (eq_sym Hlength) pf) in
+                let avoidi : (gset variable) := avoid ∪ (union_list (vars_of <$> take i l)) in
+                let pfvars1 : ((vars_of et) ⊆ avoidi) := vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid l i et avoid Hvet pfet in
+                let pfsat (*satisfies δ (p, (o, t)) et*) := Hsat3 i t et pfet pft in
+                let tmp := (X i et pfet Σ et avoidi) in
+                let tmp2 := (tmp ((decouple et avoidi)).1 ((decouple et avoidi)).2 pfvars1) in
+                let tmp3 := (tmp2 eq_refl eq_refl (@eq_sym _ _ _ (surjective_pairing (decouple et avoidi))) ) in 
+                let tmp4 := (tmp3 δ t p o pfsat Hvars) in
+                (* tmp4 *)
+                (* (projT1 tmp4) 0 *)
+                0
+. *)
+
+Definition piecewise
+    {B : Type}
+    {_EB : Empty B}
+    {_UB : Union B}
+    (n : nat)
+    (f : forall(i : nat)(iltn : i < n), B)
+    :
+    B
+:=
+    let s := pfseqn n in
+    let lδ := @fmap list _ _ _ (fun x => (f (proj1_sig x) (proj2_sig x))) s in
+    union_list lδ
+.
+
+Lemma piecewise_preserves_sat
+    {Σ : StaticModel}
+    (n : nat)
+    (base_δ : gmap variable (TermOver builtin_value))
+    (vals : forall(i : nat)(iltn : i < n), (gmap variable (TermOver builtin_value)))
+    (terms : forall(i : nat)(iltn : i < n), TermOver builtin_value)
+    (patterns : forall(i : nat)(iltn : i < n), TermOver BuiltinOrVar)
+    :
+    (
+        forall (i j : nat) (iltn : i < n) (jltn : j < n),
+            i <> j ->
+            (vals i iltn) ∩ (vals j jltn) ⊆ base_δ
+    ) ->
+    (forall(i : nat)(iltn : i < n),
+        satisfies (vals i iltn) (terms i iltn) (patterns i iltn)
+    ) ->
+    forall (i : nat) (iltn : i < n),
+    satisfies (piecewise n vals) (terms i iltn) (patterns i iltn)
+.
+Proof.
+    intros Hdisj Hholds i iltn.
+    unfold piecewise.
+    eapply TermOverBoV_satisfies_extensive>[|
+        apply (Hholds i iltn)
+    ].
+    unfold Valuation2 in *.
+    ltac1:(rewrite map_subseteq_spec).
+    intros x t Hin.
+    unfold satisfies; simpl.
+    apply take_drop_middle in Hin.
+    Search union_list.
+    rewrite list_lookup_fmap.
+    Search satisfies.
+    specialize (holds i iltn).
+Qed.
+
 Lemma decouple_preserves_semantics_1
     {Σ : StaticModel}
     (et : TermOver Expression2)
@@ -286,8 +459,7 @@ Lemma decouple_preserves_semantics_1
         vars_of δ ⊆ avoid ->
         { δ' : gmap variable (TermOver builtin_value) & ((satisfies δ' t φ)*(
             ∀ (x : variable) (e : Expression2), (x,e) ∈ σ ->
-                ∃ ot, Expression2_evaluate p δ e = Some ot /\
-                (δ' !! x) = Some (ot o)
+                { ot : _ & ((Expression2_evaluate p δ e = Some ot)*((δ' !! x) = Some (ot o)))%type }
         ))%type }
 .
 Proof.
@@ -295,7 +467,7 @@ Proof.
     ltac1:(funelim (decouple et avoid)).
     {
         intros Hφσ δ t p o H1e H2e.
-        ltac1:(simp decouple in H).
+        ltac1:(simp decouple in Hφσ).
         simpl in H1e.
         (* inversion H; subst; clear H. *)
         unfold satisfies in H1e; simpl in H1e.
@@ -375,12 +547,14 @@ Proof.
         }
     }
     {
+        (* Search sigT. *)
         intros Hd.
         ltac1:(simp decouple in Hd).
         simpl in Hd.
         inversion Hd; subst; clear Hd.
         intros δ t p o Hsat Hvars.
         rewrite vars_of_t_term_e in Hvet.
+        (* assert (Hsat' := Hsat). *)
         unfold satisfies in Hsat; simpl in Hsat.
         destruct t;
             ltac1:(simp sat2E in Hsat);
@@ -391,15 +565,43 @@ Proof.
         {
             destruct Hsat as [Hsat1 [Hsat2 Hsat3]].
             subst s0.
-            About lookup_zip_with_Some.
-            remember (ipmap (zip l l0) (fun i x pf =>
-                let et := x.1 in
-                let t := x.2 in
-                let pf' := (proj1 (lookup_zip_with_Some pair l l0 i x) pf) in
-                let pfet : l !! i = Some et := _ in
-                let tmp := (X i et) in
-                0
-            )) as lδ.
+            (* Check Hvars. *)
+            (* About surjective_pairing. *)
+            (* About eq_sym.
+            remember (
+                (fun (i : nat) (arg : ((TermOver' Expression2 * TermOver' builtin_value))%type) (pf : (zip l l0) !! i = Some arg) =>
+                let et := arg.1 in
+                let t := arg.2 in
+                let pf' := (proj1 (lookup_zip_with_Some pair l l0 i arg) pf) in
+                let pfet : l !! i = Some et := (zip_lookup_fst l l0 i arg (eq_sym Hsat2) pf) in
+                let pft : l0 !! i = Some t := (zip_lookup_snd l l0 i arg (eq_sym Hsat2) pf) in
+                let avoidi : (gset variable) := avoid ∪ (union_list (vars_of <$> take i l)) in
+                let pfvars1 : ((vars_of et) ⊆ avoidi) := vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid l i et avoid Hvet pfet in
+                let pfsat (*satisfies δ (p, (o, t)) et*) := Hsat3 i t et pfet pft in
+                let tmp := (X i et pfet Σ et avoidi) in
+                let tmp2 := (tmp ((decouple et avoidi)).1 ((decouple et avoidi)).2 pfvars1) in
+                let tmp3 := (tmp2 eq_refl eq_refl (@eq_sym _ _ _ (surjective_pairing (decouple et avoidi))) ) in 
+                let tmp4 := (tmp3 δ t p o pfsat Hvars) in
+                (* tmp4 *)
+                (projT1 tmp4) 0
+                )
+            ) as myf. *)
+            (* ltac1:(remember (ipmap (zip l l0) (fun i arg pf =>
+                let et := arg.1 in
+                let t := arg.2 in
+                let pf' := (proj1 (lookup_zip_with_Some pair l l0 i arg) pf) in
+                let pfet : l !! i = Some et := (zip_lookup_fst l l0 i arg (eq_sym Hsat2) pf) in
+                let pft : l0 !! i = Some t := (zip_lookup_snd l l0 i arg (eq_sym Hsat2) pf) in
+                let avoidi : (gset variable) := avoid ∪ (union_list (vars_of <$> take i l)) in
+                let pfvars1 : ((vars_of et) ⊆ avoidi) := vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid l i et avoid Hvet pfet in
+                let pfsat (*satisfies δ (p, (o, t)) et*) := Hsat3 i t et pfet pft in
+                let tmp := (X i et pfet Σ et avoidi) in
+                let tmp2 := (tmp ((decouple et avoidi)).1 ((decouple et avoidi)).2 pfvars1) in
+                let tmp3 := (tmp2 eq_refl eq_refl (@eq_sym _ _ _ (surjective_pairing (decouple et avoidi))) ) in 
+                let tmp4 := (tmp3 δ t p o pfsat Hvars) in
+                tmp4
+                (* (projT1 tmp4) *)
+            )) as lδ). *)
             (* assert(mIH: forall (i : nat)(eti : TermOver Expression2)(ti : TermOver builtin_value),
                 l !! i = Some eti -> l0 !! i = Some ti ->
                 {δi : gmap variable (TermOver builtin_value) & ((satisfies δi ti eti)*(True))%type}

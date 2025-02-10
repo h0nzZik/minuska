@@ -13,6 +13,7 @@ From stdpp Require Export
     fin_sets
     gmap
     hlist
+    mapset
     sets
     strings
     tactics
@@ -613,24 +614,7 @@ Proof.
     simpl in H.
     exact H.
 Qed.
-(* 
-Check pfmap.
-Search pfmap.
-Definition with_proof_of_membership
-    {A : Type}
-    (l : list A)
-    : list { ix : (nat*A) | l !! (ix.1) = Some (ix.2)  }
-:=
-    let l1 := imap (fun i x => (i,x)) l in
-    let l2 := pfmap l1 (fun (ix : (nat*A)) (pf : ix ∈ l1) =>
-        let i := ix.1 in
-        let x := ix.2 in
-        x
-    ) in
-    0
-. *)
 
-Check @fmap.
 Definition ipmap
     {A B : Type}
     (l : list A)
@@ -1655,3 +1639,12 @@ Ltac2 simplify_take_drop () :=
         end
     )
 .
+
+
+Lemma union_list_lookup
+    {K V : Type}
+    (l : list V)
+    (k : K)
+    (v : V)
+    :
+    ()
