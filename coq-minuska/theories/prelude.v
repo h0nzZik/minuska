@@ -1620,7 +1620,6 @@ Ltac2 simplify_fmap_eq () :=
     )
 .
 
-Search drop S.
 Ltac2 simplify_take_drop () :=
     repeat (
         match! goal with
@@ -1743,7 +1742,86 @@ Proof.
     }
 Qed.
 
-Lemma union_list_lookup_inv
+Lemma union_list_map_lookup_1
+    {K : Type}
+    {_EDK : EqDecision K}
+    {M : Type → Type}
+    {_FH : FMap M}
+    {V : Type}
+    {_ElV : ElemOf V (M V)}
+    {_EV : forall A, Empty (M A)}
+    {_L : forall A, Lookup K A (M A)}
+    {_PA : forall A : Type, PartialAlter K A (M A)}
+    {_OM : OMap M}
+    {_MM : Merge M}
+    {_MF : forall A, MapFold K A (M A)}
+    {_FM : FinMap K M}
+    {_Sd : @Symmetric (M V) (@map_disjoint K M _ V)}
+    {_SGL : Singleton V (M V)}
+    {_SS : SemiSet V (M V)}
+    (l : list (M V))
+    (k : K)
+    (v : V)
+    i s
+    :
+    pairwise map_disjoint l ->
+    l !! i = Some s ->
+    s !! k = Some v ->
+    (union_list l) !! k = Some v
+.
+Proof.
+    revert k v i s.
+    induction l; intros k v i s H1 H2 H3; simpl in *.
+    {
+        rewrite lookup_nil in H2.
+        inversion H2.
+    }
+    {
+        rewrite pairwise_cons in H1.
+        destruct H1 as [Hdisj Hpdisj].
+        destruct i; simpl in *.
+        {
+            apply (inj Some) in H2. subst s.
+            rewrite lookup_union_l.
+            {
+                exact H3.
+            }
+            {
+                eapply map_disjoint_Some_r>[|apply H3].
+                apply map_disjoint_union_list_1 in Hdisj.
+                symmetry in Hdisj.
+                apply Hdisj.
+            }
+        }
+        {
+            rewrite lookup_union_r.
+            {
+                eapply IHl.
+                { apply Hpdisj. }
+                { apply H2. }
+                { apply H3. }
+            }
+            {
+                apply take_drop_middle in H2.
+                rewrite <- H2 in Hdisj.
+                rewrite Forall_app in Hdisj.
+                rewrite Forall_cons in Hdisj.
+                destruct Hdisj as [Hdisj1 [Hdisj2 Hdisj3]].
+                clear - Hdisj2 H3.
+                rewrite map_disjoint_spec in Hdisj2.
+                
+                apply eq_None_ne_Some_2.
+                intros x Hcontra.
+                specialize (Hdisj2 k x v Hcontra H3).
+                exact Hdisj2.
+            }
+        }
+        Unshelve.
+        apply _.
+    }
+Qed.
+ 
+Lemma union_list_map_lookup_inv
     {K : Type}
     {_EDK : EqDecision K}
     {M : Type → Type}
@@ -1780,7 +1858,6 @@ Proof.
         inversion H1.
     }
     {
-        (* Set Printing All. *)
         rewrite pairwise_cons in H0>[|apply _Sd].
         destruct H0 as [H2 H3].
         rewrite lookup_union_Some in H1.
