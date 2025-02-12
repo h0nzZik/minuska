@@ -10,6 +10,7 @@ From stdpp Require Export
     decidable
     finite
     fin_maps
+    fin_map_dom
     fin_sets
     gmap
     hlist
@@ -1707,6 +1708,63 @@ Proof.
         }
     }
 Qed.
+
+Definition map_disjoint_up_to
+    {K M D}
+    `{_ : FinMapDom K M D}
+    (base : D)
+    (x1 x2 : M K)
+    :=
+    ((dom x1) ∩ (dom x2)) ⊆ (base)
+.
+
+Lemma map_disjoint_up_to_empty_iff_map_disjoint
+    {K M D}
+    `{_ : FinMapDom K M D}
+    (* {V : Type} *)
+    (x1 x2 : (M K))
+    :
+    map_disjoint_up_to (∅:D) x1 x2 <-> map_disjoint x1 x2
+.
+Proof.
+    unfold map_disjoint_up_to.
+    rewrite map_disjoint_spec.
+    split; intros HH.
+    {
+        intros i x y Hx1 Hx2.
+        rewrite elem_of_subseteq in HH.
+        specialize (HH i).
+        rewrite elem_of_intersection in HH.
+        rewrite elem_of_dom in HH.
+        rewrite elem_of_dom in HH.
+        ltac1:(ospecialize (HH _)).
+        {
+            split.
+            {
+                exists x. exact Hx1.
+            }
+            {
+                exists y. exact Hx2.
+            }
+        }
+        rewrite elem_of_empty in HH.
+        exact HH.
+    }
+    {
+        rewrite elem_of_subseteq.
+        intros k Hk.
+        rewrite elem_of_intersection in Hk.
+        destruct Hk as [H1k H2k].
+        rewrite elem_of_dom in H1k.
+        rewrite elem_of_dom in H2k.
+        destruct H1k as [y1 Hy1].
+        destruct H2k as [y2 Hy2].
+        specialize (HH k y1 y2 Hy1 Hy2).
+        rewrite elem_of_empty.
+        exact HH.
+    }
+Qed.
+
 
 Lemma map_disjoint_union_list_1
     {K : Type} {M : Type → Type}

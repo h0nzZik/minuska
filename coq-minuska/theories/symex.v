@@ -437,11 +437,36 @@ Proof.
     unfold Valuation2 in *.
     ltac1:(rewrite map_subseteq_spec).
     intros x t Hin.
-    unfold satisfies; simpl.
-    apply take_drop_middle in Hin.
-    Search union_list.
-    rewrite list_lookup_fmap.
-    Search satisfies.
+    eapply union_list_map_lookup_1>[()|()|apply Hin].
+    {
+        unfold pairwise.
+        intros i0 j0 ai0 aj0 Hi0j0 H1 H2.
+        
+        apply lookup_lt_Some in H1 as H1'.
+        apply lookup_lt_Some in H2 as H2'.
+        rewrite length_fmap in H1'.
+        rewrite length_fmap in H2'.
+        rewrite length_pfseqn in H1'.
+        rewrite length_pfseqn in H2'.
+        rewrite list_lookup_fmap in H1.
+        rewrite list_lookup_fmap in H2.
+        destruct (pfseqn n !! i0) eqn:Heq1>[|inversion H1].
+        destruct (pfseqn n !! j0) eqn:Heq2>[|inversion H2].
+        simpl in H1. simpl in H2.
+        apply (inj Some) in H1.
+        apply (inj Some) in H2.
+        subst ai0.
+        subst aj0.
+        destruct s as [n1 Hn1].
+        destruct s0 as [n2 Hn2].
+        simpl.
+        (* specialize (Hdisj n1 n2 Hn1 Hn2). *)
+        (* specialize (Hdisj H1' H2' Hi0j0). *)
+    }
+    {
+
+    }
+
     specialize (holds i iltn).
 Qed.
 
