@@ -1710,61 +1710,104 @@ Proof.
 Qed.
 
 Definition map_disjoint_up_to
-    {K M D}
-    `{_ : FinMapDom K M D}
-    (base : D)
-    (x1 x2 : M K)
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (base : gset K)
+    (x1 x2 : gmap K V)
     :=
-    ((dom x1) ∩ (dom x2)) ⊆ (base)
+    filter (fun x => x ∈ (base)) x1 = filter (fun x => x ∈ (base)) x2
+    /\ ( ((dom x1) ∖ base) ## ((dom x2) ∖ base) )
 .
 
 Lemma map_disjoint_up_to_empty_iff_map_disjoint
-    {K M D}
-    `{_ : FinMapDom K M D}
-    (* {V : Type} *)
-    (x1 x2 : (M K))
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (x1 x2 : gmap K V)
     :
-    map_disjoint_up_to (∅:D) x1 x2 <-> map_disjoint x1 x2
+    map_disjoint_up_to ∅ x1 x2 <-> map_disjoint x1 x2
 .
 Proof.
     unfold map_disjoint_up_to.
     rewrite map_disjoint_spec.
     split; intros HH.
     {
+        destruct HH as [HH1 HH2].
         intros i x y Hx1 Hx2.
-        rewrite elem_of_subseteq in HH.
-        specialize (HH i).
-        rewrite elem_of_intersection in HH.
-        rewrite elem_of_dom in HH.
-        rewrite elem_of_dom in HH.
-        ltac1:(ospecialize (HH _)).
-        {
-            split.
-            {
-                exists x. exact Hx1.
-            }
-            {
-                exists y. exact Hx2.
-            }
-        }
-        rewrite elem_of_empty in HH.
-        exact HH.
+        apply elem_of_dom_2 in Hx1.
+        apply elem_of_dom_2 in Hx2.
+        clear - HH2 Hx1 Hx2.
+        ltac1:(set_solver).
     }
     {
-        rewrite elem_of_subseteq.
-        intros k Hk.
-        rewrite elem_of_intersection in Hk.
-        destruct Hk as [H1k H2k].
-        rewrite elem_of_dom in H1k.
-        rewrite elem_of_dom in H2k.
-        destruct H1k as [y1 Hy1].
-        destruct H2k as [y2 Hy2].
-        specialize (HH k y1 y2 Hy1 Hy2).
-        rewrite elem_of_empty.
-        exact HH.
+        split.
+        {
+            rewrite (proj2 (map_filter_empty_iff _ _)).
+            {
+                rewrite (proj2 (map_filter_empty_iff _ _)).
+                {
+                    reflexivity.
+                }
+                unfold map_Forall.
+                intros k v Hkv Hcontra.
+                clear - Hcontra.
+                ltac1:(set_solver).
+            }
+            {
+                unfold map_Forall.
+                intros k v Hkv Hcontra.
+                clear - Hcontra.
+                ltac1:(set_solver).
+            }
+        }
+        {
+            rewrite elem_of_disjoint.
+            intros x H1x H2x.
+            rewrite difference_empty_L in H1x.
+            rewrite difference_empty_L in H2x.
+            rewrite elem_of_dom in H1x.
+            rewrite elem_of_dom in H2x.
+            destruct H1x as [y1 Hy1].
+            destruct H2x as [y2 Hy2].
+            specialize (HH _ _ _ Hy1 Hy2).
+            exact HH.
+        }
     }
 Qed.
+(* 
+Lemma map_disjoint_up_to_union_list_1
+    {K M D}
+    `{_ : FinMapDom K M D}
+    (base : D)
+    (a : M K) (l : list (M K)):
 
+    Forall (map_disjoint_up_to base a) l -> 
+    map_disjoint_up_to base a (union_list l)
+.
+Proof.
+    revert a.
+    induction l; simpl; intros a'.
+    {
+        rewrite Forall_nil.
+        intros _.
+        unfold map_disjoint_up_to.
+        rewrite dom_empty.
+        split.
+        { ltac1:(set_solver). }
+        {
+            rewrite map_filter_empty.
+            Search filter empty.
+        }
+    }
+    {
+        rewrite Forall_cons.
+        intros [HH1 HH2].
+        specialize (IHl _ HH2).
+        unfold map_disjoint_up_to in *.
+        ltac1:(set_solver).
+    }
+Qed. *)
 
 Lemma map_disjoint_union_list_1
     {K : Type} {M : Type → Type}
@@ -1942,3 +1985,68 @@ Proof.
         }
     }
 Qed.
+
+Lemma union_list_map_lookup_inv'
+    {K V}
+    {_ : EqDecision K}
+    (* {_ : EqDecision V} *)
+    {_ : Countable K}
+    (l : list (gmap K V))
+    (k : K)
+    (v : V)
+    (base : gset K)
+    :
+    pairwise (map_disjoint_up_to base) l ->
+    (union_list l) !! k = Some v ->
+    ∃ i s, l !! i = Some s /\ s !! k = Some v
+.
+Proof.
+    intros HH0 HH1.
+    unfold union_list in HH1.
+    revert k v HH0 HH1.
+    induction l; intros k v HH0 HH1; simpl in *.
+    {
+        rewrite -> lookup_empty in HH1.
+        inversion HH1.
+    }
+    {
+        rewrite pairwise_cons in HH0.
+        destruct HH0 as [H2 H3].
+        rewrite lookup_union_Some in HH1.
+        {
+            destruct HH1 as [H1|H1].
+            {
+                exists 0.
+                exists a.
+                split>[reflexivity|].
+                exact H1.
+            }
+            {
+                specialize (IHl k v H3 H1).
+                destruct IHl as [i [s [H4 H5]]].
+                exists (S i).
+                exists s.
+                simpl.
+                split>[exact H4|exact H5].
+            }
+        }
+        {
+            (* rewrite lookup_union in HH1. *)
+            (* rewrite lookup_union_Some in HH1. *)
+            destruct ((a !! k)) eqn:Heq.
+            {
+                apply lookup_union_Some_inv_l in HH1.
+            }
+            {
+                rewrite union_None_l in HH1.
+            }
+            (* rewrite union_lookup_Some in HH1. *)
+            Search union Some.
+            
+            (* Check @map_disjoint_union_list_1. *)
+            apply map_disjoint_union_list_1 in H2.
+            apply H2.
+        }
+    }
+Qed.
+
