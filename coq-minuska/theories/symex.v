@@ -437,11 +437,7 @@ Proof.
     unfold Valuation2 in *.
     ltac1:(rewrite map_subseteq_spec).
     intros x t Hin.
-    About lookup_union_Some_raw.
-    (* rewrite lookup_union_Some_raw. *)
-    (* rewrite union_list_map_lookup_raw. *)
-    eapply union_list_map_same_up_to_lookup.
-    eapply union_list_map_lookup_1>[()|()|apply Hin].
+    eapply union_list_map_same_up_to_lookup with (i := i)>[()|()|apply Hin].
     {
         unfold pairwise.
         intros i0 j0 ai0 aj0 Hi0j0 H1 H2.
@@ -464,18 +460,29 @@ Proof.
         destruct s as [n1 Hn1].
         destruct s0 as [n2 Hn2].
         simpl.
-        rewrite <- map_same_up_to_empty_iff_map_disjoint.
         apply Hdisj.
-        (* apply union_list_map_same_up_to_lookup_inv. *)
-        Check union_list_map_same_up_to_lookup_inv.
-        (* specialize (Hdisj n1 n2 Hn1 Hn2). *)
-        (* specialize (Hdisj H1' H2' Hi0j0). *)
+        apply pfseqn_lookup in Heq1.
+        apply pfseqn_lookup in Heq2.
+        simpl in *.
+        ltac1:(lia).
     }
     {
-
+        rewrite list_lookup_fmap.
+        destruct (pfseqn n !! i) eqn:Heq.
+        {
+            apply pfseqn_lookup in Heq.
+            subst i.
+            simpl in *.
+            apply f_equal.
+            apply f_equal.
+            apply PropExtensionality.proof_irrelevance.
+        }
+        {
+            apply lookup_ge_None in Heq.
+            rewrite length_pfseqn in Heq.
+            ltac1:(lia).
+        }
     }
-
-    specialize (holds i iltn).
 Qed.
 
 Lemma decouple_preserves_semantics_1
