@@ -440,7 +440,7 @@ Proof.
     About lookup_union_Some_raw.
     (* rewrite lookup_union_Some_raw. *)
     (* rewrite union_list_map_lookup_raw. *)
-    eapply map_disjoint_union_list_1.
+    eapply union_list_map_same_up_to_lookup.
     eapply union_list_map_lookup_1>[()|()|apply Hin].
     {
         unfold pairwise.

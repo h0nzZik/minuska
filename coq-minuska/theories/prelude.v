@@ -2011,6 +2011,66 @@ Proof.
     }
 Qed.
 
+
+Lemma union_list_map_same_up_to_lookup_inv
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    {_ : EqDecision V}
+    (base : gset K)
+    (l : list (gmap K V))
+    (k : K)
+    (v : V)
+:
+    pairwise (map_same_up_to base) l ->
+    (union_list l) !! k = Some v ->
+    ∃ i s, l !! i = Some s /\ s !! k = Some v
+.
+Proof.
+    revert k v.
+    induction l;
+        intros k v H1 H2;
+        simpl in *.
+    {
+        rewrite lookup_empty in H2.
+        inversion H2.
+    }
+    {
+        rewrite lookup_union_Some_raw in H2.
+        rewrite pairwise_cons in H1.
+        destruct H1 as [H3 H4].
+        specialize (IHl k v H4).
+        destruct (a !! k) eqn:Hak.
+        {
+            destruct H2 as [H2|H2].
+            {
+                apply (inj Some) in H2.
+                subst v0.
+                exists 0.
+                simpl.
+                exists a.
+                split>[reflexivity|apply Hak].
+            }
+            {
+                destruct H2 as [HContra _].
+                inversion HContra.
+            }
+        }
+        {
+            destruct H2 as [H2|H2].
+            { inversion H2. }
+            destruct H2 as [_ H2].
+            specialize (IHl H2).
+            destruct IHl as [i [s [IH1 IH2]]].
+            exists (S i).
+            exists s.
+            simpl.
+            split>[apply IH1|apply IH2].
+        }
+        apply _.
+    }
+Qed.
+
 Lemma union_list_map_same_up_to_lookup
     {K V : Type}
     {_ : EqDecision K}
@@ -2023,7 +2083,6 @@ Lemma union_list_map_same_up_to_lookup
     (k : K)
     (v : V)
 :
-    k ∉ base ->
     pairwise (map_same_up_to base) l ->
     l !! i = Some s ->
     s !! k = Some v ->
@@ -2033,7 +2092,7 @@ Proof.
     revert i s k v.
     induction l;
         intros i s k v;
-        intros H0 H1 H2 H3.
+        intros H1 H2 H3.
     {
         simpl in *.
         rewrite lookup_nil in H2.
@@ -2041,6 +2100,8 @@ Proof.
     }
     {
         simpl in *.
+        rewrite pairwise_cons in H1.
+        destruct H1 as [H4 H5].
         rewrite lookup_union_Some_raw.
         destruct i.
         {
@@ -2052,75 +2113,69 @@ Proof.
         }
         {
             simpl in *.
-            right.
-            rewrite pairwise_cons in H1.
-            destruct H1 as [H4 H5].
-            specialize (IHl i s k v H0 H5 H2 H3).
-            split>[|apply IHl].
-            apply not_elem_of_dom_1.
-            intros HContra.
-            apply take_drop_middle in H2.
-            rewrite <- H2 in H4.
-            rewrite Forall_app in H4.
-            rewrite Forall_cons in H4.
-            destruct H4 as [H6 [H7 H8]].
-            clear H2.
-            unfold map_same_up_to in H7.
-            destruct H7 as [H71 H72].
-            apply elem_of_dom_2 in H3.
-            clear - H0 H3 HContra H72.
-            ltac1:(set_solver).
-            apply _.
+            (* eapply union_list_map_same_up_to_lookup_inv in H5. *)
+            specialize (IHl i s k v H5 H2 H3).
+            destruct (a !! k) eqn:Hak.
+            {
+                simpl in *.
+                left.
+                apply f_equal.
+                apply take_drop_middle in H2 as H2'.
+                rewrite <- H2' in H4.
+                rewrite Forall_app in H4.
+                rewrite Forall_cons in H4.
+                destruct H4 as [H6 [H7 H8]].
+                clear H2'.
+                unfold map_same_up_to in H7.
+                destruct H7 as [H71 H72].
+                destruct (decide (k ∈ base)) as [Hin|Hnotin].
+                {
+                    destruct ((filter (λ x : K * V, x.1 ∈ base) a) !! k) eqn:Heq1.
+                    {
+                        destruct ((filter (λ x : K * V, x.1 ∈ base) s) !! k) eqn:Heq2.
+                        {
+                            assert (Heq1' := Heq1).
+                            rewrite H71 in Heq1'.
+                            rewrite map_lookup_filter_Some in Heq1'.
+                            rewrite map_lookup_filter_Some in Heq1.
+                            rewrite map_lookup_filter_Some in Heq2.
+                            ltac1:(destruct_and?; simplify_eq/=).
+                            reflexivity.
+                        }
+                        {
+                            rewrite H71 in Heq1.
+                            rewrite Heq1 in Heq2.
+                            ltac1:(simplify_eq/=).
+                        }
+                    }
+                    {
+                        destruct ((filter (λ x : K * V, x.1 ∈ base) s) !! k) eqn:Heq2.
+                        {
+                            rewrite H71 in Heq1.
+                            rewrite Heq1 in Heq2.
+                            ltac1:(simplify_eq/=).
+                        }
+                        {
+                            rewrite map_lookup_filter_None in Heq1.
+                            rewrite map_lookup_filter_None in Heq2.
+                            simpl in *.
+                            ltac1:(naive_solver).
+                        }
+                    }
+                }
+                {
+                    clear - Hin Hak H72 H3 Hnotin.
+                    apply elem_of_dom_2 in H3.
+                    apply elem_of_dom_2 in Hak.
+                    ltac1:(set_solver).
+                }
+            }
+            {
+                simpl in *.
+                right.
+                split>[reflexivity|apply IHl].
+            }
         }
+        apply _.
     }
 Qed.
-
-Lemma union_list_map_same_up_to_lookup_inv
-    {K V : Type}
-    {_ : EqDecision K}
-    {_ : Countable K}
-    {_ : EqDecision V}
-    (base : gset K)
-    (l : list (gmap K V))
-    (k : K)
-    (v : V)
-    :
-    pairwise (map_same_up_to base) l ->
-    (union_list l) !! k = Some v ->
-    ∃ i s, l !! i = Some s /\ s !! k = Some v
-.
-Proof.
-    intros H0 H1.
-    unfold union_list in H1.
-    revert k v H0 H1.
-    induction l; intros k v H0 H1; simpl in *.
-    {
-        rewrite lookup_empty in H1.
-        inversion H1.
-    }
-    {
-        rewrite pairwise_cons in H0.
-        destruct H0 as [H2 H3].
-        rewrite lookup_union_Some_raw in H1.
-        destruct H1 as [H1|H1].
-        {
-            exists 0.
-            simpl.
-            exists a.
-            split>[reflexivity|exact H1].
-        }
-        {
-            destruct H1 as [H4 H5].
-            specialize (IHl k v H3 H5).
-            destruct IHl as [i [s [H6 H7]]].
-            exists (S i).
-            simpl.
-            exists s.
-            split>[exact H6|exact H7].
-        }
-        Unshelve.
-        apply map_same_up_to_sym.
-    }
-Qed.
-
-About union_list_map_lookup_1.
