@@ -1709,27 +1709,63 @@ Proof.
     }
 Qed.
 
-Definition map_disjoint_up_to
+Definition map_same_up_to
     {K V : Type}
     {_ : EqDecision K}
     {_ : Countable K}
     (base : gset K)
     (x1 x2 : gmap K V)
     :=
-    filter (fun x => x ∈ (base)) x1 = filter (fun x => x ∈ (base)) x2
+    filter (fun x => x.1 ∈ (base)) x1 = filter (fun x => x.1 ∈ (base)) x2
     /\ ( ((dom x1) ∖ base) ## ((dom x2) ∖ base) )
 .
 
-Lemma map_disjoint_up_to_empty_iff_map_disjoint
+Lemma map_same_up_to_lookup
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (base : gset K)
+    (x1 x2 : gmap K V)
+    (k : K)
+    (v : V)
+    :
+    k ∈ base ->
+    map_same_up_to base x1 x2 ->
+    x1 !! k = Some v ->
+    x2 !! k = Some v
+.
+Proof.
+    intros H1 H2 H3.
+    unfold map_same_up_to in H2.
+    destruct H2 as [H4 H5].
+    assert (H6 : (filter (λ x : K * V, x.1 ∈ base) x1) !! k = Some v).
+    {
+        rewrite map_lookup_filter.
+        rewrite bind_Some.
+        exists v.
+        split>[exact H3|].
+        ltac1:(simplify_option_eq).
+        reflexivity.
+    }
+    rewrite H4 in H6.
+    rewrite map_lookup_filter in H6.
+    rewrite bind_Some in H6.
+    destruct H6 as [v' [H1v' H2v']].
+    ltac1:(simplify_eq/=).
+    ltac1:(simplify_option_eq).
+    exact H1v'.
+Qed.
+
+Lemma map_same_up_to_empty_iff_map_disjoint
     {K V : Type}
     {_ : EqDecision K}
     {_ : Countable K}
     (x1 x2 : gmap K V)
     :
-    map_disjoint_up_to ∅ x1 x2 <-> map_disjoint x1 x2
+    map_same_up_to ∅ x1 x2 <-> map_disjoint x1 x2
 .
 Proof.
-    unfold map_disjoint_up_to.
+    unfold map_same_up_to.
     rewrite map_disjoint_spec.
     split; intros HH.
     {
@@ -1775,23 +1811,90 @@ Proof.
         }
     }
 Qed.
-(* 
-Lemma map_disjoint_up_to_union_list_1
-    {K M D}
-    `{_ : FinMapDom K M D}
-    (base : D)
-    (a : M K) (l : list (M K)):
 
-    Forall (map_disjoint_up_to base a) l -> 
-    map_disjoint_up_to base a (union_list l)
+Lemma map_same_up_to_union_list_1
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (base : gset K)
+    (a : gmap K V) (l : list (gmap K V)):
+    l <> [] ->
+    Forall (map_same_up_to base a) l -> 
+    map_same_up_to base a (union_list l)
 .
 Proof.
+    intros H1 H2.
+    unfold map_same_up_to.
+    destruct l as [|x l].
+    { ltac1:(contradiction). }
+    clear H1.
+    rewrite Forall_cons in H2.
+    destruct H2 as [H3 H4].
+    split.
+    {
+        rewrite union_list_cons.
+        (* ltac1:(rewrite map_filter_union). They are not necessarily disjoint *)
+        apply map_eq.
+        intros k.
+        destruct (filter (λ x0 : K * V, x0.1 ∈ base) a !! k) eqn:Heq1.
+        {
+
+        }
+        {
+            symmetry.
+            rewrite map_lookup_filter_None.
+            rewrite map_lookup_filter_None in Heq1.
+            destruct (decide (k ∈ dom a)) as [HH|HH].
+            {
+                rewrite elem_of_dom in HH.
+                destruct HH as [y Hy].
+                destruct Heq1 as [Heq1|Heq1].
+                {
+                    rewrite Heq1 in Hy.
+                    inversion Hy.
+                }
+                {
+                    rewrite Hy in Heq1.
+                    specialize (Heq1 _ eq_refl).
+                    right.
+                    intros v HH2 Hcontra.
+                    apply Heq1. clear Heq1.
+                    simpl in *.
+                    exact Hcontra.
+                }
+            }
+            {
+                destruct Heq1 as [Heq1|Heq1].
+                {
+
+                }
+                {
+
+                }
+            }
+        }
+
+    }
+
+
+
+
+
+
+
     revert a.
     induction l; simpl; intros a'.
     {
-        rewrite Forall_nil.
-        intros _.
-        unfold map_disjoint_up_to.
+        intros Hcontra _.
+        ltac1:(contradiction Hcontra).
+        reflexivity.
+    }
+    {
+        (* rewrite Forall_nil. *)
+        intros _ Hfa.
+        rewrite Forall_cons in Hfa.
+        destruct Hfa as [Hsame Hfa].
+        unfold map_same_up_to.
         rewrite dom_empty.
         split.
         { ltac1:(set_solver). }
@@ -1804,7 +1907,7 @@ Proof.
         rewrite Forall_cons.
         intros [HH1 HH2].
         specialize (IHl _ HH2).
-        unfold map_disjoint_up_to in *.
+        unfold map_same_up_to in *.
         ltac1:(set_solver).
     }
 Qed. *)
@@ -1996,7 +2099,7 @@ Lemma union_list_map_lookup_inv'
     (v : V)
     (base : gset K)
     :
-    pairwise (map_disjoint_up_to base) l ->
+    pairwise (map_same_up_to base) l ->
     (union_list l) !! k = Some v ->
     ∃ i s, l !! i = Some s /\ s !! k = Some v
 .
