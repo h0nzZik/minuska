@@ -420,7 +420,7 @@ Lemma piecewise_preserves_sat
     (
         forall (i j : nat) (iltn : i < n) (jltn : j < n),
             i <> j ->
-            (vals i iltn) ∩ (vals j jltn) ⊆ base_δ
+            map_same_up_to (dom base_δ) (vals i iltn) (vals j jltn)
     ) ->
     (forall(i : nat)(iltn : i < n),
         satisfies (vals i iltn) (terms i iltn) (patterns i iltn)
@@ -437,6 +437,10 @@ Proof.
     unfold Valuation2 in *.
     ltac1:(rewrite map_subseteq_spec).
     intros x t Hin.
+    About lookup_union_Some_raw.
+    (* rewrite lookup_union_Some_raw. *)
+    (* rewrite union_list_map_lookup_raw. *)
+    eapply map_disjoint_union_list_1.
     eapply union_list_map_lookup_1>[()|()|apply Hin].
     {
         unfold pairwise.
@@ -460,6 +464,10 @@ Proof.
         destruct s as [n1 Hn1].
         destruct s0 as [n2 Hn2].
         simpl.
+        rewrite <- map_same_up_to_empty_iff_map_disjoint.
+        apply Hdisj.
+        (* apply union_list_map_same_up_to_lookup_inv. *)
+        Check union_list_map_same_up_to_lookup_inv.
         (* specialize (Hdisj n1 n2 Hn1 Hn2). *)
         (* specialize (Hdisj H1' H2' Hi0j0). *)
     }

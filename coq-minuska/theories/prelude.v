@@ -2011,6 +2011,70 @@ Proof.
     }
 Qed.
 
+Lemma union_list_map_same_up_to_lookup
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    {_ : EqDecision V}
+    (base : gset K)
+    (l : list (gmap K V))
+    (i : nat)
+    (s : gmap K V)
+    (k : K)
+    (v : V)
+:
+    k ∉ base ->
+    pairwise (map_same_up_to base) l ->
+    l !! i = Some s ->
+    s !! k = Some v ->
+    (union_list l) !! k = Some v
+.
+Proof.
+    revert i s k v.
+    induction l;
+        intros i s k v;
+        intros H0 H1 H2 H3.
+    {
+        simpl in *.
+        rewrite lookup_nil in H2.
+        inversion H2.
+    }
+    {
+        simpl in *.
+        rewrite lookup_union_Some_raw.
+        destruct i.
+        {
+            simpl in *.
+            apply (inj Some) in H2.
+            subst s.
+            left.
+            exact H3.
+        }
+        {
+            simpl in *.
+            right.
+            rewrite pairwise_cons in H1.
+            destruct H1 as [H4 H5].
+            specialize (IHl i s k v H0 H5 H2 H3).
+            split>[|apply IHl].
+            apply not_elem_of_dom_1.
+            intros HContra.
+            apply take_drop_middle in H2.
+            rewrite <- H2 in H4.
+            rewrite Forall_app in H4.
+            rewrite Forall_cons in H4.
+            destruct H4 as [H6 [H7 H8]].
+            clear H2.
+            unfold map_same_up_to in H7.
+            destruct H7 as [H71 H72].
+            apply elem_of_dom_2 in H3.
+            clear - H0 H3 HContra H72.
+            ltac1:(set_solver).
+            apply _.
+        }
+    }
+Qed.
+
 Lemma union_list_map_same_up_to_lookup_inv
     {K V : Type}
     {_ : EqDecision K}
@@ -2058,3 +2122,5 @@ Proof.
         apply map_same_up_to_sym.
     }
 Qed.
+
+About union_list_map_lookup_1.
