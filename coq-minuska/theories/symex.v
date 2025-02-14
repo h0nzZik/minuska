@@ -409,6 +409,44 @@ Definition piecewise
     union_list lδ
 .
 
+Lemma dom_union_list_gmap
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (l : list (gmap K V))
+    :
+    dom (union_list l) = union_list (fmap dom l)
+.
+Proof.
+    induction l; simpl in *.
+    {
+        rewrite dom_empty_L.
+        reflexivity.
+    }
+    {
+        rewrite dom_union_L.
+        rewrite IHl.
+        reflexivity.
+    }
+Qed.
+
+Lemma dom_piecewise
+    {K V}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (n : nat)
+    (f : forall(i : nat)(iltn : i < n), gmap K V)
+:
+    dom (piecewise n f) = piecewise n (fun i iltn => dom (f i iltn))
+.
+Proof.
+    unfold piecewise.
+    rewrite dom_union_list_gmap.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    reflexivity.
+Qed.
+
 Lemma piecewise_extends
     {Σ : StaticModel}
     (n : nat)
@@ -514,18 +552,18 @@ Lemma decouple_preserves_semantics_1
     (δ : Valuation2)
     :
         vars_of et ⊆ vars_of δ -> 
+        vars_of δ ⊆ avoid -> 
         { δ' : gmap variable (TermOver builtin_value) &
-            ( 
+            ((dom δ' ∖ dom δ = list_to_set (fresh_n (elements avoid) (count_expr et)))*( 
                 vars_of et ⊆ avoid ->
                 forall (φ : TermOver BuiltinOrVar) σ,
                 (φ,σ) = decouple et avoid ->
                 forall (t : TermOver builtin_value),
                 satisfies δ (p,(o,t)) et ->
-                vars_of δ ⊆ avoid -> 
             ((satisfies δ' t φ)*(
             ∀ (x : variable) (e : Expression2), (x,e) ∈ σ ->
                 { ot : _ & ((Expression2_evaluate p δ e = Some ot)*((δ' !! x) = Some (ot o)))%type }
-        ))%type) }
+        ))%type))%type }
 .
 Proof.
     ltac1:(funelim (decouple et avoid)).
@@ -537,106 +575,127 @@ Proof.
         {
             remember (fresh avoid) as y.
             unfold Valuation2 in *.
-            remember ((filter (fun ab => ab.1 <> y) δ) ∪ ({[y := (ft' o)]})) as δ'.
+            remember (δ ∪ ({[y := (ft' o)]})) as δ'.
+            (* remember ((filter (fun ab => ab.1 <> y) δ) ∪ ({[y := (ft' o)]})) as δ'. *)
             exists δ'.
-            intros Hvo1 φ σ Hφσ t Hsate Hvo2.
-            ltac1:(simplify_eq/=).
             split.
             {
-                destruct t; ltac1:(simp sat2B); simpl in *.
+                subst δ' y.
+                rewrite dom_union_L.
+                rewrite difference_union_distr_l_L.
+                rewrite difference_diag_L.
+                rewrite union_empty_l_L.
+                rewrite dom_singleton_L.
+                apply set_eq.
+                intros x.
+                rewrite elem_of_difference.
+                rewrite elem_of_singleton.
+                rewrite elem_of_union.
+                rewrite elem_of_singleton.
+                rewrite elem_of_empty.
+                split; intros HH.
                 {
-                    ltac1:(simp sat2E in Hsate).
-                    rewrite Heq in Hsate.
-                    rewrite Hsate.
-                    unfold Valuation2 in *.
-                    rewrite lookup_union_r.
-                    {
-                        rewrite lookup_singleton.
-                        reflexivity.
-                    }
-                    {
-                        rewrite map_lookup_filter.
-                        simpl.
-                        rewrite bind_None.
-                        destruct (decide (fresh avoid ∈ dom δ)) as [Hin|Hnotin].
-                        {
-                            right.
-                            rewrite elem_of_dom in Hin.
-                            destruct Hin as [x Hx].
-                            exists x.
-                            split>[exact Hx|].
-                            ltac1:(simplify_option_eq).
-                            reflexivity.
-                        }
-                        {
-                            left.
-                            apply not_elem_of_dom_1.
-                            apply Hnotin.                        
-                        }
-                    }
+                    destruct HH as [HH1 HH2].
+                    subst x.
+                    left.
+                    ltac1:(set_solver).
                 }
                 {
-                    ltac1:(simp sat2E in Hsate).
-                    rewrite Heq in Hsate.
-                    rewrite Hsate.
-                    unfold Valuation2 in *.
-                    rewrite lookup_union_r.
+                    destruct HH as [HH | HH].
                     {
-                        rewrite lookup_singleton.
-                        reflexivity.
-                    }
-                    {
-                        rewrite map_lookup_filter.
-                        simpl.
-                        rewrite bind_None.
-                        destruct (decide (fresh avoid ∈ dom δ)) as [Hin|Hnotin].
+                        split.
+                        { ltac1:(set_solver). }
+                        subst x.
+                        intros HContra.
+                        unfold vars_of in *; simpl in *.
+                        unfold vars_of in *; simpl in *.
+                        eapply elem_of_weaken in HContra>[|apply H0].
+                        assert ((fresh avoid) ∉ avoid).
                         {
-                            right.
-                            rewrite elem_of_dom in Hin.
-                            destruct Hin as [x Hx].
-                            exists x.
-                            split>[exact Hx|].
-                            ltac1:(simplify_option_eq).
-                            reflexivity.
+                            apply is_fresh.
                         }
-                        {
-                            left.
-                            apply not_elem_of_dom_1.
-                            apply Hnotin.                        
-                        }
+                        ltac1:(set_solver).
                     }
+                    { inversion HH. }
                 }
             }
             {
-                intros x e0 Hx.
-                rewrite elem_of_singleton in Hx.
+                ltac1:(rename H0 into Hvo2).
+                intros Hvo1 φ σ Hφσ t Hsate.
                 ltac1:(simplify_eq/=).
-                exists ft'.
-                split>[exact Heq|].
-                rewrite lookup_union_r.
+                split.
                 {
-                    unfold Valuation2 in *.
-                    rewrite lookup_singleton.
-                    reflexivity.
+                    destruct t; ltac1:(simp sat2B); simpl in *.
+                    {
+                        ltac1:(simp sat2E in Hsate).
+                        rewrite Heq in Hsate.
+                        rewrite Hsate.
+                        unfold Valuation2 in *.
+                        rewrite lookup_union_r.
+                        {
+                            rewrite lookup_singleton.
+                            reflexivity.
+                        }
+                        {
+                            rewrite <- not_elem_of_dom.
+                            intros HContra.
+                            assert (H0: (fresh avoid) ∉ avoid).
+                            {
+                                apply is_fresh.
+                            }
+                            apply H0. clear H0.
+                            eapply elem_of_weaken.
+                            { apply HContra. }
+                            exact Hvo2.
+                        }
+                    }
+                    {
+                        ltac1:(simp sat2E in Hsate).
+                        rewrite Heq in Hsate.
+                        rewrite Hsate.
+                        unfold Valuation2 in *.
+                        rewrite lookup_union_r.
+                        {
+                            rewrite lookup_singleton.
+                            reflexivity.
+                        }
+                        {
+                            rewrite <- not_elem_of_dom.
+                            intros HContra.
+                            assert (H0: (fresh avoid) ∉ avoid).
+                            {
+                                apply is_fresh.
+                            }
+                            apply H0. clear H0.
+                            eapply elem_of_weaken.
+                            { apply HContra. }
+                            exact Hvo2.
+                        }
+                    }
                 }
                 {
-                    rewrite map_lookup_filter.
-                    simpl.
-                    rewrite bind_None.
-                    destruct (decide (fresh avoid ∈ dom δ)) as [Hin|Hnotin].
+                    intros x e0 Hx.
+                    rewrite elem_of_singleton in Hx.
+                    ltac1:(simplify_eq/=).
+                    exists ft'.
+                    split>[exact Heq|].
+                    rewrite lookup_union_r.
                     {
-                        right.
-                        rewrite elem_of_dom in Hin.
-                        destruct Hin as [x Hx].
-                        exists x.
-                        split>[exact Hx|].
-                        ltac1:(simplify_option_eq).
+                        unfold Valuation2 in *.
+                        rewrite lookup_singleton.
                         reflexivity.
                     }
                     {
-                        left.
-                        apply not_elem_of_dom_1.
-                        apply Hnotin.                        
+                        rewrite <- not_elem_of_dom.
+                        intros HContra.
+                        assert (H0: (fresh avoid) ∉ avoid).
+                        {
+                            apply is_fresh.
+                        }
+                        apply H0. clear H0.
+                        eapply elem_of_weaken.
+                        { apply HContra. }
+                        exact Hvo2.
                     }
                 }
             }
@@ -650,18 +709,30 @@ Proof.
         }
     }
     {
-        intros Hvo.
-        rewrite vars_of_t_term_e in Hvo.
+        intros Hvo1 Hvo2.
+        rewrite vars_of_t_term_e in Hvo1.
         assert(Helper: forall i et, l !! i = Some et -> vars_of et ⊆ vars_of δ ).
         {
             intros i et Hiet.
             apply take_drop_middle in Hiet.
-            rewrite <- Hiet in Hvo.
-            rewrite fmap_app in Hvo.
-            rewrite fmap_cons in Hvo.
-            rewrite union_list_app in Hvo.
-            rewrite union_list_cons in Hvo.
-            clear - Hvo.
+            rewrite <- Hiet in Hvo1.
+            rewrite fmap_app in Hvo1.
+            rewrite fmap_cons in Hvo1.
+            rewrite union_list_app in Hvo1.
+            rewrite union_list_cons in Hvo1.
+            clear - Hvo1.
+            ltac1:(set_solver).
+        }
+        assert(Helper2: forall i et, l !! i = Some et -> vars_of δ ⊆ (((avoid ∪ ⋃ (vars_of <$> take i l)))) ).
+        {
+            intros i et Hiet.
+            apply take_drop_middle in Hiet.
+            rewrite <- Hiet in Hvo1.
+            rewrite fmap_app in Hvo1.
+            rewrite fmap_cons in Hvo1.
+            rewrite union_list_app in Hvo1.
+            rewrite union_list_cons in Hvo1.
+            clear - Hvo2.
             ltac1:(set_solver).
         }
         remember (fun (i : nat) (iltn : i < (length l)) =>
@@ -674,55 +745,61 @@ Proof.
                     let avoid0 := ((avoid ∪ ⋃ (vars_of <$> take i l))) in
                     let dcpl := decouple et avoid0 in
                     (* let pfavoid0 := @vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid Σ l i et avoid Hvo pfet in *)
-                    let tmp0 := X i et pfet Σ et avoid0 p o δ eq_refl eq_refl (Helper i et pfet) in
+                    let tmp0 := X i et pfet Σ et avoid0 p o δ eq_refl eq_refl (Helper i et pfet) (Helper2 i et pfet) in
                         (* let tmp := tmp0 eq_refl eq_refl (eq_sym (surjective_pairing (decouple et avoid0))) in *)
                     (projT1 tmp0)
                 end
             ) as f.
         remember (piecewise (length l) f) as myδ.
         exists myδ.
-        intros Hvo2 φ σ Hφσ t Hsatt Hvo3.
-        inversion Hφσ; subst φ σ; clear Hφσ.
-        simpl in *.
-        ltac1:(simp decouple).
-        simpl.
-        destruct t; simpl in *.
-        {
-            unfold satisfies in Hsatt; simpl in Hsatt.
-            ltac1:(simp sat2E in Hsatt).
-            inversion Hsatt.
-        }
-        unfold satisfies in Hsatt; simpl in Hsatt.
-        ltac1:(simp sat2E in Hsatt).
-        destruct Hsatt as [Hsatt1 [Hsatt2 Hsatt3]].
-        subst s0.
         split.
         {
-            unfold satisfies; simpl.
-            ltac1:(simp sat2B).
-            split>[reflexivity|].
-            split.
-            {
-                rewrite length_fmap.
-                rewrite ipmap_length.
-                exact Hsatt2.
-            }
-            {
-                intros i t' φ' HH1 HH2.
-                subst myδ.
-                eapply TermOverBoV_satisfies_extensive.
-                {
-                    apply piecewise_extends with (base_δ := δ).
-                    intros.
-                    unfold map_same_up_to.
-                }
-                Search satisfies.
-                Check piecewise_extends.
-                eapply piecewise_preserves_sat.
-            }
+            subst myδ.
         }
         {
+            intros φ σ Hφσ t Hsatt Hvo3.
+            inversion Hφσ; subst φ σ; clear Hφσ.
+            simpl in *.
+            ltac1:(simp decouple).
+            simpl.
+            destruct t; simpl in *.
+            {
+                unfold satisfies in Hsatt; simpl in Hsatt.
+                ltac1:(simp sat2E in Hsatt).
+                inversion Hsatt.
+            }
+            unfold satisfies in Hsatt; simpl in Hsatt.
+            ltac1:(simp sat2E in Hsatt).
+            destruct Hsatt as [Hsatt1 [Hsatt2 Hsatt3]].
+            subst s0.
+            split.
+            {
+                unfold satisfies; simpl.
+                ltac1:(simp sat2B).
+                split>[reflexivity|].
+                split.
+                {
+                    rewrite length_fmap.
+                    rewrite ipmap_length.
+                    exact Hsatt2.
+                }
+                {
+                    intros i t' φ' HH1 HH2.
+                    subst myδ.
+                    eapply TermOverBoV_satisfies_extensive.
+                    {
+                        apply piecewise_extends with (base_δ := δ).
+                        intros.
+                        unfold map_same_up_to.
+                    }
+                    Search satisfies.
+                    Check piecewise_extends.
+                    eapply piecewise_preserves_sat.
+                }
+            }
+            {
 
+            }
         }
     }
 
