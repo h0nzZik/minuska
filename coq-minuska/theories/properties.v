@@ -3320,3 +3320,43 @@ Proof.
         }
     }
 Qed.
+
+Fixpoint count_expr
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    : nat
+:=
+    match et with
+    | t_over _ => 1
+    | t_term _ l =>
+        sum_list_with count_expr l
+    end
+.
+
+Definition fresh_n {A : Type} {_ : Fresh A (list A)} : list A -> nat -> list A
+:=
+    let go := (fix go (avoid : list A) (n : nat) :=
+        match n with
+        | O => []
+        | S n' => (fresh avoid)::(go ((fresh avoid)::avoid) n')
+        end
+        ) in
+    fun avoid n => go avoid n
+.
+
+Lemma length_fresh_n
+    {A : Type} {_ : Fresh A (list A)}
+    (avoid : list A) (n : nat)
+    :
+    length (fresh_n avoid n) = n
+.
+Proof.
+    unfold fresh_n.
+    revert avoid.
+    induction n; intros avoid'; simpl in *.
+    { reflexivity. }
+    {
+        rewrite IHn.
+        reflexivity.
+    }
+Qed.

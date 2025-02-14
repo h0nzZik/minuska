@@ -409,31 +409,24 @@ Definition piecewise
     union_list lδ
 .
 
-Lemma piecewise_preserves_sat
+Lemma piecewise_extends
     {Σ : StaticModel}
     (n : nat)
     (base_δ : gmap variable (TermOver builtin_value))
     (vals : forall(i : nat)(iltn : i < n), (gmap variable (TermOver builtin_value)))
-    (terms : forall(i : nat)(iltn : i < n), TermOver builtin_value)
-    (patterns : forall(i : nat)(iltn : i < n), TermOver BuiltinOrVar)
     :
     (
         forall (i j : nat) (iltn : i < n) (jltn : j < n),
             i <> j ->
             map_same_up_to (dom base_δ) (vals i iltn) (vals j jltn)
     ) ->
-    (forall(i : nat)(iltn : i < n),
-        satisfies (vals i iltn) (terms i iltn) (patterns i iltn)
-    ) ->
     forall (i : nat) (iltn : i < n),
-    satisfies (piecewise n vals) (terms i iltn) (patterns i iltn)
+    vals i iltn ⊆ piecewise n vals
 .
 Proof.
-    intros Hdisj Hholds i iltn.
+    intros.
+
     unfold piecewise.
-    eapply TermOverBoV_satisfies_extensive>[|
-        apply (Hholds i iltn)
-    ].
     unfold Valuation2 in *.
     ltac1:(rewrite map_subseteq_spec).
     intros x t Hin.
@@ -460,7 +453,7 @@ Proof.
         destruct s as [n1 Hn1].
         destruct s0 as [n2 Hn2].
         simpl.
-        apply Hdisj.
+        apply H.
         apply pfseqn_lookup in Heq1.
         apply pfseqn_lookup in Heq2.
         simpl in *.
@@ -483,6 +476,33 @@ Proof.
             ltac1:(lia).
         }
     }
+Qed.
+
+Lemma piecewise_preserves_sat
+    {Σ : StaticModel}
+    (n : nat)
+    (base_δ : gmap variable (TermOver builtin_value))
+    (vals : forall(i : nat)(iltn : i < n), (gmap variable (TermOver builtin_value)))
+    (terms : forall(i : nat)(iltn : i < n), TermOver builtin_value)
+    (patterns : forall(i : nat)(iltn : i < n), TermOver BuiltinOrVar)
+    :
+    (
+        forall (i j : nat) (iltn : i < n) (jltn : j < n),
+            i <> j ->
+            map_same_up_to (dom base_δ) (vals i iltn) (vals j jltn)
+    ) ->
+    (forall(i : nat)(iltn : i < n),
+        sat2B (vals i iltn) (terms i iltn) (patterns i iltn)
+    ) ->
+    forall (i : nat) (iltn : i < n),
+    sat2B (piecewise n vals) (terms i iltn) (patterns i iltn)
+.
+Proof.
+    intros Hdisj Hholds i iltn.
+    eapply TermOverBoV_satisfies_extensive>[|
+        apply (Hholds i iltn)
+    ].
+    eapply (piecewise_extends n base_δ _ Hdisj).
 Qed.
 
 Lemma decouple_preserves_semantics_1
@@ -672,10 +692,34 @@ Proof.
             ltac1:(simp sat2E in Hsatt).
             inversion Hsatt.
         }
+        unfold satisfies in Hsatt; simpl in Hsatt.
+        ltac1:(simp sat2E in Hsatt).
+        destruct Hsatt as [Hsatt1 [Hsatt2 Hsatt3]].
+        subst s0.
         split.
         {
             unfold satisfies; simpl.
             ltac1:(simp sat2B).
+            split>[reflexivity|].
+            split.
+            {
+                rewrite length_fmap.
+                rewrite ipmap_length.
+                exact Hsatt2.
+            }
+            {
+                intros i t' φ' HH1 HH2.
+                subst myδ.
+                eapply TermOverBoV_satisfies_extensive.
+                {
+                    apply piecewise_extends with (base_δ := δ).
+                    intros.
+                    unfold map_same_up_to.
+                }
+                Search satisfies.
+                Check piecewise_extends.
+                eapply piecewise_preserves_sat.
+            }
         }
         {
 
