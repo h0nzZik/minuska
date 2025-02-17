@@ -446,6 +446,22 @@ Proof.
     unfold compose.
     reflexivity.
 Qed.
+ 
+Lemma piecewise_difference
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (n : nat)
+    (f : forall (i : nat) (iltn: i < n), gmap K V)
+    (m : gmap K V)
+:
+    (piecewise n f ∖ m) = piecewise n (fun i => ((fun x => x ∖ m) ∘ (f i)))
+.
+Proof.
+    unfold piecewise.
+    revert m; induction l; intros m.
+    Search union_list eq nat.
+Qed.
 
 Lemma piecewise_extends
     {Σ : StaticModel}
@@ -771,7 +787,7 @@ Proof.
         split.
         {
             subst myδ.
-            rewrite dom_piecewise.
+            
             assert (Hdomf: forall (i : nat) (iltn : i < length l),
                 (dom (f i iltn) ∖ dom δ) = (
                     let avoid0 := avoid ∪ union_list (vars_of <$> take i l) in
@@ -810,6 +826,12 @@ Proof.
                     ltac1:(lia).
                 }
             }
+            (* ltac1:(rewrite - dom_difference_L). *)
+            simpl in Hdomf.
+            (* ltac1:(setoid_rewrite <- dom_difference_L in Hdomf). *)
+            rewrite dom_piecewise.
+            Search dom difference.
+            rewrite Hdomf.
         }
         {
             intros φ σ Hφσ t Hsatt Hvo3.

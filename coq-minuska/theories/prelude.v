@@ -2179,3 +2179,44 @@ Proof.
         apply _.
     }
 Qed.
+
+
+Lemma union_list_eq_if_parts_eq
+    {A : Type}
+    {_ : Empty A}
+    {_ : Union A}
+    (l1 l2 : list A)
+    :
+    length l1 = length l2 ->
+    (forall i x1 x2, l1 !! i = Some x1 -> l2 !! i = Some x2 -> x1 = x2)->
+    l1 = l2
+.
+Proof.
+    revert l2.
+    induction l1; intros l2 Hlen H.
+    {
+        destruct l2.
+        { reflexivity. }
+        {
+            simpl in Hlen.
+            ltac1:(lia).
+        }
+    }
+    {
+        destruct l2.
+        {
+            simpl in Hlen.
+            ltac1:(lia).
+        }
+        {
+            rewrite (H 0 a a0 eq_refl eq_refl).
+            rewrite (IHl1 l2).
+            { reflexivity. }
+            { simpl in Hlen. ltac1:(lia). }
+            {
+                intros i x1 x2 Hx1 Hx2.
+                exact (H (S i) x1 x2 Hx1 Hx2).
+            }
+        }
+    }
+Qed.
