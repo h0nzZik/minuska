@@ -711,36 +711,52 @@ Proof.
     {
         intros Hvo1 Hvo2.
         rewrite vars_of_t_term_e in Hvo1.
-        assert(Helper: forall i et, l !! i = Some et -> vars_of et ⊆ vars_of δ ).
+        (* ltac1:(set(Helper : (forall i et, l !! i = Some et -> vars_of et ⊆ vars_of δ) := _)). *)
+        ltac1:(unshelve(epose (_ : (forall (i : nat) (et : TermOver Expression2) (mypf: l !! i = Some et), vars_of et ⊆ vars_of δ)) as Helper)).
         {
             intros i et Hiet.
-            apply take_drop_middle in Hiet.
-            rewrite <- Hiet in Hvo1.
-            rewrite fmap_app in Hvo1.
-            rewrite fmap_cons in Hvo1.
-            rewrite union_list_app in Hvo1.
-            rewrite union_list_cons in Hvo1.
-            clear - Hvo1.
-            ltac1:(set_solver).
+            abstract(
+                apply take_drop_middle in Hiet;
+                rewrite <- Hiet in Hvo1;
+                rewrite fmap_app in Hvo1;
+                rewrite fmap_cons in Hvo1;
+                rewrite union_list_app in Hvo1;
+                rewrite union_list_cons in Hvo1;
+                clear - Hvo1;
+                ltac1:(set_solver)
+            ).
         }
-        assert(Helper2: forall i et, l !! i = Some et -> vars_of δ ⊆ (((avoid ∪ ⋃ (vars_of <$> take i l)))) ).
+        ltac1:(unshelve(epose(_ : forall i et, l !! i = Some et -> vars_of δ ⊆ (((avoid ∪ ⋃ (vars_of <$> take i l))))) as Helper2)).
         {
             intros i et Hiet.
-            apply take_drop_middle in Hiet.
-            rewrite <- Hiet in Hvo1.
-            rewrite fmap_app in Hvo1.
-            rewrite fmap_cons in Hvo1.
-            rewrite union_list_app in Hvo1.
-            rewrite union_list_cons in Hvo1.
-            clear - Hvo2.
-            ltac1:(set_solver).
+            abstract(
+                apply take_drop_middle in Hiet;
+                assert (Hvo1' := Hvo1);
+                rewrite <- Hiet in Hvo1';
+                rewrite fmap_app in Hvo1';
+                rewrite fmap_cons in Hvo1';
+                rewrite union_list_app in Hvo1';
+                rewrite union_list_cons in Hvo1';
+                clear - Hvo2;
+                ltac1:(set_solver)
+            ).
+        }
+        assert(Helper3: forall (i : nat) (iltn : i < length l)(pfet: l !! i = None), False).
+        {
+            intros i iltn pfet.
+            ltac1:(refine(
+                let pf' := lookup_ge_None_1 l i pfet in
+                match (proj1 (Nat.lt_nge i (length l)) iltn pf')
+                with end)
+            ).
         }
         remember (fun (i : nat) (iltn : i < (length l)) =>
                 match inspect (l !! i) with
                 | exist _ None pfet =>
-                    let pf' := lookup_ge_None_1 l i pfet in
+                    match Helper3 i iltn pfet with end
+                    (* let pf' := lookup_ge_None_1 l i pfet in
                     match (proj1 (Nat.lt_nge i (length l)) iltn pf')
-                    with end
+                    with end *)
                 | exist _ (Some (et)) pfet =>
                     let avoid0 := ((avoid ∪ ⋃ (vars_of <$> take i l))) in
                     let dcpl := decouple et avoid0 in
@@ -755,6 +771,45 @@ Proof.
         split.
         {
             subst myδ.
+            rewrite dom_piecewise.
+            assert (Hdomf: forall (i : nat) (iltn : i < length l),
+                (dom (f i iltn) ∖ dom δ) = (
+                    let avoid0 := avoid ∪ union_list (vars_of <$> take i l) in
+                    match (inspect (l !! i)) with
+                    | exist _ (Some et) _ =>
+                        list_to_set ((fresh_n (elements avoid0) (count_expr et)))
+                    | exist _ None _ => ∅
+                    end
+                )
+            ).
+            {
+                unfold TermOver in *.
+                intros. subst Helper Helper2. simpl.
+                destruct (l !! i) eqn:Hli.
+                {
+                    subst f. simpl.
+                    ltac1:(move: (decouple_preserves_semantics_1_subproof Σ l δ Hvo1 i)).
+                    ltac1:(move: (decouple_preserves_semantics_1_subproof0 Σ l avoid δ Hvo1 Hvo2 i)).
+                    ltac1:(move: (X i)).
+                    ltac1:(move: (Helper3 i)).
+                    ltac1:(move: erefl).
+                    ltac1:(rewrite Hli).
+                    intros.
+                    match! goal with
+                    | [|- difference (dom (projT1 ?s)) _ = _] =>
+                        remember $s as pfs
+                    end.
+                    destruct pfs as [δ' Hδ'].
+                    simpl.
+                    destruct Hδ' as [H1δ' H2δ'].
+                    exact H1δ'.
+                }
+                {
+                    apply lookup_ge_None in Hli.
+                    ltac1:(exfalso; clear - Hli iltn).
+                    ltac1:(lia).
+                }
+            }
         }
         {
             intros φ σ Hφσ t Hsatt Hvo3.
