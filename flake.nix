@@ -126,7 +126,6 @@
           postPatch = ''
             substituteInPlace bin/main.ml \
               --replace-fail "\"/usr/lib/coq/user-contrib/Minuska\"" "\"${minuskaSrc.coqMinuska}/lib/coq/${coqVersion}/user-contrib/Minuska\"" \
-              --replace-fail "\"ocamlfind\"" "\"${coqPackages.coq.ocamlPackages.findlib}/bin/ocamlfind\"" \
               --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
           '';
 

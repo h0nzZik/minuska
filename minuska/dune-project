@@ -25,6 +25,7 @@
     zarith
     core_unix
     yaml
+   ;  coq-minuska
  )
  (synopsis "A formally verified programming language framework")
  (description "Minuska is a programming language framework capable of generating interpreters from operational semantics.")
