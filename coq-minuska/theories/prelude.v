@@ -2220,3 +2220,49 @@ Proof.
         }
     }
 Qed.
+
+Lemma union_list_difference
+    {K V : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (l : list (gmap K V))
+    (m : gmap K V)
+    :
+    (union_list l ∖ m) = (union_list ((fun x => x ∖ m) <$> l))
+.
+Proof.
+    revert m.
+    induction l; intros m.
+    {
+        simpl.
+        apply map_eq.
+        intros i.
+        rewrite lookup_difference.
+        destruct (m !! i).
+        {
+            rewrite lookup_empty.
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        simpl.
+        apply map_eq.
+        intros i.
+        rewrite lookup_union.
+        unfold union_list in *.
+        unfold fmap in IHl.
+        rewrite <- IHl.
+        do 3 (rewrite lookup_difference).
+        destruct (m !! i) eqn:Hmi.
+        {
+            reflexivity.
+        }
+        {
+            rewrite lookup_union.
+            reflexivity.
+        }
+    }
+Qed.
