@@ -200,7 +200,8 @@ let transform_groundterm
   );
   ()
 
-let generate_interpreter_ml scm_filename (out_ml_file : string) =
+let generate_interpreter_ml (modules : string list) scm_filename (out_ml_file : string) =
+  List.iter ~f:(fun m -> printf "Loading module '%s'\n" m; Dynlink.loadfile m) modules;
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
@@ -222,8 +223,8 @@ let initialize_project project_name (name_of_builtins : coqModuleName) (name_of_
   (
     (language %s)
     (semantics def.m)
-    (static_model ("%s"))
-    (program_info ("%s"))
+    (primitive_value_algebra %s)
+    (program_info %s)
   )
 |}
     project_name (Sexp.to_string (sexp_of_coqModuleName name_of_builtins)) (Sexp.to_string (sexp_of_coqModuleName name_of_program_info));
@@ -333,10 +334,11 @@ let command_generate_interpreter_ml =
     ~summary:"Generate an interpreter *.ml file from a Minuska project file (*.scm)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
+        dynload = (flag) "--dynload" (listed string) ~doc:("module to dynamically load") and
         scm_filename = anon (("lang.scm" %: Filename_unix.arg_type)) and
         out_ml_file = anon (("lang.ml" %: Filename_unix.arg_type))
       in
-      fun () -> generate_interpreter_ml scm_filename out_ml_file)
+      fun () -> generate_interpreter_ml dynload scm_filename out_ml_file)
 
 
 let command_print_coqbin =
@@ -395,11 +397,8 @@ let command =
     ~summary:"A verified semantic framework"
     [
       "init", command_init;
-      (* "generate-interpreter", command_generate_interpreter; *)
       "generate-interpreter-ml", command_generate_interpreter_ml;
       "generate-interpreter-coq", command_generate_interpreter_coq;
-      (* "compile", command_compile; *)
-      (* "def2coq", command_generate; *) (* TODO replace this with something*)
       "gt2coq", command_groundterm2coq;
       "info", command_info
      ]

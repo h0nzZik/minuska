@@ -1,0 +1,28 @@
+
+(env (dev (flags (:standard -warn-error -A))))
+
+(executable
+  (public_name run)
+  (package mylang)
+  (name run)
+  (libraries
+      minuska
+  )
+  (modules run internal)
+)
+
+(executable
+  (modes plugin)
+  (name myplugin)
+  (modules myplugin)
+  (libraries core)
+)
+
+
+(rule
+  (targets internal.ml internal.mli)
+  (deps lang.scm def.m myplugin.cmxs)
+  (action
+  (chdir %{workspace_root}
+  (run minuska generate-interpreter-ml --dynload myplugin.cmxs lang.scm internal.ml)))
+)
