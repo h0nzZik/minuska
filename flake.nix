@@ -18,13 +18,15 @@
            let coqVersion = coqPackages.coq.coq-version; in
            let stdpp = coqPackages.stdpp; in
            let coqLibraries = [
+             stdpp
+           ]; in
+           let coqPlugins = [
               coqPackages.equations
-              coqPackages.QuickChick
-              stdpp
+              coqPackages.QuickChick 
            ]; in
            let bothNativeAndOtherInputs = [
               coqPackages.coq
-           ] ++ coqLibraries ; in
+           ] ++ coqLibraries ++ coqPlugins ; in
            let wrapped = coqPackages.callPackage  ( { coq, stdenv }: coqPackages.mkCoqDerivation {
 
             useDune = true; 
@@ -40,13 +42,16 @@
             passthru = {
               inherit coqPackages;
               inherit coqLibraries;
-	          };
+              inherit coqPlugins;
+	    };
 
             buildPhase = ''
               runHook preBuild
               dune build @all theories/Minuska.html ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
               runHook postBuild
             '';
+
+            #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
           } ) { };  in
           wrapped
@@ -79,6 +84,8 @@
             inherit coqPackages;
             inherit coqMinuska;
             coqLibraries = coqMinuska.coqLibraries;
+            coqPlugins = coqMinuska.coqPlugins;
+
           };
         }
        );
@@ -114,8 +121,10 @@
             ocamlPackages.menhir
           ];
 
-          buildInputs = [
-            minuskaSrc.coqMinuska.coqLibraries
+          buildInputs =
+            minuskaSrc.coqMinuska.coqLibraries ++
+            minuskaSrc.coqMinuska.coqPlugins ++
+          [
             ocamlPackages.ocaml
             pkgs.makeWrapper
             pkgs.dune_3
@@ -152,6 +161,7 @@
             inherit coqPackages;
             inherit ocamlPackages;
             coqLibraries = minuskaSrc.coqLibraries;
+            coqPlugins = minuskaSrc.coqPlugins;
           };
         }; in
         wrapped
@@ -201,7 +211,7 @@
             ++ self.outputs.packages.${system}.coq-minuska.coqLibraries ;
 
           enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
           passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
@@ -213,9 +223,20 @@
           src = ./bench-standalone;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
+            #self.outputs.packages.${system}.coq-minuska
             pkgs.dune_3
             pkgs.time
-          ] ++ example_languages_parser_deps;
+          ] ++ example_languages_parser_deps 
+          # We need Coq and the coq-minuska library to test user-provided algebras.
+          ++ [
+            self.outputs.packages.${system}.coq-minuska.coqPackages.coq
+          ]
+          #++ self.outputs.packages.${system}.coq-minuska.coqLibraries
+          ;
+          buildInputs = [
+            self.outputs.packages.${system}.coq-minuska
+          ];
+          #dontDetectOcamlConflicts = true;
         };
 
         packages.bench-hybrid
@@ -244,7 +265,7 @@
             self.outputs.packages.${system}.languages-in-coq.coqPackages.coq
           ] ++ self.outputs.packages.${system}.coq-minuska.coqLibraries;
           enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
           passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
@@ -289,6 +310,20 @@
               pkgs.mkShell {
                 packages = [minuska minuska.coqPackages.coq-lsp minuska.coqPackages.coq];
               };
+
+
+          ## For developing bench-standalone
+          #bench-standalone =
+          #  let
+          #    bench-standalone = self.outputs.packages.${system}.bench-standalone;
+          #    minuska = self.outputs.packages.${system}.minuska;
+          #  in
+          #    pkgs.mkShell {
+          #      inputsFrom = [bench-standalone];
+          #      packages = [minuska];
+          #    };
+
+
 
           languages-in-coq =
             let

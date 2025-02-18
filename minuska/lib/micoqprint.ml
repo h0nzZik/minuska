@@ -260,15 +260,15 @@ let print_definition
   (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : coqModuleName)
-  (name_of_pi : coqModuleName)
+  ~(name_of_builtins : coqModuleName)
+  ~(name_of_pi : coqModuleName)
   def oux =
     let _ = def in
-    fprintf oux "Require Import %s %s Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike."  (get_primitive_value_algebra name_of_builtins).pvae_coq_import (get_pi name_of_pi).pie_coq_import;
+    fprintf oux "Require Import %s %s Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike.\n"  (get_primitive_value_algebra name_of_builtins).pvae_coq_import (get_pi name_of_pi).pie_coq_import;
     fprintf oux "Definition mybeta := (bi_beta MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
     fprintf oux "#[global] Existing Instance mybeta.\n";
-    fprintf oux "Definition my_program_info := %s.MyProgramInfo.\n" (get_pi name_of_pi).pie_coq_entity_name;
-    fprintf oux "Definition mysigma : StaticModel := (default_everything.Extracted my_program_info).\n";
+    fprintf oux "Definition my_program_info := %s.\n" (get_pi name_of_pi).pie_coq_entity_name;
+    fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
     fprintf oux "Existing Instance mysigma.\n";
     (* fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi; *)
     fprintf oux "#[global] Existing Instance my_program_info.\n";

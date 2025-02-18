@@ -37,10 +37,11 @@ let parse_and_print
   (iface : 'a Extracted.builtinInterface)
   (builtins_map : builtins_map_t)
   (query_map : query_map_t)
-  (name_of_builtins : coqModuleName) (name_of_pi : coqModuleName) lexbuf oux =
+  ~(name_of_builtins : coqModuleName)
+  ~(name_of_pi : coqModuleName) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition iface builtins_map query_map name_of_builtins name_of_pi value oux
+    Micoqprint.print_definition iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) value oux
   | None -> ()
 
 
@@ -48,15 +49,15 @@ let append_definition
   (iface : 'a Extracted.builtinInterface)
   (builtins_map : builtins_map_t)
   (query_map : query_map_t)
-  (name_of_builtins : coqModuleName)
-  (name_of_pi : coqModuleName)
+  ~(name_of_builtins : coqModuleName)
+  ~(name_of_pi : coqModuleName)
   input_filename
   output_channel
   =
   In_channel.with_file input_filename ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-    parse_and_print iface builtins_map query_map name_of_builtins name_of_pi lexbuf output_channel;  
+    parse_and_print iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) lexbuf output_channel;  
   );
   fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
@@ -138,12 +139,11 @@ let run l =
 let generate_interpreter_coq_internal (cfg : languagedescr) input_filename (output_coq : string) =
   let iface = ((get_primitive_value_algebra cfg.primitive_value_algebra).pvae_builtin_interface) in
   let builtins_map = (get_builtins_map (cfg.primitive_value_algebra)) in
-  let name_of_builtins = cfg.primitive_value_algebra in
   let pi = get_pi cfg.program_info in
   let query_map = transform_map (pi.pie_table) in
   (* create coqfile *)
   Out_channel.with_file output_coq ~f:(fun oux_coqfile ->
-    append_definition iface builtins_map query_map name_of_builtins cfg.primitive_value_algebra input_filename oux_coqfile;
+    append_definition iface builtins_map query_map ~name_of_builtins:(cfg.primitive_value_algebra) ~name_of_pi:(cfg.program_info) input_filename oux_coqfile;
     fprintf oux_coqfile "Definition chosen_builtins := %s.\n" (get_primitive_value_algebra cfg.primitive_value_algebra).pvae_coq_entity_name;
     ()
   )

@@ -2,7 +2,7 @@
       (
         (language arith)
         (semantics def.m)
-        (static_model "klike")
+        (primitive_value_algebra (std_module "klike"))
         (program_info (std_module "trivial"))
       )
     

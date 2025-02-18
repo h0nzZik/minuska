@@ -15,7 +15,7 @@
   (package arith)
   (name run)
   (libraries
-      minuska
+      minuska minuska.pluginbase
   )
   (modules syntax run internal parser lexer transform )
 )

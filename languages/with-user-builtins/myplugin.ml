@@ -1,5 +1,5 @@
 open Core
 
 let () =
-  printf "Hello, plugin\n";
+  printf "Hello, plugin: %n\n" (Myalgebra.fancyNumber);
   ()

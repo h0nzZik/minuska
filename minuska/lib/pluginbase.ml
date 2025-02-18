@@ -53,7 +53,7 @@ let get_primitive_value_algebra (primitive_value_algebra_name : coqModuleName) :
       match name with
       | "klike" -> Dsm.builtins_klike
       | "empty" -> Dsm.builtins_empty
-      | _ -> failwith "Unknown built-in algebra specified"  
+      | _ -> failwith (sprintf "Unknown built-in algebra specified: '%s'" name)  
     ) in
     {
       pvae_coq_import = "Minuska.pval_ocaml_binding";
@@ -72,7 +72,7 @@ let get_pi (program_info_name : coqModuleName) : programInfoEntry
     let m = (
       match name with
       | "trivial" -> Dsm.pi_trivial
-      | _ -> failwith "Unknown program info specified"
+      | _ -> failwith (sprintf "Unknown program info specified: '%s'" name)
     ) in
     ({ pie_constructor = (fst m); pie_table = (snd m); pie_coq_import = (sprintf "Minuska.pi.%s" name); pie_coq_entity_name = (sprintf "%s.MyProgramInfo" name)})
   )

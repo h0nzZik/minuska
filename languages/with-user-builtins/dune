@@ -11,11 +11,18 @@
   (modules run internal)
 )
 
+(coq.extraction
+ (prelude myalgebra)
+ (extracted_modules Myalgebra)
+ (theories)
+ (plugins)
+)
+
 (executable
   (modes plugin)
   (name myplugin)
-  (modules myplugin)
-  (libraries core)
+  (modules myplugin myalgebra)
+  (libraries core minuska.pluginbase)
 )
 
 
