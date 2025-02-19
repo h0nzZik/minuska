@@ -56,7 +56,7 @@ let get_primitive_value_algebra (primitive_value_algebra_name : coqModuleName) :
       | _ -> failwith (sprintf "Unknown built-in algebra specified: '%s'" name)  
     ) in
     {
-      pvae_coq_import = "Minuska.pval_ocaml_binding";
+      pvae_coq_import = "Minuska.builtin."^name;
       pvae_builtin_interface = m;
       pvae_coq_entity_name = (sprintf "builtins_%s" name);
     }
