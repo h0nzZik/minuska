@@ -11,17 +11,11 @@
   (modules run internal)
 )
 
-;(coq.extraction
-; (prelude myalgebra)
-; (extracted_modules Myalgebra)
-; (theories Minuska)
-; (plugins)
-;)
 (rule
   (targets myalgebra.ml myalgebra.mli)
   (deps myalgebra.v)
   (action (
-    chdir %{workspace_root} (run minuska info run -- coqc myalgebra.v)
+    chdir %{workspace_root} (bash "$(minuska info coqbin)/coqc $(minuska info coqflags) myalgebra.v")
   ))
 )
 

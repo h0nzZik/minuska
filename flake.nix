@@ -135,6 +135,8 @@
           postPatch = ''
             substituteInPlace bin/main.ml \
               --replace-fail "\"/usr/lib/coq/user-contrib/Minuska\"" "\"${minuskaSrc.coqMinuska}/lib/coq/${coqVersion}/user-contrib/Minuska\"" \
+              --replace-fail "\"/usr/lib/coq/user-contrib/stdpp\"" "\"${minuskaSrc.coqMinuska.coqPackages.stdpp}/lib/coq/${coqVersion}/user-contrib/stdpp\"" \
+              --replace-fail "\"/usr/lib/coq/user-contrib/Equations\"" "\"${minuskaSrc.coqMinuska.coqPackages.equations}/lib/coq/${coqVersion}/user-contrib/Equations\"" \
               --replace-fail "\"coqc\"" "\"${coqPackages.coq}/bin/coqc\""
           '';
 
@@ -152,7 +154,6 @@
             wrapProgram $out/bin/minuska \
               --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
               --set OCAMLPATH $OCAMLPATH \
-              --set COQPATH $COQPATH \
               --set PATH $PATH \
               --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
           '';
@@ -304,16 +305,16 @@
               };
 
 
-          ## For developing bench-standalone
-          #bench-standalone =
-          #  let
-          #    bench-standalone = self.outputs.packages.${system}.bench-standalone;
-          #    minuska = self.outputs.packages.${system}.minuska;
-          #  in
-          #    pkgs.mkShell {
-          #      inputsFrom = [bench-standalone];
-          #      packages = [minuska];
-          #    };
+          # For developing bench-standalone
+          bench-standalone =
+           let
+             bench-standalone = self.outputs.packages.${system}.bench-standalone;
+             coq-minuska = self.outputs.packages.${system}.coq-minuska;
+           in
+             pkgs.mkShell {
+               inputsFrom = [bench-standalone];
+               packages = [coq-minuska.coqPackages.coq-lsp];
+             };
 
 
 

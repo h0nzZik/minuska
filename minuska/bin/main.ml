@@ -29,9 +29,15 @@ let get_builtins_map (primitive_value_algebra_name : coqModuleName) : builtins_m
   let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding in
   builtins_map
 
+(* < to be patched in Nix> *)
 let coqc_command = "coqc" ;;
-
 let minuska_dir = "/usr/lib/coq/user-contrib/Minuska" ;;
+let stdpp_dir = "/usr/lib/coq/user-contrib/stdpp" ;;
+let equations_dir = "/usr/lib/coq/user-contrib/Equations" ;;
+(* </to be patched in Nix> *)
+
+let coqflags : string = sprintf "-include %s -R %s Equations -R %s stdpp -R %s Minuska" equations_dir equations_dir stdpp_dir minuska_dir
+
 
 let parse_and_print
   (iface : 'a Extracted.builtinInterface)
@@ -182,7 +188,7 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
     fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
   );
   (* extract coq into ocaml *)
-  let rv = run ["cd "; mldir; "; "; coqc_command; " "; "-R "; minuska_dir; " Minuska "; coqfile; " > coq_log.txt"] in
+  let rv = run ["cd "; mldir; "; "; coqc_command; " "; coqflags; " "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith ("`"^ coqc_command ^ "` failed. Is the language definition well-formed?"));
   let _ = run ["cp '"; mlfile; "' '"; output_ml; "'"] in
   let _ = run ["cp '"; mlfile; "i' '"; output_ml; "i'"] in
@@ -360,7 +366,10 @@ let command_print_coqflags =
   ~summary:"Prints coq flags"
   ~readme:(fun () -> "TODO")
   (Command.Param.return
-    (fun () -> printf "%s" ("-R " ^ minuska_dir ^ " Minuska"))
+    (fun () -> 
+      printf "%s" coqflags
+      (* printf "%s" ("-R " ^ minuska_dir ^ " Minuska") *)
+    )
   )
 
 let command_run =
