@@ -210,10 +210,12 @@
             # self.outputs.packages.${system}.minuska
             #coq.ocamlPackages.menhir
           ] ++ [self.outputs.packages.${system}.coq-minuska.coqPackages.coq]
-            ++ self.outputs.packages.${system}.coq-minuska.coqLibraries ;
+            ++ self.outputs.packages.${system}.coq-minuska.coqLibraries
+            ++ self.outputs.packages.${system}.coq-minuska.coqPlugins ;
+
 
           enableParallelBuilding = true;
-          #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
           passthru = { coqPackages = pkgs.coqPackages_8_19; };
         } ) { } ;
@@ -257,7 +259,11 @@
             self.outputs.packages.${system}.coq-minuska
             self.outputs.packages.${system}.languages-in-coq
             self.outputs.packages.${system}.languages-in-coq.coqPackages.coq
-          ] ++ self.outputs.packages.${system}.coq-minuska.coqLibraries;
+          ] ++ self.outputs.packages.${system}.coq-minuska.coqLibraries
+            ++ self.outputs.packages.${system}.coq-minuska.coqPlugins;
+          nativeBuildInputs = self.outputs.packages.${system}.coq-minuska.coqLibraries ++
+self.outputs.packages.${system}.coq-minuska.coqPlugins;
+
           enableParallelBuilding = true;
           #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
