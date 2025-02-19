@@ -223,20 +223,12 @@
           src = ./bench-standalone;
           nativeBuildInputs = [
             self.outputs.packages.${system}.minuska
-            #self.outputs.packages.${system}.coq-minuska
             pkgs.dune_3
             pkgs.time
-          ] ++ example_languages_parser_deps 
-          # We need Coq and the coq-minuska library to test user-provided algebras.
-          ++ [
-            self.outputs.packages.${system}.coq-minuska.coqPackages.coq
-          ]
-          #++ self.outputs.packages.${system}.coq-minuska.coqLibraries
-          ;
+          ] ++ example_languages_parser_deps;
           buildInputs = [
             self.outputs.packages.${system}.coq-minuska
           ];
-          #dontDetectOcamlConflicts = true;
         };
 
         packages.bench-hybrid

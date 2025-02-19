@@ -7,6 +7,6 @@ From Minuska Require Import
 Definition fancy_number := 5.
 
 Extraction
-  "Myalgebra.ml"
+  "myalgebra.ml"
    fancy_number
 .
