@@ -23,7 +23,7 @@
   (modes plugin)
   (name myplugin)
   (modules myplugin myalgebra)
-  (libraries core minuska.pluginbase)
+  (libraries core minuska minuska.pluginbase)
 )
 
 

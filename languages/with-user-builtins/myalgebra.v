@@ -1,6 +1,7 @@
 From Minuska Require Import
   prelude
   default_everything
+  pval_ocaml_binding
 .
 
 (*  Oxide values *)
@@ -107,10 +108,6 @@ Section sec.
 
 End sec.
 
-Definition builtins_binding : BuiltinsBinding := {|
-    bb_function_names := [] ;
-|}.
-
 Definition inject_bool
     {symbol : Type}
     (Fret : option PrimitiveValue -> PrimitiveValue)
@@ -155,9 +152,31 @@ Definition eject
     end
 .
 
+
+(* TOOO *)
+Definition builtins_binding : BuiltinsBinding := {|
+    bb_function_names := [] ;
+|}.
+
+
+Definition builtins_myalg : BuiltinInterface MyUnit := {|
+    bi_beta := β ;
+    bi_bindings := builtins_binding ;
+    bi_inject_bool := @inject_bool string;
+    bi_inject_Z := @inject_Z string;
+    bi_inject_string := @inject_string string;
+    bi_eject := @eject string;
+|}.
+
+
+Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
+
+Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "(fun (x1,x2,x3,x4,x5) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_symbol_eqdec = x2; Libminuska.Extracted.builtin_function_interp = x3; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x4; Libminuska.Extracted.builtin_predicate_interp = x5;})" ].
+
 Definition fancy_number := 5.
 
 Extraction
   "myalgebra.ml"
    fancy_number
+   builtins_myalg
 .

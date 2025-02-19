@@ -154,6 +154,7 @@
             wrapProgram $out/bin/minuska \
               --set OCAMLFIND_DESTDIR $OCAMLFIND_DESTDIR \
               --set OCAMLPATH $OCAMLPATH \
+              --set COQPATH $COQPATH \
               --set PATH $PATH \
               --set CAML_LD_LIBRARY_PATH $CAML_LD_LIBRARY_PATH
           '';
@@ -313,7 +314,7 @@
            in
              pkgs.mkShell {
                inputsFrom = [bench-standalone];
-               packages = [coq-minuska.coqPackages.coq-lsp];
+               packages = [coq-minuska.coqPackages.coq-lsp coq-minuska.coqPackages.coqide];
              };
 
 

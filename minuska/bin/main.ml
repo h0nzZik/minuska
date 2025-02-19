@@ -171,7 +171,7 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
       Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
       Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
       Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
-      Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.mkBuiltin" ].
+      Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.build_Builtin" ].
       Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
       Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
       Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".
