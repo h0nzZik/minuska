@@ -50,8 +50,8 @@ let builtin2str (iface : 'a Extracted.builtinInterface) (name_of_builtins : coqM
   let _ = Miskeleton.convert_builtin iface b in
   let coq_entity = (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name in
   match b with
-  | `BuiltinInt n -> "(bi_inject_Z _ "^coq_entity^" (fun a => match a with Some b => b | None => bv_error end) (" ^ (string_of_int n) ^ ")%Z)"
-  | `BuiltinString s -> "(bi_inject_string _ "^coq_entity^" (fun a => match a with Some b => b | None => bv_error end) \"" ^ s ^ "\")"
+  | `BuiltinInt n -> "(bi_inject_Z _ "^coq_entity^" (fun a => match a with Some b => b | None => bi_inject_err _ "^(get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name ^" end) (" ^ (string_of_int n) ^ ")%Z)"
+  | `BuiltinString s -> "(bi_inject_string _ "^coq_entity^" (fun a => match a with Some b => b | None => bi_inject_err "^(get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name ^" end) \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm

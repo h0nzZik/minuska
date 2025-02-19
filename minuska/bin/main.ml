@@ -169,9 +169,9 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
       Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
       Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
+      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f,g) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_err = c; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ].
       Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
-      Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "Libminuska.Extracted.build_Builtin" ].
+      Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "(fun (x1,x2,x3,x4,x5) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_symbol_eqdec = x2; Libminuska.Extracted.builtin_function_interp = x3; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x4; Libminuska.Extracted.builtin_predicate_interp = x5;})" ].
       Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
       Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
       Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".
