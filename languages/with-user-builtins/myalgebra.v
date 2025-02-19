@@ -29,6 +29,7 @@ Inductive PrimitiveValue :=
 Variant PredicateSymbol :=
 | ps_is_value
 | ps_is_stack
+| ps_is_z
 | ps_stack_is_empty
 | ps_stack_is_nonempty
 | ps_bool_is_true
@@ -44,6 +45,7 @@ Variant FunctionSymbol :=
 | fs_frame_lookup (* StackFrame -> Identifier -> Value *)
 | fs_frame_insert (* StackFrame -> Identifier -> Value -> StackFrame *)
 | fs_frame_delete (* StackFrame -> Identifier -> StackFrame *)
+| fs_z_plus (* Z -> Z -> Z*)
 .
 
 
@@ -108,6 +110,14 @@ Section sec.
 
 End sec.
 
+Definition inject_err
+    {symbol : Type}
+    :
+    PrimitiveValue :=
+  pv_err
+.
+
+
 Definition inject_bool
     {symbol : Type}
     (Fret : option PrimitiveValue -> PrimitiveValue)
@@ -155,13 +165,17 @@ Definition eject
 
 (* TOOO *)
 Definition builtins_binding : BuiltinsBinding := {|
-    bb_function_names := [] ;
+    bb_function_names := [
+      ("z.is","ps_is_z");
+      ("z.plus","fs_z_plus")
+    ] ;
 |}.
 
 
 Definition builtins_myalg : BuiltinInterface MyUnit := {|
     bi_beta := β ;
     bi_bindings := builtins_binding ;
+    bi_inject_err := @inject_err string;
     bi_inject_bool := @inject_bool string;
     bi_inject_Z := @inject_Z string;
     bi_inject_string := @inject_string string;
@@ -170,8 +184,9 @@ Definition builtins_myalg : BuiltinInterface MyUnit := {|
 
 
 Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = c; Libminuska.Extracted.bi_inject_Z = d; Libminuska.Extracted.bi_inject_string = e; Libminuska.Extracted.bi_eject = f; })" ].
-
+Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
 Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "(fun (x1,x2,x3,x4,x5) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_symbol_eqdec = x2; Libminuska.Extracted.builtin_function_interp = x3; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x4; Libminuska.Extracted.builtin_predicate_interp = x5;})" ].
+Extract Inductive Ascii.ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
 
 Definition fancy_number := 5.
 

@@ -15,7 +15,7 @@
   (targets myalgebra.ml myalgebra.mli)
   (deps myalgebra.v)
   (action (
-    chdir %{workspace_root} (bash "$(minuska info coqbin)/coqc $(minuska info coqflags) myalgebra.v")
+    chdir %{workspace_root} (bash "$(minuska info coqbin)/coqc $(minuska info coqflags) -Q . User myalgebra.v")
   ))
 )
 

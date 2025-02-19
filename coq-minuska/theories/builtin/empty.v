@@ -14,6 +14,14 @@ Proof.
 Defined.
 
 
+Inductive TrivialPVA : Set := pv_error.
+
+#[export]
+Instance TrivialPVA_eqdec : EqDecision TrivialPVA.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
 Section sec.
 
     Context
@@ -26,7 +34,7 @@ Section sec.
     Instance β
         : Builtin MyUnit := {|
         builtin_value
-            := Emptyset ;
+            := TrivialPVA ;
         builtin_function_symbol
             := Emptyset ;
         builtin_predicate_symbol
@@ -43,36 +51,44 @@ Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [] ;
 |}.
 
+Definition inject_err
+    {symbol : Type}
+    :
+    TrivialPVA
+:=
+    pv_error
+.
+
 Definition inject_bool
     {symbol : Type}
-    (Fret : option Emptyset -> Emptyset)
+    (Fret : option TrivialPVA -> TrivialPVA)
     (b : bool)
     :
-    Emptyset :=
+    TrivialPVA :=
     Fret None
 .
 
 Definition inject_Z
     {symbol : Type}
-    (Fret : option Emptyset -> Emptyset)
+    (Fret : option TrivialPVA -> TrivialPVA)
     (z : Z)
     :
-    Emptyset :=
+    TrivialPVA :=
     Fret None
 .
 
 Definition inject_string
     {symbol : Type}
-    (Fret : option Emptyset -> Emptyset)
+    (Fret : option TrivialPVA -> TrivialPVA)
     (s : string)
     :
-    Emptyset :=
+    TrivialPVA :=
     Fret None
 .
 
 Definition eject
     {symbol : Type}
-    (v : Emptyset)
+    (v : TrivialPVA)
     :
     option (bool+(Z+(string+unit)))%type
     :=

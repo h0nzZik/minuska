@@ -8,7 +8,7 @@ let () =
   add_user_primitive_value_algebra "mybuiltins" {
     pvae_builtin_interface=builtins;
     pvae_coq_entity_name="builtins_myalg";
-    pvae_coq_import="Myalgebra";
+    pvae_coq_import="User.myalgebra";
   };
   (*Minuska.Pluginbase.*)
   ()

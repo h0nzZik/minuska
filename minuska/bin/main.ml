@@ -154,7 +154,7 @@ let generate_interpreter_coq_internal (cfg : languagedescr) input_filename (outp
     ()
   )
 
-let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (output_ml : string) =
+let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) input_filename (output_ml : string) =
   let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
@@ -188,7 +188,7 @@ let generate_interpreter_ml_internal (cfg : languagedescr) input_filename (outpu
     fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
   );
   (* extract coq into ocaml *)
-  let rv = run ["cd "; mldir; "; "; coqc_command; " "; coqflags; " "; coqfile; " > coq_log.txt"] in
+  let rv = run ["cd "; mldir; "; "; coqc_command; " "; coqflags; " -R "; user_dir; " User "; coqfile; " > coq_log.txt"] in
   (if rv <> 0 then failwith ("`"^ coqc_command ^ "` failed. Is the language definition well-formed?"));
   let _ = run ["cp '"; mlfile; "' '"; output_ml; "'"] in
   let _ = run ["cp '"; mlfile; "i' '"; output_ml; "i'"] in
@@ -207,11 +207,12 @@ let transform_groundterm
   ()
 
 let generate_interpreter_ml (modules : string list) scm_filename (out_ml_file : string) =
+  let curdir = Core_unix.getcwd () in
   List.iter ~f:(fun m -> printf "Loading module '%s'\n" m; Dynlink.loadfile m) modules;
-  let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
+  let dir = Filename.to_absolute_exn ~relative_to:(curdir) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_ml_internal cfg mfile out_ml_file;
+  generate_interpreter_ml_internal curdir cfg mfile out_ml_file;
   ()
 
 let generate_interpreter_coq scm_filename (out_coq_file : string) =
