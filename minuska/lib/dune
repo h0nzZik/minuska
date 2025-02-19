@@ -12,16 +12,29 @@
     (flags (:standard -warn-error -A))))
 
 (library
+  (name libminuskapluginbase)
+  (public_name minuska.pluginbase)
+  (modules pluginbase stringutils dsm)
+  (libraries
+    ; coq-minuska
+    core
+    zarith
+  )
+  (preprocess (pps ppx_jane))
+)
+
+(library
  (name libminuska)
  (public_name minuska)
- (modules stringutils syntax parser lexer miparse micoqprint miunparse miskeleton libminuska dsm programparser)
+ (modules syntax parser lexer miparse micoqprint miunparse miskeleton programparser libminuska)
  (libraries
     benchmark
     core
-    zarith
     core_unix
     core_unix.command_unix
     core_unix.filename_unix
+    dynlink
+    libminuskapluginbase
  )
  (preprocess (pps ppx_jane))
 )

@@ -1,9 +1,11 @@
 open Core
 open Printf
+open Libminuskapluginbase.Pluginbase
+module Stringutils = Libminuskapluginbase.Stringutils
 
 let __ = let rec f _ = Obj.repr f in Obj.repr f
 
-let convert_builtin (iface : 'a Dsm.builtinInterface) (b : Syntax.builtin)  : ((string, 'a) Dsm.builtin_value)  =
+let convert_builtin (iface : 'a Extracted.builtinInterface) (b : Syntax.builtin)  : ((string, 'a) Extracted.builtin_value)  =
   match b with
   | `BuiltinInt n -> (
     iface.bi_inject_Z (fun a -> match a with | None -> failwith "The chosen builtin model does not support integers (Z)" | Some b -> b) (Z.of_int n))
@@ -13,24 +15,24 @@ let convert_builtin (iface : 'a Dsm.builtinInterface) (b : Syntax.builtin)  : ((
   | `BuiltinBool b -> (
       iface.bi_inject_bool (fun a -> match a with | None -> failwith "The chosen builtin model does not support bools" | Some b -> b) b
     )
-  | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Dsm.Bv_error *)
+  | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Extracted.Bv_error *)
   | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"
 
-let rec convert_groundterm (iface : 'a Dsm.builtinInterface) (g : Syntax.groundterm): Dsm.gT =
+let rec convert_groundterm (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
   match g with
   | `GTb b ->
-    Dsm.gt_over iface.bi_beta (convert_builtin iface b)
+    Extracted.gt_over iface.bi_beta (convert_builtin iface b)
   | `GTerm (`Id s, gs) ->
-    Dsm.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm iface) gs))
+    Extracted.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm iface) gs))
 
-let wrap_init (g : Dsm.gT) : Dsm.gT =
-  Dsm.T_term ((Stringutils.explode "builtin.init"), [g])
+let wrap_init (g : Extracted.gT) : Extracted.gT =
+  Extracted.T_term ((Stringutils.explode "builtin.init"), [g])
 
-let wrap_init0 : Dsm.gT =
-  Dsm.T_term ((Stringutils.explode "builtin.init"), [])
+let wrap_init0 : Extracted.gT =
+  Extracted.T_term ((Stringutils.explode "builtin.init"), [])
   
 
-let convert_builtin_back (iface : 'a Dsm.builtinInterface) (b : (string, 'a) Dsm.builtin_value) : Syntax.builtin =
+let convert_builtin_back (iface : 'a Extracted.builtinInterface) (b : (string, 'a) Extracted.builtin_value) : Syntax.builtin =
   let b2 = iface.bi_eject b in
   match b2 with
   | Some b3 -> (
@@ -42,15 +44,15 @@ let convert_builtin_back (iface : 'a Dsm.builtinInterface) (b : (string, 'a) Dsm
   )
   | None -> `OpaqueBuiltin
 
-let rec convert_groundterm_back (iface : 'a Dsm.builtinInterface) (g : Dsm.gT) : Syntax.groundterm =
+let rec convert_groundterm_back (iface : 'a Extracted.builtinInterface) (g : Extracted.gT) : Syntax.groundterm =
   match g with
-  | Dsm.T_over b ->
+  | Extracted.T_over b ->
     `GTb (convert_builtin_back iface b)
-  | Dsm.T_term (s, gs) ->
+  | Extracted.T_term (s, gs) ->
     `GTerm (`Id (Stringutils.implode s),(List.map ~f:(convert_groundterm_back iface) gs))
 
 let rec run_n_steps
-  (step : Dsm.gT -> (Dsm.gT*'a) option)
+  (step : Extracted.gT -> (Extracted.gT*'a) option)
   (generate_debug : 'a list -> string)
   (rev_trace : 'a list)
   (max_depth : int)
@@ -89,9 +91,9 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
 
 let command_run
   (parser : Lexing.lexbuf -> 'programT)
-  (iface : 'a Dsm.builtinInterface)
-  (step : 'programT -> Dsm.gT -> Dsm.gT option)
-  (step_ext : 'programT -> Dsm.gT -> (Dsm.gT*int) option)
+  (iface : 'a Extracted.builtinInterface)
+  (step : 'programT -> Extracted.gT -> Extracted.gT option)
+  (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
   (lang_debug_info : string list)
   =
   Command.basic
@@ -153,11 +155,11 @@ let command_run
     )
 
 let main0
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (parser : Lexing.lexbuf -> 'programT)
-  (step : 'programT -> Dsm.gT -> Dsm.gT option)
-  (step_ext : 'programT -> Dsm.gT -> (Dsm.gT*int) option)
-  (lang_debug_info : Dsm.string list)
+  (step : 'programT -> Extracted.gT -> Extracted.gT option)
+  (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
+  (lang_debug_info : Extracted.string list)
   =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.6" (command_run

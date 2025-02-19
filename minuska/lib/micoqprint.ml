@@ -1,5 +1,7 @@
 open Core
 open Syntax
+open Libminuskapluginbase.Pluginbase
+module Stringutils = Libminuskapluginbase.Stringutils
 
 type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
 type query_map_t = (string, string, String.comparator_witness) Map.t ;;
@@ -9,10 +11,6 @@ let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
     List.iteri ~f:(fun idx x -> if (idx + 1 = ln) then (f x) else (f x; g ())) l;
     ()
 
-
-let output_part_1 = {|
-Require Import Minuska.pval_ocaml_binding Minuska.default_everything Minuska.builtin.empty Minuska.builtin.klike Minuska.pi.trivial.
-|}
 
 let output_part_2 = {delimiter|
 
@@ -47,18 +45,19 @@ let translate_name
         let name = (name1) in
         ("e_fun", name)
 
-let builtin2str (iface : 'a Dsm.builtinInterface) (name_of_builtins : string) b =
+let builtin2str (iface : 'a Extracted.builtinInterface) (name_of_builtins : coqModuleName) b =
   (* This is only to throw error if we cannot convert it *)
   let _ = Miskeleton.convert_builtin iface b in
+  let coq_entity = (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name in
   match b with
-  | `BuiltinInt n -> "(bi_inject_Z _ builtins_"^name_of_builtins^" (fun a => match a with Some b => b | None => bv_error end) (" ^ (string_of_int n) ^ ")%Z)"
-  | `BuiltinString s -> "(bi_inject_string _ builtins_"^name_of_builtins^" (fun a => match a with Some b => b | None => bv_error end) \"" ^ s ^ "\")"
+  | `BuiltinInt n -> "(bi_inject_Z _ "^coq_entity^" (fun a => match a with Some b => b | None => bi_inject_err _ "^(get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name ^" end) (" ^ (string_of_int n) ^ ")%Z)"
+  | `BuiltinString s -> "(bi_inject_string _ "^coq_entity^" (fun a => match a with Some b => b | None => bi_inject_err _ "^(get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name ^" end) \"" ^ s ^ "\")"
   | _ -> failwith "Unsupported builtin value (for printing into Coq)"
 
 let rec print_groundterm
   (oux : Out_channel.t)
-  (iface : 'a Dsm.builtinInterface)
-  (name_of_builtins : string)
+  (iface : 'a Extracted.builtinInterface)
+  (name_of_builtins : coqModuleName)
   (g : Syntax.groundterm) : unit =
   match g with
   | `GTb b ->
@@ -111,10 +110,10 @@ let print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
   print_pattern_w_hole oux p None
 
 let rec print_expr_w_hole
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : string)
+  (name_of_builtins : coqModuleName)
   (oux : Out_channel.t)
   (e : Syntax.expr)
   (hole : string option)
@@ -143,20 +142,20 @@ let rec print_expr_w_hole
 
 
 let print_expr
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : string)
+  (name_of_builtins : coqModuleName)
   (oux : Out_channel.t)
   (e : Syntax.expr)
   : unit =
   print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux e None
 
 let rec print_exprterm
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : string)
+  (name_of_builtins : coqModuleName)
   (oux : Out_channel.t)
   (p : Syntax.exprterm)
   : unit =
@@ -168,10 +167,10 @@ let rec print_exprterm
     fprintf oux "])"
 
 let rec print_cond_w_hole
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : string)
+  (name_of_builtins : coqModuleName)
   (oux : Out_channel.t)
   (c : Syntax.condition)
   (hole : string option)
@@ -207,10 +206,10 @@ let rec print_cond_w_hole
 
 
 let print_rule
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : string)
+  (name_of_builtins : coqModuleName)
   (oux : Out_channel.t)
   (r : Syntax.rule) : unit =
     fprintf oux "(";
@@ -258,20 +257,21 @@ let print_mycontext oux ctx =
 
 
 let print_definition
-  (iface : 'a Dsm.builtinInterface)
+  (iface : 'a Extracted.builtinInterface)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
-  (name_of_builtins : string)
-  (name_of_pi : string)
+  ~(name_of_builtins : coqModuleName)
+  ~(name_of_pi : coqModuleName)
   def oux =
     let _ = def in
-    fprintf oux "%s" output_part_1;
-    fprintf oux "Definition mybeta := (bi_beta MyUnit builtins_%s).\n" name_of_builtins;
+    fprintf oux "Require Import Minuska.pval_ocaml_binding %s %s Minuska.default_everything.\n"  (get_primitive_value_algebra name_of_builtins).pvae_coq_import (get_pi name_of_pi).pie_coq_import;
+    fprintf oux "Definition mybeta := (bi_beta MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
     fprintf oux "#[global] Existing Instance mybeta.\n";
-    fprintf oux "Definition my_program_info := %s.MyProgramInfo.\n" name_of_pi;
+    fprintf oux "Definition my_program_info := %s.\n" (get_pi name_of_pi).pie_coq_entity_name;
     fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
     fprintf oux "Existing Instance mysigma.\n";
-    fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi;
+    (* fprintf oux "#[global] Existing Instance pi.%s.MyProgramInfo.\n" name_of_pi; *)
+    fprintf oux "#[global] Existing Instance my_program_info.\n";
     print_mycontext oux (def.context);
     
     fprintf oux "Definition isValue (";
@@ -286,13 +286,13 @@ let print_definition
     List.iter ~f:(fun fr -> print_frame oux fr) (def.frames);
     (* fprintf oux "%s\n" {|
     Definition basic_rule (name : string) (l : TermOver BuiltinOrVar) (r : TermOver Expression2) (cond : Expression2) : Declaration :=
-      (decl_rule (@mkRuleDeclaration DSM Act name (@mkRewritingRule2 DSM Act l r [(mkSideCondition2 _ (e_nullary b_true) cond)] default_act)))
+      (decl_rule (@mkRuleDeclaration Extracted Act name (@mkRewritingRule2 Extracted Act l r [(mkSideCondition2 _ (e_nullary b_true) cond)] default_act)))
     .
     |}; *)
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_strict oux x; ()) (fun () -> fprintf oux ";" ; ()) (def.Syntax.strictness) ;
     fprintf oux "%s" "] ++ [\n";
-    myiter (fun x -> print_rule iface my_builtins_map my_query_map (name_of_builtins : string) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
+    myiter (fun x -> print_rule iface my_builtins_map my_query_map (name_of_builtins : coqModuleName) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
     

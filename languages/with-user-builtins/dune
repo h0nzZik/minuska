@@ -1,0 +1,36 @@
+
+(env (dev (flags (:standard -warn-error -A))))
+
+(executable
+  (public_name run)
+  (package mylang)
+  (name run)
+  (libraries
+      minuska
+  )
+  (modules run internal)
+)
+
+(rule
+  (targets myalgebra.ml myalgebra.mli)
+  (deps myalgebra.v)
+  (action (
+    chdir %{workspace_root} (bash "$(minuska info coqbin)/coqc $(minuska info coqflags) -Q . User myalgebra.v")
+  ))
+)
+
+(executable
+  (modes plugin)
+  (name myplugin)
+  (modules myplugin myalgebra)
+  (libraries core minuska minuska.pluginbase)
+)
+
+
+(rule
+  (targets internal.ml internal.mli)
+  (deps lang.scm def.m myplugin.cmxs)
+  (action
+  (chdir %{workspace_root}
+  (run minuska generate-interpreter-ml --dynload myplugin.cmxs lang.scm internal.ml)))
+)

@@ -2350,6 +2350,14 @@ Definition builtins_binding : BuiltinsBinding := {|
     ];
 |}.
 
+Definition inject_err
+    {symbol : Type}
+    :
+(@BuiltinValue0 symbol)
+:=
+    bv_error
+.
+
 Definition inject_Z
     {symbol : Type}
     (Fret :  option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
