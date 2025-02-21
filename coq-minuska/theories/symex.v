@@ -459,10 +459,9 @@ Lemma piecewise_difference
 .
 Proof.
     unfold piecewise.
-    Search union_list difference.
-    apply union_list_eq_if_parts_eq.
-    revert m; induction l; intros m.
-    Search union_list eq nat.
+    rewrite union_list_difference.
+    rewrite <- list_fmap_compose.
+    reflexivity.
 Qed.
 
 Lemma piecewise_extends
