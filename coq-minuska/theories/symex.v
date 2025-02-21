@@ -447,7 +447,7 @@ Proof.
     reflexivity.
 Qed.
  
-Lemma piecewise_difference
+Lemma map_piecewise_difference
     {K V : Type}
     {_ : EqDecision K}
     {_ : Countable K}
@@ -459,10 +459,28 @@ Lemma piecewise_difference
 .
 Proof.
     unfold piecewise.
-    rewrite union_list_difference.
+    rewrite map_union_list_difference.
     rewrite <- list_fmap_compose.
     reflexivity.
 Qed.
+
+Lemma set_piecewise_difference
+    {K : Type}
+    {_ : EqDecision K}
+    {_ : Countable K}
+    (n : nat)
+    (f : forall (i : nat) (iltn: i < n), gset K)
+    (m : gset K)
+:
+    (piecewise n f ∖ m) = piecewise n (fun i => ((fun x => x ∖ m) ∘ (f i)))
+.
+Proof.
+    unfold piecewise.
+    rewrite set_union_list_difference.
+    rewrite <- list_fmap_compose.
+    reflexivity.
+Qed.
+
 
 Lemma piecewise_extends
     {Σ : StaticModel}
@@ -559,6 +577,46 @@ Proof.
     ].
     eapply (piecewise_extends n base_δ _ Hdisj).
 Qed.
+(* 
+#[export]
+Instance piecewise_proper 
+    {B : Type}
+    {_EB : Empty B}
+    {_UB : Union B}
+    (n : nat)
+    :
+    Proper (respectful (=) (=)) (@piecewise B _ _ n)
+.
+Proof.
+    unfold Proper.
+    unfold respectful.
+    intros f f' Hff'.
+    rewrite Hff'.
+    reflexivity.
+Qed.
+
+#[local]
+Instance myproper {B : Type} (m i : nat) g:
+    Proper
+    (forall_relation
+    (λ i : nat,
+    @pointwise_relation B (i < m) eq) ==> impl)
+    (eq g)
+.
+Proof.
+    unfold Proper.
+    unfold respectful.
+    intros f1 f2 Hf1f2.
+    intros H.
+    rewrite H.
+    unfold forall_relation in Hf1f2.
+    apply functional_extensionality_dep.
+    intros x.
+    unfold pointwise_relation in Hf1f2.
+    apply functional_extensionality_dep.
+    intros x0.
+    apply Hf1f2.
+Qed. *)
 
 Lemma decouple_preserves_semantics_1
     {Σ : StaticModel}
@@ -829,10 +887,49 @@ Proof.
             }
             (* ltac1:(rewrite - dom_difference_L). *)
             simpl in Hdomf.
+            (* rewrite piecewise_difference. *)
             (* ltac1:(setoid_rewrite <- dom_difference_L in Hdomf). *)
             rewrite dom_piecewise.
-            Search dom difference.
-            rewrite Hdomf.
+            unfold Valuation2 in *.
+            rewrite set_piecewise_difference.
+            unfold compose.
+            simpl.
+            Print fresh_n.
+            Search sum_list_with.
+            (* This should be possible to handle using single setoid_rewrite: *)
+            (* setoid_rewrite Hdomf. *)
+            (* but it didn't work for me *)
+            match! goal with
+            | [|- piecewise _ ?f = _] =>
+                remember $f as g
+            end.
+            assert(Hg: g = fun i pf => match l !! i with None => empty | Some et => list_to_set (fresh_n (elements (avoid ∪ ⋃ (vars_of <$> take i l))) (count_expr et))end).
+            {
+                subst g.
+                apply functional_extensionality_dep.
+                intros x0.
+                apply functional_extensionality_dep.
+                intros x1.
+                rewrite Hdomf.
+                reflexivity.
+            }
+            rewrite Hg.
+            simpl.
+            clear.
+            revert avoid.
+            induction l; intros avoid.
+            { 
+                simpl.
+                unfold piecewise.
+                unfold pfseqn.
+                simpl. reflexivity.
+            }
+            {
+                simpl.
+                Search piecewise.
+            }
+            Search piecewise.
+            (* rewrite union_list_fmap. *)
         }
         {
             intros φ σ Hφσ t Hsatt Hvo3.

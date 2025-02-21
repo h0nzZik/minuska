@@ -3332,23 +3332,31 @@ Fixpoint count_expr
         sum_list_with count_expr l
     end
 .
-
-Definition fresh_n {A : Type} {_ : Fresh A (list A)} : list A -> nat -> list A
+About fresh.
+Definition fresh_n
+    {A C : Type}
+    {_ : Fresh A C}
+    {_ : Union C}
+    {_ : Singleton A C}
+    : nat -> C -> list A
 :=
-    let go := (fix go (avoid : list A) (n : nat) :=
+    let go := (fix go (n : nat) (avoid : C) :=
         match n with
         | O => []
-        | S n' => (fresh avoid)::(go ((fresh avoid)::avoid) n')
+        | S n' => (fresh avoid)::(go n' ((singleton (fresh avoid)) ∪ avoid))
         end
         ) in
-    fun avoid n => go avoid n
+    fun n avoid => go n avoid
 .
 
 Lemma length_fresh_n
-    {A : Type} {_ : Fresh A (list A)}
-    (avoid : list A) (n : nat)
+    {A C : Type}
+    {_ : Fresh A C}
+    {_ : Union C}
+    {_ : Singleton A C}
+    (avoid : C) (n : nat)
     :
-    length (fresh_n avoid n) = n
+    length (fresh_n n avoid) = n
 .
 Proof.
     unfold fresh_n.
@@ -3359,4 +3367,73 @@ Proof.
         rewrite IHn.
         reflexivity.
     }
+Qed.
+
+Lemma fresh_n_proper
+    {A C : Type}
+    {_ : EqDecision A}
+    {_ : Singleton A C}
+    {_ : ElemOf A C}
+    {_ : Infinite A}
+    {_ : Union C}
+    {_ : Intersection C}
+    {_ : Difference C}
+    {_ : Elements A C}
+    {_ : Empty C}
+    {_ : FinSet A C}
+    (n : nat)
+    :
+    Proper (@equiv C _ ==> eq) (fresh_n n)
+.
+Proof.
+    induction n.
+    {
+        unfold fresh_n.
+        intros l1 l2 Hl1l2.
+        reflexivity.
+    }
+    {
+        unfold fresh_n.
+        intros l1 l2 Hl1l2.
+        setoid_rewrite Hl1l2.
+        f_equal.
+    }
+Qed.
+
+Check @fresh_proper.
+
+Lemma fresh_n_plus
+    {A C : Type}
+    {_ : EqDecision A}
+    {_ : Singleton A C}
+    {_ : ElemOf A C}
+    {_ : Infinite A}
+    {_ : Union C}
+    {_ : Intersection C}
+    {_ : Difference C}
+    {_ : Elements A C}
+    {_ : Empty C}
+    {_ : FinSet A C}
+    (n1 n2 : nat)
+    (avoid : C)
+    :
+    fresh_n (n1 + n2) avoid  = (fresh_n n1 avoid) ++ (fresh_n n2 ((list_to_set (fresh_n n1 avoid)) ∪ avoid))
+.
+Proof.
+    revert avoid n2.
+    induction n1; intros avoid n2.
+    {
+        simpl.
+        ltac1:(rewrite union_empty_l_L).
+    }
+    {
+        simpl.
+        apply f_equal.
+        rewrite IHn1.
+
+        apply f_equal.
+        f_equal.
+        rewrite <- app_assoc.
+    }
+
 Qed.
