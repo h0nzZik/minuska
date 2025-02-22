@@ -3332,7 +3332,65 @@ Fixpoint count_expr
         sum_list_with count_expr l
     end
 .
-About fresh.
+
+Fixpoint collect_expr
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    : list Expression2
+:=
+    match et with
+    | t_over e => e::[]
+    | t_term _ l => concat (collect_expr <$> l)
+    end
+.
+
+Lemma sum_list_eq_list_sum (l : list nat)
+    : sum_list l = list_sum l
+.
+Proof.
+    induction l; simpl.
+    { reflexivity. }
+    {
+        rewrite IHl. reflexivity.
+    }
+Qed.
+
+Lemma count_expr_collect_expr
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+:
+    count_expr et = length (collect_expr et)
+.
+Proof.
+    induction et; simpl.
+    { reflexivity. }
+    {
+        rewrite concat_length.
+        ltac1:(replace (map) with (@fmap _ list_fmap) by reflexivity).
+        rewrite <- list_fmap_compose.
+        rewrite <- sum_list_eq_list_sum.
+        apply sum_list_with_eq_pairwise.
+        {
+            unfold compose.
+            rewrite length_fmap.
+            reflexivity.
+        }
+        intros i x1 x2 Hx1 Hx2.
+        unfold compose in Hx2.
+        rewrite Forall_forall in H.
+        specialize (H x1).
+        rewrite elem_of_list_lookup in H.
+        specialize (H (ex_intro _ i Hx1)).
+        rewrite H. clear H.
+        rewrite list_lookup_fmap in Hx2.
+        rewrite Hx1 in Hx2.
+        simpl in Hx2.
+        apply (inj Some) in Hx2.
+        apply Hx2.
+    }
+Qed.
+
+
 Definition fresh_n
     {A C : Type}
     {_ : Fresh A C}

@@ -897,6 +897,23 @@ Proof.
                         rewrite elem_of_union.
                         rewrite elem_of_union.
                         rewrite elem_of_list_to_set.
+                        split.
+                        {
+                            intros HH.
+                            destruct HH as [HH|HH].
+                            {
+                                ltac1:(set_solver).
+                            }
+                            {
+                                destruct HH as [HH|HH].
+                                {
+                                    clear IHl.
+                                }
+                                {
+                                    ltac1:(set_solver).
+                                }
+                            }
+                        }
                     }
                     (* ltac1:(set_solver). *)
                 }
