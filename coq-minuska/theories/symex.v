@@ -388,10 +388,15 @@ Lemma piecewise_S
 .
 Proof.
     unfold piecewise.
+    rewrite pfseqn_S.
+    rewrite fmap_cons.
+    rewrite union_list_cons.
     simpl.
-    Search pfseqn.
+    f_equal.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    reflexivity.
 Qed.
-
 
 Lemma dom_union_list_gmap
     {K V : Type}
@@ -561,46 +566,6 @@ Proof.
     ].
     eapply (piecewise_extends n base_δ _ Hdisj).
 Qed.
-(* 
-#[export]
-Instance piecewise_proper 
-    {B : Type}
-    {_EB : Empty B}
-    {_UB : Union B}
-    (n : nat)
-    :
-    Proper (respectful (=) (=)) (@piecewise B _ _ n)
-.
-Proof.
-    unfold Proper.
-    unfold respectful.
-    intros f f' Hff'.
-    rewrite Hff'.
-    reflexivity.
-Qed.
-
-#[local]
-Instance myproper {B : Type} (m i : nat) g:
-    Proper
-    (forall_relation
-    (λ i : nat,
-    @pointwise_relation B (i < m) eq) ==> impl)
-    (eq g)
-.
-Proof.
-    unfold Proper.
-    unfold respectful.
-    intros f1 f2 Hf1f2.
-    intros H.
-    rewrite H.
-    unfold forall_relation in Hf1f2.
-    apply functional_extensionality_dep.
-    intros x.
-    unfold pointwise_relation in Hf1f2.
-    apply functional_extensionality_dep.
-    intros x0.
-    apply Hf1f2.
-Qed. *)
 
 Lemma decouple_preserves_semantics_1
     {Σ : StaticModel}
@@ -813,15 +778,10 @@ Proof.
                 match inspect (l !! i) with
                 | exist _ None pfet =>
                     match Helper3 i iltn pfet with end
-                    (* let pf' := lookup_ge_None_1 l i pfet in
-                    match (proj1 (Nat.lt_nge i (length l)) iltn pf')
-                    with end *)
                 | exist _ (Some (et)) pfet =>
                     let avoid0 := ((avoid ∪ ⋃ (vars_of <$> take i l))) in
                     let dcpl := decouple et avoid0 in
-                    (* let pfavoid0 := @vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid Σ l i et avoid Hvo pfet in *)
                     let tmp0 := X i et pfet Σ et avoid0 p o δ eq_refl eq_refl (Helper i et pfet) (Helper2 i et pfet) in
-                        (* let tmp := tmp0 eq_refl eq_refl (eq_sym (surjective_pairing (decouple et avoid0))) in *)
                     (projT1 tmp0)
                 end
             ) as f.
@@ -909,11 +869,41 @@ Proof.
                 simpl.
                 rewrite fresh_n_plus.
                 rewrite list_to_set_app_L.
+                rewrite piecewise_S.
+                simpl.
+                rewrite union_empty_r_L.
+                f_equal.
                 rewrite <- IHl.
-                Search piecewise.
+                f_equal.
+                apply functional_extensionality_dep.
+                intros i.
+                apply functional_extensionality_dep.
+                intros pfi.
+                destruct (l !! i) eqn:Hli.
+                {
+                    apply set_eq.
+                    intros x.
+                    rewrite elem_of_list_to_set.
+                    rewrite elem_of_list_to_set.
+                    match! goal with
+                    | [|- (elem_of _ (fresh_n _ ?l)) <-> (elem_of _ (fresh_n _ ?r))] =>
+                        assert(Hlr: $l = $r)
+                    end.
+                    {
+                        apply set_eq.
+                        intros x0.
+                        rewrite elem_of_union.
+                        rewrite elem_of_union.
+                        rewrite elem_of_union.
+                        rewrite elem_of_union.
+                        rewrite elem_of_list_to_set.
+                    }
+                    (* ltac1:(set_solver). *)
+                }
+                {
+                    reflexivity.
+                }
             }
-            Search piecewise.
-            (* rewrite union_list_fmap. *)
         }
         {
             intros φ σ Hφσ t Hsatt Hvo3.
