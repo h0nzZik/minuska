@@ -3369,7 +3369,8 @@ Proof.
     }
 Qed.
 
-Lemma fresh_n_proper
+#[export]
+Instance fresh_n_proper
     {A C : Type}
     {_ : EqDecision A}
     {_ : Singleton A C}
@@ -3400,8 +3401,6 @@ Proof.
     }
 Qed.
 
-Check @fresh_proper.
-
 Lemma fresh_n_plus
     {A C : Type}
     {_ : EqDecision A}
@@ -3424,16 +3423,22 @@ Proof.
     induction n1; intros avoid n2.
     {
         simpl.
-        ltac1:(rewrite union_empty_l_L).
+        ltac1:(rewrite union_empty_l).
+        reflexivity.
     }
     {
         simpl.
         apply f_equal.
         rewrite IHn1.
-
         apply f_equal.
-        f_equal.
-        rewrite <- app_assoc.
+        match! goal with
+        | [ |- fresh_n _ ?l = fresh_n _ ?r] =>
+            assert(H': $l ≡ $r)
+        end.
+        {
+            ltac1:(set_solver).
+        }
+        rewrite H'.
+        reflexivity.
     }
-
 Qed.
