@@ -309,92 +309,6 @@ Proof.
     ltac1:(set_solver).
 Qed.
 
-(* 
-Definition some_weird_function
-    {Σ : StaticModel}
-    (l : list (TermOver Expression2))
-    (l0 : list(TermOver builtin_value))
-    (avoid : gset variable)
-    (p : ProgramT) o
-    (δ : Valuation2)
-    (Hvars : vars_of δ ⊆ avoid)
-    (Hlength : length l0 = length l)
-    (Hvet : ⋃ (vars_of <$> l) ⊆ avoid)
-    (Hsat3: ∀ (i : nat) (t' : TermOver builtin_value) (φ' : TermOver Expression2),
-        l !! i = Some φ' → l0 !! i = Some t' → sat2E p δ t' φ' o
-    )
-    (X : ∀ (i : nat) (x : TermOver Expression2),
-        l !! i = Some x
-        → ∀ (Σ0 : StaticModel) (et : TermOver Expression2) (avoid0 : gset
-        variable) (φ : TermOver
-        BuiltinOrVar) (σ : listset
-        (variable *
-        Expression2)),
-        vars_of et ⊆ avoid0
-        → ∀ eqargs : {|
-        pr1 := Σ;
-        pr2 :=
-        {|
-        pr1 := x;
-        pr2 := avoid ∪ ⋃ (vars_of <$> take i l)
-        |}
-        |} =
-        {|
-        pr1 := Σ0;
-        pr2 := {| pr1 := et; pr2 := avoid0 |}
-        |},
-        eq_rect
-        {|
-        pr1 := Σ;
-        pr2 :=
-        {|
-        pr1 := x;
-        pr2 := avoid ∪ ⋃ (vars_of <$> take i l)
-        |}
-        |}
-        (λ projs : sigma
-        (λ Σ : StaticModel,
-        sigma
-        (λ _ : TermOver Expression2,
-        gset variable)),
-        (TermOver BuiltinOrVar *
-        listset (variable * Expression2))%type)
-        (decouple x (avoid ∪ ⋃ (vars_of <$> take i l)))
-        {| pr1 := Σ0; pr2 := {| pr1 := et; pr2 := avoid0 |} |}
-        eqargs =
-        decouple et avoid0
-        → (φ, σ) = decouple et avoid0
-        → ∀ (δ : Valuation2) (t : TermOver builtin_value) (p : ProgramT) (o : NondetValue),
-        satisfies δ (p, (o, t)) et
-        → vars_of δ ⊆ avoid0
-        → {δ' : gmap variable (TermOver builtin_value) &
-        (satisfies δ' t φ *
-        ∀ (x0 : variable) (e : Expression2),
-        (x0, e) ∈ σ
-        → {ot
-        : NondetValue → TermOver builtin_value &
-        (Expression2_evaluate p δ e = Some ot) *
-        (δ' !! x0 = Some (ot o))})%type}
-    )
-    :=
-    fun (i : nat) (arg : ((TermOver' Expression2 * TermOver' builtin_value))%type) (pf : (zip l l0) !! i = Some arg) =>
-                let et := arg.1 in
-                let t := arg.2 in
-                let pf' := (proj1 (lookup_zip_with_Some pair l l0 i arg) pf) in
-                let pfet : l !! i = Some et := (zip_lookup_fst l l0 i arg (eq_sym Hlength) pf) in
-                let pft : l0 !! i = Some t := (zip_lookup_snd l l0 i arg (eq_sym Hlength) pf) in
-                let avoidi : (gset variable) := avoid ∪ (union_list (vars_of <$> take i l)) in
-                let pfvars1 : ((vars_of et) ⊆ avoidi) := vars_of_l_subseq_avoid_impl_vars_of_x_subseteq_avoid l i et avoid Hvet pfet in
-                let pfsat (*satisfies δ (p, (o, t)) et*) := Hsat3 i t et pfet pft in
-                let tmp := (X i et pfet Σ et avoidi) in
-                let tmp2 := (tmp ((decouple et avoidi)).1 ((decouple et avoidi)).2 pfvars1) in
-                let tmp3 := (tmp2 eq_refl eq_refl (@eq_sym _ _ _ (surjective_pairing (decouple et avoidi))) ) in 
-                let tmp4 := (tmp3 δ t p o pfsat Hvars) in
-                (* tmp4 *)
-                (* (projT1 tmp4) 0 *)
-                0
-. *)
-
 Definition piecewise
     {B : Type}
     {_EB : Empty B}
@@ -408,6 +322,76 @@ Definition piecewise
     let lδ := @fmap list _ _ _ (fun x => (f (proj1_sig x) (proj2_sig x))) s in
     union_list lδ
 .
+
+Definition pfnat_S (n : nat) (x : {x' : nat | x' < n }) : {x'' : nat | x'' < (S n)}
+:=
+    exist _ (S (proj1_sig x)) (proj1 (Nat.succ_lt_mono (proj1_sig x) n) (proj2_sig x))
+.
+
+Lemma pfseqn_S (n : nat):
+    pfseqn (S n) = (exist _ 0 (Nat.lt_0_succ n))::(pfnat_S n <$> (pfseqn n))
+.
+Proof.
+    unfold pfseqn.
+    simpl.
+    f_equal.
+    {
+        erewrite PropExtensionality.proof_irrelevance at 1.
+        reflexivity.
+    }
+    {
+        erewrite PropExtensionality.proof_irrelevance at 1.
+        erewrite PropExtensionality.proof_irrelevance at 1.
+        assert(Hgeneral: forall n' i m pf1 pf2, pfseq0 (S n') (S i) m pf1 = pfnat_S n' <$> pfseq0 n' i m pf2).
+        {
+            clear n.
+            intros n' i m.
+            revert n' i.
+            induction m; intros n' i pf1 pf2.
+            {
+                reflexivity.
+            }
+            {
+                simpl.
+                f_equal.
+                {
+                    erewrite PropExtensionality.proof_irrelevance at 1.
+                    erewrite PropExtensionality.proof_irrelevance at 1.
+                    unfold pfnat_S.
+                    simpl.
+                    reflexivity.
+                }
+                {
+                    erewrite (IHm n').
+                    erewrite PropExtensionality.proof_irrelevance at 1.
+                    reflexivity.
+                    Unshelve.
+                    { ltac1:(lia). }
+                    { ltac1:(lia). }
+                    { ltac1:(lia). }
+                    { ltac1:(lia). }
+                }
+            }
+        }
+        apply Hgeneral.
+    }
+Qed.
+
+Lemma piecewise_S
+    {B : Type}
+    {_EB : Empty B}
+    {_UB : Union B}
+    (n : nat)
+    (f : forall(i : nat)(iltn : i < S n), B)
+:
+    piecewise (S n) f = (f 0 (Nat.lt_0_succ n)) ∪ (piecewise n (fun i iltn => f (S i) (proj1 (Nat.succ_lt_mono i n) iltn) ))
+.
+Proof.
+    unfold piecewise.
+    simpl.
+    Search pfseqn.
+Qed.
+
 
 Lemma dom_union_list_gmap
     {K V : Type}
@@ -629,7 +613,7 @@ Lemma decouple_preserves_semantics_1
         vars_of et ⊆ vars_of δ -> 
         vars_of δ ⊆ avoid -> 
         { δ' : gmap variable (TermOver builtin_value) &
-            ((dom δ' ∖ dom δ = list_to_set (fresh_n (elements avoid) (count_expr et)))*( 
+            ((dom δ' ∖ dom δ = list_to_set (fresh_n (count_expr et) (avoid)))*( 
                 vars_of et ⊆ avoid ->
                 forall (φ : TermOver BuiltinOrVar) σ,
                 (φ,σ) = decouple et avoid ->
@@ -852,7 +836,7 @@ Proof.
                     let avoid0 := avoid ∪ union_list (vars_of <$> take i l) in
                     match (inspect (l !! i)) with
                     | exist _ (Some et) _ =>
-                        list_to_set ((fresh_n (elements avoid0) (count_expr et)))
+                        list_to_set ((fresh_n (count_expr et) (avoid0)))
                     | exist _ None _ => ∅
                     end
                 )
@@ -885,10 +869,7 @@ Proof.
                     ltac1:(lia).
                 }
             }
-            (* ltac1:(rewrite - dom_difference_L). *)
             simpl in Hdomf.
-            (* rewrite piecewise_difference. *)
-            (* ltac1:(setoid_rewrite <- dom_difference_L in Hdomf). *)
             rewrite dom_piecewise.
             unfold Valuation2 in *.
             rewrite set_piecewise_difference.
@@ -903,7 +884,7 @@ Proof.
             | [|- piecewise _ ?f = _] =>
                 remember $f as g
             end.
-            assert(Hg: g = fun i pf => match l !! i with None => empty | Some et => list_to_set (fresh_n (elements (avoid ∪ ⋃ (vars_of <$> take i l))) (count_expr et))end).
+            assert(Hg: g = fun i pf => match l !! i with None => empty | Some et => list_to_set (fresh_n (count_expr et) ((avoid ∪ ⋃ (vars_of <$> take i l))))end).
             {
                 subst g.
                 apply functional_extensionality_dep.
@@ -926,6 +907,9 @@ Proof.
             }
             {
                 simpl.
+                rewrite fresh_n_plus.
+                rewrite list_to_set_app_L.
+                rewrite <- IHl.
                 Search piecewise.
             }
             Search piecewise.
