@@ -12,7 +12,167 @@ From Minuska Require Import
 Locate imap.
 Check imap.
 
+Fixpoint decouple
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    (avoid : listset variable)
+    (eqs : listset (variable * Expression2))
+    :
+    ((TermOver BuiltinOrVar)*(listset (variable * Expression2 )))%type
+:=
+    match et with
+    | t_over e =>
+        let y : variable := fresh (avoid ∪ (( ((fst <$> eqs))))) in
+        (t_over (bov_variable y), singleton (y,e) ∪ eqs)
+    | t_term s l =>
+        let '(l'', m) := (fix go (l' : list (TermOver Expression2)) (avoid' : listset variable) (eqs' : listset (variable * Expression2)) : (list (TermOver BuiltinOrVar))*(listset (variable * Expression2 )) := 
+            match l' with
+            | [] => ([], eqs')
+            | x::xs =>
+                let '(t', eqs'') := decouple x avoid' eqs' in
+                let '(ts', eqs''') := go xs avoid' eqs'' in
+                (t'::ts', eqs''')
+            end
+        ) l avoid eqs in
+        (t_term s l'', m)
+    end
+.
 
+Lemma decouple_extends_eqs
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    (avoid : listset variable)
+    (eqs : listset (variable * Expression2))
+    :
+    eqs ⊆ (decouple et avoid eqs).2
+.
+Proof.
+    revert avoid eqs.
+    induction et; intros avoid eqs; simpl in *.
+    {
+        ltac1:(set_solver).
+    }
+    {
+        ltac1:(repeat case_match).
+        simpl.
+        clear s.
+        revert avoid eqs l0 l1 H0 H.
+        induction l; intros avoid eqs l0 l1 H0 H.
+        {
+            ltac1:(simplify_eq/=).
+            ltac1:(set_solver).
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [HH1 HH2].
+            ltac1:(repeat case_match; simplify_eq/=).
+            specialize (IHl _ _ _ _ H1 HH2).
+            eapply transitivity>[|apply IHl].
+            clear IHl.
+            clear HH2 H1.
+            specialize (HH1 avoid eqs).
+            rewrite H in HH1.
+            simpl in HH1.
+            exact HH1.
+        }
+    }
+Qed.
+
+Lemma decouple_avoids
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    (avoid : listset variable)
+    (eqs : listset (variable * Expression2))
+    :
+    (vars_of (decouple et avoid eqs).1) ## (list_to_set ∘ elements) (avoid ∪ ((fst <$> eqs)))
+.
+Proof.
+    revert avoid eqs.
+    induction et; intros avoid eqs; simpl in *.
+    {
+        unfold vars_of; simpl.
+        unfold vars_of; simpl.
+        rewrite elem_of_disjoint.
+        intros x.
+        rewrite elem_of_singleton.
+        intros Hx H.
+        subst x.
+        rewrite elem_of_list_to_set in H.
+        rewrite elem_of_elements in H.
+
+        rewrite elem_of_union in H.
+        destruct H as [H|H].
+        {
+            
+            (* rewrite elem_of_list_to_set in Hx. *)
+            (* rewrite elem_of_elements in Hx. *)
+            (* rewrite elem_of_singleton in Hx. *)
+            (* subst x. *)
+            eapply elem_of_weaken in H.
+            eapply is_fresh.
+            { apply H. }
+            ltac1:(set_solver).
+        }
+        {
+            (* rewrite elem_of_list_to_set in Hx. *)
+            (* rewrite elem_of_elements in Hx. *)
+            (* rewrite elem_of_singleton in Hx. *)
+            (* subst x. *)
+            eapply elem_of_weaken in H.
+            eapply is_fresh.
+            { apply H. }
+            ltac1:(set_solver).
+        }
+    }
+    {
+        ltac1:(case_match).
+        unfold vars_of; simpl.
+        clear s.
+        revert avoid eqs H l0 l1 H0.
+        induction l; intros avoid eqs H l0 l1 H0; simpl in *.
+        {
+            ltac1:(simplify_eq/=).
+            ltac1:(set_solver).
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [HH1 HH2].
+            
+            destruct l0; simpl in *.
+            {
+                ltac1:(set_solver).
+            }
+            {
+                (* Search elements union. *)
+                rewrite disjoint_union_l.
+                split.
+                {
+                    repeat (ltac1:(case_match)).
+                    ltac1:(simplify_eq/=).
+                    specialize (HH1 avoid eqs).
+                    rewrite H in HH1. simpl in HH1.
+                    apply HH1.
+                }
+                {
+                    repeat (ltac1:(case_match)).
+                    ltac1:(simplify_eq/=).
+                    specialize (IHl (avoid) l2 HH2).
+                    specialize (IHl l0 l1 H1).
+                    assert(Htmp := decouple_extends_eqs a avoid eqs).
+                    rewrite H in Htmp.
+                    clear - IHl Htmp.
+                    ltac1:(set_solver).
+                }
+            }
+        }
+    }
+    Unshelve.
+    apply listset_fin_set.
+    apply listset_fin_set.
+Qed.
+
+(* 
+(* I have it wrong!!! avoidi is wrong since I avoid variables from the list instead of the newly generated one.*)
 Equations? decouple
     {Σ : StaticModel}
     (et : TermOver Expression2)
@@ -45,7 +205,7 @@ Proof.
     rewrite length_app.
     simpl.
     ltac1:(lia).
-Qed.
+Qed. *)
 
 
 Lemma decouple_avoids
@@ -774,13 +934,21 @@ Proof.
                 with end)
             ).
         }
-        remember (fun (i : nat) (iltn : i < (length l)) =>
+        assert(Helper4: forall i j a, take i l !! j = Some a -> j < length l).
+        {
+            intros.
+            apply lookup_lt_Some in H.
+            rewrite length_take in H.
+            ltac1:(lia).
+        }
+        (* Search lt le. *)
+        remember (fix ff (i : nat) (iltn : i < (length l)) : gmap variable (TermOver builtin_value) :=
                 match inspect (l !! i) with
                 | exist _ None pfet =>
                     match Helper3 i iltn pfet with end
                 | exist _ (Some (et)) pfet =>
-                    let avoid0 := ((avoid ∪ ⋃ (vars_of <$> take i l))) in
-                    let dcpl := decouple et avoid0 in
+                    let avoid0 : gset variable := ((avoid ∪ ⋃ (ipmap (take i l) (fun j a pfa => dom (ff j ((Helper4 i j a pfa))))))) in
+                    (* let dcpl := decouple et avoid0 in *)
                     let tmp0 := X i et pfet Σ et avoid0 p o δ eq_refl eq_refl (Helper i et pfet) (Helper2 i et pfet) in
                     (projT1 tmp0)
                 end
@@ -835,8 +1003,6 @@ Proof.
             rewrite set_piecewise_difference.
             unfold compose.
             simpl.
-            Print fresh_n.
-            Search sum_list_with.
             (* This should be possible to handle using single setoid_rewrite: *)
             (* setoid_rewrite Hdomf. *)
             (* but it didn't work for me *)
@@ -856,9 +1022,124 @@ Proof.
             }
             rewrite Hg.
             simpl.
-            clear.
+            assert (Havoid1: ⋃ (vars_of <$> l) ⊆ avoid).
+            {
+                ltac1:(set_solver).
+            }
+            match! goal with
+            | [|- piecewise _ ?f = _] =>
+                assert(Hf: $f = (fun (i : nat)(pfi: i < length l) => list_to_set(match l !! i with None => [] | Some et => (fresh_n (count_expr et) avoid)  end)))
+            end.
+            {
+                apply functional_extensionality_dep.
+                intros i.
+                apply functional_extensionality_dep.
+                intros pfi.
+                destruct (l !! i) eqn:Hli.
+                {
+                    apply f_equal.
+                    apply f_equal.
+                    assert (Htmp1: vars_of (take i l) ⊆ vars_of l).
+                    {
+                        rewrite <- (take_drop i l) at 2.
+                        unfold vars_of; simpl.
+                        rewrite fmap_app.
+                        rewrite union_list_app.
+                        ltac1:(set_solver).
+                    }
+                    ltac1:(set_solver).
+                }
+                { reflexivity. }
+            }
+            rewrite Hf.
+            clear Hf.
+            (* 
+            induction l; simpl.
+            {
+                reflexivity.
+            }
+            {
+                rewrite fresh_n_plus.
+                rewrite piecewise_S.
+                simpl.
+                rewrite list_to_set_app_L.
+            }
+            unfold piecewise.
+            unfold union_list.
+            rewrite foldr_fmap. *)
+            (* About list_to_set. *)
+            (* Search foldr fmap. *)
+            clear X Heqf Heqcall Hvo2 Helper2.
+            clear Hdomf f g Heqf Heqg Hg.
+            assert(Htmp1: count_expr = length ∘ collect_expr).
+            {
+                apply functional_extensionality.
+                apply count_expr_collect_expr.
+            }
+            rewrite Htmp1.
+            clear Htmp1.
+            (* unfold compose. *)
+            
+            revert Havoid1.
             revert avoid.
-            induction l; intros avoid.
+            clear.
+            remember (sum_list_with (length ∘ collect_expr) l) as cnt.
+            assert(Hcnt: sum_list_with (length ∘ collect_expr) l <= cnt).
+            {
+                ltac1:(lia).
+            }
+            clear Hcnt.
+            (* clear Heqcnt. *)
+            revert Heqcnt.
+            revert l.
+            induction cnt; intros l Heqcnt.
+            {
+                revert Heqcnt.
+                induction l; intros Hcnt; simpl in *.
+                {
+                    intros _ _. reflexivity.
+                }
+                {
+                    destruct a; simpl in *.
+                    {
+                        ltac1:(lia).
+                    }
+                    {
+                        intros avoid Havoid.
+                        rewrite piecewise_S.
+                        simpl.
+                        assert (Hlen: length (concat (collect_expr <$> l0)) = 0).
+                        {
+                            ltac1:(lia).
+                        }
+                        rewrite Hlen.
+                        simpl.
+                        rewrite concat_length in Hcnt.
+                        specialize (IHl ltac:(lia)).
+                        rewrite vars_of_t_term_e in Havoid.
+                        specialize (IHl avoid ltac:(set_solver)).
+                        rewrite <- IHl.
+                        ltac1:(set_solver).
+                    }
+                }
+            }
+            {
+                intros avoid Havoid.
+                destruct l; simpl in *.
+                {
+                    ltac1:(lia).
+                }
+                {
+                    rewrite piecewise_S.
+                    simpl.
+                    destruct t; simpl in *.
+                    {
+                        rewrite IHcnt.
+                    }
+                }
+            }
+            (* assert(Hind: forall (avoid' : gset variable) (et : TermOver' Expression2), vars_of et ⊆ avoid' -> fresh_n (count_expr et) avoid') *)
+            induction l; intros avoid Havoid1.
             { 
                 simpl.
                 unfold piecewise.
@@ -871,8 +1152,154 @@ Proof.
                 rewrite list_to_set_app_L.
                 rewrite piecewise_S.
                 simpl.
-                rewrite union_empty_r_L.
+
+                rewrite IHl.
+
+
                 f_equal.
+                destruct a.
+                {
+                    simpl in *.
+                    rewrite IHl.
+                }
+                rewrite IHl.
+                apply f_equal.
+                apply f_equal.
+
+                destruct a.
+                {
+                    simpl in *.
+                    destruct l.
+                    {
+                        simpl in *.
+                        reflexivity.
+                    }
+                    {
+                        simpl in *.
+                    }
+                    rewrite <- IHl.
+                    clear IHl.
+                    apply f_equal.
+                    apply functional_extensionality_dep.
+                    intros i.
+                    apply functional_extensionality_dep.
+                    intros pfi.
+                    destruct (l !! i)>[|reflexivity].
+                    apply f_equal.
+                    apply f_equal.
+                    destruct l.
+                    {
+                        simpl in *.
+                        destruct i; simpl in *.
+                        {
+                            ltac1:(lia).
+                        }
+                        {
+                            ltac1:(lia).
+                        }
+                    }
+                    {
+                        simpl in *.
+                        destruct i; simpl in *.
+                        {
+
+                        }
+                        {
+
+                        }
+                    }
+                    assert (Htmp1: vars_of (take i l) ⊆ vars_of l).
+                    {
+                        rewrite <- (take_drop i l) at 2.
+                        unfold vars_of; simpl.
+                        rewrite fmap_app.
+                        rewrite union_list_app.
+                        ltac1:(set_solver).
+                    }
+                    match! goal with
+                    | [|- ?l = ?r] =>
+                        assert(Htmp: $l = avoid)
+                    end.
+                    {
+                        ltac1:(set_solver).
+                    }
+                    rewrite Htmp.
+                    clear Htmp Htmp1.
+                    
+                }
+                {
+
+                }
+
+
+                rewrite <- IHl at 2.
+                (* rewrite IHl. *)
+                (* rewrite <- IHl. *)
+                (* rewrite <- IHl. *)
+                specialize (IHl (((*list_to_set (fresh_n (count_expr a) avoid)*) ∪ avoid ∪ (vars_of a)))).
+                (* specialize (IHl (avoid ∪ vars_of a ∪ ⋃ (vars_of <$> l))). *)
+                ltac1:(ospecialize (IHl _)).
+                {
+                    ltac1:(set_solver).
+                }
+                (* rewrite IHl. *)
+
+                rewrite fmap_cons in Havoid1.
+                rewrite union_list_cons in Havoid1.
+                match! Constr.type (Control.hyp ident:(IHl)) with
+                | (_ = (list_to_set (fresh_n _ ?l))) =>
+                     match! goal with
+                    |[|- _= (list_to_set (fresh_n _ ?r))] =>
+                        assert(H'lr: $l = $r)
+                    end
+                end.
+                {
+                    ltac1:(set_solver).
+                }
+                rewrite H'lr in IHl.
+                rewrite <- IHl.
+                f_equal.
+                apply functional_extensionality_dep.
+                intros i.
+                apply functional_extensionality_dep.
+                intro Hiltlen.
+                destruct (l !! i) eqn:Heq.
+                {
+                    apply f_equal.
+                    apply f_equal.
+                    clear IHl.
+                    assert(Htmp: ⋃ (vars_of <$> take i l) ⊆ ⋃ (vars_of <$> l)).
+                    {
+                        clear.
+                        rewrite <- (take_drop i l) at 2.
+                        rewrite fmap_app.
+                        rewrite union_list_app.
+                        ltac1:(set_solver).
+                    }
+                    match! goal with
+                    | [|- _ = ?r] => assert(Htmp2: $r = (list_to_set (fresh_n (count_expr a) avoid)) ∪ avoid)
+                    end.
+                    {
+                        ltac1:(set_solver).
+                    }
+                    rewrite Htmp2. clear Htmp2.
+                    ltac1:(set_solver).
+                    apply set_eq.
+                    repeat (setoid_rewrite elem_of_union).
+                    (* ltac1:(set_solver). *)
+                }
+                {
+                    reflexivity.
+                }
+                
+                (* specialize (IHl _ Havoid1). *)
+                (*                 
+                simpl in f.
+                simpl in g.
+                remember (fun (i : nat)(iltn : i < length l) => f i (Nat.lt_lt_succ_r _ _ iltn)) as f'.
+                remember (fun (i : nat)(iltn : i < length l) => g i (Nat.lt_lt_succ_r _ _ iltn)) as g'.
+                specialize (IHl f').
+                specialize (IHl g'). *)
                 rewrite <- IHl.
                 f_equal.
                 apply functional_extensionality_dep.
@@ -908,10 +1335,66 @@ Proof.
                                 destruct HH as [HH|HH].
                                 {
                                     clear IHl.
+                                    rewrite fmap_cons in Havoid1.
+                                    rewrite union_list_cons in Havoid1.
+                                    left. right.
+                                    clear - HH Havoid1.
+                                    ltac1:(set_solver).
                                 }
                                 {
                                     ltac1:(set_solver).
                                 }
+                            }
+                        }
+                        {
+                            intros HH.
+                            destruct (decide (x0 ∈ ⋃ (vars_of <$> take i l))) as [Hin|Hnotin].
+                            {
+                                right. right. apply Hin.
+                            }
+                            {
+                                destruct HH as [HH|HH].
+                                {
+                                    destruct (decide (x0 ∈ avoid)) as [Hin'|Hnotin'].
+                                    {
+                                        left. apply Hin'.
+                                    }
+                                    {
+                                        right.
+                                        left.
+                                        destruct HH as [HH|HH].
+                                        {
+                                            rewrite fmap_cons in Havoid1.
+                                            rewrite union_list_cons in Havoid1.
+                                            ltac1:(exfalso).
+                                        }
+                                        {
+                                            ltac1:(exfalso; clear -HH Hnotin'; set_solver).
+                                        }
+                                    }
+                                }
+                                {
+                                    ltac1:(exfalso; clear - HH Hnotin; set_solver).
+                                }
+                            }
+                            destruct HH as [HH|HH].
+                            {
+                                destruct HH as [HH|HH].
+                                {
+                                    rewrite fmap_cons in Havoid1.
+                                    rewrite union_list_cons in Havoid1.
+                                    left.
+                                    eapply elem_of_weaken>[|apply Havoid1].
+                                    rewrite elem_of_union.
+                                    right.
+                                    Search fresh_n.
+                                }
+                                {
+
+                                }
+                            }
+                            {
+
                             }
                         }
                     }
