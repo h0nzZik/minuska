@@ -171,6 +171,87 @@ Proof.
     apply listset_fin_set.
 Qed.
 
+Lemma decoupled_uses_only_original_vars
+    {Σ : StaticModel}
+    et avoid eqs φ σ x e:
+    (φ, σ) = (decouple et avoid eqs) ->
+    (x,e) ∈ σ ->
+    vars_of e ⊆ vars_of et \/ (x,e) ∈ eqs
+.
+Proof.
+    revert avoid eqs φ σ x e.
+    induction et;
+        intros avoid eqs φ σ x e H1 H2.
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        rewrite elem_of_union in H2.
+        destruct H2 as [H2|H2].
+        {
+            rewrite elem_of_singleton in H2.
+            ltac1:(simplify_eq/=).
+            left.
+            apply reflexivity.
+        }
+        {
+            right.
+            exact H2.
+        }
+    }
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        rewrite vars_of_t_term_e.
+        ltac1:(repeat case_match; simplify_eq/=).
+        clear s.
+        revert l0 l1 x e avoid eqs H0 H2 H.
+        induction l;
+            intros l0 l1 x e avoid eqs H0 H2 H.
+        {
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            right.
+            exact H2.
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [HH1 HH2].
+            rewrite fmap_cons.
+            rewrite union_list_cons.
+            destruct (decide ((x, e) ∈ eqs)) as [Hin|Hnotin].
+            {
+                right. assumption.
+            }
+            {
+                
+                ltac1:(repeat case_match; simplify_eq/=).
+                destruct (decide ((x, e) ∈ l2)) as [Hin'|Hnotin'].
+                {
+                    specialize (HH1 avoid eqs t l2 x e (eq_sym H) Hin').
+                    destruct HH1 as [HH1|HH1].
+                    {
+                        ltac1:(clear -HH1; set_solver).
+                    }
+                    {
+                        ltac1:(exfalso; apply Hnotin; apply HH1).
+                    }
+                }
+                {
+                    specialize (IHl l3 l1 x e avoid l2 H1 H2 HH2).
+                    simpl in *.
+                    destruct IHl as [IHl|IHl].
+                    {
+                        left. ltac1:(clear -IHl; set_solver).
+                    }
+                    {
+                        right. ltac1:(set_solver).
+                    }
+                }
+            }
+        }
+    }
+Qed.
+
 (* 
 (* I have it wrong!!! avoidi is wrong since I avoid variables from the list instead of the newly generated one.*)
 Equations? decouple
@@ -207,7 +288,7 @@ Proof.
     ltac1:(lia).
 Qed. *)
 
-
+(* 
 Lemma decouple_avoids
     {Σ : StaticModel}
     (et : TermOver Expression2)
@@ -270,7 +351,7 @@ Proof.
             ltac1:(lia).
         }
     }
-Qed.
+Qed. *)
 
 Lemma decoupled_uses_only_original_vars
     {Σ : StaticModel}
