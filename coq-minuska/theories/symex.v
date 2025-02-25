@@ -329,252 +329,6 @@ Proof.
     }
 Qed.
 
-(* 
-(* I have it wrong!!! avoidi is wrong since I avoid variables from the list instead of the newly generated one.*)
-Equations? decouple
-    {Σ : StaticModel}
-    (et : TermOver Expression2)
-    (avoid : gset variable)
-    :
-    ((TermOver BuiltinOrVar)*(listset (variable * Expression2 )))%type
-    by wf (TermOver_size et) lt
-:=
-    decouple (t_over e) avoid :=
-        let y : variable := fresh (avoid) in
-        (t_over (bov_variable y), singleton (y,e))
-    ;
-    decouple (t_term s l) avoid :=
-        let l'' := ipmap l (fun (i : nat) (x : TermOver Expression2) (pf : l !! i = Some x) =>
-            let avoidi := avoid ∪ (union_list (vars_of <$> (take i l))) in
-            let pi_sigmai := decouple x avoidi in
-            pi_sigmai
-        ) in
-    (t_term s (fmap fst l''), union_list (fmap snd l''))
-.
-Proof.
-    apply take_drop_middle in pf.
-    rewrite <- pf.
-    rewrite sum_list_with_compose.
-    unfold compose.
-    rewrite sum_list_with_S.
-    rewrite sum_list_fmap.
-    rewrite sum_list_with_app.
-    rewrite length_fmap.
-    rewrite length_app.
-    simpl.
-    ltac1:(lia).
-Qed. *)
-
-(* 
-Lemma decouple_avoids
-    {Σ : StaticModel}
-    (et : TermOver Expression2)
-    (avoid : gset variable)
-    :
-    (vars_of (decouple et avoid).1) ## avoid
-.
-Proof.
-    ltac1:(funelim (decouple et avoid)).
-    {
-        ltac1:(simp decouple).
-        simpl.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        rewrite disjoint_singleton_l.
-        rewrite <- elem_of_elements.
-        apply infinite_is_fresh.
-    }
-    {
-        ltac1:(simp decouple).
-        simpl.
-        unfold vars_of; simpl.
-        rewrite elem_of_disjoint.
-        intros x H1x H2x.
-        rewrite elem_of_union_list in H1x.
-        destruct H1x as [X [H1X H2X]].
-        rewrite elem_of_list_fmap in H1X.
-        destruct H1X as [y [H1y H2y]].
-        rewrite elem_of_list_lookup in H2y.
-        destruct H2y as [i Hi].
-        subst.
-        rewrite list_lookup_fmap in Hi.
-        rewrite fmap_Some in Hi.
-        destruct Hi as [[t ls][HH1 HH2]].
-        simpl in *; subst.
-        destruct (l !! i) eqn:Heq.
-        {
-            eapply ipmap_lookup in Heq as Heq'.
-            ltac1:(setoid_rewrite HH1 in Heq').
-            destruct Heq' as [b [H1b H2b]].
-            specialize (H2b Heq).
-            apply (inj Some) in H1b.
-            subst b.
-            specialize (H _ _ Heq Σ t0).
-            simpl in H.
-            match! (Constr.type (Control.hyp ident:(H2b))) with
-            | ( _ = decouple _ ?a) =>
-                specialize (H $a)
-            end.
-            specialize (H eq_refl).
-            specialize (H eq_refl).
-            rewrite <- H2b in H.
-            simpl in H.
-            ltac1:(set_solver).
-        }
-        {
-            apply lookup_lt_Some in HH1 as HH1'.
-            rewrite ipmap_length in HH1'.
-            apply lookup_ge_None in Heq.
-            ltac1:(lia).
-        }
-    }
-Qed. *)
-(* 
-Lemma decoupled_uses_only_original_vars
-    {Σ : StaticModel}
-    et avoid φ σ x e:
-    (φ, σ) = (decouple et avoid) ->
-    (x,e) ∈ σ ->
-    vars_of e ⊆ vars_of et
-.
-Proof.
-    ltac1:(funelim (decouple et avoid)).
-    {
-        intros H1 H2.
-        ltac1:(simp decouple in H1).
-        simpl in H1.
-        inversion H1; subst; clear H1.
-        rewrite elem_of_singleton in H2.
-        inversion H2; subst; clear H2.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        apply reflexivity.
-    }
-    {
-        intros H1 H2.
-        ltac1:(simp decouple in H1).
-        simpl in H1.
-        inversion H1; subst; clear H1.
-        rewrite elem_of_union_list in H2.
-        destruct H2 as [X [H1X H2X]].
-        simpl in H1X.
-        rewrite elem_of_list_fmap in H1X.
-        destruct H1X as [y [H1y H2y]].
-        subst X.
-        rewrite elem_of_list_lookup in H2y.
-        destruct H2y as [i Hi].
-        destruct (l !! i) eqn:Hli.
-        {
-            eapply ipmap_lookup in Hli as Hli'.
-            rewrite Hi in Hli'.
-            destruct Hli' as [b [H1b H2b]].
-            apply (inj Some) in H1b.
-            subst y.
-            specialize (H2b Hli).
-            destruct b as [φ σ].
-            specialize (H i t Hli Σ t (avoid ∪ ⋃ (vars_of <$> take i l)) φ σ x e eq_refl eq_refl H2b H2X).
-            eapply transitivity>[apply H|].
-            eapply take_drop_middle in Hli as Hli'.
-            rewrite <- Hli'. clear Hli'.
-            simpl.
-            rewrite vars_of_t_term_e.
-            rewrite fmap_app.
-            rewrite fmap_cons.
-            rewrite union_list_app.
-            rewrite union_list_cons.
-            clear.
-            ltac1:(set_solver).
-        }
-        {
-            ltac1:(exfalso).
-            apply lookup_ge_None in Hli.
-            apply lookup_lt_Some in Hi.
-            rewrite ipmap_length in Hi.
-            ltac1:(lia).
-        }
-    }
-Qed. *)
-
-Lemma decouple_does_not_lose_variables
-    {Σ : StaticModel}
-    et avoid φ σ:
-    (φ, σ) = (decouple et avoid) ->
-    ∀ (x : variable),
-        x ∈ vars_of φ ->
-        ∃ (e : Expression2),
-            (x,e) ∈ σ
-.
-Proof.
-    ltac1:(funelim (decouple et avoid)).
-    {
-        intros H1 x Hx.
-        ltac1:(simp decouple in H1).
-        simpl in H1.
-        inversion H1; subst; clear H1.
-        unfold vars_of in Hx; simpl in Hx.
-        unfold vars_of in Hx; simpl in Hx.
-        rewrite elem_of_singleton in Hx.
-        subst x.
-        exists e.
-        rewrite elem_of_singleton.
-        reflexivity.
-    }
-    {
-        intros H1 x Hx.
-        ltac1:(simp decouple in H1).
-        simpl in H1.
-        inversion H1; subst; clear H1.
-        rewrite vars_of_t_term in Hx.
-        rewrite elem_of_union_list in Hx.
-        destruct Hx as [X [H1X H2X]].
-        rewrite elem_of_list_fmap in H1X.
-        destruct H1X as [y [H1y H2y]].
-        subst X.
-        rewrite elem_of_list_fmap in H2y.
-        destruct H2y as [y' [H1y' H2y']].
-        subst y.
-        rewrite elem_of_list_lookup in H2y'.
-        destruct H2y' as [i Hi].
-        destruct (l !! i) eqn:Heq.
-        {
-            eapply ipmap_lookup in Heq as Heq'.
-            rewrite Hi in Heq'.
-            destruct Heq' as [[φ σ][H1 H2]].
-            specialize (H2 Heq).
-            apply (inj Some) in H1.
-            subst y'.
-            specialize (H i t Heq Σ t (avoid ∪ ⋃ (vars_of <$> take i l)) φ σ eq_refl eq_refl).
-            specialize (H H2 x H2X).
-            destruct H as [e He].
-            exists e.
-            ltac1:(setoid_rewrite elem_of_union_list).
-            ltac1:(setoid_rewrite elem_of_list_fmap).
-            ltac1:(setoid_rewrite elem_of_list_lookup at 1).
-            exists σ.
-            split.
-            {
-                exists (φ, σ).
-                split.
-                { reflexivity. }
-                {
-                    exists i.
-                    apply Hi.
-                }
-            }
-            {
-                exact He.
-            }
-        }
-        {
-            ltac1:(exfalso).
-            apply lookup_ge_None in Heq.
-            apply lookup_lt_Some in Hi.
-            rewrite ipmap_length in Hi.
-            ltac1:(lia).
-        }
-    }
-Qed.
-
 Lemma zip_lookup_fst
     {A B : Type} (l : list A) (l0 : list B) (i : nat) (x : (A*B)):
     length l = length l0 ->
@@ -883,6 +637,183 @@ Proof.
         apply (Hholds i iltn)
     ].
     eapply (piecewise_extends n base_δ _ Hdisj).
+Qed.
+
+
+
+
+Lemma decouple_preserves_semantics_1
+    {Σ : StaticModel}
+    (et : TermOver Expression2)
+    (avoid : listset variable)
+    eqs
+    (p : ProgramT)    
+    (o : NondetValue)
+    (δ : Valuation2)
+    :
+        vars_of et ⊆ vars_of δ -> 
+        vars_of δ ⊆ (list_to_set (elements avoid)) -> 
+        { δ' : gmap variable (TermOver builtin_value) &
+            ((dom δ' ∖ dom δ = list_to_set (fresh_n (count_expr et) (avoid ∪ (fst <$> eqs))))*( 
+                vars_of et ⊆ (list_to_set (elements avoid)) ->
+                forall (φ : TermOver BuiltinOrVar) σ,
+                (φ,σ) = decouple et avoid eqs ->
+                forall (t : TermOver builtin_value),
+                satisfies δ (p,(o,t)) et ->
+            ((satisfies δ' t φ)*(
+            ∀ (x : variable) (e : Expression2), (x,e) ∈ σ ->
+                (x,e) ∉ eqs ->
+                { ot : _ & ((Expression2_evaluate p δ e = Some ot)*((δ' !! x) = Some (ot o)))%type }
+        ))%type))%type }
+.
+Proof.
+    revert avoid eqs p o δ.
+    ltac1:(induction et using TermOver_rect);
+        intros avoid eqs p o δ HH1 HH2.
+    {
+        simpl in *.
+        destruct (Expression2_evaluate p δ a) as [ft'|] eqn:Heq.
+        {
+            unfold Valuation2 in *.
+            remember (δ ∪ ({[(fresh (avoid ∪ (fst <$> eqs))) := (ft' o)]})) as δ'.
+            exists δ'.
+            split.
+            {
+                subst δ'.
+                rewrite dom_union_L.
+                rewrite difference_union_distr_l_L.
+                rewrite difference_diag_L.
+                rewrite union_empty_l_L.
+                rewrite dom_singleton_L.
+                apply set_eq.
+                intros x.
+                rewrite elem_of_difference.
+                rewrite elem_of_singleton.
+                rewrite elem_of_union.
+                rewrite elem_of_singleton.
+                rewrite elem_of_empty.
+                split; intros HH.
+                {
+                    destruct HH as [HH1' HH2'].
+                    subst x.
+                    left.
+                    ltac1:(set_solver).
+                }
+                {
+                    destruct HH as [HH | HH].
+                    {
+                        split.
+                        { ltac1:(set_solver). }
+                        subst x.
+                        intros HContra.
+                        unfold vars_of in *; simpl in *.
+                        unfold vars_of in *; simpl in *.
+                        eapply elem_of_weaken in HContra>[|apply HH2].
+                        assert ((fresh (avoid ∪ (fst <$> eqs))) ∉ avoid ∪ (fst <$> eqs)).
+                        {
+                            apply is_fresh.
+                        }
+                        ltac1:(set_solver).
+                    }
+                    { inversion HH. }
+                }
+            }
+            {
+                (* ltac1:(rename H0 into Hvo2). *)
+                intros Hvo1 φ σ Hφσ t Hsate.
+                ltac1:(simplify_eq/=).
+                split.
+                {
+                    unfold satisfies in *; simpl in *.
+                    destruct t; ltac1:(simp sat2B); simpl in *.
+                    {
+                        ltac1:(simp sat2E in Hsate).
+                        rewrite Heq in Hsate.
+                        rewrite Hsate.
+                        unfold Valuation2 in *.
+                        rewrite lookup_union_r.
+                        {
+                            rewrite lookup_singleton.
+                            reflexivity.
+                        }
+                        {
+                            rewrite <- not_elem_of_dom.
+                            intros HContra.
+                            eapply elem_of_weaken in HContra>[|apply HH2].
+                            assert (H0: (fresh (avoid ∪ (fst <$> eqs))) ∉ avoid ∪ (fst <$> eqs)).
+                            {
+                                apply is_fresh.
+                            }
+                            apply H0. clear H0.
+                            ltac1:(set_solver).
+                        }
+                    }
+                    {
+                        ltac1:(simp sat2E in Hsate).
+                        rewrite Heq in Hsate.
+                        rewrite Hsate.
+                        unfold Valuation2 in *.
+                        rewrite lookup_union_r.
+                        {
+                            rewrite lookup_singleton.
+                            reflexivity.
+                        }
+                        {
+                            rewrite <- not_elem_of_dom.
+                            intros HContra.
+                            eapply elem_of_weaken in HContra>[|apply HH2].
+                            assert (H0: (fresh (avoid ∪ (fst <$> eqs))) ∉ avoid ∪ (fst <$> eqs)).
+                            {
+                                apply is_fresh.
+                            }
+                            apply H0. clear H0.
+                            ltac1:(set_solver).
+                        }
+                    }
+                }
+                {
+                    intros x e0 Hx.
+                    rewrite elem_of_union in Hx.
+                    rewrite elem_of_singleton in Hx.
+                    intros HMaybeContra.
+                    assert ((x, e0) = (fresh (avoid ∪ (fst <$> eqs)), a)).
+                    {
+                        ltac1:(set_solver).
+                    }
+                    (* (destruct Hx as [Hx|Hx])>[|ltac1:(set_solver)]. *)
+                    ltac1:(simplify_eq/=).
+                    exists ft'.
+                    split>[exact Heq|].
+                    rewrite lookup_union_r.
+                    {
+                        unfold Valuation2 in *.
+                        rewrite lookup_singleton.
+                        reflexivity.
+                    }
+                    {
+                        rewrite <- not_elem_of_dom.
+                        intros HContra.
+                        eapply elem_of_weaken in HContra>[|apply HH2].
+                        assert (H0: (fresh (avoid ∪ (fst <$> eqs))) ∉ avoid ∪ (fst <$> eqs)).
+                        {
+                            apply is_fresh.
+                        }
+                        apply H0. clear H0.
+                        ltac1:(set_solver).
+                    }
+                }
+            }
+        }
+        {
+            apply Expression2_evaluate_None_inv in Heq.
+            ltac1:(exfalso).
+            repeat (unfold vars_of in *; simpl in *; ()).
+            ltac1:(set_solver).
+        }        
+    }
+    {
+        (* TODO *)
+    }
 Qed.
 
 Lemma decouple_preserves_semantics_1
