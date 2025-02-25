@@ -252,6 +252,83 @@ Proof.
     }
 Qed.
 
+Lemma decouple_does_not_lose_variables
+    {Σ : StaticModel}
+    et avoid φ σ eqs:
+    (φ, σ) = (decouple et avoid eqs) ->
+    ∀ (x : variable),
+        x ∈ vars_of φ ->
+        ∃ (e : Expression2),
+            (x,e) ∈ σ
+.
+Proof.
+    revert avoid φ σ eqs.
+    induction et; intros avoid φ σ eqs HH1 x HH3.
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        unfold vars_of in HH3; simpl in *.
+        unfold vars_of in HH3; simpl in *.
+        rewrite elem_of_singleton in HH3.
+        subst x. exists a.
+        rewrite elem_of_union. left.
+        rewrite elem_of_singleton.
+        reflexivity.
+    }
+    {
+        simpl in *.
+        ltac1:(repeat case_match; simplify_eq/=).
+        rewrite vars_of_t_term in HH3.
+        clear s.
+        revert avoid eqs x l0 l1 H H0 HH3.
+        induction l;
+            intros avoid eqs x l0 l1 H H0 HH3.
+        {
+            ltac1:(simplify_eq/=).
+            clear -HH3. ltac1:(set_solver).
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            ltac1:(repeat case_match; simplify_eq/=).
+            destruct (decide (x ∈ vars_of t)) as [Hin|Hnotin].
+            {
+                specialize (H1 _ _ _ _ (eq_sym H)).
+                specialize (H1 x Hin).
+                destruct H1 as [e Hxe].
+                exists e.
+                clear - H3 Hxe.
+                revert l1 l2 l3 avoid Hxe H3.
+                induction l; intros l1 l2 l3 avoid Hxe H3.
+                {
+                    ltac1:(simplify_eq/=).
+                    exact Hxe.
+                }
+                {
+                    ltac1:(repeat case_match; simplify_eq/=).
+                    eapply IHl>[|eapply H0].
+                    eapply elem_of_weaken.
+                    apply Hxe.
+                    eapply transitivity.
+                    eapply decouple_extends_eqs.
+                    rewrite H. reflexivity.
+                }
+            }
+            {
+                rewrite elem_of_union in HH3.
+                destruct HH3 as [HH3|HH3].
+                {
+                    ltac1:(naive_solver).
+                }
+                {
+                    specialize (IHl _ _ _ _ _ H2 H3 HH3).
+                    apply IHl.
+                }
+            }
+        }
+    }
+Qed.
+
 (* 
 (* I have it wrong!!! avoidi is wrong since I avoid variables from the list instead of the newly generated one.*)
 Equations? decouple
@@ -352,7 +429,7 @@ Proof.
         }
     }
 Qed. *)
-
+(* 
 Lemma decoupled_uses_only_original_vars
     {Σ : StaticModel}
     et avoid φ σ x e:
@@ -416,7 +493,7 @@ Proof.
             ltac1:(lia).
         }
     }
-Qed.
+Qed. *)
 
 Lemma decouple_does_not_lose_variables
     {Σ : StaticModel}
