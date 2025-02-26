@@ -652,9 +652,9 @@ Lemma decouple_preserves_semantics_1
     (δ : Valuation2)
     :
         vars_of et ⊆ vars_of δ -> 
-        vars_of δ ⊆ (list_to_set (elements avoid)) -> 
+        vars_of δ ⊆ (list_to_set (elements (avoid ∪ (fst <$> eqs)))) -> 
         { δ' : gmap variable (TermOver builtin_value) &
-            ((dom δ' ∖ dom δ = list_to_set (fresh_n (count_expr et) (avoid ∪ (fst <$> eqs))))*( 
+            ((dom δ ⊆ dom δ')*(dom δ' ∖ dom δ = list_to_set (fresh_n (count_expr et) (avoid ∪ (fst <$> eqs))))*( 
                 vars_of et ⊆ (list_to_set (elements avoid)) ->
                 forall (φ : TermOver BuiltinOrVar) σ,
                 (φ,σ) = decouple et avoid eqs ->
@@ -685,6 +685,10 @@ Proof.
                 rewrite difference_diag_L.
                 rewrite union_empty_l_L.
                 rewrite dom_singleton_L.
+                split.
+                {
+                    ltac1:(set_solver).
+                }
                 apply set_eq.
                 intros x.
                 rewrite elem_of_difference.
@@ -812,6 +816,120 @@ Proof.
         }        
     }
     {
+        revert X avoid eqs p o δ HH1 HH2.
+        induction l;
+            intros X avoid eqs p o δ HH1 HH2.
+        {
+            simpl in *.
+            exists δ.
+            split.
+            {
+                rewrite difference_diag_L.
+                split.
+                { apply reflexivity. }
+                { reflexivity. }
+            }
+            {
+                intros HH3 φ σ HH4 t HH5.
+                split.
+                {
+                    ltac1:(simplify_eq/=).
+                    unfold satisfies; simpl.
+                    unfold satisfies in HH5; simpl in HH5.
+                    destruct t;
+                        ltac1:(simp sat2E in HH5);
+                        ltac1:(simp sat2B).
+                    {
+                        destruct HH5 as [HH5 [HH6 HH7]].
+                        subst b.
+                        split>[reflexivity|].
+                        split>[exact HH6|].
+                        intros i t φ' HH8.
+                        rewrite lookup_nil in HH8.
+                        inversion HH8.
+                    }
+                }
+                {
+                    unfold satisfies in HH5; simpl in HH5.
+                    destruct t;
+                        ltac1:(simp sat2E in HH5).
+                    { inversion HH5. }
+                    destruct HH5 as [HH5 [HH6 HH7]].
+                    subst b.
+                    intros x e H1xe H2xe.
+                    ltac1:(simplify_eq/=).
+                    ltac1:(exfalso; apply H2xe; apply H1xe).
+                }
+            }
+        }
+        {
+            rewrite vars_of_t_term_e in HH1.
+            rewrite fmap_cons in HH1.
+            rewrite union_list_cons in HH1.
+            assert (X' := X a ltac:(set_solver) avoid eqs).
+            specialize (X' p o δ ltac:(set_solver) HH2).
+            destruct X' as [δ' Hδ'].
+            destruct Hδ' as [H1δ' H2δ'].
+            ltac1:(ospecialize (H2δ' _)).
+            {
+                (* clear - HH1 HH2. *)
+                rewrite elem_of_subseteq in HH1.
+                rewrite elem_of_subseteq in HH2.
+                rewrite elem_of_subseteq.
+                intros x.
+                specialize (HH1 x).
+                specialize (HH2 x).
+                intros Hx.
+                specialize (HH1 ltac:(set_solver)).
+                specialize (HH2 HH1).
+                (* clear - HH2. *)
+                rewrite elem_of_list_to_set in HH2.
+                rewrite elem_of_list_to_set.
+                rewrite elem_of_elements in HH2.
+                rewrite elem_of_elements.
+                rewrite elem_of_union in HH2.
+                destruct HH2 as [HH2|HH2].
+                {
+                    exact HH2.
+                }
+                {
+                    
+                }
+            }
+            (* specialize (H2δ' ltac:(set_solver)). *)
+            ltac1:(ospecialize (IHl _)).
+            {
+                intros.
+                apply X.
+                {
+                    rewrite elem_of_cons. right. assumption.
+                }
+                {
+                    assumption.
+                }
+                {
+                    assumption.
+                }
+            }
+            destruct H1δ' as [H11δ' H12δ'].
+            specialize (IHl avoid eqs p o δ').
+            ltac1:(ospecialize (IHl _ _)).
+            {
+                rewrite vars_of_t_term_e.
+                clear IHl.
+                unfold vars_of; simpl.
+                clear - H11δ' HH1.
+                ltac1:(set_solver).
+            }
+            {
+                clear IHl.
+                unfold vars_of; simpl.
+                (* eapply transitivity>[|apply HH2]. *)
+                (* ltac1:(set_solver). *)
+            }
+            (* specialize (IHl ltac:(set_solver)). *)
+            
+        }
         (* TODO *)
     }
 Qed.
