@@ -21,7 +21,7 @@ let convert_builtin (iface : 'a Extracted.builtinInterface) (b : Syntax.builtin)
 let rec convert_groundterm (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
   match g with
   | `GTb b ->
-    Extracted.gt_over iface.bi_beta (convert_builtin iface b)
+    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin iface b)
   | `GTerm (`Id s, gs) ->
     Extracted.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm iface) gs))
 

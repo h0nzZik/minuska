@@ -65,7 +65,7 @@ let append_definition
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
     parse_and_print iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) lexbuf output_channel;  
   );
-  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). |};
+  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mysignature mybeta my_program_info Lang_Decls)). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
@@ -122,6 +122,8 @@ let write_gterm
       |};
       fprintf oux "Require %s.\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_import;
       fprintf oux "Require %s.\n" (get_pi name_of_pi).pie_coq_import;
+      fprintf oux "Definition mysignature := (bi_signature MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
+      fprintf oux "#[global] Existing Instance mysignature.\n";
       fprintf oux "Definition mybeta := (bi_beta MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
       fprintf oux "#[global] Existing Instance mybeta.\n";
       fprintf oux "Definition my_program_info := %s.\n" (get_pi name_of_pi).pie_coq_entity_name;
@@ -169,9 +171,11 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
       Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
       Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f,g) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_err = c; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ].
+      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, c, d, e, f, g) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_err = c; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b;Libminuska.Extracted.bi_inject_err=c;Libminuska.Extracted.bi_inject_bool=d;Libminuska.Extracted.bi_inject_Z=e;Libminuska.Extracted.bi_inject_string=f;Libminuska.Extracted.bi_eject=g} -> (myf a0 a b c d e f g))" .
+
       Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
-      Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "(fun (x1,x2,x3,x4,x5) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_symbol_eqdec = x2; Libminuska.Extracted.builtin_function_interp = x3; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x4; Libminuska.Extracted.builtin_predicate_interp = x5;})" ].
+      Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].
+      Extract Inductive Model => "Libminuska.Extracted.model" [  "(fun (x1,x2,x3) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_interp = x2; Libminuska.Extracted.builtin_predicate_interp = x3;})" ].
       Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
       Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
       Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".

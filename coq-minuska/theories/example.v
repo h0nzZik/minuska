@@ -34,7 +34,7 @@ Inductive MyProgramT : Set := my_program .
 
 Module example_1.
 
-    Definition pi : @ProgramInfo string MySymbols MyUnit (builtin.klike.β) := {|
+    Definition pi : @ProgramInfo string MySymbols MyUnit builtin.klike.mysignature (builtin.klike.β) := {|
         QuerySymbol := MyQuerySymbol ;
         ProgramT := MyProgramT ;
         pi_symbol_interp := fun prog sym => match sym with end ;
@@ -42,7 +42,7 @@ Module example_1.
 
     #[local]
     Instance Σ : StaticModel :=
-        default_model (builtin.klike.β) pi
+        default_model builtin.klike.mysignature (builtin.klike.β) pi
     .
     
     Definition X : variable := "X".
@@ -62,7 +62,7 @@ Module example_1.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string)
-        := Eval vm_compute in (to_theory Act (process_declarations Act default_act _ program_info (Decls))).
+        := Eval vm_compute in (to_theory Act (process_declarations Act default_act _ _ program_info (Decls))).
 
     Definition interp :=
         naive_interpreter Γ.1 my_program

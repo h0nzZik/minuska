@@ -18,8 +18,9 @@ Instance MyProgramInfo
     {symbol : Type}
     {symbols : Symbols symbol}
     {NondetValue : Type}
-    {builtin : Builtin NondetValue}
-    : @ProgramInfo symbol symbols NondetValue builtin
+    {mysignature : Signature}
+    {builtin : Model NondetValue}
+    : @ProgramInfo symbol symbols NondetValue mysignature builtin
 := {|
     QuerySymbol := MyQuerySymbol ;
     ProgramT := @TermOver' symbol builtin_value ;

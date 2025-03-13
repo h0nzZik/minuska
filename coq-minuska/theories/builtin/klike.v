@@ -1914,17 +1914,21 @@ Section sec2.
     .
 
     #[local]
-    Instance β
-        : Builtin MyUnit
-    := {|
-        builtin_value
-            := BuiltinValue ;
-
+    Instance mysignature : Signature := {|
         builtin_function_symbol
             := FunctionSymbol ;
 
         builtin_predicate_symbol
             := PredicateSymbol ;
+    
+    |}.
+
+    #[local]
+    Instance β
+        : Model MyUnit
+    := {|
+        builtin_value
+            := BuiltinValue ;
 
         builtin_function_interp
             := fun p =>
@@ -2406,7 +2410,7 @@ Section negations.
         (variable : Type)
         (symbols : Symbols symbol)
         (variables : MVariables variable)
-        (program_info : @ProgramInfo symbol symbols MyUnit (@β symbol symbols))
+        (my_program_info : @ProgramInfo symbol symbols MyUnit mysignature (@β symbol symbols))
         (nondet_gen : nat -> MyUnit)
     .
 
@@ -2416,9 +2420,10 @@ Section negations.
         variable
         symbols
         MyUnit
+        mysignature
         (@β symbol symbols)
         variables
-        program_info
+        my_program_info
         nondet_gen
     ).
 

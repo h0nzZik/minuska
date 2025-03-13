@@ -29,20 +29,23 @@ Section sec.
         {symbols : Symbols symbol}
     .
 
-
     #[local]
-    Instance β
-        : Builtin MyUnit := {|
-        builtin_value
-            := TrivialPVA ;
+    Instance mysignature : Signature := {|
         builtin_function_symbol
             := Emptyset ;
         builtin_predicate_symbol
             := Emptyset ;
+    |}.
+
+    #[local]
+    Instance β
+        : @Model mysignature _ _ MyUnit := {|
+        builtin_value
+            := TrivialPVA ;
         builtin_function_interp
-            := fun p => match p with end ;
+            := fun _ _ _ => t_over pv_error ;
         builtin_predicate_interp
-            := fun p => match p with end ;
+            := fun _ _ _ => false ;
     |}.
 
 End sec.

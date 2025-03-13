@@ -1,4 +1,6 @@
 Require Import Minuska.pval_ocaml_binding Minuska.builtin.klike Minuska.pi.trivial Minuska.default_everything.
+Definition mysignature := (bi_signature MyUnit builtins_klike).
+#[global] Existing Instance mysignature.
 Definition mybeta := (bi_beta MyUnit builtins_klike).
 #[global] Existing Instance mybeta.
 Definition my_program_info := trivial.MyProgramInfo.
@@ -46,7 +48,7 @@ Definition Lang_Decls : list Declaration := [
 ; (framed_rule my_program_info frame_simple "while.unfold" (@t_term symbol BuiltinOrVar "while" [(t_over (bov_variable "B")); (t_over (bov_variable "S"))]) (@t_term symbol Expression2 "ite" [(@t_over symbol Expression2(e_variable "B")); (@t_term symbol Expression2 "seq" [(@t_over symbol Expression2(e_variable "S")); (@t_term symbol Expression2 "while" [(@t_over symbol Expression2(e_variable "B")); (@t_over symbol Expression2(e_variable "S"))])]); (@t_term symbol Expression2 "unitValue" [])]) sc_true)
 
 ].
-Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mybeta my_program_info Lang_Decls)). 
+Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mysignature mybeta my_program_info Lang_Decls)). 
 Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).
 Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).
 Definition lang_debug_info : list string := (snd T).

@@ -20,6 +20,9 @@ From Minuska Require Import
 
 Import builtin.klike.Notations.
 
+Definition mysignature := (bi_signature MyUnit builtins_klike).
+Existing Instance mysignature.
+
 Definition mybeta := (bi_beta MyUnit builtins_klike).
 Existing Instance mybeta.
 
@@ -39,7 +42,7 @@ Module unary_nat.
 
     #[local]
     Instance Σ : StaticModel :=
-        default_model (mybeta) mypi
+        default_model mysignature (mybeta) mypi
     .
     
     Definition X : variable := "$X".
@@ -183,7 +186,7 @@ Module unary_nat.
     ].
 
     Definition Γfact : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ mypi (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ _ mypi (Decls_nat_fact ++ Decls_nat_mul ++ Decls_nat_add))).
 
     Definition initial_expr (x : TermOver builtin_value) :=
         (ground (
@@ -272,7 +275,7 @@ Module unary_nat.
     ].
 
     Definition Γfib : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ mypi (Decls_nat_fib ++ Decls_nat_add))).
+    (to_theory Act (process_declarations Act default_act _ _ mypi (Decls_nat_fib ++ Decls_nat_add))).
 
     Definition initial_fib (n : nat) := initial_expr (
         (ground (nat_fib [(nat_to_unary n)]))

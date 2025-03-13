@@ -24,6 +24,9 @@ From Minuska Require Import
 .
 Import builtin.klike.Notations.
 
+Definition mysignature := (bi_signature MyUnit builtins_klike).
+Existing Instance mysignature.
+
 Definition mybeta := (bi_beta MyUnit builtins_klike).
 Existing Instance mybeta.
 
@@ -43,7 +46,7 @@ Defined.
 Module two_counters.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta) mypi.
+    Instance Σ : StaticModel := default_model mysignature (mybeta) mypi.
 
     Definition M : variable := "M".
     Definition N : variable := "N".
@@ -58,7 +61,7 @@ Module two_counters.
     Arguments s {_br} _%_rs.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
-    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ mypi ([
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ _ mypi ([
         decl_rule (
             rule ["my-rule"]:
                 cfg [ state [ s [ t_over ($M) ]; t_over ($N) ] ]
@@ -125,7 +128,7 @@ End two_counters.
 
 Module two_counters_Z.
 #[local]
-    Instance Σ : StaticModel := default_model (mybeta) mypi.
+    Instance Σ : StaticModel := default_model mysignature (mybeta) mypi.
 
     Definition M : variable := "M".
     Definition N : variable := "N".
@@ -134,7 +137,7 @@ Module two_counters_Z.
     Arguments state {_br} _%_rs.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) :=
-    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ mypi ([
+    Eval vm_compute in (to_theory Act (process_declarations Act default_act _ _ mypi ([
         decl_rule (
             rule ["my-rule"]:
                state [ t_over ($M) ; t_over ($N) ]
@@ -177,7 +180,7 @@ End two_counters_Z.
 Module arith.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta) mypi.
+    Instance Σ : StaticModel := default_model mysignature (mybeta) mypi.
 
     Definition X : variable := "X".
     Definition Y : variable := "Y".
@@ -273,7 +276,7 @@ Module arith.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ mypi (Decls))).
+    (to_theory Act (process_declarations Act default_act _ _ mypi (Decls))).
 
 
     (*
@@ -362,7 +365,7 @@ Check "End arith".
 Module fib_native.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta) mypi.
+    Instance Σ : StaticModel := default_model mysignature (mybeta) mypi.
 
     Check builtin_value.
 
@@ -420,7 +423,7 @@ Module fib_native.
     ].
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ mypi (Decls))).
+    (to_theory Act (process_declarations Act default_act _ _ mypi (Decls))).
 
 
     Definition interp_from (fuel : nat) from
@@ -487,7 +490,7 @@ Module fib_native.
         )
     .
 
-    About false.
+    (* About false. *)
     Lemma test_of_computational_behavior:
         my_flag = Coq.Init.Datatypes.false
     .
@@ -527,7 +530,7 @@ End fib_native.
 Module imp.
 
     #[local]
-    Instance Σ : StaticModel := default_model (mybeta) mypi.
+    Instance Σ : StaticModel := default_model mysignature (mybeta) mypi.
 
 
     Definition B : variable := "$B".
@@ -803,7 +806,7 @@ Module imp.
     ]%limp.
 
     Definition Γ : (RewritingTheory2 Act)*(list string) := Eval vm_compute in 
-    (to_theory Act (process_declarations Act default_act _ mypi (Decls))).
+    (to_theory Act (process_declarations Act default_act _ _ mypi (Decls))).
 
     (* Compute (length (Γ.1)). *)
 

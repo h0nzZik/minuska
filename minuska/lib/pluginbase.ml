@@ -19,7 +19,7 @@ type primitiveValueAlgebraEntry = {
 type programInfoEntry = {
   pie_coq_import : string ;
   pie_coq_entity_name : string ;
-  pie_constructor : Dsm.__ -> (Dsm.__ Dsm.symbols) -> Dsm.__ -> ((Dsm.__, Dsm.__) Dsm.builtin) -> (Dsm.__, Dsm.__) Dsm.programInfo ;
+  pie_constructor : Dsm.__ -> (Dsm.__ Dsm.symbols) -> Dsm.__ -> Dsm.signature -> ((Dsm.__, Dsm.__) Dsm.model) -> (Dsm.__, Dsm.__) Dsm.programInfo ;
   pie_table: (Dsm.string*Dsm.string) list ;
 }
 

@@ -57,24 +57,29 @@ Class Symbols (symbol : Type) := {
     symbol_countable :: Countable symbol ;
 }.
 
+Class Signature := {
+    builtin_function_symbol
+        : Type ;
+    builtin_function_symbol_eqdec
+        :: EqDecision builtin_function_symbol ;
+
+    builtin_predicate_symbol
+        : Type ;
+    builtin_predicate_symbol_eqdec
+        :: EqDecision builtin_predicate_symbol ;
+}.
+
 (*
     Interface for builtin data types.
-    We differentiate between nulary, unary, binary, and ternary
-    function symbols in order not to have to dependently encode arity.
-    Functions of higher arity are rare (and usually they are a sign of a poor design of the type).
     TODO: explore having them as functions from lists to option type
     - we evaluate expressions into option type anyway.
 *)
-Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) := {
+Class Model {signature : Signature} {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) := {
     builtin_value
         : Type ;
     builtin_value_eqdec
         :: EqDecision builtin_value ;
     
-    builtin_function_symbol
-        : Type ;
-    builtin_function_symbol_eqdec
-        :: EqDecision builtin_function_symbol ;
     
     (* I make the function interpretation total, and it is up to the concrete model
        to decide what does applying functions with invalid arguments mean.
@@ -84,12 +89,7 @@ Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) :=
         -> NondetValue
         -> list (@TermOver' symbol builtin_value)
         -> @TermOver' symbol builtin_value ;
-    
-    builtin_predicate_symbol
-        : Type ;
-    builtin_predicate_symbol_eqdec
-        :: EqDecision builtin_predicate_symbol ;
-    
+        
     (* I make the predicate interpretation total, and it is up to the concrete model
        to decide what does applying predicates with invalid arguments mean.
        *)
@@ -110,7 +110,8 @@ Class ProgramInfo
     {symbol : Type}
     {symbols : Symbols symbol}
     {NondetValue : Type}
-    {builtin : Builtin NondetValue}
+    {signature : Signature}
+    {builtin : Model NondetValue}
     : Type
     := {
     QuerySymbol : Type ;
@@ -128,7 +129,8 @@ Class StaticModel := mkStaticModel {
     variable : Type ;
     symbols :: Symbols symbol ;
     NondetValue : Type ;
-    builtin :: Builtin NondetValue;
+    signature :: Signature ;
+    builtin :: Model NondetValue;
     variables :: MVariables variable ;
     program_info :: ProgramInfo ;
     nondet_gen : nat -> NondetValue ;
