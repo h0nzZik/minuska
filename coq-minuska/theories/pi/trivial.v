@@ -19,7 +19,7 @@ Instance MyProgramInfo
     {symbols : Symbols symbol}
     {NondetValue : Type}
     {mysignature : Signature}
-    {builtin : Model NondetValue}
+    {builtin : Model mysignature NondetValue}
     : @ProgramInfo symbol symbols NondetValue mysignature builtin
 := {|
     QuerySymbol := MyQuerySymbol ;

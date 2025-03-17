@@ -21,7 +21,7 @@ Require Export
   Coq.extraction.ExtrOcamlNatBigInt
 .
 
-Set Extraction KeepSingleton.
+(* Set Extraction KeepSingleton. *)
 
 From Coq Require Import String Bool Arith ZArith List.
 
@@ -39,23 +39,23 @@ Defined.
 #[export]
 Instance DSM
     {mysignature : Signature}
-    {β : Model MyUnit}
+    {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     : StaticModel :=
     default_model mysignature β program_info
 .
 
-Definition GT {mysignature : Signature} {β : Model MyUnit} := @TermOver' string (builtin_value).
+Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (builtin_value).
 
-Definition StepT {mysignature : Signature} {β : Model MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT.
-Definition StepT_ext {mysignature : Signature} {β : Model MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat).
+Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT.
+Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat).
 
-Definition gt_over {mysignature : Signature} {β : Model MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
-Definition gt_term {mysignature : Signature} {β : Model MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
+Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
+Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
 
 Definition basic_rule
     {mysignature : Signature}
-    {β : Model MyUnit}
+    {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     (name : string)
     (l : TermOver BuiltinOrVar)
@@ -79,7 +79,7 @@ Definition BoV_to_Expr2
 
 Definition framed_rule
     {mysignature : Signature}
-    {β : Model MyUnit}
+    {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     (frame : (variable*(TermOver BuiltinOrVar)))
     (name : string)
@@ -95,7 +95,7 @@ Definition framed_rule
 
 Definition global_naive_interpreter
     {mysignature : Signature}
-    {β : Model MyUnit}
+    {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     :=
     @naive_interpreter (DSM program_info) Act
@@ -103,7 +103,7 @@ Definition global_naive_interpreter
 
 Definition global_naive_interpreter_ext
     {mysignature : Signature}
-    {β : Model MyUnit}
+    {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     :=
     @naive_interpreter_ext (DSM program_info) Act
@@ -111,7 +111,7 @@ Definition global_naive_interpreter_ext
 
 Definition global_naive_interpreter_sound
     {mysignature : Signature}
-    {β : Model MyUnit}
+    {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     :=
     @naive_interpreter_sound (DSM program_info) Act

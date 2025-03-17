@@ -74,21 +74,15 @@ Class Signature := {
     TODO: explore having them as functions from lists to option type
     - we evaluate expressions into option type anyway.
 *)
-Class Model {signature : Signature} {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) := {
-    builtin_value
-        : Type ;
-    builtin_value_eqdec
-        :: EqDecision builtin_value ;
-    
-    
+Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
     (* I make the function interpretation total, and it is up to the concrete model
        to decide what does applying functions with invalid arguments mean.
        *)
     builtin_function_interp
         : builtin_function_symbol
         -> NondetValue
-        -> list (@TermOver' symbol builtin_value)
-        -> @TermOver' symbol builtin_value ;
+        -> list (@TermOver' symbol Carrier)
+        -> @TermOver' symbol Carrier ;
         
     (* I make the predicate interpretation total, and it is up to the concrete model
        to decide what does applying predicates with invalid arguments mean.
@@ -96,8 +90,17 @@ Class Model {signature : Signature} {symbol : Type} {symbols : Symbols symbol} (
     builtin_predicate_interp
         : builtin_predicate_symbol
         -> NondetValue
-        -> list (@TermOver' symbol builtin_value)
+        -> list (@TermOver' symbol Carrier)
         -> bool ;
+}.
+
+Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
+    builtin_value
+        : Type ;
+    builtin_value_eqdec
+        :: EqDecision builtin_value ;
+
+    builtin_model_over :: ModelOver signature NondetValue builtin_value ;
 }.
 
 Set Primitive Projections.
@@ -111,7 +114,7 @@ Class ProgramInfo
     {symbols : Symbols symbol}
     {NondetValue : Type}
     {signature : Signature}
-    {builtin : Model NondetValue}
+    {builtin : Model signature NondetValue}
     : Type
     := {
     QuerySymbol : Type ;
@@ -130,7 +133,7 @@ Class StaticModel := mkStaticModel {
     symbols :: Symbols symbol ;
     NondetValue : Type ;
     signature :: Signature ;
-    builtin :: Model NondetValue;
+    builtin :: Model signature NondetValue;
     variables :: MVariables variable ;
     program_info :: ProgramInfo ;
     nondet_gen : nat -> NondetValue ;

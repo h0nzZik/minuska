@@ -37,15 +37,20 @@ Section sec.
             := Emptyset ;
     |}.
 
-    #[local]
-    Instance β
-        : @Model mysignature _ _ MyUnit := {|
-        builtin_value
-            := TrivialPVA ;
+    Definition βover
+        : ModelOver mysignature MyUnit TrivialPVA := {|
         builtin_function_interp
             := fun _ _ _ => t_over pv_error ;
         builtin_predicate_interp
             := fun _ _ _ => false ;
+    |}.
+
+    #[local]
+    Instance β
+        : @Model _ _ mysignature MyUnit := {|
+        builtin_value
+            := TrivialPVA ;
+        builtin_model_over := βover ;
     |}.
 
 End sec.

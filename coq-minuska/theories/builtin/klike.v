@@ -1924,11 +1924,9 @@ Section sec2.
     |}.
 
     #[local]
-    Instance β
-        : Model MyUnit
+    Instance βover
+        : ModelOver mysignature MyUnit BuiltinValue0
     := {|
-        builtin_value
-            := BuiltinValue ;
 
         builtin_function_interp
             := fun p =>
@@ -2248,6 +2246,16 @@ Section sec2.
                 end
             )
             end ;
+    |}.
+
+    #[local]
+    Instance β
+        : Model mysignature MyUnit
+    := {|
+        builtin_value
+            := BuiltinValue ;
+
+        builtin_model_over := βover ;
     |}.
 
 End sec2.

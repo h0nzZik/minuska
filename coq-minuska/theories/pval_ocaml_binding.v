@@ -10,7 +10,7 @@ From Coq Require Import String ZArith.
 
 Record BuiltinInterface (NondetValue : Type) := mkBuiltinInterface {
     bi_signature : Signature ;
-    bi_beta : Model (NondetValue : Type) ;
+    bi_beta : Model bi_signature (NondetValue : Type) ;
     bi_bindings : BuiltinsBinding ;
     bi_inject_err : (@builtin_value _ _ _ NondetValue bi_beta) ;
     bi_inject_bool : forall (Fret : option (@builtin_value _ _ _ NondetValue bi_beta) -> (@builtin_value _ _ _ NondetValue bi_beta)), bool -> (@builtin_value _ _ _ NondetValue bi_beta) ;

@@ -10,7 +10,7 @@ Instance MySymbols : Symbols string := Build_Symbols _ _ _.
 Section default_model.
     Context
         (signature : Signature)
-        (β : Model MyUnit)
+        (β : Model signature MyUnit)
         (my_program_info : ProgramInfo)
     .
 
