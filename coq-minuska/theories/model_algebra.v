@@ -224,6 +224,18 @@ End sum.
 Arguments builtin_value {symbol} {symbols signature}
   {NondetValue} (Model)
 .
+
+(*
+    Huh, composing two models of the same signature would be weird
+    because we would have to somehow interpret a symbol applied
+    to an empty list in an arbitrarily-chosen constitutent model.
+*)
+
+(* 
+Fixpoint lift_sum_list {A B : Type} (l : list (sum A B))
+    : option (sum (list A) (list B))
+. *)
+
 (* 
 Definition is_inl {A B : Type} (x : sum A B) : bool :=
     match x with
@@ -287,11 +299,11 @@ Definition modelover_union_function_interp
     {symbols : Symbols symbol}
     (s : Signature)
     (NV : Type)
-    (Carrier1 Carrier2 : Type)
+    (Carrier : Type)
     (m1 : ModelOver s NV Carrier1)
     (m2 : ModelOver s NV Carrier2)
 :
-    (builtin_function_symbol s) -> NV -> (list (@TermOver' symbol (sum Carrier1 Carrier2))) -> (@TermOver' symbol Carrier1)
+    (builtin_function_symbol s) -> NV -> (list (@TermOver' symbol (sum Carrier))) -> (@TermOver' symbol Carrier1)
 :=
     fun f nv args =>
     if (forallb (is_relatively_pure is_inl) args) then
@@ -308,11 +320,11 @@ Definition modelover_union
     {symbols : Symbols symbol}
     (s : Signature)
     (NV : Type)
-    (Carrier1 Carrier2 : Type)
+    (Carrier : Type)
     (m1 : ModelOver s NV Carrier1)
     (m2 : ModelOver s NV Carrier2)
 :
-    ModelOver s NV (sum Carrier1 Carrier2)
+    ModelOver s NV (sum Carrier)
 := {|
     builtin_function_interp := fun f
 |}

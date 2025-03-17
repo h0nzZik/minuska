@@ -33,10 +33,12 @@ theories/symex_spec.v
 theories/symex.v
 theories/pval_ocaml_binding.v
 theories/model_algebra.v
+theories/model_traits.v
 
 theories/builtin/bool_signature.v
 theories/builtin/int_signature.v
 theories/builtin/bool_model.v
+theories/builtin/int_model.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v
