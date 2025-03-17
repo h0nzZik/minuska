@@ -100,7 +100,15 @@ Definition bool_predicate_interp
 :=
     fun p nv args =>
     match p with
-    | bool_pred_is => true
+    | bool_pred_is => 
+        match args with
+        | (t_over x1)::[] =>
+            match (asb x1) with
+            | Some _ => true
+            | _ => false
+            end
+        | _ => false
+        end
     | bool_pred_is_false =>
         match args with
         | (t_over x1)::[] =>
