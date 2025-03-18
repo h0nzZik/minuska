@@ -75,6 +75,9 @@ Class Signature := {
     - we evaluate expressions into option type anyway.
 *)
 Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
+    (* builtin_value_eqdec
+        :: EqDecision Carrier ; *)
+
     (* I make the function interpretation total, and it is up to the concrete model
        to decide what does applying functions with invalid arguments mean.
        *)
@@ -97,8 +100,10 @@ Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signatur
 Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
     builtin_value
         : Type ;
+
     builtin_value_eqdec
         :: EqDecision builtin_value ;
+
 
     builtin_model_over :: ModelOver signature NondetValue builtin_value ;
 }.

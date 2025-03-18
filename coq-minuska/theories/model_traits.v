@@ -1,34 +1,52 @@
 From Minuska Require Import
     prelude
     spec
+    model_functor
 .
 
-Class WithErrTrait (Carrier : Type)
+Inductive ErrT :=
+| et_error
+.
+
+(* 
+Class WithErrTrait
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {my_signature : Signature}
+    {NondetValue : Type}
+    (M : Model my_signature NondetValue)
 := {
-    wet_error : Carrier ;
+    inject_error :: CarrierInjection ErrT M ;
 }.
 
-Class WithBoolTrait (Carrier : Type)
+Class WithBoolTrait
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {my_signature : Signature}
+    {NondetValue : Type}
+    (M : Model my_signature NondetValue)
 := {
-    wbt_inject_bool : bool -> Carrier ;
-    wbt_inject_bool__injective :: Inj (=) (=) wbt_inject_bool ;
+    inject_bool :: CarrierInjection bool M ;
 }.
 
-Class WithIntTrait (Carrier : Type)
+Class WithIntTrait
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {my_signature : Signature}
+    {NondetValue : Type}
+    (M : Model my_signature NondetValue)
 := {
-    wit_inject_Z : Z -> Carrier ;
-    wit_inject_Z__injective :: Inj (=) (=) wit_inject_Z ;
+    inject_int :: CarrierInjection Z M ;
 }.
 
-Class WithListTrait (Inner : Type) (Carrier : Type)
+Class WithListTrait (Inner : Type)
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {my_signature : Signature}
+    {NondetValue : Type}
+    (M : Model my_signature NondetValue)
 := {
-    wlt_inject_inner : Inner -> Carrier ;
-    wlt_inject_inner__injective :: Inj (=) (=) wlt_inject_inner ;
-    
-    wlt_inject_list : list Inner -> Carrier ;
-    wlt_inject_list__injective :: Inj (=) (=) wlt_inject_list ;
+    inject_list_inner :: CarrierInjection Inner M ;
+    inject_list :: CarrierInjection (list Inner) M ;
 }.
-
-
-
-
+ *)

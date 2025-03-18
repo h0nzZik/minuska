@@ -4,6 +4,8 @@ From Minuska Require Import
     signature_morphism
 .
 
+From Coq Require Import Logic.Eqdep_dec.
+
 #[local]
 Arguments builtin_function_symbol (Signature) : clear implicits.
 #[local]
@@ -17,6 +19,127 @@ Arguments builtin_predicate_interp {symbol} {symbols signature}
   {NondetValue Carrier} (ModelOver) _ _ _
 .
 
+Class Injection (FromT ToT : Type) := {
+    inject : FromT -> ToT ;
+    inject_inj :: Inj (=) (=) inject ;
+}.
+
+(* Print ModelOver. *)
+Record RelaxedModel
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    (signature : Signature)
+    (NondetValue : Type)
+    (FromT : Type)
+:= {
+    rm_carrier :
+        Type
+    ;
+    rm_carrier_eqdec :
+        EqDecision rm_carrier
+    ;
+    rm_model_over :
+        forall (Carrier : Type),
+        Injection FromT Carrier ->
+        Injection rm_carrier Carrier ->
+        ModelOver signature NondetValue Carrier
+    ;
+}.
+
+Program Definition model_of_relaxed
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    (signature : Signature)
+    (NondetValue : Type)
+    (FromT : Type)
+    {_EFT : EqDecision FromT}
+    :
+    RelaxedModel signature NondetValue FromT  ->
+    Model signature NondetValue
+:= fun RM => {|
+    builtin_value := sum FromT (rm_carrier _ _ _ RM) ;
+    builtin_model_over :=
+        rm_model_over signature NondetValue FromT RM
+        (sum FromT (rm_carrier _ _ _ RM))
+        {| inject := inl |}
+        {| inject := inr |}
+|}.
+Next Obligation.
+    destruct RM as [c ed ov].
+    apply _.
+Defined.
+Fail Next Obligation.
+
+(* 
+Definition RelaxedCarrier
+    (T1 T2 : Type)
+:=
+    Injection T1 T2 -> Type
+.
+
+Print ModelOver.
+
+
+
+(*
+    [Param] represents a part of the carrier that is not present
+    neither in the input carrier nor in the output carrier
+    but should be added at some point after the transformation.
+*)
+Class RelaxedCarrierFunctorT (Param : Type) := {
+    rcf_carrier :
+        forall
+            (Carrier : Type),
+            RelaxedCarrier Param Carrier
+    ;
+
+    rcf_carrier_eqdec :
+        forall (Carrier : Type) (inj : Injection Param Carrier),
+            EqDecision Carrier ->
+            EqDecision (rcf_carrier Carrier inj)
+    ;
+
+    (*
+        The functor preserves injections to carrier
+    *)
+    rcf_from:
+        forall (Carrier FromT : Type)
+            (inj : Injection Param Carrier)
+            (f : FromT -> Carrier),
+            FromT -> (rcf_carrier Carrier inj)
+    ;
+
+    rcf_from_inj:
+        forall (Carrier FromT : Type)
+            (inj : Injection Param Carrier)
+            (f : FromT -> Carrier)
+            (finj : Inj (=) (=) f),
+            Inj (=) (=) (rcf_from Carrier FromT inj f)
+    ;
+}. *)
+
+Class CarrierFunctorT := {
+    cf_carrier
+        : Type -> Type
+    ;
+    cf_carrier_eqdec
+        : forall T,
+            EqDecision T ->
+            EqDecision (cf_carrier T)
+    ;
+
+    cf_from:
+        forall (T FromT : Type)(f : FromT -> T),
+            FromT -> (cf_carrier T)
+    ;
+
+    cf_from_inj:
+        forall (T FromT : Type)(f : FromT -> T),
+            Inj (=) (=) f ->
+            Inj (=) (=) (cf_from T FromT f)
+    ;
+
+}.
 
 Definition model_reduction
     (s1 s2 : Signature)
@@ -181,7 +304,8 @@ Section sum.
         = m1.
     Proof.
         unfold model_reduction.
-        destruct m1; simpl in *.
+        destruct m1 as [f1 p1]; simpl in *.
+        destruct m2 as [f2 p2]; simpl in *.
         f_equal.
     Qed.
 

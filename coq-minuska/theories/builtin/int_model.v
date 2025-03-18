@@ -4,6 +4,8 @@ From Minuska Require Import
     bool_model
     int_signature
     model_traits
+    model_algebra
+    (* model_functor *)
 .
 
 Definition int_carrier := Z.
@@ -13,9 +15,9 @@ Definition int_function_interp
     {symbols : Symbols symbol}
     (NondetValue : Type)
     (Carrier : Type)
-    {_WE : WithErrTrait Carrier}
-    {_WB : WithBoolTrait Carrier}
-    {_WI : WithIntTrait Carrier}
+    {_WE : Injection ErrT Carrier}
+    {_WB : Injection bool Carrier}
+    {_WI : Injection Z Carrier}
     (asi : Carrier -> option int_carrier)
 :
     IntFunSymbol ->
@@ -29,65 +31,65 @@ Definition int_function_interp
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1), (asi x2) with
-            | Some z1, Some z2 => t_over (wit_inject_Z (z1 + z2)%Z)
-            | _, _ => t_over wet_error
+            | Some z1, Some z2 => t_over (inject Z Carrier (z1 + z2)%Z)
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_minus =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1), (asi x2) with
-            | Some z1, Some z2 => t_over (wit_inject_Z (z1 - z2))
-            | _, _ => t_over wet_error
+            | Some z1, Some z2 => t_over (inject Z Carrier (z1 - z2)%Z)
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_uminus =>
         match args with
         | (t_over x1)::[] =>
             match (asi x1) with
-            | Some z1 => t_over (wit_inject_Z z1)
-            | _ => t_over wet_error
+            | Some z1 => t_over (inject Z Carrier (-z1)%Z)
+            | _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_zero =>
         match args with
-        | [] => t_over (wit_inject_Z 0)
-        | _ => t_over wet_error
+        | [] => t_over (inject Z Carrier 0%Z)
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_one =>
         match args with
-        | [] => t_over (wit_inject_Z 1)
-        | _ => t_over wet_error
+        | [] => t_over (inject Z Carrier 1%Z)
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_eq =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1),(asi x2) with
-            | Some z1, Some z2 => t_over (wbt_inject_bool (bool_decide (z1 = z2)))
-            | _, _ => t_over wet_error
+            | Some z1, Some z2 => t_over (inject bool Carrier (bool_decide (z1 = z2)%Z))
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_le =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1),(asi x2) with
-            | Some z1, Some z2 => t_over (wbt_inject_bool (bool_decide (z1 <= z2)%Z))
-            | _, _ => t_over wet_error
+            | Some z1, Some z2 => t_over (inject bool Carrier (bool_decide (z1 <= z2)%Z))
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | int_lt =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1),(asi x2) with
-            | Some z1, Some z2 => t_over (wbt_inject_bool (bool_decide (z1 < z2)%Z))
-            | _, _ => t_over wet_error
+            | Some z1, Some z2 => t_over (inject bool Carrier (bool_decide (z1 < z2)%Z))
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
 
     end
@@ -124,9 +126,9 @@ Definition int_model_over
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    {Cint : WithIntTrait Carrier}
-    {Cbool : WithBoolTrait Carrier}
-    {Cerr : WithErrTrait Carrier}
+    {_WE : Injection ErrT Carrier}
+    {_WB : Injection bool Carrier}
+    {_WI : Injection Z Carrier}
     (asi : Carrier -> option int_carrier)
     :
     @ModelOver symbol symbols int_signature NondetValue Carrier
@@ -149,7 +151,7 @@ Instance simple_int_carrier__eqdec
 Proof.
     ltac1:(solve_decision).
 Defined.
-
+(* 
 #[local]
 Program Instance simple_int_carrier__with_int_trait
     : WithIntTrait simple_int_carrier
@@ -170,14 +172,44 @@ Program Instance simple_int_carrier__with_bool_trait
 Next Obligation.
     inversion H; reflexivity.
 Qed.
-Fail Next Obligation.
-
+Fail Next Obligation. *)
+(* 
 #[local]
 Instance simple_int_carrier__with_err_trait
     : WithErrTrait simple_int_carrier
 := {|
-    wet_error := sic_err;
+    (inject ErrT Carrier et_error) := sic_err;
+|}. *)
+
+#[local]
+Program Instance inj_err : Injection ErrT simple_int_carrier := {|
+    inject := fun e => sic_err ;
 |}.
+Next Obligation.
+    destruct x,y. reflexivity.
+Qed.
+Fail Next Obligation.
+
+#[local]
+Program Instance inj_bool : Injection bool simple_int_carrier := {|
+    inject := sic_bool ;
+|}.
+Next Obligation.
+    inversion H; subst; clear.
+    reflexivity.
+Qed.
+Fail Next Obligation.
+
+#[local]
+Program Instance inj_int : Injection Z simple_int_carrier := {|
+    inject := sic_int ;
+|}.
+Next Obligation.
+    inversion H; subst; clear.
+    reflexivity.
+Qed.
+Fail Next Obligation.
+
 
 (* from here down it does not compose *)
 Definition simple_int_model

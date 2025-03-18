@@ -3,25 +3,27 @@ From Minuska Require Import
     spec
     bool_signature
     model_traits
+    model_algebra
+    (* model_functor *)
 .
 
 Definition bool_carrier := bool.
-
+(* 
 #[export]
 Instance bool_carrier__with_bool_trait
     :
     WithBoolTrait bool_carrier
 := {|
     wbt_inject_bool := fun x => x ;
-|}.
+|}. *)
 
 Definition bool_function_interp
     {symbol : Type}
     {symbols : Symbols symbol}
     (NondetValue : Type)
     (Carrier : Type)
-    {Cbool : WithBoolTrait Carrier}
-    {Cerr : WithErrTrait Carrier}
+    {Cbool : Injection bool Carrier}
+    {Cerr : Injection ErrT Carrier}
     (asb : Carrier -> option bool)
 :
     BoolFunSymbol ->
@@ -31,57 +33,57 @@ Definition bool_function_interp
 :=
     fun f nd args =>
     match f with
-    | bool_fun_true => t_over (wbt_inject_bool true)
-    | bool_fun_false => t_over (wbt_inject_bool false)
+    | bool_fun_true => t_over (inject bool Carrier true)
+    | bool_fun_false => t_over (inject bool Carrier false)
     | bool_fun_neg =>
         match args with
         | (t_over x1)::[] =>
             match (asb x1) with
-            | Some true => t_over (wbt_inject_bool false)
-            | Some false => t_over (wbt_inject_bool true)
-            | None => t_over wet_error
+            | Some true => t_over (inject bool Carrier false)
+            | Some false => t_over (inject bool Carrier true)
+            | None => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | bool_fun_and =>
         match args with
         | (t_over (x1))::(t_over (x2))::[] =>
             match (asb x1),(asb x2) with
             | (Some b1), (Some b2) =>
-                t_over (wbt_inject_bool (andb b1 b2))
-            | _,_ => t_over wet_error
+                t_over (inject bool Carrier (andb b1 b2))
+            | _,_ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | bool_fun_or =>
         match args with
         | (t_over (x1))::(t_over (x2))::[] =>
             match (asb x1),(asb x2) with
             | (Some b1), (Some b2) =>
-                t_over (wbt_inject_bool (orb b1 b2))
-            | _,_ => t_over wet_error
+                t_over (inject bool Carrier (orb b1 b2))
+            | _,_ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | bool_fun_iff =>
         match args with
         | (t_over (x1))::(t_over (x2))::[] =>
             match (asb x1),(asb x2) with
             | (Some b1), (Some b2) =>
-                t_over (wbt_inject_bool (eqb b1 b2))
-            | _, _ => t_over wet_error
+                t_over (inject bool Carrier (eqb b1 b2))
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     | bool_fun_xor =>
         match args with
         | (t_over (x1))::(t_over (x2))::[] =>
             match (asb x1),(asb x2) with
             | (Some b1), (Some b2) =>
-                t_over (wbt_inject_bool (negb (eqb b1 b2)))
-            | _, _ => t_over wet_error
+                t_over (inject bool Carrier (negb (eqb b1 b2)))
+            | _, _ => t_over (inject ErrT Carrier et_error)
             end
-        | _ => t_over wet_error
+        | _ => t_over (inject ErrT Carrier et_error)
         end
     end
 .
@@ -135,8 +137,8 @@ Definition bool_model_over
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    {Cbool : WithBoolTrait Carrier}
-    {Cerr : WithErrTrait Carrier}
+    {Cbool : Injection bool Carrier}
+    {Cerr : Injection ErrT Carrier}
     (asb : Carrier -> option bool)
     :
     @ModelOver symbol symbols bool_signature NondetValue Carrier
@@ -147,7 +149,7 @@ Definition bool_model_over
 
 
 Definition simple_bool_carrier := option bool_carrier.
-
+(* 
 #[local]
 Instance simple_bool_carrier__with_bool_trait
     : WithBoolTrait simple_bool_carrier
@@ -160,7 +162,24 @@ Instance simple_bool_carrier__with_err_trait
     : WithErrTrait simple_bool_carrier
 := {|
     wet_error := None ;
+|}. *)
+
+#[local]
+Instance inj_bool : Injection bool simple_bool_carrier :=
+{|
+    inject := Some ;
 |}.
+
+#[local]
+Program Instance inj_err : Injection ErrT simple_bool_carrier :=
+{|
+    inject := fun e => None ;
+|}.
+Next Obligation.
+    destruct x,y. reflexivity.
+Qed.
+Fail Next Obligation.
+
 
 (* from here down it does not compose *)
 Definition simple_bool_model
