@@ -94,7 +94,6 @@ Program Definition information_flow_functor
 |}.
 Next Obligation.
     intros.
-    (* Search RelDecision prod. *)
     ltac1:(unshelve(eapply prod_eq_dec)).
     apply rm_carrier_eqdec.
 Defined.
@@ -103,3 +102,82 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+Definition information_flow_functor_tagged
+    (TagType : Type)
+    {_E : EqDecision TagType}
+    {_C : Countable TagType}
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature : Signature}
+    {NondetValue : Type}
+    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (c : @rm_carrier _ _ _ _ _ M)
+    (tags : gset TagType)
+    :
+    @rm_carrier _ _ _ _ _ (rmf_apply (information_flow_functor TagType) M)
+:=
+     (c,tags)
+.
+
+Definition information_flow_functor_get_tags
+    (TagType : Type)
+    {_E : EqDecision TagType}
+    {_C : Countable TagType}
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature : Signature}
+    {NondetValue : Type}
+    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (c' : @rm_carrier _ _ _ _ _ (rmf_apply (information_flow_functor TagType) M))
+    :
+    gset TagType
+:=
+    c'.2
+.
+
+Definition information_flow_functor_get_pure
+    (TagType : Type)
+    {_E : EqDecision TagType}
+    {_C : Countable TagType}
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature : Signature}
+    {NondetValue : Type}
+    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (c' : @rm_carrier _ _ _ _ _ (rmf_apply (information_flow_functor TagType) M))
+    :
+    @rm_carrier _ _ _ _ _ M
+:=
+    c'.1
+.
+
+#[export]
+Program Instance information_flow_functor_trait
+    (TagType : Type)
+    {_E : EqDecision TagType}
+    {_C : Countable TagType}
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature : Signature}
+    {NondetValue : Type}
+    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    :
+    IFCRelaxedModelTrait TagType M (rmf_apply (information_flow_functor TagType) M)
+:= {|
+    ifc_tagged := information_flow_functor_tagged TagType M ;
+    ifc_get_tags := information_flow_functor_get_tags TagType M;
+    ifc_get_pure := information_flow_functor_get_pure TagType M;
+|}.
+Next Obligation.
+    intros.
+    simpl.
+    reflexivity.
+Qed.
+Next Obligation.
+    intros.
+    simpl.
+    reflexivity.
+Qed.
+Fail Next Obligation.
+
+(* TODO need "the rest" of the natural transformation *)
