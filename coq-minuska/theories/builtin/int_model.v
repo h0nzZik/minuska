@@ -126,9 +126,9 @@ Definition int_model_over
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    {_WE : Injection ErrT Carrier}
-    {_WB : Injection bool Carrier}
-    {_WI : Injection Z Carrier}
+    (_WE : Injection ErrT Carrier)
+    (_WB : Injection bool Carrier)
+    (_WI : Injection Z Carrier)
     (asi : Carrier -> option int_carrier)
     :
     @ModelOver symbol symbols int_signature NondetValue Carrier
@@ -137,90 +137,31 @@ Definition int_model_over
     builtin_predicate_interp := fun (p : @builtin_predicate_symbol int_signature) => int_predicate_interp NondetValue Carrier asi p;
 |}.
 
-
-Inductive simple_int_carrier :=
-| sic_bool (b : bool_carrier)
-| sic_int (i : int_carrier)
-| sic_err
-.
-
-#[local]
-Instance simple_int_carrier__eqdec
-    : EqDecision simple_int_carrier
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-(* 
-#[local]
-Program Instance simple_int_carrier__with_int_trait
-    : WithIntTrait simple_int_carrier
-:= {|
-    wit_inject_Z := fun i => (sic_int i) ;
-|}.
-Next Obligation.
-    inversion H; reflexivity.
-Qed.
-Fail Next Obligation.
-
-#[local]
-Program Instance simple_int_carrier__with_bool_trait
-    : WithBoolTrait simple_int_carrier
-:= {|
-    wbt_inject_bool := fun b => (sic_bool b) ;
-|}.
-Next Obligation.
-    inversion H; reflexivity.
-Qed.
-Fail Next Obligation. *)
-(* 
-#[local]
-Instance simple_int_carrier__with_err_trait
-    : WithErrTrait simple_int_carrier
-:= {|
-    (inject ErrT Carrier et_error) := sic_err;
-|}. *)
-
-#[local]
-Program Instance inj_err : Injection ErrT simple_int_carrier := {|
-    inject := fun e => sic_err ;
-|}.
-Next Obligation.
-    destruct x,y. reflexivity.
-Qed.
-Fail Next Obligation.
-
-#[local]
-Program Instance inj_bool : Injection bool simple_int_carrier := {|
-    inject := sic_bool ;
-|}.
-Next Obligation.
-    inversion H; subst; clear.
-    reflexivity.
-Qed.
-Fail Next Obligation.
-
-#[local]
-Program Instance inj_int : Injection Z simple_int_carrier := {|
-    inject := sic_int ;
-|}.
-Next Obligation.
-    inversion H; subst; clear.
-    reflexivity.
-Qed.
-Fail Next Obligation.
-
-
-(* from here down it does not compose *)
-Definition simple_int_model
+Definition int_relaxed_model
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
     :
-    Model int_signature NondetValue
+    RelaxedModel int_signature NondetValue (ErrT+bool)
 := {|
-    builtin_value := simple_int_carrier ;
-    builtin_model_over := int_model_over symbol symbols NondetValue simple_int_carrier (fun x => match x with sic_int i => Some i | _ => None end);
+    rm_carrier := int_carrier ;
+    rm_model_over :=
+        fun (Carrier : Type)
+            (inja : Injection (ErrT+bool) Carrier)
+            (injb : ReversibleInjection int_carrier Carrier)
+            => int_model_over symbol symbols NondetValue Carrier
+                {| inject := fun (e:ErrT) => @inject _ _ inja (inl e) |}
+                {| inject := fun (b:bool) => @inject _ _ inja (inr b) |}
+                (@ri_injection _ _ injb)
+                (@ri_reverse _ _ injb)
 |}.
 
+Definition int_model
+    (symbol : Type)
+    (symbols : Symbols symbol)
+    (NondetValue : Type)
+    : Model int_signature NondetValue
+:=
+    model_of_relaxed (int_relaxed_model symbol symbols NondetValue)
+.
 
