@@ -3,7 +3,7 @@ From Minuska Require Import
     spec
     model_algebra
 .
-
+(* 
 #[global]
 Arguments inject (FromT ToT) {Injection} _.
 
@@ -17,7 +17,7 @@ Class CarrierInjection
 := {
     carrier_inject : Injection FromT (@builtin_value _ _ _ _ M) ;
 }.
-    
+     *)
 (* 
 Class CarrierInjection
     {symbol : Type}

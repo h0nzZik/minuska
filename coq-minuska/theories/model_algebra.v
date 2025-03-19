@@ -24,6 +24,8 @@ Class Injection (FromT ToT : Type) := {
     inject_inj :: Inj (=) (=) inject ;
 }.
 
+Arguments inject (FromT ToT) {Injection} _.
+
 Class ReversibleInjection (FromT ToT : Type) := {
     ri_injection :: Injection FromT ToT ;
     ri_reverse : ToT -> option FromT ;
@@ -32,7 +34,6 @@ Class ReversibleInjection (FromT ToT : Type) := {
         @inject FromT ToT ri_injection from = to ;
 }.
 
-(* Print ModelOver. *)
 Record RelaxedModel
     {symbol : Type}
     {symbols : Symbols symbol}
@@ -85,28 +86,82 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Class CarrierFunctorT := {
-    cf_carrier
+Record RelaxedModelFunctorT (FromT : Type) := {
+    rmf_signature : Signature -> Signature ;
+    rmf_nondet : Type -> Type ;
+
+    (* rmf_carrier
         : Type -> Type
     ;
-    cf_carrier_eqdec
+    rmf_carrier_eqdec
         : forall T,
             EqDecision T ->
-            EqDecision (cf_carrier T)
+            EqDecision (rmf_carrier T)
     ;
 
-    cf_from:
+    rmf_from:
         forall (T FromT : Type)(f : FromT -> T),
-            FromT -> (cf_carrier T)
+            FromT -> (rmf_carrier T)
     ;
 
-    cf_from_inj:
+    rmf_from_inj:
         forall (T FromT : Type)(f : FromT -> T),
             Inj (=) (=) f ->
-            Inj (=) (=) (cf_from T FromT f)
-    ;
+            Inj (=) (=) (rmf_from T FromT f)
+    ; *)
 
+    rmf_model_over :
+        forall
+            (signature : Signature)
+            (NondetValue : Type)
+            {symbol : Type}
+            {symbols : Symbols symbol},
+            @RelaxedModel symbol symbols signature NondetValue FromT ->
+            (* (inja : Injection FromT Carrier) *)
+            (* (injb : ReversibleInjection (rmf_carrier Carrier) Carrier), *)
+            @RelaxedModel
+                symbol
+                symbols
+                (rmf_signature signature)
+                (rmf_nondet NondetValue)
+                FromT
 }.
+
+(* 
+Definition rmf_apply
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    (FromT : Type)
+    (f : RelaxedModelFunctorT FromT)
+    {signature : Signature}
+    {NondetValue : Type}
+    (x : RelaxedModel signature NondetValue FromT)
+    :
+    RelaxedModel (@rmf_signature _ f signature) (@rmf_nondet _ f NondetValue) FromT
+:= {|
+    rm_carrier := rmf_carrier _ f (@rm_carrier _ _ _ _ _ x) ;
+    rm_carrier_eqdec := rmf_carrier_eqdec _ f _ ((@rm_carrier_eqdec _ _ _ _ _ x)) ;
+    rm_model_over :=
+        fun (Carrier : Type)
+            (inja : Injection FromT Carrier)
+            (injb : ReversibleInjection _ Carrier)
+        => @rmf_model_over _ f signature NondetValue symbol symbols Carrier
+            (* inja *)
+            (* _ *)
+(*             
+            {|
+                ri_injection := {|
+                    inject := 0
+                    (* fun (a : (rmf_carrier FromT f (rm_carrier signature NondetValue FromT x))) => (@inject _ _ (@ri_injection _ _ injb) a) *)
+                    (* inject := @rmf_from _ f _ _ (@inject _ _ (@ri_injection _ _ injb)) *)
+                |}
+            |} *)
+            (* injb *)
+         ;
+
+|}. *)
+
+
 
 Definition model_reduction
     (s1 s2 : Signature)

@@ -8,22 +8,16 @@ From Minuska Require Import
     (* model_functor *)
 .
 
-(* 
-#[local]
-Instance list_model_functor : CarrierFunctorT := {|
-    cf_carrier := list ;
-|}. *)
-
 Definition list_function_interp
     (InnerT : Type)
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    (symbol : Type)
+    (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    {_WE : Injection ErrT Carrier}
-    {_WB : Injection bool Carrier}
-    {_WI : Injection InnerT Carrier}
-    {_WL : Injection (list InnerT) Carrier}
+    (_WE : Injection ErrT Carrier)
+    (_WB : Injection bool Carrier)
+    (_WI : Injection InnerT Carrier)
+    (_WL : Injection (list InnerT) Carrier)
     (asi : Carrier -> option (InnerT))
     (asl : Carrier -> option (list InnerT))
 :
@@ -82,14 +76,14 @@ Definition list_function_interp
 
 Definition list_predicate_interp
     (InnerT : Type)
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    (symbol : Type)
+    (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    {_WE : Injection ErrT Carrier}
-    {_WB : Injection bool Carrier}
-    {_WI : Injection InnerT Carrier}
-    {_WL : Injection (list InnerT) Carrier}
+    (_WE : Injection ErrT Carrier)
+    (_WB : Injection bool Carrier)
+    (_WI : Injection InnerT Carrier)
+    (_WL : Injection (list InnerT) Carrier)
     (asi : Carrier -> option (InnerT))
     (asl : Carrier -> option (list InnerT))
 :
@@ -112,30 +106,10 @@ Definition list_predicate_interp
     end
 .
 
-Definition list_model_over
-    (InnerT : Type)
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    (NondetValue : Type)
-    (Carrier : Type)
-    {_WE : Injection ErrT Carrier}
-    {_WB : Injection bool Carrier}
-    {_WI : Injection InnerT Carrier}
-    {_WL : Injection (list InnerT) Carrier}
-    (asi : Carrier -> option (InnerT))
-    (asl : Carrier -> option (list InnerT))
-    :
-    @ModelOver symbol symbols list_signature NondetValue Carrier
-:= {|
-    builtin_function_interp := fun (f : @builtin_function_symbol list_signature) => list_function_interp InnerT NondetValue Carrier asi asl f;
-    builtin_predicate_interp := fun (p : @builtin_predicate_symbol list_signature) => list_predicate_interp InnerT NondetValue Carrier asi asl p;
-|}.
-
 Variant simple_list_carrier (Inner : Type) :=
 | slc_inner (x : Inner)
 | slc_list (l : list Inner)
 .
-
 
 #[local]
 Instance simple_list_carrier__eqdec
@@ -147,150 +121,83 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
-(* 
-
-#[local]
-Instance slc_carfun : CarrierFunctorT := {|
-    cf_carrier := simple_list_carrier ;
-|}.
-
-#[local]
-Instance lift_wet
-    (symbol : Type)
-    (symbols : Symbols symbol)
-    (NondetValue : Type)
-    (my_signature : Signature)
-    (M : Model my_signature NondetValue)
-    {_WET : WithErrTrait (spec.builtin_value M)}
- :
-    WithErrTrait (simple_list_carrier (builtin_value M))
+Program Definition list_relaxed_functor :
+    RelaxedModelFunctorT (ErrT+bool)
 := {|
-    (inject ErrT Carrier et_error) := slc_inner (spec.builtin_value M) model_traits.(inject ErrT Carrier et_error)
-|}.
+    rmf_signature := fun _ => list_signature ;
+    rmf_nondet := fun ND => ND ;
 
-
-#[local]
-Program Instance lift_wbt
-    (symbol : Type)
-    (symbols : Symbols symbol)
-    (NondetValue : Type)
-    (my_signature : Signature)
-    (M : Model my_signature NondetValue)
-    {_WBT : WithBoolTrait (spec.builtin_value M)}
- :
-    WithBoolTrait (simple_list_carrier (builtin_value M))
-:= {|
-    wbt_inject_bool := (slc_inner (spec.builtin_value M)) ∘ model_traits.wbt_inject_bool
+    rmf_model_over :=
+        fun (signature : Signature)
+            (NondetValue : Type)
+            (symbol : Type)
+            (symbols : Symbols symbol)
+            M
+        => 
+        {|
+            rm_carrier := (simple_list_carrier (rm_carrier _ _ _ M)) ;
+            rm_model_over :=
+                fun
+                    (Carrier : Type)
+                    (inja : Injection (ErrT+bool) Carrier)
+                    (injb : ReversibleInjection (simple_list_carrier (rm_carrier _ _ _ M)) Carrier)
+                => 
+                    let asi := (fun c =>
+                        match (@ri_reverse _ _ injb) c with Some d => (
+                            match d with
+                            | slc_inner _ d' => Some d'
+                            | _ => None
+                            end
+                        )
+                        | None => None end) in
+                    let asl := (fun c =>
+                        match (@ri_reverse _ _ injb) c with Some d => (
+                            match d with
+                            | slc_list _ d' => Some d'
+                            | _ => None
+                            end
+                        )
+                        | None => None end) in
+                let WL : Injection (list (rm_carrier signature NondetValue (ErrT + bool) M)) Carrier := {|
+                    inject := fun l => @inject _ _ (@ri_injection _ _ injb) (slc_list _ l)
+                |} in
+                let WI := {|
+                    inject := fun i => @inject _ _ (@ri_injection _ _ injb) (slc_inner _ i)
+                |} in
+                let WB := {|
+                    inject := fun b => @inject _ _ inja (inr b)                
+                |} in
+                let WE := {|
+                    inject := fun e => @inject _ _ inja (inl e)                
+                |} in
+                {|
+                    builtin_function_interp := fun (f : @builtin_function_symbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WE WB WI WL asi asl f;
+                    builtin_predicate_interp := fun (p : @builtin_predicate_symbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WE WB WI WL asi asl p;
+                |}
+        |}  ;
 |}.
 Next Obligation.
-    unfold compose in H.
-    inversion H; subst; clear H.
-    apply (inj _) in H1.
-    apply H1.
+    apply simple_list_carrier__eqdec.
+    apply rm_carrier_eqdec.
+Defined.
+Next Obligation.
+    apply inject_inj in H.
+    ltac1:(injection H as H).
+    exact H.
 Qed.
-Fail Next Obligation. *)
-(* 
-#[local]
-Program Instance wlt (Inner : Type)
-    :
-    WithListTrait Inner (simple_list_carrier Inner)
-:= {|
-    inject InnerT Carrier := slc_inner Inner ;
-    inject (list InnerT) Carrier := slc_list Inner ;
-|}.
 Next Obligation.
-    inversion H; subst; clear H.
-    reflexivity.
+    apply inject_inj in H.
+    ltac1:(injection H as H).
+    exact H.
 Qed.
 Next Obligation.
-    inversion H; subst; clear H.
-    reflexivity.
+    apply inject_inj in H.
+    ltac1:(injection H as H).
+    exact H.
 Qed.
-Fail Next Obligation. *)
-
-
-
-
-(* 
-Definition simple_list_functor
-    (symbol : Type)
-    (symbols : Symbols symbol)
-    (NondetValue : Type)
-    :
-    forall (my_signature : Signature)
-        (M : Model my_signature NondetValue),
-        WithErrTrait ((spec.builtin_value M)) ->
-        WithBoolTrait ((spec.builtin_value M)) ->
-        Model list_signature NondetValue
-:= fun my_signature M _WE _WB =>
-{|
-    builtin_value :=
-        simple_list_carrier (spec.builtin_value M)
-    ;
-    builtin_model_over :=
-        list_model_over
-            (spec.builtin_value M)
-            NondetValue
-            (simple_list_carrier (spec.builtin_value M))
-            (λ x, match x with slc_inner _ x' => Some x' | _ => None end)
-            (λ x, match x with slc_list _ x' => Some x' | _ => None end)
-    ;
-|}
-. *)
-(* 
-(* Set Typeclasses Debug. *)
-Program Definition list_carrier_functor_relaxed :
-    RelaxedCarrierFunctorT ErrT
-:= {|
-    rcf_carrier :=
-        fun (Carrier : Type)
-            (_IE : (Injection ErrT Carrier))
-            =>
-            simple_list_carrier Carrier
-    ;
-
-    rcf_from := fun (Carrier FromT : Type)
-            (inj : Injection ErrT Carrier)
-            (f : FromT -> Carrier)
-            =>
-            (slc_inner Carrier) ∘ f
-    ;
-
-|}.
 Next Obligation.
-    (* rcf_from_inj *)
-    unfold compose in H; simpl in H.
-    inversion H; subst; clear H.
-    apply (inj f) in H1.
-    exact H1.
-Qed.
-Fail Next Obligation. *)
-
-
-Program Definition list_carrier_functor :
-    CarrierFunctorT
-:= {|
-    cf_carrier :=
-        fun (Carrier : Type)
-            (* (_IE : (Injection ErrT Carrier)) *)
-            =>
-            simple_list_carrier Carrier
-    ;
-
-    cf_from := fun (Carrier FromT : Type)
-            (* (inj : Injection ErrT Carrier) *)
-            (f : FromT -> Carrier)
-            =>
-            (slc_inner Carrier) ∘ f
-    ;
-
-|}.
-Next Obligation.
-    (* rcf_from_inj *)
-    unfold compose in H0; simpl in H0.
-    ltac1:(injection H0 as H0).
-    apply (inj f) in H0.
-    exact H0.
+    destruct x,y; reflexivity.
 Qed.
 Fail Next Obligation.
+
 
