@@ -90,27 +90,7 @@ Record RelaxedModelFunctorT (FromT : Type) := {
     rmf_signature : Signature -> Signature ;
     rmf_nondet : Type -> Type ;
 
-    (* rmf_carrier
-        : Type -> Type
-    ;
-    rmf_carrier_eqdec
-        : forall T,
-            EqDecision T ->
-            EqDecision (rmf_carrier T)
-    ;
-
-    rmf_from:
-        forall (T FromT : Type)(f : FromT -> T),
-            FromT -> (rmf_carrier T)
-    ;
-
-    rmf_from_inj:
-        forall (T FromT : Type)(f : FromT -> T),
-            Inj (=) (=) f ->
-            Inj (=) (=) (rmf_from T FromT f)
-    ; *)
-
-    rmf_model_over :
+    rmf_model :
         forall
             (signature : Signature)
             (NondetValue : Type)
@@ -126,6 +106,25 @@ Record RelaxedModelFunctorT (FromT : Type) := {
                 (rmf_nondet NondetValue)
                 FromT
 }.
+
+Definition rmf_apply
+    {FromT : Type}
+    (f : RelaxedModelFunctorT FromT)
+    {signature : Signature}
+    {NondetValue : Type}
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    (M : @RelaxedModel symbol symbols signature NondetValue FromT)
+    :
+    @RelaxedModel
+        symbol
+        symbols
+        (rmf_signature _ f signature)
+        (rmf_nondet _ f NondetValue)
+        FromT
+:= 
+    rmf_model _ f _ _ M
+.
 
 (* 
 Definition rmf_apply

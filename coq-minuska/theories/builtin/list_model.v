@@ -127,7 +127,7 @@ Program Definition list_relaxed_functor :
     rmf_signature := fun _ => list_signature ;
     rmf_nondet := fun ND => ND ;
 
-    rmf_model_over :=
+    rmf_model :=
         fun (signature : Signature)
             (NondetValue : Type)
             (symbol : Type)
