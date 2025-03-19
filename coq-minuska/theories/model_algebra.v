@@ -26,13 +26,34 @@ Class Injection (FromT ToT : Type) := {
 
 Arguments inject (FromT ToT) {Injection} _.
 
+Definition inj_compose {A B C : Type} (g : Injection B C) (f : Injection A B) := {|
+    inject := compose (@inject _ _ g) (@inject _ _ f) ;
+|}. 
+
 Class ReversibleInjection (FromT ToT : Type) := {
     ri_injection :: Injection FromT ToT ;
     ri_reverse : ToT -> option FromT ;
-    ri_reverse_pf : forall to from,
-        ri_reverse to = Some from ->
-        @inject FromT ToT ri_injection from = to ;
+    ri_reverse_pf : forall from,
+        ri_reverse (@inject FromT ToT ri_injection from) = Some from ;
 }.
+
+Program Definition rinj_compose
+    {A B C : Type}
+    (g : ReversibleInjection B C)
+    (f : ReversibleInjection A B)
+:= {|
+    ri_injection := inj_compose (@ri_injection _ _ g) (@ri_injection _ _ f) ;
+    ri_reverse := fun c =>
+        b ← (@ri_reverse _ _ g c);
+        (@ri_reverse _ _ f b)
+|}.
+Next Obligation.
+    rewrite ri_reverse_pf.
+    simpl.
+    rewrite ri_reverse_pf.
+    reflexivity.
+Qed.
+Fail Next Obligation.
 
 Record RelaxedModel
     {symbol : Type}
@@ -81,9 +102,6 @@ Next Obligation.
     destruct RM as [c ed ov].
     apply _.
 Defined.
-Next Obligation.
-    destruct to; simpl in *; ltac1:(simplify_eq/=); reflexivity.
-Qed.
 Fail Next Obligation.
 
 Record RelaxedModelFunctorT (FromT : Type) := {

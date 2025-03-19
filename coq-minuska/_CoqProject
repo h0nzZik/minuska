@@ -44,6 +44,7 @@ theories/builtin/bool_model.v
 theories/builtin/int_model.v
 theories/builtin/list_model.v
 theories/builtin/example_list_int_model.v
+theories/builtin/information_flow_functor.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v
