@@ -8,6 +8,13 @@ Inductive ErrT :=
 | et_error
 .
 
+#[export]
+Instance ErrT_eqdec : EqDecision ErrT.
+Proof.
+    unfold RelDecision.
+    intros [] []. left. reflexivity.
+Defined.
+
 (* 
 Class WithErrTrait
     {symbol : Type}

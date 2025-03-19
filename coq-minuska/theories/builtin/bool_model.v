@@ -137,8 +137,8 @@ Definition bool_model_over
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    {Cbool : Injection bool Carrier}
-    {Cerr : Injection ErrT Carrier}
+    (Cbool : Injection bool Carrier)
+    (Cerr : Injection ErrT Carrier)
     (asb : Carrier -> option bool)
     :
     @ModelOver symbol symbols bool_signature NondetValue Carrier
@@ -147,49 +147,28 @@ Definition bool_model_over
     builtin_predicate_interp := fun (p : @builtin_predicate_symbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
 |}.
 
-
-Definition simple_bool_carrier := option bool_carrier.
-(* 
-#[local]
-Instance simple_bool_carrier__with_bool_trait
-    : WithBoolTrait simple_bool_carrier
-:= {|
-    wbt_inject_bool := fun b => (Some b) ;
-|}.
-
-#[local]
-Instance simple_bool_carrier__with_err_trait
-    : WithErrTrait simple_bool_carrier
-:= {|
-    wet_error := None ;
-|}. *)
-
-#[local]
-Instance inj_bool : Injection bool simple_bool_carrier :=
-{|
-    inject := Some ;
-|}.
-
-#[local]
-Program Instance inj_err : Injection ErrT simple_bool_carrier :=
-{|
-    inject := fun e => None ;
-|}.
-Next Obligation.
-    destruct x,y. reflexivity.
-Qed.
-Fail Next Obligation.
-
-
-(* from here down it does not compose *)
-Definition simple_bool_model
+Definition bool_relaxed_model
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
     :
-    Model bool_signature NondetValue
+    RelaxedModel bool_signature NondetValue ErrT
 := {|
-    builtin_value := simple_bool_carrier ;
-    builtin_model_over := bool_model_over symbol symbols NondetValue simple_bool_carrier (fun x => x);
+    rm_carrier := bool_carrier ;
+    rm_model_over :=
+        fun (Carrier : Type)
+            (inja : Injection ErrT Carrier)
+            (injb : ReversibleInjection bool_carrier Carrier)
+            => bool_model_over symbol symbols NondetValue Carrier
+                (@ri_injection _ _ injb)
+                inja
+                (@ri_reverse _ _ injb)
 |}.
 
+Definition bool_model
+    (symbol : Type)
+    (symbols : Symbols symbol)
+    (NondetValue : Type)
+:=
+    model_of_relaxed (bool_relaxed_model symbol symbols NondetValue)
+.
