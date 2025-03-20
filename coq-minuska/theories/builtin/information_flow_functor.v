@@ -435,6 +435,7 @@ Next Obligation.
             specialize (IHl H2).
             clear H2.
             ltac1:(simplify_option_eq).
+            inversion IHl; subst; clear IHl.
             reflexivity.
         }
     }
@@ -487,8 +488,6 @@ Class IFCRelaxedModelTrait1
             args,
         let r1 : TermOver' Carrier' := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
         let r2 : TermOver' Carrier := eval_function_in_orig ifc_0 Carrier inja injb f nv args in
-        (* TODO we need to relate the two somehow *)
-        (* True *)
         match @ri_reverse _ _ (TermOver'_rinj injb) r2, @ri_reverse _ _ (TermOver'_rinj injb') r1 with
         | Some r'2, Some r'1 => (r'2) = (TermOver'_map ifc_get_pure r'1)
         | _,_ => True

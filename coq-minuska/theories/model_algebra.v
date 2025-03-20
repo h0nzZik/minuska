@@ -30,6 +30,19 @@ Definition inj_compose {A B C : Type} (g : Injection B C) (f : Injection A B) :=
     inject := compose (@inject _ _ g) (@inject _ _ f) ;
 |}. 
 
+Program Definition inj_id (A : Type) : Injection A A :=
+{| inject := fun x => x; |}
+.
+Fail Next Obligation.
+
+(* Of course not.
+Program Definition inj_fst (A B : Type) : Injection (prod A B) A :=
+{|
+    inject := fst ;
+|}.
+Next Obligation.
+Fail Next Obligation. *)
+
 Class ReversibleInjection (FromT ToT : Type) := {
     ri_injection :: Injection FromT ToT ;
     ri_reverse : ToT -> option FromT ;
@@ -53,6 +66,24 @@ Next Obligation.
     rewrite ri_reverse_pf.
     reflexivity.
 Qed.
+Fail Next Obligation.
+
+Program Definition rinj_id (A : Type) : ReversibleInjection A A := {|
+    ri_injection := {| inject := fun x => x; |};
+    ri_reverse := fun x => Some x;
+|}.
+Fail Next Obligation.
+
+Program Definition rinj_inl (A B : Type) : ReversibleInjection A (A+B) := {|
+    ri_injection := {| inject := inl; |} ;
+    ri_reverse := fun x => match x with inl x' => Some x' | _ => None end ;
+|}.
+Fail Next Obligation.
+
+Program Definition rinj_inr (A B : Type) : ReversibleInjection B (A+B) := {|
+    ri_injection := {| inject := inr; |} ;
+    ri_reverse := fun x => match x with inr x' => Some x' | _ => None end ;
+|}.
 Fail Next Obligation.
 
 Record RelaxedModel
@@ -371,3 +402,40 @@ Section sum.
 
 
 End sum.
+
+Definition modelover_nv_lift 
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature: Signature}
+    {NV1 NV2 : Type}
+    {Carrier : Type}
+    (nvf : NV2 -> NV1)
+    (m : ModelOver signature NV1 Carrier)
+    :
+    ModelOver signature NV2 Carrier
+:= {|
+    builtin_function_interp :=
+        fun f nv args => @builtin_function_interp _ _ _ _ _ m f (nvf nv) args
+    ;
+    builtin_predicate_interp :=
+        fun p nv args => @builtin_predicate_interp _ _ _ _ _ m p (nvf nv) args
+    ;
+|}.
+
+(* 
+Definition modelover_carrier_lift 
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature: Signature}
+    {NV : Type}
+    {Carrier1 Carrier2 : Type}
+    (cf : ReversibleInjection Carrier1 Carrier2)
+    (m : ModelOver signature NV Carrier1)
+    :
+    ModelOver signature NV Carrier2
+:= {|
+    builtin_function_interp :=
+        fun f nv args => @builtin_function_interp _ _ _ _ _ m f nv ((TermOver'_map (@ri_reverse Carrier1 Carrier2 cf)) <$> args)
+|}.
+ *)
+

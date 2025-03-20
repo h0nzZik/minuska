@@ -36,6 +36,7 @@ theories/model_algebra.v
 theories/model_traits.v
 theories/signature_morphism.v
 theories/model_functor.v
+theories/conservative_merge.v
 
 theories/builtin/bool_signature.v
 theories/builtin/int_signature.v
