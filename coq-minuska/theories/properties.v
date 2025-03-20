@@ -14,6 +14,8 @@ Lemma vars_of_to_l2r_of_tob
     vars_of_to_l2r (TermOverBuiltin_to_TermOverBoV r) = []
 .
 Proof.
+    unfold TermOverBuiltin_to_TermOverBoV.
+    unfold TermOver_map.
     induction r; simpl.
     { reflexivity. }
     {
@@ -1941,6 +1943,7 @@ Lemma satisfies_TermOverBuiltin_to_TermOverBoV
     satisfies ρ γ (TermOverBuiltin_to_TermOverBoV γ)
 .
 Proof.
+    unfold TermOverBuiltin_to_TermOverBoV, TermOver_map.
     unfold satisfies; simpl.
     ltac1:(induction γ using TermOver_rect).
     {
@@ -3057,6 +3060,7 @@ Lemma satisfies_TermOverBoV_to_TermOverExpr
     satisfies ρ γ φ
 .
 Proof.
+    unfold TermOverBoV_to_TermOverExpr2, TermOver_map.
     revert γ.
     ltac1:(induction φ using TermOver_rect); intros γ.
     {

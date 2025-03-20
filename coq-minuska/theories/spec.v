@@ -278,18 +278,26 @@ match t with
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size) l)
 end.
 
+Print TermOver'.
+Fixpoint TermOver'_map
+    {T : Type} {A B : Type}
+    (f : A -> B)
+    (t : @TermOver' T A)
+    : @TermOver' T B
+:=
+    match t with
+    | t_over b => t_over (f b)
+    | t_term s l => t_term s (map (TermOver'_map f) l)
+    end
+.
 
-Fixpoint TermOver_map
+Definition TermOver_map
     {Σ : StaticModel}
     {A B : Type}
     (f : A -> B)
     (t : TermOver A)
-    : TermOver B
 :=
-    match t with
-    | t_over b => t_over (f b)
-    | t_term s l => t_term s (map (TermOver_map f) l)
-    end
+    TermOver'_map f t
 .
 
 Definition TermOverBuiltin_to_TermOverBoV

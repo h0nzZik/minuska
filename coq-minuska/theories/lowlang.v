@@ -471,6 +471,7 @@ Instance cancel_TermOver_map
     Cancel eq (TermOver_map f) (TermOver_map g)
 .
 Proof.
+    unfold TermOver_map.
     intros Hcancel.
     intros t.
     induction t; simpl.
