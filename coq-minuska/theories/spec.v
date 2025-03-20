@@ -278,7 +278,6 @@ match t with
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size) l)
 end.
 
-Print TermOver'.
 Fixpoint TermOver'_map
     {T : Type} {A B : Type}
     (f : A -> B)

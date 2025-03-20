@@ -338,9 +338,109 @@ Definition eval_function_in_iflow
     let args' := (TermOver'_map (@inject _ _ (@ri_injection _ _ injb))) <$> args in
     @builtin_function_interp _ _ _ _ _ (@rm_model_over _ _ signature _ _ Miflow Carrier inja injb) f nv args'
 .
+Fixpoint TermOver'_option_map
+    {T : Type} {A B : Type}
+    (f : A -> option B)
+    (t : @TermOver' T A)
+    : option (@TermOver' T B)
+:=
+    match t with
+    | t_over b => t_over <$> (f b)
+    | t_term s l => t_term s <$> (list_collect ((TermOver'_option_map f) <$> l))
+    end
+.
 
 
-(* TODO need "the rest" of the natural transformation *)
+Program Definition TermOver'_rinj
+    {T A B : Type}
+    (i : ReversibleInjection A B)
+    :
+    ReversibleInjection (@TermOver' T A) (@TermOver' T B)
+:= {|
+    ri_injection := {| 
+        inject := TermOver'_map (@inject _ _ (@ri_injection _ _ i))
+    |} ;
+    ri_reverse := TermOver'_option_map ((@ri_reverse _ _ i)) ;
+|}.
+Next Obligation.
+    intros.
+    unfold Inj.
+    intros x.
+    induction x; intros y; destruct y; intros HH; simpl in *.
+    {
+        ltac1:(injection HH as HH).
+        apply (inject_inj) in HH.
+        subst a0.
+        reflexivity.
+    }
+    {
+        inversion HH.
+    }
+    {
+        inversion HH.
+    }
+    {
+        ltac1:(injection HH as HH).
+        subst s0.
+        f_equal.
+        revert l0 H0 H.
+        induction l; intros l0 H0 H.
+        {
+            destruct l0; simpl in *.
+            { reflexivity. }
+            {
+                inversion H0.
+            }
+        }
+        {
+            destruct l0; simpl in *.
+            {
+                inversion H0.
+            }
+            {
+                inversion H0; subst; clear H0.
+                rewrite Forall_cons_iff in H.
+                destruct H as [H4 H5].
+                f_equal.
+                {
+                    apply H4.
+                    apply H2.
+                }
+                {
+                    apply IHl.
+                    apply H3.
+                    apply H5.
+                }
+            }
+        }
+    }
+Qed.
+Next Obligation.
+    intros.
+    destruct i as [i1 i2 i3]; simpl in *.
+    induction from; simpl in *.
+    {
+        rewrite i3.
+        reflexivity.
+    }
+    {
+        revert H.
+        induction l; intros H; simpl in *.
+        {
+            reflexivity.
+        }
+        {
+            rewrite Forall_cons_iff in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2).
+            clear H2.
+            ltac1:(simplify_option_eq).
+            reflexivity.
+        }
+    }
+Qed.
+Fail Next Obligation.
+
 Class IFCRelaxedModelTrait1
     (TagType : Type)
     {_SL : IFLattice TagType}
@@ -385,14 +485,16 @@ Class IFCRelaxedModelTrait1
             (f : builtin_function_symbol)
             (nv : NondetValue)
             args,
-        let r1 := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
-        let r2 := eval_function_in_orig ifc_0 Carrier inja injb f nv args in
+        let r1 : TermOver' Carrier' := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
+        let r2 : TermOver' Carrier := eval_function_in_orig ifc_0 Carrier inja injb f nv args in
         (* TODO we need to relate the two somehow *)
-        True
-        (* match @ri_reverse _ _ injb r1, ri_reverse r2 with
-        | Some r'1, Some r'2 => False
+        (* True *)
+        match @ri_reverse _ _ (TermOver'_rinj injb) r2, @ri_reverse _ _ (TermOver'_rinj injb') r1 with
+        | Some r'2, Some r'1 => (r'2) = (TermOver'_map ifc_get_pure r'1)
         | _,_ => True
-        end *)
+        end
     ;
 }.
-    
+
+
+(* TODO need "the rest" of the natural transformation *)
