@@ -338,18 +338,6 @@ Definition eval_function_in_iflow
     let args' := (TermOver'_map (@inject _ _ (@ri_injection _ _ injb))) <$> args in
     @builtin_function_interp _ _ _ _ _ (@rm_model_over _ _ signature _ _ Miflow Carrier inja injb) f nv args'
 .
-Fixpoint TermOver'_option_map
-    {T : Type} {A B : Type}
-    (f : A -> option B)
-    (t : @TermOver' T A)
-    : option (@TermOver' T B)
-:=
-    match t with
-    | t_over b => t_over <$> (f b)
-    | t_term s l => t_term s <$> (list_collect ((TermOver'_option_map f) <$> l))
-    end
-.
-
 
 Program Definition TermOver'_rinj
     {T A B : Type}

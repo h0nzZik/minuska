@@ -3324,3 +3324,15 @@ Proof.
         }
     }
 Qed.
+
+Fixpoint TermOver'_option_map
+    {T : Type} {A B : Type}
+    (f : A -> option B)
+    (t : @TermOver' T A)
+    : option (@TermOver' T B)
+:=
+    match t with
+    | t_over b => t_over <$> (f b)
+    | t_term s l => t_term s <$> (list_collect ((TermOver'_option_map f) <$> l))
+    end
+.
