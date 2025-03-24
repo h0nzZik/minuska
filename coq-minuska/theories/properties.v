@@ -416,6 +416,169 @@ Proof.
     }
 Qed.
 
+Lemma Expression2_evaluate_None_relative
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (e : Expression2)
+    (ρ1 ρ2 : Valuation2)
+    :
+    vars_of e ⊆ vars_of ρ1 ->
+    ρ1 ⊆ ρ2 ->
+    Expression2_evaluate program ρ1 e = None ->
+    Expression2_evaluate program ρ2 e = None
+.
+Proof.
+    induction e; intros H1 H2 H3.
+    {
+        simpl in *.
+        exact H3.
+    }
+    {
+        simpl in *.
+        destruct (ρ1 !! x) eqn:Heq1,
+            (ρ2 !! x) eqn:Heq2.
+        {
+            inversion H3.
+        }
+        {
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            unfold vars_of in H1; simpl in H1.
+            rewrite singleton_subseteq_l in H1.
+            unfold Valuation2 in *.
+            rewrite <- not_elem_of_dom in Heq1.
+            apply Heq1. apply H1.
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        simpl in *.
+        unfold vars_of in H1; simpl in H1.
+        rewrite bind_None.
+        rewrite bind_None in H3.
+        destruct H3 as [H3|H3].
+        {
+            left.
+            apply list_collect_Exists_1 in H3.
+            apply list_collect_Exists.
+            rewrite Exists_exists.
+            rewrite Exists_exists in H3.
+            destruct H3 as [x [H1x H2x]].
+            rewrite Forall_forall in H.
+            rewrite elem_of_list_fmap in H1x.
+            destruct H1x as [y [H1y H2y]].
+            subst x.
+            setoid_rewrite elem_of_list_fmap.
+            exists None.
+            simpl. split.
+            {
+                exists y.
+                split>[|exact H2y].
+                symmetry.
+                apply H.
+                { apply H2y. }
+                {
+                    rewrite elem_of_list_lookup in H2y.
+                    destruct H2y as [i Hi].
+                    apply take_drop_middle in Hi.
+                    rewrite <- Hi in H1.
+                    rewrite fmap_app in H1.
+                    rewrite fmap_cons in H1.
+                    rewrite union_list_app in H1.
+                    rewrite union_list_cons in H1.
+                    ltac1:(set_solver).
+                }
+                {
+                    apply H2.
+                }
+                {
+                    simpl in H2x.
+                    unfold isSome in H2x.
+                    ltac1:(case_match).
+                    ltac1:(exfalso).
+                    apply H2x.
+                    reflexivity.
+                    reflexivity.
+                }
+            }
+            {
+                intros HContra. inversion HContra.
+            }
+        }
+        {
+            right.
+            destruct H3 as [result [H1result H2result]].
+            exists result.
+            inversion H2result.
+        }
+    }
+    {
+        simpl in *.
+        unfold vars_of in H1; simpl in H1.
+        rewrite bind_None.
+        rewrite bind_None in H3.
+        destruct H3 as [H3|H3].
+        {
+            left.
+            apply list_collect_Exists_1 in H3.
+            apply list_collect_Exists.
+            rewrite Exists_exists.
+            rewrite Exists_exists in H3.
+            destruct H3 as [x [H1x H2x]].
+            rewrite Forall_forall in H.
+            rewrite elem_of_list_fmap in H1x.
+            destruct H1x as [y [H1y H2y]].
+            subst x.
+            setoid_rewrite elem_of_list_fmap.
+            exists None.
+            simpl. split.
+            {
+                exists y.
+                split>[|exact H2y].
+                symmetry.
+                apply H.
+                { apply H2y. }
+                {
+                    rewrite elem_of_list_lookup in H2y.
+                    destruct H2y as [i Hi].
+                    apply take_drop_middle in Hi.
+                    rewrite <- Hi in H1.
+                    rewrite fmap_app in H1.
+                    rewrite fmap_cons in H1.
+                    rewrite union_list_app in H1.
+                    rewrite union_list_cons in H1.
+                    ltac1:(set_solver).
+                }
+                {
+                    apply H2.
+                }
+                {
+                    simpl in H2x.
+                    unfold isSome in H2x.
+                    ltac1:(case_match).
+                    ltac1:(exfalso).
+                    apply H2x.
+                    reflexivity.
+                    reflexivity.
+                }
+            }
+            {
+                intros HContra. inversion HContra.
+            }
+        }
+        {
+            right.
+            destruct H3 as [result [H1result H2result]].
+            exists result.
+            inversion H2result.
+        }
+    }
+Qed.
+
 Lemma Expression2_evaluate_Some_enough_inv
     {Σ : StaticModel}
     (program : ProgramT)

@@ -608,6 +608,7 @@ Proof.
         {   
             ltac1:(simplify_option_eq).
             ltac1:(simp sat2E).
+            inversion HH; subst; clear HH.
             split>[reflexivity|].
             rewrite length_fmap.
             ltac1:(rename H1 into l1).
@@ -870,6 +871,130 @@ Proof.
     }
 Qed.
 
+Lemma eval_et_evaluate_None_relative
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (et : TermOver Expression2)
+    (ρ1 ρ2 : Valuation2)
+    (nv : NondetValue)
+    :
+    vars_of et ⊆ vars_of ρ1 ->
+    ρ1 ⊆ ρ2 ->
+    eval_et program ρ1 nv et = None ->
+    eval_et program ρ2 nv et = None
+.
+Proof.
+    induction et; simpl in *; intros HH1 HH2 HH3.
+    {
+        unfold eval_et in *; simpl in *.
+        rewrite bind_None in HH3.
+        rewrite bind_None.
+        destruct HH3 as [HH3|HH3].
+        {
+            rewrite fmap_None in HH3.
+            unfold Expression2_evaluate_nv in *.
+            rewrite bind_None in HH3.
+            destruct HH3 as [HH3|HH3].
+            {
+                eapply Expression2_evaluate_None_relative in HH3.
+                {
+                    rewrite HH3.
+                    simpl.
+                    left.
+                    reflexivity.
+                }
+                {
+                    apply HH1.
+                }
+                { apply HH2. }
+            }
+            {
+                destruct HH3 as [x [H1x H2x]].
+                inversion H2x.
+            }
+        }
+        {
+            destruct HH3 as [x [H1x H2x]].
+            inversion H2x.
+        }
+    }
+    {
+        unfold eval_et in *.
+        rewrite Forall_forall in H.
+        rewrite bind_None.
+        rewrite bind_None in HH3.
+        simpl in *.
+        destruct HH3 as [HH3|HH3].
+        {
+            simpl in *.
+            rewrite fmap_None in HH3.
+            apply list_collect_Exists_1 in HH3.
+            rewrite Exists_exists in HH3.
+            destruct HH3 as [x [H1x H2x]].
+            simpl in H2x.
+            unfold isSome in *.
+            unfold is_true in *.
+            left.
+            destruct x; simpl in *.
+            {
+                ltac1:(contradiction H2x).
+                reflexivity.
+            }
+            {
+                clear H2x.
+                rewrite fmap_None.
+                apply list_collect_Exists.
+                rewrite Exists_exists.
+                exists None.
+                simpl.
+                unfold Expression2_evaluate_nv in *.
+                rewrite elem_of_list_fmap in H1x.
+                rewrite elem_of_list_fmap.
+                split>[|intros HH; inversion HH].
+                destruct H1x as [y [H1y H2y]].
+                exists y.
+                split>[|apply H2y].
+                specialize (H _ H2y).
+                ltac1:(ospecialize (H _)).
+                {
+                    rewrite elem_of_list_lookup in H2y.
+                    destruct H2y as [i Hi].
+                    apply take_drop_middle in Hi.
+                    rewrite <- Hi in HH1.
+                    unfold vars_of in HH1; simpl in HH1.
+                    rewrite fmap_app in HH1.
+                    rewrite fmap_cons in HH1.
+                    rewrite union_list_app in HH1.
+                    rewrite union_list_cons in HH1.
+                    ltac1:(set_solver).
+                }
+                specialize (H HH2).
+                rewrite bind_None in H.
+                rewrite bind_None in H.
+                ltac1:(ospecialize (H _)).
+                {
+                    left.
+                    symmetry.
+                    apply H1y.
+                }
+                destruct H as [H|H].
+                {
+                    symmetry.
+                    apply H.
+                }
+                {
+                    destruct H as [x [H1x H2x]].
+                    inversion H2x.
+                }
+            }
+        }
+        {
+            destruct HH3 as [x [H1x H2x]].
+            inversion H2x.
+        }
+    }
+Qed.
+
 Lemma eval_et_extensive_Some
     {Σ : StaticModel}
     (program : ProgramT)
@@ -977,8 +1102,9 @@ Lemma try_match_lhs_with_sc_complete
     (nv : NondetValue)
     :
     vars_of (r_scs r) ⊆ vars_of (r_from r) ->
+    vars_of (r_to r) ⊆ vars_of (r_from r) ->
     satisfies ρ g (r_from r) ->
-    satisfies ρ (program,(nv,g')) (r_to r) ->
+    eval_et program ρ nv (r_to r) = Some g' ->
     satisfies ρ (program, nv) (r_scs r) ->
     {
         ρ' : (gmap variable (TermOver builtin_value)) &
@@ -988,25 +1114,13 @@ Lemma try_match_lhs_with_sc_complete
     }   
 .
 Proof.
-    (*
-        If a side condition `sc` contains a variable
-        that is not in the 'from' part `fr` of the rule,
-        then the side condition evaluates to `false`.
-        Why?
-        Because if it evaluated to `true`,
-        then `vars_of sc ⊆ vars_of ρ `.
-        But vars_of ρ = vars_of fr, because of
-        the NOOTA property.
-    *)
-    intros Hn H1 HX H2.
+    intros Hn Hn' H1 HX H2.
     apply try_match_new_complete in H1.
     destruct H1 as [ρ1 [H1ρ1 H2ρ1]].
     destruct H2ρ1 as [H2ρ1 H3ρ2].
-    (*destruct (matchesb ρ1 () (fr_scs r)) eqn:Hm.*)
     {
         
         unfold try_match_lhs_with_sc.
-        (* ltac1:(setoid_rewrite bind_Some). *)
         exists ρ1.
         split.
         {
@@ -1022,24 +1136,32 @@ Proof.
         exists ρ1.
         split>[apply H3ρ2|].
         simpl in *.
+        unfold satisfies in *; simpl in *.
         destruct (SideCondition_evaluate program ρ1 nv (r_scs r)) eqn:Heq1.
         {
-            destruct (isSome (eval_et program ρ1 nv (r_to r))) eqn:Heq2.
+            destruct ((eval_et program ρ1 nv (r_to r))) eqn:Heq2.
             {
                 reflexivity.
             }
             {
-                unfold satisfies in *; simpl in *.
-                apply eval_et_correct_2 in HX.
-                Check Expression2_evaluate_extensive_Some.
-                Search eval_et.
-                (* unfold try_match_new in H3ρ2. *)
+                simpl.
+                ltac1:(exfalso).
+                eapply eval_et_evaluate_None_relative in Heq2.
+                rewrite Heq2 in HX.
+                inversion HX.
+                {
+                    rewrite H1ρ1.
+                    apply Hn'.
+                }
+                {
+                    apply H2ρ1.
+                }
             }
         }
         unfold satisfies in H2; simpl in H2.
-        rewrite <- not_true_iff_false in H.
+        rewrite <- not_true_iff_false in Heq1.
         ltac1:(exfalso).
-        apply H. clear H.
+        apply Heq1. clear Heq1.
         eapply sc_satisfies_insensitive>[|apply H2].
         unfold Valuation2_restrict.
         unfold Valuation2 in *.

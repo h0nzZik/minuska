@@ -616,6 +616,7 @@ Proof.
     }
 Qed.
 
+
 Lemma list_collect_Exists
     {A : Type}
     (l_in : list (option A))
@@ -697,6 +698,44 @@ Proof.
     }
 Qed.
 
+
+Lemma list_collect_Exists_1
+    {A : Type}
+    (l_in : list (option A))
+    :
+    list_collect l_in = None ->
+    Exists (not ∘ isSome) l_in
+.
+Proof.
+    induction l_in; intros HH; simpl in *.
+    {
+        inversion HH.
+    }
+    {
+        rewrite bind_None in HH.
+        destruct HH as [HH|HH].
+        {
+            subst a.
+            left.
+            simpl.
+            intros HContra.
+            inversion HContra.
+        }
+        {
+            destruct HH as [x [H1x H2x]].
+            rewrite bind_None in H2x.
+            subst a.
+            destruct H2x as [H2x|H2x].
+            {
+                right. apply IHl_in. apply H2x.
+            }
+            {
+                destruct H2x as [x0 [H1x0 H2x0]].
+                inversion H2x0.
+            }
+        }
+    }
+Qed.
 
 Lemma list_collect_Forall_T
     {A : Type}
