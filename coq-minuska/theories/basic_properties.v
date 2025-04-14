@@ -627,7 +627,6 @@ match t with
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size_with fsz) l)
 end.
 
-
 Fixpoint TO_to_tree
     {T : Type}
     {A : Type}
@@ -720,7 +719,6 @@ Proof.
         intros. apply TO_from_to_tree.
     }
 Defined.
-
 
 Definition BoV_to_Expr2
     {Σ : StaticModel}
@@ -839,3 +837,113 @@ Proof.
     destruct t; simpl; ltac1:(lia).
 Qed.
 
+
+
+Fixpoint E_to_tree
+    {Σ : StaticModel}
+    (e : Expression2)
+    :
+    (gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol))%type)
+:=
+    match e with
+    | e_ground a => GenLeaf (inl (inl (inl a)))
+    | e_variable x => GenLeaf (inl (inl (inr x)))
+    | e_fun f l =>
+        let l' := E_to_tree <$> l in
+        GenNode 0 ((GenLeaf (inl (inr f)))::l')
+    | e_query q l =>
+        let l' := E_to_tree <$> l in
+        GenNode 1 ((GenLeaf (inr q))::l')
+    end
+.
+
+Fixpoint E_of_tree
+    {Σ : StaticModel}
+    (t : gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol))%type)
+    : option Expression2
+:=
+    match t with
+    | GenLeaf (inl (inl (inl a))) => Some (e_ground a)
+    | GenLeaf (inl (inl (inr x))) => Some (e_variable x)
+    | GenNode 0 ((GenLeaf (inl (inr f)))::l') =>
+        l ← list_collect (E_of_tree <$> l');
+        Some (e_fun f l)
+    | GenNode 1 ((GenLeaf (inr q))::l') =>
+        l ← list_collect (E_of_tree <$> l');
+        Some (e_query q l)
+    | _ => None
+    end
+.
+
+
+Lemma E_from_to_tree
+    {Σ : StaticModel}
+    :
+    forall e,
+        E_of_tree (E_to_tree e) = Some e
+.
+Proof.
+    intros e; induction e.
+    { reflexivity. }
+    { reflexivity. }
+    {
+        simpl.
+        rewrite bind_Some.
+        exists l.
+        (repeat split).
+        induction l.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            specialize (IHl IH2).
+            clear IH2.
+            rewrite fmap_cons.
+            rewrite fmap_cons.
+            rewrite IH1. clear IH1.
+            simpl.
+            rewrite IHl.
+            simpl.
+            reflexivity.
+        }
+    }
+    {
+        simpl.
+        rewrite bind_Some.
+        exists l.
+        (repeat split).
+        induction l.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            specialize (IHl IH2).
+            clear IH2.
+            rewrite fmap_cons.
+            rewrite fmap_cons.
+            rewrite IH1. clear IH1.
+            simpl.
+            rewrite IHl.
+            simpl.
+            reflexivity.
+        }
+    }
+Qed.
+
+#[export]
+Instance Expression2_countable
+    {Σ : StaticModel}
+    {_Cbv: Countable builtin_value}
+    :
+    Countable Expression2
+.
+Proof.
+    apply inj_countable with (
+        f := E_to_tree
+    )(
+        g := E_of_tree
+    ).
+    {
+        intros. apply E_from_to_tree.
+    }
+Defined.

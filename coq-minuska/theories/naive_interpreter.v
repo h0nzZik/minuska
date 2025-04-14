@@ -719,8 +719,17 @@ Proof.
                 clear H1z H2.
                 rewrite <- IHl.
                 f_equal.
+                unfold fmap.
+                apply list_fmap_ext.
+                intros i x Hix.
+                ltac1:(unshelve(eapply TermOver'_option_map__extensional)).
+                {
+                    apply _.
+                }
+(*                 
+                Search TermOver'_option_map.
                 apply H1.
-                apply IHl.
+                apply IHl. *)
             }
         }
 

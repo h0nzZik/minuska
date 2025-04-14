@@ -3673,3 +3673,42 @@ Proof.
         }
     }
 Qed.
+
+Lemma TermOver'_option_map__extensional
+    {T : Type} {A B : Type}
+    {_EA : EqDecision A}
+    {_CA : Countable A}
+    (f1 f2 : A -> option B)
+    (ta : @TermOver' T A)
+:
+    (forall a, a ∈ TermOver'_leaves ta -> (isSome (f1 a) -> f2 a = f1 a) /\ (isSome (f2 a) -> f1 a = f2 a)) ->
+    TermOver'_option_map f1 ta = TermOver'_option_map f2 ta
+.
+Proof.
+    intros H1.
+    destruct (TermOver'_option_map f1 ta) eqn:Heq.
+    {
+        eapply TermOver'_option_map__extension in Heq.
+        symmetry.
+        apply Heq.
+        apply H1.
+    }
+    {
+        destruct (TermOver'_option_map f2 ta) eqn:Heq2.
+        {
+            ltac1:(exfalso).
+            eapply TermOver'_option_map__extension in Heq2.
+            {
+                rewrite Heq in Heq2.
+                inversion Heq2.
+            }
+            {
+                apply H1.
+            }
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
+

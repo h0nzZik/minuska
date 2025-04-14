@@ -62,11 +62,15 @@ Class Signature := {
         : Type ;
     builtin_function_symbol_eqdec
         :: EqDecision builtin_function_symbol ;
+    builtin_function_symbol_countable
+        :: Countable builtin_function_symbol ;
 
     builtin_predicate_symbol
         : Type ;
     builtin_predicate_symbol_eqdec
         :: EqDecision builtin_predicate_symbol ;
+    builtin_predicate_symbol_countable
+        :: Countable builtin_predicate_symbol ;
 }.
 
 (*
@@ -124,6 +128,8 @@ Class ProgramInfo
     := {
     QuerySymbol : Type ;
     QuerySymbol_eqdec :: EqDecision QuerySymbol ;
+    QuerySymbol_countable :: Countable QuerySymbol ;
+
     ProgramT : Type ;
     pi_symbol_interp :
         ProgramT -> 
