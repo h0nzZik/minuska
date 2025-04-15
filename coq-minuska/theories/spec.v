@@ -439,13 +439,14 @@ mkSatisfies {
 Arguments satisfies : simpl never.
 
 (* A valuation is a mapping from variables to groun terms. *)
+(* TODO why not making this a notation? *)
 Definition Valuation2
     {Σ : StaticModel}
 :=
     gmap variable (TermOver builtin_value)
 .
 
-
+(* TODO Do we even need this?*)
 #[export]
 Instance Subseteq_Valuation2 {Σ : StaticModel}
     : SubsetEq Valuation2
