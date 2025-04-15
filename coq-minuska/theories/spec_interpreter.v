@@ -68,9 +68,9 @@ Definition RewritingRule2_wf1
     (r : RewritingRule2 Act)
     : Type
 := 
-    let vs1 : gset variable := vars_of (r_scs r) in
-    let vs2 : gset variable := vars_of (r_from r) in
-    (vs1 ⊆ vs2)
+    vars_of (r_scs r) ⊆ vars_of (r_from r)
+    /\
+    vars_of (r_to r) ⊆ vars_of (r_from r)
 .
 
 Definition RewritingRule2_wf2'
@@ -107,7 +107,8 @@ Definition RewritingRule2_wf
     (r : RewritingRule2 Act)
     : Type
 :=
-    RewritingRule2_wf1 r * RewritingRule2_wf2 r
+    RewritingRule2_wf1 r * True 
+    (* RewritingRule2_wf2 r *)
 .
 
 Definition RewritingTheory2_wf
