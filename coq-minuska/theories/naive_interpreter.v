@@ -616,6 +616,7 @@ Qed.
 
 Lemma eval_et_strip_helper
     {Σ : StaticModel}
+    {_Cbv : Countable builtin_value}
     (program : ProgramT)
     (ρ : Valuation2)
     (et : TermOver Expression2)
@@ -712,110 +713,132 @@ Proof.
             {
                 exists z.
                 split>[|reflexivity].
-                (* eapply IHl. *)
                 specialize (H1 _ H1y).
-                (* erewrite IHl. *)
                 specialize (IHl z H1z H2).
                 clear H1z H2.
+                fold (@fmap _ list_fmap).
+                (* unfold Valuation2 in *. *)
+                assert(Hfilter: 
+                    (filter
+                        (λ kv : variable * TermOver builtin_value,
+                      kv.1 ∈ ⋃ (vars_of <$> l))
+                    ρ)
+                    ⊆
+                    (filter
+                        (λ kv : variable * TermOver builtin_value,
+                        kv.1 ∈ (vars_of a ∪ (⋃ (vars_of <$> l))))
+                    ρ)
+                ).
+                {
+                    unfold Valuation2 in *.
+                    apply map_filter_strong_subseteq_ext.
+                    intros i x.
+                    simpl.
+                    intros [HH1 HH2].
+                    split>[|exact HH2].
+                    rewrite elem_of_union.
+                    right.
+                    exact HH1.
+                }
+                (* unfold Expression2_evaluate_nv in *. *)
+                apply list_collect_inv in IHl as IHl'.
                 rewrite <- IHl.
-                f_equal.
-                unfold fmap.
+                apply f_equal.
                 apply list_fmap_ext.
                 intros i x Hix.
-                ltac1:(unshelve(eapply TermOver'_option_map__extensional)).
+                match! goal with
+                | [|- (TermOver'_option_map ?f _ = _)] =>
+                    remember $f as myf
+                end.
+                assert(Htmp := @TermOver'_option_map__Some_1 (symbol) _ _ _ _ myf).
+                apply take_drop_middle in Hix as Hix'.
+                rewrite <- Hix' in IHl'.
+                (* clear Hix'. *)
+                rewrite fmap_app in IHl'.
+                rewrite fmap_cons in IHl'.
+                rewrite Forall_app in IHl'.
+                rewrite Forall_cons in IHl'.
+                destruct IHl' as [_ [IHmy _]].
+                unfold isSome in IHmy.
+                ltac1:(case_match).
                 {
-                    apply _.
+                    clear IHmy.
+                    ltac1:(rename H into Hmy).
+                    ltac1:(rename t into tmy).
+                    specialize (Htmp x tmy).
+                    subst myf.
+                    rewrite Hix' in Hmy.
+                    ltac1:(ospecialize (Htmp _)).
+                    {
+                        eapply TermOver'_option_map__extension>[|apply Hmy].
+                        intros a0 Ha0 Hevala0.
+                        clear Htmp.
+                        unfold Expression2_evaluate_nv in *.
+                        unfold isSome in *.
+                        ltac1:(case_match).
+                        {
+                            rewrite bind_Some in H.
+                            destruct H as [x0 [H1x0 H2x0]].
+                            clear Hevala0.
+                            apply (inj Some) in H2x0.
+                            subst t.
+                            rewrite bind_Some.
+                            exists x0.
+                            split>[|reflexivity].
+                            eapply Expression2_evaluate_extensive_Some>[|apply H1x0].
+                            apply Hfilter.
+                        }
+                        {
+                            inversion Hevala0.
+                        }
+                    }
+                    symmetry.
+                    eapply TermOver'_option_map__extension in Hmy as Hmy'.
+                    rewrite Hmy'.
+                    {
+                        symmetry.
+                        eapply TermOver'_option_map__extension>[|apply Hmy].
+                        intros a0 H1a0 H2a0.
+                        unfold Expression2_evaluate_nv in *.
+                        unfold isSome in *.
+                        ltac1:(case_match).
+                        {
+                            clear H2a0.
+                            rewrite bind_Some.
+                            rewrite bind_Some in H.
+                            destruct H as [x0 [H1x0 H2x0]].
+                            apply (inj Some) in H2x0.
+                            subst t.
+                            exists x0.
+                            split>[|reflexivity].
+                            eapply Expression2_evaluate_extensive_Some>[|apply H1x0].
+                            apply Hfilter.
+                        }
+                        {
+                            inversion H2a0.
+                        }
+                    }
+                    {
+                        intros a0 H1a0 H2a0.
+                        unfold Expression2_evaluate_nv in *.
+                        unfold isSome in *.
+                        ltac1:(case_match).
+                        {
+                            rewrite bind_Some in H.
+                            destruct H as [x0 [H1x0 H2x0]].
+                            clear H2a0.
+                            apply (inj Some) in H2x0.
+                            subst t.
+                            reflexivity.
+                        }
+                        {
+                            inversion H2a0.
+                        }
+                    }
                 }
-(*                 
-                Search TermOver'_option_map.
-                apply H1.
-                apply IHl. *)
+                { inversion IHmy. }
             }
         }
-
-        assert(Htmp: Forall (λ u : option (TermOver' (TermOver builtin_value)), u)
-            (TermOver'_option_map (Expression2_evaluate_nv program (filter
-            (λ kv : variable * TermOver builtin_value,
-            kv.1 ∈ ⋃ (vars_of <$> l))
-            ρ) nv) <$> l)
-        ).
-        {
-            rewrite Forall_forall.
-            rewrite Forall_forall in H1x'.
-            rewrite Forall_forall in H.
-            intros x0 Hx0.
-            apply H1x'.
-            rewrite elem_of_list_fmap in Hx0.
-            destruct Hx0 as [y [H1y H2y]].
-            subst x0.
-            specialize (H y H2y).
-            rewrite elem_of_list_fmap.
-            exists y.
-            split>[|exact H2y].
-            specialize (H1x' ((TermOver'_option_map (Expression2_evaluate_nv program ρ nv) y))).
-            ltac1:(ospecialize (H1x' _)).
-            {
-                rewrite elem_of_list_fmap.
-                exists y.
-                split>[|exact H2y].
-                reflexivity.
-            }
-            unfold isSome in *.
-
-
-
-            (* Check TermOver'_option_map__extension. *)
-
-
-
-            destruct (TermOver'_option_map (Expression2_evaluate_nv program ρ nv) y) eqn:Heq.
-            {
-                specialize (H t erefl).
-                erewrite TermOver'_option_map__extension>[|()|apply H].
-                { reflexivity. }
-                
-                intros a H1a H2a.
-                unfold isSome in *.
-                ltac1:(case_match)>[|inversion H2a].
-                clear H2a.
-                clear H1x'.
-                unfold Expression2_evaluate_nv in *.
-                rewrite bind_Some.
-                rewrite bind_Some in H0.
-                destruct H0 as [x0 [H1x0 H2x0]].
-                apply (inj Some) in H2x0.
-                subst t0.
-                exists x0.
-                split>[|reflexivity].
-                eapply Expression2_evaluate_extensive_Some>[|apply H1x0].
-                unfold Valuation2 in *.
-                ltac1:(rewrite map_filter_subseteq_ext).
-                intros i x1 H1ix1 H2ix2.
-                simpl in *.
-                rewrite elem_of_union_list.
-                exists (vars_of y).
-                rewrite elem_of_list_fmap.
-                split>[|apply H2ix2].
-                exists y.
-                split>[reflexivity|].
-                exact H2y.
-            }
-            {
-                inversion H1x'.
-            }
-        }
-        apply list_collect_Forall in Htmp.
-        destruct Htmp as [l_out [H1l_out H2l_out]].
-        unfold Valuation2 in *.
-        unfold TermOver in *.
-        rewrite H1l_out.
-        (* apply list_collect_inv in H1l_out. *)
-        (* ltac1:(simplify_eq/=). *)
-        clear H1l_out.
-        apply f_equal.
-        (* ltac1:(simplify_option_eq). *)
-        Search list_collect.
-        
     }
 Qed.
 
