@@ -108,6 +108,8 @@ Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (
     builtin_value_eqdec
         :: EqDecision builtin_value ;
 
+    builtin_value_countable
+        :: Countable builtin_value ;
 
     builtin_model_over :: ModelOver signature NondetValue builtin_value ;
 }.

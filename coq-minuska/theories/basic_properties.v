@@ -933,7 +933,6 @@ Qed.
 #[export]
 Instance Expression2_countable
     {Σ : StaticModel}
-    {_Cbv: Countable builtin_value}
     :
     Countable Expression2
 .

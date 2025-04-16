@@ -62,64 +62,25 @@ Definition Interpreter_sound'
     )%type
 .
 
-Definition RewritingRule2_wf1
-    {Σ : StaticModel}
-    {Act : Set}
-    (r : RewritingRule2 Act)
-    : Type
-:= 
-    vars_of (r_scs r) ⊆ vars_of (r_from r)
-    /\
-    vars_of (r_to r) ⊆ vars_of (r_from r)
-.
-
-Definition RewritingRule2_wf2'
-    {Σ : StaticModel}
-    {Act : Set}
-    (r : RewritingRule2 Act)
-    : Type
-:= 
-    (vars_of (r_to r) ⊆ vars_of (r_from r))
-.
-
-
-(*
-    This is known as 'weakly well-defined rule'
-    in the literature.
-*)
-Definition RewritingRule2_wf2
-    {Σ : StaticModel}
-    {Act : Set}
-    (r : RewritingRule2 Act)
-    : Type
-:= 
-    forall (g : TermOver builtin_value) (ρ : Valuation2) (program : ProgramT) (nv : NondetValue),
-        satisfies ρ g (r_from r) ->
-        satisfies ρ (program, nv) (r_scs r) ->
-        { g' : (TermOver builtin_value) &
-            satisfies ρ (program, (nv,g')) (r_to r)
-        }
-.
-
 Definition RewritingRule2_wf
     {Σ : StaticModel}
     {Act : Set}
     (r : RewritingRule2 Act)
-    : Type
+    : Prop
 :=
-    RewritingRule2_wf1 r * True 
-    (* RewritingRule2_wf2 r *)
+    vars_of (r_scs r) ⊆ vars_of (r_from r)
+    /\
+    vars_of (r_to r) ⊆ vars_of (r_from r)
 .
 
 Definition RewritingTheory2_wf
     {Σ : StaticModel}
     {Act : Set}
     (Γ : list (RewritingRule2 Act))
-    : Type
+    : Prop
 :=
-    forall r, r ∈ Γ -> RewritingRule2_wf r
+    Forall RewritingRule2_wf Γ
 .
-
 
 Definition Interpreter_sound
     {Σ : StaticModel}

@@ -1672,6 +1672,37 @@ Inductive FunctionSymbol : Set :=
 Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
+#[export]
+Program Instance FunctionSymbol_fin : Finite FunctionSymbol := {|
+    enum := [
+        b_zero
+        ; b_list_empty
+        ; b_map_empty 
+        ; b_map_size
+        ; b_Z_plus
+        ; b_Z_minus
+        ; b_Z_times
+        ; b_Z_div
+        ; b_Z_isLe
+        ; b_Z_isLt
+        ; b_Z_isGe
+        ; b_Z_isGt
+        ; b_Z_eq
+        ; b_Z_neq
+        ; b_bool_neg  
+        ; b_map_lookup
+        ; b_map_update
+    ]
+|}.
+Next Obligation.
+    (* This is probably not the fastest way but it works. *)
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    intros x; destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
 Inductive PredicateSymbol : Set :=
 | b_tt                     (* Prop *)
 | b_isBuiltin              (* 'a -> Prop *)
@@ -1700,10 +1731,49 @@ Inductive PredicateSymbol : Set :=
 | b_have_different_symbols   (* term -> term -> Prop *)
 .
 
-
 #[export]
 Instance PredicateSymbol_eqDec : EqDecision PredicateSymbol.
 Proof. ltac1:(solve_decision). Defined.
+
+
+#[export]
+Program Instance PredicateSymbol_fin : Finite PredicateSymbol := {|
+    enum := [
+        b_tt                     ;
+        b_isBuiltin              ;
+        b_isNotBuiltin           ;
+        b_isError                ;
+        b_isNotError             ;
+        b_isSymbol               ;
+        b_isNotSymbol            ;
+        b_isZ                    ;
+        b_isNotZ                 ;
+        b_isBool                 ;
+        b_isNotBool              ;
+        b_isString               ;
+        b_isNotString            ;
+        b_isList                 ;
+        b_isNotList              ;
+        b_isMap                  ;
+        b_isNotMap               ;
+        b_bool_is_true           ;
+        b_bool_is_false          ;
+        b_term_eq                ;
+        b_map_hasKey             ;
+        b_is_applied_symbol      ;
+        b_is_not_applied_symbol  ;
+        b_have_same_symbol       ;
+        b_have_different_symbols
+    ]
+|}.
+Next Obligation.
+    (* This is probably not the fastest way but it works. *)
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    intros x; destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
 
 Section sec2.
 

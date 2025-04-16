@@ -615,7 +615,6 @@ Qed.
 
 Lemma eval_et_strip_helper
     {Σ : StaticModel}
-    {_Cbv : Countable builtin_value}
     (program : ProgramT)
     (ρ : Valuation2)
     (et : TermOver Expression2)
@@ -845,7 +844,6 @@ Qed.
 (* Check Expression2_evalute_strip. *)
 Lemma eval_et_strip
     {Σ : StaticModel}
-    {_Cbv : Countable builtin_value}
     (program : ProgramT)
     (ρ : Valuation2)
     (et : TermOver Expression2)
@@ -1408,7 +1406,6 @@ Qed.
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
-    {_Cbv : Countable builtin_value}
     {Act : Set}
     (program : ProgramT)
     (g g' : TermOver builtin_value)
@@ -1576,7 +1573,6 @@ Qed.
 
 Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
-    {_Cbv : Countable builtin_value}
     {Act : Set}
     (program : ProgramT)
     (e : TermOver builtin_value)
@@ -1644,7 +1640,8 @@ Proof.
         specialize (Hc ρ').
         ltac1:(ospecialize (Hc nv _ _)).
         {
-            unfold is_true in wfΓ.
+            unfold RewritingTheory2_wf in wfΓ.
+            rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             specialize (wfΓ Hin).
             apply wfΓ.
@@ -1713,13 +1710,12 @@ Proof.
             eapply Valuation2_restrict_eq_subseteq in Htmp.
             symmetry. apply Htmp.
             rewrite H1.   
-            unfold is_true in wfΓ.
+            unfold RewritingTheory2_wf in wfΓ.
+            rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             specialize (wfΓ Hin).
             unfold RewritingRule2_wf in *.
-            destruct wfΓ as [[wf11 wf12] wf2].
-            unfold RewritingRule2_wf1 in *.
-            unfold RewritingRule2_wf2 in *.
+            destruct wfΓ as [wf11 wf12].
             eapply transitivity>[|apply wf11].
             unfold vars_of; simpl.
             ltac1:(set_solver).
@@ -1871,7 +1867,6 @@ Qed.
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
-    {_Cbv : Countable builtin_value}
     {Act : Set}
     (Γ : RewritingTheory2 Act)
     : Interpreter_sound Γ (naive_interpreter Γ).
@@ -1992,6 +1987,8 @@ Proof.
                 apply H2ρ'.
             }
             {
+                unfold RewritingTheory2_wf in wfΓ.
+                rewrite Forall_forall in wfΓ.
                 apply wfΓ.
                 apply H1r'.
             }
