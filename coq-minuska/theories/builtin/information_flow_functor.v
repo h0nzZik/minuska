@@ -3,6 +3,7 @@ From Minuska Require Import
     spec
     model_algebra
     model_traits
+    properties
 .
 
 From stdpp Require Import decidable.
@@ -428,7 +429,6 @@ Next Obligation.
             specialize (IHl H2).
             clear H2.
             ltac1:(simplify_option_eq).
-            inversion IHl; subst; clear IHl.
             reflexivity.
         }
     }
