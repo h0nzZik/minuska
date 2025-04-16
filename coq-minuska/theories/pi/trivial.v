@@ -13,6 +13,19 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+#[export]
+Program Instance MyQuerySymbol_fin : Finite MyQuerySymbol := {|
+    enum := [qs_program];
+|}.
+Next Obligation.
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
+
 #[local]
 Instance MyProgramInfo
     {symbol : Type}

@@ -13,6 +13,17 @@ Proof.
     destruct x, y.
 Defined.
 
+#[export]
+Program Instance emptyset_fin : Finite Emptyset := {|
+    enum := [];
+|}.
+Next Obligation.
+    constructor.
+Qed.
+Next Obligation.
+    destruct x.
+Qed.
+Fail Next Obligation.
 
 Inductive TrivialPVA : Set := pv_error.
 
@@ -21,6 +32,21 @@ Instance TrivialPVA_eqdec : EqDecision TrivialPVA.
 Proof.
     ltac1:(solve_decision).
 Defined.
+
+
+
+#[export]
+Program Instance TrivialPVA_fin : Finite TrivialPVA := {|
+    enum := [pv_error];
+|}.
+Next Obligation.
+    repeat constructor; ltac1:(set_solver).
+Qed.
+Next Obligation.
+    destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
 
 Section sec.
 

@@ -99,6 +99,9 @@ Record RelaxedModel
     rm_carrier_eqdec :
         EqDecision rm_carrier
     ;
+    rm_carrier_countable :
+        Countable rm_carrier
+    ;
     rm_model_over :
         forall (Carrier : Type),
         Injection FromT Carrier ->
@@ -114,6 +117,7 @@ Program Definition model_of_relaxed
     {NondetValue : Type}
     {FromT : Type}
     {_EFT : EqDecision FromT}
+    {_CT : Countable FromT}
     (RM : RelaxedModel signature NondetValue FromT)
     :
     Model signature NondetValue
@@ -131,6 +135,10 @@ Program Definition model_of_relaxed
 |}.
 Next Obligation.
     destruct RM as [c ed ov].
+    apply _.
+Defined.
+Next Obligation.
+    destruct RM.
     apply _.
 Defined.
 Fail Next Obligation.
