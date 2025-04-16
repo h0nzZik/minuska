@@ -71,9 +71,10 @@ let append_definition
   fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
   fprintf output_channel "%s\n" {|
     (* This lemma asserts well-formedness of the definition *)
-    Lemma language_well_formed: isSome(RewritingTheory2_wf_heuristics (fst T)).
+    Lemma language_well_formed: spec_interpreter.RewritingTheory2_wf (fst T).
     Proof.
-      (* This is the main syntactic check. If this fails, the semantics contain a bad rule. *) ltac1:(compute_done).
+      (* This is the main syntactic check. If this fails, the semantics contains a bad rule. *)
+      ltac1:(compute_done).
     Qed.
     (* This lemma asserts soundness of the generated interpreter. *)
     (* Unfortunately, we cannot rely on the extraction here.
@@ -83,15 +84,8 @@ let append_definition
         lang_interpreter
     .
     Proof.
-        apply @global_naive_interpreter_sound.
-        (*{ apply _. }*)
-        ltac1:(assert(Htmp: isSome(RewritingTheory2_wf_heuristics (fst T)))).
-        {
-            apply language_well_formed.
-        }
-        unfold is_true, isSome in Htmp.
-        destruct (RewritingTheory2_wf_heuristics (fst T)) eqn:Heq>[|inversion Htmp].
-        assumption.
+        apply global_naive_interpreter_sound.
+        apply language_well_formed.
     Qed.
     *)
   |} ;
@@ -167,6 +161,7 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
       Require Import Ascii.
       Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
       Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
+      Extract Inductive stdpp.countable.Countable => "Libminuska.Extracted.countable" [ "(fun (e,d) -> {Libminuska.Extracted.encode = e; Libminuska.Extracted.decode = d;})" ].
       Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
       Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
@@ -183,7 +178,7 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
       Extract Constant GT => "Libminuska.Extracted.gT".
       Extract Constant gt_term => "Libminuska.Extracted.gt_term".
       Extract Constant gt_over => "Libminuska.Extracted.gt_over".
-      Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.pi_symbol_interp = d; })" ].
+      Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, c, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.querySymbol_countable = c; Libminuska.Extracted.pi_symbol_interp = d; })" ].
       Extract Constant program_info => "Libminuska.Extracted.programInfo".
       Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
       Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
