@@ -156,12 +156,12 @@ Definition int_relaxed_model
                 (@ri_reverse _ _ injb)
 |}.
 
-Definition int_model
+(* Definition int_model
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
     : Model int_signature NondetValue
 :=
     model_of_relaxed (int_relaxed_model symbol symbols NondetValue)
-.
+. *)
 

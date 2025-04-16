@@ -15,6 +15,18 @@ Proof.
     intros [] []. left. reflexivity.
 Defined.
 
+#[export]
+Program Instance ErrT_fin : Finite ErrT := {|
+    enum := [et_error] ;
+|}.
+Next Obligation.
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
 (* 
 Class WithErrTrait
     {symbol : Type}

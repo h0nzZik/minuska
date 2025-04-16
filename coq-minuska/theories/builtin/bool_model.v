@@ -165,10 +165,10 @@ Definition bool_relaxed_model
                 (@ri_reverse _ _ injb)
 |}.
 
-Definition bool_model
+(* Definition bool_model
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
 :=
     model_of_relaxed (bool_relaxed_model symbol symbols NondetValue)
-.
+. *)

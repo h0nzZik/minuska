@@ -121,6 +121,34 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+#[local]
+Program Instance simple_list_carrier__countable
+    (Inner : Type)
+    {_ : EqDecision Inner}
+    {_ : Countable Inner}
+    : Countable (simple_list_carrier Inner) := {|
+    encode := fun slc =>
+        stdpp.countable.encode (
+            match slc with
+            | slc_inner _ x => inl x
+            | slc_list _ l => inr l
+            end
+        )
+    ;
+    decode := fun (p : positive) =>
+        match (@stdpp.countable.decode (Inner+(list Inner)) _ _ p) with
+        | Some (inl x) => Some (slc_inner _ x)
+        | Some (inr l) => Some (slc_list _ l)
+        | None => None
+        end
+|}.
+Next Obligation.
+    rewrite decode_encode.
+        ltac1:(repeat case_match; simplify_eq/=);
+        reflexivity.
+Qed.
+Fail Next Obligation.
+
 Program Definition list_relaxed_functor :
     RelaxedModelFunctorT (ErrT+bool)
 := {|
@@ -179,6 +207,11 @@ Program Definition list_relaxed_functor :
 Next Obligation.
     apply simple_list_carrier__eqdec.
     apply rm_carrier_eqdec.
+Defined.
+Next Obligation.
+    (* Countable *)
+    destruct M.
+    apply _.
 Defined.
 Next Obligation.
     apply inject_inj in H.

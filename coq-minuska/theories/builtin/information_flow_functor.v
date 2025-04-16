@@ -154,6 +154,11 @@ Next Obligation.
     apply rm_carrier_eqdec.
 Defined.
 Next Obligation.
+    intros. simpl in *.
+    destruct M.
+    apply _.
+Defined.
+Next Obligation.
     intros. simpl in *. ltac1:(simplify_eq/=). reflexivity.
 Qed.
 Fail Next Obligation.
