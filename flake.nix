@@ -198,28 +198,6 @@
           ocamlPackages = pkgs.ocamlPackages;
         };
 
-        packages.languages-in-coq
-        = pkgs.coqPackages_8_19.callPackage 
-        ( { coq, stdenv }:
-        stdenv.mkDerivation {
-          name = "languages-in-coq";
-          src = ./languages-in-coq;
-
-          buildInputs = [
-            self.outputs.packages.${system}.coq-minuska
-            # self.outputs.packages.${system}.minuska
-            #coq.ocamlPackages.menhir
-          ] ++ [self.outputs.packages.${system}.coq-minuska.coqPackages.coq]
-            ++ self.outputs.packages.${system}.coq-minuska.coqLibraries
-            ++ self.outputs.packages.${system}.coq-minuska.coqPlugins ;
-
-
-          enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-
-          passthru = { coqPackages = pkgs.coqPackages_8_19; };
-        } ) { } ;
-
 
         packages.bench-standalone
         = pkgs.stdenv.mkDerivation {
@@ -245,31 +223,6 @@
             pkgs.time
           ] ++ example_languages_parser_deps;
         };
-
-        packages.bench-coq
-        = pkgs.coqPackages_8_19.callPackage 
-        ( { coq, stdenv }:
-        stdenv.mkDerivation {
-          name = "bench-coq";
-          src = ./bench-coq;
-
-          propagatedBuildInputs = [
-            pkgs.time
-            pkgs.python312
-            self.outputs.packages.${system}.coq-minuska
-            self.outputs.packages.${system}.languages-in-coq
-            self.outputs.packages.${system}.languages-in-coq.coqPackages.coq
-          ] ++ self.outputs.packages.${system}.coq-minuska.coqLibraries
-            ++ self.outputs.packages.${system}.coq-minuska.coqPlugins;
-          nativeBuildInputs = self.outputs.packages.${system}.coq-minuska.coqLibraries ++
-self.outputs.packages.${system}.coq-minuska.coqPlugins;
-
-          enableParallelBuilding = true;
-          #installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-
-          passthru = { coqPackages = pkgs.coqPackages_8_19; };
-        } ) { } ;
-
 
         packages.minuska-docker
         = pkgs.dockerTools.buildImage {
@@ -344,18 +297,6 @@ self.outputs.packages.${system}.coq-minuska.coqPlugins;
                 inputsFrom = [examples-coq];
                 packages = [
                   examples-coq.coqPackages.coq-lsp
-                ];
-              };
-
-          bench-coq =
-            let
-              bench-coq = self.outputs.packages.${system}.bench-coq;
-            in
-              pkgs.mkShell {
-                inputsFrom = [bench-coq];
-                packages = [
-                  bench-coq.coqPackages.coq-lsp
-                  #benchexec
                 ];
               };
 
