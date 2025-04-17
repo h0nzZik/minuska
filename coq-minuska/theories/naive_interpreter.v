@@ -84,8 +84,8 @@ Definition Expression2_evaluate_nv
     (nv : NondetValue)
     (t : Expression2)
 :=
-    gt ← Expression2_evaluate program ρ t;
-    Some (gt nv)
+    gt ← Expression2_evaluate program ρ t nv;
+    Some (gt)
 .
 
 Definition eval_et
@@ -885,7 +885,7 @@ Proof.
     revert g HH.
     induction et; simpl in *; intros g HH.
     {
-        destruct (Expression2_evaluate program ρ a) eqn:Heq.
+        destruct (Expression2_evaluate program ρ a nv) eqn:Heq.
         {
             simpl in *.
             ltac1:(simplify_eq/=).
@@ -945,7 +945,7 @@ Proof.
                     simpl in HH.
                     ltac1:(simplify_option_eq).
                     symmetry in Heqo0.
-                    destruct (list_collect (TermOver_collect <$> map (TermOver_map (Expression2_evaluate program ρ)) l)) eqn:Heq';
+                    destruct (list_collect (TermOver_collect <$> map (TermOver_map (fun e => Expression2_evaluate program ρ e nv)) l)) eqn:Heq';
                         ltac1:(simplify_eq/=).
                     specialize (IHl _ erefl).
                     intros.
@@ -1100,19 +1100,20 @@ Proof.
     }
 Qed.
 
-Lemma TermOver'_option_map__Expression2_evaluate__extensive {Σ : StaticModel} a nv ρ1 ρ2 program
+Lemma TermOver'_option_map__Expression2_evaluate__extensive
+{Σ : StaticModel} a nv ρ1 ρ2 program
 :
     ρ1 ⊆ ρ2 ->
     ∀ t : TermOver' (TermOver builtin_value),
     TermOver'_option_map
     (λ t0 : Expression2,
-    Expression2_evaluate program ρ1 t0
-    ≫= λ gt : NondetValue → TermOver builtin_value, Some (gt nv))
+    Expression2_evaluate program ρ1 t0 nv
+    ≫= λ gt : TermOver builtin_value, Some (gt))
     a = Some t
     → @TermOver'_option_map symbol _ _
     (λ t0 : Expression2,
-    Expression2_evaluate program ρ2 t0
-    ≫= λ gt : NondetValue → TermOver builtin_value, Some (gt nv))
+    Expression2_evaluate program ρ2 t0 nv
+    ≫= λ gt : TermOver builtin_value, Some (gt))
     a = Some t
 .
 Proof.
@@ -1128,7 +1129,7 @@ Proof.
         apply (inj Some) in H2y.
         subst x.
         rewrite fmap_Some.
-        exists (y nv).
+        exists (y).
         split>[|reflexivity].
         rewrite bind_Some.
         exists y.
@@ -1323,7 +1324,7 @@ Proof.
     induction et; intros t H1 H2; simpl in *.
     {
         unfold eval_et in *. simpl in *.
-        destruct (Expression2_evaluate program ρ1 a) eqn:Heq1.
+        destruct (Expression2_evaluate program ρ1 a nv) eqn:Heq1.
         {
             simpl in *.
             rewrite bind_Some in H2.

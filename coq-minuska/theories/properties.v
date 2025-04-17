@@ -1140,23 +1140,6 @@ Proof.
 Qed.
 
 
-Lemma Expression2_evaluate_None_inv
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (e : Expression2)
-    (ρ : Valuation2)
-:
-    Expression2_evaluate program ρ e = None ->
-    ~( vars_of e ⊆ vars_of ρ )
-.
-Proof.
-    intros H1 HContra.
-    assert(H2 := Expression2_evaluate_Some_enough_inv program e ρ HContra).
-    destruct H2 as [g Hg].
-    rewrite H1 in Hg.
-    inversion Hg.
-Qed.
-
 Lemma vars_of_t_over_expr
     {Σ : StaticModel}
     (e : Expression2)
@@ -1586,13 +1569,13 @@ Proof.
                     }
                     {
                         symmetry.
-                        assert(HH2: Forall (λ u : option (NondetValue → TermOver builtin_value), u)
-                                (list_fmap Expression2 (option (NondetValue → TermOver builtin_value))
-                                (Expression2_evaluate program
+                        assert(HH2: Forall (λ u : option (TermOver builtin_value), u)
+                                (list_fmap Expression2 (option (TermOver builtin_value))
+                                (fun e => Expression2_evaluate program
                                 (filter
                                 (λ kv : variable * TermOver builtin_value,
                                 kv.1 ∈ vars_of args)
-                                ρ))
+                                ρ) e nv)
                                 args) 
                             ).
                         {
