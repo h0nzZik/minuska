@@ -8,7 +8,7 @@
       (libraries
           minuska
       )
-      (modules run internal)
+      (modules run internal transform)
     )
 
     (rule

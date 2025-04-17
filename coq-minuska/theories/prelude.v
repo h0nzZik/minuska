@@ -1446,7 +1446,6 @@ Ltac2 simplify_fmap_eq () :=
     )
 .
 
-Search drop S.
 Ltac2 simplify_take_drop () :=
     repeat (
         match! goal with
@@ -1466,3 +1465,25 @@ Ltac2 simplify_take_drop () :=
     )
 .
 
+Ltac2 case_on_length () :=
+    repeat(
+        simpl in *;
+        match! goal with
+        | [h: ((length ?args) = (S _)) |- _] =>
+            destruct $args; simpl in $h; try ltac1:(lia)
+        | [h: ((length ?args) = O) |- _] =>
+            destruct $args; simpl in $h; try ltac1:(lia)
+        | [h: ((S _) = (S _)) |- _] =>
+            apply Nat.succ_inj in $h
+        end
+    )
+.
+
+Definition format_string_list (l : list string) : string :=
+match l with
+| [] => "[]"
+| x::[] => "[ " +:+ x +:+ " ]"
+| x::y::zs =>
+    "[ " +:+ x +:+ (fold_right (fun b a => b +:+ "; " +:+ a) "]" (y::zs))
+end
+.

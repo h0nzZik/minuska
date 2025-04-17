@@ -68,7 +68,28 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Definition bool_signature : Signature := {|
+Program Definition bool_signature : Signature := {|
     builtin_function_symbol := BoolFunSymbol ;
     builtin_predicate_symbol := BoolPredSymbol ;
+    bps_ar := fun p =>
+        match p with
+        | bool_pred_is => 1
+        | bool_pred_is_false => 1
+        | bool_pred_is_true => 1
+        end ;
+    bps_neg := fun p =>
+        match p with
+        | bool_pred_is => None
+        | bool_pred_is_false => Some bool_pred_is_true
+        | bool_pred_is_true => Some bool_pred_is_false
+        end ;
+    bps_neg_ar := _ ;
+    bps_neg__sym := _;
 |}.
+Next Obligation.
+    destruct p,p'; simpl in *; ltac1:(lia).
+Qed.
+Next Obligation.
+    destruct p,p'; simpl in *; ltac1:(simplify_option_eq); reflexivity.
+Qed.
+Fail Next Obligation.

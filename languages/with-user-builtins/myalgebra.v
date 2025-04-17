@@ -73,6 +73,97 @@ Proof.
   ltac1:(solve_decision).
 Defined.
 
+
+#[local]
+Obligation Tactic := idtac.
+
+
+#[export]
+Program Instance FunctionSymbol_fin : Finite FunctionSymbol := {|
+    enum := [
+  fs_bool_neg (* bool -> bool *)
+; fs_stack_head (* Stack -> StackFrame *)
+; fs_stack_tail (* Stack -> Stack *)
+; fs_stack_push (* Stack -> StackFrame -> Stack *)
+; fs_frame_has (* StackFrame -> Identifier -> bool *)
+; fs_frame_lookup (* StackFrame -> Identifier -> Value *)
+; fs_frame_insert (* StackFrame -> Identifier -> Value -> StackFrame *)
+; fs_frame_delete (* StackFrame -> Identifier -> StackFrame *)
+; fs_z_plus (* Z -> Z -> Z*)
+
+    ]
+|}.
+Next Obligation.
+    (* This is probably not the fastest way but it works. *)
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    intros x; destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
+#[export]
+Program Instance PredicateSymbol_fin : Finite PredicateSymbol := {|
+    enum := [
+  ps_is_value
+; ps_is_stack
+; ps_is_z
+; ps_stack_is_empty
+; ps_stack_is_nonempty
+; ps_bool_is_true
+; ps_bool_is_false
+    ]
+|}.
+Next Obligation.
+    (* This is probably not the fastest way but it works. *)
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    intros x; destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
+#[local]
+    Program Instance mysignature : Signature := {|
+        builtin_function_symbol
+            := FunctionSymbol ;
+
+        builtin_predicate_symbol
+            := PredicateSymbol ;
+    
+        bps_ar := fun p =>
+            match p with
+            | ps_is_value => 1
+            | ps_is_stack => 1
+            | ps_is_z => 1
+            | ps_stack_is_empty => 1
+            | ps_stack_is_nonempty => 1
+            | ps_bool_is_true => 1
+            | ps_bool_is_false => 1
+            end ;
+        bps_neg := fun p =>
+            match p with
+            | ps_is_value => None
+            | ps_is_stack => None
+            | ps_is_z => None
+            | ps_stack_is_empty => Some ps_stack_is_nonempty
+            | ps_stack_is_nonempty => Some ps_stack_is_empty
+            | ps_bool_is_true => Some ps_bool_is_false
+            | ps_bool_is_false => Some ps_bool_is_true
+            end ;
+
+    |}.
+    Next Obligation.
+        intros p p' H; destruct p, p'; ltac1:(simplify_eq/=); reflexivity.
+    Qed.
+    Next Obligation.
+        intros p p' H; destruct p; simpl; ltac1:(simplify_eq/=); try reflexivity.
+    Qed.
+    Fail Next Obligation.
+
+#[local]
+Obligation Tactic := Program.Tactics.program_simpl.
+
 Section sec.
 
     Context
@@ -82,32 +173,38 @@ Section sec.
 
 
     #[local]
-    Instance β
-        : Builtin MyUnit := {|
-        builtin_value
-            := PrimitiveValue ;
-        builtin_function_symbol
-            := FunctionSymbol ;
-        builtin_predicate_symbol
-            := PredicateSymbol ;
+    Program Instance βover
+        : ModelOver mysignature MyUnit PrimitiveValue := {|
         builtin_function_interp
             := fun
-              (f : FunctionSymbol)
+              (f : builtin_function_symbol)
               (nd : _)
               (args : list (TermOver' PrimitiveValue))
-              => (t_over pv_err)
+              => None
         ;
 
         builtin_predicate_interp
             := fun
-              (p : PredicateSymbol)
+              (p : builtin_predicate_symbol)
               (nd : _)
               (args : list (TermOver' PrimitiveValue))
               =>
-              false
+              None
         ;
+        bps_neg_correct := _;
+        
     |}.
+    Fail Next Obligation.
+    
+    #[local]
+    Instance β
+        : Model mysignature MyUnit
+    := {|
+        builtin_value
+            := PrimitiveValue ;
 
+        builtin_model_over := βover ;
+    |}.
 End sec.
 
 Definition inject_err

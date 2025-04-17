@@ -71,36 +71,38 @@ Class Signature := {
         :: EqDecision builtin_predicate_symbol ;
     builtin_predicate_symbol_countable
         :: Countable builtin_predicate_symbol ;
+    
+    bps_ar : builtin_predicate_symbol -> nat ;
+    bps_neg : builtin_predicate_symbol -> option builtin_predicate_symbol ;
+    bps_neg_ar : forall p p', bps_neg p = Some p' -> bps_ar p = bps_ar p' ;
+    bps_neg__sym : forall p p', bps_neg p = Some p' -> bps_neg p' = Some p ;
 }.
 
-(*
-    Interface for builtin data types.
-    TODO: explore having them as functions from lists to option type
-    - we evaluate expressions into option type anyway.
-*)
 Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
     (* builtin_value_eqdec
         :: EqDecision Carrier ; *)
 
-    (* I make the function interpretation total, and it is up to the concrete model
-       to decide what does applying functions with invalid arguments mean.
-       *)
     builtin_function_interp
         : builtin_function_symbol
         -> NondetValue
         -> list (@TermOver' symbol Carrier)
-        -> @TermOver' symbol Carrier ;
+        -> option (@TermOver' symbol Carrier) ;
         
-    (* I make the predicate interpretation total, and it is up to the concrete model
-       to decide what does applying predicates with invalid arguments mean.
-       *)
     builtin_predicate_interp
         : builtin_predicate_symbol
         -> NondetValue
         -> list (@TermOver' symbol Carrier)
-        -> bool ;
+        -> option bool ;
+    
+    bps_neg_correct : forall p p' nv l b b',
+        bps_neg p = Some p' ->
+        length l = bps_ar p ->
+        builtin_predicate_interp p' nv l = Some b ->
+        builtin_predicate_interp p nv l = Some b' ->
+        b = ~~ b' ;
 }.
 
+(* This should be called [Carrier] instead*)
 Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
     builtin_value
         : Type ;
@@ -534,30 +536,24 @@ Fixpoint Expression2_evaluate
     (program : ProgramT)
     (ρ : Valuation2)
     (t : Expression2)
-    : option (NondetValue -> TermOver builtin_value) :=
+    : NondetValue -> option (TermOver builtin_value) :=
 match t with
-| e_ground e => Some (fun _ => e)
+| e_ground e => fun _ =>  Some (e)
 | e_variable x =>
     match ρ !! x with
-    | Some v => Some (fun _ => v)
-    | None => None
+    | Some v => fun _ =>  Some (v)
+    | None => fun _ => None
     end
 | e_query q l =>
-    let es' := Expression2_evaluate program ρ <$> l in
+    fun nv =>
+    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
     es ← list_collect es';
-    Some (
-        fun nv =>
-        let args := (fun x => x nv) <$> es in
-        pi_symbol_interp program q args
-    )
+    Some (pi_symbol_interp program q es)
 | e_fun f l =>
-    let es' := Expression2_evaluate program ρ <$> l in
+    fun nv =>
+    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
     es ← list_collect es';
-    Some (
-        fun nv =>
-        let args := (fun x => x nv) <$> es in
-        builtin_function_interp f nv args
-    )
+    builtin_function_interp f nv es
 end.
 
 
@@ -572,8 +568,8 @@ Equations? sat2E
     by wf (TermOver_size φ) lt
 :=
     sat2E program ρ t (t_over e) nv :=
-        match Expression2_evaluate program ρ e with 
-        | Some f => f nv = t
+        match Expression2_evaluate program ρ e nv with 
+        | Some t' => t' = t
         | None => False
         end ;
     sat2E program ρ (t_over a) (t_term s l) _ := False ;
@@ -613,24 +609,26 @@ Definition SideCondition_evaluate
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideCondition)
-    : bool
+    : option bool
 :=
     (
-        fix go (sc : SideCondition) : bool :=
+        fix go (sc : SideCondition) : option bool :=
         match sc with
-        | sc_true => true
-        | sc_false => false
+        | sc_true => Some true
+        | sc_false => Some false
         | sc_atom pred args => (
-            let ts' := Expression2_evaluate program ρ <$> args in
-            match list_collect ts' with
-            | None => false
-            | Some nts => 
-                let ts := (fun nt => nt nv) <$> nts in
-                builtin_predicate_interp pred nv ts
-            end
+            let ts' := (fun e => Expression2_evaluate program ρ e nv) <$> args in
+            ts ← list_collect ts';
+            builtin_predicate_interp pred nv ts
         )
-        | sc_and l r => andb (go l) (go r)
-        | sc_or l r => orb (go l) (go r)
+        | sc_and l r => 
+            l' ← (go l);
+            r' ← (go r);
+            Some (andb l' r')
+        | sc_or l r => 
+            l' ← (go l);
+            r' ← (go r);
+            Some (orb l' r')
         end
     ) sc
 .
@@ -645,7 +643,7 @@ Instance Satisfies_SideCondition
         variable
 := {|
     satisfies := fun ρ pgnv sc =>
-        SideCondition_evaluate pgnv.1 ρ pgnv.2 sc = true
+        SideCondition_evaluate pgnv.1 ρ pgnv.2 sc = Some true
 |}.
 
 #[export]
@@ -736,116 +734,9 @@ Record BuiltinsBinding := {
     bb_function_names : list (string * string) ;
 }.
 
-Class NegablePredicateSymbol
-    {Σ : StaticModel}
-    (sym : builtin_predicate_symbol)
-    (ar : nat)
-    := mkNegablePredicateSymbol {
-    nps_negate : list Expression2 -> SideCondition ;
-    nps_negate_correct : forall ρ args pgnv,
-        length args = ar ->
-        vars_of args ⊆ vars_of ρ ->
-        SideCondition_evaluate pgnv.1 ρ pgnv.2 (nps_negate args)
-        = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 (sc_atom sym args))
-}.
 
-Arguments nps_negate {Σ} sym ar {NegablePredicateSymbol} args.
-
-Class NegableSideCondition {Σ : StaticModel} (sc : SideCondition) := {
-    nsc_negate : SideCondition ;
-    nsc_negate_correct : forall ρ pgnv,
-        vars_of sc ⊆ vars_of ρ ->
-        SideCondition_evaluate pgnv.1 ρ pgnv.2 nsc_negate 
-        = negb (SideCondition_evaluate pgnv.1 ρ pgnv.2 sc) ;
-}.
-
-Arguments nsc_negate {Σ} sc {NegableSideCondition}.
-
-#[local]
-Obligation Tactic := idtac.
-
-
-#[export]
-Program Instance NegableSideCondition_false
-    {Σ : StaticModel}
-    : NegableSideCondition sc_false :=
-{|
-    nsc_negate := sc_true ;
-|}.
-Next Obligation.
-    intros. simpl. reflexivity.
-Qed. Fail Next Obligation.
-
-
-#[export]
-Program Instance NegableSideCondition_true
-    {Σ : StaticModel}
-    : NegableSideCondition sc_true :=
-{|
-    nsc_negate := sc_false ;
-|}.
-Next Obligation.
-    intros. simpl. reflexivity.
-Qed. Fail Next Obligation.
-
-#[export]
-Program Instance NegableSideCondition_atomic
-    {Σ : StaticModel}
-    (sym : builtin_predicate_symbol)
-    (args : list Expression2)
-    (nps : NegablePredicateSymbol sym (length args))
-    : NegableSideCondition (sc_atom sym args) := 
-{|
-    nsc_negate := (nps_negate sym (length args) args) ;
-|}.
-Next Obligation.
-    intros; apply nps_negate_correct>[reflexivity|apply H].
-Qed.
-Fail Next Obligation.
-
-#[export]
-Program Instance NegableSideCondition_and
-    {Σ : StaticModel}
-    (l r : SideCondition)
-    (nl : NegableSideCondition l)
-    (nr : NegableSideCondition r)
-    :
-    NegableSideCondition (sc_and l r) :=
-{|
-    nsc_negate := sc_or (nsc_negate l) (nsc_negate r) ;
-|}.
-Next Obligation.
-    abstract(
-        intros;
-        simpl;
-        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
-        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
-        rewrite negb_and;
-        reflexivity
-    ).
-Qed.
-Fail Next Obligation.
-
-#[export]
-Program Instance NegableSideCondition_or
-    {Σ : StaticModel}
-    (l r : SideCondition)
-    (nl : NegableSideCondition l)
-    (nr : NegableSideCondition r)
-    :
-    NegableSideCondition (sc_or l r) :=
-{|
-    nsc_negate := sc_and (nsc_negate l) (nsc_negate r) ;
-|}.
-Next Obligation.
-    abstract(
-        intros;
-        simpl;
-        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
-        rewrite nsc_negate_correct>[|unfold vars_of in H; simpl in H; ltac1:(set_solver)];
-        rewrite negb_or;
-        reflexivity
-    ).
-Qed.
-Fail Next Obligation.
-
+Variant SymbolInfo {Σ0 : Signature} :=
+| si_none
+| si_predicate (p : builtin_predicate_symbol) (ar : nat) (np : option string)
+| si_function (f : builtin_function_symbol)
+.

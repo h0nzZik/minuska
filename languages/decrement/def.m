@@ -4,7 +4,7 @@
 @strictness: [];
 
 
-@rule [init]: builtin.init[] => program.ast() where @true ;
+@rule [init]: builtin.init[] => @query:program.ast() where @true ;
 
 @rule [decrement]: succ[X] => X where @true ;
 

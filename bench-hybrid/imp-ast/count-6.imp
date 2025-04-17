@@ -1,11 +1,11 @@
 seq[seq[
-   assign[var[(@builtin-string "sum")], (@builtin-int 0)],
+   assign[var[(@builtin:string("sum"))], (@builtin:int("0"))],
 seq[ 
-   assign[var[(@builtin-string "i")], (@builtin-int 6)],
-   while[le[(@builtin-int 1),var[(@builtin-string "i")]],
+   assign[var[(@builtin:string("i"))], (@builtin:int("6"))],
+   while[le[(@builtin:int("1")),var[(@builtin:string("i"))]],
      seq[
-       assign[var[(@builtin-string "sum")], plus[var[(@builtin-string "sum")], var[(@builtin-string "i")]]],
-       assign[var[(@builtin-string "i")], plus[var[(@builtin-string "i")],(@builtin-int -1)]]
+       assign[var[(@builtin:string("sum"))], plus[var[(@builtin:string("sum"))], var[(@builtin:string("i"))]]],
+       assign[var[(@builtin:string("i"))], plus[var[(@builtin:string("i"))],(@builtin:int("-1"))]]
      ]
    ]
-]], var[(@builtin-string "sum")]]
+]], var[(@builtin:string("sum"))]]

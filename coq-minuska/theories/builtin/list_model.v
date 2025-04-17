@@ -14,7 +14,6 @@ Definition list_function_interp
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    (_WE : Injection ErrT Carrier)
     (_WB : Injection bool Carrier)
     (_WI : Injection InnerT Carrier)
     (_WL : Injection (list InnerT) Carrier)
@@ -24,52 +23,52 @@ Definition list_function_interp
     ListFunSymbol ->
     NondetValue ->
     list (@TermOver' symbol Carrier) ->
-    @TermOver' symbol  Carrier
+    option (@TermOver' symbol  Carrier)
 :=
     fun f nd args =>
     match f with
     | list_nil =>
         match args with
-        | [] => t_over (inject (list InnerT) Carrier [])
-        | _ => t_over (inject ErrT Carrier et_error)
+        | [] => Some (t_over (inject (list InnerT) Carrier []))
+        | _ => None
         end
     | list_cons =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1), (asl x2) with
-            | Some v, Some l => t_over (inject (list InnerT) Carrier (v::l))
-            | _, _ => t_over (inject ErrT Carrier et_error)
+            | Some v, Some l => Some (t_over (inject (list InnerT) Carrier (v::l)))
+            | _, _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | list_head =>
         match args with
         | (t_over x1)::[] =>
             match asl x1 with
-            | Some [] => t_over (inject ErrT Carrier et_error)
-            | Some (h::_) => t_over (inject InnerT Carrier h)
-            | _ => t_over (inject ErrT Carrier et_error)
+            | Some [] => None
+            | Some (h::_) => Some (t_over (inject InnerT Carrier h))
+            | _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | list_tail =>
         match args with
         | (t_over x1)::[] =>
             match asl x1 with
-            | Some [] => t_over (inject ErrT Carrier et_error)
-            | Some (_::t) => t_over (inject (list InnerT) Carrier t)
-            | _ => t_over (inject ErrT Carrier et_error)
+            | Some [] => None
+            | Some (_::t) => Some (t_over (inject (list InnerT) Carrier t))
+            | _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | list_is_nil =>
         match args with
         | (t_over x1)::[] =>
             match (asl x1) with
-            | Some l => t_over (inject bool Carrier (bool_decide (l = [])))
-            | _ => t_over (inject ErrT Carrier et_error)
+            | Some l => Some (t_over (inject bool Carrier (bool_decide (l = []))))
+            | _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     end
 .
@@ -80,7 +79,6 @@ Definition list_predicate_interp
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    (_WE : Injection ErrT Carrier)
     (_WB : Injection bool Carrier)
     (_WI : Injection InnerT Carrier)
     (_WL : Injection (list InnerT) Carrier)
@@ -90,7 +88,7 @@ Definition list_predicate_interp
     ListPredSymbol ->
     NondetValue ->
     list (@TermOver' symbol Carrier) ->
-    bool
+    option bool
 :=
     fun p nd args =>
     match p with
@@ -98,10 +96,10 @@ Definition list_predicate_interp
         match args with
         | (t_over x1)::[] =>
             match (asl x1) with
-            | Some _ => true
-            | _ => false
+            | Some _ => Some true
+            | _ => Some false
             end
-        | _ => false
+        | _ => None
         end
     end
 .
@@ -150,7 +148,7 @@ Qed.
 Fail Next Obligation.
 
 Program Definition list_relaxed_functor :
-    RelaxedModelFunctorT (ErrT+bool)
+    RelaxedModelFunctorT (bool)
 := {|
     rmf_signature := fun _ => list_signature ;
     rmf_nondet := fun ND => ND ;
@@ -167,7 +165,7 @@ Program Definition list_relaxed_functor :
             rm_model_over :=
                 fun
                     (Carrier : Type)
-                    (inja : Injection (ErrT+bool) Carrier)
+                    (inja : Injection (bool) Carrier)
                     (injb : ReversibleInjection (simple_list_carrier (rm_carrier _ _ _ M)) Carrier)
                 => 
                     let asi := (fun c =>
@@ -186,21 +184,18 @@ Program Definition list_relaxed_functor :
                             end
                         )
                         | None => None end) in
-                let WL : Injection (list (rm_carrier signature NondetValue (ErrT + bool) M)) Carrier := {|
+                let WL : Injection (list (rm_carrier signature NondetValue (bool) M)) Carrier := {|
                     inject := fun l => @inject _ _ (@ri_injection _ _ injb) (slc_list _ l)
                 |} in
                 let WI := {|
                     inject := fun i => @inject _ _ (@ri_injection _ _ injb) (slc_inner _ i)
                 |} in
                 let WB := {|
-                    inject := fun b => @inject _ _ inja (inr b)                
-                |} in
-                let WE := {|
-                    inject := fun e => @inject _ _ inja (inl e)                
+                    inject := fun b => @inject _ _ inja (b)                
                 |} in
                 {|
-                    builtin_function_interp := fun (f : @builtin_function_symbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WE WB WI WL asi asl f;
-                    builtin_predicate_interp := fun (p : @builtin_predicate_symbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WE WB WI WL asi asl p;
+                    builtin_function_interp := fun (f : @builtin_function_symbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl f;
+                    builtin_predicate_interp := fun (p : @builtin_predicate_symbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl p;
                 |}
         |}  ;
 |}.
@@ -224,12 +219,12 @@ Next Obligation.
     exact H.
 Qed.
 Next Obligation.
-    apply inject_inj in H.
-    ltac1:(injection H as H).
+    apply (inj (inject bool Carrier)) in H.
     exact H.
 Qed.
 Next Obligation.
-    destruct x,y; reflexivity.
+    destruct p; simpl in *;
+        ltac1:(simplify_eq/=).
 Qed.
 Fail Next Obligation.
 

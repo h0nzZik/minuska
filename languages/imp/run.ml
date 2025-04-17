@@ -1,12 +1,14 @@
 open Core
-open Printf
+open Libminuskapluginbase
+open Pluginbase
+
 
 let main () =
   Libminuska.Miskeleton.main
-    Imp.Internal.chosen_builtins
+    (get_primitive_value_algebra (coqModuleName_of_sexp (Sexp.of_string ("(Std_module klike)"))))
+    (get_pi (coqModuleName_of_sexp (Sexp.of_string ("(Std_module trivial)"))))
     Imp.Transform.parse
-    Imp.Internal.lang_interpreter
-    Imp.Internal.lang_interpreter_ext
-    Imp.Internal.lang_debug_info
+    Imp.Internal.langDefaults
+    Imp.Internal.lang_Decls
   
 let _ = main ()

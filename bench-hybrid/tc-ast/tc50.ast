@@ -1,1 +1,1 @@
-(@builtin-int 50)
+(@builtin:int("50"))
