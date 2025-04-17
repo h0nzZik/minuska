@@ -14,6 +14,8 @@ Lemma vars_of_to_l2r_of_tob
     vars_of_to_l2r (TermOverBuiltin_to_TermOverBoV r) = []
 .
 Proof.
+    unfold TermOverBuiltin_to_TermOverBoV.
+    unfold TermOver_map.
     induction r; simpl.
     { reflexivity. }
     {
@@ -410,6 +412,169 @@ Proof.
             apply lookup_lt_Some in Hi.
             unfold TermOver in *.
             ltac1:(lia).
+        }
+    }
+Qed.
+
+Lemma Expression2_evaluate_None_relative
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (e : Expression2)
+    (ρ1 ρ2 : Valuation2)
+    :
+    vars_of e ⊆ vars_of ρ1 ->
+    ρ1 ⊆ ρ2 ->
+    Expression2_evaluate program ρ1 e = None ->
+    Expression2_evaluate program ρ2 e = None
+.
+Proof.
+    induction e; intros H1 H2 H3.
+    {
+        simpl in *.
+        exact H3.
+    }
+    {
+        simpl in *.
+        destruct (ρ1 !! x) eqn:Heq1,
+            (ρ2 !! x) eqn:Heq2.
+        {
+            inversion H3.
+        }
+        {
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            unfold vars_of in H1; simpl in H1.
+            rewrite singleton_subseteq_l in H1.
+            unfold Valuation2 in *.
+            rewrite <- not_elem_of_dom in Heq1.
+            apply Heq1. apply H1.
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        simpl in *.
+        unfold vars_of in H1; simpl in H1.
+        rewrite bind_None.
+        rewrite bind_None in H3.
+        destruct H3 as [H3|H3].
+        {
+            left.
+            apply list_collect_Exists_1 in H3.
+            apply list_collect_Exists.
+            rewrite Exists_exists.
+            rewrite Exists_exists in H3.
+            destruct H3 as [x [H1x H2x]].
+            rewrite Forall_forall in H.
+            rewrite elem_of_list_fmap in H1x.
+            destruct H1x as [y [H1y H2y]].
+            subst x.
+            setoid_rewrite elem_of_list_fmap.
+            exists None.
+            simpl. split.
+            {
+                exists y.
+                split>[|exact H2y].
+                symmetry.
+                apply H.
+                { apply H2y. }
+                {
+                    rewrite elem_of_list_lookup in H2y.
+                    destruct H2y as [i Hi].
+                    apply take_drop_middle in Hi.
+                    rewrite <- Hi in H1.
+                    rewrite fmap_app in H1.
+                    rewrite fmap_cons in H1.
+                    rewrite union_list_app in H1.
+                    rewrite union_list_cons in H1.
+                    ltac1:(set_solver).
+                }
+                {
+                    apply H2.
+                }
+                {
+                    simpl in H2x.
+                    unfold isSome in H2x.
+                    ltac1:(case_match).
+                    ltac1:(exfalso).
+                    apply H2x.
+                    reflexivity.
+                    reflexivity.
+                }
+            }
+            {
+                intros HContra. inversion HContra.
+            }
+        }
+        {
+            right.
+            destruct H3 as [result [H1result H2result]].
+            exists result.
+            inversion H2result.
+        }
+    }
+    {
+        simpl in *.
+        unfold vars_of in H1; simpl in H1.
+        rewrite bind_None.
+        rewrite bind_None in H3.
+        destruct H3 as [H3|H3].
+        {
+            left.
+            apply list_collect_Exists_1 in H3.
+            apply list_collect_Exists.
+            rewrite Exists_exists.
+            rewrite Exists_exists in H3.
+            destruct H3 as [x [H1x H2x]].
+            rewrite Forall_forall in H.
+            rewrite elem_of_list_fmap in H1x.
+            destruct H1x as [y [H1y H2y]].
+            subst x.
+            setoid_rewrite elem_of_list_fmap.
+            exists None.
+            simpl. split.
+            {
+                exists y.
+                split>[|exact H2y].
+                symmetry.
+                apply H.
+                { apply H2y. }
+                {
+                    rewrite elem_of_list_lookup in H2y.
+                    destruct H2y as [i Hi].
+                    apply take_drop_middle in Hi.
+                    rewrite <- Hi in H1.
+                    rewrite fmap_app in H1.
+                    rewrite fmap_cons in H1.
+                    rewrite union_list_app in H1.
+                    rewrite union_list_cons in H1.
+                    ltac1:(set_solver).
+                }
+                {
+                    apply H2.
+                }
+                {
+                    simpl in H2x.
+                    unfold isSome in H2x.
+                    ltac1:(case_match).
+                    ltac1:(exfalso).
+                    apply H2x.
+                    reflexivity.
+                    reflexivity.
+                }
+            }
+            {
+                intros HContra. inversion HContra.
+            }
+        }
+        {
+            right.
+            destruct H3 as [result [H1result H2result]].
+            exists result.
+            inversion H2result.
         }
     }
 Qed.
@@ -1941,6 +2106,7 @@ Lemma satisfies_TermOverBuiltin_to_TermOverBoV
     satisfies ρ γ (TermOverBuiltin_to_TermOverBoV γ)
 .
 Proof.
+    unfold TermOverBuiltin_to_TermOverBoV, TermOver_map.
     unfold satisfies; simpl.
     ltac1:(induction γ using TermOver_rect).
     {
@@ -3057,6 +3223,7 @@ Lemma satisfies_TermOverBoV_to_TermOverExpr
     satisfies ρ γ φ
 .
 Proof.
+    unfold TermOverBoV_to_TermOverExpr2, TermOver_map.
     revert γ.
     ltac1:(induction φ using TermOver_rect); intros γ.
     {
@@ -3320,3 +3487,228 @@ Proof.
         }
     }
 Qed.
+
+Fixpoint TermOver'_option_map
+    {T : Type} {A B : Type}
+    (f : A -> option B)
+    (t : @TermOver' T A)
+    : option (@TermOver' T B)
+:=
+    match t with
+    | t_over b => t_over <$> (f b)
+    | t_term s l => t_term s <$> (list_collect ((TermOver'_option_map f) <$> l))
+    end
+.
+
+Fixpoint TermOver'_leaves
+    {T A : Type}
+    {_EA : EqDecision A}
+    {_CA : Countable A}
+    (t : @TermOver' T A)
+    :
+    gset A
+:=
+    match t with
+    | t_over a => singleton a
+    | t_term _ l => union_list (TermOver'_leaves <$> l) 
+    end
+.
+
+Lemma TermOver'_option_map__Some_1
+    {T : Type}
+    {A B : Type}
+    {_EA : EqDecision A}
+    {_CA : Countable A}
+    (f : A -> option B)
+    (t : @TermOver' T A)
+    (t' : @TermOver' T B)
+:
+    TermOver'_option_map f t = Some t' ->
+    forall (a : A),
+        a ∈ TermOver'_leaves t ->
+        exists (b : B),
+            f a = Some b
+.
+Proof.
+    revert t'.
+    induction t; intros t' Ht'; simpl in *.
+    {
+        rewrite fmap_Some in Ht'.
+        destruct Ht' as [x [H1x H2x]].
+        subst t'.
+        intros a' Ha'.
+        rewrite elem_of_singleton in Ha'.
+        subst a'.
+        exists x.
+        exact H1x.
+    }
+    {
+        rewrite fmap_Some in Ht'.
+        destruct Ht' as [l' [H1l' H2l']].
+        subst t'.
+        apply list_collect_inv in H1l'.
+        clear l'.
+        intros a Ha.
+        rewrite elem_of_union_list in Ha.
+        destruct Ha as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        subst X.
+        rewrite Forall_forall in H.
+        specialize (H _ H2y).
+        rewrite Forall_forall in H1l'.
+        unfold isSome in *.
+        specialize (H1l' (TermOver'_option_map f y)).
+        rewrite elem_of_list_fmap in H1l'.
+        ltac1:(ospecialize (H1l' _)).
+        {
+            exists y.
+            split>[|apply H2y].
+            simpl.
+            reflexivity.
+        }
+        destruct (TermOver'_option_map f y) eqn:Heq.
+        {
+            clear H1l'.
+            specialize (H t erefl).
+            specialize (H a H2X).
+            exact H.
+        }
+        {
+            inversion H1l'.
+        }
+    }
+Qed.
+
+Lemma TermOver'_option_map__extension
+    {T : Type} {A B : Type}
+    {_EA : EqDecision A}
+    {_CA : Countable A}
+    (f1 f2 : A -> option B)
+    (ta : @TermOver' T A)
+    (tb : @TermOver' T B)
+:
+    (forall a, a ∈ TermOver'_leaves ta -> isSome (f1 a) -> f2 a = f1 a) ->
+    TermOver'_option_map f1 ta = Some tb ->
+    TermOver'_option_map f2 ta = Some tb
+.
+Proof.
+    revert tb.
+    induction ta; intros tb HH1 HH2; simpl in *.
+    {
+        rewrite fmap_Some in HH2.
+        rewrite fmap_Some.
+        destruct HH2 as [x [H1x H2x]].
+        subst tb.
+        exists x.
+        split>[|reflexivity].
+        specialize (HH1 a).
+        rewrite elem_of_singleton in HH1.
+        specialize (HH1 eq_refl).
+        unfold isSome in *.
+        ltac1:(case_match; simplify_eq/=).
+        specialize (HH1 eq_refl).
+        exact HH1.
+    }
+    {
+        rewrite fmap_Some.
+        rewrite fmap_Some in HH2.
+        destruct HH2 as [x [H1x H2x]].
+        subst tb.
+        exists x.
+        split>[|reflexivity].
+        clear s.
+        revert x H1x H HH1.
+        induction l;
+            intros x H1x H HH1;
+            simpl in *.
+        {
+            exact H1x.
+        }
+        {
+            rewrite Forall_cons_iff in H.
+            destruct H as [H1 H2].
+            rewrite bind_Some.
+            rewrite bind_Some in H1x.
+            destruct H1x as [y [H1y H2y]].
+            rewrite bind_Some in H2y.
+            destruct H2y as [z [H1z H2z]].
+            apply (inj Some) in H2z.
+            subst x.
+            specialize (IHl _ H1z H2).
+            clear H1z H2.
+            simpl in *.
+            exists y.
+            rewrite bind_Some.
+            split.
+            {
+                apply H1.
+                intros a0 H1a0 H2a0.
+                apply HH1.
+                {
+                    clear - H1a0.
+                    ltac1:(set_solver).
+                }
+                {
+                    apply H2a0.
+                }
+                {
+                    apply H1y.
+                }
+            }
+            {
+                exists z.
+                split>[|reflexivity].
+                apply IHl.
+                intros a0 H1a0 H2a0.
+                apply HH1.
+                {
+                    clear - H1a0.
+                    ltac1:(set_solver).
+                }
+                {
+                    apply H2a0.
+                }
+            }
+        }
+    }
+Qed.
+
+Lemma TermOver'_option_map__extensional
+    {T : Type} {A B : Type}
+    {_EA : EqDecision A}
+    {_CA : Countable A}
+    (f1 f2 : A -> option B)
+    (ta : @TermOver' T A)
+:
+    (forall a, a ∈ TermOver'_leaves ta -> (isSome (f1 a) -> f2 a = f1 a) /\ (isSome (f2 a) -> f1 a = f2 a)) ->
+    TermOver'_option_map f1 ta = TermOver'_option_map f2 ta
+.
+Proof.
+    intros H1.
+    destruct (TermOver'_option_map f1 ta) eqn:Heq.
+    {
+        eapply TermOver'_option_map__extension in Heq.
+        symmetry.
+        apply Heq.
+        apply H1.
+    }
+    {
+        destruct (TermOver'_option_map f2 ta) eqn:Heq2.
+        {
+            ltac1:(exfalso).
+            eapply TermOver'_option_map__extension in Heq2.
+            {
+                rewrite Heq in Heq2.
+                inversion Heq2.
+            }
+            {
+                apply H1.
+            }
+        }
+        {
+            reflexivity.
+        }
+    }
+Qed.
+

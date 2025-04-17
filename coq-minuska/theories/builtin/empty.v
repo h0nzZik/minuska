@@ -13,6 +13,17 @@ Proof.
     destruct x, y.
 Defined.
 
+#[export]
+Program Instance emptyset_fin : Finite Emptyset := {|
+    enum := [];
+|}.
+Next Obligation.
+    constructor.
+Qed.
+Next Obligation.
+    destruct x.
+Qed.
+Fail Next Obligation.
 
 Inductive TrivialPVA : Set := pv_error.
 
@@ -22,6 +33,21 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+
+
+#[export]
+Program Instance TrivialPVA_fin : Finite TrivialPVA := {|
+    enum := [pv_error];
+|}.
+Next Obligation.
+    repeat constructor; ltac1:(set_solver).
+Qed.
+Next Obligation.
+    destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
+
 Section sec.
 
     Context
@@ -29,20 +55,28 @@ Section sec.
         {symbols : Symbols symbol}
     .
 
-
     #[local]
-    Instance β
-        : Builtin MyUnit := {|
-        builtin_value
-            := TrivialPVA ;
+    Instance mysignature : Signature := {|
         builtin_function_symbol
             := Emptyset ;
         builtin_predicate_symbol
             := Emptyset ;
+    |}.
+
+    Definition βover
+        : ModelOver mysignature MyUnit TrivialPVA := {|
         builtin_function_interp
-            := fun p => match p with end ;
+            := fun _ _ _ => t_over pv_error ;
         builtin_predicate_interp
-            := fun p => match p with end ;
+            := fun _ _ _ => false ;
+    |}.
+
+    #[local]
+    Instance β
+        : @Model _ _ mysignature MyUnit := {|
+        builtin_value
+            := TrivialPVA ;
+        builtin_model_over := βover ;
     |}.
 
 End sec.

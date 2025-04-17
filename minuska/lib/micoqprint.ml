@@ -265,6 +265,8 @@ let print_definition
   def oux =
     let _ = def in
     fprintf oux "Require Import Minuska.pval_ocaml_binding %s %s Minuska.default_everything.\n"  (get_primitive_value_algebra name_of_builtins).pvae_coq_import (get_pi name_of_pi).pie_coq_import;
+    fprintf oux "Definition mysignature := (bi_signature MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
+    fprintf oux "#[global] Existing Instance mysignature.\n";
     fprintf oux "Definition mybeta := (bi_beta MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
     fprintf oux "#[global] Existing Instance mybeta.\n";
     fprintf oux "Definition my_program_info := %s.\n" (get_pi name_of_pi).pie_coq_entity_name;

@@ -8,6 +8,7 @@ Extraction
     "Dsm.ml"
     mkRewritingRule2
     BuiltinInterface
+    mkBuiltinInterface
     builtins_empty
     builtins_klike
     pi_trivial

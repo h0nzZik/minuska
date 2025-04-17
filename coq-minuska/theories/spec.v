@@ -57,47 +57,61 @@ Class Symbols (symbol : Type) := {
     symbol_countable :: Countable symbol ;
 }.
 
-(*
-    Interface for builtin data types.
-    We differentiate between nulary, unary, binary, and ternary
-    function symbols in order not to have to dependently encode arity.
-    Functions of higher arity are rare (and usually they are a sign of a poor design of the type).
-    TODO: explore having them as functions from lists to option type
-    - we evaluate expressions into option type anyway.
-*)
-Class Builtin {symbol : Type} {symbols : Symbols symbol} (NondetValue : Type) := {
-    builtin_value
-        : Type ;
-    builtin_value_eqdec
-        :: EqDecision builtin_value ;
-    
+Class Signature := {
     builtin_function_symbol
         : Type ;
     builtin_function_symbol_eqdec
         :: EqDecision builtin_function_symbol ;
-    
+    builtin_function_symbol_countable
+        :: Countable builtin_function_symbol ;
+
+    builtin_predicate_symbol
+        : Type ;
+    builtin_predicate_symbol_eqdec
+        :: EqDecision builtin_predicate_symbol ;
+    builtin_predicate_symbol_countable
+        :: Countable builtin_predicate_symbol ;
+}.
+
+(*
+    Interface for builtin data types.
+    TODO: explore having them as functions from lists to option type
+    - we evaluate expressions into option type anyway.
+*)
+Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
+    (* builtin_value_eqdec
+        :: EqDecision Carrier ; *)
+
     (* I make the function interpretation total, and it is up to the concrete model
        to decide what does applying functions with invalid arguments mean.
        *)
     builtin_function_interp
         : builtin_function_symbol
         -> NondetValue
-        -> list (@TermOver' symbol builtin_value)
-        -> @TermOver' symbol builtin_value ;
-    
-    builtin_predicate_symbol
-        : Type ;
-    builtin_predicate_symbol_eqdec
-        :: EqDecision builtin_predicate_symbol ;
-    
+        -> list (@TermOver' symbol Carrier)
+        -> @TermOver' symbol Carrier ;
+        
     (* I make the predicate interpretation total, and it is up to the concrete model
        to decide what does applying predicates with invalid arguments mean.
        *)
     builtin_predicate_interp
         : builtin_predicate_symbol
         -> NondetValue
-        -> list (@TermOver' symbol builtin_value)
+        -> list (@TermOver' symbol Carrier)
         -> bool ;
+}.
+
+Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
+    builtin_value
+        : Type ;
+
+    builtin_value_eqdec
+        :: EqDecision builtin_value ;
+
+    builtin_value_countable
+        :: Countable builtin_value ;
+
+    builtin_model_over :: ModelOver signature NondetValue builtin_value ;
 }.
 
 Set Primitive Projections.
@@ -110,11 +124,14 @@ Class ProgramInfo
     {symbol : Type}
     {symbols : Symbols symbol}
     {NondetValue : Type}
-    {builtin : Builtin NondetValue}
+    {signature : Signature}
+    {builtin : Model signature NondetValue}
     : Type
     := {
     QuerySymbol : Type ;
     QuerySymbol_eqdec :: EqDecision QuerySymbol ;
+    QuerySymbol_countable :: Countable QuerySymbol ;
+
     ProgramT : Type ;
     pi_symbol_interp :
         ProgramT -> 
@@ -128,7 +145,8 @@ Class StaticModel := mkStaticModel {
     variable : Type ;
     symbols :: Symbols symbol ;
     NondetValue : Type ;
-    builtin :: Builtin NondetValue;
+    signature :: Signature ;
+    builtin :: Model signature NondetValue;
     variables :: MVariables variable ;
     program_info :: ProgramInfo ;
     nondet_gen : nat -> NondetValue ;
@@ -268,18 +286,25 @@ match t with
 | t_term _ l => S (sum_list_with (S ∘ TermOver_size) l)
 end.
 
+Fixpoint TermOver'_map
+    {T : Type} {A B : Type}
+    (f : A -> B)
+    (t : @TermOver' T A)
+    : @TermOver' T B
+:=
+    match t with
+    | t_over b => t_over (f b)
+    | t_term s l => t_term s (map (TermOver'_map f) l)
+    end
+.
 
-Fixpoint TermOver_map
+Definition TermOver_map
     {Σ : StaticModel}
     {A B : Type}
     (f : A -> B)
     (t : TermOver A)
-    : TermOver B
 :=
-    match t with
-    | t_over b => t_over (f b)
-    | t_term s l => t_term s (map (TermOver_map f) l)
-    end
+    TermOver'_map f t
 .
 
 Definition TermOverBuiltin_to_TermOverBoV
@@ -416,13 +441,14 @@ mkSatisfies {
 Arguments satisfies : simpl never.
 
 (* A valuation is a mapping from variables to groun terms. *)
+(* TODO why not making this a notation? *)
 Definition Valuation2
     {Σ : StaticModel}
 :=
     gmap variable (TermOver builtin_value)
 .
 
-
+(* TODO Do we even need this?*)
 #[export]
 Instance Subseteq_Valuation2 {Σ : StaticModel}
     : SubsetEq Valuation2

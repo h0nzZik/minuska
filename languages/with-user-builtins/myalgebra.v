@@ -182,10 +182,10 @@ Definition builtins_myalg : BuiltinInterface MyUnit := {|
     bi_eject := @eject string;
 |}.
 
-
 Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a, b, c, d, e, f,g) -> { Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_err = c; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ].
 Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
-Extract Inductive Builtin => "Libminuska.Extracted.builtin" [  "(fun (x1,x2,x3,x4,x5) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_symbol_eqdec = x2; Libminuska.Extracted.builtin_function_interp = x3; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x4; Libminuska.Extracted.builtin_predicate_interp = x5;})" ].
+Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].
+Extract Inductive Model => "Libminuska.Extracted.model" [  "(fun (x1,x2,x3) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_interp = x2; Libminuska.Extracted.builtin_predicate_interp = x3;})" ].
 Extract Inductive Ascii.ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
 
 Definition fancy_number := 5.

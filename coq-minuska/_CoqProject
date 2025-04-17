@@ -24,7 +24,6 @@ theories/minusl_compile.v
 theories/minusl_compile_properties.v
 theories/dt.v
 theories/interp_loop.v
-theories/example.v
 theories/default_everything.v
 theories/unification_interface.v
 theories/textbook_unification_alg.v
@@ -32,6 +31,20 @@ theories/textbook_unification.v
 theories/symex_spec.v
 theories/symex.v
 theories/pval_ocaml_binding.v
+theories/model_algebra.v
+theories/model_traits.v
+theories/signature_morphism.v
+theories/model_functor.v
+theories/conservative_merge.v
+
+theories/builtin/bool_signature.v
+theories/builtin/int_signature.v
+theories/builtin/list_signature.v
+theories/builtin/bool_model.v
+theories/builtin/int_model.v
+theories/builtin/list_model.v
+theories/builtin/example_list_int_model.v
+theories/builtin/information_flow_functor.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v

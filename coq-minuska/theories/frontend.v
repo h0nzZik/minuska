@@ -6,10 +6,6 @@ From Minuska Require Import
     builtins
 .
 
-
-(* Import default_builtin.
-Export default_builtin.Notations. *)
-
 Arguments e_fun {Σ} f l%_list_scope.
 
 Definition SymbolicTerm_to_ExprTerm
@@ -213,12 +209,13 @@ Section wsm.
         (default_act : Act)
     .
     Context
-        (β : Builtin MyUnit)
+        (signature : Signature)
+        (β : Model signature MyUnit)
         (my_program_info : ProgramInfo)
     .
 
     #[local]
-    Instance Σ : StaticModel := default_model β my_program_info.
+    Instance Σ : StaticModel := default_model signature β my_program_info.
 
     Definition to_var := fun x:string => x.
     Definition to_sym := fun x:string => x.

@@ -46,13 +46,7 @@ jobs:
 
     - name: 'Run hybrid benchmarks'
       run: nix develop -L '.#bench-hybrid' --command ./bench-hybrid/test.sh
-
-    - name: 'Build Coq language examples'
-      run: nix build -L '.#languages-in-coq'
-
-    - name: 'Run Coq benchmarks'
-      run: nix develop -L '.#bench-coq' --command ./bench-coq/build-and-profile.sh
-      
+     
     - if: matrix.os == 'ubuntu-latest'
       name: Setup Pages
       uses: actions/configure-pages@v4

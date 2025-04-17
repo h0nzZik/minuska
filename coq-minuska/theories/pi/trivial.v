@@ -13,13 +13,27 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+#[export]
+Program Instance MyQuerySymbol_fin : Finite MyQuerySymbol := {|
+    enum := [qs_program];
+|}.
+Next Obligation.
+    (repeat constructor); ltac1:(set_solver).
+Qed.
+Next Obligation.
+    destruct x; ltac1:(set_solver).
+Qed.
+Fail Next Obligation.
+
+
 #[local]
 Instance MyProgramInfo
     {symbol : Type}
     {symbols : Symbols symbol}
     {NondetValue : Type}
-    {builtin : Builtin NondetValue}
-    : @ProgramInfo symbol symbols NondetValue builtin
+    {mysignature : Signature}
+    {builtin : Model mysignature NondetValue}
+    : @ProgramInfo symbol symbols NondetValue mysignature builtin
 := {|
     QuerySymbol := MyQuerySymbol ;
     ProgramT := @TermOver' symbol builtin_value ;
