@@ -89,7 +89,7 @@ Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signatur
         : builtin_function_symbol
         -> NondetValue
         -> list (@TermOver' symbol Carrier)
-        -> @TermOver' symbol Carrier ;
+        -> option (@TermOver' symbol Carrier) ;
         
     (* I make the predicate interpretation total, and it is up to the concrete model
        to decide what does applying predicates with invalid arguments mean.
@@ -534,30 +534,24 @@ Fixpoint Expression2_evaluate
     (program : ProgramT)
     (ρ : Valuation2)
     (t : Expression2)
-    : option (NondetValue -> TermOver builtin_value) :=
+    : NondetValue -> option (TermOver builtin_value) :=
 match t with
-| e_ground e => Some (fun _ => e)
+| e_ground e => fun _ =>  Some (e)
 | e_variable x =>
     match ρ !! x with
-    | Some v => Some (fun _ => v)
-    | None => None
+    | Some v => fun _ =>  Some (v)
+    | None => fun _ => None
     end
 | e_query q l =>
-    let es' := Expression2_evaluate program ρ <$> l in
+    fun nv =>
+    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
     es ← list_collect es';
-    Some (
-        fun nv =>
-        let args := (fun x => x nv) <$> es in
-        pi_symbol_interp program q args
-    )
+    Some (pi_symbol_interp program q es)
 | e_fun f l =>
-    let es' := Expression2_evaluate program ρ <$> l in
+    fun nv =>
+    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
     es ← list_collect es';
-    Some (
-        fun nv =>
-        let args := (fun x => x nv) <$> es in
-        builtin_function_interp f nv args
-    )
+    builtin_function_interp f nv es
 end.
 
 
@@ -572,8 +566,8 @@ Equations? sat2E
     by wf (TermOver_size φ) lt
 :=
     sat2E program ρ t (t_over e) nv :=
-        match Expression2_evaluate program ρ e with 
-        | Some f => f nv = t
+        match Expression2_evaluate program ρ e nv with 
+        | Some t' => t' = t
         | None => False
         end ;
     sat2E program ρ (t_over a) (t_term s l) _ := False ;
@@ -621,11 +615,10 @@ Definition SideCondition_evaluate
         | sc_true => true
         | sc_false => false
         | sc_atom pred args => (
-            let ts' := Expression2_evaluate program ρ <$> args in
+            let ts' := (fun e => Expression2_evaluate program ρ e nv) <$> args in
             match list_collect ts' with
             | None => false
-            | Some nts => 
-                let ts := (fun nt => nt nv) <$> nts in
+            | Some ts =>
                 builtin_predicate_interp pred nv ts
             end
         )
