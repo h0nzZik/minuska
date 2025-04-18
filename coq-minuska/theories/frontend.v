@@ -4,6 +4,7 @@ From Minuska Require Import
     notations
     default_static_model
     builtins
+    properties
 .
 
 Arguments e_fun {Σ} f l%_list_scope.
@@ -50,7 +51,6 @@ Record ContextDeclaration {Σ : StaticModel}
     cd_position : nat ;
     cd_positions_to_wait_for : list nat ;
     cd_isValue : Expression2 -> SideCondition ;
-    cd_isValue_neg : forall e, NegableSideCondition (cd_isValue e) ;
     cd_cseq_context : ContextTemplate;
 }.
 
@@ -60,7 +60,6 @@ Record StrictnessDeclaration {Σ : StaticModel}
     sd_arity : nat ;
     sd_positions : list nat ;
     sd_isValue : Expression2 -> SideCondition ;
-    sd_isValue_neg : forall e, NegableSideCondition (sd_isValue e) ;
     sd_cseq_context : ContextTemplate ;
 }.
 
@@ -75,7 +74,6 @@ Notation
                 sd_arity := a ;
                 sd_positions := l ;
                 sd_isValue := r ;
-                sd_isValue_neg := _;
                 sd_cseq_context := t ;
             |}
         )
@@ -87,7 +85,6 @@ Class Defaults {Σ : StaticModel} := {
     default_empty_cseq_name : string ;
     default_context_template : ContextTemplate ;
     default_isValue : Expression2 -> SideCondition ;
-    default_isValue_neg : forall e, NegableSideCondition (default_isValue e) ;
 }.
 
 Notation
@@ -100,7 +97,6 @@ Notation
                 sd_arity := a ;
                 sd_positions := l ;
                 sd_isValue := default_isValue ;
-                sd_isValue_neg := default_isValue_neg ;
                 sd_cseq_context := default_context_template ;
             |}
         )
@@ -122,7 +118,6 @@ Definition strictness_to_contexts
             cd_position := position ;
             cd_positions_to_wait_for := (firstn idx (sd_positions sd));
             cd_isValue := sd_isValue sd ;
-            cd_isValue_neg := sd_isValue_neg sd ;
             cd_cseq_context := @sd_cseq_context Σ sd ;
         |})
         (sd_positions sd)
@@ -178,28 +173,26 @@ Definition argument_sequence
 
 Record State {Σ : StaticModel} {Act : Set}
 := mkState {
-    st_rules : gmap label (RewritingRule2 Act) ;
-    st_log : string ;
+    st_rules : (gmap label (RewritingRule2 Act)) ;
 }.
 
-Arguments mkState {Σ} {Act} st_rules st_log%_string_scope.
+Arguments mkState {Σ} {Act} st_rules.
 
 Definition process_rule_declaration
     {Σ : StaticModel}
     {Act : Set}
     (s : State)
     (r : RuleDeclaration Act)
-    : State
+    : State+string
 :=
 match (st_rules s) !! (rd_label r) with
 | Some _
-    => (mkState
-        (st_rules s)
-        ((st_log s) +:+ ("Rule with name '" +:+ (rd_label r) ++ "' already present"))%string)
+    => inr
+        ("Rule with name '" +:+ (rd_label r) ++ "' already present")%string
 | None
-    => mkState
+    => inl (mkState
         (<[(rd_label r) := (rd_rule r)]>(st_rules s))
-        (st_log s)
+    )
 end
 .
 
@@ -249,9 +242,8 @@ Section wsm.
         (positions_to_wait_for : list nat)
         (position : nat)
         (isValue : Expression2 -> SideCondition)
-        (isValue_neg : forall e, NegableSideCondition (isValue e))
         (cseq_context : ContextTemplate)
-        : RuleDeclaration Act
+        : (RuleDeclaration Act)+string
     :=
         let vars : list variable
             := argument_sequence to_var arity in
@@ -261,26 +253,31 @@ Section wsm.
             := (t_over <$> (e_variable <$> vars)) in
         let selected_var : variable
             := to_var (argument_name position) in
-        let lhs_selected_var : (TermOver BuiltinOrVar)
-            := t_over (bov_variable selected_var) in
-        let force_cseq_context
-            := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
-        (* all operands on the left are already evaluated *)
-        let side_condition : SideCondition
-            := foldr  sc_and (sc_true) (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
-        rule [lbl]:
-            cseq_context _ _ (cseq ([
-                (t_term sym lhs_vars);
-                (t_over (bov_variable REST_SEQ))
-            ])%list)
-         ~>{default_act} SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq ([
-                lhs_selected_var;
-                cseq ([
-                    (freezer freezerLbl position (delete position lhs_vars));
+        match try_neg (isValue (e_variable selected_var)) with
+        | None => inr "Cannot negate given isValue condition"
+        | Some is_value_neg => inl (
+            let lhs_selected_var : (TermOver BuiltinOrVar)
+                := t_over (bov_variable selected_var) in
+            let force_cseq_context
+                := ((fun _:TagLHS => cseq_context _ _) mkTagLHS) in
+            (* all operands on the left are already evaluated *)
+            let side_condition : SideCondition
+                := foldr  sc_and (sc_true) (isValue <$> ((e_variable <$> (to_var <$> (argument_name <$> positions_to_wait_for))) )) in
+            rule [lbl]:
+                cseq_context _ _ (cseq ([
+                    (t_term sym lhs_vars);
                     (t_over (bov_variable REST_SEQ))
-                ])%list
-            ])%list)))
-            where (sc_and (nsc_negate (isValue (e_variable selected_var))) side_condition)
+                ])%list)
+            ~>{default_act} SymbolicTerm_to_ExprTerm ((force_cseq_context (cseq ([
+                    lhs_selected_var;
+                    cseq ([
+                        (freezer freezerLbl position (delete position lhs_vars));
+                        (t_over (bov_variable REST_SEQ))
+                    ])%list
+                ])%list)))
+                where (sc_and (is_value_neg) side_condition)
+            )
+        end
     .
 
 
@@ -328,9 +325,9 @@ Section wsm.
         {defaults : Defaults}
         (s : State)
         (c : ContextDeclaration)
-        : State
+        : State+string
     := 
-        let hr : RuleDeclaration Act
+        let hr' : (RuleDeclaration Act)+string
             := heating_rule_seq
                     ((cd_label c) +:+ "-heat")
                     (cd_label c)
@@ -339,34 +336,44 @@ Section wsm.
                     (cd_positions_to_wait_for c)
                     (cd_position c)
                     (cd_isValue c)
-                    (cd_isValue_neg c)
                     (@cd_cseq_context Σ c)
             in
-        let cr : RuleDeclaration Act
-            := cooling_rule
-                    ((cd_label c) +:+ "-cool")
-                    (cd_label c)
-                    (cd_sym c)
-                    (cd_arity c)
-                    (cd_position c)
-                    (cd_isValue c)
-                    (@cd_cseq_context Σ c)
-            in
-        
-        process_rule_declaration
-            (process_rule_declaration s hr)
-            cr
+        match hr' with
+        | inl hr => (
+            let cr : RuleDeclaration Act
+                := cooling_rule
+                        ((cd_label c) +:+ "-cool")
+                        (cd_label c)
+                        (cd_sym c)
+                        (cd_arity c)
+                        (cd_position c)
+                        (cd_isValue c)
+                        (@cd_cseq_context Σ c)
+                in
+            
+            match (process_rule_declaration s hr) with
+            | inl s' =>
+                process_rule_declaration
+                    s'
+                    cr
+            | inr err_s =>
+                inr ("Cannot process declaration: " +:+ err_s)
+            end
+        )
+        | (inr err_s) =>
+            inr ("Invalid 'context' declaration: " +:+ err_s)
+        end
     .
 
     Definition process_strictness_declaration
         {defaults : Defaults}
         (s : State)
         (c : StrictnessDeclaration)
-        : State
+        : State+string
     :=
         foldr
-            (fun a b => process_context_declaration b a)
-            s
+            (fun a b' => match b' with inr s => inr s | inl b => process_context_declaration b a end)
+            (inl s)
             (strictness_to_contexts id id id c)
     .
 
@@ -375,7 +382,6 @@ Section wsm.
         : @State Σ Act
     := {|
         st_rules := ∅ ;
-        st_log := "";
     |}.
 
 
@@ -384,7 +390,7 @@ Section wsm.
         {defaults : Defaults}
         (s : State)
         (d : Declaration)
-        : State
+        : State+string
     :=
     match d with
     | decl_rule rd => process_rule_declaration s rd
@@ -395,9 +401,9 @@ Section wsm.
     Definition process_declarations
         {defaults : Defaults}
         (ld : list Declaration)
-        : State
+        : State+string
     :=
-        fold_left process_declaration ld initialState
+        fold_left (fun s' d => match s' with inl s => process_declaration s d | inr s => inr s end) ld (inl initialState)
     .
 
     Definition to_theory

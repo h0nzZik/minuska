@@ -56,26 +56,30 @@ Section sec.
     .
 
     #[local]
-    Instance mysignature : Signature := {|
+    Program Instance mysignature : Signature := {|
         builtin_function_symbol
             := Emptyset ;
         builtin_predicate_symbol
             := Emptyset ;
+        bps_ar := fun _ => 0 ;
+        bps_neg := fun _ => None;
     |}.
+    Fail Next Obligation.
 
-    Definition βover
-        : ModelOver mysignature MyUnit TrivialPVA := {|
+    Program Definition βover
+        : ModelOver mysignature MyUnit Emptyset := {|
         builtin_function_interp
-            := fun _ _ _ => t_over pv_error ;
+            := fun _ _ _ => None ;
         builtin_predicate_interp
             := fun _ _ _ => false ;
     |}.
+    Fail Next Obligation.
 
     #[local]
     Instance β
         : @Model _ _ mysignature MyUnit := {|
         builtin_value
-            := TrivialPVA ;
+            := Emptyset ;
         builtin_model_over := βover ;
     |}.
 
