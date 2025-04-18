@@ -162,6 +162,14 @@ Defined.
 Next Obligation.
     intros. simpl in *. ltac1:(simplify_eq/=). reflexivity.
 Qed.
+Next Obligation.
+    intros. simpl in *.
+    eapply bps_neg_correct.
+    { apply H. }
+    { apply H0. }
+    { apply H1. }
+    { apply H2. }
+Qed.
 Fail Next Obligation.
 
 Definition information_flow_functor_tagged
@@ -286,6 +294,8 @@ Definition eval_predicate_in_iflow
     (p : builtin_predicate_symbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
+    :
+    option bool
 :=
     let args' := (TermOver'_map (@inject _ _ (@ri_injection _ _ injb))) <$> args in
     @builtin_predicate_interp _ _ _ _ _ (@rm_model_over _ _ signature _ _ Miflow Carrier inja injb) p nv args'
@@ -312,7 +322,7 @@ Definition eval_function_in_orig
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
-    TermOver' Carrier
+    option (TermOver' Carrier)
 :=
     let args' : list (TermOver' (@rm_carrier _ _ _ _ _ Morig)) := (list_fmap _ _ (TermOver'_map ifc_get_pure) args) in
     let args'' : list (TermOver' Carrier) := list_fmap _ _ (TermOver'_map (@inject _ _ (@ri_injection _ _ injb))) args' in
@@ -339,7 +349,7 @@ Definition eval_function_in_iflow
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
-    TermOver' Carrier
+    option (TermOver' Carrier)
 :=
     let args' := (TermOver'_map (@inject _ _ (@ri_injection _ _ injb))) <$> args in
     @builtin_function_interp _ _ _ _ _ (@rm_model_over _ _ signature _ _ Miflow Carrier inja injb) f nv args'
@@ -479,11 +489,21 @@ Class IFCRelaxedModelTrait1
             (f : builtin_function_symbol)
             (nv : NondetValue)
             args,
-        let r1 : TermOver' Carrier' := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
-        let r2 : TermOver' Carrier := eval_function_in_orig ifc_0 Carrier inja injb f nv args in
-        match @ri_reverse _ _ (TermOver'_rinj injb) r2, @ri_reverse _ _ (TermOver'_rinj injb') r1 with
-        | Some r'2, Some r'1 => (r'2) = (TermOver'_map ifc_get_pure r'1)
-        | _,_ => True
+        let r1 : option (TermOver' Carrier') := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
+        let r2 : option (TermOver' Carrier) := eval_function_in_orig ifc_0 Carrier inja injb f nv args in
+        match r1, r2 with
+        | None, None => True
+        | Some _, None => False
+        | None, Some _ => False
+        | Some r'1, Some r'2 =>
+            let r''1 : option (TermOver' ((@rm_carrier _ _ _ _ _ Miflow))) := (@ri_reverse _ _ (TermOver'_rinj injb')) r'1 in
+            let r''2 : option (TermOver' ((@rm_carrier _ _ _ _ _ Morig))) := (@ri_reverse _ _ (TermOver'_rinj injb)) r'2 in
+            match r''1, r''2 with
+            | Some g'1, Some g2 =>
+                let g1 := (TermOver'_map ifc_get_pure g'1) in
+                g1 = g2
+            | _, _ => False
+            end
         end
     ;
 }.

@@ -15,7 +15,6 @@ Definition int_function_interp
     {symbols : Symbols symbol}
     (NondetValue : Type)
     (Carrier : Type)
-    {_WE : Injection ErrT Carrier}
     {_WB : Injection bool Carrier}
     {_WI : Injection Z Carrier}
     (asi : Carrier -> option int_carrier)
@@ -23,7 +22,7 @@ Definition int_function_interp
     IntFunSymbol ->
     NondetValue ->
     list (@TermOver' symbol Carrier) ->
-    @TermOver' symbol  Carrier
+    option (@TermOver' symbol  Carrier)
 :=
     fun f nd args =>
     match f with
@@ -31,65 +30,65 @@ Definition int_function_interp
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1), (asi x2) with
-            | Some z1, Some z2 => t_over (inject Z Carrier (z1 + z2)%Z)
-            | _, _ => t_over (inject ErrT Carrier et_error)
+            | Some z1, Some z2 => Some (t_over (inject Z Carrier (z1 + z2)%Z))
+            | _, _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | int_minus =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1), (asi x2) with
-            | Some z1, Some z2 => t_over (inject Z Carrier (z1 - z2)%Z)
-            | _, _ => t_over (inject ErrT Carrier et_error)
+            | Some z1, Some z2 => Some (t_over (inject Z Carrier (z1 - z2)%Z))
+            | _, _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | int_uminus =>
         match args with
         | (t_over x1)::[] =>
             match (asi x1) with
-            | Some z1 => t_over (inject Z Carrier (-z1)%Z)
-            | _ => t_over (inject ErrT Carrier et_error)
+            | Some z1 => Some (t_over (inject Z Carrier (-z1)%Z))
+            | _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | int_zero =>
         match args with
-        | [] => t_over (inject Z Carrier 0%Z)
-        | _ => t_over (inject ErrT Carrier et_error)
+        | [] => Some (t_over (inject Z Carrier 0%Z))
+        | _ => None
         end
     | int_one =>
         match args with
-        | [] => t_over (inject Z Carrier 1%Z)
-        | _ => t_over (inject ErrT Carrier et_error)
+        | [] => Some (t_over (inject Z Carrier 1%Z))
+        | _ => None
         end
     | int_eq =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1),(asi x2) with
-            | Some z1, Some z2 => t_over (inject bool Carrier (bool_decide (z1 = z2)%Z))
-            | _, _ => t_over (inject ErrT Carrier et_error)
+            | Some z1, Some z2 => Some (t_over (inject bool Carrier (bool_decide (z1 = z2)%Z)))
+            | _, _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | int_le =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1),(asi x2) with
-            | Some z1, Some z2 => t_over (inject bool Carrier (bool_decide (z1 <= z2)%Z))
-            | _, _ => t_over (inject ErrT Carrier et_error)
+            | Some z1, Some z2 => Some (t_over (inject bool Carrier (bool_decide (z1 <= z2)%Z)))
+            | _, _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
     | int_lt =>
         match args with
         | (t_over x1)::(t_over x2)::[] =>
             match (asi x1),(asi x2) with
-            | Some z1, Some z2 => t_over (inject bool Carrier (bool_decide (z1 < z2)%Z))
-            | _, _ => t_over (inject ErrT Carrier et_error)
+            | Some z1, Some z2 => Some (t_over (inject bool Carrier (bool_decide (z1 < z2)%Z)))
+            | _, _ => None
             end
-        | _ => t_over (inject ErrT Carrier et_error)
+        | _ => None
         end
 
     end
@@ -105,7 +104,7 @@ Definition int_predicate_interp
     IntPredSymbol ->
     NondetValue ->
     list (@TermOver' symbol Carrier) ->
-    bool
+    option bool
 :=
     fun p nv args =>
     match p with
@@ -113,20 +112,19 @@ Definition int_predicate_interp
         match args with
         | (t_over x1)::[] =>
             match (asi x1) with
-            | Some _ => true
-            | _ => false
+            | Some _ => Some true
+            | _ => Some false
             end
-        | _ => false
+        | _ => None
         end
     end
 .
 
-Definition int_model_over
+Program Definition int_model_over
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
     (Carrier : Type)
-    (_WE : Injection ErrT Carrier)
     (_WB : Injection bool Carrier)
     (_WI : Injection Z Carrier)
     (asi : Carrier -> option int_carrier)
@@ -135,33 +133,39 @@ Definition int_model_over
 := {|
     builtin_function_interp := fun (f : @builtin_function_symbol int_signature) => int_function_interp NondetValue Carrier asi f;
     builtin_predicate_interp := fun (p : @builtin_predicate_symbol int_signature) => int_predicate_interp NondetValue Carrier asi p;
+    bps_neg_correct := _;
 |}.
+Next Obligation.
+    destruct p; simpl in *;
+        case_on_length (); simpl in *;
+        ltac1:(simplify_eq/=).
+Qed.
+Fail Next Obligation.
 
 Definition int_relaxed_model
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
     :
-    RelaxedModel int_signature NondetValue (ErrT+bool)
+    RelaxedModel int_signature NondetValue (bool)
 := {|
     rm_carrier := int_carrier ;
     rm_model_over :=
         fun (Carrier : Type)
-            (inja : Injection (ErrT+bool) Carrier)
+            (inja : Injection (bool) Carrier)
             (injb : ReversibleInjection int_carrier Carrier)
             => int_model_over symbol symbols NondetValue Carrier
-                {| inject := fun (e:ErrT) => @inject _ _ inja (inl e) |}
-                {| inject := fun (b:bool) => @inject _ _ inja (inr b) |}
+                {| inject := fun (b:bool) => @inject _ _ inja b |}
                 (@ri_injection _ _ injb)
                 (@ri_reverse _ _ injb)
 |}.
 
-(* Definition int_model
+Definition int_model
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
     : Model int_signature NondetValue
 :=
     model_of_relaxed (int_relaxed_model symbol symbols NondetValue)
-. *)
+.
 

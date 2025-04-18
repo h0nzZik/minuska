@@ -2,9 +2,9 @@ type token =
   | ID of string
   | VAR of string
   | INT of int
+  | STRING of string
   | KEYWORD_VALUE
-  | KEYWORD_BUILTIN_INT
-  | KEYWORD_BUILTIN_STRING
+  | KEYWORD_BUILTIN
   | KEYWORD_STRICTNESS
   | KEYWORD_RULE
   | KEYWORD_FRAMES
@@ -23,7 +23,6 @@ type token =
   | SLASH
   | ARROW
   | SEMICOLON
-  | QUOTE
   | COLON
   | COMMA
   | EOF
@@ -31,8 +30,7 @@ type token =
 
 
 
-type id = [ `Id of string ]
-
+type id = Pluginbase.id
 type vari = [ `Var of string ]
 
 type pattern = 
@@ -40,18 +38,9 @@ type pattern =
   | `PTerm of (id*(pattern list))
   ]
 
-type builtin =
-  [ `BuiltinInt of int
-  | `BuiltinString of string
-  | `BuiltinBool of bool
-  | `BuiltinError
-  | `OpaqueBuiltin
-  ]
+(* type builtin = Pluginbase.builtin *)
+type groundterm = Pluginbase.groundterm
 
-type groundterm =
-  [ `GTb of builtin
-  | `GTerm of (id*(groundterm list))
-  ]
 
 type expr =
   [ `EVar of vari
@@ -83,15 +72,15 @@ type rule =
 
 type framedecl =
   {
-    name : id ;
-    var : vari ;
-    pat : pattern ;
+    fd_name : id ;
+    fd_var : vari ;
+    fd_pat : pattern ;
   }
 
 type contextdecl =
   {
-    var : vari ;
-    pat : pattern ;
+    cd_var : vari ;
+    cd_pat : pattern ;
   }
 
 type strictdecl =

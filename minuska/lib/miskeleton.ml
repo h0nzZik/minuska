@@ -1,55 +1,36 @@
 open Core
 open Printf
-open Libminuskapluginbase.Pluginbase
-module Stringutils = Libminuskapluginbase.Stringutils
+open Libminuskapluginbase
+open Util
+open Pluginbase
 
-let __ = let rec f _ = Obj.repr f in Obj.repr f
+let convert_builtin (pvae : primitiveValueAlgebraEntry) (b : builtin_repr)  : ((string, 'a) Extracted.builtin_value)  =
+  match (pvae.pvae_builtin_inject b) with
+  | None -> failwith "Cannot represent primitive value in chosen builtin model"
+  | Some v -> v
 
-let convert_builtin (iface : 'a Extracted.builtinInterface) (b : Syntax.builtin)  : ((string, 'a) Extracted.builtin_value)  =
-  match b with
-  | `BuiltinInt n -> (
-    iface.bi_inject_Z (fun a -> match a with | None -> failwith "The chosen builtin model does not support integers (Z)" | Some b -> b) (Z.of_int n))
-  | `BuiltinString s ->(
-     iface.bi_inject_string (fun a -> match a with | None -> failwith "The chosen builtin model does not support strings" | Some b -> b) (Stringutils.explode s)
-    )
-  | `BuiltinBool b -> (
-      iface.bi_inject_bool (fun a -> match a with | None -> failwith "The chosen builtin model does not support bools" | Some b -> b) b
-    )
-  | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Extracted.Bv_error *)
-  | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"
-
-let rec convert_groundterm (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
+let rec convert_groundterm (pvae : primitiveValueAlgebraEntry) (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
   match g with
   | `GTb b ->
-    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin iface b)
+    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin pvae b)
   | `GTerm (`Id s, gs) ->
-    Extracted.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm iface) gs))
+    Extracted.T_term (((*Stringutils.explode*) s),(List.map ~f:(convert_groundterm pvae iface) gs))
 
 let wrap_init (g : Extracted.gT) : Extracted.gT =
-  Extracted.T_term ((Stringutils.explode "builtin.init"), [g])
+  Extracted.T_term (((*Stringutils.explode*) "builtin.init"), [g])
 
 let wrap_init0 : Extracted.gT =
-  Extracted.T_term ((Stringutils.explode "builtin.init"), [])
+  Extracted.T_term (((*Stringutils.explode*) "builtin.init"), [])
   
 
-let convert_builtin_back (iface : 'a Extracted.builtinInterface) (b : (string, 'a) Extracted.builtin_value) : Syntax.builtin =
-  let b2 = iface.bi_eject b in
-  match b2 with
-  | Some b3 -> (
-    match b3 with
-    | Inl x -> `BuiltinBool x
-    | Inr (Inl x) -> `BuiltinInt (Z.to_int x)
-    | Inr (Inr (Inl x)) -> `BuiltinString (Stringutils.implode x)
-    | Inr (Inr (Inr _)) -> `BuiltinError
-  )
-  | None -> `OpaqueBuiltin
-
-let rec convert_groundterm_back (iface : 'a Extracted.builtinInterface) (g : Extracted.gT) : Syntax.groundterm =
+let rec groundterm_coq_quote (pvae : primitiveValueAlgebraEntry) (g : Extracted.gT) : string =
   match g with
   | Extracted.T_over b ->
-    `GTb (convert_builtin_back iface b)
+    (pvae.pvae_builtin_coq_quote (Option.value_exn (pvae.pvae_builtin_eject b)))
   | Extracted.T_term (s, gs) ->
-    `GTerm (`Id (Stringutils.implode s),(List.map ~f:(convert_groundterm_back iface) gs))
+    let ss = List.map ~f:(groundterm_coq_quote pvae) gs in
+    sprintf "%s %s" s (format_string_list ss)
+
 
 let rec run_n_steps
   (step : Extracted.gT -> (Extracted.gT*'a) option)
@@ -91,7 +72,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
 
 let command_run
   (parser : Lexing.lexbuf -> 'programT)
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
   (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
   (lang_debug_info : string list)
@@ -146,7 +127,7 @@ let command_run
           fprintf stdout "Taken %d steps\n" actual_depth;
           (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
           with_output_file_or_stdout output_file (fun f_out -> 
-            fprintf f_out "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back iface result));
+            fprintf f_out "%s\n" (groundterm_coq_quote pvae result);
             ()
           );
           ()
@@ -155,29 +136,30 @@ let command_run
     )
 
 let main0
+  (pvae : primitiveValueAlgebraEntry) 
   (iface : 'a Extracted.builtinInterface)
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
   (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
-  (lang_debug_info : Extracted.string list)
+  (lang_debug_info : string list)
   =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.6" (command_run
       parser
-      iface
+      pvae
       step
       step_ext
-      (List.map lang_debug_info ~f:Stringutils.implode)
+      lang_debug_info (*(List.map lang_debug_info ~f:Stringutils.implode)*)
       )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 
-let wrap_interpreter iface interpreter =
-  (fun a b -> Obj.magic (interpreter (Obj.magic (convert_groundterm iface a)) (Obj.magic b)))
+let wrap_interpreter pvae iface interpreter : 'programT -> Extracted.gT -> Extracted.gT option =
+  (fun a b -> Stdlib.Obj.magic (interpreter (Stdlib.Obj.magic (convert_groundterm pvae iface a)) (Stdlib.Obj.magic b)))
 
-let wrap_interpreter_ext iface interpreter_ext =
+let wrap_interpreter_ext pvae iface interpreter_ext =
   (fun a b -> 
-    let r = Obj.magic (interpreter_ext (Obj.magic (convert_groundterm iface a)) (Obj.magic b)) in
+    let r = Stdlib.Obj.magic (interpreter_ext (Stdlib.Obj.magic (convert_groundterm pvae iface a)) (Stdlib.Obj.magic b)) in
     match r with
     | Some v ->
       Some ((fst v), (Z.to_int (snd v)))
@@ -185,10 +167,17 @@ let wrap_interpreter_ext iface interpreter_ext =
   )
 
 
-let main iface parser interpreter interpreter_ext debug_info  =
+let main
+      (pvae : primitiveValueAlgebraEntry)
+      (iface : 'a Extracted.builtinInterface)
+      (parser : Lexing.lexbuf -> 'programT)
+      interpreter
+      interpreter_ext
+      debug_info  =
   main0
+    pvae
     iface
     parser
-    (wrap_interpreter iface interpreter)
-    (wrap_interpreter_ext iface interpreter_ext)
+    (wrap_interpreter pvae iface interpreter)
+    (wrap_interpreter_ext pvae iface interpreter_ext)
     (debug_info)

@@ -1,10 +1,10 @@
 %token <int> INT
 %token <string> ID
 %token <string> VAR
+%token <string> STRING
 %token KEYWORD_VALUE
 %token KEYWORD_STRICTNESS
-%token KEYWORD_BUILTIN_INT
-%token KEYWORD_BUILTIN_STRING
+%token KEYWORD_BUILTIN
 %token KEYWORD_RULE
 %token KEYWORD_FRAMES
 %token KEYWORD_OF_ARITY
@@ -19,7 +19,6 @@
 %token BRACKET_ROUND_RIGHT
 %token BRACKET_SQUARE_LEFT
 %token BRACKET_SQUARE_RIGHT
-%token QUOTE
 %token SLASH
 %token ARROW
 %token SEMICOLON
@@ -29,6 +28,7 @@
 
 
 
+%{ open Libminuskapluginbase %}
 %start <(Syntax.definition option)> option_definition
 %start <(Syntax.groundterm option)> option_groundterm
 %{ open Syntax %}
@@ -42,7 +42,7 @@ contextdecl:
     COLON
     p = pattern
     SEMICOLON
-    { { var = (`Var x); pat = p } }
+    { { cd_var = (`Var x); cd_pat = p } }
 
 strictnessone:
   | s = ID;
@@ -78,18 +78,14 @@ pattern:
 
 builtin:
   | BRACKET_ROUND_LEFT
-    KEYWORD_BUILTIN_INT
-    n = INT
+    KEYWORD_BUILTIN
+    COLON
+    kind = ID
+    BRACKET_ROUND_LEFT
+    value = STRING
     BRACKET_ROUND_RIGHT
-    { `BuiltinInt n }
-  | BRACKET_ROUND_LEFT
-    KEYWORD_BUILTIN_STRING
-    QUOTE
-    s = ID
-    QUOTE
     BRACKET_ROUND_RIGHT
-    { `BuiltinString s }
-
+    { { br_kind = kind; br_value = value; } }
   ;
 
 groundterm:
@@ -174,7 +170,7 @@ framedecl:
     BRACKET_ROUND_RIGHT
     COLON
     p = pattern
-    { { name=(`Id n); var=(`Var x); pat=p } }
+    { { fd_name=(`Id n); fd_var=(`Var x); fd_pat=p } }
   ;
 
 framesdecl:

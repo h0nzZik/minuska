@@ -17,7 +17,7 @@ Record ExprAndBoV {Σ : StaticModel} : Type := mkExprAndBoV {
 }.
 
 Arguments mkExprAndBoV {Σ} eab_expr eab_bov.
-
+(* 
 Class TagLHS := mkTagLHS {}.
 Class TagRHS := mkTagRHS {}.
 Class TagGround := mkTagGround {}.
@@ -62,7 +62,7 @@ Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {
 #[export]
 Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
     inject_variable := (*t_over ∘ *) e_variable;
-}.
+}. *)
 
 (*
 
@@ -101,12 +101,12 @@ Proof. inversion _eq. subst. constructor. apply term_operand. Defined.
 Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%_type_scope {ToAOO} _.
 
 *)
-
+(* 
 Notation "'$' x" :=
     (inject_variable x)
     (at level 40)
-.
-
+. *)
+(* 
 Notation "'llrule' l '~>{' a '}' r 'requires' s"
     := (@mkRewritingRule2
         _
@@ -132,4 +132,4 @@ Notation "'rule' l '~>{' a '}' r 'requires' s"
 .
 
 
-Notation "( 'ground' g )" := ((fun (_:TagGround) => (g)) mkTagGround).
+Notation "( 'ground' g )" := ((fun (_:TagGround) => (g)) mkTagGround). *)

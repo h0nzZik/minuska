@@ -5,6 +5,7 @@ From Minuska Require Import
 .
 
 From Coq Require Import Logic.Eqdep_dec.
+From Coq Require Import Logic.PropExtensionality.
 
 #[local]
 Arguments builtin_function_symbol (Signature) : clear implicits.
@@ -183,43 +184,7 @@ Definition rmf_apply
     rmf_model _ f _ _ M
 .
 
-(* 
-Definition rmf_apply
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    (FromT : Type)
-    (f : RelaxedModelFunctorT FromT)
-    {signature : Signature}
-    {NondetValue : Type}
-    (x : RelaxedModel signature NondetValue FromT)
-    :
-    RelaxedModel (@rmf_signature _ f signature) (@rmf_nondet _ f NondetValue) FromT
-:= {|
-    rm_carrier := rmf_carrier _ f (@rm_carrier _ _ _ _ _ x) ;
-    rm_carrier_eqdec := rmf_carrier_eqdec _ f _ ((@rm_carrier_eqdec _ _ _ _ _ x)) ;
-    rm_model_over :=
-        fun (Carrier : Type)
-            (inja : Injection FromT Carrier)
-            (injb : ReversibleInjection _ Carrier)
-        => @rmf_model_over _ f signature NondetValue symbol symbols Carrier
-            (* inja *)
-            (* _ *)
-(*             
-            {|
-                ri_injection := {|
-                    inject := 0
-                    (* fun (a : (rmf_carrier FromT f (rm_carrier signature NondetValue FromT x))) => (@inject _ _ (@ri_injection _ _ injb) a) *)
-                    (* inject := @rmf_from _ f _ _ (@inject _ _ (@ri_injection _ _ injb)) *)
-                |}
-            |} *)
-            (* injb *)
-         ;
-
-|}. *)
-
-
-
-Definition model_reduction
+Program Definition model_reduction
     (s1 s2 : Signature)
     (μ : SignatureMorphism s1 s2)
     (NV Carrier : Type)
@@ -241,15 +206,57 @@ Definition model_reduction
             (nv : NV)
             (args : list (@TermOver' symbol Carrier))
         => spec.builtin_predicate_interp m2 (predicate_symbol_morphism μ p) nv args;
+    
+    bps_neg_correct := _ ;
 |}
 .
+Next Obligation.
+    destruct μ as [μf μp H1μp H2μp].
+    destruct m2 as [bf bp Hbp].
+    simpl in *.
+    assert (Hmy := Hbp (μp p) (μp p') nv l b b').
+    ltac1:(ospecialize (Hmy _ _)).
+    {
+        rewrite H2μp.
+        rewrite H.
+        reflexivity.
+    }
+    {
+        rewrite H1μp.
+        exact H0.
+    }
+    specialize (Hmy H1 H2).
+    exact Hmy.
+Qed.
+Fail Next Obligation.
 
 Section sum.
 
-    Definition signature_sum (s1 s2 : Signature) : Signature := {|
+    Program Definition signature_sum (s1 s2 : Signature) : Signature := {|
         builtin_function_symbol := sum (builtin_function_symbol s1) (builtin_function_symbol s2) ;
         builtin_predicate_symbol := sum (builtin_predicate_symbol s1) (builtin_predicate_symbol s2) ;
+        bps_ar := fun p =>
+            match p with
+            | inl p' => @bps_ar s1 p'
+            | inr p' => @bps_ar s2 p'
+            end;
+        bps_neg := fun p =>
+            match p with
+            | inl p' => inl <$> @bps_neg s1 p'
+            | inr p' => inr <$> @bps_neg s2 p'
+            end ;
+        bps_neg_ar := _;
+        bps_neg__sym := _;
     |}.
+    Next Obligation.
+        destruct p,p'; simpl in *; ltac1:(simplify_option_eq);
+            apply bps_neg_ar; assumption.
+    Qed.
+    Next Obligation.
+        destruct p, p'; simpl in *; ltac1:(simplify_option_eq);
+            erewrite bps_neg__sym; simpl; try reflexivity; assumption.
+    Qed.
+    Fail Next Obligation.
 
     Definition signature_sum_morphism_1_function
         (s1 s2 : Signature)
@@ -265,13 +272,13 @@ Section sum.
         fun f => inl f
     .
 
-    Definition signature_sum_morphism_1 (s1 s2 : Signature)
+    Program Definition signature_sum_morphism_1 (s1 s2 : Signature)
         : SignatureMorphism s1 (signature_sum s1 s2)
     := {|
         function_symbol_morphism := signature_sum_morphism_1_function s1 s2 ;
         predicate_symbol_morphism := signature_sum_morphism_1_predicate s1 s2 ;
     |}.
-
+    Fail Next Obligation.
 
     Definition signature_sum_morphism_2_function
         (s1 s2 : Signature)
@@ -287,12 +294,13 @@ Section sum.
         fun f => inr f
     .
 
-    Definition signature_sum_morphism_2 (s1 s2 : Signature)
+    Program Definition signature_sum_morphism_2 (s1 s2 : Signature)
         : SignatureMorphism s2 (signature_sum s1 s2)
     := {|
         function_symbol_morphism := signature_sum_morphism_2_function s1 s2 ;
         predicate_symbol_morphism := signature_sum_morphism_2_predicate s1 s2 ;
     |}.
+    Fail Next Obligation.
 
     #[export]
     Program Instance signature_sum_morph_1_inj
@@ -322,7 +330,7 @@ Section sum.
         (nv : NV)
         (args : list (@TermOver' symbol Carrier))
         :
-        (@TermOver' symbol Carrier)
+        option (@TermOver' symbol Carrier)
     :=
         match f with
         | inl f' => @builtin_function_interp symbol symbols s1 NV Carrier m1 f' nv args
@@ -341,7 +349,7 @@ Section sum.
         (nv : NV)
         (args : list (@TermOver' symbol Carrier))
         :
-        bool
+        option bool
     :=
         match p with
         | inl p' => @builtin_predicate_interp symbol symbols s1 NV Carrier m1 p' nv args
@@ -349,7 +357,7 @@ Section sum.
         end
     .
 
-    Definition modelover_sum
+    Program Definition modelover_sum
         {symbol : Type}
         {symbols : Symbols symbol}
         (s1 s2 : Signature)
@@ -362,8 +370,28 @@ Section sum.
     := {|
         builtin_function_interp :=  function_interp_sum s1 s2 NV Carrier m1 m2;
         builtin_predicate_interp :=  predicate_interp_sum s1 s2 NV Carrier m1 m2;
+        bps_neg_correct := _;
     |}
     .
+    Next Obligation.
+        Check bps_neg_correct.
+        destruct p,p'; simpl in *; ltac1:(simplify_option_eq).
+        {
+            eapply bps_neg_correct in Heqo.
+            { apply Heqo. }
+            { apply H0. }
+            { apply H1. }
+            { apply H2. }
+        }
+        {
+            eapply bps_neg_correct in Heqo.
+            { apply Heqo. }
+            { apply H0. }
+            { apply H1. }
+            { apply H2. }
+        }
+    Qed.
+    Fail Next Obligation.
 
     Lemma modelover_sum_reduce_1
         {symbol : Type}
@@ -382,9 +410,10 @@ Section sum.
         = m1.
     Proof.
         unfold model_reduction.
-        destruct m1 as [f1 p1]; simpl in *.
-        destruct m2 as [f2 p2]; simpl in *.
+        destruct m1 as [f1 p1 Hneg1]; simpl in *.
+        destruct m2 as [f2 p2 Hneg2]; simpl in *.
         f_equal.
+        apply proof_irrelevance.
     Qed.
 
     Lemma modelover_sum_reduce_2
@@ -406,12 +435,13 @@ Section sum.
         unfold model_reduction.
         destruct m2; simpl in *.
         f_equal.
+        apply proof_irrelevance.
     Qed.
 
 
 End sum.
 
-Definition modelover_nv_lift 
+Program Definition modelover_nv_lift 
     {symbol : Type}
     {symbols : Symbols symbol}
     {signature: Signature}
@@ -429,6 +459,14 @@ Definition modelover_nv_lift
         fun p nv args => @builtin_predicate_interp _ _ _ _ _ m p (nvf nv) args
     ;
 |}.
+Next Obligation.
+    eapply bps_neg_correct in H.
+    { apply H. }
+    { apply H0. }
+    { apply H1. }
+    { apply H2. }
+Qed.
+Fail Next Obligation.
 
 (* 
 Definition modelover_carrier_lift 
