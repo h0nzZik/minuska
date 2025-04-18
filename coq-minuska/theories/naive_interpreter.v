@@ -180,7 +180,8 @@ Definition try_match_lhs_with_sc
     : option (Valuation2*(TermOver builtin_value))
 :=
     ρ ← try_match_new g (r_from r);
-    if SideCondition_evaluate program ρ nv (r_scs r)
+    b ← SideCondition_evaluate program ρ nv (r_scs r);
+    if b
     then (
         match (eval_et program ρ nv (r_to r)) with
         | None => None
@@ -599,13 +600,15 @@ Lemma sc_satisfies_insensitive
     (program : ProgramT)
     (nv : NondetValue)
     :
-    ∀ (v1 v2 : Valuation2) (b : SideCondition),
-            Valuation2_restrict v1 (vars_of b) = Valuation2_restrict v2 (vars_of b) ->
-            SideCondition_evaluate program v1 nv b -> SideCondition_evaluate program v2 nv b
+    ∀ (v1 v2 : Valuation2) (sc : SideCondition) (b : bool),
+            Valuation2_restrict v1 (vars_of sc) = Valuation2_restrict v2 (vars_of sc) ->
+            SideCondition_evaluate program v1 nv sc = Some b ->
+            SideCondition_evaluate program v2 nv sc = Some b
 .
 Proof.
-    intros v1 v2 b H X.
+    intros v1 v2 sc b H X.
     unfold Valuation2_restrict in H.
+    unfold is_true in *.
     eapply SideCondition_satisfies_strip in X.
     rewrite H in X.
     eapply SideCondition_satisfies_extensive>[|apply X].
@@ -1730,24 +1733,37 @@ Proof.
         (* Search try_match_new. *)
         ltac1:(repeat case_match).
         {
-            ltac1:(simplify_eq/=).
-            eapply Heqfound.
-            rewrite elem_of_list_fmap.
-            unfold try_match_lhs_with_sc.
-            exists r.
-            rewrite H3.
-            simpl.
-            rewrite H.
-            rewrite H0.
-            split>[reflexivity|].
-            exact Hin.
-            simpl. reflexivity.
+            rewrite bind_Some in H2x.
+            destruct H2x as [b' [H1b' H2b']].
+            destruct b'.
+            {
+                ltac1:(simplify_eq/=).
+                eapply Heqfound.
+                rewrite elem_of_list_fmap.
+                unfold try_match_lhs_with_sc.
+                exists r.
+                rewrite H3.
+                simpl.
+                rewrite H.
+                rewrite H1b'.
+                split>[reflexivity|].
+                exact Hin.
+                simpl. reflexivity.
+            }
+            {
+                inversion H2b'.
+            }
         }
         {
-            inversion H2x.
-        }
-        {
-            inversion H2x.
+            rewrite bind_Some in H2x.
+            destruct H2x as [b' [H1b' H2b']].
+            destruct b'.
+            {
+                inversion H2b'.
+            }
+            {
+                inversion H2b'.
+            }
         }
     }
 Qed.
@@ -1789,6 +1805,7 @@ Proof.
         inversion H2r'; subst; clear H2r'.
         rewrite Hot1 in H1r'.
         inversion H1r'; subst; clear H1r'.
+        unfold satisfies; simpl.
         split.
         {
             split.
@@ -1813,12 +1830,25 @@ Proof.
                         unfold isSome in H2x.
                         destruct (eval_et program x nv (r_to r)) eqn:Heq2.
                         {
-                            apply (inj Some) in H2x.
-                            subst ρ'.
-                            apply H1x.
+                            rewrite bind_Some in H2x.
+                            destruct H2x as [b' [H1b' H2b']].
+                            apply (inj Some) in H1b'.
+                            subst b'.
+                            destruct b.
+                            {
+                                apply (inj Some) in H2b'.
+                                subst ρ'.
+                                simpl.
+                                apply H1x.
+                            }
+                            {
+                                inversion H2b'.
+                            }
                         }
                         {
-                            inversion H2x.
+                            destruct b;
+                                simpl in *;
+                                inversion H2x.
                         }
                     }
                     {
@@ -1830,6 +1860,8 @@ Proof.
                 unfold try_match_lhs_with_sc in H1ρ'.
                 apply bind_Some_T_1 in H1ρ'.
                 destruct H1ρ' as [x [H1x H2x]].
+                rewrite bind_Some in H2x.
+                destruct H2x as [b' [H1b' H2b']].
                 ltac1:(repeat case_match; simpl in *; simplify_eq/=).
                 assumption.
             }
@@ -1845,17 +1877,25 @@ Proof.
             destruct HTM as [x [H1x H2x]].
             destruct (SideCondition_evaluate program x nv (r_scs r)) eqn:Heq.
             {
-
                 unfold isSome in H2x.
                 destruct (eval_et program x nv (r_to r)) eqn:Heq2.
                 {
-                    apply (inj Some) in H2x.
-                    subst ρ'.
-                    simpl.
-                    apply Heq.
+                    destruct b.
+                    {
+                        simpl in *.
+                        apply (inj Some) in H2x.
+                        subst ρ'.
+                        simpl in *.
+                        apply Heq.
+                        
+                    }
+                    {
+                        simpl in *.
+                        inversion H2x.
+                    }
                 }
                 {
-                    inversion H2x.
+                    destruct b; simpl in *; inversion H2x.
                 }
             }
             {
