@@ -71,7 +71,7 @@ Section sec.
         builtin_function_interp
             := fun _ _ _ => None ;
         builtin_predicate_interp
-            := fun _ _ _ => false ;
+            := fun _ _ _ => None ;
     |}.
     Fail Next Obligation.
 

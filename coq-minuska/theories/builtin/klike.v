@@ -1894,13 +1894,13 @@ Section sec2.
     .
 
     Definition liftNularyP
-        (f : MyUnit -> bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> bool)
+        (f : MyUnit -> option bool)
+        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
         | [] => f nv
-        | _::_ => false
+        | _::_ => None
         end
     .
 
@@ -1917,14 +1917,14 @@ Section sec2.
     .
 
     Definition liftUnaryP
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> bool)
+        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> option bool)
+        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
-        | [] => false
+        | [] => None
         | x1::[] => f nv x1
-        | _::_::_ => false
+        | _::_::_ => None
         end
     .
 
@@ -1942,15 +1942,15 @@ Section sec2.
     .
 
     Definition liftBinaryP
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> bool)
+        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option bool)
+        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
-        | [] => false
-        | _::[] => false
+        | [] => None
+        | _::[] => None
         | x1::x2::[] => f nv x1 x2
-        | _::_::_::_ => false
+        | _::_::_::_ => None
         end
     .
 
@@ -2035,6 +2035,21 @@ Section sec2.
         intros p p' H; destruct p; simpl; ltac1:(simplify_eq/=); try reflexivity.
     Qed.
     Fail Next Obligation.
+
+
+    Ltac2 case_on_length () :=
+        repeat(
+            simpl in *;
+            match! goal with
+            | [h: ((length ?args) = (S _)) |- _] =>
+                destruct $args; simpl in $h; try ltac1:(lia)
+            | [h: ((length ?args) = O) |- _] =>
+                destruct $args; simpl in $h; try ltac1:(lia)
+            | [h: ((S _) = (S _)) |- _] =>
+                apply Nat.succ_inj in $h
+            end
+        )
+    .
 
     (* #[local] *)
     (* Obligation Tactic := idtac.     *)
@@ -2155,132 +2170,132 @@ Section sec2.
             match p with
             | b_term_eq => liftBinaryP (
                 fun _ v1 v2 =>
-                (bool_decide (v1 = v2))
+                Some (bool_decide (v1 = v2))
             )
 
             | b_bool_is_true => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over (bv_bool b) => eqb b true
-                | _ => false
+                | t_over (bv_bool b) => Some (eqb b true)
+                | _ => None
                 end
             )
 
             | b_bool_is_false => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over (bv_bool b) => eqb b false
-                | _ => false
+                | t_over (bv_bool b) => Some (eqb b false)
+                | _ => None
                 end
             )
 
             | b_isBuiltin => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over b => true
-                | t_term _ _ => false
+                | t_over b => Some true
+                | t_term _ _ => Some false
                 end
             )
             | b_isNotBuiltin => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over b => false
-                | t_term _ _ => true
+                | t_over b => Some false
+                | t_term _ _ => Some true
                 end
             )
             | b_isSymbol => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_term _ _ => true
-                | _ => false
+                | t_term _ _ => Some true
+                | _ => Some false
                 end
             )
 
             | b_isNotSymbol => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_term _ _ => false
-                | _ => true
+                | t_term _ _ => Some false
+                | _ => Some true
                 end
             )
    
             | b_isString => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => (impl_isString x)
-                | _ => false
+                | t_over x => Some (impl_isString x)
+                | _ => None
                 end
             )
 
             | b_isNotString => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => negb (impl_isString x)
-                | _ => true
+                | t_over x => Some (negb (impl_isString x))
+                | _ => None
                 end
             )
                 
             | b_isList => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => (impl_isList x)
-                | _ => false
+                | t_over x => Some (impl_isList x)
+                | _ => None
                 end
             )
 
             | b_isNotList => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => negb (impl_isList x)
-                | _ => true
+                | t_over x => Some (negb (impl_isList x))
+                | _ => None
                 end
             )
 
             | b_isBool => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => (impl_isBool x)
-                | _ => false
+                | t_over x => Some (impl_isBool x)
+                | _ => None
                 end
             )
 
             | b_isNotBool => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => negb (impl_isBool x)
-                | _ => true
+                | t_over x => Some (negb (impl_isBool x))
+                | _ => None
                 end
             )
                 
             | b_isMap => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => (impl_isMap x)
-                | _ => false
+                | t_over x => Some (impl_isMap x)
+                | _ => None
                 end
             )
 
             | b_isNotMap => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => negb (impl_isMap x)
-                | _ => true
+                | t_over x => Some (negb (impl_isMap x))
+                | _ => None
                 end
             )
 
             | b_isZ => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => (impl_isZ x)
-                | _ => false
+                | t_over x => Some (impl_isZ x)
+                | _ => None
                 end
             )
 
             | b_isNotZ => liftUnaryP (
                 fun _ v =>
                 match v with
-                | t_over x => negb (impl_isZ x)
-                | _ => true
+                | t_over x => Some (negb (impl_isZ x))
+                | _ => None
                 end
             )    
 
@@ -2290,10 +2305,10 @@ Section sec2.
                 | t_over (bv_pmap m) =>
                     let p := my_encode (v2) in
                     match m !! p with
-                    | Some _ => true
-                    | None => false
+                    | Some _ => Some true
+                    | None => Some false
                     end
-                | _ => false
+                | _ => None
                 end
             )
 
@@ -2302,10 +2317,10 @@ Section sec2.
                 match v1 with
                 | t_term s1 _ =>
                     match v2 with
-                    | t_term s2 _ => (bool_decide (s1 = s2))
-                    | _ => false
+                    | t_term s2 _ => Some (bool_decide (s1 = s2))
+                    | _ => None
                     end
-                | _ => false
+                | _ => None
                 end
             )
 
@@ -2314,10 +2329,10 @@ Section sec2.
                 match v1 with
                 | t_term s1 _ =>
                     match v2 with
-                    | t_term s2 _ => negb (bool_decide (s1 = s2))
-                    | _ => false
+                    | t_term s2 _ => Some (negb (bool_decide (s1 = s2)))
+                    | _ => None
                     end
-                | _ => false
+                | _ => None
                 end
             )
 
@@ -2326,10 +2341,10 @@ Section sec2.
                 match v1 with
                 | t_over (bv_sym s) =>
                     match v2 with
-                    | t_term s' _ => (bool_decide (s' = s))
-                    | _ => false
+                    | t_term s' _ => Some (bool_decide (s' = s))
+                    | _ => None
                     end
-                | _ => false
+                | _ => None
                 end
             )
 
@@ -2338,10 +2353,10 @@ Section sec2.
                 match v1 with
                 | t_over (bv_sym s) =>
                     match v2 with
-                    | t_term s' _ => negb (bool_decide (s' = s))
-                    | _ => true
+                    | t_term s' _ => Some ( negb (bool_decide (s' = s)))
+                    | _ => None
                     end
-                | _ => true
+                | _ => None
                 end
             )
             end ;
@@ -2351,34 +2366,36 @@ Section sec2.
     (* Fail Next Obligation. *)
     Next Obligation.
         intros.
-        destruct p; 
-            ltac1:(simplify_option_eq); 
-            destruct l; 
-            simpl in *|-; 
-            try (ltac1:(lia));
-            destruct l; 
-            simpl in *|-; 
-            try (ltac1:(lia));
-            simpl;
-            try(
-                destruct t;
-                simpl;
-                try reflexivity;
-                try (apply negb_involutive)
-            ).
+        destruct p,p'; simpl in *; case_on_length (); ltac1:(repeat case_match; simplify_eq/=); try reflexivity.
         {
-            Check xpred0.
-            destruct a.
-            destruct b; reflexivity.
+          rewrite negb_involutive. reflexivity.
         }
-(*         
-        ltac1:(repeat case_match); simpl in *; subst; simpl in *; ltac1:(simplify_option_eq); (do 3 (try (destruct l))); simpl in *; try reflexivity; try ltac1:(lia);
-            ltac1:(repeat case_match); subst; simpl in *; try reflexivity;
-            try (apply negb_involutive). *)
-
+        {
+          rewrite negb_involutive. reflexivity.
+        }
+        {
+          rewrite negb_involutive. reflexivity.
+        }
+        {
+          rewrite negb_involutive. reflexivity.
+        }
+        {
+          rewrite negb_involutive. reflexivity.
+        }
+        {
+          destruct b0; reflexivity.
+        }
+        {
+          destruct b0; reflexivity.
+        }
+        {
+          rewrite negb_involutive. reflexivity.
+        }
+        {
+          rewrite negb_involutive. reflexivity.
+        }
     Qed.
-    Next Obligation.
-    (* Qed. *)
+    Fail Next Obligation.
 
     #[local]
     Instance β
@@ -2557,20 +2574,6 @@ Section negations.
         my_program_info
         nondet_gen
     ).
-
-    Ltac2 case_on_length () :=
-        repeat(
-            simpl in *;
-            match! goal with
-            | [h: ((length ?args) = (S _)) |- _] =>
-                destruct $args; simpl in $h; try ltac1:(lia)
-            | [h: ((length ?args) = O) |- _] =>
-                destruct $args; simpl in $h; try ltac1:(lia)
-            | [h: ((S _) = (S _)) |- _] =>
-                apply Nat.succ_inj in $h
-            end
-        )
-    .
 
     Ltac2 simplify_negable () :=
         case_on_length ();

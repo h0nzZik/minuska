@@ -99,7 +99,7 @@ Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signatur
         length l = bps_ar p ->
         builtin_predicate_interp p' nv l = Some b ->
         builtin_predicate_interp p nv l = Some b' ->
-        b = b' ;
+        b = ~~ b' ;
 }.
 
 Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
