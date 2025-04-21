@@ -3,6 +3,12 @@ open Core
 open Printf
 open Sexplib.Std
 
+type builtin =
+  [ `BuiltinInt of int
+  | `BuiltinString of string
+  | `BuiltinBool of bool
+  ]
+
 type coqModuleName = 
 | User_module of string
 | Std_module of string
@@ -14,6 +20,9 @@ type primitiveValueAlgebraEntry = {
   pvae_coq_import : string ;
   pvae_coq_entity_name : string ;
   pvae_builtin_interface : Dsm.__ Dsm.builtinInterface ;
+  pvae_builtin_quote : builtin -> string ;
+  pvae_builtin_inject : builtin -> ((string, Dsm.__) Dsm.builtin_value) option ;
+  pvae_builtin_eject : (string, Dsm.__) Dsm.builtin_value -> builtin option ;
 }
 
 type programInfoEntry = {
@@ -59,6 +68,32 @@ let get_primitive_value_algebra (primitive_value_algebra_name : coqModuleName) :
       pvae_coq_import = "Minuska.builtin."^name;
       pvae_builtin_interface = m;
       pvae_coq_entity_name = (sprintf "builtins_%s" name);
+      pvae_builtin_quote = (fun (b : builtin) -> (
+        match name with
+        | "klike" -> (
+           match b with
+           | `BuiltinInt n -> (sprintf "(bv_Z (%d)%%Z)" n)
+           | `BuiltinBool b' -> (sprintf "(bv_bool %s)" (if b' then "true" else "false"))
+           | `BuiltinString s -> (sprintf "(bv_str (\"%s\")%%str)" s)
+        )
+        | _ -> failwith (sprintf "Cannot represent given builtin using module '%s'" name)
+      ));
+      pvae_builtin_inject = (fun (b : builtin) -> (
+        Obj.magic (
+        match name with
+        | "klike" -> (
+          match b with
+          | `BuiltinInt n -> (Option.some (Dsm.Bv_Z (Z.of_int n)))
+          | `BuiltinBool b' -> (Option.some (Dsm.Bv_bool b'))
+          | `BuiltinString s -> (Option.some (Dsm.Bv_str (Stringutils.explode s)))
+        )
+        | _ -> failwith (sprintf "Cannot represent given builtin using module '%s'" name)
+      )));
+      pvae_builtin_eject = (fun b -> (match (Obj.magic b) with
+        | Dsm.Bv_Z z -> (Option.some (`BuiltinInt (Z.to_int z)))
+        | Dsm.Bv_bool b' -> (Option.some (`BuiltinBool b'))
+        | Dsm.Bv_str s -> (Option.some (`BuiltinString (Stringutils.implode s)))
+      ));
     }
   )
   | User_module name -> (

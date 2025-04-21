@@ -29,6 +29,7 @@
 
 
 
+%{ open Libminuskapluginbase %}
 %start <(Syntax.definition option)> option_definition
 %start <(Syntax.groundterm option)> option_groundterm
 %{ open Syntax %}

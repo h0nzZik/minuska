@@ -2493,33 +2493,6 @@ Definition builtins_binding : BuiltinsBinding := {|
     ];
 |}.
 
-Definition inject_Z
-    {symbol : Type}
-    (Fret :  option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
-    (z : Z)
-    :
-    (@BuiltinValue0 symbol) :=
-    Fret (Some (bv_Z z))
-.
-
-Definition inject_bool
-    {symbol : Type}
-    (Fret :  option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
-    (b : bool)
-    :
-    (@BuiltinValue0 symbol) :=
-    Fret (Some (bv_bool b))
-.
-
-Definition inject_string
-    {symbol : Type}
-    (Fret : option (@BuiltinValue0 symbol) -> (@BuiltinValue0 symbol))
-    (s : string)
-    :
-    (@BuiltinValue0 symbol) :=
-    Fret (Some (bv_str s))
-.
-
 Definition eject
     {symbol : Type}
     (v : @BuiltinValue0 symbol)

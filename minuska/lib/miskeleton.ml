@@ -1,29 +1,22 @@
 open Core
 open Printf
-open Libminuskapluginbase.Pluginbase
+open Libminuskapluginbase
+open Pluginbase
 module Stringutils = Libminuskapluginbase.Stringutils
 
 let __ = let rec f _ = Obj.repr f in Obj.repr f
 
-let convert_builtin (iface : 'a Extracted.builtinInterface) (b : Syntax.builtin)  : ((string, 'a) Extracted.builtin_value)  =
-  match b with
-  | `BuiltinInt n -> (
-    iface.bi_inject_Z (fun a -> match a with | None -> failwith "The chosen builtin model does not support integers (Z)" | Some b -> b) (Z.of_int n))
-  | `BuiltinString s ->(
-     iface.bi_inject_string (fun a -> match a with | None -> failwith "The chosen builtin model does not support strings" | Some b -> b) (Stringutils.explode s)
-    )
-  | `BuiltinBool b -> (
-      iface.bi_inject_bool (fun a -> match a with | None -> failwith "The chosen builtin model does not support bools" | Some b -> b) b
-    )
-  | `BuiltinError -> failwith "Cannot convert `BuiltinError" (* Extracted.Bv_error *)
-  | `OpaqueBuiltin -> failwith "Cannot convert unknown builtin back into Coq runtime"
+let convert_builtin (pvae : primitiveValueAlgebraEntry) (b : builtin)  : ((string, 'a) Extracted.builtin_value)  =
+  match (pvae.pvae_builtin_inject b) with
+  | None -> failwith "Cannot represent primitive value in chosen builtin model"
+  | Some v -> v
 
-let rec convert_groundterm (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
+let rec convert_groundterm (pvae : primitiveValueAlgebraEntry) (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
   match g with
   | `GTb b ->
-    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin iface b)
+    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin pvae b)
   | `GTerm (`Id s, gs) ->
-    Extracted.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm iface) gs))
+    Extracted.T_term ((Stringutils.explode s),(List.map ~f:(convert_groundterm pvae iface) gs))
 
 let wrap_init (g : Extracted.gT) : Extracted.gT =
   Extracted.T_term ((Stringutils.explode "builtin.init"), [g])
@@ -32,24 +25,17 @@ let wrap_init0 : Extracted.gT =
   Extracted.T_term ((Stringutils.explode "builtin.init"), [])
   
 
-let convert_builtin_back (iface : 'a Extracted.builtinInterface) (b : (string, 'a) Extracted.builtin_value) : Syntax.builtin =
-  let b2 = iface.bi_eject b in
-  match b2 with
-  | Some b3 -> (
-    match b3 with
-    | Inl x -> `BuiltinBool x
-    | Inr (Inl x) -> `BuiltinInt (Z.to_int x)
-    | Inr (Inr (Inl x)) -> `BuiltinString (Stringutils.implode x)
-    | Inr (Inr (Inr _)) -> `BuiltinError
-  )
-  | None -> `OpaqueBuiltin
+let convert_builtin_back (pvae : primitiveValueAlgebraEntry) (b : (string, 'a) Extracted.builtin_value) : builtin =
+  match pvae.pvae_builtin_eject b with
+  | None -> failwith "Cannot convert primitive value back..?"
+  | Some v -> v
 
-let rec convert_groundterm_back (iface : 'a Extracted.builtinInterface) (g : Extracted.gT) : Syntax.groundterm =
+let rec convert_groundterm_back (pvae : primitiveValueAlgebraEntry) (g : Extracted.gT) : Syntax.groundterm =
   match g with
   | Extracted.T_over b ->
-    `GTb (convert_builtin_back iface b)
+    `GTb (convert_builtin_back pvae b)
   | Extracted.T_term (s, gs) ->
-    `GTerm (`Id (Stringutils.implode s),(List.map ~f:(convert_groundterm_back iface) gs))
+    `GTerm (`Id (Stringutils.implode s),(List.map ~f:(convert_groundterm_back pvae) gs))
 
 let rec run_n_steps
   (step : Extracted.gT -> (Extracted.gT*'a) option)
@@ -91,7 +77,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
 
 let command_run
   (parser : Lexing.lexbuf -> 'programT)
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
   (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
   (lang_debug_info : string list)
@@ -146,7 +132,7 @@ let command_run
           fprintf stdout "Taken %d steps\n" actual_depth;
           (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
           with_output_file_or_stdout output_file (fun f_out -> 
-            fprintf f_out "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back iface result));
+            fprintf f_out "%s\n" (Miunparse.groundterm_to_string (convert_groundterm_back pvae result));
             ()
           );
           ()
@@ -155,6 +141,7 @@ let command_run
     )
 
 let main0
+  (pvae : primitiveValueAlgebraEntry) 
   (iface : 'a Extracted.builtinInterface)
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
@@ -164,7 +151,7 @@ let main0
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.6" (command_run
       parser
-      iface
+      pvae
       step
       step_ext
       (List.map lang_debug_info ~f:Stringutils.implode)
@@ -172,12 +159,12 @@ let main0
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 
-let wrap_interpreter iface interpreter =
-  (fun a b -> Obj.magic (interpreter (Obj.magic (convert_groundterm iface a)) (Obj.magic b)))
+let wrap_interpreter pvae interpreter =
+  (fun a b -> Obj.magic (interpreter (Obj.magic (convert_groundterm pvae a)) (Obj.magic b)))
 
-let wrap_interpreter_ext iface interpreter_ext =
+let wrap_interpreter_ext pvae interpreter_ext =
   (fun a b -> 
-    let r = Obj.magic (interpreter_ext (Obj.magic (convert_groundterm iface a)) (Obj.magic b)) in
+    let r = Obj.magic (interpreter_ext (Obj.magic (convert_groundterm pvae a)) (Obj.magic b)) in
     match r with
     | Some v ->
       Some ((fst v), (Z.to_int (snd v)))
@@ -185,10 +172,11 @@ let wrap_interpreter_ext iface interpreter_ext =
   )
 
 
-let main iface parser interpreter interpreter_ext debug_info  =
+let main pvae iface parser interpreter interpreter_ext debug_info  =
   main0
+    pvae
     iface
     parser
-    (wrap_interpreter iface interpreter)
-    (wrap_interpreter_ext iface interpreter_ext)
+    (wrap_interpreter pvae interpreter)
+    (wrap_interpreter_ext pvae interpreter_ext)
     (debug_info)

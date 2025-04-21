@@ -40,13 +40,7 @@ type pattern =
   | `PTerm of (id*(pattern list))
   ]
 
-type builtin =
-  [ `BuiltinInt of int
-  | `BuiltinString of string
-  | `BuiltinBool of bool
-  | `BuiltinError
-  | `OpaqueBuiltin
-  ]
+type builtin = Pluginbase.builtin
 
 type groundterm =
   [ `GTb of builtin

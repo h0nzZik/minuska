@@ -3,7 +3,8 @@ open Printf
 open Sexplib.Std
 
 open Libminuska
-module Syntax = Libminuska.Syntax
+open Libminuskapluginbase
+open Syntax
 
 open Libminuskapluginbase.Pluginbase
 module Stringutils = Libminuskapluginbase.Stringutils
@@ -40,19 +41,19 @@ let coqflags : string = sprintf "-include %s -R %s Equations -R %s stdpp -R %s M
 
 
 let parse_and_print
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (builtins_map : builtins_map_t)
   (query_map : query_map_t)
   ~(name_of_builtins : coqModuleName)
   ~(name_of_pi : coqModuleName) lexbuf oux =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) value oux
+    Micoqprint.print_definition pvae builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) value oux
   | None -> ()
 
 
 let append_definition
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (builtins_map : builtins_map_t)
   (query_map : query_map_t)
   ~(name_of_builtins : coqModuleName)
@@ -63,9 +64,13 @@ let append_definition
   In_channel.with_file input_filename ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-    parse_and_print iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) lexbuf output_channel;  
+    parse_and_print pvae builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) lexbuf output_channel;  
   );
-  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mysignature mybeta my_program_info Lang_Decls)). |};
+  fprintf output_channel "%s\n" {|Definition pre1T := Eval vm_compute in (process_declarations Act default_act mysignature mybeta my_program_info Lang_Decls). |};
+  fprintf output_channel "%s\n" {|Definition pre2T := Eval vm_compute in (match pre1T as m return (match m return Type with inl _ => State | inr _ => string end) with inl t => t | inr s => s end). |};
+  fprintf output_channel "%s\n" {|Fail Definition myerror : string := Eval vm_compute in (pre2T). |};
+  fprintf output_channel "%s\n" {|Definition myok : State := Eval vm_compute in (pre2T). |};
+  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act myok). |};
   fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).|};
   fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
@@ -91,11 +96,11 @@ let append_definition
   |} ;
   ()
 
-let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
+let wrap_init (g : groundterm) : groundterm =
   `GTerm ((`Id "builtin.init"), [g])
 
 let write_gterm
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (name_of_builtins : coqModuleName)
   (name_of_pi : coqModuleName)
   lexbuf outname =
@@ -126,7 +131,7 @@ let write_gterm
       fprintf oux "%s" {|
         Definition given_groundterm := 
       |};
-      Micoqprint.print_groundterm oux iface name_of_builtins (wrap_init gt);
+      Micoqprint.print_groundterm oux pvae name_of_builtins (wrap_init gt);
       fprintf oux " .\n";
     );
     ()
@@ -139,13 +144,13 @@ let run l =
   Sys_unix.command (String.concat l)
 
 let generate_interpreter_coq_internal (cfg : languagedescr) input_filename (output_coq : string) =
-  let iface = ((get_primitive_value_algebra cfg.primitive_value_algebra).pvae_builtin_interface) in
+  let pvae = ((get_primitive_value_algebra cfg.primitive_value_algebra)) in
   let builtins_map = (get_builtins_map (cfg.primitive_value_algebra)) in
   let pi = get_pi cfg.program_info in
   let query_map = transform_map (pi.pie_table) in
   (* create coqfile *)
   Out_channel.with_file output_coq ~f:(fun oux_coqfile ->
-    append_definition iface builtins_map query_map ~name_of_builtins:(cfg.primitive_value_algebra) ~name_of_pi:(cfg.program_info) input_filename oux_coqfile;
+    append_definition pvae builtins_map query_map ~name_of_builtins:(cfg.primitive_value_algebra) ~name_of_pi:(cfg.program_info) input_filename oux_coqfile;
     fprintf oux_coqfile "Definition chosen_builtins := %s.\n" (get_primitive_value_algebra cfg.primitive_value_algebra).pvae_coq_entity_name;
     ()
   )
@@ -166,7 +171,7 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
       Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
       Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, c, d, e, f, g) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_err = c; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b;Libminuska.Extracted.bi_inject_err=c;Libminuska.Extracted.bi_inject_bool=d;Libminuska.Extracted.bi_inject_Z=e;Libminuska.Extracted.bi_inject_string=f;Libminuska.Extracted.bi_eject=g} -> (myf a0 a b c d e f g))" .
+      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, d, e, f, g) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b;Libminuska.Extracted.bi_inject_bool=d;Libminuska.Extracted.bi_inject_Z=e;Libminuska.Extracted.bi_inject_string=f;Libminuska.Extracted.bi_eject=g} -> (myf a0 a b d e f g))" .
 
       Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
       Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].
@@ -194,14 +199,14 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
   ()
 
 let transform_groundterm
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (name_of_builtins : coqModuleName)
   (name_of_pi : coqModuleName)
   input_fname output_fname () =
   In_channel.with_file input_fname ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-    write_gterm iface name_of_builtins name_of_pi lexbuf output_fname;  
+    write_gterm pvae name_of_builtins name_of_pi lexbuf output_fname;  
   );
   ()
 
@@ -323,7 +328,7 @@ let command_groundterm2coq =
      fun () -> 
       let name_of_builtins = coqModuleName_of_sexp (Sexp.of_string name_of_builtins0) in
       let name_of_program_info = coqModuleName_of_sexp (Sexp.of_string name_of_program_info0) in
-      transform_groundterm (get_primitive_value_algebra name_of_builtins).pvae_builtin_interface name_of_builtins name_of_program_info input_filename output_filename ())
+      transform_groundterm (get_primitive_value_algebra name_of_builtins) name_of_builtins name_of_program_info input_filename output_filename ())
 
 let command_generate_interpreter_coq =
   Command.basic

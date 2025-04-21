@@ -1,4 +1,5 @@
 open Core
+open Libminuskapluginbase
 open Syntax
 open Libminuskapluginbase.Pluginbase
 module Stringutils = Libminuskapluginbase.Stringutils
@@ -45,9 +46,9 @@ let translate_name
         let name = (name1) in
         ("e_fun", name)
 
-let builtin2str (iface : 'a Extracted.builtinInterface) (name_of_builtins : coqModuleName) b =
+let builtin2str (pvae : primitiveValueAlgebraEntry) (name_of_builtins : coqModuleName) (b : Syntax.builtin) =
   (* This is only to throw error if we cannot convert it *)
-  let _ = Miskeleton.convert_builtin iface b in
+  let _ = Miskeleton.convert_builtin pvae b in
   let coq_entity = (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name in
   match b with
   | `BuiltinInt n -> "(bi_inject_Z _ "^coq_entity^" (fun a => match a with Some b => b | None => bi_inject_err _ "^(get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name ^" end) (" ^ (string_of_int n) ^ ")%Z)"
@@ -56,17 +57,17 @@ let builtin2str (iface : 'a Extracted.builtinInterface) (name_of_builtins : coqM
 
 let rec print_groundterm
   (oux : Out_channel.t)
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (name_of_builtins : coqModuleName)
   (g : Syntax.groundterm) : unit =
   match g with
   | `GTb b ->
       fprintf oux "(@t_over symbol builtin_value ";
-      fprintf oux "%s" (builtin2str iface name_of_builtins b);
+      fprintf oux "%s" (builtin2str pvae name_of_builtins b);
       fprintf oux ")";
   | `GTerm (`Id s, gs) ->
     fprintf oux "(@t_term symbol builtin_value \"%s\" [" s;
-    myiter (fun x -> print_groundterm oux iface name_of_builtins x; ()) (fun () -> fprintf oux "; "; ()) gs;
+    myiter (fun x -> print_groundterm oux pvae name_of_builtins x; ()) (fun () -> fprintf oux "; "; ()) gs;
     fprintf oux "])"
 
 
@@ -110,7 +111,7 @@ let print_pattern (oux : Out_channel.t) (p : Syntax.pattern) : unit =
   print_pattern_w_hole oux p None
 
 let rec print_expr_w_hole
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry) 
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
   (name_of_builtins : coqModuleName)
@@ -130,29 +131,29 @@ let rec print_expr_w_hole
         )
   | `EGround g ->
     fprintf oux "(e_ground ";
-    print_groundterm oux iface name_of_builtins g;
+    print_groundterm oux pvae name_of_builtins g;
     fprintf oux ")"
 
   | `ECall (`Id s, es) ->
     let (k, name) = translate_name my_builtins_map my_query_map s in
     fprintf oux "(%s %s [" k name;
-    myiter (fun x -> print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+    myiter (fun x -> print_expr_w_hole pvae my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
     fprintf oux "])"
 
 
 
 let print_expr
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
   (name_of_builtins : coqModuleName)
   (oux : Out_channel.t)
   (e : Syntax.expr)
   : unit =
-  print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux e None
+  print_expr_w_hole pvae my_builtins_map my_query_map name_of_builtins oux e None
 
 let rec print_exprterm
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
   (name_of_builtins : coqModuleName)
@@ -160,14 +161,14 @@ let rec print_exprterm
   (p : Syntax.exprterm)
   : unit =
   match p with
-  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr iface my_builtins_map my_query_map name_of_builtins) oux e; fprintf oux ")";
+  | `EExpr e -> fprintf oux "(@t_over symbol Expression2"; (print_expr pvae my_builtins_map my_query_map name_of_builtins) oux e; fprintf oux ")";
   | `ETerm (`Id s, ps) ->
     fprintf oux "(@t_term symbol Expression2 \"%s\" [" s;
-    myiter (fun x -> print_exprterm iface my_builtins_map my_query_map name_of_builtins oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
+    myiter (fun x -> print_exprterm pvae my_builtins_map my_query_map name_of_builtins oux x; ()) (fun () -> fprintf oux "; "; ()) ps;
     fprintf oux "])"
 
 let rec print_cond_w_hole
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
   (name_of_builtins : coqModuleName)
@@ -178,19 +179,19 @@ let rec print_cond_w_hole
   match c with
   | `CondAtomic (`Id s, es) ->
       fprintf oux "(sc_atom %s [" (snd (translate_name my_builtins_map my_query_map s));
-      myiter (fun x -> print_expr_w_hole iface my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
+      myiter (fun x -> print_expr_w_hole pvae my_builtins_map my_query_map name_of_builtins oux x hole; ()) (fun () -> fprintf oux "; "; ()) es;
       fprintf oux "])"
   | `CondAnd (c1, c2) -> (
     fprintf oux "(sc_and ";
-    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c1 hole;
-    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c2 hole;
+    print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux c1 hole;
+    print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux c2 hole;
     fprintf oux ")";
     ()
   )
   | `CondOr (c1, c2) -> (
       fprintf oux "(sc_or ";
-      print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c1 hole;
-      print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux c2 hole;
+      print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux c1 hole;
+      print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux c2 hole;
       fprintf oux ")";
       ()
   )
@@ -206,7 +207,7 @@ let rec print_cond_w_hole
 
 
 let print_rule
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
   (name_of_builtins : coqModuleName)
@@ -223,11 +224,11 @@ let print_rule
     
     print_pattern oux (r.lhs);
     fprintf oux " ";
-    print_exprterm iface my_builtins_map my_query_map name_of_builtins oux (r.rhs);
+    print_exprterm pvae my_builtins_map my_query_map name_of_builtins oux (r.rhs);
     fprintf oux " ";
-    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux r.cond None;
+    print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux r.cond None;
     (* fprintf oux "["; *)
-    (* myiter (fun x -> print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond); *)
+    (* myiter (fun x -> print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux x None; ()) (fun () -> fprintf oux "; "; ()) (r.cond); *)
     (* fprintf oux "]"; *)
     fprintf oux ")\n";
     ()
@@ -257,7 +258,7 @@ let print_mycontext oux ctx =
 
 
 let print_definition
-  (iface : 'a Extracted.builtinInterface)
+  (pvae : primitiveValueAlgebraEntry)
   (my_builtins_map : builtins_map_t)
   (my_query_map : query_map_t)
   ~(name_of_builtins : coqModuleName)
@@ -279,10 +280,10 @@ let print_definition
     fprintf oux "Definition isValue (";
     fprintf oux "%s" (match (fst (def.Syntax.value)) with `Var s -> s);
     fprintf oux " : Expression2) := ";
-    print_cond_w_hole iface my_builtins_map my_query_map name_of_builtins oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
+    print_cond_w_hole pvae my_builtins_map my_query_map name_of_builtins oux (snd (def.Syntax.value)) (Some (match (fst (def.Syntax.value)) with `Var s -> s));
     fprintf oux ".\n";
     
-    fprintf oux "#[export] Instance isValue_nsc (X : Expression2) : NegableSideCondition (isValue X) := ltac:(intros; unfold isValue in *; apply _).\n";
+    (*fprintf oux "#[export] Instance isValue_nsc (X : Expression2) : NegableSideCondition (isValue X) := ltac:(intros; unfold isValue in *; apply _).\n";*)
     
     fprintf oux "%s\n" output_part_2;
     List.iter ~f:(fun fr -> print_frame oux fr) (def.frames);
@@ -294,7 +295,7 @@ let print_definition
     fprintf oux "Definition Lang_Decls : list Declaration := [\n";
     myiter (fun x -> print_strict oux x; ()) (fun () -> fprintf oux ";" ; ()) (def.Syntax.strictness) ;
     fprintf oux "%s" "] ++ [\n";
-    myiter (fun x -> print_rule iface my_builtins_map my_query_map (name_of_builtins : coqModuleName) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
+    myiter (fun x -> print_rule pvae my_builtins_map my_query_map (name_of_builtins : coqModuleName) oux x; ()) (fun () -> fprintf oux "; "; ()) (def.Syntax.rules);
     fprintf oux "\n].\n";
     ()
     
