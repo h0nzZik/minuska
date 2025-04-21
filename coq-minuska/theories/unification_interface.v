@@ -16,14 +16,6 @@ match s with
 end
 .
 
-
-Fixpoint sub_app_e {Σ : StaticModel} (s : SubT) (t : TermOver Expression2) : TermOver Expression2 :=
-match s with
-| [] => t
-| (x,t')::s' => sub_app_e s' (TermOverBoV_subst_expr2 t' x t)
-end
-.
-
 Class UnificationAlgorithm
     {Σ : StaticModel}
 := {
