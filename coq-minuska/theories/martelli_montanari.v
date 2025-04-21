@@ -10,16 +10,13 @@ From stdpp Require Import
     relations
 .
 
-(* Own Ltac macros *)
 Ltac resymde S Name HName :=
   remember S as Name eqn:HName; symmetry in HName; destruct Name
 .
 
-(* Unification Problem *)
-
-(* borrowed from textbook_unification_alg.v 
-  other functionality, yet not required may be borrowed
-  as well; though then maybe consider importing it *)
+(* Borrowed from textbook_unification_alg.v. 
+   Other functionality not yet required, but may be borrowed
+   as well; though then consider some restructuring and possibly importing. *)
 Definition eqn {Σ : StaticModel} : Type :=
     ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type
 .
@@ -45,6 +42,37 @@ Definition is_unifier_of {Σ : StaticModel} (s : SubTMM) (l : list eqn) :=
   Forall (fun '(e1, e2) => sub_app_mm s e1 = sub_app_mm s e2) l
 .
 
+Definition term_is_var {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool :=
+  match t with
+    | t_over (bov_variable _) => true
+    | _ => false
+  end
+.
+
+Definition term_is_nonvar {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool := ~~ (term_is_var t).
+
+Definition term_is_constant {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool :=
+  match t with
+    | t_over _ => true
+    | _ => false
+  end
+.
+
+Definition term_params {Σ : StaticModel} (t : TermOver BuiltinOrVar) : option (list (TermOver BuiltinOrVar)) :=
+  match t with
+    | t_term _ l => Some l
+    | _ => None
+  end
+.
+
+Definition term_has_same_symbol {Σ : StaticModel} (orig : TermOver BuiltinOrVar) (t : TermOver BuiltinOrVar) : bool :=
+  match orig, t with
+    | t_over (bov_builtin a), t_over (bov_builtin b) => bool_decide (a = b)
+    | t_term a _, t_term b _ => bool_decide (a = b)
+    | _, _ => false
+  end
+.
+
 Definition UP {Σ : StaticModel} : Type := listset eqn.
 
 Definition equiv_UP {Σ : StaticModel} (up up' : UP) : Prop :=
@@ -52,9 +80,6 @@ Definition equiv_UP {Σ : StaticModel} (up up' : UP) : Prop :=
 .
 
 Notation "x ~up y" := (equiv_UP x y) (at level 70).
-
-
-(* MultiEquation *)
 
 Definition Meqn {Σ : StaticModel} : Type :=
   (gset (variable) * list (TermOver BuiltinOrVar))%type
@@ -145,7 +170,8 @@ Global Instance meqn_elem_of {Σ : StaticModel} : ElemOf (TermOver BuiltinOrVar)
     end
 .
 
-(* This definition, as is, is needed for set_equiv_instance - used in use of union_list lemmas *)
+(* This definition, as is, is needed for set_equiv_instance - used in during union_list lemmas.
+   The default resolution of Equiv for Meqn defaults to Prod Equiv, which is unwanted. *)
 Global Instance meqn_equiv {Σ : StaticModel} : Equiv Meqn :=
   λ (meqn meqn' : Meqn), ∀ (t : TermOver BuiltinOrVar), t ∈ meqn <-> t ∈ meqn'
 .
@@ -293,15 +319,6 @@ split.
 }
 Qed.
 
-Definition term_is_var {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool :=
-  match t with
-    | t_over (bov_variable _) => true
-    | _ => false
-  end
-.
-
-Definition term_is_nonvar {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool := ~~ (term_is_var t).
-
 Definition meqn_right_valid {Σ : StaticModel} (meqn : Meqn) : Prop :=
   ∀ t : TermOver BuiltinOrVar, t ∈ get_nonvar_part meqn -> term_is_nonvar t
 .
@@ -312,26 +329,6 @@ Definition meqn_left_valid {Σ : StaticModel} (meqn : Meqn) : Prop :=
 
 Definition meqn_valid {Σ : StaticModel} (meqn : Meqn) : Prop :=
   meqn_left_valid meqn ∧ meqn_right_valid meqn
-.
-
-
-(* Relations *)
-
-
-Definition rel_up {Σ : StaticModel} (up : UP) (t t' : TermOver BuiltinOrVar) : Prop :=
-  (t, t') ∈ up
-.
-
-Definition rel_up_closure {Σ : StaticModel} (up : UP) : relation (TermOver BuiltinOrVar) := 
-  rtsc (rel_up up)
-.
-
-Definition represents'' {Σ : StaticModel} (meqn : Meqn) (up : UP) : Prop :=
-  meqn_valid meqn ->
-  ∀ (t t' : TermOver BuiltinOrVar),
-  (t ∈ meqn ∧
-  t' ∈ meqn) <->
-  rel_up_closure up t t'
 .
 
 Definition create_eqn {Σ : StaticModel} (t t' : TermOver BuiltinOrVar) : eqn := 
@@ -491,9 +488,13 @@ split.
 }
 Qed.
 
+Definition up_of_terms {Σ : StaticModel} (lt : list (TermOver BuiltinOrVar)) : UP :=
+  list_to_set (RST_list_closure lt lt)
+.
+
 Definition up_of_meqn {Σ : StaticModel} (meqn : Meqn) : UP :=
   let '(var_part, nonvar_part) := meqn in
-    list_to_set (RST_list_closure (var_to_term <$> elements var_part) nonvar_part)
+    up_of_terms ((var_to_term <$> elements var_part) ++ nonvar_part)
 .
 
 Lemma up_of_meqn_elem_of {Σ : StaticModel} :
@@ -514,6 +515,7 @@ split.
       destruct H1 as [v' [H1 H1']].
       unfold up_of_meqn.
       destruct meqn.
+      unfold up_of_terms.
       rewrite elem_of_list_to_set.
       rewrite <- RST_list_closure_elem_of.
       split.
@@ -521,6 +523,8 @@ split.
         left.
         unfold get_var_part in H0'.
         simpl in H0'.
+        rewrite elem_of_app.
+        left.
         rewrite elem_of_list_fmap.
         exists v.
         split.
@@ -538,6 +542,8 @@ split.
         left.
         unfold get_var_part in H1'.
         simpl in H1'.
+        rewrite elem_of_app.
+        left.
         rewrite elem_of_list_fmap.
         exists v'.
         split.
@@ -554,11 +560,14 @@ split.
     }
     {
       unfold up_of_meqn.
+      unfold up_of_terms.
       destruct meqn.
       rewrite elem_of_list_to_set.
       rewrite <- RST_list_closure_elem_of.
       split.
       {
+        left.
+        rewrite elem_of_app.
         left.
         rewrite elem_of_list_fmap.
         exists v.
@@ -577,6 +586,8 @@ split.
         right.
         unfold get_nonvar_part in H1.
         simpl in H1.
+        rewrite elem_of_app.
+        right.
         assumption.
       }
     }
@@ -586,18 +597,22 @@ split.
     {
       unfold up_of_meqn.
       destruct meqn.
+      unfold up_of_terms.
       rewrite elem_of_list_to_set.
       rewrite <- RST_list_closure_elem_of.
+      do 2(rewrite elem_of_app).
       split.
       {
         right.
         unfold get_nonvar_part in H0.
         simpl in H0.
+        right.
         assumption.
       }
       {
         left.
         rewrite elem_of_list_fmap.
+        left.
         exists v'.
         split.
         {
@@ -616,17 +631,21 @@ split.
     {
       unfold up_of_meqn.
       destruct meqn.
+      unfold up_of_terms.
       rewrite elem_of_list_to_set.
       rewrite <- RST_list_closure_elem_of.
+      do 2 (rewrite elem_of_app).
       split.
       {
         right.
         unfold get_nonvar_part in H0.
+        right.
         assumption.
       }
       {
         right.
         unfold get_nonvar_part in H1.
+        right.
         assumption.
       }
     }
@@ -637,34 +656,34 @@ split.
   unfold up_of_meqn in H0.
   do 2 (rewrite (meqn_valid_elem_of_in _ H)).
   destruct meqn.
+  unfold up_of_terms in H0.
   rewrite elem_of_list_to_set in H0.
   rewrite <- RST_list_closure_elem_of in H0.
+  do 2 (rewrite elem_of_app in H0).
   do 2 (rewrite elem_of_list_fmap in H0).
   unfold get_nonvar_part.
   simpl.
   setoid_rewrite <- elem_of_elements.
   setoid_rewrite var_term_to_var_some.
   unfold var_to_term in H0.
-  assumption.
+  ltac1:(set_solver).
 }
 Qed.
 
-(* Representation *)
-
-Definition get_vars_of_var_part_list_meqns {Σ : StaticModel} (car : list Meqn) : gset variable :=
+Definition get_vars_of_S_list_meqns {Σ : StaticModel} (car : list Meqn) : gset variable :=
   list_to_set (concat ((elements ∘ get_var_part) <$> car))
 .
 
-Lemma get_vars_of_var_part_list_meqns_equiv {Σ : StaticModel} :
+Lemma get_vars_of_S_list_meqns_equiv {Σ : StaticModel} :
   ∀ (lm : list Meqn) (v : variable),
-    v ∈ get_vars_of_var_part_list_meqns lm <-> Exists (fun x => v ∈ get_var_part x) lm
+    v ∈ get_vars_of_S_list_meqns lm <-> Exists (fun x => v ∈ get_var_part x) lm
 .
 Proof.
 split.
 {
   intros.
   rewrite Exists_exists.
-  unfold get_vars_of_var_part_list_meqns in H.
+  unfold get_vars_of_S_list_meqns in H.
   rewrite elem_of_list_to_set in H.
   rewrite elem_of_list_In in H.
   rewrite in_concat in H.
@@ -687,7 +706,7 @@ split.
   intros.
   rewrite Exists_exists in H.
   destruct H as [meqn [H0 H1]].
-  unfold get_vars_of_var_part_list_meqns.
+  unfold get_vars_of_S_list_meqns.
   rewrite elem_of_list_to_set.
   rewrite elem_of_list_In.
   rewrite in_concat.
@@ -707,50 +726,33 @@ split.
 }
 Qed.
 
-Definition get_vars_of_nonvar_part_list_meqns {Σ : StaticModel} (car : list Meqn) : gset variable :=
+Definition get_vars_of_M_meqns {Σ : StaticModel} (car : list Meqn) : gset variable :=
   let terms_sets : list (list (TermOver BuiltinOrVar)) := get_nonvar_part <$> car in
   let terms : list (TermOver BuiltinOrVar) := concat terms_sets in
   let vars : list (gset variable) := vars_of <$> terms in
     ⋃ vars
 .
 
-Definition get_vars_of_var_part_listset_meqns {Σ : StaticModel} (car : listset Meqn) : gset variable :=
-  get_vars_of_var_part_list_meqns (elements car)
+Definition get_vars_of_S_listset_meqns {Σ : StaticModel} (car : listset Meqn) : gset variable :=
+  get_vars_of_S_list_meqns (elements car)
 .
 
-Lemma get_vars_of_var_part_listset_meqns_equiv {Σ : StaticModel} :
+Lemma get_vars_of_S_listset_meqns_equiv {Σ : StaticModel} :
   ∀ (ls : listset Meqn) (v : variable),
-    v ∈ get_vars_of_var_part_listset_meqns ls <-> (∃ (meqn : Meqn), meqn ∈ ls ∧ v ∈ get_var_part meqn )
+    v ∈ get_vars_of_S_listset_meqns ls <-> (∃ (meqn : Meqn), meqn ∈ ls ∧ v ∈ get_var_part meqn )
 .
 Proof.
 intros.
-unfold get_vars_of_var_part_listset_meqns.
-ltac1:(pose proof((get_vars_of_var_part_list_meqns_equiv (elements ls) v))).
+unfold get_vars_of_S_listset_meqns.
+ltac1:(pose proof((get_vars_of_S_list_meqns_equiv (elements ls) v))).
 rewrite Exists_exists in H.
 setoid_rewrite elem_of_elements in H.
 assumption.
 Qed.
 
-Definition get_vars_of_nonvar_part_listset_meqns {Σ : StaticModel} (car : listset Meqn) : gset variable :=
-  get_vars_of_nonvar_part_list_meqns (elements car)
+Definition get_vars_of_M_listset_meqns {Σ : StaticModel} (car : listset Meqn) : gset variable :=
+  get_vars_of_M_meqns (elements car)
 .
-
-(* DEC PART *)
-
-Definition term_is_constant {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool :=
-  match t with
-    | t_over _ => true
-    | _ => false
-  end
-.
-
-Definition term_params {Σ : StaticModel} (t : TermOver BuiltinOrVar) : option (list (TermOver BuiltinOrVar)) :=
-  match t with
-    | t_term _ l => Some l
-    | _ => None
-  end
-.
-
 
 Class U_ops
   {Σ : StaticModel}
@@ -765,7 +767,11 @@ Class U_ops
     ;
 
     u_map :
-      U -> (Meqn -> Meqn) -> U
+      (Meqn -> Meqn) -> U -> U
+    ;
+
+    u_map_elem_of :
+      ∀ (f : Meqn -> Meqn) (u : U) (meqn : Meqn), meqn ∈ elements (u_map f u) ↔ ∃ meqn' : Meqn, meqn = f meqn' ∧ meqn' ∈ elements u
     ;
 
     u_insert :
@@ -793,7 +799,7 @@ Class U_ops
     ;
 
     u_extract_nonempty_m_meqn_is_nonempty :
-      ∀ (u u' : U) (meqn : Meqn), u_extract_nonempty_m_meqn u = Some (meqn, u') -> ~~ meqn_m_empty meqn
+      ∀ (u u' : U) (meqn : Meqn), u_extract_nonempty_m_meqn u = Some (meqn, u') -> meqn_m_empty meqn = false
     ;
 
     u_extract_overlapping_meqns :
@@ -825,19 +831,19 @@ Definition u_valid {Σ : StaticModel} {u_ops : U_ops} (u : U) : Prop :=
 .
 
 
-Definition up_of_list {Σ : StaticModel} (lm : list Meqn) : UP :=
+Definition up_of_meqns {Σ : StaticModel} (lm : list Meqn) : UP :=
   ⋃ (up_of_meqn <$> lm)
 .
 
-Lemma up_of_list_all_terms_in_UP {Σ : StaticModel} :
+Lemma up_of_meqns_all_terms_in_UP {Σ : StaticModel} :
   ∀ (lm : list Meqn), Forall (fun meqn => meqn_valid meqn) lm ->
-  Forall (fun meqn => ∀ (t t' : TermOver BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn -> (t, t') ∈ up_of_list lm) lm
+  Forall (fun meqn => ∀ (t t' : TermOver BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn -> (t, t') ∈ up_of_meqns lm) lm
 .
 Proof.
 intros.
 rewrite Forall_forall.
 intros.
-unfold up_of_list.
+unfold up_of_meqns.
 rewrite elem_of_union_list.
 exists (up_of_meqn x).
 split.
@@ -853,16 +859,16 @@ split.
 }
 Qed.
 
-Lemma up_of_list_elem_of {Σ : StaticModel} :
+Lemma up_of_meqns_elem_of {Σ : StaticModel} :
   ∀ (lm : list Meqn) (t t' : TermOver BuiltinOrVar), Forall (fun meqn => meqn_valid meqn) lm -> 
-    (t, t') ∈ up_of_list lm <-> Exists (fun meqn => t ∈ meqn ∧ t' ∈ meqn) lm
+    (t, t') ∈ up_of_meqns lm <-> Exists (fun meqn => t ∈ meqn ∧ t' ∈ meqn) lm
 .
 Proof.
 intros.
 split.
 {
   intros.
-  unfold up_of_list in H0.
+  unfold up_of_meqns in H0.
   rewrite elem_of_union_list in H0.
   destruct H0 as [up [H0 H1]].
   rewrite elem_of_list_fmap in H0.
@@ -885,7 +891,7 @@ split.
   rewrite Exists_exists.
   intros.
   destruct H0 as [meqn [H0 H1]].
-  unfold up_of_list.
+  unfold up_of_meqns.
   rewrite elem_of_union_list.
   unfold u_valid in H.
   rewrite Forall_forall in H.
@@ -904,7 +910,7 @@ split.
 Qed.
 
 Definition up_of_u {Σ : StaticModel} {u_ops : U_ops} (u : U) : UP :=
-  up_of_list (elements u)
+  up_of_meqns (elements u)
 .
 
 Lemma up_of_valid_u_meqn_all_terms_in_UP {Σ : StaticModel} {u_ops : U_ops} :
@@ -914,7 +920,7 @@ Lemma up_of_valid_u_meqn_all_terms_in_UP {Σ : StaticModel} {u_ops : U_ops} :
 Proof.
 intros.
 unfold u_valid in H.
-apply (up_of_list_all_terms_in_UP _ H).
+apply (up_of_meqns_all_terms_in_UP _ H).
 Qed.
 
 Lemma up_of_valid_u_elem_of {Σ : StaticModel} {u_ops : U_ops} :
@@ -924,7 +930,7 @@ Lemma up_of_valid_u_elem_of {Σ : StaticModel} {u_ops : U_ops} :
 Proof.
 intros.
 unfold u_valid in H.
-apply (up_of_list_elem_of _ t t' H).
+apply (up_of_meqns_elem_of _ t t' H).
 Qed.
 
 Definition u_get_vars {Σ : StaticModel} {u_ops : U_ops} (u : U) : gset variable := 
@@ -1215,7 +1221,7 @@ Qed.
 Lemma u_extract_overlapping_meqns_keeps_get_vars {Σ : StaticModel} {u_ops : U_ops} :
   ∀ (u u' : U) (v v': variable) (ls_meqn : listset Meqn),
     u_extract_overlapping_meqns u v = (ls_meqn, u') ->
-    v' ∈ u_get_vars u <-> v' ∈ u_get_vars u' ∨ v' ∈ get_vars_of_var_part_listset_meqns ls_meqn
+    v' ∈ u_get_vars u <-> v' ∈ u_get_vars u' ∨ v' ∈ get_vars_of_S_listset_meqns ls_meqn
 .
 Proof.
 intros.
@@ -1229,7 +1235,7 @@ split.
   {
     right.
     rewrite <- (u_extract_overlapping_meqns_in_ls_meqn u u' v ls_meqn meqn H H0) in H2.
-    apply (get_vars_of_var_part_listset_meqns_equiv ls_meqn v').
+    apply (get_vars_of_S_listset_meqns_equiv ls_meqn v').
     exists meqn.
     ltac1:(pose proof (conj H2 H1)).
     assumption.
@@ -1259,7 +1265,7 @@ split.
     apply (conj H2 H1).
   }
   {
-    rewrite (get_vars_of_var_part_listset_meqns_equiv ls_meqn v') in H0.
+    rewrite (get_vars_of_S_listset_meqns_equiv ls_meqn v') in H0.
     destruct H0 as [meqn [H0 H1]].
     ltac1:(pose proof (or_introl (meqn ∈ elements u') H0)).
     rewrite <- (u_extract_overlapping_meqns_disjunct u u' v ls_meqn meqn H) in H2.
@@ -1778,7 +1784,7 @@ Qed.
 
 Lemma u_extract_nonempty_m_meqn_is_nonempty_listset {Σ : StaticModel} :
       ∀ (u u' : listset Meqn) (meqn : Meqn),
-        u_extract_nonempty_m_meqn_listset u = Some (meqn, u') -> ~~ meqn_m_empty meqn
+        u_extract_nonempty_m_meqn_listset u = Some (meqn, u') -> meqn_m_empty meqn = false
 .
 Proof.
 intros.
@@ -1804,9 +1810,8 @@ destruct l0.
     discriminate.
   }
   {
-    rewrite eq_true_not_negb_iff in H3.
-    rewrite H3.
-    reflexivity.
+    apply not_true_is_false in H3.
+    assumption.
   }
 }
 Qed.
@@ -1982,13 +1987,12 @@ apply elements_disj_union.
 assumption.
 Qed.
 
-(* QQ TODO: fix this together *)
 
 Program Definition U_listset_ops {Σ : StaticModel} : U_ops := {|
   U := listset Meqn;
 
   u_insert := (λ ls meqn, singleton meqn ∪ ls);
-  u_map := (λ u f, f <$> u);
+  u_map := (λ f u, f <$> u);
 
   u_extract_nonempty_m_meqn := u_extract_nonempty_m_meqn_listset;
   
@@ -1997,6 +2001,11 @@ Program Definition U_listset_ops {Σ : StaticModel} : U_ops := {|
 Next Obligation.
 intros.
 apply NoDup_elements.
+Qed.
+Next Obligation.
+intros Σ.
+setoid_rewrite elem_of_elements.
+exact elem_of_fmap.
 Qed.
 Next Obligation.
 intros.
@@ -2069,7 +2078,7 @@ Definition is_compact_up_to_var {Σ : StaticModel} (u_ops : U_ops) (u : U) (v : 
     v ∉ get_var_part meqn \/ v ∉ get_var_part meqn'
 .
 
-(* That u is compact on vars that are not in gv *)
+(* U is compact on vars that are not in gv *)
 Definition is_compact_up_to_vars {Σ : StaticModel} (u_ops : U_ops) (u : U) (gv : gset variable) : Prop :=
   ∀ (v : variable),
     v ∈ (u_get_vars u ∖ gv) ->
@@ -2624,7 +2633,7 @@ assert (∀ (v'' : variable), v'' ∈ u_get_vars u <-> v'' ∈ u_get_vars u0 ∨
     }
     {
       right.
-      rewrite get_vars_of_var_part_listset_meqns_equiv in H0.
+      rewrite get_vars_of_S_listset_meqns_equiv in H0.
       destruct H0 as [meqn [H0 H1]].
       rewrite var_elem_of_meqn in H1.
       rewrite var_elem_of_meqn.
@@ -2641,7 +2650,7 @@ assert (∀ (v'' : variable), v'' ∈ u_get_vars u <-> v'' ∈ u_get_vars u0 ∨
     intros.
     destruct H0.
     {
-      ltac1:(pose proof (or_introl (v'' ∈ get_vars_of_var_part_listset_meqns l) H0)).
+      ltac1:(pose proof (or_introl (v'' ∈ get_vars_of_S_listset_meqns l) H0)).
       rewrite (u_extract_overlapping_meqns_keeps_get_vars u u0 v v'' l HeqUEO).
       assumption.
     }
@@ -2662,9 +2671,9 @@ assert (∀ (v'' : variable), v'' ∈ u_get_vars u <-> v'' ∈ u_get_vars u0 ∨
     }
   }
 }
-assert (∀ (v'' : variable), v'' ∈ get_var_part c_meqn <-> v'' ∈ get_vars_of_var_part_listset_meqns {[c_meqn]}).
+assert (∀ (v'' : variable), v'' ∈ get_var_part c_meqn <-> v'' ∈ get_vars_of_S_listset_meqns {[c_meqn]}).
 {
-  setoid_rewrite get_vars_of_var_part_listset_meqns_equiv.
+  setoid_rewrite get_vars_of_S_listset_meqns_equiv.
   split.
   {
     intros.
@@ -3106,7 +3115,7 @@ destruct (decide (x ∈ elements u)) as [H2 | H2].
 }
 Qed.
 
-Lemma compcatify_by_var_keeps_up_of_u {Σ : StaticModel} {u_ops : U_ops} :
+Lemma compactify_by_var_keeps_up_of_u {Σ : StaticModel} {u_ops : U_ops} :
   ∀ (u u' : U) (v : variable), compactify_by_var u_ops u v = u' ->
   u_valid u ->
   up_of_u u ⊆ up_of_u u'
@@ -3144,7 +3153,7 @@ destruct (decide (meqn ∈ elements u')) as [H5 | H5].
 }
 Qed.
 
-Lemma compcatify_by_var_keeps_unifier_of {Σ : StaticModel} {u_ops : U_ops} :
+Lemma compactify_by_var_keeps_unifier_of {Σ : StaticModel} {u_ops : U_ops} :
   ∀ (u u' : U) (v : variable), compactify_by_var u_ops u v = u' ->
   u_valid u ->
   ∀ (s : SubTMM), is_unifier_of s (elements (up_of_u u)) <-> is_unifier_of s (elements (up_of_u u'))
@@ -3222,7 +3231,7 @@ split.
     apply (H1 _ H3).
   }
   {
-    ltac1:(pose proof (compcatify_by_var_keeps_up_of_u _ _ _ H H0)).
+    ltac1:(pose proof (compactify_by_var_keeps_up_of_u _ _ _ H H0)).
     rewrite elem_of_subseteq in H4.
     rewrite elem_of_elements in H2, H3.
     specialize (H4 x H2).
@@ -3500,14 +3509,14 @@ induction lv.
 }
 Qed.
 
-Lemma compactify_by_vars_keep_unifier_of {Σ : StaticModel} {u_ops : U_ops} :
+Lemma compactify_by_vars_keeps_equiv_UP {Σ : StaticModel} {u_ops : U_ops} :
   ∀ (u u' : U) (lv : list variable), compactify_by_vars u_ops u lv = u' ->
-  u_valid u ->
-  ∀ (s : SubTMM), is_unifier_of s (elements (up_of_u u)) <-> is_unifier_of s (elements (up_of_u u'))
+  u_valid u -> up_of_u u ~up up_of_u u'
 .
 Proof.
 intros u u' lv.
 revert u u'.
+unfold equiv_UP.
 induction lv.
 {
   intros.
@@ -3522,7 +3531,7 @@ induction lv.
   symmetry in HeqCBVA.
   ltac1:(pose proof (compactify_by_var_keeps_u_valid _ _ _ HeqCBVA H0)).
   specialize (IHlv CBVA u' H H1 s).
-  ltac1:(pose proof (compcatify_by_var_keeps_unifier_of _ _ _ HeqCBVA H0 s)).
+  ltac1:(pose proof (compactify_by_var_keeps_unifier_of _ _ _ HeqCBVA H0 s)).
   rewrite <- H2 in IHlv.
   assumption.
 }
@@ -3578,14 +3587,44 @@ Lemma compactify_keeps_equiv_UP {Σ : StaticModel} {u_ops : U_ops} :
 .
 Proof.
 intros.
-unfold equiv_UP.
 unfold compactify in H.
-ltac1:(pose proof (compactify_by_vars_keep_unifier_of _ _ _ H H0)).
+ltac1:(pose proof (compactify_by_vars_keeps_equiv_UP _ _ _ H H0)).
 assumption.
 Qed.
 
+Fixpoint u_insert_many {Σ : StaticModel} {u_ops : U_ops} (u : U) (lm : list Meqn) : U :=
+  match lm with
+    | [] => u
+    | x::xs => u_insert_many (u_insert u x) xs
+  end
+.
+
+Definition u_subst {Σ : StaticModel} {u_ops : U_ops} (u : U) (sub : SubTMM) : U :=
+  u_map (λ meqn, meqn_subst meqn sub) u
+.
+
+Lemma u_subst_keeps_u_valid {Σ : StaticModel} {u_ops : U_ops} :
+  ∀ (u : U) (sub : SubTMM),
+    u_valid u ->
+    u_valid (u_subst u sub)
+.
+Proof.
+Abort.
+
+Lemma u_subst_keeps_equiv_UP {Σ : StaticModel} {u_ops : U_ops} :
+  ∀ (u : U) (sub : SubTMM),
+    u_valid u ->
+    (∀ (v : variable) (t : TermOver BuiltinOrVar), 
+      lookup v sub = Some t -> (var_to_term v, t) ∈ up_of_u u) ->
+    up_of_u u ~up up_of_u (u_subst u sub)
+.
+Proof.
+Abort.
+
 (* Source of zipWith and transpose: https://gist.github.com/Agnishom/d686ef345d7c7b408362e1d2c9c64581#file-awesomelistlemmas-v
-  this repo should contain relevant proofs for them *)
+  this repo should contain relevant proofs for the.
+  Asked the author via email for permission to use the code below.
+  I was granted the permission. *)
 
 Definition zipWith {X Y Z} (f : X -> Y -> Z) (xs : list X) (ys : list Y) : list Z :=
   map (fun '(x, y) => f x y) (combine xs ys)
@@ -3595,15 +3634,6 @@ Fixpoint transpose {X : Type} (len : nat) (tapes : list (list X)) : list (list X
   match tapes with
     | [] => repeat [] len
     | t :: ts => zipWith cons t (transpose len ts)
-  end
-.
-
-
-Definition term_has_same_symbol {Σ : StaticModel} (orig : TermOver BuiltinOrVar) (t : TermOver BuiltinOrVar) : bool :=
-  match orig, t with
-    | t_over (bov_builtin a), t_over (bov_builtin b) => bool_decide (a = b)
-    | t_term a _, t_term b _ => bool_decide (a = b)
-    | _, _ => false
   end
 .
 
@@ -3624,9 +3654,9 @@ Fixpoint dec_aux {Σ : StaticModel} (m : list (TermOver BuiltinOrVar)) (n : nat)
               then
                 match t with
                   | t_over _ => Some (t, empty)
-                  | t_term s _ =>
+                  | t_term s l =>
                       term_args ← mapM term_params m;
-                      ithMs ← Some (transpose (length term_args) term_args);
+                      ithMs ← Some (transpose (length l) term_args);
                       ithMsDeced ← (mapM (λ x, dec_aux x n) ithMs);
                       '(miCParams, miFrontEqs) ← Some (split ithMsDeced);
                       Some (t_term s miCParams, ⋃ miFrontEqs)
@@ -3638,9 +3668,37 @@ Fixpoint dec_aux {Σ : StaticModel} (m : list (TermOver BuiltinOrVar)) (n : nat)
   end
 .
 
+Lemma dec_aux_TermOver_size_enough {Σ : StaticModel} :
+  ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
+    dec_aux lt (sum_list_with TermOver_size lt) = Some (c, f) <-> ∃ (sub : SubTMM),
+      Forall
+      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), sub_app_mm sub t = sub_app_mm sub t')
+      ((λ x, sub_app_mm sub x) <$> lt)
+.
+Proof.
+Abort.
+
 Definition dec {Σ : StaticModel} (m : list (TermOver BuiltinOrVar)) : option (TermOver BuiltinOrVar * listset Meqn)%type :=
   dec_aux m (sum_list_with TermOver_size m)
 .
+
+Lemma dec_exists {Σ : StaticModel} :
+  ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
+    dec lt = Some (c, f) <-> ∃ (sub : SubTMM),
+      Forall
+      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), sub_app_mm sub t = sub_app_mm sub t')
+      ((λ x, sub_app_mm sub x) <$> lt)
+.
+Proof.
+Abort.
+
+Lemma dec_keeps_equiv_UP {Σ : StaticModel} {u_ops : U_ops} :
+  ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
+    dec lt = Some (c, f) -> ∃ (v : variable),
+      up_of_terms lt ~up up_of_meqns ((elements f) ++ [ init_meqn {[ v ]} [c] ])
+.
+Proof.
+Abort.
 
 Definition T {Σ : StaticModel} : Type :=
   list Meqn
@@ -3654,7 +3712,7 @@ Definition t_meqn_v_prec {Σ : StaticModel} (t_car : list Meqn) : Prop :=
   ∀ (pred succ : list Meqn) (meqn : Meqn) (v : variable), 
     t_car = pred ++ (meqn :: succ) ->
     v ∈ get_var_part meqn ->
-    v ∉ get_vars_of_nonvar_part_list_meqns succ
+    v ∉ get_vars_of_M_meqns succ
 .
 
 Definition t_valid {Σ : StaticModel} (t : T) : Prop :=
@@ -3662,7 +3720,7 @@ Definition t_valid {Σ : StaticModel} (t : T) : Prop :=
 .
 
 Definition up_of_t {Σ : StaticModel} (t : T) : UP :=
-  up_of_list t
+  up_of_meqns t
 .
 
 Definition R {Σ : StaticModel} {u_ops : U_ops} : Type :=
@@ -3686,11 +3744,12 @@ Definition r_vars_disjoint {Σ : StaticModel} {u_ops : U_ops} (r : R) : Prop :=
     ∀ (meqn meqn' : Meqn),
       meqn ∈ r ->
       meqn' ∈ r ->
+      meqn ≠ meqn' ->
       get_var_part meqn ∩ get_var_part meqn' = ∅
 .
 
 Definition r_has_all_vars {Σ : StaticModel} {u_ops : U_ops} (r : R) : Prop :=
-  get_vars_of_var_part_list_meqns (elements r) = get_vars_of_nonvar_part_list_meqns (elements r)
+  get_vars_of_S_list_meqns (elements r) = get_vars_of_M_meqns (elements r)
 .
 
 Definition r_valid {Σ : StaticModel} {u_ops : U_ops} (r : R) : Prop :=
@@ -3698,42 +3757,43 @@ Definition r_valid {Σ : StaticModel} {u_ops : U_ops} (r : R) : Prop :=
     t_valid t ∧ u_valid u ∧ r_vars_disjoint r ∧ r_has_all_vars r
 .
 
-Fixpoint u_insert_many {Σ : StaticModel} {u_ops : U_ops} (u : U) (lm : list Meqn) : U :=
-  match lm with
-    | [] => u
-    | x::xs => u_insert_many (u_insert u x) xs
-  end
-.
-
-Definition init_r {Σ : StaticModel} {u_ops : U_ops} (t : TermOver BuiltinOrVar) (t' : TermOver BuiltinOrVar) : R :=
-  let vars : list variable := elements ((vars_of t) ∩ (vars_of t')) in
-  let meqns : list Meqn := (λ v, init_meqn (singleton v) []) <$> vars in
+Definition init_r' {Σ : StaticModel} {u_ops : U_ops} (lt : list (TermOver BuiltinOrVar)) : (R * variable)%type :=
+  let vars : gset variable := ⋃ (vars_of <$> lt) in
+  let meqns : list Meqn := (λ v, init_meqn (singleton v) []) <$> (elements vars) in
   let u_empty : U := empty in
   let u_missing_up : U := u_insert_many u_empty meqns in
-  let up_meqn : Meqn := init_meqn (singleton (fresh vars)) [t;t'] in
-    ([], u_insert u_missing_up up_meqn)
+  let fresh_var : variable := fresh vars in
+  let up_meqn : Meqn := init_meqn (singleton (fresh_var)) lt in
+    (([], u_insert u_missing_up up_meqn), fresh_var)
+.
+
+Definition init_r {Σ : StaticModel} {u_ops : U_ops} (lt : list (TermOver BuiltinOrVar)) : R :=
+  (init_r' lt).1
 .
 
 Lemma init_r_valid {Σ : StaticModel} {u_ops : U_ops} :
-  ∀ (t t' : TermOver BuiltinOrVar) (r : R), init_r t t' = r -> r_valid r
+  ∀ (lt : list (TermOver BuiltinOrVar)) (r : R),
+    forallb term_is_nonvar lt = true ->
+    r_valid (init_r lt)
 .
 Proof.
 Abort.
 
-
-Definition u_subst {Σ : StaticModel} {u_ops : U_ops} (u : U) (sub : SubTMM) : U :=
-  u_map u (λ meqn, meqn_subst meqn sub)
+Lemma init_r_keeps_UP {Σ : StaticModel} {u_ops : U_ops} :
+  ∀ (lt : list (TermOver BuiltinOrVar)),
+    forallb term_is_nonvar lt = true ->
+    ∀ (r : R) (v : variable), init_r' lt = (r, v) ->
+    up_of_terms ((var_to_term v)::lt) ~up up_of_r r
 .
+Proof.
+Abort.
 
-Fixpoint unify_r_aux {Σ : StaticModel} {u_ops : U_ops} (r : R) (n : nat) : option (list Meqn) :=
-  match n with
-    | O => None
-    | S n =>
-      let '(t, u) := r in
+Definition unify_r_step {Σ : StaticModel} {u_ops : U_ops} (r : R) : option (R) :=
+  let '(t, u) := r in
         match elements u with
-          | [] => Some (reverse t)
+          | [] => Some (reverse t, empty)
           | _ => match u_extract_nonempty_m_meqn u with
-                  | None => Some (reverse t ++ elements u)
+                  | None => Some (reverse t ++ elements u, empty)
                   | Some ((s, m), u_rest) => 
                         '(common_part, frontier) ← dec m;
                         let frontier_l := elements frontier in
@@ -3742,10 +3802,32 @@ Fixpoint unify_r_aux {Σ : StaticModel} {u_ops : U_ops} (r : R) (n : nat) : opti
                               let sub : SubTMM := gset_to_gmap common_part s in
                               let u_meqn_reduced := u_insert_many u_rest frontier_l in
                               let u_compactified := compactify u_meqn_reduced in
-                                  unify_r_aux ((meqn_subst (init_meqn s [common_part]) sub)::t, u_subst u_compactified sub) n
+                                  Some ((init_meqn s [common_part])::t, u_subst u_compactified sub)
                 end
         end
-  end
+.
+
+Lemma unify_r_valid_r {Σ : StaticModel} {u_ops : U_ops} :
+  ∀ (r r' : R), r_valid r -> unify_r_step r = Some r' -> r_valid r'
+.
+Proof.
+Abort.
+
+Lemma unify_r_keeps_equiv_UP {Σ : StaticModel} {u_ops : U_ops} :
+  ∀ (r r' : R), r_valid r -> unify_r_step r = Some r' -> up_of_r r ~up up_of_r r'
+.
+Proof.
+Abort.
+
+Fixpoint unify_r_aux {Σ : StaticModel} {u_ops : U_ops} (r : R) (n : nat) : option (list Meqn) :=
+  let '(t, u) := r in
+    match n with
+      | O => match elements u with
+              | [] => Some t
+              | _ => None
+            end
+      | S n => unify_r_step r ≫= fun r' => unify_r_aux r' n
+    end
 .
 
 Lemma unify_r_aux_n_enough {Σ : StaticModel} {u_ops : U_ops} :
@@ -3762,14 +3844,22 @@ Lemma unify_r_aux_valid_t {Σ : StaticModel} {u_ops : U_ops} :
 Proof.
 Abort.
 
-Definition unify_r {Σ : StaticModel} {u_ops : U_ops} (r : R) :=
+Definition unify_r {Σ : StaticModel} {u_ops : U_ops} (r : R) : option (list Meqn) :=
   let '(t, u) := r in
   let u_len := length (elements u) in
     unify_r_aux r (u_len + 1)
 .
 
-Definition unify_terms {Σ : StaticModel} {u_ops : U_ops} (t : TermOver BuiltinOrVar) (t' : TermOver BuiltinOrVar) : option (list Meqn) :=
-  unify_r (init_r t t')
+Definition unify_terms {Σ : StaticModel} {u_ops : U_ops} (lt : list (TermOver BuiltinOrVar)) : option (list Meqn) :=
+  unify_r (init_r lt)
+.
+
+Definition take_any {A : Type} (a b : option A) :=
+  match a, b with
+    | Some x, _ => Some x
+    | _, Some x => Some x
+    | _, _ => None
+  end
 .
 
 Fixpoint extract_mgu_aux {Σ : StaticModel} (t : T) (sub : SubTMM) : SubTMM :=
@@ -3780,7 +3870,7 @@ Fixpoint extract_mgu_aux {Σ : StaticModel} (t : T) (sub : SubTMM) : SubTMM :=
         match head m_sub with
           | None => extract_mgu_aux xs sub
           | Some x =>
-            let new_sub := gset_to_gmap x s in
+            let new_sub := merge take_any (gset_to_gmap x s) sub in
               extract_mgu_aux xs new_sub
         end
   end
@@ -3790,17 +3880,31 @@ Definition extract_mgu {Σ : StaticModel} (t : T) : SubTMM :=
   extract_mgu_aux (reverse t) empty
 .
 
+Lemma extract_mgu_contains_var {Σ : StaticModel} :
+  ∀ (t : T) (sub : SubTMM), t_valid t ->
+    extract_mgu t = sub ->
+    ∀ (v : variable) (t : TermOver BuiltinOrVar), lookup v sub = Some t ->
+    ∀ (v' : variable), v' ∈ vars_of t ->
+    lookup v' sub = None
+.
+Proof.
+Abort.
+
 Lemma sub_is_unifier {Σ : StaticModel} {u_ops : U_ops} :
-  ∀ (t t' : TermOver BuiltinOrVar) (r_t : T),
-    unify_terms t t' = Some r_t ->
+  ∀ (lt : list (TermOver BuiltinOrVar)) (r_t : T),
+    unify_terms lt = Some r_t ->
+    ∀ (t : TermOver BuiltinOrVar), t ∈ lt ->
+    ∀ (t' : TermOver BuiltinOrVar), t' ∈ lt ->
     sub_app_mm (extract_mgu r_t) t = sub_app_mm (extract_mgu r_t) t'
 .
 Proof.
 Abort.
 
 Lemma sub_no_unifier {Σ : StaticModel} {u_ops : U_ops} :
-  ∀ (t t' : TermOver BuiltinOrVar),
-    unify_terms t t' = None ->
+  ∀ (lt : list (TermOver BuiltinOrVar)),
+    unify_terms lt = None ->
+    ∃ (t : TermOver BuiltinOrVar), t ∈ lt ->
+    ∃ (t' : TermOver BuiltinOrVar), t' ∈ lt ->
     ∀ (sub : SubTMM), sub_app_mm sub t ≠ sub_app_mm sub t'
 .
 Proof.
