@@ -12,19 +12,16 @@ Record BuiltinInterface (NondetValue : Type) := mkBuiltinInterface {
     bi_signature : Signature ;
     bi_beta : Model bi_signature (NondetValue : Type) ;
     bi_bindings : BuiltinsBinding ;
-    bi_eject : (@builtin_value _ _ _ NondetValue bi_beta) -> option (bool+(Z+(string)))%type ;
 }.
 
 Definition builtins_empty : BuiltinInterface MyUnit := {|
     bi_beta := builtin.empty.β ;
     bi_bindings := builtin.empty.builtins_binding ;
-    bi_eject := @builtin.empty.eject string;
 |}.
 
 Definition builtins_klike : BuiltinInterface MyUnit := {|
     bi_beta := builtin.klike.β ;
     bi_bindings := builtin.klike.builtins_binding ;
-    bi_eject := @builtin.klike.eject string;
 |}.
 
 Definition pi_trivial := (@pi.trivial.MyProgramInfo, @pi.trivial.my_binding).

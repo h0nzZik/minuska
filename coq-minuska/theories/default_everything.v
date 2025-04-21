@@ -17,11 +17,26 @@ Require Export
   Coq.extraction.ExtrOcamlBasic(*
   Coq.extraction.ExtrOcamlChar
   Coq.extraction.ExtrOcamlString*)
+  Coq.extraction.ExtrOcamlNativeString
   Coq.extraction.ExtrOcamlZBigInt
   Coq.extraction.ExtrOcamlNatBigInt
 .
 
-(* Set Extraction KeepSingleton. *)
+(* Adapted from [Coq.extraction.ExtrOcamlNativeString], using [Stdlib.String] instead of [String]*)
+Extract Inductive string => "string"
+[
+"
+  """"
+"
+"
+  (fun (c, s) -> Stdlib.String.make 1 c ^ s)
+"
+]
+"
+ (fun f0 f1 s ->
+    let l = Stdlib.String.length s in
+    if l = 0 then f0 () else f1 (Stdlib.String.get s 0) (Stdlib.String.sub s 1 (l-1)))
+".
 
 From Coq Require Import String Bool Arith ZArith List.
 

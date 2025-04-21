@@ -2205,7 +2205,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (impl_isString x)
-                | _ => None
+                | _ => Some false
                 end
             )
 
@@ -2213,7 +2213,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (negb (impl_isString x))
-                | _ => None
+                | _ => Some true
                 end
             )
                 
@@ -2221,7 +2221,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (impl_isList x)
-                | _ => None
+                | _ => Some false
                 end
             )
 
@@ -2229,7 +2229,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (negb (impl_isList x))
-                | _ => None
+                | _ => Some true
                 end
             )
 
@@ -2237,7 +2237,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (impl_isBool x)
-                | _ => None
+                | _ => Some false
                 end
             )
 
@@ -2245,7 +2245,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (negb (impl_isBool x))
-                | _ => None
+                | _ => Some true
                 end
             )
                 
@@ -2253,7 +2253,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (impl_isMap x)
-                | _ => None
+                | _ => Some false
                 end
             )
 
@@ -2261,7 +2261,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (negb (impl_isMap x))
-                | _ => None
+                | _ => Some true
                 end
             )
 
@@ -2269,7 +2269,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (impl_isZ x)
-                | _ => None
+                | _ => Some false
                 end
             )
 
@@ -2277,7 +2277,7 @@ Section sec2.
                 fun _ v =>
                 match v with
                 | t_over x => Some (negb (impl_isZ x))
-                | _ => None
+                | _ => Some true
                 end
             )    
 
