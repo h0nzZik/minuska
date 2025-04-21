@@ -34,6 +34,7 @@ nlia.cache
 nra.cache
 native_compute_profile_*.data
 .vagrant
+.vscode/
 # generated timing files
 *.timing.diff
 *.v.after-timing
