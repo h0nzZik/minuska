@@ -186,7 +186,7 @@ Extract Inductive string => "string"
       Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
     |};
     fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
-    fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
+    fprintf oux_coqfile "Extraction \"%s\" Lang_Decls chosen_builtins.\n" ("interpreter.ml");
   );
   (* extract coq into ocaml *)
   let rv = run ["cd "; mldir; "; "; coqc_command; " "; coqflags; " -R "; user_dir; " User "; coqfile; " > coq_log.txt"] in

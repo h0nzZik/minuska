@@ -171,13 +171,26 @@ let main
       (pvae : primitiveValueAlgebraEntry)
       (iface : 'a Extracted.builtinInterface)
       (parser : Lexing.lexbuf -> 'programT)
-      interpreter
-      interpreter_ext
-      debug_info  =
-  main0
-    pvae
-    iface
-    parser
-    (wrap_interpreter pvae iface interpreter)
-    (wrap_interpreter_ext pvae iface interpreter_ext)
-    (debug_info)
+      langDefaults
+      lang_Decls
+      =
+  (* let pre1T = (Extracted.process_declarations langDefaults lang_Decls) in *)
+  let pre1T = Extracted.process_declarations Extracted.Default_act in
+  match pre1T with
+  | Extracted.Inl(st) -> (
+    match (Extracted.to_theory st) with
+    | (thy, dbg) -> (
+      let basic_interpreter = Extracted.global_naive_interpreter Extracted.my_program_info thy in
+      let ext_interpreter = Extracted.global_naive_interpreter_ext Extracted.my_program_info thy in
+      main0
+      pvae
+      iface
+      parser
+      (wrap_interpreter pvae iface basic_interpreter)
+      (wrap_interpreter_ext pvae iface ext_interpreter)
+      (dbg)  
+    )
+  )
+  | Extracted.Inr(err) -> (
+    failwith (sprintf "Err: %s" err)
+  )

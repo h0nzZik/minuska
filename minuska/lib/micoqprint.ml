@@ -113,7 +113,7 @@ let rec exprterm_to_str
     )
     | `ETerm (`Id s, ps) -> (
       let ps_str = List.map ~f:(exprterm_to_str pvae) ps in
-      sprintf "(@t_over string StringExpression \"%s\" %s)" s (Util.format_coq_string_list ps_str)
+      sprintf "(@t_term string StringExpression \"%s\" %s)" s (Util.format_coq_string_list ps_str)
     )
 
 let rec cond_w_hole_to_str
@@ -150,9 +150,9 @@ let rule_to_str
     (r : Syntax.rule)
     : string =
     let kind : string = (match r.frame with
-      | None -> (sprintf "basic_rule my_program_info \"%s\"" (r.name))
+      | None -> (sprintf "basic_rule \"%s\"" (r.name))
       | Some (`Id s) -> (
-        sprintf "framed_rule my_program_info frame_%s \"%s\"" s (r.name)
+        sprintf "framed_rule frame_%s \"%s\"" s (r.name)
       )
     ) in
     sprintf "(%s %s %s %s)" kind (pattern_to_str pvae r.lhs) (exprterm_to_str pvae r.rhs) (cond_to_str pvae r.cond)
@@ -201,7 +201,7 @@ Definition mysigma : StaticModel := (default_everything.DSM my_program_info).
 Instance LangDefaults : Defaults := mkDefaults "builtin.cseq" "builtin.empty_cseq" myContext isValue.
   
 %s
-Definition Lang_Decls : list Declaration :=
+Definition Lang_Decls : list (Declaration Act) :=
   (%s)
   ++
   (%s)

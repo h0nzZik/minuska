@@ -734,3 +734,9 @@ Record BuiltinsBinding := {
     bb_function_names : list (string * string) ;
 }.
 
+
+Variant SymbolInfo {Σ0 : Signature} :=
+| si_none
+| si_predicate (p : builtin_predicate_symbol) (ar : nat) (np : option builtin_predicate_symbol)
+| si_function (f : builtin_function_symbol)
+.

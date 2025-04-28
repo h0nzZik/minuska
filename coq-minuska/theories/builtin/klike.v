@@ -2390,8 +2390,37 @@ Section sec2.
         builtin_model_over := βover ;
     |}.
 
-End sec2.
 
+    Definition sym_info : string -> SymbolInfo :=
+    fun s => match s with
+    | "sym.is" => si_predicate b_isSymbol 1 (Some b_isNotSymbol)
+    | "sym.isNot" => si_predicate b_isNotSymbol 1 (Some b_isSymbol)
+    | "bool.is" => si_predicate b_isBool 1 (Some b_isNotBool)
+    | "bool.isNot" => si_predicate b_isNotBool 1 (Some b_isBool)
+    | "string.is" => si_predicate b_isString 1 (Some b_isNotString)
+    | "string.isNot" => si_predicate b_isNotString 1 (Some b_isString)
+    | "z.is" => si_predicate b_isZ 1 (Some b_isNotZ)
+    | "z.isNot" => si_predicate b_isNotZ 1 (Some b_isZ)
+    | "bool.neg" => si_function b_bool_neg
+    | "bool.is_true" => si_predicate b_bool_is_true 1 (Some b_bool_is_false)
+    | "bool.is_false" => si_predicate b_bool_is_false 1 (Some b_bool_is_true)
+    | "term.eq" => si_predicate b_term_eq 2 None
+    | "term.same_symbol" => si_predicate b_have_same_symbol 2 (Some b_have_different_symbols)
+    | "term.different_symbol" => si_predicate b_have_different_symbols 2 (Some b_have_same_symbol)
+    | "z.plus" => si_function b_Z_plus
+    | "z.eq" => si_function b_Z_eq
+    | "z.le" => si_function b_Z_isLe
+    | "z.lt" => si_function b_Z_isLt
+    | "map.hasKey" => si_predicate b_map_hasKey 2 None
+    | "map.lookup" => si_function b_map_lookup
+    | "map.size" => si_function b_map_size
+    | "map.empty" => si_function b_map_empty
+    | "map.update" => si_function b_map_update
+    | _ => si_none
+    end.
+
+End sec2.
+(* 
 
 Module Notations.
     
@@ -2461,7 +2490,7 @@ Module Notations.
 
     Notation "<opaque map>" := (bv_pmap (PNodes _)) (only printing).
 
-End Notations.
+End Notations. *)
 
 Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [
@@ -2493,7 +2522,7 @@ Definition builtins_binding : BuiltinsBinding := {|
         ("map.update", "b_map_update")
     ];
 |}.
-
+(* 
 Definition eject
     {symbol : Type}
     (v : @BuiltinValue0 symbol)
@@ -2506,11 +2535,11 @@ Definition eject
     | bv_str s => Some (inr(inr (s)))
     | _ => None
     end 
-.
+. *)
 
 
 (* Print bv_list. *)
-
+(* 
 Section sb.
     Context
         {symbol : Type}
@@ -2535,4 +2564,4 @@ Section sb.
         end
 .
 
-End sb.
+End sb. *)

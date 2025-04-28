@@ -8,9 +8,11 @@ From Minuska Require Import
 
 From Coq Require Import String ZArith.
 
+
 Record BuiltinInterface (NondetValue : Type) := mkBuiltinInterface {
     bi_signature : Signature ;
     bi_beta : Model bi_signature NondetValue ;
+    bi_sym_info : string -> SymbolInfo ;
     bi_bindings : BuiltinsBinding ;
     (* bi_show_builtin : builtin_value -> string ; *)
 }.
@@ -18,12 +20,14 @@ Record BuiltinInterface (NondetValue : Type) := mkBuiltinInterface {
 Definition builtins_empty : BuiltinInterface MyUnit := {|
     bi_beta := builtin.empty.β ;
     bi_bindings := builtin.empty.builtins_binding ;
+    bi_sym_info := fun s => si_none ;
     (* bi_show_builtin := fun _ => "()" ; *)
 |}.
 
 Definition builtins_klike : BuiltinInterface MyUnit := {|
     bi_beta := builtin.klike.β ;
     bi_bindings := builtin.klike.builtins_binding ;
+    bi_sym_info := builtin.klike.sym_info ;
     (* bi_show_builtin := @builtin.klike.show_builtin string (fun x => x) ; *)
 |}.
 

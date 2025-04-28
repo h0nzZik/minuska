@@ -14,6 +14,11 @@ Extraction
     builtins_klike
     pi_trivial
     frontend.srr_to_rr
+    frontend.process_declarations
+    frontend.to_theory
+    default_everything.Act
+    default_everything.default_act
+    default_everything.invisible_act
     default_everything.DSM
     default_everything.GT
     default_everything.gt_term

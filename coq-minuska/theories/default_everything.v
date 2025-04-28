@@ -69,9 +69,9 @@ Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b 
 Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
 
 Definition basic_rule
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
-    (program_info : ProgramInfo)
+    (* {mysignature : Signature} *)
+    (* {β : Model mysignature MyUnit} *)
+    (* (program_info : ProgramInfo) *)
     (name : string)
     (l : @TermOver' string StringBuiltinOrVar)
     (r : @TermOver' string StringExpression)
