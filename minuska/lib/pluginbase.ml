@@ -8,13 +8,6 @@ type builtin_repr = {
   br_value : string;
 }
 
-(*
-type builtin =
-  [ `BuiltinInt of int
-  | `BuiltinString of string
-  | `BuiltinBool of bool
-  ]
-*)
 type groundterm =
   [ `GTb of builtin_repr
   | `GTerm of (id*(groundterm list))
@@ -37,14 +30,7 @@ type primitiveValueAlgebraEntry = {
 }
 
 type programInfoEntry = {
-  pie_coq_import : string ;
-  pie_coq_entity_name : string ;
   pie_constructor :
-    (* Dsm.__ -> *)
-    (* (Dsm.__ Dsm.symbols) -> *)
-    (* Dsm.__ -> *)
-    Dsm.signature ->
-    ((string, Dsm.__) Dsm.model) ->
     (string, Dsm.__) Dsm.programInfo ;
   pie_inject : string -> Dsm.__ option ;
 }
@@ -52,8 +38,6 @@ type programInfoEntry = {
 (* private stuff *)
 
 let primitiveValueAlgebraEntries = Hashtbl.create 20
-
-let programInfoEntries = Hashtbl.create 20
 
 (* public interface *)
 
@@ -63,14 +47,6 @@ let add_user_primitive_value_algebra
   =
   Hashtbl.add primitiveValueAlgebraEntries primitive_value_algebra_name pvae;
   ()
-
-let add_user_program_info
-  (program_info_name : string)
-  (program_info_entry : programInfoEntry)
-  =
-  Hashtbl.add programInfoEntries program_info_name program_info_entry;
-  ()
-
 
 let get_primitive_value_algebra (primitive_value_algebra_name : coqModuleName) : primitiveValueAlgebraEntry =  
   match primitive_value_algebra_name with
@@ -135,21 +111,13 @@ let get_primitive_value_algebra (primitive_value_algebra_name : coqModuleName) :
     Hashtbl.find primitiveValueAlgebraEntries name
   )
 
-let get_pi (program_info_name : coqModuleName) : programInfoEntry
-  =
-  match program_info_name with
-  | Std_module name ->(
-    let m = (
-      match name with
-      | "trivial" -> Dsm.pi_trivial
-      | _ -> failwith (sprintf "Unknown program info specified: '%s'" name)
-    ) in
-    ({ pie_constructor = (fst m); pie_inject = (fun s -> Obj.magic ((snd m) s)); pie_coq_import = (sprintf "Minuska.pi.%s" name); pie_coq_entity_name = (sprintf "%s.MyProgramInfo" name)})
-  )
-  | User_module name -> (
-      Hashtbl.find programInfoEntries name
-  )
-  
+
+let get_trivial_program_info signature builtins : programInfoEntry =
+  { 
+    pie_constructor = ((fst Dsm.pi_trivial) signature builtins);
+    pie_inject = (fun s -> Obj.magic ((snd Dsm.pi_trivial) s));
+  }
+
 module Extracted = Dsm
 
 (* EOF *)

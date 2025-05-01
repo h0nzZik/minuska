@@ -24,71 +24,32 @@ let coqflags : string = sprintf "-include %s -R %s Equations -R %s stdpp -R %s M
 
 
 let parse_and_print
-  (pvae : primitiveValueAlgebraEntry)
-  ~(name_of_pi : coqModuleName)
   lexbuf
   (oux : Out_channel.t)
   =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    fprintf oux "%s" (Micoqprint.definition_to_str pvae (get_pi name_of_pi) value);
+    fprintf oux "%s" (Micoqprint.definition_to_str value);
     ()
   | None -> ()
 
 
 let append_definition
-  (pvae : primitiveValueAlgebraEntry)
-  ~(name_of_pi : coqModuleName)
   input_filename
   (output_channel : Out_channel.t)
   =
   In_channel.with_file input_filename ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-    parse_and_print pvae ~name_of_pi:(name_of_pi) lexbuf output_channel;  
+    parse_and_print lexbuf output_channel;  
   );
-  (*
-  fprintf output_channel "%s\n" {|Definition pre1T := Eval vm_compute in (process_declarations Act default_act mysignature mybeta my_program_info Lang_Decls). |};
-  fprintf output_channel "%s\n" {|Definition pre2T := Eval vm_compute in (match pre1T as m return (match m return Type with inl _ => State | inr _ => string end) with inl t => t | inr s => s end). |};
-  fprintf output_channel "%s\n" {|Fail Definition myerror : string := Eval vm_compute in (pre2T). |};
-  fprintf output_channel "%s\n" {|Definition myok : State := Eval vm_compute in (pre2T). |};
-  fprintf output_channel "%s\n" {|Definition T1 := Eval vm_compute in (fst (to_theory Act myok)). |};
-  fprintf output_channel "%s\n" {|Definition T2 := Eval vm_compute in (snd (to_theory Act myok)). |};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info T1.|};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info T1.|};
-  fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := T2.|};
-  fprintf output_channel "%s\n" {|
-    (* This lemma asserts well-formedness of the definition *)
-    Lemma language_well_formed: spec_interpreter.RewritingTheory2_wf T1.
-    Proof.
-      (* This is the main syntactic check. If this fails, the semantics contains a bad rule. *)
-      ltac1:(compute_done).
-    Qed.
-    (* This lemma asserts soundness of the generated interpreter. *)
-    (* Unfortunately, we cannot rely on the extraction here.
-    Lemma interp_sound:
-        Interpreter_sound'
-        T1
-        lang_interpreter
-    .
-    Proof.
-        apply global_naive_interpreter_sound.
-        apply language_well_formed.
-    Qed.
-    *)
-  |} ;
-  *)
   ()
 
 let wrap_init (g : groundterm) : groundterm =
   `GTerm ((`Id "builtin.init"), [g])
 
 let write_gterm
-  (pvae : primitiveValueAlgebraEntry)
-  (name_of_builtins : coqModuleName)
-  (name_of_pi : coqModuleName)
   lexbuf outname =
-  let _ = pvae in
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gt ->
     Out_channel.with_file outname ~f:(fun oux ->
@@ -98,25 +59,10 @@ let write_gterm
         default_everything
         pval_ocaml_binding
       .
-      From Minuska Require Import
-        builtin.empty
-        builtin.klike
-        (* pi.trivial *)
-      .
       |};
-      let pvae = (get_primitive_value_algebra name_of_builtins) in
-      fprintf oux "Require %s.\n" pvae.pvae_coq_import;
-      fprintf oux "Require %s.\n" (get_pi name_of_pi).pie_coq_import;
-      fprintf oux "Definition mysignature := (bi_signature MyUnit %s).\n" pvae.pvae_coq_entity_name;
-      fprintf oux "#[global] Existing Instance mysignature.\n";
-      fprintf oux "Definition mybeta := (bi_beta MyUnit %s).\n" pvae.pvae_coq_entity_name;
-      fprintf oux "#[global] Existing Instance mybeta.\n";
-      fprintf oux "Definition my_program_info := %s.\n" (get_pi name_of_pi).pie_coq_entity_name;
-      fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
-      fprintf oux "Existing Instance mysigma.\n";
       fprintf oux {|
         Definition given_groundterm := (%s).
-      |} (Micoqprint.groundterm_to_string pvae (wrap_init gt));
+      |} (Micoqprint.groundterm_to_string (wrap_init gt));
       ()
     );
     ()
@@ -128,21 +74,17 @@ let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let generate_interpreter_coq_internal (cfg : languagedescr) input_filename (output_coq : string) =
-  let pvae = ((get_primitive_value_algebra cfg.primitive_value_algebra)) in
-  (* let pi = get_pi cfg.program_info in *)
-  (* create coqfile *)
+let generate_interpreter_coq_internal input_filename (output_coq : string) =
   Out_channel.with_file output_coq ~f:(fun oux_coqfile ->
-    append_definition pvae ~name_of_pi:(cfg.program_info) input_filename oux_coqfile;
-    fprintf oux_coqfile "Definition chosen_builtins := %s.\n" (get_primitive_value_algebra cfg.primitive_value_algebra).pvae_coq_entity_name;
+    append_definition input_filename oux_coqfile;
     ()
-  )
+  ); ()
 
-let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) input_filename (output_ml : string) =
+let generate_interpreter_ml_internal (user_dir : string) input_filename (output_ml : string) =
   let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
-  let _ = generate_interpreter_coq_internal cfg input_filename coqfile in
+  let _ = generate_interpreter_coq_internal input_filename coqfile in
   (* append to coqfile *)
   Out_channel.with_file coqfile ~append:(true) ~f:(fun oux_coqfile ->
     fprintf oux_coqfile "%s" {|
@@ -202,14 +144,11 @@ Extract Inductive string => "string"
   ()
 
 let transform_groundterm
-  (pvae : primitiveValueAlgebraEntry)
-  (name_of_builtins : coqModuleName)
-  (name_of_pi : coqModuleName)
   input_fname output_fname () =
   In_channel.with_file input_fname ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-    write_gterm pvae name_of_builtins name_of_pi lexbuf output_fname;  
+    write_gterm lexbuf output_fname;  
   );
   ()
 
@@ -219,14 +158,14 @@ let generate_interpreter_ml (modules : string list) scm_filename (out_ml_file : 
   let dir = Filename.to_absolute_exn ~relative_to:(curdir) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_ml_internal curdir cfg mfile out_ml_file;
+  generate_interpreter_ml_internal curdir mfile out_ml_file;
   ()
 
 let generate_interpreter_coq scm_filename (out_coq_file : string) =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_coq_internal cfg mfile out_coq_file;
+  generate_interpreter_coq_internal mfile out_coq_file;
   ()
 
 let initialize_project project_name (name_of_builtins : coqModuleName) (name_of_program_info : coqModuleName) =
@@ -283,24 +222,28 @@ let initialize_project project_name (name_of_builtins : coqModuleName) (name_of_
 |}
   );
   Out_channel.with_file "run.ml" ~f:(fun oux ->
-    fprintf oux {|
-      open Core
-      open Printf
-      open Libminuskapluginbase
-      open Pluginbase
+    fprintf oux 
+{|
+open Core
+open Printf
+open Libminuskapluginbase
+open Pluginbase
 
-      let main () =
-        Libminuska.Miskeleton.main
-          (get_primitive_value_algebra (coqModuleName_of_sexp (Sexp.of_string ("%s"))))
-          (get_pi (coqModuleName_of_sexp (Sexp.of_string ("%s"))))
-          (fun _ -> failwith "Parser not implemented.")
-          Internal.langDefaults
-          Internal.lang_Decls
-        
-      let _ = main ()
-    |}
+let main () =
+  let pvae = (get_primitive_value_algebra (coqModuleName_of_sexp (Sexp.of_string ("%s")))) in
+  let signature = (pvae.pvae_builtin_interface.bi_signature) in
+  let builtins = (pvae.pvae_builtin_interface.bi_beta) in
+  let pie = (get_trivial_program_info signature builtins) in
+  Libminuska.Miskeleton.main
+    pvae
+    pie          
+    (fun _ -> failwith "Parser not implemented.")
+    Internal.langDefaults
+    Internal.lang_Decls
+  
+let _ = main ()
+|}
     (Sexp.to_string (sexp_of_coqModuleName name_of_builtins))
-    (Sexp.to_string (sexp_of_coqModuleName name_of_program_info))
   );
   ()
 
@@ -325,17 +268,11 @@ let command_groundterm2coq =
     ~summary:"Generate a Coq (*.v) file from a ground term (e.g., a program)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-    (* TODO support user-provided PVAs *)
-        name_of_builtins0 = flag "--builtins" (required string) ~doc:"builtins to use" and
-        name_of_program_info0 = flag "--program-info" (required string) ~doc:"program info to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
-
      in
      fun () -> 
-      let name_of_builtins = coqModuleName_of_sexp (Sexp.of_string name_of_builtins0) in
-      let name_of_program_info = coqModuleName_of_sexp (Sexp.of_string name_of_program_info0) in
-      transform_groundterm (get_primitive_value_algebra name_of_builtins) name_of_builtins name_of_program_info input_filename output_filename ())
+      transform_groundterm input_filename output_filename ())
 
 let command_generate_interpreter_coq =
   Command.basic

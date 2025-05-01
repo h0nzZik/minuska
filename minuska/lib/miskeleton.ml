@@ -179,7 +179,7 @@ let main
       =
   let mysignature = pvae.pvae_builtin_interface.bi_signature in
   let mybeta = pvae.pvae_builtin_interface.bi_beta in
-  let my_program_info = (pie.pie_constructor mysignature mybeta ) in
+  let my_program_info = (pie.pie_constructor) in
   let mysigma = Extracted.dSM mysignature mybeta my_program_info in
   let name2ar = (fun name ->
     match (pvae.pvae_builtin_interface.bi_sym_info name) with

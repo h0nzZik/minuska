@@ -36,23 +36,20 @@ let translate_name
         ("e_fun", name)
 *)
 let rec groundterm_to_string
-    (pvae : primitiveValueAlgebraEntry)
     (g : Syntax.groundterm)
     : string =
     match g with
     | `GTb b -> (
-      (* sprintf "(@t_over string BuiltinRepr \"%s\")" (pvae.pvae_builtin_coq_quote b) *)
       sprintf "(@t_over string BuiltinRepr {|br_kind:=\"%s\";br_value:=\"%s\"|})" (b.br_kind) (b.br_value)
     )
-      | `GTerm (`Id s, gs) -> (
-      let gs_str = List.map ~f:(groundterm_to_string pvae) gs in
-      sprintf "(@t_term string BuiltinRepr \"%s\" %s)" s (Util.format_coq_string_list gs_str)
-      )
+    | `GTerm (`Id s, gs) -> (
+    let gs_str = List.map ~f:(groundterm_to_string) gs in
+    sprintf "(@t_term string BuiltinRepr \"%s\" %s)" s (Util.format_coq_string_list gs_str)
+    )
 
 let rec pattern_w_hole_to_str
-  (pvae : primitiveValueAlgebraEntry)
-    (p : Syntax.pattern)
-    (hole : string option)
+  (p : Syntax.pattern)
+  (hole : string option)
     : string =
   match p with
   | `PVar (`Var s) -> (
@@ -68,15 +65,14 @@ let rec pattern_w_hole_to_str
       )
   )
   | `PTerm (`Id s, ps) -> (
-    let ps_str = List.map ~f:(fun a -> pattern_w_hole_to_str pvae a hole) ps in
+    let ps_str = List.map ~f:(fun a -> pattern_w_hole_to_str a hole) ps in
     sprintf "(@t_term string StringBuiltinOrVar \"%s\" %s)" s (Util.format_coq_string_list ps_str)
   )
 
-let pattern_to_str (pvae : primitiveValueAlgebraEntry) (p : Syntax.pattern) : string =
-  pattern_w_hole_to_str pvae p None
+let pattern_to_str (p : Syntax.pattern) : string =
+  pattern_w_hole_to_str p None
 
 let rec expr_w_hole_to_str
-  (pvae : primitiveValueAlgebraEntry)
   (e : Syntax.expr)
   (hole : string option)
   : string
@@ -96,48 +92,46 @@ let rec expr_w_hole_to_str
     )
   )
   | `EGround g -> (
-    sprintf "(se_ground %s)" (groundterm_to_string pvae g)
+    sprintf "(se_ground %s)" (groundterm_to_string g)
   )
   | `ECallF (`Id s, es) -> (
-    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str pvae a hole) es in
+    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
     sprintf "(se_applyf \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
   | `ECallQ (`Id s, es) -> (
-    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str pvae a hole) es in
+    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
     sprintf "(se_applyq \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
 
-  let expr_to_str (pvae : primitiveValueAlgebraEntry) (e : Syntax.expr) : string =
-    (expr_w_hole_to_str pvae e None)
+  let expr_to_str (e : Syntax.expr) : string =
+    (expr_w_hole_to_str e None)
 
 let rec exprterm_to_str
-    (pvae : primitiveValueAlgebraEntry)
     (p : Syntax.exprterm)
     : string =
     match p with
     | `EExpr e -> (
-      sprintf "(@t_over string StringExpression %s)" (expr_to_str pvae e)
+      sprintf "(@t_over string StringExpression %s)" (expr_to_str e)
     )
     | `ETerm (`Id s, ps) -> (
-      let ps_str = List.map ~f:(exprterm_to_str pvae) ps in
+      let ps_str = List.map ~f:(exprterm_to_str) ps in
       sprintf "(@t_term string StringExpression \"%s\" %s)" s (Util.format_coq_string_list ps_str)
     )
 
 let rec cond_w_hole_to_str
-  (pvae : primitiveValueAlgebraEntry)
   (c : Syntax.condition)
   (hole : string option)
   : string =
   match c with
   | `CondAtomic (`Id s, es) -> (
-    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str pvae a hole) es in
+    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
     sprintf "(ssc_atom \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
   | `CondAnd (c1, c2) -> (
-    sprintf "(ssc_and %s %s)" (cond_w_hole_to_str pvae c1 hole) (cond_w_hole_to_str pvae c2 hole)
+    sprintf "(ssc_and %s %s)" (cond_w_hole_to_str c1 hole) (cond_w_hole_to_str c2 hole)
   )
   | `CondOr (c1, c2) -> (
-    sprintf "(ssc_or %s %s)" (cond_w_hole_to_str pvae c1 hole) (cond_w_hole_to_str pvae c2 hole)
+    sprintf "(ssc_or %s %s)" (cond_w_hole_to_str c1 hole) (cond_w_hole_to_str c2 hole)
   )
   | `CondTrue -> (
     "ssc_true"
@@ -147,13 +141,11 @@ let rec cond_w_hole_to_str
   )
 
 let cond_to_str
-  (pvae : primitiveValueAlgebraEntry)
     (c : Syntax.condition)
     : string =
-    (cond_w_hole_to_str pvae c None)
+    (cond_w_hole_to_str c None)
 
 let rule_to_str
-    (pvae : primitiveValueAlgebraEntry)
     (r : Syntax.rule)
     : string =
     let kind : string = (match r.frame with
@@ -162,13 +154,13 @@ let rule_to_str
         sprintf "framed_rule frame_%s \"%s\"" s (r.name)
       )
     ) in
-    sprintf "(%s %s %s %s)" kind (pattern_to_str pvae r.lhs) (exprterm_to_str pvae r.rhs) (cond_to_str pvae r.cond)
+    sprintf "(%s %s %s %s)" kind (pattern_to_str r.lhs) (exprterm_to_str r.rhs) (cond_to_str r.cond)
 
-let frame_to_str (pvae : primitiveValueAlgebraEntry) fr : string =
-  sprintf "(\"%s\",%s)" (match fr.fd_var with `Var s -> s) (pattern_to_str pvae fr.fd_pat)
+let frame_to_str fr : string =
+  sprintf "(\"%s\",%s)" (match fr.fd_var with `Var s -> s) (pattern_to_str fr.fd_pat)
 
-let frame_definition_to_str (pvae : primitiveValueAlgebraEntry) fr : string =
-  sprintf "Definition frame_%s : (string*(@TermOver' string StringBuiltinOrVar)) := %s.\n" (match fr.fd_name with `Id s -> s) (frame_to_str pvae fr)
+let frame_definition_to_str fr : string =
+  sprintf "Definition frame_%s : (string*(@TermOver' string StringBuiltinOrVar)) := %s.\n" (match fr.fd_name with `Id s -> s) (frame_to_str fr)
 
 let decl_strict_to_str strictness : string = (
   sprintf "(decl_strict Act (mkStrictnessDeclaration \"%s\" %d %s isValue myContext))\n"
@@ -177,31 +169,21 @@ let decl_strict_to_str strictness : string = (
     (Util.format_coq_string_list (List.map ~f:(fun a -> sprintf "%d" a) strictness.strict_places))
 )
 
-let mycontext_decl_to_str (pvae : primitiveValueAlgebraEntry) ctx : string = (
+let mycontext_decl_to_str ctx : string = (
   let vname = (match (ctx.cd_var) with `Var s -> s) in
-  sprintf "Definition myContext := (fun (%s : @TermOver' string StringBuiltinOrVar) => %s).\n" vname (pattern_w_hole_to_str pvae (ctx.cd_pat) (Some vname))
+  sprintf "Definition myContext := (fun (%s : @TermOver' string StringBuiltinOrVar) => %s).\n" vname (pattern_w_hole_to_str (ctx.cd_pat) (Some vname))
 )
 
-let isvalue_decl_to_str (pvae : primitiveValueAlgebraEntry) value : string = (
+let isvalue_decl_to_str value : string = (
   let varname = (match (fst (value)) with `Var s -> s) in
-  sprintf "Definition isValue (%s : StringExpression) := %s.\n" varname (cond_w_hole_to_str pvae (snd value) (Some varname))
+  sprintf "Definition isValue (%s : StringExpression) := %s.\n" varname (cond_w_hole_to_str (snd value) (Some varname))
 )
 
 
-let definition_to_str (pvae : primitiveValueAlgebraEntry) pi def : string = (
-  let builtins_import = (pvae.pvae_coq_import) in
-  let builtins_name = pvae.pvae_coq_entity_name in
+let definition_to_str def : string = (
   sprintf
 {delimiter|
-Require Import Minuska.pval_ocaml_binding %s %s Minuska.default_everything.
-(* Definition mysignature := (bi_signature MyUnit %s). *)
-(* #[global] Existing Instance mysignature. *)
-(* Definition mybeta := (bi_beta MyUnit %s). *)
-(* #[global] Existing Instance mybeta. *)
-(* Definition my_program_info := %s. *)
-(* Definition mysigma : StaticModel := (default_everything.DSM my_program_info). *)
-(* #[global] Existing Instance mysigma. *)
-(* #[global] Existing Instance my_program_info. *)
+Require Import Minuska.pval_ocaml_binding Minuska.default_everything.
   %s
   %s
 #[local]
@@ -214,15 +196,9 @@ Definition Lang_Decls : list (Declaration Act) :=
   (%s)
 . (* Lang_Decls *)
 |delimiter}
-
-  builtins_import
-  (pi.pie_coq_import)
-  builtins_name
-  builtins_name
-  (pi.pie_coq_entity_name)
-  (mycontext_decl_to_str pvae (def.context))
-  (isvalue_decl_to_str pvae (def.Syntax.value))
-  (Util.format_string_list_per_line (List.map ~f:(frame_definition_to_str pvae) def.frames))
+  (mycontext_decl_to_str (def.context))
+  (isvalue_decl_to_str (def.Syntax.value))
+  (Util.format_string_list_per_line (List.map ~f:(frame_definition_to_str) def.frames))
   (Util.format_coq_string_list_per_line (List.map ~f:(decl_strict_to_str) def.Syntax.strictness))
-  (Util.format_coq_string_list_per_line (List.map ~f:(rule_to_str pvae) def.Syntax.rules))
+  (Util.format_coq_string_list_per_line (List.map ~f:(rule_to_str) def.Syntax.rules))
 )
