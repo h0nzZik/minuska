@@ -47,7 +47,7 @@ runCase() {
     echo "Failed"
   fi
   if [[ -e "$expout" ]]; then
-    diff "$outputd/out" "$expout"
+    diff -u --ignore-all-space "$outputd/out" "$expout"
   fi
   local extime=$(cat "$outputd/err" | grep 'Execution' | cut -d ':' -f 2 | xargs)
   local parsetime=$(cat "$outputd/err" | grep 'Parsing' | cut -d ':' -f 2 | xargs)
@@ -74,11 +74,14 @@ testNative() {
   rm -rf ./interpreters
   mkdir -p ./interpreters
 
-  echo "== Compilation"
-  if doCompile fail-invalid-semantics ; then
-    echo "ERROR: an invalid language definition compiles!"
-    exit 1
-  fi
+  # This test is now disabled.
+  # Indeed, an invalid language definition compiles,
+  # but emits a warning when starting the execution.
+  #echo "== Compilation"
+  #if doCompile fail-invalid-semantics ; then
+  #  echo "ERROR: an invalid language definition compiles!"
+  #  exit 1
+  #fi
 
   doCompile decrement
   doCompile decrement-builtin

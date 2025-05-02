@@ -25,28 +25,6 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Inductive TrivialPVA : Set := pv_error.
-
-#[export]
-Instance TrivialPVA_eqdec : EqDecision TrivialPVA.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-
-
-
-#[export]
-Program Instance TrivialPVA_fin : Finite TrivialPVA := {|
-    enum := [pv_error];
-|}.
-Next Obligation.
-    repeat constructor; ltac1:(set_solver).
-Qed.
-Next Obligation.
-    destruct x; ltac1:(set_solver).
-Qed.
-Fail Next Obligation.
-
 
 Section sec.
 
@@ -56,26 +34,30 @@ Section sec.
     .
 
     #[local]
-    Instance mysignature : Signature := {|
+    Program Instance mysignature : Signature := {|
         builtin_function_symbol
             := Emptyset ;
         builtin_predicate_symbol
             := Emptyset ;
+        bps_ar := fun _ => 0 ;
+        bps_neg := fun _ => None;
     |}.
+    Fail Next Obligation.
 
-    Definition βover
-        : ModelOver mysignature MyUnit TrivialPVA := {|
+    Program Definition βover
+        : ModelOver mysignature MyUnit Emptyset := {|
         builtin_function_interp
-            := fun _ _ _ => t_over pv_error ;
+            := fun _ _ _ => None ;
         builtin_predicate_interp
-            := fun _ _ _ => false ;
+            := fun _ _ _ => None ;
     |}.
+    Fail Next Obligation.
 
     #[local]
     Instance β
         : @Model _ _ mysignature MyUnit := {|
         builtin_value
-            := TrivialPVA ;
+            := Emptyset ;
         builtin_model_over := βover ;
     |}.
 
@@ -85,46 +67,38 @@ Definition builtins_binding : BuiltinsBinding := {|
     bb_function_names := [] ;
 |}.
 
-Definition inject_err
-    {symbol : Type}
-    :
-    TrivialPVA
-:=
-    pv_error
-.
-
 Definition inject_bool
     {symbol : Type}
-    (Fret : option TrivialPVA -> TrivialPVA)
+    (Fret : option Emptyset -> Emptyset)
     (b : bool)
     :
-    TrivialPVA :=
+    Emptyset :=
     Fret None
 .
 
 Definition inject_Z
     {symbol : Type}
-    (Fret : option TrivialPVA -> TrivialPVA)
+    (Fret : option Emptyset -> Emptyset)
     (z : Z)
     :
-    TrivialPVA :=
+    Emptyset :=
     Fret None
 .
 
 Definition inject_string
     {symbol : Type}
-    (Fret : option TrivialPVA -> TrivialPVA)
+    (Fret : option Emptyset -> Emptyset)
     (s : string)
     :
-    TrivialPVA :=
+    Emptyset :=
     Fret None
 .
 
 Definition eject
     {symbol : Type}
-    (v : TrivialPVA)
+    (v : Emptyset)
     :
-    option (bool+(Z+(string+unit)))%type
+    option (bool+(Z+(string)))%type
     :=
     None
 .

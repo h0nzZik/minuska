@@ -3,6 +3,7 @@ From Minuska Require Export
     prelude
     default_everything
     pval_ocaml_binding
+    frontend
 .
 Extraction
     "Dsm.ml"
@@ -12,6 +13,14 @@ Extraction
     builtins_empty
     builtins_klike
     pi_trivial
+    interpreter_results.RewritingTheory2_wf_dec
+    frontend.srr_to_rr
+    frontend.process_declarations
+    frontend.to_theory
+    frontend.realize_thy
+    default_everything.Act
+    default_everything.default_act
+    default_everything.invisible_act
     default_everything.DSM
     default_everything.GT
     default_everything.gt_term

@@ -12,7 +12,7 @@ let parse_with_error lexbuf =
       raise (Invalid_argument ("Parsing problem at " ^ (print_position lexbuf) ^ "."))
 
 let convert_int (n : int) : Libminuska.Syntax.groundterm =
-  `GTb (`BuiltinInt n)
+  `GTb ({br_kind="int"; br_value=(sprintf "%d" n)})
       
 let parse (lexbuf : Lexing.lexbuf) : Libminuska.Syntax.groundterm =
   match parse_with_error lexbuf with

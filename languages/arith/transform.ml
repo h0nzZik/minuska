@@ -13,7 +13,7 @@ let parse_with_error lexbuf =
 
 let rec convert_aexp (e : Syntax.aexpr) : Libminuska.Syntax.groundterm =
   match e with
-  | `AExprInt n -> (`GTb (`BuiltinInt n))
+  | `AExprInt n -> (`GTb ({br_kind="int"; br_value=(sprintf "%d" n)}))
   | `AExprPlus (a, b) -> `GTerm(`Id "plus", [(convert_aexp a);(convert_aexp b)])
   | `AExprMinus (a, b) -> `GTerm(`Id "minus", [(convert_aexp a);(convert_aexp b)])
       

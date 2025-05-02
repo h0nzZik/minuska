@@ -43,8 +43,9 @@ Instance MyProgramInfo
         end ;
 |}.
 
-Definition my_binding : list (string*string) := [
-    ("program.ast", "qs_program")
-].
-
-(* Print Grammar. *)
+Definition my_binding : string -> option MyQuerySymbol :=
+fun s =>
+match s with
+| "program.ast" => Some qs_program
+| _ => None
+end.

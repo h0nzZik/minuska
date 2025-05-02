@@ -1,12 +1,10 @@
 open Core
 open Printf
+open Sexplib
 open Sexplib.Std
 
 open Libminuska
-module Syntax = Libminuska.Syntax
-
 open Libminuskapluginbase.Pluginbase
-module Stringutils = Libminuskapluginbase.Stringutils
 
 type languagedescr = {
   language                 : string      ;
@@ -14,20 +12,6 @@ type languagedescr = {
   primitive_value_algebra  : coqModuleName ;
   program_info             : coqModuleName ;
 } [@@deriving sexp]
-
-type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
-type query_map_t = (string, string, String.comparator_witness) Map.t ;;
-
-let transform_map m =
-  let binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) m in
-  let m2 = Map.of_alist_exn (module String) binding in
-  m2
-
-let get_builtins_map (primitive_value_algebra_name : coqModuleName) : builtins_map_t =
-  let builtins_binding_coq = (get_primitive_value_algebra primitive_value_algebra_name).pvae_builtin_interface.bi_bindings in
-  let builtins_binding = List.map ~f:(fun p -> (Stringutils.implode (fst p), Stringutils.implode (snd p))) builtins_binding_coq in
-  let builtins_map : builtins_map_t = Map.of_alist_exn (module String) builtins_binding in
-  builtins_map
 
 (* < to be patched in Nix> *)
 let coqc_command = "coqc" ;;
@@ -40,64 +24,31 @@ let coqflags : string = sprintf "-include %s -R %s Equations -R %s stdpp -R %s M
 
 
 let parse_and_print
-  (iface : 'a Extracted.builtinInterface)
-  (builtins_map : builtins_map_t)
-  (query_map : query_map_t)
-  ~(name_of_builtins : coqModuleName)
-  ~(name_of_pi : coqModuleName) lexbuf oux =
+  lexbuf
+  (oux : Out_channel.t)
+  =
   match Miparse.parse_definition_with_error lexbuf with
   | Some value ->
-    Micoqprint.print_definition iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) value oux
+    fprintf oux "%s" (Micoqprint.definition_to_str value);
+    ()
   | None -> ()
 
 
 let append_definition
-  (iface : 'a Extracted.builtinInterface)
-  (builtins_map : builtins_map_t)
-  (query_map : query_map_t)
-  ~(name_of_builtins : coqModuleName)
-  ~(name_of_pi : coqModuleName)
   input_filename
-  output_channel
+  (output_channel : Out_channel.t)
   =
   In_channel.with_file input_filename ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_filename };
-    parse_and_print iface builtins_map query_map ~name_of_builtins:(name_of_builtins) ~name_of_pi:(name_of_pi) lexbuf output_channel;  
+    parse_and_print lexbuf output_channel;  
   );
-  fprintf output_channel "%s\n" {|Definition T := Eval vm_compute in (to_theory Act (process_declarations Act default_act mysignature mybeta my_program_info Lang_Decls)). |};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter (*: (StepT my_program_info)*) := global_naive_interpreter my_program_info (fst T).|};
-  fprintf output_channel "%s\n" {|Definition lang_interpreter_ext (*: (StepT_ext my_program_info)*) := global_naive_interpreter_ext my_program_info (fst T).|};
-  fprintf output_channel "%s\n" {|Definition lang_debug_info : list string := (snd T).|};
-  fprintf output_channel "%s\n" {|
-    (* This lemma asserts well-formedness of the definition *)
-    Lemma language_well_formed: spec_interpreter.RewritingTheory2_wf (fst T).
-    Proof.
-      (* This is the main syntactic check. If this fails, the semantics contains a bad rule. *)
-      ltac1:(compute_done).
-    Qed.
-    (* This lemma asserts soundness of the generated interpreter. *)
-    (* Unfortunately, we cannot rely on the extraction here.
-    Lemma interp_sound:
-        Interpreter_sound'
-        (fst T)
-        lang_interpreter
-    .
-    Proof.
-        apply global_naive_interpreter_sound.
-        apply language_well_formed.
-    Qed.
-    *)
-  |} ;
   ()
 
-let wrap_init (g : Syntax.groundterm) : Syntax.groundterm =
+let wrap_init (g : groundterm) : groundterm =
   `GTerm ((`Id "builtin.init"), [g])
 
 let write_gterm
-  (iface : 'a Extracted.builtinInterface)
-  (name_of_builtins : coqModuleName)
-  (name_of_pi : coqModuleName)
   lexbuf outname =
   match Miparse.parse_groundterm_with_error lexbuf with
   | Some gt ->
@@ -108,26 +59,11 @@ let write_gterm
         default_everything
         pval_ocaml_binding
       .
-      From Minuska Require Import
-        builtin.empty
-        builtin.klike
-        (* pi.trivial *)
-      .
       |};
-      fprintf oux "Require %s.\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_import;
-      fprintf oux "Require %s.\n" (get_pi name_of_pi).pie_coq_import;
-      fprintf oux "Definition mysignature := (bi_signature MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
-      fprintf oux "#[global] Existing Instance mysignature.\n";
-      fprintf oux "Definition mybeta := (bi_beta MyUnit %s).\n" (get_primitive_value_algebra name_of_builtins).pvae_coq_entity_name;
-      fprintf oux "#[global] Existing Instance mybeta.\n";
-      fprintf oux "Definition my_program_info := %s.\n" (get_pi name_of_pi).pie_coq_entity_name;
-      fprintf oux "Definition mysigma : StaticModel := (default_everything.DSM my_program_info).\n";
-      fprintf oux "Existing Instance mysigma.\n";
-      fprintf oux "%s" {|
-        Definition given_groundterm := 
-      |};
-      Micoqprint.print_groundterm oux iface name_of_builtins (wrap_init gt);
-      fprintf oux " .\n";
+      fprintf oux {|
+        Definition given_groundterm := (%s).
+      |} (Micoqprint.groundterm_to_string (wrap_init gt));
+      ()
     );
     ()
   | None -> ()
@@ -138,35 +74,43 @@ let run l =
   let _ = fprintf stderr "> %s\n" (String.concat l) in
   Sys_unix.command (String.concat l)
 
-let generate_interpreter_coq_internal (cfg : languagedescr) input_filename (output_coq : string) =
-  let iface = ((get_primitive_value_algebra cfg.primitive_value_algebra).pvae_builtin_interface) in
-  let builtins_map = (get_builtins_map (cfg.primitive_value_algebra)) in
-  let pi = get_pi cfg.program_info in
-  let query_map = transform_map (pi.pie_table) in
-  (* create coqfile *)
+let generate_interpreter_coq_internal input_filename (output_coq : string) =
   Out_channel.with_file output_coq ~f:(fun oux_coqfile ->
-    append_definition iface builtins_map query_map ~name_of_builtins:(cfg.primitive_value_algebra) ~name_of_pi:(cfg.program_info) input_filename oux_coqfile;
-    fprintf oux_coqfile "Definition chosen_builtins := %s.\n" (get_primitive_value_algebra cfg.primitive_value_algebra).pvae_coq_entity_name;
+    append_definition input_filename oux_coqfile;
     ()
-  )
+  ); ()
 
-let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) input_filename (output_ml : string) =
+let generate_interpreter_ml_internal (user_dir : string) input_filename (output_ml : string) =
   let mldir = (Filename_unix.temp_dir "langdef" ".minuska") in
   let coqfile = Filename.concat mldir "interpreter.v" in
   let mlfile = Filename.concat mldir "interpreter.ml" in
-  let _ = generate_interpreter_coq_internal cfg input_filename coqfile in
+  let _ = generate_interpreter_coq_internal input_filename coqfile in
   (* append to coqfile *)
   Out_channel.with_file coqfile ~append:(true) ~f:(fun oux_coqfile ->
     fprintf oux_coqfile "%s" {|
-      Require Import Ascii.
-      Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].
-      Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].
+      Require Import Ascii Coq.extraction.ExtrOcamlNativeString.
+Extract Inductive string => "string"
+[
+"
+  """"
+"
+"
+  (fun (c, s) -> Stdlib.String.make 1 c ^ s)
+"
+]
+"
+ (fun f0 f1 s ->
+    let l = Stdlib.String.length s in
+    if l = 0 then f0 () else f1 (Stdlib.String.get s 0) (Stdlib.String.sub s 1 (l-1)))
+".
+      (*Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].*)
+      (*Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].*)
       Extract Inductive stdpp.countable.Countable => "Libminuska.Extracted.countable" [ "(fun (e,d) -> {Libminuska.Extracted.encode = e; Libminuska.Extracted.decode = d;})" ].
       Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
       Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
       Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, c, d, e, f, g) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_inject_err = c; Libminuska.Extracted.bi_inject_bool = d; Libminuska.Extracted.bi_inject_Z = e; Libminuska.Extracted.bi_inject_string = f; Libminuska.Extracted.bi_eject = g; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b;Libminuska.Extracted.bi_inject_err=c;Libminuska.Extracted.bi_inject_bool=d;Libminuska.Extracted.bi_inject_Z=e;Libminuska.Extracted.bi_inject_string=f;Libminuska.Extracted.bi_eject=g} -> (myf a0 a b c d e f g))" .
+      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, c) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_show_builtin = c; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b; Libminuska.Extracted.bi_show_builtin = c} -> (myf a0 a b c))" .
 
       Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
       Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].
@@ -178,13 +122,19 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
       Extract Constant GT => "Libminuska.Extracted.gT".
       Extract Constant gt_term => "Libminuska.Extracted.gt_term".
       Extract Constant gt_over => "Libminuska.Extracted.gt_over".
+
+      Extract Inductive BuiltinRepr => "Libminuska.Extracted.builtinRepr" [ "(fun (a,b) -> { Libminuska.Extracted.br_kind=a; Libminuska.Extracted.br_value=b; } )" ].
+      Extract Inductive StringBuiltinOrVar => "Libminuska.Extracted.stringBuiltinOrVar" [ "Libminuska.Extracted.Sbov_builtin" "Libminuska.Extracted.Sbov_var" ] .
       Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, c, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.querySymbol_countable = c; Libminuska.Extracted.pi_symbol_interp = d; })" ].
-      Extract Constant program_info => "Libminuska.Extracted.programInfo".
-      Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter".
-      Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext".
+      Extract Inductive Declaration => "Libminuska.Extracted.declaration" [ "Libminuska.Extracted.Decl_rule" "Libminuska.Extracted.Decl_ctx" "Libminuska.Extracted.Decl_strict" ] .
+      Extract Inductive StringSideCondition => "Libminuska.Extracted.stringSideCondition" [ "Libminuska.Extracted.Ssc_true" "Libminuska.Extracted.Ssc_false" "Libminuska.Extracted.Ssc_atom" "Libminuska.Extracted.Ssc_and" "Libminuska.Extracted.Ssc_or" ].
+      Extract Inductive StringExpression => "Libminuska.Extracted.stringExpression" [ "Libminuska.Extracted.Se_ground" "Libminuska.Extracted.Se_variable" "Libminuska.Extracted.Se_applyf" "Libminuska.Extracted.Se_applyq" ].
+      Extract Inductive Defaults => "Libminuska.Extracted.defaults" [ "(fun (a,b,c,d) -> {Libminuska.Extracted.default_cseq_name = a; Libminuska.Extracted.default_empty_cseq_name = b; Libminuska.Extracted.default_context_template = c; Libminuska.Extracted.default_isValue = d;})" ].
+      (* Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter". *)
+      (* Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext". *)
     |};
     fprintf oux_coqfile "Set Extraction Output Directory \"%s\".\n" (mldir);
-    fprintf oux_coqfile "Extraction \"%s\" lang_interpreter lang_interpreter_ext lang_debug_info chosen_builtins.\n" ("interpreter.ml");
+    fprintf oux_coqfile "Extraction \"%s\" Lang_Decls LangDefaults (*chosen_builtins*).\n" ("interpreter.ml");
   );
   (* extract coq into ocaml *)
   let rv = run ["cd "; mldir; "; "; coqc_command; " "; coqflags; " -R "; user_dir; " User "; coqfile; " > coq_log.txt"] in
@@ -194,14 +144,11 @@ let generate_interpreter_ml_internal (user_dir : string) (cfg : languagedescr) i
   ()
 
 let transform_groundterm
-  (iface : 'a Extracted.builtinInterface)
-  (name_of_builtins : coqModuleName)
-  (name_of_pi : coqModuleName)
   input_fname output_fname () =
   In_channel.with_file input_fname ~f:(fun inx ->
     let lexbuf = Lexing.from_channel inx in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_fname };
-    write_gterm iface name_of_builtins name_of_pi lexbuf output_fname;  
+    write_gterm lexbuf output_fname;  
   );
   ()
 
@@ -211,14 +158,14 @@ let generate_interpreter_ml (modules : string list) scm_filename (out_ml_file : 
   let dir = Filename.to_absolute_exn ~relative_to:(curdir) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_ml_internal curdir cfg mfile out_ml_file;
+  generate_interpreter_ml_internal curdir mfile out_ml_file;
   ()
 
 let generate_interpreter_coq scm_filename (out_coq_file : string) =
   let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
   let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
   let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_coq_internal cfg mfile out_coq_file;
+  generate_interpreter_coq_internal mfile out_coq_file;
   ()
 
 let initialize_project project_name (name_of_builtins : coqModuleName) (name_of_program_info : coqModuleName) =
@@ -275,20 +222,28 @@ let initialize_project project_name (name_of_builtins : coqModuleName) (name_of_
 |}
   );
   Out_channel.with_file "run.ml" ~f:(fun oux ->
-    fprintf oux {|
-      open Core
-      open Printf
+    fprintf oux 
+{|
+open Core
+open Printf
+open Libminuskapluginbase
+open Pluginbase
 
-      let main () =
-        Libminuska.Miskeleton.main
-          Internal.chosen_builtins
-          (fun _ -> failwith "Parser not implemented.")
-          Internal.lang_interpreter
-          Internal.lang_interpreter_ext
-          Internal.lang_debug_info
-        
-      let _ = main ()
-    |}
+let main () =
+  let pvae = (get_primitive_value_algebra (coqModuleName_of_sexp (Sexp.of_string ("%s")))) in
+  let signature = (pvae.pvae_builtin_interface.bi_signature) in
+  let builtins = (pvae.pvae_builtin_interface.bi_beta) in
+  let pie = (get_trivial_program_info signature builtins) in
+  Libminuska.Miskeleton.main
+    pvae
+    pie          
+    (fun _ -> failwith "Parser not implemented.")
+    Internal.langDefaults
+    Internal.lang_Decls
+  
+let _ = main ()
+|}
+    (Sexp.to_string (sexp_of_coqModuleName name_of_builtins))
   );
   ()
 
@@ -313,17 +268,11 @@ let command_groundterm2coq =
     ~summary:"Generate a Coq (*.v) file from a ground term (e.g., a program)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-    (* TODO support user-provided PVAs *)
-        name_of_builtins0 = flag "--builtins" (required string) ~doc:"builtins to use" and
-        name_of_program_info0 = flag "--program-info" (required string) ~doc:"program info to use" and
         input_filename = anon (("filename_in" %: Filename_unix.arg_type)) and
         output_filename = anon (("filename_out" %: Filename_unix.arg_type))
-
      in
      fun () -> 
-      let name_of_builtins = coqModuleName_of_sexp (Sexp.of_string name_of_builtins0) in
-      let name_of_program_info = coqModuleName_of_sexp (Sexp.of_string name_of_program_info0) in
-      transform_groundterm (get_primitive_value_algebra name_of_builtins).pvae_builtin_interface name_of_builtins name_of_program_info input_filename output_filename ())
+      transform_groundterm input_filename output_filename ())
 
 let command_generate_interpreter_coq =
   Command.basic

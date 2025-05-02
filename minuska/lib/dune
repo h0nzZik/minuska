@@ -14,21 +14,23 @@
 (library
   (name libminuskapluginbase)
   (public_name minuska.pluginbase)
-  (modules pluginbase stringutils dsm)
+  (modules pluginbase dsm syntax util)
   (libraries
-    ; coq-minuska
     core
+    stdlib
     zarith
+    sexplib
   )
-  (preprocess (pps ppx_jane))
+  (preprocess (pps ppx_sexp_value ppx_sexp_conv))
 )
 
 (library
  (name libminuska)
  (public_name minuska)
- (modules syntax parser lexer miparse micoqprint miunparse miskeleton programparser libminuska)
+ (modules parser lexer miparse micoqprint miunparse miskeleton programparser libminuska)
  (libraries
     benchmark
+    stdlib
     core
     core_unix
     core_unix.command_unix

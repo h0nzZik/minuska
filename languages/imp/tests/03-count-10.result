@@ -1,1 +1,1 @@
-c[builtin.cseq[[(@builtin-int 55)], builtin.empty_cseq[]], [(@opaque_builtin)]]
+c[builtin.cseq[(@builtin:int("55")), builtin.empty_cseq[]], (@builtin:map("_"))]

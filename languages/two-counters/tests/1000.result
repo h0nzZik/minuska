@@ -1,1 +1,1 @@
-state[[(@builtin-int 0)], [(@builtin-int 500500)]]
+state[(@builtin:int("0")), (@builtin:int("500500"))]

@@ -26,16 +26,16 @@ and convert_command (ast : Syntax.command) : Libminuska.Syntax.groundterm =
   | `CmdExpr e -> convert_aexp e
 and convert_id (x : Syntax.id) : Libminuska.Syntax.groundterm =
   match x with
-  | `Id s -> `GTerm (`Id "var", [(`GTb (`BuiltinString s))])
+  | `Id s -> `GTerm (`Id "var", [(`GTb {br_kind="string"; br_value=s;})])
 and convert_aexp (e : Syntax.aexpr) : Libminuska.Syntax.groundterm =
   match e with
-  | `AExprInt n -> (`GTb (`BuiltinInt n))
+  | `AExprInt n -> (`GTb {br_kind="int"; br_value=(sprintf "%d" n);})
   | `AExprVar x -> (convert_id x)
   | `AExprPlus (a, b) -> `GTerm(`Id "plus", [(convert_aexp a);(convert_aexp b)])
   | `AExprMinus (a, b) -> `GTerm(`Id "minus", [(convert_aexp a);(convert_aexp b)])
 and convert_bexp (e : Syntax.bexpr) : Libminuska.Syntax.groundterm =
   match e with
-  | `BExprBool b -> `GTb (`BuiltinBool b)
+  | `BExprBool b -> `GTb {br_kind="bool"; br_value=(if b then "true" else "false");}
   | `BExprNeg e2 -> `GTerm(`Id "neg", [(convert_bexp e2)])
   | `BExprAnd (e1,e2) -> `GTerm(`Id "and", [(convert_bexp e1); (convert_bexp e2)])
   | `BExprOr (e1,e2) -> `GTerm(`Id "or", [(convert_bexp e1); (convert_bexp e2)])

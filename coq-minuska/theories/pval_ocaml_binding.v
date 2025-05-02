@@ -8,54 +8,23 @@ From Minuska Require Import
 
 From Coq Require Import String ZArith.
 
+
 Record BuiltinInterface (NondetValue : Type) := mkBuiltinInterface {
     bi_signature : Signature ;
-    bi_beta : Model bi_signature (NondetValue : Type) ;
-    bi_bindings : BuiltinsBinding ;
-    bi_inject_err : (@builtin_value _ _ _ NondetValue bi_beta) ;
-    bi_inject_bool : forall (Fret : option (@builtin_value _ _ _ NondetValue bi_beta) -> (@builtin_value _ _ _ NondetValue bi_beta)), bool -> (@builtin_value _ _ _ NondetValue bi_beta) ;
-    bi_inject_Z : forall (Fret : option (@builtin_value _ _ _ NondetValue bi_beta) -> (@builtin_value _ _ _ NondetValue bi_beta)), Z -> (@builtin_value _ _ _ NondetValue bi_beta) ;
-    bi_inject_string : forall (Fret : option (@builtin_value _ _ _ NondetValue bi_beta) -> (@builtin_value _ _ _ NondetValue bi_beta)), string -> (@builtin_value _ _ _ NondetValue bi_beta) ;
-    bi_eject : (@builtin_value _ _ _ NondetValue bi_beta) -> option (bool+(Z+(string+unit)))%type ;
+    bi_beta : Model bi_signature NondetValue ;
+    bi_sym_info : string -> SymbolInfo ;
 }.
 
 Definition builtins_empty : BuiltinInterface MyUnit := {|
     bi_beta := builtin.empty.β ;
-    bi_bindings := builtin.empty.builtins_binding ;
-    bi_inject_err := @builtin.empty.inject_err string;
-    bi_inject_bool := @builtin.empty.inject_bool string;
-    bi_inject_Z := @builtin.empty.inject_Z string;
-    bi_inject_string := @builtin.empty.inject_string string;
-    bi_eject := @builtin.empty.eject string;
+    bi_sym_info := fun s => si_none ;
 |}.
 
 Definition builtins_klike : BuiltinInterface MyUnit := {|
     bi_beta := builtin.klike.β ;
-    bi_bindings := builtin.klike.builtins_binding ;
-    bi_inject_err := @builtin.klike.inject_err string;
-    bi_inject_bool := fun b => @builtin.klike.inject_bool string b;
-    bi_inject_Z := fun z => @builtin.klike.inject_Z string z;
-    bi_inject_string := fun s => @builtin.klike.inject_string string s;
-    bi_eject := @builtin.klike.eject string;
+    bi_sym_info := builtin.klike.sym_info ;
 |}.
 
-Definition pi_trivial := (@pi.trivial.MyProgramInfo, @pi.trivial.my_binding).
+Definition pi_trivial := (@pi.trivial.MyProgramInfo string _ MyUnit, @pi.trivial.my_binding).
 
-(* 
-Record PI_interface := {
-    pii_program_info : 
-        forall
-        {symbol : Type}
-        {symbols : Symbols symbol}
-        {NondetValue : Type}
-        {builtin : Builtin NondetValue},
-        @ProgramInfo symbol symbols NondetValue builtin
-        ;
-    
-    pii_binding : list (string*string) ;
-}.
-
-Definition pi_trivial : PI_interface := {
-    pii_program_info : trivial.MyProgramInfo ;
-}. *)
 
