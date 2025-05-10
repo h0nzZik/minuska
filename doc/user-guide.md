@@ -4,108 +4,70 @@ This file describes Minuska from the user's point of view.
 
 ## Building
 
-To build Minuska from source, you can either run
+To build Minuska from source, you can run
 ```sh
 nix develop '.#with-minuska'
 ```
-which builds the project and populates the PATH environment variable with a `minuska` command,
-or you can first install [all the dependencies](./dependencies.md)
-and run
-```sh
-cd <project-root>/minuska
-dune build @all
-dune install --prefix <install-directory>
-```
-which installs the `minuska` command into `<install-directory>/bin`.
+which builds the project and populates the PATH environment variable with the `minuska` command. You can also try the `bench-standalone` devshell. Alternatively, RPM and DEB packages are available.
 
 
 ## Using Minuska
 
-Minuska can be used as a standalone command-line tool, as a Coq library, or combined.
-We illustrate the usage on a trivial 'language definition' [decrement.m](./examples-standalone/m/decrement.m) that accepts unary-encoded numbers as programs
-and decrements the given number until it gets to zero (or smaller).
-The illustrative commands are supposed to be run from the root of this repository.
+The main use-case for Minuska is currently in generating interpreters from formal language definitions. Typically, a language definition has the form of an `*.m` file, such as [this one](../languages/arith/def.m). A language definition can also have the form of a direct, Coq-based definition; however, there is not much tooling support for that style of work.
 
-### From the command-line
+Let's have a closer look at the above-referenced language definition file for evaluation of arithmetic expressions.
 
-To see all the options `minuska` offers, run run:
-```sh
-minuska --help
-```
+### Semantic rules
 
-#### Generating interpreters and running programs natively
+The main part of the language definition are "semantic rules" for addition and subtraction:
+```
+@rule/simple [plus]: plus[X,Y] => z.plus(X, Y) where @and(z.is(X), z.is(Y)) ;
+@rule/simple [minus]: minus[X,Y] => z.minus(X, Y) where @and(z.is(X), z.is(Y)) ;
+```
+Each rule consists of
+- the `@rule` keyword
+- optionally followed by a "frame identifier" behind a slash (`/`) (such as `/simple`);
+- a "rule label" in square brackets (such as `[plus]`);
+- a "left-hand side pattern" such as `plus[X,Y]`;
+- a "right-hand side term-with-expressions" such as `z.plus(X, Y)`; and
+- a "side condition" such as `@and(z.is(X), z.is(Y))`.
 
-To generate an interpreter from a language definition, use the `minuska compile` command. For example,
-```sh
-minuska compile ./examples-standalone/m/decrement.m decrement.exe
-```
-generates the interpreter named `decrement.exe`.
-The generated interpreter can be used to execute a program for a given number of steps.
-For example, given the [unary-encoded number three](../examples-standalone/m/decrement.d/three), running
-```sh
-./decrement.exe ./examples-standalone/m/decrement.d/three --depth 3
-```
-outputs the unary-encoded number one
-```
-Taken 3 steps
-succ[zero[]]
-```
-because the very first step is used to initialize the program.
-Indeed, running
-```sh
-./decrement.exe ./examples-standalone/m/decrement.d/three --depth 0
-```
-shows us the initial configuration:
-```
-Taken 0 steps
-builtin.init[succ[succ[succ[zero[]]]]]
-```
+The consequence of such a rule for an interpreter of the specified language is that a program state (formally known as "configuration") that _matches_ the left-hand side pattern can be _rewritten_ to a new configuration, which a result of evaluating the term-with-expressions with variables assigned to the same values as in the left-hand side. In the case of the `plus` rule, the term-with-expressions is one expression, calling the _built-in function_ named `z.plus` which simply adds two integers together.
 
-To see all the options provided by the interpreter, run:
-```sh
-./decrement.exe --help
+### Subterm rewriting
+
+However, the `plus` rule can be applied only to integers: the built-in function `z.plus` would get stuck on any other argument. To evaluate nested arithmetic expressions, the typical approach of these kind of frameworks (K and Minuska) is to implement a stack-based evaluator. Because doing so by hand is _boring_, Minuska (similarly to K) provides constructs that help with that. Specifically, one can declare the symbols `plus` and `minus` to be strict in both of their arguments
 ```
+@strictness: [
+  plus of_arity 2 in [0,1],
+  minus of_arity 2 in [0,1]
+];
+```
+which instructs Minuska to automatically generate rewrite rules for evaluation of subexpressions. However, for such approach to make sense, one needs to consider the concept of _value_.
 
-#### Generating Coq definitions and running programs inside Coq
+A value is a term that we do not want to further rewrite. In the context of a language of arithmetic expressions, a value is simply an integer:
+```
+@value(X): z.is(X) ;
+```
+Here, `z.is` is a _built-in predicate_ that holds only on integers. (Specifically, it is a _negable predicate_ - a predicate that can safely be negated. In Minuska, not all predicates can be negated, because [negations are bad](https://h0nzzik.github.io/posts/008-framing-for-free/) and break separation-logic-style reasoning, which is a feature on the "TODO" list of Minuska.)
 
-To run a program inside Coq, we need to (1) generate a Coq definition
-from a language definition, (2) generate a Coq definition from the program,
-and (3) glue them together.
+### Contexts and frames
 
-To generate and compile a `*.v` file containing the language definition, run:
-```sh
-minuska def2coq ./examples-standalone/m/decrement.m decrement.v
-coqc -R . Test decrement.v
+However, the stack machine also needs to keep its stack somewhere. That is where "frames" and "contexts" come to place.
+```
+@context(HOLE): c[HOLE];
+@frames: [
+  simple(X): c[builtin.cseq [X,REST]]
+];
 ```
 
-Then, to generate and compile a `*.v` file containing the input program, run:
-```sh
-minuska gt2coq ./examples-standalone/m/decrement.d/three three.v
-coqc -R . Test three.v
+The `@context` declaration says that the whole execution stack should be kept under the (unary) symbol `c`. The stack is like a list separated using the `builtin.cseq` binary symbol. For example, a stack `[1,2,3]` (with `1` at the top) is represented as the term
 ```
-
-Now we can generate a Coq file that uses both the interpreter and the input.
-```coq
-(* test.v *)
-From Minuska Require
-  interp_loop
-.
-From Test Require
-  decrement
-  three
-.
-
-Compute (let steps := 3 in
-  @interp_loop.interp_loop
-    default_everything.DSM
-    decrement.lang_interpreter
-    steps
-    three.given_groundterm
-).
+builtin.cseq[1, builtin.cseq[2, builtin.cseq[3, builtin.empty_cseq]
 ```
-We can either open it in an IDE (e.g. ProofGeneral, or VSCode), or build it with `coqc`:
+With this approach, a semantic rule for addition could look like the following:
 ```
-coqc -R . Test test.v
+@rule/simple [plus]: c[builtin.cseq[plus[X,Y], REST]] => c[builtin.cseq[z.plus(X, Y), REST]] where @and(z.is(X), z.is(Y)) ;
 ```
-
+It is easily visible that there is so much uninteresting noise in such a rule! Therefore, the `simple` frame can be used to abstrac away all this noise. In general, one can declare multiple frames to be used in different contexts, which is a feature more useful for larger languages.
 

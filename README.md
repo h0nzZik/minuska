@@ -52,11 +52,7 @@ In principle, many features could be implemented in Minuska that would make the 
 These include support for concrete syntax of programming languages, formalization of the strictness declarations, symbolic execution, and deductive verification.
 See the [ideas document](./doc/ideas.md)
 
-# Troubleshooting
-
-If your system does not support FUSE, or its configuration is broken, try `export APPIMAGE_EXTRACT_AND_RUN=1` before running any generated interpreters.
-This needs to be done e.g., in Docker, or when running on Github-hosted runners.
 
 # Papers
 
-An extended version of the SEFM'24 paper titled 'Minuska: Towards a Formally Verified Programming Language Framework' is available [on Arxiv](https://arxiv.org/abs/2409.11530).
+There exists a SEFM'24 [paper](https://doi.org/10.1007/978-3-031-77382-2_12) titled 'Minuska: Towards a Formally Verified Programming Language Framework'. Also, an older version is available [on Arxiv](https://arxiv.org/abs/2409.11530).
