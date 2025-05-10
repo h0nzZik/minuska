@@ -1912,6 +1912,18 @@ Lemma naive_interpreter_sound
     (Γ : RewritingTheory2 Act)
     : Interpreter_sound Γ (naive_interpreter Γ).
 Proof.
+    (* Proof structure:
+       1. Rule Application Correctness:
+          - If the interpreter produces a result (Some e2), then there exists a valid rewriting rule in Γ
+            that justifies the transition from e1 to e2.
+
+       2. Exhaustiveness:
+          - If the interpreter returns None, then no rewriting rule in Γ applies to the input term e1.
+
+       3. Progress:
+          - If there exists a valid rewriting rule in Γ that applies to e1, then the interpreter will
+            produce a valid result (Some e2).
+    *)
     unfold Interpreter_sound.
     intros wfΓ.
     unfold naive_interpreter.
