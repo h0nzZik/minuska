@@ -44,6 +44,10 @@ Definition SubT {Σ : StaticModel} : Type
     list (variable*(TermOver BuiltinOrVar))%type
 .
 
+Definition subt_closed {Σ : StaticModel} (s : SubT) :=
+    forall k v, s !! k = Some v -> vars_of v.2 = ∅
+.
+
 (* TODO use fold *)
 Fixpoint sub_app {Σ : StaticModel} (s : SubT) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
 match s with
@@ -231,44 +235,148 @@ Proof.
     }
 Qed.
 
+Lemma sub_app_mm_closed
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    (φ : TermOver BuiltinOrVar)
+    :
+    vars_of φ = ∅ ->
+    sub_app_mm sub_mm φ = φ
+.
+Proof.
+    induction φ; intros HH; simpl in *.
+    {
+        destruct a; simpl in *.
+        { reflexivity. }
+        {
+            unfold vars_of in HH; simpl in HH.
+            unfold vars_of in HH; simpl in HH.
+            ltac1:(set_solver).
+        }
+    }
+    {
+        apply f_equal.
+        revert HH H.
+        induction l; intros HH H; simpl in *.
+        { reflexivity. }
+        {
+            rewrite Forall_cons_iff in H.
+            destruct H as [H1 H2].
+            rewrite vars_of_t_term in HH.
+            rewrite fmap_cons in HH.
+            rewrite union_list_cons in HH.
+            specialize (IHl ltac:(set_solver)).
+            specialize (H1 ltac:(set_solver)).
+            rewrite H1.
+            rewrite (IHl H2).
+            reflexivity.
+        }
+    }
+Qed.
+
+Lemma sub_app_mm_insert_2
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    (x : variable)
+    (v : TermOver BuiltinOrVar)
+    (φ : TermOver BuiltinOrVar)
+    :
+    vars_of v = ∅ ->
+    sub_app_mm (<[x:=v]>sub_mm) φ
+    = sub_app_mm sub_mm (sub_app [(x,v)] φ)
+.
+Proof.
+    induction φ; intros Hvars; simpl.
+    {
+        destruct a; simpl.
+        {
+            reflexivity.
+        }
+        {
+            destruct (decide (x = x0)).
+            {
+                subst x0.
+                ltac1:(rewrite lookup_insert).
+                {
+                    rewrite sub_app_mm_closed.
+                    reflexivity.
+                    exact Hvars.
+                }
+            }
+            {
+                ltac1:(rewrite lookup_insert_ne).
+                { assumption. }
+                {
+                    ltac1:(repeat case_match).
+                    {
+                        simpl.
+                        ltac1:(rewrite H).
+                        reflexivity.
+                    }
+                    {
+                        simpl.
+                        ltac1:(rewrite H).
+                        reflexivity.
+                    }
+                }
+            }
+        }
+    }
+    {
+        apply f_equal.
+        revert H.
+        induction l; intros H; simpl in *.
+        { reflexivity. }
+        {
+            rewrite Forall_cons_iff in H.
+            destruct H as [H1 H2].
+            rewrite (H1 Hvars).
+            rewrite (IHl H2).
+            reflexivity.
+        }
+    }
+Qed.
+
+
 
 Lemma subT_to_subTMM_correct
     {Σ : StaticModel}
     (sub : SubT)
     (φ : TermOver BuiltinOrVar)
     :
+    subt_closed sub ->
     sub_app_mm (subT_to_subTMM sub) φ = sub_app sub φ
 .
 Proof.
     revert φ.
-    induction sub; intros φ; simpl.
+    induction sub; intros φ HH; simpl.
     {
         rewrite sub_app_mm_empty.
         reflexivity.
     }
     {
         destruct a; simpl in *.
-
-
-        revert t sub IHsub.
-        induction φ; intros t sub IHsub; simpl.
+        rewrite sub_app_mm_insert_2.
+        simpl.
+        rewrite IHsub.
+        { reflexivity. }
         {
-            destruct a; simpl.
-            {
-                rewrite sub_app_builtin.
-                reflexivity.
-            }
-            {
-                destruct (decide (v = x)).
-                {
-                    subst x.
-                    ltac1:(rewrite lookup_insert).
-                }
-            }
+            unfold subt_closed in HH.
+            unfold subt_closed.
+            intros k v0 H1.
+            specialize (HH (S k)).
+            simpl in HH.
+            apply HH.
+            assumption.
         }
-        (* apply IHsub. *)
-        rewrite <- IHsub.
-        
+        {
+            unfold subt_closed in HH.
+            unfold subt_closed.
+            (* intros k v0 H1. *)
+            specialize (HH 0 (v,t) eq_refl).
+            simpl in HH.
+            apply HH.
+        }
     }
 Qed.
 
