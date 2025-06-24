@@ -8,7 +8,8 @@ From Minuska Require Import
     pi.trivial
     symex
 .
-
+About stdpp.strings.String.
+Locate String.
 From QuickChick Require Import QuickChick.
 Import QcDefaultNotation.
 
@@ -23,6 +24,11 @@ Instance show_builtin : Show builtin_value := {|
 Definition genBuiltin : G builtin_value :=
     oneOf_ (returnGen (inl true)) [(returnGen (inl true)); (returnGen (inl false)); (returnGen (inr 1%Z));(returnGen (inr 2%Z))]
 .
+
+#[local]
+Instance show_symbol : Show symbol := {|
+    show := fun x => x;
+|}.
 
 Fixpoint show_to {T : Type} {_ST : Show T} (t : TermOver T) : string  :=
     match t with
@@ -62,7 +68,7 @@ Fixpoint genTermSized' {T : Type} (sz : nat) (g : nat -> G T) : G (TermOver T) :
   end.
 
 Definition genTermSized sz := genTermSized' sz (fun _ => genBuiltin).
-
+(* Sample (genTermSized 3). *)
 (* Print Expression2. *)
 
 #[local]
@@ -135,41 +141,88 @@ Definition genValuationSized (sz : nat) : G (gmap variable (TermOver builtin_val
     ) (fun l => returnGen (list_to_map l))
 .
 
-About map_to_list.
+
+Definition showVal_ (ρ : Valuation2) : string :=
+        let l := map_to_list ρ in
+        show (l)
+.
+(* About map_to_list. *)
 #[local]
-Instance showVal : Show (gmap variable (TermOver builtin_value)) := {|
-    show := fun x => 
-        let l := map_to_list x in
-        show l;
+Instance showVal : Show Valuation2 := {|
+    show := showVal_
 |}.
 
-
-Sample (genValuationSized 1).
-(* Sample (genTermOverExprSized 3). *)
-
-Definition replace_and_collect_property
+(* Sample (genValuationSized 1). *)
+(* Search bool. *)
+Definition replace_and_collect_property_1
     (program : ProgramT)
     (g : TermOver builtin_value)
     (et : TermOver Expression2)
     (ρ : Valuation2)
     (nv : NondetValue)
-    : Prop
+    : bool
 :=
-    sat2Eb program ρ g et nv =
-    sat2Bb ρ g (replace_and_collect et).1
+    implb
+        (sat2Eb program ρ g et nv)
+        (sat2Bb ρ g (replace_and_collect et).1)
 .
-(* 
-QuickChick (
-    forAll
+
+(* Set Printing Universes. *)
+(* Set Debug "backtrace". *)
+Definition myP1 := forAll
         (genTermOverExprSized 3)
         (
+            fun et =>
             forAll
                 (genTermSized 3)
                 (
+                    fun g =>
                     forAll
-                        (genValSized 3)
-                        (replace_and_collect_property (t_over (inl false)))
+                        (genValuationSized 3)
+                        (fun rho => replace_and_collect_property_1 (t_over (inl false)) g et rho mytt)
                 )
-        )
-). *)
+        ).
+
+QuickChick (
+    myP1
+).
+(* Of course it does not work. The property is too strong.
+    In general, the replace_and_collect does not preserve satisfaction
+    but only satisfiability.
+ *)
+Compute (replace_and_collect (t_over (e_fun int_one []))).
+Compute (sat2Bb ∅ (t_over (inr 1%Z)) (replace_and_collect (t_over (e_fun int_one []))).1).
+
+Definition replace_and_collect_property_2
+    (program : ProgramT)
+    (g : TermOver builtin_value)
+    (et : TermOver Expression2)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    : bool
+:=
+    implb
+        (sat2Bb ρ g (replace_and_collect et).1)
+        (sat2Eb program ρ g et nv)
+.
+
+
+
+Definition myP2 := forAll
+        (genTermOverExprSized 3)
+        (
+            fun et =>
+            forAll
+                (genTermSized 3)
+                (
+                    fun g =>
+                    forAll
+                        (genValuationSized 3)
+                        (fun rho => replace_and_collect_property_2 (t_over (inl false)) g et rho mytt)
+                )
+        ).
+(* Print MyUnit. *)
+QuickChick (
+    myP2
+).
 (* replace_and_collect *)

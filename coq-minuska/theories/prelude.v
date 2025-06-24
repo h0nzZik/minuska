@@ -14,7 +14,7 @@ From stdpp Require Export
     gmap
     hlist
     sets
-    strings
+    (* strings *)
     tactics
     list
     list_numbers
@@ -23,7 +23,21 @@ From stdpp Require Export
     pretty
 .
 
-(* This is unset by stdpp. We need to set it again.*)
+(* I really, really do not want to import stdpp.strings.String, because it makes problems in the extraction *)
+(* https://github.com/rocq-prover/rocq/issues/15247 *)
+Require stdpp.strings.
+
+Definition string_eq_dec0 := Eval vm_compute in stdpp.strings.String.eq_dec.
+Definition string_countable0 := Eval vm_compute in stdpp.strings.String.countable.
+#[export]
+Instance string_eq_dec : EqDecision string := string_eq_dec0.
+#[export]
+Instance string_countable : Countable string := string_countable0.
+#[export]
+Program Instance string_infinite : Infinite string :=
+  search_infinite pretty.
+
+
 
 (*
 #[global]
