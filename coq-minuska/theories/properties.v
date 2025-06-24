@@ -1026,9 +1026,15 @@ Proof.
         unfold satisfies; simpl.
         destruct gt,a ; ltac1:(simp sat2B); simpl.
         {
+            ltac1:(naive_solver).
+        }
+        {
             intros HH.
             unfold TermOver in *.
             ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
+            ltac1:(naive_solver).
+        }
+        {
             ltac1:(naive_solver).
         }
         {
@@ -1036,6 +1042,8 @@ Proof.
             ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
             ltac1:(naive_solver).
         }
+        
+        
     }
     {
         unfold satisfies; simpl.

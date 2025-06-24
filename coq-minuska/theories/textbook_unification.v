@@ -559,9 +559,11 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(congruence).
 }
 {
-    rewrite HH in Heqcall.
-    rewrite bind_Some in Heqcall.
-    destruct Heqcall as [x0 [H1x0 H2x0]].
+    rewrite bind_Some in HH.
+    destruct HH as [x0 [H1x0 H2x0]].
+    (* rewrite HH in Heqcall. *)
+    (* rewrite bind_Some in Heqcall. *)
+    (* destruct Heqcall as [x0 [H1x0 H2x0]]. *)
     inversion H2x0; subst; clear H2x0.
     clear Heq.
     repeat (rewrite fmap_cons).
@@ -594,7 +596,7 @@ ltac1:(funelim (unify es)); intros ss HH.
 {
     ltac1:(simp unify in HH).
     unfold unify_unfold_clause_6_1 in HH.
-    rewrite Heq in HH.
+    (* rewrite Heq in HH. *)
     inversion HH.
 }
 {
@@ -602,8 +604,8 @@ ltac1:(funelim (unify es)); intros ss HH.
 }
 {
     rewrite HH in Heqcall.
-    rewrite bind_Some in Heqcall.
-    destruct Heqcall as [x0 [H1x0 H2x0]].
+    rewrite bind_Some in HH.
+    destruct HH as [x0 [H1x0 H2x0]].
 
     inversion H2x0; subst; clear H2x0.
     clear Heq.
@@ -637,9 +639,9 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(set_solver).
 }
 {
-    rewrite HH in Heqcall.
-    rewrite bind_Some in Heqcall.
-    destruct Heqcall as [x0 [H1x0 H2x0]].
+    (* rewrite HH in HH. *)
+    rewrite bind_Some in HH.
+    destruct HH as [x0 [H1x0 H2x0]].
 
     inversion H2x0; subst; clear H2x0.
     clear Heq.
@@ -668,9 +670,9 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(congruence).
 }
 {
-    rewrite HH in Heqcall.
-    rewrite bind_Some in Heqcall.
-    destruct Heqcall as [x0 [H1x0 H2x0]].
+    (* rewrite HH in Heqcall. *)
+    rewrite bind_Some in HH.
+    destruct HH as [x0 [H1x0 H2x0]].
     inversion H2x0; subst; clear H2x0.
     rewrite fmap_cons.
     rewrite list_to_set_cons.
@@ -693,7 +695,8 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(simplify_eq/=).
 }
 {
-    ltac1:(simp unify in HH). rewrite Heq in HH.
+    ltac1:(simp unify in HH). 
+    (* rewrite Heq in HH. *)
     simpl in HH.
     inversion HH.
 }
@@ -701,9 +704,9 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(congruence).
 }
 {
-    rewrite HH in Heqcall.
-    rewrite bind_Some in Heqcall.
-    destruct Heqcall as [x0 [H1x0 H2x0]].
+    (* rewrite HH in Heqcall. *)
+    rewrite bind_Some in HH.
+    destruct HH as [x0 [H1x0 H2x0]].
     inversion H2x0; subst; clear H2x0.
     specialize (H _ H1x0).
     rewrite fmap_cons.
@@ -727,8 +730,8 @@ ltac1:(funelim (unify es)); intros ss HH.
     subst.
     rewrite eqns_vars_cons.
     simpl.
-    rewrite HH in Heqcall.
-    specialize (H _ Heqcall).
+    (* rewrite HH in Heqcall. *)
+    specialize (H _ HH).
     ltac1:(rewrite eqns_vars_app in H).
     ltac1:(rewrite eqns_vars_zip in H)>[assumption|].
     ltac1:(rewrite 2!vars_of_t_term).
@@ -934,7 +937,7 @@ ltac1:(funelim(unify es)).
     apply least_of_nil_nil.
 }
 {
-    rewrite <- Heqcall.
+    (* rewrite <- Heqcall. *)
     (destruct (unify es) as [ss|]).
     {
         clear Heq. ltac1:(simplify_eq/=).
@@ -964,15 +967,17 @@ ltac1:(funelim(unify es)).
     }
 }
 {
-    rewrite <- Heqcall.
+    (* rewrite <- Heqcall. *)
     exact I.
 }
 {
-    rewrite <- Heqcall. clear Heqcall.
+    (* rewrite <- Heqcall.  *)
+    clear Heqcall.
     exact I.
 }
 {
-    rewrite <- Heqcall. clear Heqcall.
+    (* rewrite <- Heqcall.  *)
+    clear Heqcall.
     simpl.
     ltac1:( repeat (case_match; simpl in *; simplify_eq/=)).
     {
@@ -1025,15 +1030,20 @@ ltac1:(funelim(unify es)).
     exact I.
 }
 {
+    exact I.
+}
+(* {
     ltac1:(case_match).
-    { ltac1:(simplify_eq/=). 
+    { 
+        ltac1:(simplify_eq/=). 
     }
     {
     inversion e.
     }
-}
+} *)
 {
-    rewrite <- Heqcall. clear Heqcall. simpl.
+    (* rewrite <- Heqcall.  *)
+    clear Heqcall. simpl.
     ltac1:(repeat (case_match; simplify_eq/=)).
     {
         clear e H1.
@@ -1074,7 +1084,8 @@ ltac1:(funelim(unify es)).
     }
 }
 {
-    rewrite <- Heqcall. clear Heqcall.
+    (* rewrite <- Heqcall. *)
+    clear Heqcall.
     ltac1:(repeat (case_match; simplify_eq/=; try assumption)).
     destruct H as [H1 H2].
     repeat split.
@@ -1092,7 +1103,8 @@ ltac1:(funelim(unify es)).
     reflexivity.
 }
 {
-    rewrite <- Heqcall. ltac1:(simp unify in Heqcall).
+    (* rewrite <- Heqcall.  *)
+    ltac1:(simp unify in Heqcall).
     unfold unify_unfold_clause_2 in Heqcall.
     clear Heqcall.
     clear HH.
@@ -1136,11 +1148,13 @@ ltac1:(funelim(unify es)).
     exact I.
 }
 {
-    rewrite <- Heqcall. clear Heqcall. simpl.
+    (* rewrite <- Heqcall.  *)
+    clear Heqcall. simpl.
     exact I.
 }
 {
-    rewrite <- Heqcall. clear Heqcall. simpl.
+    (* rewrite <- Heqcall.  *)
+    clear Heqcall. simpl.
     clear Heq.
     clear HH.
     ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
@@ -1271,15 +1285,16 @@ ltac1:(funelim(unify es)).
 {
     ltac1:(simp unify).
     unfold unify_unfold_clause_6_2.
-    rewrite Heq.
+    (* rewrite Heq. *)
     exact I.
 }
 {
-    rewrite <- Heqcall.
+    (* rewrite <- Heqcall. *)
     exact I.
 }
 {
-    rewrite <- Heqcall. clear Heqcall.
+    (* rewrite <- Heqcall.  *)
+    clear Heqcall.
     
     clear HH.
     destruct (unify (sub (t_term s l0) x es)) as [Hr |].
@@ -1360,7 +1375,7 @@ ltac1:(funelim(unify es)).
 {
     destruct a as [HH1 HH2].
     clear Heq.
-    rewrite <- Heqcall.
+    (* rewrite <- Heqcall. *)
     destruct (unify (zip l1 l2 ++ es)) eqn:Heq2.
     {
         subst.
@@ -1488,7 +1503,7 @@ ltac1:(funelim(unify es)).
     }
 }
 {
-    rewrite <- Heqcall.
+    (* rewrite <- Heqcall. *)
     exact I.
 }
 Qed.
@@ -1925,12 +1940,12 @@ Proof.
         inversion HNone.
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         specialize (H HNone).
         solve [eauto].
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         constructor.
         intros HContra.
         ltac1:(simplify_eq/=).
@@ -1941,7 +1956,7 @@ Proof.
         ltac1:(set_solver).
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         rewrite bind_None in HNone.
         destruct HNone as [HNone|HNone].
         {
@@ -1954,7 +1969,7 @@ Proof.
         }
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         specialize (H HNone).
         solve [eauto].
     }
@@ -1965,7 +1980,7 @@ Proof.
         solve [eauto].
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         rewrite bind_None in HNone.
         destruct HNone as [HNone|HNone].
         {
@@ -1978,12 +1993,12 @@ Proof.
         }
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         specialize (H HNone).
         solve [eauto].
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         rewrite bind_None in HNone.
         destruct HNone as [HNone|HNone].
         {
@@ -1999,7 +2014,7 @@ Proof.
         solve [eauto].
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         rewrite bind_None in HNone.
         destruct HNone as [HNone|HNone].
         {
@@ -2012,7 +2027,7 @@ Proof.
         }
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         specialize (H HNone).
         solve [eauto].
     }
@@ -2023,7 +2038,7 @@ Proof.
         solve [eauto].
     }
     {
-        rewrite <- Heqcall in HNone.
+        (* rewrite <- Heqcall in HNone. *)
         rewrite bind_None in HNone.
         destruct HNone as [HNone|HNone].
         {
