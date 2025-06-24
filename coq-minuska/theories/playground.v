@@ -44,8 +44,8 @@ Definition genSymbol : G symbol :=
     (oneOf [(returnGen "s");(returnGen "t");(returnGen "a");(returnGen "b");(returnGen "c")])
 .
 
-Print IntFunSymbol.
-Compute builtin_function_symbol.
+(* Print IntFunSymbol. *)
+(* Compute builtin_function_symbol. *)
 
 Definition genFunction : G builtin_function_symbol :=
     elems [int_plus; int_minus; int_uminus; int_zero; int_one; int_eq; int_le; int_lt]
@@ -135,13 +135,16 @@ Definition genValuationSized (sz : nat) : G (gmap variable (TermOver builtin_val
     ) (fun l => returnGen (list_to_map l))
 .
 
+About map_to_list.
 #[local]
 Instance showVal : Show (gmap variable (TermOver builtin_value)) := {|
-    show := fun x => show (map_to_list x) ;
+    show := fun x => 
+        let l := map_to_list x in
+        show l;
 |}.
 
 
-Sample (genValuationSized 2).
+Sample (genValuationSized 1).
 (* Sample (genTermOverExprSized 3). *)
 
 Definition replace_and_collect_property
@@ -155,7 +158,7 @@ Definition replace_and_collect_property
     sat2Eb program ρ g et nv =
     sat2Bb ρ g (replace_and_collect et).1
 .
-
+(* 
 QuickChick (
     forAll
         (genTermOverExprSized 3)
@@ -168,5 +171,5 @@ QuickChick (
                         (replace_and_collect_property (t_over (inl false)))
                 )
         )
-).
+). *)
 (* replace_and_collect *)

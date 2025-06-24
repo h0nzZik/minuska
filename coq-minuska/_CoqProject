@@ -54,3 +54,4 @@ theories/builtin/empty.v
 theories/builtin/klike.v
 theories/pi/trivial.v
 
+theories/playground.v
