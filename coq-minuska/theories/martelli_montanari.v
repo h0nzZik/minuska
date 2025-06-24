@@ -14,33 +14,6 @@ Ltac resymde S Name HName :=
   remember S as Name eqn:HName; symmetry in HName; destruct Name
 .
 
-(* Borrowed from textbook_unification_alg.v. 
-   Other functionality not yet required, but may be borrowed
-   as well; though then consider some restructuring and possibly importing. *)
-Definition eqn {Σ : StaticModel} : Type :=
-    ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type
-.
-
-Definition SubTMM {Σ : StaticModel} : Type
-:=
-    gmap variable (TermOver BuiltinOrVar)
-.
-
-Fixpoint sub_app_mm {Σ : StaticModel} (s : SubTMM) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
-match t with
-  | t_over (bov_variable v) => let t'_opt := s !! v in
-    match t'_opt with
-      | None => t
-      | Some t' => t'
-    end
-  | t_term sm l => t_term sm (map (λ t' : TermOver BuiltinOrVar, sub_app_mm s t') l)
-  | _ => t
-end
-.
-
-Definition is_unifier_of {Σ : StaticModel} (s : SubTMM) (l : list eqn) :=
-  Forall (fun '(e1, e2) => sub_app_mm s e1 = sub_app_mm s e2) l
-.
 
 Definition term_is_var {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool :=
   match t with

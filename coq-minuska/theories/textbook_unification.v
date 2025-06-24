@@ -414,39 +414,6 @@ induction es; simpl; intros ss HH.
 Qed.
 
 
-Lemma sub_app_app
-{Σ : StaticModel}
-(s1 s2 : SubT)
-(t : TermOver BuiltinOrVar)
-:
-sub_app (s1 ++ s2) t = sub_app s2 (sub_app s1 t)
-.
-Proof.
-revert t.
-induction s1; intros t; simpl.
-{ reflexivity. }
-{
-    destruct a; simpl in *.
-    rewrite IHs1. reflexivity.
-}
-Qed.
-
-Lemma sub_app_builtin
-{Σ : StaticModel}
-(ss : SubT)
-(b : builtin_value)
-:
-sub_app ss (t_over (bov_builtin b)) = t_over (bov_builtin b)
-.
-Proof.
-induction ss; simpl.
-{ reflexivity. }
-{
-    destruct a; simpl in *.
-    apply IHss.
-}
-Qed.
-
 
 Lemma helper_lemma_3 {Σ : StaticModel}:
 ∀ l s1,
