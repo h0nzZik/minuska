@@ -235,3 +235,212 @@ Proof.
     }
 Qed.
 
+Equations? sat2Eb
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (ρ : Valuation2)
+    (t : TermOver builtin_value)
+    (φ : TermOver Expression2)
+    (nv : NondetValue)
+    : bool
+    by wf (TermOver_size φ) lt
+:=
+    sat2Eb program ρ t (t_over e) nv :=
+        match Expression2_evaluate program ρ e nv with 
+        | Some t' => bool_decide (t' = t)
+        | None => false
+        end ;
+    sat2Eb program ρ (t_over a) (t_term s l) _ := false ;
+    sat2Eb program ρ (t_term s' l') (t_term s l) nv := 
+        bool_decide (s' = s) &&
+        match (decide (length l' = length l)) with
+        | right _ => false
+        | left _ => 
+            forallbin (zip l l') (fun i xx' pf => let x := xx'.1 in let x' := xx'.2 in
+            sat2Eb program ρ x' x nv
+        )
+        end
+    ;
+.
+Proof.
+    abstract(
+        ltac1:(replace l with (fst <$> zip l l'))>[
+            ()|(apply fst_zip; ltac1:(lia))
+        ];
+        apply take_drop_middle in pf as pf';
+        rewrite <- pf';
+        rewrite fmap_app;
+        rewrite fmap_cons;
+        simpl;
+        rewrite sum_list_with_app;
+        simpl;
+        ltac1:(unfold x);
+        ltac1:(lia)
+    ).
+Defined.
+
+
+
+Lemma sat2E_refl
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (ρ : Valuation2)
+    (t : TermOver builtin_value)
+    (φ : TermOver Expression2)
+    (nv : NondetValue)
+    :
+    reflect (sat2E program ρ t φ nv) (sat2Eb program ρ t φ nv)
+.
+Proof.
+    revert φ.
+    unfold TermOver in *.
+    ltac1:(induction t using TermOver_rect); intros φ; destruct φ;
+        ltac1:(simp sat2E); ltac1:(simp sat2Eb).
+    {
+        ltac1:(case_match).
+        {
+            apply bool_decide_reflect.
+        }
+        {
+            apply ReflectF.
+            ltac1:(tauto).
+        }
+    }
+    {
+        apply ReflectF.
+        ltac1:(tauto).
+    }
+    {
+        ltac1:(case_match).
+        {
+            apply bool_decide_reflect.
+        }
+        {
+            apply ReflectF.
+            ltac1:(tauto).
+        }
+    }
+    {
+        ltac1:(rename b into s').
+        ltac1:(rename l into l').
+        ltac1:(rename l0 into l).
+        destruct (decide (s' = s)) as [Hy|Hn].
+        {
+            destruct (decide (length l' = length l)) as [Hy2|Hn2].
+            {
+                subst.
+                simpl.
+                rewrite bool_decide_eq_true_2>[|reflexivity].
+                simpl.
+                revert X l Hy2.
+                induction l'; intros X l Hy2; destruct l; simpl.
+                {
+                    apply ReflectT.
+                    ltac1:(naive_solver).
+                }
+                {
+                    simpl in Hy2.
+                    inversion Hy2.
+                }
+                {
+                    simpl in Hy2.
+                    inversion Hy2.
+                }
+                {
+                    simpl in Hy2.
+                    apply (inj S) in Hy2.
+                    simpl in *.
+                    ltac1:(ospecialize (IHl' _)).
+                    {
+                        intros x Hx.
+                        specialize (X x).
+                        intros φ.
+                        ltac1:(ospecialize (X _)).
+                        {
+                            rewrite elem_of_cons.
+                            right.
+                            exact Hx.
+                        }
+                        apply X.
+                    }
+                    specialize (IHl' l Hy2).
+                    (* apply IHl'. *)
+                    destruct IHl' as [IHl'|IHl'].
+                    {
+                        destruct IHl' as [H1 [H2 H3]].
+                        clear H1 H2.
+                        rewrite andb_comm.
+                        simpl.
+                        specialize (X a ).
+                        ltac1:(ospecialize (X _)).
+                        {
+                            rewrite elem_of_cons.
+                            left.
+                            reflexivity.
+                        }
+                        specialize (X t).
+                        destruct X as [X|X].
+                        {
+                            apply ReflectT.
+                            split>[reflexivity|].
+                            split>[ltac1:(lia)|].
+                            intros i t' φ' HH1 HH2.
+                            destruct i.
+                            {
+                                simpl in *.
+                                ltac1:(simplify_eq/=).
+                                exact X.
+                            }
+                            {
+                                simpl in *.
+                                specialize (H3 _ _ _ HH1 HH2).
+                                apply H3.
+                            }
+                        }
+                        {
+                            apply ReflectF.
+                            intros [HH1 [HH2 HH3]].
+                            apply X. clear X.
+                            specialize (HH3 0 a t).
+                            simpl in HH3.
+                            specialize (HH3 eq_refl eq_refl).
+                            exact HH3.
+                        }
+                    }
+                    {
+                        rewrite andb_comm.
+                        simpl.
+                        apply ReflectF.
+                        intros [HH1 [HH2 HH3]].
+                        apply IHl'.
+                        clear IHl'.
+                        split>[assumption|].
+                        split>[assumption|].
+                        intros i t' φ' HH4 HH5.
+                        specialize (HH3 (S i) _ _ HH4 HH5).
+                        exact HH3.
+                    }
+                }
+            }
+            {
+                subst.
+                rewrite bool_decide_eq_true_2>[|reflexivity].
+                simpl.
+                apply ReflectF.
+                ltac1:(tauto).
+            }
+        }
+        {
+            rewrite bool_decide_eq_false_2.
+            {
+                simpl.
+                apply ReflectF.
+                ltac1:(tauto).
+            }
+            {
+                apply Hn.
+            }
+        }
+    }
+Qed.
+
