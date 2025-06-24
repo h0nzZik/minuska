@@ -11,6 +11,7 @@ From QuickChick Require Import QuickChick.
 Import QcDefaultNotation.
 
 
+
 (* Existing Instance int_model. *)
 
 #[local]
@@ -50,6 +51,8 @@ Fixpoint genTermSized (sz : nat) : G (TermOver builtin_value) :=
   end.
 
 
+
+Locate forallb.
 (* Check returnGen. *)
 Sample (genTermSized 1).
 
