@@ -70,6 +70,57 @@ Fixpoint subT_to_subTMM
     end
 .
 
+Fixpoint fresh_var_seq
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    : list variable
+:=
+    match n with
+    | 0 => []
+    | S n' => (fresh avoid)::(fresh_var_seq ((fresh avoid)::avoid) n')
+    end
+.
+
+Fixpoint fresh_nth
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    : variable
+:=
+    match n with
+    | 0 => fresh avoid
+    | S n' => (fresh_nth ((fresh avoid)::avoid) n')
+    end
+.
+
+Definition renaming_for
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    :
+    list (variable*variable)
+:=
+    let rhss : list (TermOver BuiltinOrVar) := snd <$> map_to_list sub_mm in
+    let avoid : list variable := elements (union_list (vars_of <$> rhss)) in
+    let to_be_renamed : list variable := elements (dom sub_mm) in
+    (* [] *)
+    zip to_be_renamed (fresh_var_seq (to_be_renamed ++ avoid) (length to_be_renamed))
+.
+
+(* perhaps use kmap? *)
+Definition subTMM_to_subT
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    :
+    SubT
+:=
+    let subl : list (variable*(TermOver BuiltinOrVar)) := map_to_list sub_mm in
+    let renaming := renaming_for sub_mm in
+    let rnmap : gmap variable variable := list_to_map renaming in
+    let subl_renamed : list (variable*(TermOver BuiltinOrVar)) := (fun kv => match rnmap !! kv.1 with None => kv | Some y => (kv.1, t_over (bov_variable y)) end) <$> subl in
+    subl_renamed ++ ((fun xy => (xy.1, t_over (bov_variable xy.2)))<$> renaming)
+.
+
 Lemma sub_app_mm_empty
     {Σ : StaticModel}
     (φ : TermOver BuiltinOrVar)
@@ -380,34 +431,279 @@ Proof.
     }
 Qed.
 
+(* Print fresh_var_seq. *)
+
+Lemma elem_of_fresh_var_seq
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    (x : variable)
+    :
+    x ∈ fresh_var_seq avoid n ->
+    x ∉ avoid
+.
+Proof.
+    revert avoid.
+    induction n; intros avoid HH; simpl in *.
+    {
+        rewrite elem_of_nil in HH.
+        destruct HH.
+    }
+    {
+        rewrite elem_of_cons in HH.
+        destruct HH as [HH|HH].
+        {
+            subst x.
+            apply infinite_is_fresh.
+        }
+        {
+            specialize (IHn (fresh avoid::avoid) HH).
+            ltac1:(set_solver).
+        }
+    }
+Qed.
+
+Lemma NoDup_fresh_var_seq
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    :
+    NoDup (fresh_var_seq avoid n)
+.
+Proof.
+    revert avoid.
+    induction n; intros avoid; simpl in *.
+    {
+        constructor.
+    }
+    {
+        constructor.
+        intros HContra.
+        apply elem_of_fresh_var_seq in HContra.
+        ltac1:(set_solver).
+        apply IHn.
+    }
+Qed.
+
+
+Lemma subTMM_to_subT_correct
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    (φ : TermOver BuiltinOrVar)
+:
+    sub_app (subTMM_to_subT sub_mm) φ = sub_app_mm sub_mm φ
+.
+Proof.
+    induction φ.
+    {
+        simpl.
+        destruct a; simpl.
+        {
+            rewrite sub_app_builtin.
+            reflexivity.
+        }
+        {
+            destruct (sub_mm !! x) eqn:Heq.
+            {
+                unfold subTMM_to_subT.
+                rewrite sub_app_app.
+                (* Search list_to_map lookup. *)
+                simpl.
+                assert (Hy: exists y, (((list_to_map (renaming_for sub_mm)):(gmap variable variable)) !! x = Some y)).
+                {
+                    unfold renaming_for.
+                    remember (map_to_list sub_mm) as sub_mm'.
+                    remember (snd <$> sub_mm') as rhss.
+                    remember (elements (union_list (vars_of <$> rhss))) as avoid.
+                    remember (elements (dom sub_mm)) as to_be_renamed.
+                    remember (list_find (fun y => x = y) to_be_renamed) as found.
+                    destruct found.
+                    {
+
+                    }
+                    {
+                        ltac1:(exfalso).
+                        subst.
+                        symmetry in Heqfound.
+                        ltac1:(rewrite list_find_None in Heqfound).
+                        rewrite Forall_forall in Heqfound.
+                        specialize (Heqfound x).
+                        rewrite elem_of_elements in Heqfound.
+                        apply Heqfound.
+                        {
+                            clear Heqfound.
+                            ltac1:(rewrite elem_of_dom).
+                            exists t.
+                            exact Heq.
+                        }
+                        {
+                            reflexivity.
+                        }
+                    }
+                }
+                destruct Hy as [y Hy].
+                (* NoDup renaming ? *)
+(*                 
+                assert(((list_to_map (renaming_for sub_mm)):(gmap variable variable)) !! y = None).
+                {
+                    (* clear Hy Heq. *)
+                    unfold renaming_for.
+                    apply not_elem_of_list_to_map_1.
+                    intros HContra.
+                    (* unfold zip. *)
+                    rewrite elem_of_list_fmap in HContra.
+                    destruct HContra as [z [H1z H2z]].
+                    destruct z as [z1 z2].
+                    simpl in *. subst.
+                    apply elem_of_zip_l in H2z as H1.
+                    apply elem_of_zip_r in H2z as H2.
+                    clear H2z.
+
+                    apply elem_of_fresh_var_seq in H2.
+                    
+                    rewrite elem_of_elements in H1.
+                    ltac1:(rewrite elem_of_dom in H1).
+                    destruct H1 as [t' Ht'].
+                    
+                    rewrite elem_of_app in H2.
+                    rewrite elem_of_elements in H2.
+                    apply Decidable.not_or in H2.
+                    destruct H2 as [H21 H22].
+                    Search (~ (_ \/ _)).
+                    Search elem_of zip.
+                    ltac1:(rewrite elem_of_zip_with in H2z).
+                    (* Search (list_to_map _ !! _ = None). *)
+                } *)
+
+                lazy_match! goal with
+                | [|- sub_app _ ?s = _] =>
+                    (* unfold SubTMM in *; *)
+                    assert(H1: $s = t_over (bov_variable y))
+                end.
+                {
+                    (* ltac1:(induction sub_mm using map_ind). *)
+                    remember (map_to_list sub_mm) as sub_mm'.
+                    assert (Hnd := stdpp.fin_maps.map_to_list_spec sub_mm).
+                    ltac1:(rewrite - Heqsub_mm' in Hnd).
+                    
+                    assert (Hxt: (x,t) ∈ sub_mm').
+                    {
+                        subst sub_mm'.
+                        ltac1:(rewrite elem_of_map_to_list).
+                        exact Heq.
+                    }
+                    clear Heqsub_mm' Heq.
+                    revert Hnd Hxt.
+                    induction sub_mm'; intros Hnd Hxt; simpl in *.
+                    {
+                        rewrite elem_of_nil in Hxt.
+                        inversion Hxt.
+                    }
+                    {
+                        rewrite elem_of_cons in Hxt.
+                        destruct Hxt as [Hxt|Hxt].
+                        {
+                            subst a.
+                            ltac1:(rewrite Hy).
+                            simpl in *.
+                            rewrite decide_True.
+                            {
+                                clear IHsub_mm'.
+                                rewrite NoDup_cons in Hnd.
+                                destruct Hnd as [[Hnd1 Hnd2] Hnd3].
+                                assert (x ∉ dom sub_mm).
+                                {
+                                    ltac1:(rewrite elem_of_dom).
+                                    intros HContra.
+                                    destruct HContra as [z Hz].
+                                    rewrite <- Hnd3 in Hz.
+                                    rewrite elem_of_cons in Hz.
+                                    destruct (decide (z = t)).
+                                    {
+                                        destruct Hz as [Hz|Hz];
+                                            try ltac1:(naive_solver).
+                                        ltac1:(simplify_eq/=).
+                                        apply Hnd1.
+                                    }
+                                }
+(* 
+                                assert (Htmp := proj1 (Hnd3 x t)).
+                                rewrite elem_of_cons in Htmp.
+                                ltac1:(ospecialize (Htmp _)).
+                                {
+                                    left. reflexivity.
+                                } *)
+                                (* This becomes wild *)
+                                revert Hnd1 Hnd2 Hnd3. clear Hy.
+                                induction sub_mm';
+                                    intros Hnd1 Hnd2 Hnd3;
+                                    simpl in *.
+                                {
+                                    reflexivity.
+                                }
+                                {
+                                    simpl in *.
+                                    ltac1:(repeat case_match).
+                                    {
+                                        ltac1:(simplify_eq/=).
+                                    }
+                                    {
+
+                                    }
+                                }
+
+
+
+                                simpl.
+                                Search sub_app.
+                                (* lazy_match! goal with
+                                | [|- sub_app ?s _ = _] =>
+
+                                end. *)
+                            }
+                            {
+                                reflexivity.
+                            }
+                        }
+                    }
+                    Search map_to_list elem_of.
+                    (* assert (Hxt: (x,t) ∈ ) *)
+                }
+                Search sub_app bov_variable.
+            }
+            {
+                simpl.
+            }
+        }
+    }
+Qed.
+
 Class UnificationAlgorithm
     {Σ : StaticModel}
 := {
     ua_unify :
         TermOver BuiltinOrVar ->
         TermOver BuiltinOrVar ->
-        option SubT
+        option SubTMM
     ;
     
     ua_unify_sound :
         forall
             (t1 t2 : TermOver BuiltinOrVar)
-            (u : SubT),
+            (u : SubTMM),
         ua_unify t1 t2 = Some u ->
-        (sub_app u t1 = sub_app u t2) /\
+        (sub_app_mm u t1 = sub_app_mm u t2) /\
         (
-            forall u',
-                sub_app u' t1 = sub_app u' t2 ->
-                exists rest,
-                forall (x : variable),
-                    sub_app (u ++ rest) (t_over (bov_variable x)) = sub_app u' (t_over (bov_variable x))
+            forall (u' : SubTMM),
+                sub_app_mm u' t1 = sub_app_mm u' t2 ->
+                    map_subseteq u u'
         )
     ;
 
     ua_unify_complete :
         forall (t1 t2 : TermOver BuiltinOrVar),
             ua_unify t1 t2 = None ->
-            forall (s : SubT),
-                sub_app s t1 <> sub_app s t2
+            forall (s : SubTMM),
+                sub_app_mm s t1 <> sub_app_mm s t2
     ;
 }.

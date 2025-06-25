@@ -2040,10 +2040,36 @@ Program Definition
 :
     UnificationAlgorithm
 := {|
-    ua_unify := fun t1 t2 => textbook_unification_alg.unify [(t1,t2)] ;
+    ua_unify := fun t1 t2 => subT_to_subTMM <$> (textbook_unification_alg.unify [(t1,t2)]) ;
 |}.
 Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).
+    destruct (unify [(t1, t2)]) eqn:Heq.
+    {
+        destruct Hsound as [Hsound1 Hsound2].
+        simpl in Hsound1.
+        destruct Hsound1 as [Hsound1 _].
+        rewrite <- subT_to_subTMM_correct in Hsound1.
+        rewrite <- subT_to_subTMM_correct in Hsound1.
+        split.
+        {
+            rewrite fmap_Some in H.
+            destruct H as [ss [H1ss H2ss]].
+            subst.
+            ltac1:(rewrite H1ss in Heq).
+            apply (inj Some) in Heq.
+            subst l.
+            exact Hsound1.
+        }
+        {
+            intros u' Hu'.
+            unfold least_of in Hsound2.
+            unfold is_unifier_of in Hsound2.
+            Search sub_app t_over.
+            Search unify.
+        }
+        Search sub_app_mm.
+    }
     ltac1:(rewrite H in Hsound).
     simpl in Hsound.
     destruct Hsound as [H1 H2].
