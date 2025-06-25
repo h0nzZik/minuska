@@ -568,6 +568,26 @@ Proof.
     ltac1:(set_solver).
 Qed.
 
+Lemma renaming_for_all
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    :
+    elements (dom sub_mm) ⊆ (fst <$> (renaming_for sub_mm))
+.
+Proof.
+    unfold renaming_for.
+    ltac1:(rewrite elem_of_subseteq).
+    intros x Hx.
+    rewrite fst_zip.
+    {
+        exact Hx.
+    }
+    {
+        rewrite length_fresh_var_seq.
+        ltac1:(lia).
+    }
+Qed.
+
 Lemma subTMM_to_subT_correct
     {Σ : StaticModel}
     (sub_mm : SubTMM)
@@ -633,15 +653,187 @@ Proof.
                     assert(H1: $s = t_over (bov_variable y))
                 end.
                 {
-                    unfold renaming_for in *.
+                    (* unfold renaming_for in *. *)
                     remember (map_to_list sub_mm) as sub_mm'.
-
-                    Check f_equal.
+                    assert (Hsub_mm'_nodup : NoDup (fst <$> sub_mm')).
+                    {
+                        subst sub_mm'.
+                        unfold SubTMM in *.
+                        apply NoDup_fst_map_to_list.
+                    }
                     ltac1:(apply (f_equal (@list_to_map variable (TermOver BuiltinOrVar) (gmap variable (TermOver BuiltinOrVar)) _ _)) in Heqsub_mm').
                     ltac1:(rewrite list_to_map_to_list in Heqsub_mm').
                     
                     clear Heq t.
                     subst sub_mm.
+
+                    revert x y Hy Hsub_mm'_nodup.
+                    induction sub_mm'; intros x y Hy Hsub_mm'_nodup; simpl in *.
+                    {
+                        apply elem_of_list_to_map_2 in Hy.
+                        unfold renaming_for in Hy.
+                        apply elem_of_zip_l in Hy.
+                        ltac1:(rewrite dom_empty_L in Hy).
+                        rewrite elements_empty in Hy.
+                        rewrite elem_of_nil in Hy.
+                        destruct Hy.
+                    }
+                    {
+                        lazy_match! Constr.type &Hy with
+                        | (list_to_map ?a) !! _ = _ => remember $a as m
+                        end.
+                        destruct a as [z t'].
+                        simpl in *.
+                        destruct (list_to_map m !! z) eqn:Hma.
+                        {
+                            destruct (decide (z = x)).
+                            {
+                                subst z.
+                                rewrite Hma in Hy.
+                                apply (inj Some) in Hy.
+                                subst v.
+                                rewrite Heqm in Hma.
+                                (* Search lookup list_to_map. *)
+                                ltac1:(rewrite <- elem_of_list_to_map in Hma).
+                                assert(Hnt := NoTwice_renaming_for (<[x:=t']> (list_to_map sub_mm')) y).
+                                rewrite elem_of_list_fmap in Hnt.
+                                ltac1:(ospecialize (Hnt _)).
+                                {
+                                    exists (x,y).
+                                    simpl.
+                                    split>[reflexivity|].
+                                    apply Hma.
+                                }
+
+                                (* UFF *)
+                                (* Search renaming_for. *)
+                                (* Check renaming_for_all. *)
+                                clear IHsub_mm'.
+                                assert (Hra := renaming_for_all  (<[x:=t']> (list_to_map sub_mm'))).
+                                assert (Hra' : (fst <$> sub_mm') ⊆ (renaming_for (<[x:=t']> (list_to_map sub_mm'))).*1).
+                                {
+                                    ltac1:(rewrite elem_of_subseteq).
+                                    ltac1:(rewrite elem_of_subseteq in Hra).
+                                    intros x0 Hx0.
+                                    specialize (Hra x0).
+                                    ltac1:(ospecialize (Hra _)).
+                                    {
+                                        rewrite elem_of_elements.
+                                        ltac1:(rewrite elem_of_dom).
+                                        rewrite elem_of_list_fmap in Hx0.
+                                        destruct Hx0 as [[z phi] [H2 H3]].
+                                        subst x0. simpl in *.
+                                        destruct (decide (z = x)).
+                                        {
+                                            subst.
+                                            exists t'.
+                                            ltac1:(rewrite lookup_insert).
+                                            reflexivity.
+                                        }
+                                        {
+                                            exists phi.
+                                            ltac1:(rewrite lookup_insert_ne).
+                                            ltac1:(congruence).
+                                            ltac1:(rewrite - elem_of_list_to_map).
+                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                            apply Hsub_mm'_nodup.
+                                            exact H3.
+                                        }
+                                    }
+                                    exact Hra.
+                                }
+                                ltac1:(rewrite - Heqm in Hra).
+                                assert (Hnd1 : (NoDup (fst <$> m))).
+                                {
+                                    subst m.
+                                    apply NoDup_1_renaming_for.
+                                }
+                                assert(Hynotm : y ∉ (fst <$> m)).
+                                {
+                                    subst m.
+                                    rewrite elem_of_list_fmap.
+                                    intros HContra.
+                                    destruct HContra as [[z1 z2] [H1 H2]].
+                                    simpl in *; subst.
+                                    apply Hnt. clear Hnt.
+                                    rewrite elem_of_list_fmap.
+                                    exists (z1, z2).
+                                    simpl.
+                                    split>[reflexivity|].
+                                    exact H2.
+                                }
+                                clear Heqm Hnt Hma.
+                                revert y m Hnd1 Hynotm Hra.
+                                induction sub_mm'; intros y m Hnd1 Hynotm Hra.
+                                {
+                                    simpl. reflexivity.
+                                }
+                                {
+                                    simpl.
+                                    destruct a. simpl.
+                                    destruct (list_to_map m!!v) eqn:Heq2.
+                                    {
+                                        destruct (decide (v = y)).
+                                        {
+                                            subst v.
+                                            simpl.
+                                            ltac1:(exfalso).
+                                            rewrite <- elem_of_list_to_map in Heq2.
+                                            apply Hynotm. clear Hynotm.
+                                            rewrite elem_of_list_fmap.
+                                            exists (y, v0).
+                                            simpl.
+                                            split>[reflexivity|exact Heq2].
+                                            assumption.
+                                        }
+                                        {
+                                            eapply IHsub_mm'.
+                                            { assumption. }
+                                            { assumption. }
+                                            {
+                                                
+                                            }
+                                        }
+                                    }
+                                    {
+                                        destruct (decide (v = y)).
+                                        {
+                                            subst v.
+                                            simpl.
+                                            ltac1:(exfalso).
+                                            rewrite <- elem_of_list_to_map in Heq2.
+                                            apply Hynotm. clear Hynotm.
+                                            rewrite elem_of_list_fmap.
+                                            exists (y, v0).
+                                            simpl.
+                                            split>[reflexivity|exact Heq2].
+                                            assumption.
+                                        }
+                                        {
+                                            eapply IHsub_mm'.
+                                            { assumption. }
+                                            { assumption. }
+                                            { assumption. }
+                                        }
+                                    }
+                                }
+
+
+                                Search renaming_for.
+                            }
+                        }
+                        remember ((list_to_map (renaming_for (<[a.1:=a.2]> ((list_to_map sub_mm')))) !! a.1):(gmap variable (variable))) as Somez.
+                        destruct (decide (x0 = x)).
+                        {
+
+                        }
+                    }
+
+
+
+
+
+                    Check NoTwice_renaming_for.
                     remember ((elements (dom (list_to_map sub_mm')) ++ elements (⋃ (vars_of <$> sub_mm'.*2)))) as avoid.
                     assert (Havoid: (elements (dom ((list_to_map sub_mm'):(gmap variable (TermOver BuiltinOrVar)))) ++ elements (⋃ (vars_of <$> sub_mm'.*2))) ⊆ avoid) by (ltac1:(set_solver)).
                     clear Heqavoid.
@@ -652,9 +844,9 @@ Proof.
                     remember ( (length (elements (dom (list_to_map sub_mm'))))) as n.
                     clear Heqn.
                     
-                    ltac1:(setoid_rewrite -> elements_list_to_set).
-                    Search elements list_to_set.
-                    Search dom list_to_map.
+                    (* ltac1:(setoid_rewrite -> elements_list_to_set). *)
+                    (* Search elements list_to_set. *)
+                    (* Search dom list_to_map. *)
                     revert x y n avoid Havoid Hy.
                     induction sub_mm'; intros x y n avoid Havoid Hy; simpl in *.
                     {
@@ -671,6 +863,7 @@ Proof.
                         {
                             clear H1.
                             fold (@fmap list list_fmap) in *.
+                            Check NoTwice_renaming_for.
                             (* Search dom insert. *)
                             ltac1:(rewrite dom_insert_L).
                             Search list_to_map zip.
