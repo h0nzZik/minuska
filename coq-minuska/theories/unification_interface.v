@@ -783,6 +783,68 @@ Proof.
                                             }
                                         }
                                     }
+                                    ltac1:(rewrite - elem_of_list_to_map).
+                                    {
+                                        simpl in *.
+                                        repeat (rewrite NoDup_cons in Hsub_mm'_nodup).
+                                        destruct Hsub_mm'_nodup as [HH1 [HH2 HH3]].
+                                        rewrite fst_zip.
+                                        ltac1:(rewrite dom_insert_L).
+                                        ltac1:(rewrite elements_union_singleton).
+                                        {
+                                            
+                                        }
+                                        {
+                                            rewrite NoDup_cons.
+                                            fold (@fmap list list_fmap) in *.
+                                            rewrite elem_of_elements.
+                                            rewrite elem_of_dom.
+                                            split.
+                                            {
+                                                intros HContra.
+                                                destruct HContra as [p Hp].
+                                                ltac1:(rewrite - elem_of_list_to_map in Hp).
+                                                { assumption. }
+                                                apply HH1. clear HH1.
+                                                rewrite elem_of_cons.
+                                                right.
+                                                rewrite elem_of_list_fmap.
+                                                exists (x, p).
+                                                split>[reflexivity|].
+                                                exact Hp.
+                                            }
+                                            {
+                                                apply NoDup_elements.
+                                            }
+                                        }
+                                        {
+                                            simpl.
+                                            ltac1:(rewrite dom_insert).
+                                            rewrite elements_union_singleton.
+                                            simpl.
+                                            rewrite length_fresh_var_seq.
+                                            ltac1:(rewrite dom_list_to_map_L).
+                                            ltac1:(rewrite elements_list_to_set).
+                                            assumption.
+                                            rewrite length_fmap.
+                                            ltac1:(lia).
+                                            intros HContra.
+                                            rewrite elem_of_dom in HContra.
+                                            destruct HContra as [p Hp].
+                                            ltac1:(rewrite - elem_of_list_to_map in Hp).
+                                            assumption.
+                                            fold (@fmap list list_fmap) in *.
+                                            apply HH1.
+                                            clear HH1.
+                                            rewrite elem_of_cons.
+                                            right.
+                                            rewrite elem_of_list_fmap.
+                                            exists (x,p).
+                                            simpl.
+                                            split>[reflexivity|].
+                                            exact Hp.
+                                        }
+                                    }
                                 }
                             }
                         }
