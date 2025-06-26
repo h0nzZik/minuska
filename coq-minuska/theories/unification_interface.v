@@ -596,6 +596,218 @@ Lemma subTMM_to_subT_correct
     sub_app (subTMM_to_subT sub_mm) φ = sub_app_mm sub_mm φ
 .
 Proof.
+    unfold subTMM_to_subT.
+    remember (renaming_for sub_mm) as rn.
+    unfold renaming_for in Heqrn.
+    remember ((elements (dom sub_mm) ++ elements (⋃ (vars_of <$> (map_to_list sub_mm).*2)))) as avoid.
+    assert (Havoid : ((elements (dom sub_mm) ++ elements (⋃ (vars_of <$> (map_to_list sub_mm).*2)))) ⊆ avoid) by ltac1:(set_solver).
+    clear Heqavoid.
+
+    subst rn.
+    revert avoid Havoid.
+    induction φ; intros avoid Havoid.
+    {
+        simpl in *.
+        destruct a.
+        {
+            simpl in *.
+            rewrite sub_app_builtin.
+            reflexivity.
+        }
+        {
+            remember (map_to_list sub_mm) as sub_mm'.
+            
+            assert (Hlen: (length (elements (dom (@list_to_map variable (TermOver BuiltinOrVar) (gmap variable (TermOver BuiltinOrVar)) _ _ sub_mm')))) = length sub_mm').
+            {
+                rewrite dom_list_to_map.
+                rewrite elements_list_to_set.
+                rewrite length_fmap.
+                reflexivity.
+                subst sub_mm'.
+                unfold SubTMM in *.
+                apply NoDup_fst_map_to_list.
+            }
+            
+            assert (Hsub_mm'_nodup : NoDup (fst <$> sub_mm')).
+            {
+                subst sub_mm'.
+                unfold SubTMM in *.
+                apply NoDup_fst_map_to_list.
+            }
+            ltac1:(apply (f_equal (@list_to_map variable (TermOver BuiltinOrVar) (gmap variable (TermOver BuiltinOrVar)) _ _)) in Heqsub_mm').
+            ltac1:(rewrite list_to_map_to_list in Heqsub_mm').
+            subst sub_mm.
+            ltac1:(rewrite Hlen).
+            clear Hlen.
+            revert avoid Havoid.
+            induction sub_mm'; intros avoid Havoid.
+            {
+                simpl in *.
+                ltac1:(rewrite lookup_empty dom_empty_L elements_empty).
+                simpl.
+                reflexivity.
+            }
+            {
+                simpl.
+                destruct a as [y t].
+                simpl in *.
+                destruct (decide (x = y)).
+                {
+                    subst y.
+                    ltac1:(rewrite lookup_insert).
+                    destruct (list_to_map
+                        (zip (elements (dom (<[x:=t]> (list_to_map sub_mm'))))
+                        (fresh avoid
+                        :: fresh_var_seq (fresh avoid :: avoid) (length sub_mm')))
+                        !! x
+                    ) eqn:Heq1.
+                    {
+                        fold (@fmap list list_fmap) in *.
+                        rewrite decide_True>[|reflexivity].
+                        (* rewrite sub_app_app. *)
+                        ltac1:(ospecialize (IHsub_mm' _)).
+                        {
+                            inversion Hsub_mm'_nodup; subst.
+                            assumption.
+                        }
+                        specialize (IHsub_mm' (fresh avoid :: avoid)).
+                        ltac1:(ospecialize (IHsub_mm' _)).
+                        {
+                            ltac1:(rewrite dom_list_to_map).
+                            ltac1:(rewrite dom_insert_L in Havoid).
+                            ltac1:(rewrite dom_list_to_map in Havoid).
+                            ltac1:(set_solver).
+                        }
+                        rewrite sub_app_app.
+                        rewrite sub_app_app in IHsub_mm'.
+                        lazy_match! goal with
+                        | [ |- sub_app _ ?p = _] =>
+                            assert (exists z, $p = t_over (bov_variable z) /\ z ∈ (fresh avoid :: fresh_var_seq (fresh avoid :: avoid) (length sub_mm')))
+                        end.
+                        {
+                            clear - Heq1 Hsub_mm'_nodup.
+                            revert v avoid Heq1 Hsub_mm'_nodup.
+                            induction sub_mm'; intros v avoid Heq1 Hsub_mm'_nodup.
+                            {
+                                simpl in *.
+                                exists v.
+                                split>[reflexivity|].
+                                ltac1:(rewrite dom_insert_L in Heq1).
+                                ltac1:(rewrite union_empty_r_L in Heq1).
+                                rewrite elements_singleton in Heq1.
+
+                                ltac1:(rewrite - elem_of_list_to_map in Heq1).
+                                {
+                                    constructor.
+                                    intros HContra.
+                                    rewrite elem_of_nil in HContra.
+                                    exact HContra.
+                                    constructor.
+                                }
+                                simpl in Heq1.
+                                rewrite elem_of_cons.
+                                rewrite elem_of_cons in Heq1.
+                                ltac1:(set_solver).
+                            }
+                            {
+                                simpl in *.
+                                specialize (IHsub_mm' v (avoid)).
+                                simpl in *.
+                                ltac1:(ospecialize (IHsub_mm' _)).
+                                {
+                                    ltac1:(rewrite - elem_of_list_to_map in Heq1).
+                                    {
+                                        repeat (rewrite NoDup_cons in Hsub_mm'_nodup).
+                                        destruct Hsub_mm'_nodup as [HH1 [HH2 HH3]].
+                                        rewrite fst_zip.
+                                        apply NoDup_elements.
+                                        simpl.
+                                        rewrite length_fresh_var_seq.
+                                        ltac1:(rewrite dom_insert_L).
+                                        ltac1:(rewrite dom_insert_L).
+                                        rewrite elements_union_singleton.
+                                        {
+                                            rewrite elements_union_singleton.
+                                            {
+                                                simpl.
+                                                ltac1:(rewrite dom_list_to_map).
+                                                rewrite elements_list_to_set.
+                                                rewrite length_fmap.
+                                                ltac1:(lia).
+                                                assumption.
+                                            }
+                                            {
+                                                fold (@fmap list list_fmap) in *.
+                                                intros HContra.
+                                                apply HH2. clear HH2.
+                                                rewrite elem_of_dom in HContra.
+                                                destruct HContra as [b Hb].
+                                                rewrite elem_of_list_fmap.
+                                                destruct a as [a1 a2].
+                                                simpl in *.
+                                                exists (a1, b).
+                                                split>[reflexivity|].
+                                                ltac1:(rewrite - elem_of_list_to_map in Hb).
+                                                { exact HH3. }
+                                                { exact Hb. }
+                                            }    
+                                        }
+                                        {
+                                            intros HContra.
+                                            rewrite elem_of_union in HContra.
+                                            destruct HContra as [HContra|HContra].
+                                            {
+                                                rewrite elem_of_singleton in HContra.
+                                                subst x.
+                                                fold (@fmap list list_fmap) in *.
+                                                apply HH1.
+                                                clear HH1.
+                                                rewrite elem_of_cons.
+                                                left.
+                                                reflexivity.
+                                            }
+                                            {
+                                                fold (@fmap list list_fmap) in *.
+                                                rewrite elem_of_dom in HContra.
+                                                destruct HContra as [b Hb].
+                                                ltac1:(rewrite - elem_of_list_to_map in Hb).
+                                                { exact HH3. }
+                                                apply HH1.
+                                                rewrite elem_of_cons.
+                                                clear HH1.
+                                                right. 
+                                                rewrite elem_of_list_fmap.
+                                                exists (x,b).
+                                                split>[reflexivity|].
+                                                exact Hb.
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        assert(Htmp :
+                        
+                        ).
+                        rewrite IHsub_mm'.
+                        
+                    }
+                    
+                }
+            }
+        }
+    }
+Qed.
+
+
+Lemma subTMM_to_subT_correct1
+    {Σ : StaticModel}
+    (sub_mm : SubTMM)
+    (φ : TermOver BuiltinOrVar)
+:
+    sub_app (subTMM_to_subT sub_mm) φ = sub_app_mm sub_mm φ
+.
+Proof.
     induction φ.
     {
         simpl.
@@ -743,6 +955,7 @@ Proof.
                                     exact Hra.
                                 }
                                 ltac1:(rewrite - Heqm in Hra).
+                                ltac1:(rewrite - Heqm in Hra').
                                 assert (Hnd1 : (NoDup (fst <$> m))).
                                 {
                                     subst m.
@@ -762,9 +975,9 @@ Proof.
                                     split>[reflexivity|].
                                     exact H2.
                                 }
-                                clear Heqm Hnt Hma.
-                                revert y m Hnd1 Hynotm Hra.
-                                induction sub_mm'; intros y m Hnd1 Hynotm Hra.
+                                clear Heqm Hnt Hma Hra.
+                                revert y m Hnd1 Hynotm Hra'.
+                                induction sub_mm'; intros y m Hnd1 Hynotm Hra'.
                                 {
                                     simpl. reflexivity.
                                 }
@@ -788,10 +1001,21 @@ Proof.
                                         }
                                         {
                                             eapply IHsub_mm'.
+                                            {
+                                                ltac1:(fold (@fmap list list_fmap) in *; idtac).
+                                                clear - Hsub_mm'_nodup.
+                                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                simpl in *.
+                                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                rewrite NoDup_cons.
+                                                ltac1:(fold (@fmap list list_fmap) in *; idtac).
+                                                ltac1:(set_solver).
+                                            }
                                             { assumption. }
                                             { assumption. }
                                             {
-                                                
+                                                clear - Hra'.
+                                                ltac1:(set_solver).
                                             }
                                         }
                                     }
@@ -799,27 +1023,66 @@ Proof.
                                         destruct (decide (v = y)).
                                         {
                                             subst v.
-                                            simpl.
                                             ltac1:(exfalso).
-                                            rewrite <- elem_of_list_to_map in Heq2.
-                                            apply Hynotm. clear Hynotm.
-                                            rewrite elem_of_list_fmap.
-                                            exists (y, v0).
-                                            simpl.
-                                            split>[reflexivity|exact Heq2].
-                                            assumption.
+                                            clear - Hra' Hynotm.
+                                            ltac1:(set_solver).
                                         }
                                         {
                                             eapply IHsub_mm'.
+                                            {
+                                                ltac1:(fold (@fmap list list_fmap) in *; idtac).
+                                                clear - Hsub_mm'_nodup.
+                                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                simpl in *.
+                                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                rewrite NoDup_cons.
+                                                ltac1:(fold (@fmap list list_fmap) in *; idtac).
+                                                ltac1:(set_solver).
+                                            }
                                             { assumption. }
                                             { assumption. }
-                                            { assumption. }
+                                            {
+                                                clear - Hra'.
+                                                ltac1:(set_solver).
+                                            }
                                         }
                                     }
                                 }
-
-
-                                Search renaming_for.
+                                {
+                                    fold (@fmap list list_fmap) in *.
+                                    apply NoDup_1_renaming_for.
+                                }
+                            }
+                            {
+                                fold (@fmap list list_fmap) in *.
+                                subst m.
+                                rewrite <- IHsub_mm' with (y := y)(x := x).
+                                {
+                                    apply f_equal2.
+                                    {
+                                        apply f_equal2.
+                                        {
+                                            apply functional_extensionality.
+                                            intros [v'' t''].
+                                            ltac1:(repeat case_match).
+                                            {
+                                                simpl in *.
+                                                ltac1:(rewrite <- elem_of_list_to_map in H).
+                                                ltac1:(rewrite <- elem_of_list_to_map in H0).
+                                                Check renaming_for.
+                                            }
+                                        }
+                                        {
+                                            reflexivity.
+                                        }
+                                    }
+                                    {
+                                        reflexivity.
+                                    }
+                                }
+                                clear IHsub_mm'.
+                                clear z.
+                                eapply IHsub_mm'.
                             }
                         }
                         remember ((list_to_map (renaming_for (<[a.1:=a.2]> ((list_to_map sub_mm')))) !! a.1):(gmap variable (variable))) as Somez.
