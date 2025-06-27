@@ -5,7 +5,9 @@ From Minuska Require Import
     termoverbov_subst
     termoverbov_subst_properties
     substitution_parallel
+    substitution_parallel_properties
     substitution_sequential
+    substitution_sequential_properties
 .
 
 (* TODO use fold *)
@@ -564,7 +566,263 @@ Proof.
                         {
                             ltac1:(rewrite dom_insert_L).
                             ltac1:(rewrite dom_list_to_map_L).
+                            destruct (((@list_to_map variable variable (gmap variable variable) _ _
+                                (zip (elements ({[x]} ∪ ((list_to_set sub_mm'.*1):(gset variable))))
+                                (fresh avoid
+                                :: fresh_var_seq (fresh avoid :: avoid)
+                                (length sub_mm')))):(gmap variable variable)) !! ((x)))
+                                eqn:Heqxx.
+                            {
+                                (*  *)
+                                rewrite subs_app_nodup_2 with (y := v0).
+                                {
+                                    simpl.
+                                }
+                                {
+
+                                    (* rewrite <- list_fmap_compose.
+                                    lazy_match! goal with
+                                    | [|- NoDup ( ?f <$> _)] => assert (Hfst : $f = fst)
+                                    end.
+                                    {
+                                        unfold compose.
+                                        apply functional_extensionality.
+                                        intros [x' p'].
+                                        simpl.
+                                        ltac1:(case_match); simpl in *.
+                                    } *)
+                                    rewrite <- list_fmap_compose.
+                                    lazy_match! goal with
+                                    | [|- NoDup ( ?f <$> _)] => assert (Hfst : $f = (fun kv =>
+                                        let found := list_find (eq (kv.1)) ((elements ({[x]} ∪ ((list_to_set sub_mm'.*1):(gset variable))))) in
+                                        match found with
+                                        | None => kv.1
+                                        | Some (n, _) => fresh_nth avoid n
+                                        end
+                                    ))
+                                    end.
+                                    {
+                                        apply functional_extensionality.
+                                        intros [x' p'].
+                                        simpl.
+                                        clear - Hsub_mm'_nodup.
+                                        remember (elements ({[x]} ∪ ((list_to_set sub_mm'.*1):(gset variable)))) as els.
+                                        assert (Hels: {[x]} ∪ (list_to_set sub_mm'.*1 : gset variable) ≡ (list_to_set els)).
+                                        {
+                                            rewrite Heqels.
+                                            ltac1:(set_solver).
+                                        }
+                                        clear Heqels.
+
+                                        clear Hsub_mm'_nodup.
+                                        revert x sub_mm' Hels.
+                                        induction els; intros x sub_mm' Hels.
+                                        {
+                                            simpl in *.
+                                            rewrite lookup_empty.
+                                            reflexivity.
+                                        }
+                                        {
+                                            simpl in *.
+                                            destruct (decide (x' = a)).
+                                            {
+                                                subst.
+                                                rewrite lookup_insert.
+                                                simpl.
+                                                reflexivity.
+                                            }
+                                            {
+                                                rewrite lookup_insert_ne.
+                                                {
+                                                    assert(x ∈ ((list_to_set els):(gset variable))) by ltac1:(set_solver).
+                                                    assert(a ∈ ((list_to_set sub_mm'.*1):(gset variable))) by ltac1:(set_solver).
+                                                    specialize (IHels _ Hels).
+                                                }
+                                                {
+                                                    ltac1:(congruence).
+                                                }
+                                            }
+                                        }
+
+                                        Search elements list_to_set.
+                                        revert x'.
+                                        induction sub_mm'; intros x'.
+                                        {
+                                            simpl.
+                                            rewrite union_empty_r_L.
+                                            rewrite elements_singleton.
+                                            simpl.
+                                            destruct (decide (x' = x)).
+                                            {
+                                                subst x'.
+                                                rewrite lookup_insert.
+                                                simpl.
+                                                reflexivity.
+                                            }
+                                            {
+                                                rewrite lookup_insert_ne.
+                                                {
+                                                    rewrite lookup_empty.
+                                                    reflexivity.
+                                                }
+                                                {
+                                                    ltac1:(congruence).
+                                                }
+                                            }
+                                        }
+                                        {
+                                            simpl.
+                                            fold (@fmap list list_fmap) in *.
+                                            ltac1:(ospecialize (IHsub_mm' _)).
+                                            {
+                                                rewrite NoDup_cons.
+                                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                split.
+                                                {
+                                                    ltac1:(set_solver).
+                                                }
+                                                {
+                                                    destruct Hsub_mm'_nodup as [ND1 ND2].
+                                                    destruct a; simpl in *.
+                                                    rewrite NoDup_cons in ND2.
+                                                    apply ND2.
+                                                }
+                                            }
+                                            ltac1:(repeat case_match; simplify_eq/=).
+                                            {
+                                                ltac1:(rewrite - elem_of_list_to_map in H).
+                                                {
+                                                    rewrite fst_zip.
+                                                    apply NoDup_elements.
+                                                    simpl.
+                                                    rewrite length_fresh_var_seq.
+                                                    (* Search elements union. *)
+                                                    rewrite elements_union_singleton.
+                                                    {
+                                                        simpl.
+                                                        rewrite elements_union_singleton.
+                                                        {
+                                                            simpl.
+                                                            rewrite elements_list_to_set.
+                                                            rewrite length_fmap.
+                                                            ltac1:(lia).
+                                                            clear - Hsub_mm'_nodup.
+                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                            ltac1:(set_solver).    
+                                                        }
+                                                        {
+                                                            clear - Hsub_mm'_nodup.
+                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                            ltac1:(set_solver).    
+                                                        }
+                                                    }
+                                                    {
+                                                        clear - Hsub_mm'_nodup.
+                                                        rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                        rewrite NoDup_cons in Hsub_mm'_nodup.
+                                                        ltac1:(set_solver).
+                                                    }
+                                                }
+                                                {
+                                                    apply elem_of_zip_r in H.
+                                                    apply list_find_Some in H0.
+                                                    destruct H0 as [H1 [H2 H3]].
+                                                    subst v0.
+                                                    rewrite elem_of_list_lookup in H.
+                                                    destruct H as [j Hj].
+                                                    destruct j.
+                                                    {
+                                                        simpl in *.
+                                                        apply (inj Some) in Hj.
+                                                        destruct n.
+                                                        {
+                                                            simpl in *.
+                                                            symmetry.
+                                                            exact Hj.
+                                                        }
+                                                        {
+                                                            subst v.
+                                                            simpl.
+                                                            ltac1:(exfalso).
+
+                                                        }
+                                                    }
+                                                    destruct (decide (j < n)) as [Hlt|Hge].
+                                                    {
+                                                        specialize (H3 j).
+                                                    }
+                                                    destruct n.
+                                                    {
+                                                        simpl in *.
+                                                    }
+                                                    {
+
+                                                    }
+                                                    (* ltac1:(rewrite elements_union_singleton in H0). *)
+                                                    specialize (IHsub_mm').
+                                                    assert(H2': v1 ∈ fresh_var_seq avoid (S (S (length sub_mm')))).
+                                                    {
+                                                        apply H2.
+                                                    }
+                                                    apply list_find_Some in H3.
+                                                    destruct H3 as [H4 [H5 H6]].
+                                                    subst v2.
+                                                    Search fresh_nth.
+                                                }
+
+                                            }
+                                            {
+
+                                            }
+                                            {
+
+                                            }
+                                            assert(Htmp := elem_of_list_to_map).
+                                        }
+                                    }
+                                    unfold compose.
+                                    Search fmap.
+                                    (* assert(Htmp := NoDup_1_renaming_for sub_mm'). *)
+                                    clear.
+                                    revert x avoid.
+                                    induction sub_mm'; intros x avoid.
+                                    {
+                                        simpl.
+                                        apply NoDup_nil.
+                                        exact I.
+                                    }
+                                    {
+                                        rewrite fmap_cons.
+                                        rewrite fmap_cons.
+                                        rewrite NoDup_cons.
+                                        split.
+                                        {
+
+                                        }
+                                        {
+                                            simpl in *.
+                                            (* ltac1:(replace (length (a::sub_mm')) with (S (length sub_mm')) by reflexivity). *)
+                                            (* rewrite fresh_var_seq *)
+                                            apply IHsub_mm'.
+                                        }
+                                    }
+                                    apply NoDup_1_renaming_for.
+                                    Search NoDup fmap.
+                                }
+                                {
+
+                                }
+                                {
+
+                                }
+                            }
+                            {
+                                (* Not found *)
+                            }
                             (* In the absence of duplicated keys and variable-only values, subs_app behaves nicely and just returns the one value *)
+                            erewrite subs_app_nodup_2.
                         }
                         
                         lazy_match! goal with
