@@ -3,6 +3,8 @@ From Minuska Require Import
     spec
     basic_properties
     unification_interface
+    termoverbov_subst
+    substitution_sequential
     textbook_unification_alg
 .
 
@@ -39,7 +41,7 @@ Definition wfeqns {Σ : StaticModel} (V : gset variable) (es : list eqn) : Prop 
 Forall (wfeqn V) es
 .
 
-Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : SubT)
+Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : SubS)
 : Prop
 :=
 match s with
@@ -49,7 +51,7 @@ match s with
 end
 .
 
-Fixpoint vars_of_sub {Σ : StaticModel} (s : SubT) : gset variable
+Fixpoint vars_of_sub {Σ : StaticModel} (s : SubS) : gset variable
 :=
 match s with
 | [] => ∅
@@ -57,7 +59,7 @@ match s with
 end
 .
 
-Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : SubT)
+Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : SubS)
 :
 wfsub V s1 ->
 wfsub (V ∖ (vars_of_sub s1)) s2 ->
@@ -90,7 +92,7 @@ induction s1; intros V HH1 HH2; simpl in *.
 }
 Qed.
 
-Definition sub_lt {Σ : StaticModel} (s1 s2 : SubT) :=
+Definition sub_lt {Σ : StaticModel} (s1 s2 : SubS) :=
 ∃ s3, s1 = s2 ++ s3
 .
 
@@ -153,22 +155,22 @@ Qed.
 
 Fixpoint is_unifier_of
 {Σ : StaticModel}
-(s : SubT)
+(s : SubS)
 (es : list eqn)
 :=
 match es with
 | [] => True
-| (t1,t2)::es' => (sub_app s t1 = sub_app s t2) /\ is_unifier_of s es'
+| (t1,t2)::es' => (subs_app s t1 = subs_app s t2) /\ is_unifier_of s es'
 end
 .
 
 Definition least_of
 {Σ : StaticModel}
-(s : SubT)
+(s : SubS)
 (es : list eqn)
 :=
 ∀ s', is_unifier_of s' es ->
-∃ s1, ∀ x, sub_app s' (t_over (bov_variable x)) = sub_app (s ++ s1) (t_over (bov_variable x))
+∃ s1, ∀ x, subs_app s' (t_over (bov_variable x)) = subs_app (s ++ s1) (t_over (bov_variable x))
 .
 
 
@@ -197,13 +199,13 @@ induction a; simpl.
 }
 Qed.
 
-Lemma sub_app_term
+Lemma subs_app_term
 {Σ : StaticModel}
-(ss : SubT)
+(ss : SubS)
 (sym : symbol)
 (l : list (TermOver BuiltinOrVar))
 :
-sub_app ss (t_term sym l) = t_term sym ((sub_app ss) <$> l)
+subs_app ss (t_term sym l) = t_term sym ((subs_app ss) <$> l)
 .
 Proof.
 revert l sym.
@@ -221,12 +223,12 @@ Qed.
 
 Lemma helper_lemma_1
 {Σ : StaticModel}
-(s : SubT)
+(s : SubS)
 (x : variable)
 (t t' : TermOver BuiltinOrVar)
 :
-sub_app s (t_over (bov_variable x)) = sub_app s t' ->
-sub_app s t = sub_app s  (TermOverBoV_subst t x t')
+subs_app s (t_over (bov_variable x)) = subs_app s t' ->
+subs_app s t = subs_app s  (TermOverBoV_subst t x t')
 .
 Proof.
 revert s.
@@ -283,8 +285,8 @@ induction t; simpl; intros ss HH.
 }
 {
 
-    rewrite sub_app_term.
-    rewrite sub_app_term.
+    rewrite subs_app_term.
+    rewrite subs_app_term.
     apply f_equal.
     revert ss HH H.
     induction l; intros ss HH1 HH2.
@@ -310,9 +312,9 @@ Lemma helper_lemma_2
 (x : variable)
 (t : TermOver BuiltinOrVar)
 (es : list eqn)
-(s : SubT)
+(s : SubS)
 :
-sub_app s (t_over (bov_variable x)) = sub_app s t ->
+subs_app s (t_over (bov_variable x)) = subs_app s t ->
 is_unifier_of s es ->
 is_unifier_of s (sub t x es)
 .
@@ -337,10 +339,10 @@ Qed.
 
 Definition sub_ext
 {Σ : StaticModel}
-(ss : SubT)
+(ss : SubS)
 (es : list eqn)
 :=
-(fun e => (sub_app ss e.1, sub_app ss e.2)) <$> es
+(fun e => (subs_app ss e.1, subs_app ss e.2)) <$> es
 .
 
 
@@ -360,7 +362,7 @@ Qed.
 
 Lemma sub_ext_cons
 {Σ : StaticModel}
-(ss : SubT)
+(ss : SubS)
 x t
 (es : list eqn)
 :
@@ -392,7 +394,7 @@ the unifier may map only variables that occur somewhere in the relation?
 *)
 Lemma is_unifier_of_cons
 {Σ : StaticModel}
-(ss : SubT)
+(ss : SubS)
 (es : list eqn)
 x t
 : 
@@ -419,11 +421,11 @@ Lemma helper_lemma_3 {Σ : StaticModel}:
 ∀ l s1,
 (
     ∀ x : variable,
-    sub_app l (t_over (bov_variable x)) =
-    sub_app (s1) (t_over (bov_variable x))
+    subs_app l (t_over (bov_variable x)) =
+    subs_app (s1) (t_over (bov_variable x))
 ) ->
 ∀ t,
-    sub_app l t = sub_app (s1) t
+    subs_app l t = subs_app (s1) t
 .
 Proof.
 intros l s1 HNice t.
@@ -432,8 +434,8 @@ induction t; intros ll s1 HNice.
 {
     destruct a.
     {
-    rewrite sub_app_builtin.
-    rewrite sub_app_builtin.
+    rewrite subs_app_builtin.
+    rewrite subs_app_builtin.
     reflexivity.
     }
     {
@@ -442,8 +444,8 @@ induction t; intros ll s1 HNice.
     }
 }
 {
-    rewrite sub_app_term.
-    rewrite sub_app_term.
+    rewrite subs_app_term.
+    rewrite subs_app_term.
     apply f_equal.
     rewrite Forall_forall in H.
     apply list_eq.
@@ -498,7 +500,7 @@ Qed.
 Lemma unify_no_variable_out_of_thin_air
 {Σ : StaticModel}
 (es : list eqn)
-(ss : SubT)
+(ss : SubS)
 :
 unify es = Some ss ->
 (list_to_set (fmap fst ss)) ∪ (⋃ (fmap (vars_of ∘ snd) ss)) ⊆ eqns_vars es
@@ -709,13 +711,13 @@ ltac1:(funelim (unify es)); intros ss HH.
 }
 Qed.
 
-Lemma sub_app_unbound_var_1
+Lemma subs_app_unbound_var_1
 {Σ : StaticModel}
-(ss : SubT)
+(ss : SubS)
 (x : variable)
 :
 x ∉ ss.*1 ->
-sub_app ss (t_over (bov_variable x)) = (t_over (bov_variable x))
+subs_app ss (t_over (bov_variable x)) = (t_over (bov_variable x))
 .
 Proof.
 induction ss; intros HH.
@@ -736,15 +738,15 @@ induction ss; intros HH.
 }
 Qed.
 
-Lemma sub_app_unbound_var_2
+Lemma subs_app_unbound_var_2
 {Σ : StaticModel}
-(ss : SubT)
+(ss : SubS)
 (x : variable)
 :
 x ∉ ⋃ (vars_of <$> ss.*2) ->
 forall (t : TermOver BuiltinOrVar),
 x ∉ vars_of t ->
-x ∉ vars_of (sub_app ss t)
+x ∉ vars_of (subs_app ss t)
 .
 Proof.
 revert x .
@@ -855,7 +857,7 @@ unify_failure ((t1,t2)::es)
 Lemma unify_some_not_failure
 {Σ : StaticModel}
 (es : list eqn)
-(u : SubT)
+(u : SubS)
 :
 unify es = Some u ->
 ~ (unify_failure es)
@@ -975,13 +977,13 @@ ltac1:(funelim(unify es)).
         destruct Hsss as [Hsss1 Hsss2].
         exists s1. intros x0.
         specialize (Hs1 x0).
-        rewrite sub_app_app in Hs1.
-        rewrite sub_app_app.
+        rewrite subs_app_app in Hs1.
+        rewrite subs_app_app.
         destruct (decide (x = x0))>[|auto].
         subst.
-        rewrite sub_app_builtin.
-        rewrite sub_app_builtin in Hsss1.
-        rewrite sub_app_builtin.
+        rewrite subs_app_builtin.
+        rewrite subs_app_builtin in Hsss1.
+        rewrite subs_app_builtin.
         ltac1:(congruence).
     }
     }
@@ -1035,13 +1037,13 @@ ltac1:(funelim(unify es)).
             destruct (decide (x = x0))>[|reflexivity].
             subst. simpl in Hss.
             destruct Hss as [Hss1 Hss2].
-            do 2 (rewrite sub_app_app).
+            do 2 (rewrite subs_app_app).
             assert (Hs1x0 := Hs1 x0).
-            (rewrite sub_app_app in Hs1x0).
+            (rewrite subs_app_app in Hs1x0).
             rewrite <- Hs1x0.
-            rewrite sub_app_builtin.
-            rewrite sub_app_builtin.
-            rewrite sub_app_builtin in Hss1.
+            rewrite subs_app_builtin.
+            rewrite subs_app_builtin.
+            rewrite subs_app_builtin in Hss1.
             apply Hss1.
             }
         }
@@ -1128,8 +1130,8 @@ ltac1:(funelim(unify es)).
     {
         clear e H1.
         destruct H as [HH1 HH2].
-        rewrite sub_app_term.
-        rewrite sub_app_term.
+        rewrite subs_app_term.
+        rewrite subs_app_term.
         simpl.
         (repeat split).
         {
@@ -1196,9 +1198,9 @@ ltac1:(funelim(unify es)).
             exists (s1).
             intros x0.
             ltac1:(rename s1 into r).
-            (*rewrite sub_app_app.*)
+            (*rewrite subs_app_app.*)
 
-            assert (Hunb := sub_app_unbound_var_2 l x).
+            assert (Hunb := subs_app_unbound_var_2 l x).
             ltac1:(ospecialize (Hunb _)).
             {
             rewrite list_fmap_compose in Hnoota.
@@ -1232,7 +1234,7 @@ ltac1:(funelim(unify es)).
             destruct (decide (x = x0)).
             {
             subst. ltac1:(rename x0 into x).
-            apply sub_app_unbound_var_1 in Hnlx as Hnlx'.
+            apply subs_app_unbound_var_1 in Hnlx as Hnlx'.
             eapply helper_lemma_3 in Hs1 as Hs1'.
             rewrite <- Hs1'. clear Hs1'.
             exact Hu1.
@@ -1352,8 +1354,8 @@ ltac1:(funelim(unify es)).
         {
             rewrite is_unifier_of_app in HH3.
             destruct HH3 as [HH31 HH32].
-            rewrite sub_app_term.
-            rewrite sub_app_term.
+            rewrite subs_app_term.
+            rewrite subs_app_term.
             f_equal.
             apply list_eq.
             intros i.
@@ -1429,8 +1431,8 @@ ltac1:(funelim(unify es)).
             destruct Hu as [H1u H2u].
             specialize (HH4 u).
             rewrite is_unifier_of_app in HH4.
-            rewrite sub_app_term in H1u.
-            rewrite sub_app_term in H1u.
+            rewrite subs_app_term in H1u.
+            rewrite subs_app_term in H1u.
             inversion H1u; subst; clear H1u.
             ltac1:(ospecialize (HH4 _)).
             {
@@ -1522,13 +1524,13 @@ induction t2; intros t1 Hsub t; simpl in *.
 }
 Qed.
 
-Lemma sub_app_preserves_subterm
+Lemma subs_app_preserves_subterm
 {Σ : StaticModel}
 (t1 t2 : TermOver BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 forall s,
-    is_subterm_b (sub_app s t1) (sub_app s t2)
+    is_subterm_b (subs_app s t1) (subs_app s t2)
 .
 Proof.
 intros HH1 s.
@@ -1648,7 +1650,7 @@ Qed.
 
 Lemma is_unifier_of_extensive
 {Σ : StaticModel}
-(u : SubT)
+(u : SubS)
 (es : list eqn)
 :
 is_unifier_of u es ->
@@ -1670,10 +1672,10 @@ induction es.
     clear -HH1 HH2.
     induction rest.
     { rewrite app_nil_r. apply HH1.  }
-    rewrite sub_app_app in IHrest.
-    rewrite sub_app_app in IHrest.
-    rewrite sub_app_app.
-    rewrite sub_app_app.
+    rewrite subs_app_app in IHrest.
+    rewrite subs_app_app in IHrest.
+    rewrite subs_app_app.
+    rewrite subs_app_app.
     simpl.
     destruct a as [x t].
     ltac1:(congruence).
@@ -1685,7 +1687,7 @@ Lemma unify_failure_is_severe
 (es : list eqn)
 :
 unify_failure es ->
-~ exists s : SubT,
+~ exists s : SubS,
     is_unifier_of s es
 .
 Proof.
@@ -1724,11 +1726,11 @@ induction Hfail.
     subst.
 
     apply var_is_subterm in H2X as H2X'.
-    apply sub_app_preserves_subterm with (s := s) in H2X'.
+    apply subs_app_preserves_subterm with (s := s) in H2X'.
     apply is_subterm_size in H2X'.
     rewrite H1s in H2X'.
     clear H1s H2s.
-    rewrite sub_app_term in H2X'.
+    rewrite subs_app_term in H2X'.
     simpl in H2X'.
 
     rewrite elem_of_list_lookup in H2t.
@@ -1775,11 +1777,11 @@ induction Hfail.
     subst.
 
     apply var_is_subterm in H2X as H2X'.
-    apply sub_app_preserves_subterm with (s := s) in H2X'.
+    apply subs_app_preserves_subterm with (s := s) in H2X'.
     apply is_subterm_size in H2X'.
     rewrite <- H1s in H2X'.
     clear H1s H2s.
-    rewrite sub_app_term in H2X'.
+    rewrite subs_app_term in H2X'.
     simpl in H2X'.
 
     rewrite elem_of_list_lookup in H2t.
@@ -1797,33 +1799,33 @@ induction Hfail.
     intros [s Hs].
     simpl in Hs.
     destruct Hs as [Hs1 Hs2].
-    rewrite sub_app_builtin in Hs1.
-    rewrite sub_app_builtin in Hs1.
+    rewrite subs_app_builtin in Hs1.
+    rewrite subs_app_builtin in Hs1.
     ltac1:(simplify_eq/=).
 }
 {
     intros HContra.
     destruct HContra as [s0 [H1s0 H2s0]].
-    rewrite sub_app_term in H1s0.
-    rewrite sub_app_builtin in H1s0.
+    rewrite subs_app_term in H1s0.
+    rewrite subs_app_builtin in H1s0.
     inversion H1s0.
 }
 {
     intros [s0 [H1s0 H2s0]].
-    rewrite sub_app_term in H1s0.
-    rewrite sub_app_builtin in H1s0.
+    rewrite subs_app_term in H1s0.
+    rewrite subs_app_builtin in H1s0.
     inversion H1s0.
 }
 {
     intros [s0 [H1s0 H2s0]].
-    rewrite sub_app_term in H1s0.
-    rewrite sub_app_term in H1s0.
+    rewrite subs_app_term in H1s0.
+    rewrite subs_app_term in H1s0.
     ltac1:(simplify_eq/=).
 }
 {
     intros [s0 [H1s0 H2s0]].
-    rewrite sub_app_term in H1s0.
-    rewrite sub_app_term in H1s0.
+    rewrite subs_app_term in H1s0.
+    rewrite subs_app_term in H1s0.
     ltac1:(simplify_eq/=).
     apply (f_equal length) in H0.
     rewrite length_fmap in H0.
@@ -1832,8 +1834,8 @@ induction Hfail.
 }
 {
     intros [s0 [H1s0 H2s0]].
-    rewrite sub_app_term in H1s0.
-    rewrite sub_app_term in H1s0.
+    rewrite subs_app_term in H1s0.
+    rewrite subs_app_term in H1s0.
     ltac1:(simplify_eq/=).
     apply (f_equal length) in H1s0 as H1s0'.
     rewrite length_fmap in H1s0'.
@@ -2065,10 +2067,10 @@ Next Obligation.
             intros u' Hu'.
             unfold least_of in Hsound2.
             unfold is_unifier_of in Hsound2.
-            Search sub_app t_over.
+            Search subs_app t_over.
             Search unify.
         }
-        Search sub_app_mm.
+        Search subp_app.
     }
     ltac1:(rewrite H in Hsound).
     simpl in Hsound.

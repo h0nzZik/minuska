@@ -1501,3 +1501,29 @@ match l with
     "[ " +:+ x +:+ (fold_right (fun b a => b +:+ "; " +:+ a) "]" (y::zs))
 end
 .
+
+
+Lemma lookup_of_zip_both
+    {A B : Type}
+    (a : A)
+    (b : B)
+    (i : nat)
+    (la : list A)
+    (lb : list B)
+:
+    la !! i = Some a ->
+    lb !! i = Some b ->
+    (zip la lb) !! i = Some (a,b)
+.
+Proof.
+    revert a b la lb.
+    induction i; intros a b la lb Hla Hlb.
+    {
+        destruct la,lb; simpl in *; ltac1:(simplify_eq/=).
+        reflexivity.
+    }
+    {
+        destruct la,lb; simpl in *; ltac1:(simplify_eq/=).
+        apply IHi; assumption.
+    }
+Qed.

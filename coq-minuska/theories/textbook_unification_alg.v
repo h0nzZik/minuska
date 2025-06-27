@@ -2,6 +2,7 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
+    termoverbov_subst
 .
 
 From Equations Require Export Equations.
