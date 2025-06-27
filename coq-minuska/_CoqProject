@@ -16,6 +16,7 @@ theories/string_variables.v
 theories/BuiltinValue.v
 theories/builtins.v
 theories/termoverbov_subst.v
+theories/termoverbov_subst_properties.v
 theories/naive_interpreter.v
 theories/interpreter_results.v
 theories/default_static_model.v
@@ -29,7 +30,9 @@ theories/dt.v
 theories/interp_loop.v
 theories/default_everything.v
 theories/substitution_sequential.v
+theories/substitution_sequential_properties.v
 theories/substitution_parallel.v
+theories/substitution_parallel_properties.v
 theories/substitution_parseq_conv.v
 theories/unification_interface.v
 theories/textbook_unification_alg.v

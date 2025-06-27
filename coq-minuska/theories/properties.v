@@ -2984,3 +2984,31 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma vars_of_builtin
+    {Σ : StaticModel}
+    b
+:
+    vars_of (t_over (bov_builtin b)) = ∅
+.
+Proof.
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    reflexivity.
+Qed.
+
+
+
+Lemma vars_of_variable
+    {Σ : StaticModel}
+    x
+:
+    vars_of (t_over (bov_variable x)) = {[x]}
+.
+Proof.
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    reflexivity.
+Qed.
+

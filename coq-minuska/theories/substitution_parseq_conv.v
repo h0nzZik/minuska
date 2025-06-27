@@ -3,6 +3,7 @@ From Minuska Require Import
     spec
     basic_properties
     termoverbov_subst
+    termoverbov_subst_properties
     substitution_parallel
     substitution_sequential
 .
@@ -450,7 +451,6 @@ Qed.
 
 
 (* TODO *)
-(* 
 Lemma subTMM_to_subT_correct
     {Σ : StaticModel}
     (sub_mm : SubP)
@@ -1067,4 +1067,4 @@ Proof.
             }
         }
     }
-Qed. *)
+Qed.
