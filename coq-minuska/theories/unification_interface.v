@@ -587,309 +587,31 @@ Proof.
         ltac1:(lia).
     }
 Qed.
-(* 
-Lemma elem_of_zip_both
+
+Lemma lookup_of_zip_both
     {A B : Type}
     (a : A)
     (b : B)
+    (i : nat)
     (la : list A)
     (lb : list B)
 :
-    length la = length lb ->
-    a ∈ la ->
-
-    (a,b) ∈ zip la lb
-. *)
-(* 
-Lemma elements_union_produce
-    {A : Type}
-    {_EA : EqDecision A}
-    {_CA : Countable A}
-    (g : gset A)
-:
-    (elements g = [])
-    \/
-    (∃ a, elements g = a::(elements (g ∖ {[a]})))
+    la !! i = Some a ->
+    lb !! i = Some b ->
+    (zip la lb) !! i = Some (a,b)
 .
 Proof.
-    destruct (decide (elements g = [])) as [?|Hg].
+    revert a b la lb.
+    induction i; intros a b la lb Hla Hlb.
     {
-        left.
-        assumption.
-    }
-    {
-        right.
-        destruct (elements g) eqn:Heqeg.
-        {
-            ltac1:(contradiction Hg).
-            reflexivity.
-        }
-        {
-            clear Hg.
-            unfold elements in *.
-            unfold gset_elements in *.
-            unfold mapset.mapset_elements in *.
-            (* rewrite <- Heqeg. *)
-            destruct g as [m].
-            simpl in *.
-            exists a.
-            apply f_equal.
-            destruct m as [car].
-            destruct car.
-            {
-                simpl in *.
-                inversion Heqeg.
-            }
-            {
-                unfold map_to_list in *.
-                unfold map_fold in *.
-                unfold gmap_fold in *.
-                unfold gmap.gmap_dep_fold in *.
-                unfold gmap.gmap_dep_ne_fold in *.
-                rewrite Heqeg.
-                (* unfold gmap.gmap_fold_aux in *. *)
-                simpl in *.
-                
-                destruct g; simpl in *;
-                unfold difference;
-                unfold map_difference;
-                unfold difference_with;
-                unfold map_difference_with;
-                unfold merge;
-                unfold gmap_merge;
-                simpl in *;
-                ltac1:(repeat case_match; simplify_eq/=).
-                {
-                    inversion H; subst; clear H; simpl in *.
-                }
-            }
-            simpl in *.
-            (* rewrite Heqeg. *)
-            remember ((map_to_list g).*1) as m'.
-            assert (Htmp2 := elements_union_singleton (g ∖ {[a]}) a ltac:(set_solver)).
-            inversion Htmp2; subst; clear Htmp2.
-            {
-                exists a.
-                apply f_equal.
-                assert (H0: a ∈ g).
-                {
-                    rewrite <- elem_of_elements.
-                    rewrite Heqeg.
-                    rewrite elem_of_cons.
-                    left.
-                    reflexivity.
-                }
-                assert (Htmp : {[a]} ∪ (g ∖ {[a]}) = g).
-                {
-                    assert (Htmp2 := union_difference_singleton a g H0).
-                    ltac1:(set_solver).
-                }
-                rewrite Htmp in H.
-                rewrite Heqeg in H.
-                inversion H; subst; clear H.
-                ltac1:(simplify_eq/=).
-            }
-            {
-
-            }
-            {
-
-            }
-        }
-        Search not nil.
-    }
-   remember (size g) as sz.
-    assert (Hsz : size g <= sz) by ltac1:(lia).
-    clear Heqsz.
-    revert g Hsz.
-    induction (sz); intros g Hsz.
-    {
-        assert (H0 : size g = 0) by ltac1:(lia).
-        apply size_empty_inv in H0.
-        assert(g = ∅) by ltac1:(set_solver).
-        subst g.
-        left.
-        rewrite elements_empty.
+        destruct la,lb; simpl in *; ltac1:(simplify_eq/=).
         reflexivity.
     }
     {
-        destruct (size g) eqn:Heqsz.
-        {
-            assert (H0 : size g = 0) by ltac1:(lia).
-            apply size_empty_inv in H0.
-            assert(g = ∅) by ltac1:(set_solver).
-            subst g.
-            left.
-            rewrite elements_empty.
-            reflexivity.
-        }
-        {
-            assert (Hsz': n <= sz) by ltac1:(lia).
-            assert (Hsz'' : 0 < size g) by ltac1:(lia).
-            apply size_pos_elem_of in Hsz''.
-            destruct Hsz'' as [x Hx].
-            apply union_difference_singleton_L in Hx as Hx'.
-            right.
-            assert (IHsz' := IHsz (g ∖ {[x]})).
-            ltac1:(ospecialize (IHsz' _)).
-            {
-                rewrite size_difference.
-                rewrite size_singleton.
-                ltac1:(lia).
-                ltac1:(set_solver).
-            }
-            destruct IHsz' as [IHsz'|IHsz'].
-            {
-                apply elements_empty_inv in IHsz'.
-                exists x.
-                assert(Hgx : g ∖ {[x]} = ∅) by ltac1:(set_solver).
-                rewrite Hgx.
-                rewrite elements_empty.
-                assert (Hgx' : g = {[x]}) by ltac1:(set_solver).
-                rewrite Hgx'.
-                rewrite elements_singleton.
-                reflexivity.
-            }
-            {
-                destruct IHsz' as [a Ha].
-                ltac1:(setoid_rewrite Hx' at 1).
-                assert (Htmp2 := elements_union_singleton (g ∖ {[x]}) x ltac:(set_solver)).
-                inversion Htmp2; subst; clear Htmp2.
-                {
-                    exists x.
-                    apply f_equal.
-                    rewrite Ha.
-                }
-                Search elements union.
-                destruct (decide (x = a)).
-                {
-                    subst x.
-                    exists a.
-                    rewrite Ha.
-                }
-                (* exists a. *)
-                (* rewrite *)
-
-            }
-        }
+        destruct la,lb; simpl in *; ltac1:(simplify_eq/=).
+        apply IHi; assumption.
     }
- 
 Qed.
-
-
-Lemma elements_union_singleton_produce
-    {A : Type}
-    {_EA : EqDecision A}
-    {_CA : Countable A}
-    (a : A)
-    (g : gset A)
-:
-    a ∉ g ->
-    (elements ({[a]} ∪ g) = a::(elements g))
-    \/
-    (∃ b rest, g = {[b]} ∪ rest /\ elements ({[a]} ∪ g) = b::(elements rest))
-.
-Proof.
-    remember (size g) as sz.
-    assert (Hsz : size g <= sz) by ltac1:(lia).
-    clear Heqsz.
-    revert a g Hsz.
-    induction (sz); intros a g Hsz Hnotin.
-    {
-        assert (H0 : size g = 0) by ltac1:(lia).
-        apply size_empty_inv in H0.
-        assert(g = ∅) by ltac1:(set_solver).
-        subst g.
-        rewrite union_empty_r_L.
-        rewrite elements_empty.
-        rewrite elements_singleton.
-        left.
-        reflexivity.
-    }
-    {
-        destruct (size g) eqn:Heqsz.
-        {
-            assert (H0 : size g = 0) by ltac1:(lia).
-            apply size_empty_inv in H0.
-            assert(g = ∅) by ltac1:(set_solver).
-            subst g.
-            rewrite union_empty_r_L.
-            rewrite elements_empty.
-            rewrite elements_singleton.
-            left.
-            reflexivity.
-        }
-        {
-            assert (Hsz': n <= sz) by ltac1:(lia).
-            assert (Hsz'' : 0 < size g) by ltac1:(lia).
-            apply size_pos_elem_of in Hsz''.
-            destruct Hsz'' as [x Hx].
-            destruct (decide (x = a)).
-            {
-                subst x.
-                ltac1:(exfalso).
-                apply Hnotin.
-                apply Hx.
-            }
-            {
-                (* assert (Ha := union_difference_singleton_L a (g ∖ {[a]})).
-                ltac1:(ospecialize (Ha _)).
-                {
-
-                } *)
-                (* Search difference elem_of. *)
-                apply union_difference_singleton_L in Hx as Hx'.
-                assert (IHa := IHsz a (g ∖ {[x]})).
-                ltac1:(ospecialize (IHa _ _)).
-                {
-                    rewrite size_difference.
-                    rewrite size_singleton.
-                    ltac1:(lia).
-                    ltac1:(set_solver).
-                }
-                {
-                    ltac1:(set_solver).
-                }
-                (* rewrite Hx'. *)
-                destruct IHa as [IHa|IHa].
-                {
-                    ltac1:(setoid_rewrite Hx' at 3 4).
-                    left.
-                    (* rewrite Hx' at 2. *)
-                    (* rewrite <- IHa. *)
-                    (* ltac1:(set_solver). *)
-                }
-                {
-
-                }
-                
-                Search elem_of difference.
-            }
-        {
-            Search size elem_of.
-        }
-        
-        destruct (decide (x = a)).
-        {
-            subst x.
-            ltac1:(exfalso).
-            clear - Hnotin.
-            ltac1:(set_solver).
-        }
-        {
-            assert (IHx := IHg x H).
-            assert (IHa := IHg a ltac:(set_solver)).
-            destruct IHx as [IHx|IHx],
-                IHa as [IHa|IHa].
-            {
-                rewrite IHx.
-                left.
-
-                rewrite IHg.
-            }
-        }
-    }
-Qed. *)
 
 
 Lemma subTMM_to_subT_correct
@@ -1039,8 +761,7 @@ Proof.
                                         destruct ((fresh avoid :: fresh_var_seq (fresh avoid :: avoid) (length sub_mm')) !! j) eqn:Heq2.
                                         {
                                             exists j, v0.
-                                            (* TODO *)
-                                            Search
+                                            apply lookup_of_zip_both; assumption.
                                         }
                                         {
                                             ltac1:(exfalso).
@@ -1114,6 +835,199 @@ Proof.
                                 destruct IHsub_mm' as [z [H1z H2z]].
                                 exists z.
                                 fold (@fmap list list_fmap) in *.
+                                destruct a as [x' p'].
+                                destruct H2z as [i Hi].
+                                simpl in *.
+
+                                remember (list_find (eq x') ((elements (dom (<[x:=t]> (<[x':=p']> ((list_to_map sub_mm'):(gmap variable (TermOver BuiltinOrVar))))))))) as Found.
+                                destruct Found eqn:Hfound.
+                                {
+                                    destruct p as [i'' Hi''].
+                                    symmetry in HeqFound.
+                                    apply list_find_Some in HeqFound.
+                                    destruct HeqFound as [H1 [H2 H3]].
+                                    destruct i'' as [|i''].
+                                    {
+                                        simpl in *.
+                                        subst Hi''.
+                                        ltac1:(rewrite -> elem_of_list_to_map_1 with (x := (fresh avoid))).
+                                        {
+                                            split.
+                                            {
+
+                                            }
+                                            {
+                                                rewrite elem_of_list_lookup.
+                                                Check lookup_lt_Some.
+                                                (* Search lookup Some. *)
+(*                                                 
+                                                destruct i.
+                                                {
+                                                    simpl in *.
+                                                    ltac1:(simplify_eq/=).
+                                                    exists 0.
+                                                    simpl.
+                                                    reflexivity.
+                                                }
+                                                {
+                                                    simpl in *.
+                                                    ltac1:(simplify_eq/=).
+                                                    exists (S (S i)).
+                                                    simpl.
+                                                    exact Hi.
+                                                } *)
+                                            }
+
+                                        }
+                                        {
+                                            rewrite fst_zip.
+                                            apply NoDup_elements.
+                                            simpl.
+                                            rewrite length_fresh_var_seq.
+                                            ltac1:(rewrite dom_insert_L).
+                                            ltac1:(rewrite dom_insert_L).
+                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                            destruct Hsub_mm'_nodup as [ND1 [ND2 ND3]].
+                                            rewrite elements_disj_union.
+                                            {
+                                                rewrite elements_disj_union.
+                                                {
+                                                    rewrite length_app.
+                                                    rewrite length_app.
+                                                    rewrite elements_singleton.
+                                                    rewrite elements_singleton.
+                                                    simpl.
+                                                    rewrite dom_list_to_map.
+                                                    rewrite elements_list_to_set.
+                                                    rewrite length_fmap.
+                                                    ltac1:(lia).
+                                                    ltac1:(naive_solver).
+                                                }
+                                                {
+                                                    ltac1:(rewrite disjoint_singleton_l).
+                                                    rewrite elem_of_dom.
+                                                    intros [zz Hzz].
+                                                    apply ND2.
+                                                    clear ND2.
+                                                    rewrite elem_of_list_fmap.
+                                                    exists (x', zz).
+                                                    simpl.
+                                                    split>[reflexivity|].
+                                                    ltac1:(rewrite - elem_of_list_to_map in Hzz).
+                                                    {
+                                                        assumption.
+                                                    }
+                                                    {
+                                                        exact Hzz.
+                                                    }
+                                                }
+                                            }
+                                            {
+                                                rewrite elem_of_cons in ND1.
+                                                rewrite elem_of_list_fmap in ND1.
+                                                rewrite elem_of_list_fmap in ND2.
+                                                rewrite dom_list_to_map.
+                                                rewrite disjoint_singleton_l.
+                                                intros HContra.
+                                                rewrite elem_of_union in HContra.
+                                                destruct HContra as [HContra|HContra].
+                                                {
+                                                    rewrite elem_of_singleton in HContra.
+                                                    subst x'.
+                                                    apply ND1.
+                                                    left.
+                                                    reflexivity.
+                                                }
+                                                {
+                                                    rewrite elem_of_list_to_set in HContra.
+                                                    rewrite elem_of_list_fmap in HContra.
+                                                    destruct HContra as [[u' w'] [Huw1 Huw2]].
+                                                    subst.
+                                                    simpl in *.
+                                                    apply ND1.
+                                                    right.
+                                                    exists (u', w').
+                                                    split>[reflexivity|].
+                                                    exact Huw2.
+                                                }
+                                            }
+                                        }
+                                        {
+                                            rewrite elem_of_list_lookup.
+                                            exists 0.
+                                            apply lookup_of_zip_both.
+                                            {
+                                                simpl.
+                                                apply H1.
+                                            }
+                                            {
+                                                simpl.
+                                                reflexivity.
+                                            }
+                                        }
+                                    }
+                                    {
+                                        simpl in *.
+                                    }
+                                    
+                                    (* erewrite lookup_of_zip_both. *)
+                                    (* exists i''. *)
+                                    
+                                }
+                                {
+                                    ltac1:(exfalso).
+                                    symmetry in HeqFound.
+                                    apply list_find_None in HeqFound.
+                                    rewrite Forall_forall in HeqFound.
+                                    specialize (HeqFound x').
+                                    apply HeqFound. clear HeqFound.
+                                    clear.
+                                    rewrite elem_of_elements.
+                                    rewrite elem_of_dom.
+                                    destruct (decide (x' = x)).
+                                    {
+                                        subst x'.
+                                        exists t.
+                                        rewrite lookup_insert.
+                                        reflexivity.
+                                    }
+                                    {
+                                        exists (p').
+                                        rewrite lookup_insert_ne.
+                                        {
+                                            rewrite lookup_insert.
+                                            reflexivity.
+                                        }
+                                        { ltac1:(congruence). }
+                                    }
+                                    reflexivity.
+                                }
+
+                                destruct i.
+                                {
+                                    simpl in Hi.
+                                    apply (inj Some) in Hi.
+                                    subst z.
+                                    ltac1:(erewrite elem_of_list_to_map_1).
+                                    {
+
+                                    }
+                                    {
+
+                                    }
+                                    {
+                                        rewrite elem_of_list_lookup.
+                                        
+                                    }
+                                }
+                                {
+                                    simpl in Hi.
+                                }
+                                
+                                Search list_to_map lookup.
+                                Check elem_of_list_to_map.
+                                ltac1:(rewrite - elem_of_list_to_map).
                                 ltac1:(case_match).
                                 {
                                     Search a.
