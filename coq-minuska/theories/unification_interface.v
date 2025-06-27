@@ -117,7 +117,7 @@ Definition subTMM_to_subT
     let subl : list (variable*(TermOver BuiltinOrVar)) := map_to_list sub_mm in
     let renaming := renaming_for sub_mm in
     let rnmap : gmap variable variable := list_to_map renaming in
-    let subl_renamed : list (variable*(TermOver BuiltinOrVar)) := (fun kv => match rnmap !! kv.1 with None => kv | Some y => (kv.1, t_over (bov_variable y)) end) <$> subl in
+    let subl_renamed : list (variable*(TermOver BuiltinOrVar)) := (fun kv => match rnmap !! kv.1 with None => kv | Some y => (y, kv.2) end) <$> subl in
     subl_renamed ++ ((fun xy => (xy.1, t_over (bov_variable xy.2)))<$> renaming)
 .
 
@@ -613,6 +613,66 @@ Proof.
     }
 Qed.
 
+Lemma fresh_var_seq_mono
+    {Σ : StaticModel}
+    avoid n
+    :
+    fresh_var_seq avoid n ⊆ fresh_var_seq avoid (S n)
+.
+Proof.
+    revert avoid.
+    induction n; intros avoid.
+    {
+        simpl.
+        ltac1:(set_solver).
+    }
+    {
+        specialize (IHn (fresh avoid::avoid)).
+        remember (S n) as n'.
+        rewrite Heqn' at 1.
+        simpl.
+        ltac1:(set_solver).
+    }
+Qed.
+
+Lemma sub_app_nodup
+    {Σ : StaticModel}
+    (sub : SubT)
+    (x y : variable)
+    :
+    NoDup (fst <$> sub) ->
+    (x, t_over (bov_variable y)) ∈ sub ->
+    (forall x' p', (x', p') ∈ sub -> ∃ y', p' = t_over (bov_variable y')) ->
+    sub_app sub (t_over (bov_variable x)) = t_over (bov_variable y)
+.
+Proof.
+    induction sub; intros HH1 HH2 HH3; simpl in *.
+    {
+        rewrite elem_of_nil in HH2.
+        destruct HH2.
+    }
+    {
+        destruct a as [x' p'].
+        simpl in *.
+        destruct (decide (x' = x)).
+        {
+            subst.
+            simpl in *.
+            fold (@fmap list list_fmap) in *.
+            rewrite NoDup_cons in HH1.
+            destruct HH1 as [HH4 HH5].
+            (* clear IHsub HH3. *)
+            rewrite elem_of_cons in HH2.
+            destruct HH2 as [HH2|HH2].
+            {
+                ltac1:(simplify_eq/=).
+                (* Need a lemma saying that sub_app does nothing because ... wait... y should not be in sub *)
+                rewrite IHsub.
+                reflexivity.
+            }
+        }
+    }
+Qed.
 
 Lemma subTMM_to_subT_correct
     {Σ : StaticModel}
@@ -676,11 +736,21 @@ Proof.
             {
                 simpl.
                 destruct a as [y t].
+                
                 simpl in *.
                 destruct (decide (x = y)).
                 {
                     subst y.
                     ltac1:(rewrite lookup_insert).
+                    (* ltac1:(case_match).
+                    {
+
+                    }
+                    {
+
+                    } *)
+                    (* Unset Printing Notations. *)
+                    (* ltac1:(rewrite sub_app_app). *)
                     destruct (list_to_map
                         (zip (elements (dom (<[x:=t]> (list_to_map sub_mm'))))
                         (fresh avoid
@@ -689,14 +759,14 @@ Proof.
                     ) eqn:Heq1.
                     {
                         fold (@fmap list list_fmap) in *.
-                        rewrite decide_True>[|reflexivity].
+                        (* rewrite decide_True>[|reflexivity]. *)
                         (* rewrite sub_app_app. *)
                         ltac1:(ospecialize (IHsub_mm' _)).
                         {
                             inversion Hsub_mm'_nodup; subst.
                             assumption.
                         }
-                        specialize (IHsub_mm' (fresh avoid :: avoid)).
+                        specialize (IHsub_mm' (avoid)).
                         ltac1:(ospecialize (IHsub_mm' _)).
                         {
                             ltac1:(rewrite dom_list_to_map).
@@ -706,18 +776,33 @@ Proof.
                         }
                         rewrite sub_app_app.
                         rewrite sub_app_app in IHsub_mm'.
+                        destruct (decide (v = x)).
+                        {
+                            subst v.
+                            simpl in *.
+                            (* This is a contradiction, as according to Havoid we have [x ∈ avoid],
+                               and according to Heq1, [x] is one of the freshly generated (thus non-avoid) variables.
+                            *)
+                        }
+                        {
+                            ltac1:(rewrite dom_insert_L).
+                            ltac1:(rewrite dom_list_to_map_L).
+                            (* In the absence of duplicated keys and variable-only values, sub_app behaves nicely and just returns the one value *)
+                        }
+                        
                         lazy_match! goal with
                         | [ |- sub_app _ ?p = _] =>
                             assert (exists z, $p = t_over (bov_variable z) /\ z ∈ (fresh avoid :: fresh_var_seq (fresh avoid :: avoid) (length sub_mm')))
                         end.
                         {
+
                             clear - Heq1 Hsub_mm'_nodup.
                             revert v avoid Heq1 Hsub_mm'_nodup.
                             induction sub_mm'; intros v avoid Heq1 Hsub_mm'_nodup.
                             {
                                 simpl in *.
                                 exists v.
-                                split>[reflexivity|].
+                                (* split>[reflexivity|]. *)
                                 ltac1:(rewrite dom_insert_L in Heq1).
                                 ltac1:(rewrite union_empty_r_L in Heq1).
                                 rewrite elements_singleton in Heq1.
@@ -733,6 +818,17 @@ Proof.
                                 simpl in Heq1.
                                 rewrite elem_of_cons.
                                 rewrite elem_of_cons in Heq1.
+                                destruct (decide (v = x)); simpl in *.
+                                {
+                                    subst; simpl in *.
+                                    destruct Heq1 as [Heq1|Heq1].
+                                    {
+                                        ltac1:(simplify_eq/=).
+                                    }
+                                }
+                                {
+
+                                }
                                 ltac1:(set_solver).
                             }
                             {
@@ -854,28 +950,20 @@ Proof.
                                         {
                                             split.
                                             {
-
-                                            }
-                                            {
-                                                rewrite elem_of_list_lookup.
-                                                Check lookup_lt_Some.
-                                                (* Search lookup Some. *)
-(*                                                 
-                                                destruct i.
+                                                destruct (decide (x' = v)).
                                                 {
+                                                    subst v.
                                                     simpl in *.
-                                                    ltac1:(simplify_eq/=).
-                                                    exists 0.
-                                                    simpl.
-                                                    reflexivity.
                                                 }
                                                 {
-                                                    simpl in *.
-                                                    ltac1:(simplify_eq/=).
-                                                    exists (S (S i)).
-                                                    simpl.
-                                                    exact Hi.
-                                                } *)
+
+                                                }
+                                            }
+                                            {
+                                                apply elem_of_list_lookup_2 in Hi.
+                                                clear - Hi.
+                                                assert (Htmp := fresh_var_seq_mono (fresh avoid::avoid) (length sub_mm')).
+                                                ltac1:(set_solver).
                                             }
 
                                         }
