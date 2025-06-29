@@ -48,6 +48,7 @@ Fixpoint fresh_nth
     end
 .
 
+
 Definition renaming_for
     {Σ : StaticModel}
     (sub_mm : SubP)
@@ -452,6 +453,41 @@ Proof.
 Qed.
 
 
+Lemma fresh_nth_iff
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n m : nat)
+    (x : variable)
+    :
+    n < m ->
+    fresh_nth avoid n = x <-> ((fresh_var_seq avoid m) !! n = Some x)
+.
+Proof.
+    revert avoid m x.
+    induction n; intros avoid m x HH; simpl in *.
+    {
+        destruct m.
+        {
+            ltac1:(lia).
+        }
+        {
+            simpl.
+            ltac1:(naive_solver).
+        }
+    }
+    {
+        destruct m.
+        {
+            ltac1:(lia).
+        }
+        {
+            specialize (IHn (fresh avoid :: avoid) m x ltac:(lia)).
+            simpl.
+            exact IHn.
+        }
+    }
+Qed.
+
 (* TODO *)
 Lemma subTMM_to_subT_correct
     {Σ : StaticModel}
@@ -629,18 +665,39 @@ Proof.
                                             rewrite elem_of_list_lookup in H.
                                             destruct H as [n' Hn'].
                                             destruct H0 as [H1 [H2 H3]].
-                                            destruct (decide (n' < n)) as [Hlt|Hnlt].
+                                            apply lookup_of_zip_both_2 in Hn'.
+                                            destruct Hn' as [H1n' H2n'].
+                                            subst v0.
+                                            assert (n' = n).
                                             {
-                                                subst v0.
-                                                (* need something like lookup_of_zip_both but in the opposite direction *)
-                                                Search zip lookup.
-                                                (* specialize (H3 _ _ H1). *)
+                                                clear - Hne H1n' H1.
+                                                symmetry.
+                                                eapply NoDup_lookup.
+                                                {
+                                                    apply Hne.
+                                                }
+                                                {
+                                                    apply H1.
+                                                }
+                                                {
+                                                    apply H1n'.
+                                                }
                                             }
-                                            (* TODO need lemmas about fresh_nth *)
-                                            (* Search fresh_nth. *)
-                                            (* ltac1:(rewrite - elem_of_list_to_map) *)
-                                            Search list_to_map lookup.
-
+                                            subst n'.
+                                            assert (Htmp: fresh_var_seq avoid (S (length sub_mm')) !! n = Some v).
+                                            {
+                                                apply H2n'.
+                                            }
+                                            rewrite <- fresh_nth_iff in Htmp.
+                                            {
+                                                symmetry.
+                                                exact Htmp.
+                                            }
+                                            {
+                                                apply lookup_lt_Some in Htmp.
+                                                rewrite length_fresh_var_seq in Htmp.
+                                                ltac1:(lia).
+                                            }
                                         }
                                         (* </NEW TEST> *)
 
