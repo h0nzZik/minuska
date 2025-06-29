@@ -653,9 +653,9 @@ Proof.
                                             subst els.
                                             apply NoDup_elements.
                                         }
-                                        clear Heqels.
+                                        (* clear Heqels. *)
 
-                                        clear Hsub_mm'_nodup.
+                                        (* clear Hsub_mm'_nodup. *)
 
                                         (* < NEW TEST> *)
                                         ltac1:(repeat case_match; simpl in *; simplify_eq/=).
@@ -699,290 +699,49 @@ Proof.
                                                 ltac1:(lia).
                                             }
                                         }
-                                        (* </NEW TEST> *)
-
-                                        (* Do i need the induction at all? *)
-                                        revert x sub_mm' Hels Hne.
-                                        induction els; intros x sub_mm' Hels Hne.
                                         {
-                                            simpl in *.
-                                            rewrite lookup_empty.
+                                            apply elem_of_list_to_map_2 in H.
+                                            rewrite elem_of_list_lookup in H.
+                                            destruct H as [n' Hn'].
+                                            apply lookup_of_zip_both_2 in Hn'.
+                                            destruct Hn' as [H1n' H2n'].
+                                            apply list_find_None in H0.
+                                            rewrite Forall_forall in H0.
+                                            specialize (H0 x').
+                                            rewrite elem_of_list_lookup in H0.
+                                            specialize (H0 (ex_intro _ _ H1n')).
+                                            ltac1:(contradiction H0).
                                             reflexivity.
                                         }
                                         {
-                                            simpl in *.
-                                            destruct (decide (x' = a)) as [? | Hn].
-                                            {
-                                                subst.
-                                                rewrite lookup_insert.
-                                                simpl.
-                                                reflexivity.
-                                            }
-                                            {
-                                                (* Oh no, I have been confusing [x] and [x'] *)
-                                                rewrite lookup_insert_ne.
-                                                {
-                                                    rewrite NoDup_cons in Hne.
-                                                    destruct Hne as [Hne1 Hne2].
-                                                    assert (Hne3: a ∉ ((@list_to_set variable (gset variable) _ _ _ els))).
-                                                    {
-                                                        rewrite elem_of_list_to_set.
-                                                        assumption.
-                                                    }
-                                                    assert(Hau: a ∈ {[x]} ∪ ((@list_to_set variable (gset variable) _ _ _ sub_mm'.*1))).
-                                                    {
-                                                        clear - Hels Hn Hne3.
-                                                        ltac1:(set_solver).
-                                                    }
-                                                    destruct (decide (a = x)).
-                                                    {
-                                                        subst.
-(*                                                         
-                                                        specialize (IHels x (sub_mm' ∖ {[x]})).
-                                                        ltac1:(ospecialize (IHels _)).
-                                                        {
-                                                            clear IHels.
-                                                            rewrite Hels.
-                                                            ltac1:(set_solver).
-                                                        } *)
-                                                        destruct (decide (x ∈ @list_to_set variable (gset variable) _ _ _ sub_mm'.*1)) as [Hin|Hnotin].
-                                                        {
-                                                            rewrite elem_of_list_to_set in Hin.
-                                                            rewrite elem_of_list_fmap in Hin.
-                                                            destruct Hin as [[x'' p''] [H1p'' H2p'']].
-                                                            simpl in *.
-                                                            subst x''.
-                                                            remember (filter (fun u => u.1 = x) sub_mm') as new_sub.
-                                                            (* FIXME what [if x ∈ sub_mm'.*1] ? *)
-                                                            specialize (IHels x new_sub).
-                                                            ltac1:(ospecialize (IHels _)).
-                                                            {
-                                                                clear IHels.
-                                                                split.
-                                                                {
-                                                                    intros HH.
-                                                                    rewrite elem_of_union in HH.
-                                                                    rewrite elem_of_singleton in HH.
-                                                                    destruct (decide (x0 ∈ @list_to_set variable (gset variable) _ _ _ new_sub.*1)) as [Hin'|Hnotin'].
-                                                                    {
-                                                                        destruct (decide (x0 = x)).
-                                                                        {
-                                                                            subst x0.
-                                                                            ltac1:(exfalso).
-                                                                            clear HH.
-                                                                            clear Hau.
-                                                                        }
-                                                                        {
-                                                                            subst new_sub.
-                                                                            rewrite elem_of_list_to_set in Hin'.
-                                                                            rewrite elem_of_list_fmap in Hin'.
-                                                                            destruct Hin' as [[z' t'] [H1zt H2zt]].
-                                                                            simpl in *.
-                                                                            subst z'.
-                                                                            rewrite elem_of_list_filter in H2zt.
-                                                                            destruct H2zt as [HH1 HH2].
-                                                                            simpl in *.
-                                                                            
-                                                                            assert (Htmp: x0 ∈ @list_to_set variable (gset variable) _ _ _ sub_mm'.*1).
-                                                                            {
-                                                                                clear - Hels HH2.
-                                                                                rewrite elem_of_list_to_set.
-                                                                                rewrite elem_of_list_fmap.
-                                                                                exists (x0, t').
-                                                                                split.
-                                                                                {
-                                                                                    reflexivity.
-                                                                                }
-                                                                                {
-                                                                                    assumption.
-                                                                                }
-                                                                            }
-                                                                            ltac1:(set_solver).
-                                                                        }
-                                                                    }
-                                                                    {
-
-                                                                    }
-                                                                }
-                                                                {
-
-                                                                }
-                                                                Search equiv subseteq.
-                                                                (* apply equiv_subseteq. *)
-                                                                Search filter.
-                                                                (* ltac1:(rewrite Hels). *)
-                                                                (* ltac1:(set_solver). *)
-                                                            }
-                                                            
-                                                        }
-                                                        {
-                                                            specialize (IHels x sub_mm').
-                                                            ltac1:(ospecialize (IHels _)).
-                                                            {
-                                                                clear IHels.
-                                                                rewrite Hels.
-                                                                ltac1:(set_solver).
-                                                            }
-                                                        }
-                                                        
-                                                    }
-                                                    {
-
-                                                    }
-                                                    assert(a ∈ ((@list_to_set variable (gset variable) _ _ _ sub_mm'.*1))).
-                                                    {
-                                                        clear - Hels Hn Hne3 Hau.
-                                                        rewrite elem_of_union in Hau.
-                                                        rewrite elem_of_singleton in Hau.
-                                                        ltac1:(set_solver).
-                                                    }
-                                                    (* assert(x ∈ ((list_to_set els):(gset variable))) by ltac1:(set_solver). *)
-                                                    
-                                                    (* specialize (IHels _ Hels). *)
-                                                }
-                                                {
-                                                    ltac1:(congruence).
-                                                }
-                                            }
-                                        }
-
-                                        Search elements list_to_set.
-                                        revert x'.
-                                        induction sub_mm'; intros x'.
-                                        {
+                                            apply list_find_Some in H0.
+                                            destruct H0 as [H1 [H2 H3]].
+                                            subst v.
+                                            apply not_elem_of_list_to_map_2 in H.
+                                            rewrite elem_of_list_lookup in H.
+                                            ltac1:(contradiction H).
+                                            exists n.
+                                            rewrite fst_zip.
+                                            exact H1.
                                             simpl.
-                                            rewrite union_empty_r_L.
-                                            rewrite elements_singleton.
+                                            rewrite length_fresh_var_seq.
+                                            apply lookup_lt_Some in H1.
+                                            (* Search elements union. *)
+                                            rewrite elements_union_singleton.
                                             simpl.
-                                            destruct (decide (x' = x)).
+                                            rewrite elements_list_to_set.
+                                            rewrite length_fmap.
+                                            ltac1:(lia).
+                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                            exact (proj2 Hsub_mm'_nodup).
                                             {
-                                                subst x'.
-                                                rewrite lookup_insert.
-                                                simpl.
-                                                reflexivity.
-                                            }
-                                            {
-                                                rewrite lookup_insert_ne.
-                                                {
-                                                    rewrite lookup_empty.
-                                                    reflexivity.
-                                                }
-                                                {
-                                                    ltac1:(congruence).
-                                                }
-                                            }
-                                        }
-                                        {
-                                            simpl.
-                                            fold (@fmap list list_fmap) in *.
-                                            ltac1:(ospecialize (IHsub_mm' _)).
-                                            {
-                                                rewrite NoDup_cons.
+                                                rewrite elem_of_list_to_set.
                                                 rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                split.
-                                                {
-                                                    ltac1:(set_solver).
-                                                }
-                                                {
-                                                    destruct Hsub_mm'_nodup as [ND1 ND2].
-                                                    destruct a; simpl in *.
-                                                    rewrite NoDup_cons in ND2.
-                                                    apply ND2.
-                                                }
+                                                exact (proj1 Hsub_mm'_nodup).
                                             }
-                                            ltac1:(repeat case_match; simplify_eq/=).
-                                            {
-                                                ltac1:(rewrite - elem_of_list_to_map in H).
-                                                {
-                                                    rewrite fst_zip.
-                                                    apply NoDup_elements.
-                                                    simpl.
-                                                    rewrite length_fresh_var_seq.
-                                                    (* Search elements union. *)
-                                                    rewrite elements_union_singleton.
-                                                    {
-                                                        simpl.
-                                                        rewrite elements_union_singleton.
-                                                        {
-                                                            simpl.
-                                                            rewrite elements_list_to_set.
-                                                            rewrite length_fmap.
-                                                            ltac1:(lia).
-                                                            clear - Hsub_mm'_nodup.
-                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                            ltac1:(set_solver).    
-                                                        }
-                                                        {
-                                                            clear - Hsub_mm'_nodup.
-                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                            rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                            ltac1:(set_solver).    
-                                                        }
-                                                    }
-                                                    {
-                                                        clear - Hsub_mm'_nodup.
-                                                        rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                        rewrite NoDup_cons in Hsub_mm'_nodup.
-                                                        ltac1:(set_solver).
-                                                    }
-                                                }
-                                                {
-                                                    apply elem_of_zip_r in H.
-                                                    apply list_find_Some in H0.
-                                                    destruct H0 as [H1 [H2 H3]].
-                                                    subst v0.
-                                                    rewrite elem_of_list_lookup in H.
-                                                    destruct H as [j Hj].
-                                                    destruct j.
-                                                    {
-                                                        simpl in *.
-                                                        apply (inj Some) in Hj.
-                                                        destruct n.
-                                                        {
-                                                            simpl in *.
-                                                            symmetry.
-                                                            exact Hj.
-                                                        }
-                                                        {
-                                                            subst v.
-                                                            simpl.
-                                                            ltac1:(exfalso).
-
-                                                        }
-                                                    }
-                                                    destruct (decide (j < n)) as [Hlt|Hge].
-                                                    {
-                                                        specialize (H3 j).
-                                                    }
-                                                    destruct n.
-                                                    {
-                                                        simpl in *.
-                                                    }
-                                                    {
-
-                                                    }
-                                                    (* ltac1:(rewrite elements_union_singleton in H0). *)
-                                                    specialize (IHsub_mm').
-                                                    assert(H2': v1 ∈ fresh_var_seq avoid (S (S (length sub_mm')))).
-                                                    {
-                                                        apply H2.
-                                                    }
-                                                    apply list_find_Some in H3.
-                                                    destruct H3 as [H4 [H5 H6]].
-                                                    subst v2.
-                                                    Search fresh_nth.
-                                                }
-
-                                            }
-                                            {
-
-                                            }
-                                            {
-
-                                            }
-                                            assert(Htmp := elem_of_list_to_map).
                                         }
+                                        { reflexivity. }
+                                        (* </NEW TEST> *)
                                     }
                                     unfold compose.
                                     Search fmap.
