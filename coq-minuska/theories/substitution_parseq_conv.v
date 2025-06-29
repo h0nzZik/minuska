@@ -557,15 +557,6 @@ Proof.
                 {
                     subst y.
                     ltac1:(rewrite lookup_insert).
-                    (* ltac1:(case_match).
-                    {
-
-                    }
-                    {
-
-                    } *)
-                    (* Unset Printing Notations. *)
-                    (* ltac1:(rewrite subs_app_app). *)
                     destruct (list_to_map
                         (zip (elements (dom (<[x:=t]> (list_to_map sub_mm'))))
                         (fresh avoid
@@ -655,6 +646,71 @@ Proof.
                                 rewrite subs_app_nodup_2 with (y := v0).
                                 {
                                     simpl.
+                                    ltac1:(rewrite - elem_of_list_to_map in Heqxx).
+                                    {
+                                        rewrite fst_zip.
+                                        apply NoDup_elements.
+                                        simpl.
+                                        rewrite length_fresh_var_seq.
+                                        rewrite elements_union_singleton.
+                                        simpl.
+                                        rewrite elements_list_to_set.
+                                        rewrite length_fmap.
+                                        ltac1:(lia).
+                                        rewrite NoDup_cons in Hsub_mm'_nodup.
+                                        apply Hsub_mm'_nodup.
+                                        rewrite NoDup_cons in Hsub_mm'_nodup.
+                                        rewrite elem_of_list_to_set.
+                                        apply Hsub_mm'_nodup.
+                                    }
+                                    rewrite elem_of_list_lookup in Heqxx.
+                                    destruct Heqxx as [i Hi].
+                                    apply lookup_of_zip_both_2 in Hi.
+                                    destruct Hi as [H1i H2i].
+                                    apply take_drop_middle in H1i.
+                                    rewrite <- H1i.
+                                    apply take_drop_middle in H2i.
+                                    rewrite <- H2i.
+                                    rewrite zip_with_app.
+                                    {
+                                        simpl.
+                                        rewrite fmap_app.
+                                        rewrite fmap_cons.
+                                        simpl.
+                                        ltac1:(rewrite subs_app_app).
+                                    }
+                                    {
+                                        ltac1:(rewrite length_take).
+                                        ltac1:(rewrite length_take).
+                                        simpl.
+                                        rewrite length_fresh_var_seq.
+                                        rewrite elements_union_singleton.
+                                        simpl.
+                                        rewrite elements_list_to_set.
+                                        rewrite length_fmap.
+                                        ltac1:(lia).
+                                        {
+                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                            apply Hsub_mm'_nodup.
+                                        }
+                                        {
+                                            rewrite NoDup_cons in Hsub_mm'_nodup.
+                                            rewrite elem_of_list_to_set.
+                                            apply Hsub_mm'_nodup.
+                                        }
+                                    }
+                                    Search zip_with app.
+                                    (* Search subs_app app. *)
+                                    ltac1:(rewrite subs_app_app).
+                                    ltac1:(case_match).
+                                    {
+                                        Search t.
+                                    }
+                                    {
+
+                                    }
+                                    (* Search subs_app bov_variable. *)
+                                    (* rewrite elements_union_singleton. *)
                                 }
                                 {
                                     rewrite <- list_fmap_compose.
@@ -774,7 +830,7 @@ Proof.
                                         (* </NEW TEST> *)
                                     }
                                     unfold compose.
-                                    Search fmap.
+                                    (* Search fmap. *)
                                     (* assert(Htmp := NoDup_1_renaming_for sub_mm'). *)
                                     clear.
                                     revert x avoid.
