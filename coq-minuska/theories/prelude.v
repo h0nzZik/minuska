@@ -1527,3 +1527,28 @@ Proof.
         apply IHi; assumption.
     }
 Qed.
+
+Lemma lookup_of_zip_both_2
+    {A B : Type}
+    (a : A)
+    (b : B)
+    (i : nat)
+    (la : list A)
+    (lb : list B)
+:
+    (zip la lb) !! i = Some (a,b) ->
+    la !! i = Some a /\ lb !! i = Some b
+.
+Proof.
+    revert a b la lb.
+    induction i; intros a b la lb H.
+    {
+        destruct la, lb; simpl in *; ltac1:(simplify_eq/=).
+        split; reflexivity.
+    }
+    {
+        destruct la, lb; simpl in *; ltac1:(simplify_eq/=).
+        apply IHi in H.
+        exact H.
+    }
+Qed.
