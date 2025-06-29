@@ -612,11 +612,41 @@ Proof.
                                             rewrite Heqels.
                                             ltac1:(set_solver).
                                         }
+                                        assert (Hne: NoDup els).
+                                        {
+                                            subst els.
+                                            apply NoDup_elements.
+                                        }
                                         clear Heqels.
 
                                         clear Hsub_mm'_nodup.
-                                        revert x sub_mm' Hels.
-                                        induction els; intros x sub_mm' Hels.
+
+                                        (* < NEW TEST> *)
+                                        ltac1:(repeat case_match; simpl in *; simplify_eq/=).
+                                        {
+                                            apply list_find_Some in H0.
+                                            apply elem_of_list_to_map_2 in H.
+                                            rewrite elem_of_list_lookup in H.
+                                            destruct H as [n' Hn'].
+                                            destruct H0 as [H1 [H2 H3]].
+                                            destruct (decide (n' < n)) as [Hlt|Hnlt].
+                                            {
+                                                subst v0.
+                                                (* need something like lookup_of_zip_both but in the opposite direction *)
+                                                Search zip lookup.
+                                                (* specialize (H3 _ _ H1). *)
+                                            }
+                                            (* TODO need lemmas about fresh_nth *)
+                                            (* Search fresh_nth. *)
+                                            (* ltac1:(rewrite - elem_of_list_to_map) *)
+                                            Search list_to_map lookup.
+
+                                        }
+                                        (* </NEW TEST> *)
+
+                                        (* Do i need the induction at all? *)
+                                        revert x sub_mm' Hels Hne.
+                                        induction els; intros x sub_mm' Hels Hne.
                                         {
                                             simpl in *.
                                             rewrite lookup_empty.
@@ -624,7 +654,7 @@ Proof.
                                         }
                                         {
                                             simpl in *.
-                                            destruct (decide (x' = a)).
+                                            destruct (decide (x' = a)) as [? | Hn].
                                             {
                                                 subst.
                                                 rewrite lookup_insert.
@@ -632,11 +662,126 @@ Proof.
                                                 reflexivity.
                                             }
                                             {
+                                                (* Oh no, I have been confusing [x] and [x'] *)
                                                 rewrite lookup_insert_ne.
                                                 {
-                                                    assert(x ∈ ((list_to_set els):(gset variable))) by ltac1:(set_solver).
-                                                    assert(a ∈ ((list_to_set sub_mm'.*1):(gset variable))) by ltac1:(set_solver).
-                                                    specialize (IHels _ Hels).
+                                                    rewrite NoDup_cons in Hne.
+                                                    destruct Hne as [Hne1 Hne2].
+                                                    assert (Hne3: a ∉ ((@list_to_set variable (gset variable) _ _ _ els))).
+                                                    {
+                                                        rewrite elem_of_list_to_set.
+                                                        assumption.
+                                                    }
+                                                    assert(Hau: a ∈ {[x]} ∪ ((@list_to_set variable (gset variable) _ _ _ sub_mm'.*1))).
+                                                    {
+                                                        clear - Hels Hn Hne3.
+                                                        ltac1:(set_solver).
+                                                    }
+                                                    destruct (decide (a = x)).
+                                                    {
+                                                        subst.
+(*                                                         
+                                                        specialize (IHels x (sub_mm' ∖ {[x]})).
+                                                        ltac1:(ospecialize (IHels _)).
+                                                        {
+                                                            clear IHels.
+                                                            rewrite Hels.
+                                                            ltac1:(set_solver).
+                                                        } *)
+                                                        destruct (decide (x ∈ @list_to_set variable (gset variable) _ _ _ sub_mm'.*1)) as [Hin|Hnotin].
+                                                        {
+                                                            rewrite elem_of_list_to_set in Hin.
+                                                            rewrite elem_of_list_fmap in Hin.
+                                                            destruct Hin as [[x'' p''] [H1p'' H2p'']].
+                                                            simpl in *.
+                                                            subst x''.
+                                                            remember (filter (fun u => u.1 = x) sub_mm') as new_sub.
+                                                            (* FIXME what [if x ∈ sub_mm'.*1] ? *)
+                                                            specialize (IHels x new_sub).
+                                                            ltac1:(ospecialize (IHels _)).
+                                                            {
+                                                                clear IHels.
+                                                                split.
+                                                                {
+                                                                    intros HH.
+                                                                    rewrite elem_of_union in HH.
+                                                                    rewrite elem_of_singleton in HH.
+                                                                    destruct (decide (x0 ∈ @list_to_set variable (gset variable) _ _ _ new_sub.*1)) as [Hin'|Hnotin'].
+                                                                    {
+                                                                        destruct (decide (x0 = x)).
+                                                                        {
+                                                                            subst x0.
+                                                                            ltac1:(exfalso).
+                                                                            clear HH.
+                                                                            clear Hau.
+                                                                        }
+                                                                        {
+                                                                            subst new_sub.
+                                                                            rewrite elem_of_list_to_set in Hin'.
+                                                                            rewrite elem_of_list_fmap in Hin'.
+                                                                            destruct Hin' as [[z' t'] [H1zt H2zt]].
+                                                                            simpl in *.
+                                                                            subst z'.
+                                                                            rewrite elem_of_list_filter in H2zt.
+                                                                            destruct H2zt as [HH1 HH2].
+                                                                            simpl in *.
+                                                                            
+                                                                            assert (Htmp: x0 ∈ @list_to_set variable (gset variable) _ _ _ sub_mm'.*1).
+                                                                            {
+                                                                                clear - Hels HH2.
+                                                                                rewrite elem_of_list_to_set.
+                                                                                rewrite elem_of_list_fmap.
+                                                                                exists (x0, t').
+                                                                                split.
+                                                                                {
+                                                                                    reflexivity.
+                                                                                }
+                                                                                {
+                                                                                    assumption.
+                                                                                }
+                                                                            }
+                                                                            ltac1:(set_solver).
+                                                                        }
+                                                                    }
+                                                                    {
+
+                                                                    }
+                                                                }
+                                                                {
+
+                                                                }
+                                                                Search equiv subseteq.
+                                                                (* apply equiv_subseteq. *)
+                                                                Search filter.
+                                                                (* ltac1:(rewrite Hels). *)
+                                                                (* ltac1:(set_solver). *)
+                                                            }
+                                                            
+                                                        }
+                                                        {
+                                                            specialize (IHels x sub_mm').
+                                                            ltac1:(ospecialize (IHels _)).
+                                                            {
+                                                                clear IHels.
+                                                                rewrite Hels.
+                                                                ltac1:(set_solver).
+                                                            }
+                                                        }
+                                                        
+                                                    }
+                                                    {
+
+                                                    }
+                                                    assert(a ∈ ((@list_to_set variable (gset variable) _ _ _ sub_mm'.*1))).
+                                                    {
+                                                        clear - Hels Hn Hne3 Hau.
+                                                        rewrite elem_of_union in Hau.
+                                                        rewrite elem_of_singleton in Hau.
+                                                        ltac1:(set_solver).
+                                                    }
+                                                    (* assert(x ∈ ((list_to_set els):(gset variable))) by ltac1:(set_solver). *)
+                                                    
+                                                    (* specialize (IHels _ Hels). *)
                                                 }
                                                 {
                                                     ltac1:(congruence).
