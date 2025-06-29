@@ -598,6 +598,48 @@ Proof.
                             (* This is a contradiction, as according to Havoid we have [x ∈ avoid],
                                and according to Heq1, [x] is one of the freshly generated (thus non-avoid) variables.
                             *)
+                            ltac1:(exfalso).
+                            ltac1:(rewrite - elem_of_list_to_map in Heq1).
+                            {
+                                rewrite fst_zip.
+                                apply NoDup_elements.
+                                simpl.
+                                rewrite length_fresh_var_seq.
+                                ltac1:(rewrite dom_insert).
+                                rewrite elements_union_singleton.
+                                simpl.
+                                ltac1:(rewrite dom_list_to_map).
+                                rewrite elements_list_to_set.
+                                rewrite length_fmap.
+                                ltac1:(lia).
+                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                apply (proj2 (Hsub_mm'_nodup)).
+                                rewrite NoDup_cons in Hsub_mm'_nodup.
+                                ltac1:(rewrite dom_list_to_map).
+                                rewrite elem_of_list_to_set.
+                                apply (proj1 (Hsub_mm'_nodup)).
+                            }
+                            rewrite elem_of_list_lookup in Heq1.
+                            destruct Heq1 as [i Hi].
+                            apply lookup_of_zip_both_2 in Hi.
+                            destruct Hi as [H1i H2i].
+                            assert(Hxa : x ∈ avoid).
+                            {
+                                apply take_drop_middle in H1i.
+                                simpl in *.
+                                ltac1:(rewrite - H1i in Havoid).
+                                clear - Havoid.
+                                ltac1:(set_solver).
+                            }
+                            clear - H2i Hxa.
+                            assert (H2i' : fresh_var_seq avoid (S (length sub_mm')) !! i = Some x).
+                            {
+                                apply H2i.
+                            }
+                            apply elem_of_list_lookup_2 in H2i'.
+                            apply elem_of_fresh_var_seq in H2i'.
+                            apply H2i'.
+                            exact Hxa.
                         }
                         {
                             ltac1:(rewrite dom_insert_L).
@@ -615,18 +657,6 @@ Proof.
                                     simpl.
                                 }
                                 {
-
-                                    (* rewrite <- list_fmap_compose.
-                                    lazy_match! goal with
-                                    | [|- NoDup ( ?f <$> _)] => assert (Hfst : $f = fst)
-                                    end.
-                                    {
-                                        unfold compose.
-                                        apply functional_extensionality.
-                                        intros [x' p'].
-                                        simpl.
-                                        ltac1:(case_match); simpl in *.
-                                    } *)
                                     rewrite <- list_fmap_compose.
                                     lazy_match! goal with
                                     | [|- NoDup ( ?f <$> _)] => assert (Hfst : $f = (fun kv =>
