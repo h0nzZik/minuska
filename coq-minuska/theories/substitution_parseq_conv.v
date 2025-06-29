@@ -678,6 +678,7 @@ Proof.
                                         rewrite fmap_cons.
                                         simpl.
                                         ltac1:(rewrite subs_app_app).
+                                        Search subs_app cons.
                                     }
                                     {
                                         ltac1:(rewrite length_take).
@@ -699,18 +700,6 @@ Proof.
                                             apply Hsub_mm'_nodup.
                                         }
                                     }
-                                    Search zip_with app.
-                                    (* Search subs_app app. *)
-                                    ltac1:(rewrite subs_app_app).
-                                    ltac1:(case_match).
-                                    {
-                                        Search t.
-                                    }
-                                    {
-
-                                    }
-                                    (* Search subs_app bov_variable. *)
-                                    (* rewrite elements_union_singleton. *)
                                 }
                                 {
                                     rewrite <- list_fmap_compose.

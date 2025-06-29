@@ -24,6 +24,19 @@ Proof.
     }
 Qed.
 
+Lemma subs_app_cons
+    {Σ : StaticModel}
+    x p
+    (s2 : SubS)
+    (t : TermOver BuiltinOrVar)
+:
+    subs_app ((x,p)::s2) t = subs_app s2 (subs_app [(x,p)] t)
+.
+Proof.
+    ltac1:(replace ((x,p)::s2) with (([(x,p)])++s2) by reflexivity).
+    apply subs_app_app.
+Qed.
+
 Lemma subs_app_builtin
     {Σ : StaticModel}
     (ss : SubS)
