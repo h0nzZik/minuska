@@ -18,6 +18,7 @@ From stdpp Require Export
     tactics
     list
     list_numbers
+    listset
     numbers
     pmap
     pretty
