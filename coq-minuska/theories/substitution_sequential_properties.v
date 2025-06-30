@@ -359,3 +359,31 @@ Proof.
     }
 Qed.
 
+
+Lemma subs_app_untouched
+    {Σ : StaticModel}
+    (s : SubS)
+    (φ : TermOver BuiltinOrVar)
+    :
+    vars_of φ ## (list_to_set s.*1) ->
+    subs_app s φ = φ
+.
+Proof.
+    revert φ; induction s; intros φ HH; simpl in *.
+    {
+        reflexivity.
+    }
+    {
+        destruct a as [y t].
+        simpl in *.
+        fold (@fmap list list_fmap) in *.
+        rewrite subst_notin2.
+        {
+            apply IHs.
+            ltac1:(set_solver).
+        }
+        {
+            ltac1:(set_solver).
+        }
+    }
+Qed.
