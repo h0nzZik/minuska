@@ -484,25 +484,29 @@ Proof.
             }
         }
         (* Search compose. *)
+        (* rewrite Hmix. *)
+        (* rewrite assoc. *)
+        rewrite <- subp_app_singleton.
+        remember ([eta subp_app m ∘ subp_app {[i := x]}] ) as f.
         rewrite Hmix.
         rewrite assoc.
-        rewrite <- subp_app_singleton.
-        (* ltac1:(setoid_rewrite <- IHb). *)
-        (* rewrite assoc. *)
-        ltac1:(replace ({[i:=x]}) with (f' <$> ({[i := (t_over (bov_variable i))]}:(gmap variable (TermOver BuiltinOrVar))))).
+        ltac1:(replace ({[i:=x]}) with ((subp_app {[i := x]}) <$> ({[i := (t_over (bov_variable i))]}:(gmap variable (TermOver BuiltinOrVar))))).
         {
-            rewrite <- map_fmap_union.
-            subst f'.
-            (* Set Printing Parentheses. *)
             subst f.
-            rewrite <- subp_app_singleton.
-            (* rewrite <- subp_compose_correct. *)
-            erewrite IHb.
-            Search fmap union.
+            Set Printing Parentheses.
+            ltac1:(rewrite map_fmap_compose).
+            
+            ltac1:(rewrite <- map_fmap_union).
         }
         {
-            (* Search ({[_:=_]}). *)
-            (* Search singleton insert empty. *)
+            rewrite <- insert_empty.
+            rewrite fmap_insert.
+            rewrite fmap_empty.
+            rewrite insert_empty.
+            subst f.
+            simpl.
+            ltac1:(rewrite lookup_singleton).
+            reflexivity.
         }
         specialize (IHb ((f' <$> a) ∪ {[i := x]})).
         ltac1:(ospecialize (IHb _)).
