@@ -42,6 +42,275 @@ Fixpoint fresh_nth
     end
 .
 
+Definition RenamingT {Σ : StaticModel} : Type := gmap variable variable.
+
+Definition renaming_ok {Σ : StaticModel} (r : RenamingT) : Prop :=
+    forall k1 k2 v, r !! k1 = Some v -> r !! k2 = Some v -> k1 = k2
+.
+
+Lemma renaming_ok_empty
+    {Σ : StaticModel}
+    :
+    renaming_ok ∅
+.
+Proof.
+    unfold renaming_ok.
+        intros k1 k2 v HH1 HH2.
+        ltac1:(rewrite lookup_empty in HH1).
+        inversion HH1.
+Qed.
+
+Lemma renaming_ok_insert_inv {Σ : StaticModel}
+    (r : RenamingT)
+    (x y : variable)
+:
+    x ∉ dom r ->
+    renaming_ok (<[x:=y]>r) ->
+    renaming_ok r
+.
+Proof.
+    unfold RenamingT in *.
+    intros HH1 HH.
+    unfold renaming_ok in *.
+    intros k1 k2 v H1 H2.
+    specialize (HH k1 k2 v).
+    destruct (decide (k1 = x)).
+    {
+        subst.
+        ltac1:(rewrite lookup_insert in HH).
+        ltac1:(contradiction HH1).
+        rewrite elem_of_dom.
+        exists v.
+        apply H1.
+    }
+    {
+        ltac1:(rewrite lookup_insert_ne in HH).
+        {
+            ltac1:(congruence).
+        }
+        specialize (HH H1).
+        destruct (decide (k2 = x)).
+        {
+            subst.
+            ltac1:(rewrite lookup_insert in HH).
+            ltac1:(contradiction HH1).
+            rewrite elem_of_dom.
+            exists v.
+            apply H2.
+        }
+        {
+            ltac1:(rewrite lookup_insert_ne in HH).
+            {
+                ltac1:(congruence).
+            }
+            specialize (HH H2).
+            exact HH.
+        }
+    }
+Qed.
+
+Definition r_inverse {Σ : StaticModel} (r : RenamingT) : RenamingT :=
+    list_to_map ((fun kv => (kv.2,kv.1))<$>(map_to_list r))
+.
+
+Lemma r_inverse_insert
+    {Σ : StaticModel}
+    (r : RenamingT)
+    (x y : variable)
+    :
+    renaming_ok r ->
+    x ∉ dom r ->
+    y ∉ (@map_img variable variable (gmap variable variable) _ (gset variable) _ _ _ r) ->
+    r_inverse (<[x:=y]>r) = <[y:=x]>(r_inverse r)
+.
+Proof.
+    unfold r_inverse.
+    intros HH2 HH3 HH1.
+    unfold RenamingT in *.
+    ltac1:(apply map_eq_iff).
+    intros i.
+    assert(Htmp2 : NoDup ([eta snd] <$> map_to_list r)).
+    {
+        apply NoDup_fmap_2_strong.
+        {
+            intros [a b] [c d] HH3' HH4' HH5'.
+            simpl in *.
+            subst.
+            f_equal.
+            rewrite elem_of_map_to_list in HH3'.
+            rewrite elem_of_map_to_list in HH4'.
+            specialize (HH2 a c d HH3' HH4').
+            exact HH2.
+        }
+        {
+            apply NoDup_map_to_list.
+        }
+    }
+    assert(Htmp1 : NoDup
+        ((λ kv : variable * variable, (kv.2, kv.1)) <$> map_to_list (<[x:=y]> r)).*1).
+    {
+        ltac1:(rewrite <- list_fmap_compose).
+        unfold compose.
+        simpl.
+        unfold renaming_ok in HH2.
+        rewrite map_to_list_insert.
+        rewrite fmap_cons.
+        simpl.
+        constructor.
+        {
+            intros HContra.
+            (* apply HH1. clear HH1. *)
+            (* rewrite elem_of_dom. *)
+            rewrite elem_of_list_fmap in HContra.
+            destruct HContra as [[z1 z2][H1z H2z]].
+            subst.
+            simpl in *.
+            rewrite elem_of_map_to_list in H2z.
+            rewrite elem_of_map_img in HH1.
+            apply HH1.
+            exists z1.
+            exact H2z.
+        }
+        {
+            apply Htmp2.
+        }
+        {
+            apply not_elem_of_dom_1 in HH3.
+            exact HH3.
+        }
+  
+    }
+    destruct (decide (i = y)).
+    {
+        subst.
+        rewrite lookup_insert.
+        ltac1:(rewrite - elem_of_list_to_map).
+        {
+            assumption.
+        }
+        rewrite elem_of_list_fmap.
+        exists (x,y).
+        simpl.
+        split>[reflexivity|].
+        rewrite elem_of_map_to_list.
+        rewrite lookup_insert.
+        reflexivity.
+    }
+    {
+        rewrite lookup_insert_ne.
+        lazy_match! goal with
+        | [|- _ = ?r !! ?i] =>
+            destruct ($r !! $i) eqn:Heq
+        end.
+        {
+            ltac1:(rewrite - elem_of_list_to_map).
+            {
+                apply Htmp1.
+            }
+            ltac1:(rewrite - elem_of_list_to_map in Heq).
+            {
+                rewrite <- list_fmap_compose.
+                unfold compose.
+                simpl.
+                exact Htmp2.
+            }
+            rewrite elem_of_list_fmap in Heq.
+            rewrite elem_of_list_fmap.
+            destruct Heq as [[z1 z2][H1z H2z]].
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            exists (z1, z2).
+            split>[reflexivity|].
+            rewrite elem_of_map_to_list.
+            destruct (decide (z1 = x)).
+            {
+                subst.
+                rewrite elem_of_map_to_list in H2z.
+                ltac1:(contradiction HH3).
+                rewrite elem_of_dom.
+                rewrite H2z.
+                exists z2.
+                simpl.
+                reflexivity.
+            }
+            {
+                rewrite lookup_insert_ne.
+                {
+                    rewrite elem_of_map_to_list in H2z.
+                    exact H2z.
+                }
+                {
+                    ltac1:(congruence).
+                }
+            }
+        }
+        {
+            apply not_elem_of_list_to_map_2 in Heq.
+            apply not_elem_of_list_to_map_1.
+            intros HContra.
+            apply Heq. clear Heq.
+            rewrite <- list_fmap_compose.
+            rewrite <- list_fmap_compose in HContra.
+            unfold compose in *.
+            simpl in *.
+            rewrite elem_of_list_fmap.
+            rewrite elem_of_list_fmap in HContra.
+            destruct HContra as [[z1 z2][H1z H2z]].
+            simpl in *.
+            subst.
+            rewrite elem_of_map_to_list in H2z.
+            apply lookup_insert_Some in H2z.
+            destruct H2z as [H2z|H2z].
+            {
+                destruct H2z as [H1 H2].
+                subst.
+                ltac1:(contradiction n).
+                reflexivity.
+            }
+            {
+                destruct H2z as [H1 H2].
+                exists (z1, z2).
+                simpl.
+                split>[reflexivity|].
+                rewrite elem_of_map_to_list.
+                exact H2.
+            }
+        }
+        {
+            ltac1:(congruence).
+        }
+    }
+Qed.
+
+Lemma r_inverse_ok {Σ : StaticModel} (r : RenamingT) :
+    renaming_ok r ->
+    renaming_ok (r_inverse r)
+.
+Proof.
+    unfold RenamingT in *.
+    ltac1:(induction r using map_ind); intros Hok.
+    {
+        unfold r_inverse.
+        ltac1:(rewrite map_to_list_empty).
+        rewrite fmap_nil.
+        simpl.
+        apply renaming_ok_empty.
+    }
+    {
+        
+        apply renaming_ok_insert_inv in Hok.
+        {
+            specialize (IHr Hok).
+        }
+        {
+            ltac1:(rewrite elem_of_dom).
+            rewrite H.
+            unfold is_Some.
+            ltac1:(naive_solver).
+        }
+    }
+Qed.
+
 Definition renaming_for
     {Σ : StaticModel}
     (sub_mm : SubP)
