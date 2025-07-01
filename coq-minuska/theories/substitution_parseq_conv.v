@@ -408,13 +408,127 @@ Definition renaming_for
     {Σ : StaticModel}
     (sub_mm : SubP)
     :
-    list (variable*variable)
+    RenamingT
 :=
     let rhss : list (TermOver BuiltinOrVar) := snd <$> map_to_list sub_mm in
     let avoid : list variable := elements (union_list (vars_of <$> rhss)) in
     let to_be_renamed : list variable := elements (dom sub_mm) in
-    zip to_be_renamed (fresh_var_seq (to_be_renamed ++ avoid) (length to_be_renamed))
+    let r' := zip to_be_renamed (fresh_var_seq (to_be_renamed ++ avoid) (length to_be_renamed)) in
+    list_to_map r'
 .
+
+Lemma length_fresh_var_seq
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    :
+    length (fresh_var_seq avoid n) = n
+.
+Proof.
+    revert avoid.
+    induction n; intros avoid; simpl in *.
+    { reflexivity. }
+    {
+        rewrite IHn. reflexivity.
+    }
+Qed.
+
+
+Lemma elem_of_fresh_var_seq
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    (x : variable)
+    :
+    x ∈ fresh_var_seq avoid n ->
+    x ∉ avoid
+.
+Proof.
+    revert avoid.
+    induction n; intros avoid HH; simpl in *.
+    {
+        rewrite elem_of_nil in HH.
+        destruct HH.
+    }
+    {
+        rewrite elem_of_cons in HH.
+        destruct HH as [HH|HH].
+        {
+            subst x.
+            apply infinite_is_fresh.
+        }
+        {
+            specialize (IHn (fresh avoid::avoid) HH).
+            ltac1:(set_solver).
+        }
+    }
+Qed.
+
+Lemma NoDup_fresh_var_seq
+    {Σ : StaticModel}
+    (avoid : list variable)
+    (n : nat)
+    :
+    NoDup (fresh_var_seq avoid n)
+.
+Proof.
+    revert avoid.
+    induction n; intros avoid; simpl in *.
+    {
+        constructor.
+    }
+    {
+        constructor.
+        intros HContra.
+        apply elem_of_fresh_var_seq in HContra.
+        ltac1:(set_solver).
+        apply IHn.
+    }
+Qed.
+
+
+Lemma renaming_for_ok
+    {Σ : StaticModel}
+    (s : SubP)
+    :
+    renaming_ok (renaming_for s)
+.
+Proof.
+    unfold renaming_for.
+    unfold renaming_ok.
+    intros k1 k2 v H1 H2.
+    ltac1:(rewrite - elem_of_list_to_map in H1).
+    {
+        rewrite fst_zip.
+        apply NoDup_elements.
+        rewrite length_fresh_var_seq.
+        ltac1:(lia).
+    }
+    ltac1:(rewrite - elem_of_list_to_map in H2).
+    {
+        rewrite fst_zip.
+        apply NoDup_elements.
+        rewrite length_fresh_var_seq.
+        ltac1:(lia).
+    }
+    rewrite elem_of_list_lookup in H1.
+    rewrite elem_of_list_lookup in H2.
+    destruct H1 as [i Hi].
+    destruct H2 as [j Hj].
+    apply lookup_of_zip_both_2 in Hi.
+    apply lookup_of_zip_both_2 in Hj.
+    destruct Hi as [H1 H2].
+    destruct Hj as [H3 H4].
+    assert (i = j).
+    {
+        About NoDup_lookup.
+        eapply NoDup_lookup>[|apply H2|apply H4].
+        apply NoDup_fresh_var_seq.
+    }
+    subst j.
+    ltac1:(simplify_eq/=).
+    reflexivity.
+Qed.
 
 Definition subTMM_to_subT
     {Σ : StaticModel}
@@ -629,73 +743,6 @@ Proof.
     }
 Qed.
 
-Lemma elem_of_fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
-    (n : nat)
-    (x : variable)
-    :
-    x ∈ fresh_var_seq avoid n ->
-    x ∉ avoid
-.
-Proof.
-    revert avoid.
-    induction n; intros avoid HH; simpl in *.
-    {
-        rewrite elem_of_nil in HH.
-        destruct HH.
-    }
-    {
-        rewrite elem_of_cons in HH.
-        destruct HH as [HH|HH].
-        {
-            subst x.
-            apply infinite_is_fresh.
-        }
-        {
-            specialize (IHn (fresh avoid::avoid) HH).
-            ltac1:(set_solver).
-        }
-    }
-Qed.
-
-Lemma NoDup_fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
-    (n : nat)
-    :
-    NoDup (fresh_var_seq avoid n)
-.
-Proof.
-    revert avoid.
-    induction n; intros avoid; simpl in *.
-    {
-        constructor.
-    }
-    {
-        constructor.
-        intros HContra.
-        apply elem_of_fresh_var_seq in HContra.
-        ltac1:(set_solver).
-        apply IHn.
-    }
-Qed.
-
-Lemma length_fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
-    (n : nat)
-    :
-    length (fresh_var_seq avoid n) = n
-.
-Proof.
-    revert avoid.
-    induction n; intros avoid; simpl in *.
-    { reflexivity. }
-    {
-        rewrite IHn. reflexivity.
-    }
-Qed.
 
 Lemma NoDup_1_renaming_for
     {Σ : StaticModel}
