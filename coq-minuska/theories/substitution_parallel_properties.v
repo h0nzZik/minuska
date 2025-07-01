@@ -480,6 +480,77 @@ Proof.
     }
 Qed.
 
+Example subp_compose_ex1
+  {Σ : StaticModel}
+  (x y : variable)
+  (f : symbol)
+  (t : TermOver BuiltinOrVar)
+  :
+  subp_compose ({[y := t]}) ({[x := t_term f [t_over (bov_variable y)]]})
+  = {[x := t_term f [t]]}
+.
+Proof.
+  unfold subp_compose.
+  unfold SubP in *.
+  repeat (rewrite <- insert_empty).
+  repeat (rewrite fmap_insert).
+  repeat (rewrite fmap_empty).
+  ltac1:(rewrite subp_app_insert0).
+  {
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    unfold subp_dom.
+    ltac1:(rewrite dom_empty_L).
+    apply disjoint_empty_r.
+  }
+  ltac1:(rewrite subp_app_empty').
+  unfold compose.
+  simpl.
+  ltac1:(rewrite lookup_insert).
+  rewrite map_filter_insert.
+  simpl.
+  rewrite map_filter_empty.
+  ltac1:(case_match).
+  {
+    clear H.
+    ltac1:(rename n into H).
+    unfold subp_codom in H.
+    rewrite elem_of_union_list in H.
+    ltac1:(exfalso).
+    apply H.
+    clear H.
+    exists ({[y]}).
+    rewrite elem_of_singleton.
+    split>[|reflexivity].
+    rewrite elem_of_list_fmap.
+    exists (t_term f [t_over (bov_variable y)]).
+    unfold vars_of; simpl.
+    unfold vars_of; simpl.
+    split>[ltac1:(set_solver)|].
+    rewrite elem_of_elements.
+    ltac1:(rewrite elem_of_map_img).
+    exists x.
+    rewrite lookup_insert.
+    reflexivity.
+  }
+  {
+    clear H.
+    ltac1:(rename n into H).
+    apply dec_stable in H.
+    rewrite delete_empty.
+    ltac1:(rewrite map_filter_empty).
+    rewrite fmap_empty.
+    rewrite left_id.
+    {
+        reflexivity.
+    }
+    {
+        apply _.
+    }
+  }
+Qed.
+
+
 Lemma subp_compose_assoc
   {Σ : StaticModel}
   (a b c : SubP)
@@ -512,4 +583,19 @@ Proof.
     apply _.
   }
 Qed.
+
+Lemma subp_union_is_compose__sometimes
+  {Σ : StaticModel}
+  (a b : gmap variable (TermOver BuiltinOrVar))
+  :
+  (subp_app b <$> a) = a ->
+  a ∪ b = subp_compose a b
+.
+Proof.
+    intros HH.
+    unfold subp_compose.
+    rewrite HH.
+    reflexivity.
+Qed.
+
 

@@ -13,7 +13,7 @@ From Minuska Require Import
 Definition make_parallel
     {Σ : StaticModel}
     (sub : SubS)
-    : SubP
+    : (gmap variable (TermOver BuiltinOrVar))
 :=
     list_to_map sub
 .
@@ -549,15 +549,8 @@ Definition make_serial
     let rinv := r_inverse r in
     (map_to_list (rlift r))
     ++
-    (map_to_list (s ∪ (rlift rinv)))
+    (map_to_list (subp_compose s (rlift rinv)))
 .
-
-#[local]
-Instance union_subp {Σ : StaticModel} : Union SubP.
-Proof.
-    unfold SubP.
-    apply _.
-Defined.
 
 Lemma make_parallel_app
     {Σ : StaticModel}
@@ -571,8 +564,121 @@ Proof.
     apply list_to_map_app.
 Qed.
 
+Lemma make_parallel_map_to_list
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    :
+    make_parallel (map_to_list s) = s
+.
+Proof.
+    unfold make_parallel.
+    unfold SubP in *.
+    apply list_to_map_to_list.
+Qed.
 
-Lemma subTMM_to_make_parallel
+Definition idren
+    {Σ : StaticModel}
+    (vs : gset variable)
+    : RenamingT
+:=
+    set_to_map (fun x => (x,x)) vs
+.
+
+Lemma compose_renaming_inverse
+    {Σ : StaticModel}
+    (r : RenamingT)
+    :
+    renaming_ok r ->
+    (subp_compose (rlift (r_inverse r)) (rlift r)) = rlift (idren (dom r))
+.
+Proof.
+    intros Hrok.
+    unfold subp_compose.
+    apply map_eq_iff.
+    intros i.
+    unfold rlift,idren,r_inverse.
+    rewrite <- map_fmap_compose.
+    unfold compose.
+    simpl.
+    rewrite lookup_fmap.
+    destruct ((set_to_map _ (dom r)) !! i) eqn:Heq.
+    {
+        simpl.
+        ltac1:(rewrite lookup_set_to_map in Heq).
+        {
+            intros y y' Hy Hy' HH.
+            simpl in *.
+            exact HH.
+        }
+        destruct Heq as [y [H1y H2y]].
+        ltac1:(simplify_eq/=).
+        rewrite lookup_union.
+        rewrite lookup_fmap.
+        rewrite lookup_fmap.
+        ltac1:(rewrite elem_of_dom in H1y).
+        destruct H1y as [v' Hv'].
+        rewrite Hv'.
+        simpl.
+        destruct (list_to_map _ !! v) eqn:Heq2.
+        {
+            ltac1:(rewrite - elem_of_list_to_map in Heq2).
+            {
+                rewrite <- list_fmap_compose.
+                unfold compose.
+                simpl.
+                apply renaming_ok_nodup.
+                exact Hrok.
+            }
+            rewrite elem_of_list_fmap in Heq2.
+            destruct Heq2 as [[y1 y2][H1y H2y]].
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            ltac1:(rewrite elem_of_map_to_list in H2y).
+            ltac1:(rewrite lookup_fmap).
+            rewrite H2y.
+            simpl.
+            reflexivity.
+        }
+        {
+            simpl.
+            assert(Htmp := not_elem_of_list_to_map_2 (_ <$> map_to_list r) v Heq2).
+            destruct (decide (v = v')) as [?|Hn].
+            {
+                subst.
+                reflexivity.
+            }
+            {
+                ltac1:(exfalso).
+                rewrite elem_of_list_fmap in Htmp.
+                unfold renaming_ok in Hrok.
+                (* Search (~ (∃ _, _)). *)
+                apply Htmp.
+                clear Htmp.
+                
+                exists (v, v).
+                simpl.
+                split>[reflexivity|].
+                rewrite elem_of_list_fmap.
+                exists (v,v).
+                simpl.
+                split>[reflexivity|].
+                ltac1:(rewrite elem_of_map_to_list).
+            }
+            rewrite elem_of_list_fmap in Htmp.
+            
+            Search (list_to_map _ !! _ = None).
+        }
+    }
+    ltac1:(rewrite lookup_set_to_map).
+    (* rewrite lookup_set_to_map_id. *)
+    (* rewrite lookup_fmap. *)
+    (* rewrite <- map_fmap_compose. *)
+    (* destruct (dom r !! i). *)
+    (* rewrite lookup_fmap. *)
+    (* rewrite <- map_fmap_compose. *)
+Qed.
+
+Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (s : gmap variable (TermOver BuiltinOrVar))
     :
@@ -584,22 +690,37 @@ Proof.
     unfold compose.
     unfold make_serial.
     rewrite make_parallel_app.
+    rewrite make_parallel_map_to_list.
+    ltac1:(rewrite make_parallel_map_to_list).
+    rewrite map_union_comm.
+    {
+        rewrite subp_union_is_compose__sometimes.
+        {
+            rewrite subp_compose_assoc.
+        }
+        {
+
+        }
+    }
+    {
+        (* Search map_disjoint. *)
+        (* Search "##ₘ". *)
+        (* rewrite elem_of_disjoint. *)
+    }
+    Search union "comm".
+    (* rewrite union_comm_L. *)
+    rewrite subp_union_is_compose__sometimes.
+    {
+
+    }
+    {
+
+    }
+    (* unfold subp_compose. *)
+    (* rewrite assoc. *)
     Search make_parallel.
 Qed.
 
-
-Definition make_serial
-    {Σ : StaticModel}
-    (sub_mm : SubP)
-    :
-    SubS
-:=
-    let subl : list (variable*(TermOver BuiltinOrVar)) := map_to_list sub_mm in
-    let renaming := renaming_for sub_mm in
-    let rnmap : gmap variable variable := list_to_map renaming in
-    let subl_renamed : list (variable*(TermOver BuiltinOrVar)) := (fun kv => match rnmap !! kv.1 with None => kv | Some y => (y, kv.2) end) <$> subl in
-    subl_renamed ++ ((fun xy => (xy.2, t_over (bov_variable xy.1)))<$> renaming)
-.
 
 
 Lemma subp_app_insert
