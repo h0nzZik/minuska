@@ -659,7 +659,7 @@ Proof.
                 simpl.
                 split>[reflexivity|].
                 rewrite elem_of_list_fmap.
-                exists (v,v).
+                exists (v',v).
                 simpl.
                 split>[reflexivity|].
                 ltac1:(rewrite elem_of_map_to_list).

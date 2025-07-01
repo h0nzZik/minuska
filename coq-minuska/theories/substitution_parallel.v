@@ -57,6 +57,7 @@ Definition subp_codom
   examples:
     1. a={(y,t)}, b={(x,f(y))} ==> {(x, f(t)), (y, t)}
     2. a={(x,f(y))}, b={(y,t)} ==> {(x,f(y)), (y, t[f(y)/x])}
+    3. a={(y,x)}, b={(x, 0)}
 
  *)
  (* About filter. *)
