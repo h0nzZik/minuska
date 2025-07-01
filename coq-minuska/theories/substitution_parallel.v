@@ -55,14 +55,18 @@ Definition subp_codom
 (* a after b *)
 (* 
   examples:
-    1. a={(y,0)}, b={(x,f(y))} ==> {(x, f(0))}
-    2. a={(x,f(y))}, b={(y,0)} ==> {(x,f(y)), (y, 0)}
+    1. a={(y,t)}, b={(x,f(y))} ==> {(x, f(t)), (y, t)}
+    2. a={(x,f(y))}, b={(y,t)} ==> {(x,f(y)), (y, t[f(y)/x])}
 
  *)
  (* About filter. *)
 Definition subp_compose
   {Σ : StaticModel}
-  (a b : SubP)
+  (a b : gmap variable (TermOver BuiltinOrVar))
 :=
-  union (fmap (subp_app b) (filter (fun kv => kv.1 ∉ subp_codom b) a)) (fmap (subp_app a) b)
+  union 
+  (* ((filter (fun kv => kv.1 ∉ vars_of (subp_app b kv.2)) a)) *)
+    ((filter (fun kv => kv.1 ∉ subp_dom b) a))
+    (fmap (subp_app a) b) 
 .
+

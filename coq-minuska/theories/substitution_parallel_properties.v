@@ -480,6 +480,7 @@ Proof.
     }
 Qed.
 
+(* 1. a={(y,0)}, b={(x,f(y))} ==> {(x, f(0))} *)
 Example subp_compose_ex1
   {Σ : StaticModel}
   (x y : variable)
@@ -487,7 +488,7 @@ Example subp_compose_ex1
   (t : TermOver BuiltinOrVar)
   :
   subp_compose ({[y := t]}) ({[x := t_term f [t_over (bov_variable y)]]})
-  = {[x := t_term f [t]]}
+  = {[x := t_term f [t]; y := t]}
 .
 Proof.
   unfold subp_compose.
@@ -506,7 +507,7 @@ Proof.
   ltac1:(rewrite subp_app_empty').
   unfold compose.
   simpl.
-  ltac1:(rewrite lookup_insert).
+  (* ltac1:(rewrite lookup_insert). *)
   rewrite map_filter_insert.
   simpl.
   rewrite map_filter_empty.
@@ -514,42 +515,147 @@ Proof.
   {
     clear H.
     ltac1:(rename n into H).
-    unfold subp_codom in H.
-    rewrite elem_of_union_list in H.
-    ltac1:(exfalso).
-    apply H.
-    clear H.
-    exists ({[y]}).
-    rewrite elem_of_singleton.
-    split>[|reflexivity].
-    rewrite elem_of_list_fmap.
-    exists (t_term f [t_over (bov_variable y)]).
-    unfold vars_of; simpl.
-    unfold vars_of; simpl.
-    split>[ltac1:(set_solver)|].
-    rewrite elem_of_elements.
-    ltac1:(rewrite elem_of_map_img).
-    exists x.
-    rewrite lookup_insert.
-    reflexivity.
+    unfold subp_dom in H.
+    ltac1:(rewrite not_elem_of_dom in H).
+    destruct (decide (x = y)).
+    {
+        subst.
+        rewrite lookup_insert in H.
+        inversion H.
+    }
+    {
+        rewrite lookup_insert_ne in H.
+        {
+            clear H.
+            rewrite decide_True.
+            {
+                rewrite insert_union_singleton_l.
+                repeat (rewrite insert_empty).
+                (* ltac1:(rewrite <- assoc). *)
+                rewrite (right_id ∅).
+                {
+                    rewrite insert_union_singleton_l.
+                    apply map_union_comm.
+                    rewrite map_disjoint_singleton_l.
+                    rewrite <- insert_empty.
+                    rewrite lookup_insert_ne.
+                    rewrite lookup_empty.
+                    reflexivity.
+                    ltac1:(congruence).
+                }
+                {
+                    apply _.
+                }
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+            ltac1:(congruence).
+        }
+    }
   }
   {
     clear H.
     ltac1:(rename n into H).
     apply dec_stable in H.
-    rewrite delete_empty.
-    ltac1:(rewrite map_filter_empty).
-    rewrite fmap_empty.
-    rewrite left_id.
+    unfold subp_dom in H.
+    ltac1:(rewrite elem_of_dom in H).
+    destruct H as [x' Hx'].
+    destruct (decide (x = y)).
     {
-        reflexivity.
+        subst.
+        rewrite lookup_insert in Hx'.
+        ltac1:(simplify_eq/=).
+        rewrite delete_empty.
+        ltac1:(rewrite map_filter_empty).
+        rewrite (left_id ∅).
+        {
+            rewrite decide_True.
+            {
+                rewrite insert_insert.
+                reflexivity.
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+            apply _.
+        }
     }
     {
-        apply _.
+        subst.
+        rewrite lookup_insert_ne in Hx'.
+        {
+            rewrite lookup_empty in Hx'.
+            inversion Hx'.
+        }
+        {
+            ltac1:(congruence).
+        }
     }
   }
 Qed.
 
+(* 2. a={(x,f(y))}, b={(y,t)} ==> {(x,f(y)), (y, t[f(y)/x])} *)
+Example subp_compose_ex2
+  {Σ : StaticModel}
+  (x y : variable)
+  (f : symbol)
+  (t : TermOver BuiltinOrVar)
+  :
+  x <> y ->
+  subp_compose ({[x := t_term f [t_over (bov_variable y)]]}) ({[y := t]})
+  = {[x := t_term f [t_over (bov_variable y)]; y := TermOverBoV_subst t x (t_term f [t_over (bov_variable y)])]}
+.
+Proof.
+    unfold subp_compose.
+    unfold SubP in *.
+    intros Hxy.
+    repeat (rewrite <- insert_empty).
+    do 1 (rewrite fmap_insert).
+    ltac1:(rewrite subp_app_insert0).
+    {
+        unfold subp_dom.
+        ltac1:(rewrite dom_empty_L).
+        ltac1:(set_solver).
+    }
+    {
+        ltac1:(rewrite subp_app_empty').
+        unfold compose.
+        rewrite map_filter_insert.
+        simpl.
+        ltac1:(case_match).
+        {
+            rewrite map_filter_empty.
+            rewrite fmap_empty.
+            simpl.
+            repeat (rewrite insert_empty).
+            rewrite insert_union_singleton_l.
+            reflexivity.
+        }
+        {
+            clear H.
+            apply dec_stable in n.
+            unfold subp_dom in n.
+            ltac1:(rewrite elem_of_dom in n).
+            destruct n as [x' Hx'].
+            apply lookup_insert_Some in Hx'.
+            destruct Hx' as [[H1 H2]|[H3 H4]].
+            {
+                subst.
+                ltac1:(contradiction Hxy).
+                reflexivity.
+            }
+            {
+                rewrite lookup_empty in H4.
+                inversion H4.
+            }
+        }
+    }
+Qed.
 
 Lemma subp_compose_assoc
   {Σ : StaticModel}
@@ -562,25 +668,51 @@ Proof.
   unfold SubP in *.
   unfold subp_compose.
   intros Hdisj.
-  rewrite assoc.
-  f_equal.
-  rewrite map_fmap_union.
-  f_equal.
-  rewrite <- map_fmap_compose.
-  f_equal.
-  apply functional_extensionality.
-  intros x.
-  rewrite subp_compose_helper_1.
+  (* set (fun kv => kv.1 ∉ subp_codom c) as notin_codom_c. *)
+  (* set (fun kv => kv.1 ∉ subp_codom b) as notin_codom_b. *)
+  (* set (fun kv => kv.1 ∉ subp_codom ((_ <$> _) ∪ _)) as notin_codom_XX. *)
+  unfold SubP in *.
+  (* repeat (rewrite assoc). *)
+  (* Search (_ ##ₘ _). *)
+    Search (filter _ (_ ∪ _)).
+  Check map_filter_union.
+  rewrite map_filter_union.
   {
-    rewrite subp_app_union.
-    { reflexivity. }
-    { exact Hdisj. }
+
   }
   {
-    assumption.
-  }
-  {
-    apply _.
+    apply map_disjoint_spec.
+    intros i x y H1 H2.
+    rewrite lookup_fmap in H2.
+    rewrite lookup_fmap in H1.
+    rewrite map_lookup_filter in H1.
+    ltac1:(simplify_option_eq).
+    destruct (b !! i) eqn:Hbi.
+    {
+        simpl in H2.
+        ltac1:(simplify_option_eq).
+        apply H1. clear H0 H1.
+        unfold subp_codom.
+        rewrite elem_of_union_list.
+        ltac1:(setoid_rewrite elem_of_list_fmap).
+        exists (vars_of t).
+        split.
+        {
+            rewrite elem_of_list_fmap.
+            ltac1:(setoid_rewrite elem_of_elements).
+            exists (t).
+        }
+        {
+            rewrite elem_of_dom.
+            rewrite Hbi.
+            exists t.
+            reflexivity.
+        }
+        
+    }
+    unfold map_disjoint.
+    Search (_ ##ₘ _).
+    (* unfold notin_codom_b. *)
   }
 Qed.
 
