@@ -113,6 +113,31 @@ Definition r_inverse {Σ : StaticModel} (r : RenamingT) : RenamingT :=
     list_to_map ((fun kv => (kv.2,kv.1))<$>(map_to_list r))
 .
 
+Lemma renaming_ok_nodup
+    {Σ : StaticModel}
+    (r : RenamingT)
+    :
+    renaming_ok r ->
+    NoDup ([eta snd] <$> map_to_list r)
+.
+Proof.
+    unfold RenamingT in *.
+    intros H.
+    apply NoDup_fmap_2_strong.
+    {
+        intros [a b] [c d] HH3' HH4' HH5'.
+        simpl in *.
+        subst.
+        f_equal.
+        rewrite elem_of_map_to_list in HH3'.
+        rewrite elem_of_map_to_list in HH4'.
+        apply (H a c d HH3' HH4').
+    }
+    {
+        apply NoDup_map_to_list.
+    }
+Qed.
+
 Lemma r_inverse_insert
     {Σ : StaticModel}
     (r : RenamingT)
@@ -131,20 +156,8 @@ Proof.
     intros i.
     assert(Htmp2 : NoDup ([eta snd] <$> map_to_list r)).
     {
-        apply NoDup_fmap_2_strong.
-        {
-            intros [a b] [c d] HH3' HH4' HH5'.
-            simpl in *.
-            subst.
-            f_equal.
-            rewrite elem_of_map_to_list in HH3'.
-            rewrite elem_of_map_to_list in HH4'.
-            specialize (HH2 a c d HH3' HH4').
-            exact HH2.
-        }
-        {
-            apply NoDup_map_to_list.
-        }
+        apply renaming_ok_nodup.
+        exact HH2.
     }
     assert(Htmp1 : NoDup
         ((λ kv : variable * variable, (kv.2, kv.1)) <$> map_to_list (<[x:=y]> r)).*1).
@@ -288,27 +301,35 @@ Lemma r_inverse_ok {Σ : StaticModel} (r : RenamingT) :
 .
 Proof.
     unfold RenamingT in *.
-    ltac1:(induction r using map_ind); intros Hok.
+    intros H.
+    unfold renaming_ok, r_inverse.
+    intros k1 k2 v HH1 HH2.
+    ltac1:(rewrite - elem_of_list_to_map in HH1).
     {
-        unfold r_inverse.
-        ltac1:(rewrite map_to_list_empty).
-        rewrite fmap_nil.
+        rewrite <- list_fmap_compose.
+        unfold compose.
         simpl.
-        apply renaming_ok_empty.
+        apply renaming_ok_nodup.
+        exact H.
     }
+    ltac1:(rewrite - elem_of_list_to_map in HH2).
     {
-        
-        apply renaming_ok_insert_inv in Hok.
-        {
-            specialize (IHr Hok).
-        }
-        {
-            ltac1:(rewrite elem_of_dom).
-            rewrite H.
-            unfold is_Some.
-            ltac1:(naive_solver).
-        }
+        rewrite <- list_fmap_compose.
+        unfold compose.
+        simpl.
+        apply renaming_ok_nodup.
+        exact H.
     }
+    rewrite elem_of_list_fmap in HH1.
+    rewrite elem_of_list_fmap in HH2.
+    destruct HH1 as [[a b][HH11 HH12]].
+    destruct HH2 as [[c d][HH21 HH22]].
+    simpl in *.
+    ltac1:(simplify_eq/=).
+    ltac1:(rewrite elem_of_map_to_list in HH12).
+    ltac1:(rewrite elem_of_map_to_list in HH22).
+    ltac1:(simplify_eq/=).
+    reflexivity.
 Qed.
 
 Definition renaming_for
