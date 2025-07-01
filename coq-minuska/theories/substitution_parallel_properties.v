@@ -349,3 +349,167 @@ Proof.
         apply HH0.
     }
 Qed.
+
+Lemma subp_compose_helper_1
+    {Σ : StaticModel}
+    (b c : SubP)
+    :
+    subp_codom b ## subp_dom c ->
+    subp_app c <$> b = b
+.
+Proof.
+    intros Hdisj.
+    apply map_eq_iff.
+    intros i.
+    destruct (b !! i) eqn:Hbi.
+    {
+        rewrite lookup_fmap.
+        ltac1:(rewrite Hbi).
+        simpl.
+        apply f_equal.
+        apply subp_app_almost_closed.
+        unfold SubP in *.
+        ltac1:(assert(vars_of t ⊆ subp_codom b)).
+        {
+            unfold subp_codom.
+            rewrite elem_of_subseteq.
+            intros x Hx.
+            rewrite elem_of_union_list.
+            exists (vars_of t).
+            split>[|exact Hx].
+            rewrite elem_of_list_fmap.
+            exists t.
+            split>[reflexivity|].
+            rewrite elem_of_elements.
+            ltac1:(rewrite elem_of_map_img).
+            exists i.
+            exact Hbi.
+        }
+        ltac1:(set_solver).
+    }
+    {
+        rewrite lookup_fmap.
+        ltac1:(rewrite Hbi).
+        reflexivity.
+    }
+Qed.
+
+Lemma subp_app_union
+    {Σ : StaticModel}
+    (b c : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_codom b ## subp_dom c ->
+    subp_app (b ∪ c) = (subp_app c) ∘ (subp_app b)
+.
+Proof.
+    intros HH.
+    apply functional_extensionality.
+    intros phi.
+    revert b c HH.
+    induction phi; intros b c HH.
+    {
+        simpl.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        {
+            unfold SubP in *.
+            ltac1:(erewrite lookup_union_Some_l in H0)>[|apply H1].
+            apply (inj Some) in H0.
+            subst.
+            symmetry.
+            apply subp_app_almost_closed.
+            (* ltac1:(eapply lookup_union_Some_l in H1). *)
+            ltac1:(assert(vars_of t ⊆ subp_codom b)).
+            {
+                unfold subp_codom.
+                rewrite elem_of_subseteq.
+                intros y Hy.
+                rewrite elem_of_union_list.
+                exists (vars_of t).
+                split>[|exact Hy].
+                rewrite elem_of_list_fmap.
+                exists t.
+                split>[reflexivity|].
+                rewrite elem_of_elements.
+                ltac1:(rewrite elem_of_map_img).
+                exists x.
+                exact H1.
+            }
+            ltac1:(set_solver).
+        }
+        {
+            ltac1:(rewrite lookup_union_r in H0).
+            exact H1.
+            ltac1:(rewrite H0).
+            reflexivity.
+        }
+        {
+            ltac1:(exfalso).
+            unfold SubP in *.
+            rewrite lookup_union in H0.
+            rewrite H1 in H0.
+            unfold union,option_union,union_with,option_union_with in H0.
+            ltac1:(case_match; simplify_eq/=).
+        }
+        {
+            unfold SubP in *.
+            rewrite lookup_union in H0.
+            rewrite H1 in H0.
+            unfold union,option_union,union_with,option_union_with in H0.
+            ltac1:(case_match; simplify_eq/=).
+            reflexivity.
+        }
+    }
+    {
+        simpl.
+        f_equal.
+        clear s.
+        ltac1:(replace (map) with (@fmap list list_fmap) by reflexivity).
+        rewrite <- list_fmap_compose.
+        apply list_fmap_ext.
+        intros i x Hix.
+        rewrite Forall_forall in H.
+        specialize (H x).
+        ltac1:(ospecialize (H _)).
+        {
+            rewrite elem_of_list_lookup.
+            exists i.
+            exact Hix.
+        }
+        specialize (H _ _ HH).
+        exact H.
+    }
+Qed.
+
+Lemma subp_compose_assoc
+  {Σ : StaticModel}
+  (a b c : SubP)
+:
+    subp_codom b ## subp_dom c ->
+    subp_compose (subp_compose a b) c = subp_compose a (subp_compose b c)
+.
+Proof.
+  unfold SubP in *.
+  unfold subp_compose.
+  intros Hdisj.
+  rewrite assoc.
+  f_equal.
+  rewrite map_fmap_union.
+  f_equal.
+  rewrite <- map_fmap_compose.
+  f_equal.
+  apply functional_extensionality.
+  intros x.
+  rewrite subp_compose_helper_1.
+  {
+    rewrite subp_app_union.
+    { reflexivity. }
+    { exact Hdisj. }
+  }
+  {
+    assumption.
+  }
+  {
+    apply _.
+  }
+Qed.
+

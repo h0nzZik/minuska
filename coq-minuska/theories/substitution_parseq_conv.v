@@ -10,7 +10,7 @@ From Minuska Require Import
     substitution_sequential_properties
 .
 
-Definition subT_to_subTMM
+Definition make_parallel
     {Σ : StaticModel}
     (sub : SubS)
     : SubP
@@ -530,7 +530,65 @@ Proof.
     reflexivity.
 Qed.
 
-Definition subTMM_to_subT
+Definition rlift
+    {Σ : StaticModel}
+    (r : RenamingT)
+    :
+    SubP
+:=
+   (fun x => t_over (bov_variable x)) <$> r
+.
+
+Definition make_serial
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    :
+    SubS
+:=
+    let r := renaming_for s in
+    let rinv := r_inverse r in
+    (map_to_list (rlift r))
+    ++
+    (map_to_list (s ∪ (rlift rinv)))
+.
+
+#[local]
+Instance union_subp {Σ : StaticModel} : Union SubP.
+Proof.
+    unfold SubP.
+    apply _.
+Defined.
+
+Lemma make_parallel_app
+    {Σ : StaticModel}
+    (s1 s2 : SubS)
+    :
+    make_parallel (s1 ++ s2) = make_parallel s1 ∪ make_parallel s2
+.
+Proof.
+    unfold make_parallel.
+    unfold SubS,SubP in *.
+    apply list_to_map_app.
+Qed.
+
+
+Lemma subTMM_to_make_parallel
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    :
+    make_parallel ∘ make_serial = id
+.
+Proof.
+    apply functional_extensionality.
+    intros m.
+    unfold compose.
+    unfold make_serial.
+    rewrite make_parallel_app.
+    Search make_parallel.
+Qed.
+
+
+Definition make_serial
     {Σ : StaticModel}
     (sub_mm : SubP)
     :
@@ -702,13 +760,13 @@ Proof.
 Qed.
 
 
-Lemma subT_to_subTMM_correct
+Lemma make_parallel_correct
     {Σ : StaticModel}
     (sub : SubS)
     (φ : TermOver BuiltinOrVar)
     :
     subt_closed sub ->
-    subp_app (subT_to_subTMM sub) φ = subs_app sub φ
+    subp_app (make_parallel sub) φ = subs_app sub φ
 .
 Proof.
     revert φ.
@@ -890,12 +948,12 @@ Proof.
 Qed.
 
 (* TODO *)
-Lemma subTMM_to_subT_correct
+Lemma make_serial_correct
     {Σ : StaticModel}
     (sub_mm : SubP)
     (φ : TermOver BuiltinOrVar)
 :
-    subs_app (subTMM_to_subT sub_mm) φ = subp_app sub_mm φ
+    subs_app (make_serial sub_mm) φ = subp_app sub_mm φ
 .
 Proof.
 Qed.

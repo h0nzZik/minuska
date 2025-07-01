@@ -43,14 +43,12 @@ Definition subp_codom
   ⋃ (vs)
 .
 
-
-
-(* 
 (* a after b *)
 Definition subp_compose
   {Σ : StaticModel}
   (a b : SubP)
 :=
-  union (fmap (fun p => subp_app b p) a) b
+  union (fmap (subp_app b) a) b
 .
- *)
+
+
