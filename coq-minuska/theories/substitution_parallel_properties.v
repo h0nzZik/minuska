@@ -985,6 +985,7 @@ Proof.
   }
 Qed.
 
+(* 
 Lemma subp_union_is_compose__sometimes
   {Σ : StaticModel}
   (a b : gmap variable (TermOver BuiltinOrVar))
@@ -999,4 +1000,4 @@ Proof.
     reflexivity.
 Qed.
 
-
+ *)

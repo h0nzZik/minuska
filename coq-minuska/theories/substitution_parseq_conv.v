@@ -10,6 +10,10 @@ From Minuska Require Import
     substitution_sequential_properties
 .
 
+From Coq Require Import
+    Logic.Classical_Prop
+.
+
 Definition make_parallel
     {Σ : StaticModel}
     (sub : SubS)
@@ -584,6 +588,7 @@ Definition idren
     set_to_map (fun x => (x,x)) vs
 .
 
+(* Likely is not true *)
 Lemma compose_renaming_inverse
     {Σ : StaticModel}
     (r : RenamingT)
@@ -614,59 +619,356 @@ Proof.
         ltac1:(simplify_eq/=).
         rewrite lookup_union.
         rewrite lookup_fmap.
-        rewrite lookup_fmap.
+        (* rewrite lookup_fmap. *)
         ltac1:(rewrite elem_of_dom in H1y).
         destruct H1y as [v' Hv'].
         rewrite Hv'.
         simpl.
-        destruct (list_to_map _ !! v) eqn:Heq2.
+        rewrite map_lookup_filter.
+        simpl.
+        remember (list_to_map ((λ kv : variable * variable, (kv.2, kv.1)) <$> map_to_list r)) as r'.
+        rewrite lookup_fmap.
+        unfold union,option_union,union_with,option_union_with.
+        ltac1:(case_match).
         {
-            ltac1:(rewrite - elem_of_list_to_map in Heq2).
+            ltac1:(simplify_option_eq).
+            ltac1:(rewrite - elem_of_list_to_map in Heqo1).
             {
                 rewrite <- list_fmap_compose.
-                unfold compose.
-                simpl.
                 apply renaming_ok_nodup.
-                exact Hrok.
+                apply Hrok.
             }
-            rewrite elem_of_list_fmap in Heq2.
-            destruct Heq2 as [[y1 y2][H1y H2y]].
-            simpl in *.
-            ltac1:(simplify_eq/=).
-            ltac1:(rewrite elem_of_map_to_list in H2y).
-            ltac1:(rewrite lookup_fmap).
-            rewrite H2y.
-            simpl.
-            reflexivity.
-        }
-        {
-            simpl.
-            assert(Htmp := not_elem_of_list_to_map_2 (_ <$> map_to_list r) v Heq2).
-            destruct (decide (v = v')) as [?|Hn].
             {
-                subst.
+                unfold RenamingT in *.
+                unfold SubP in *.
+                ltac1:(rewrite elem_of_list_fmap in Heqo1).
+                destruct Heqo1 as [[y z][HH1 HH2]].
+                simpl in *.
+                ltac1:(simplify_eq/=).
+                rewrite elem_of_map_to_list in HH2.
+                ltac1:(contradiction H0).
+                unfold subp_dom.
+                ltac1:(rewrite elem_of_dom).
+                rewrite lookup_fmap.
+                rewrite Hv'.
+                simpl.
+                eexists.
                 reflexivity.
             }
+        }
+        {
+            ltac1:(simplify_option_eq).
             {
-                ltac1:(exfalso).
-                rewrite elem_of_list_fmap in Htmp.
-                unfold renaming_ok in Hrok.
-                (* Search (~ (∃ _, _)). *)
-                apply Htmp.
-                clear Htmp.
-                
-                exists (v, v).
-                simpl.
-                split>[reflexivity|].
-                rewrite elem_of_list_fmap.
-                exists (v',v).
-                simpl.
-                split>[reflexivity|].
-                ltac1:(rewrite elem_of_map_to_list).
+                ltac1:(rewrite lookup_fmap).
+                unfold subp_dom in H0.
+                ltac1:(rewrite elem_of_dom in H0).
+                destruct H0 as [? H0].
+                rewrite lookup_fmap in H0.
+                rewrite Hv' in H0.
+                simpl in H0.
+                destruct (decide (v = v')).
+                {
+                    subst.
+                    rewrite Heqo1.
+                    simpl.
+                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite - elem_of_list_to_map in Heqo1).
+                    {
+                        rewrite <- list_fmap_compose.
+                        apply renaming_ok_nodup.
+                        apply Hrok.
+                    }
+                    {
+                        rewrite elem_of_list_fmap in Heqo1.
+                        destruct Heqo1 as [[y z][H1 H2]].
+                        simpl in *.
+                        ltac1:(simplify_eq/=).
+                        ltac1:(rewrite elem_of_map_to_list in H2).
+                        specialize (Hrok _ _ _ Hv' H2).
+                        subst.
+                        reflexivity.
+                    }
+                }
+                {
+                    ltac1:(simplify_eq/=).
+                    ltac1:(repeat case_match; simplify_eq/=).
+                    {
+                        rewrite fmap_Some in H0.
+                        destruct H0 as [x [H1x H2]].
+                        subst t.
+                        ltac1:(rewrite - elem_of_list_to_map in Heqo1).
+                        {
+                            rewrite <- list_fmap_compose.
+                            apply renaming_ok_nodup.
+                            apply Hrok.
+                        }
+                        {
+                            rewrite elem_of_list_fmap in Heqo1.
+                            destruct Heqo1 as [[y z][HH1 HH2]].
+                            simpl in *.
+                            ltac1:(simplify_eq/=).
+                            ltac1:(rewrite elem_of_map_to_list in HH2).
+                            ltac1:(rewrite - elem_of_list_to_map in H1x).
+                            {
+                                rewrite <- list_fmap_compose.
+                                apply renaming_ok_nodup.
+                                apply Hrok.
+                            }
+                            {
+                                rewrite elem_of_list_fmap in H1x.
+                                destruct H1x as [[y' z'][HH1' HH2']].
+                                simpl in *.
+                                ltac1:(simplify_eq/=).
+                                ltac1:(rewrite elem_of_map_to_list in HH2').
+                                specialize (Hrok _ _ _ Hv' HH2').
+                                subst y'.
+                                reflexivity.
+                            }
+                        }
+                    }
+                    {
+                        rewrite fmap_None in H0.
+                        unfold RenamingT in *.
+                        ltac1:(rewrite - elem_of_list_to_map in Heqo1).
+                        {
+                            rewrite <- list_fmap_compose.
+                            apply renaming_ok_nodup.
+                            apply Hrok.
+                        }
+                        {
+                            rewrite elem_of_list_fmap in Heqo1.
+                            destruct Heqo1 as [[y z][H1 H2]].
+                            simpl in *.
+                            ltac1:(simplify_eq/=).
+                            ltac1:(rewrite elem_of_map_to_list in H2).
+                            unfold RenamingT in *.
+                            ltac1:(apply not_elem_of_list_to_map_2 in H0).
+                            rewrite elem_of_list_fmap in H0.
+                            ltac1:(setoid_rewrite elem_of_list_fmap in H0).
+                            ltac1:(contradiction H0).
+                            clear H0.
+                            destruct (decide (y = z)).
+                            {
+                                subst.
+                                eexists (v', _).
+                                split>[reflexivity|].
+                                eexists (v', _).
+                                split>[reflexivity|].
+                                ltac1:(simplify_eq/=).
+                            }
+                            {
+                                eexists (v', _).
+                                split>[reflexivity|].
+                                eexists (_, _).
+                                split>[reflexivity|].
+                                rewrite elem_of_map_to_list.
+                                exact Hv'.
+                            }
+                        }
+                    }
+                }
             }
-            rewrite elem_of_list_fmap in Htmp.
+            unfold RenamingT in *.
+            ltac1:(apply not_elem_of_list_to_map_2 in Heqo0).
+            rewrite elem_of_list_fmap in Heqo0.
+            ltac1:(setoid_rewrite elem_of_list_fmap in Heqo0).
+            ltac1:(case_match).
+            {
+                ltac1:(rewrite lookup_fmap_Some in H).
+                destruct H as [x [H1x H2x]].
+                subst t.
+                ltac1:(rewrite - elem_of_list_to_map in H2x).
+                {
+                    rewrite <- list_fmap_compose.
+                    apply renaming_ok_nodup.
+                    apply Hrok.
+                }
+                {
+                    rewrite elem_of_list_fmap in H2x.
+                    destruct H2x as [[y' z'][HH1' HH2']].
+                    simpl in *.
+                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite elem_of_map_to_list in HH2').
+                    specialize (Hrok _ _ _ Hv' HH2').
+                    subst y'.
+                    reflexivity.
+                }
+            }
+            {
+                ltac1:(rewrite lookup_fmap in H).
+                rewrite fmap_None in H.
+                unfold RenamingT in *.
+                ltac1:(apply not_elem_of_list_to_map_2 in H).
+                rewrite elem_of_list_fmap in H.
+                ltac1:(setoid_rewrite elem_of_list_fmap in H).
+                destruct (decide (v = v')).
+                {
+                    subst.
+                    reflexivity.
+                }
+                {
+                    ltac1:(contradiction H).
+                    clear H.
+                    eexists (_,_).
+                    split>[reflexivity|].
+                    eexists (_,_).   
+                    split>[reflexivity|].
+                    rewrite elem_of_map_to_list.
+                    exact Hv'.
+                }
+            }
+        }
+    }
+    {
+        simpl.
+        rewrite lookup_union.
+        rewrite union_None.
+        split.
+        {
+            rewrite map_lookup_filter.
+            simpl.
+            rewrite bind_None.
+
+            unfold set_to_map in Heq.
+            ltac1:(rewrite - not_elem_of_list_to_map in Heq).
+            rewrite <- list_fmap_compose in Heq.
+            unfold compose in Heq.
+            simpl in Heq.
+            rewrite list_fmap_id in Heq.
+            rewrite elem_of_elements in Heq.
+            ltac1:(rewrite not_elem_of_dom in Heq).
+
             
-            Search (list_to_map _ !! _ = None).
+            rewrite lookup_fmap.
+            rewrite fmap_None.
+            unfold RenamingT in *.
+            ltac1:(rewrite - not_elem_of_list_to_map).
+            rewrite <- list_fmap_compose.
+            unfold compose.
+            simpl.
+            rewrite elem_of_list_fmap.
+            
+            apply Decidable.imp_simp.
+            {
+                (* Shame on me. *)
+                apply classic.
+            }
+            {
+                intros HH.
+                destruct HH as [[y z][H1 H2]].
+                simpl in *.
+                subst.
+                rewrite elem_of_map_to_list in H2.
+                exists (t_over (bov_variable y)).
+                simpl.
+                (* ltac1:(simplify_option_eq). *)
+                {
+                    split.
+                    {
+                        (* rewrite <- map_fmap_compose. *)
+                        unfold SubP in *.
+                        rewrite fmap_Some.
+                        eexists _.
+                        split>[|reflexivity].
+                        ltac1:(rewrite - elem_of_list_to_map).
+                        {
+                            rewrite <- list_fmap_compose.
+                            apply renaming_ok_nodup.
+                            apply Hrok.
+                        }
+                        rewrite elem_of_list_fmap.
+                        eexists (_, _).
+                        simpl.
+                        split>[reflexivity|].
+                        rewrite elem_of_map_to_list.
+                        exact H2.
+                    }
+                    {
+                        rewrite bind_None.
+                        left.
+                        ltac1:(simplify_option_eq).
+                        { reflexivity. }
+                        {
+                            ltac1:(contradiction H).
+                            clear H H0.
+                            unfold subp_dom.
+                            ltac1:(rewrite elem_of_dom).
+                            rewrite lookup_fmap.
+                            ltac1:(rewrite Heq).
+                            simpl.
+                        }
+                        {
+                            ltac1:(contradiction H).
+                        }
+                    }
+                }
+                {
+                    ltac1:(rewrite elem_of_dom in H).
+                    ltac1:(contradiction H).
+                    clear H.
+                }
+            }
+            {
+                (* Shame on me again. *)
+                apply classic.
+            }
+
+            Search ((~ _) \/ _ ).
+
+            destruct ((r_inverse r) !! i) eqn:Heq'.
+            {
+                unfold r_inverse in Heq'.
+                setoid_rewrite Heq'.
+                simpl.
+                right.
+                eexists.
+                split>[reflexivity|].
+                rewrite bind_None.
+                ltac1:(simplify_option_eq).
+                {
+                    left. reflexivity.
+                }
+                {
+                    ltac1:(exfalso).
+                    ltac1:(rewrite - elem_of_list_to_map in Heq').
+                    {
+                        rewrite <- list_fmap_compose.
+                        apply renaming_ok_nodup.
+                        apply Hrok.
+                    }
+                    {
+                        rewrite elem_of_list_fmap in Heq'.
+                        destruct Heq' as [[y z][H1 H2]].
+                        simpl in *.
+                        ltac1:(simplify_eq/=).
+                        ltac1:(rewrite elem_of_map_to_list in H2).
+                    }
+                }
+                left.
+                ltac1:(simplify_option_eq).
+                { reflexivity. }
+                {
+                    unfold subp_dom in H.
+                    ltac1:(rewrite not_elem_of_dom in H).
+                    rewrite lookup_fmap in H.
+
+                }
+                {
+                    ltac1:(contradiction H).
+                }
+            }
+            ltac1:(destruct (decide (i ∈ (map_img r)))).
+
+            left.
+            intros HContra.
+            destruct HContra as [[y z][H1 H2]].
+            subst.
+            simpl in *.
+            rewrite elem_of_map_to_list in H2.
+            
+        }
+        {
+
         }
     }
     ltac1:(rewrite lookup_set_to_map).
