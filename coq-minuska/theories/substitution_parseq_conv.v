@@ -332,6 +332,78 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma r_inverse_inverse {Σ : StaticModel} (r : RenamingT) :
+    renaming_ok r ->
+    r_inverse (r_inverse r) = r
+.
+Proof.
+    intros Hok.
+    unfold r_inverse.
+    unfold RenamingT in *.
+    apply map_eq_iff.
+    intros i.
+    destruct (r !! i) eqn:Hri.
+    {
+        ltac1:(rewrite - elem_of_list_to_map).
+        rewrite <- list_fmap_compose.
+        unfold compose.
+        simpl.
+        apply renaming_ok_nodup.
+        {
+            apply r_inverse_ok.
+            apply Hok.
+        }
+        {
+            rewrite elem_of_list_fmap.
+            exists (v, i).
+            split>[reflexivity|].
+            (* ltac1:(rewrite list_to_map_to_list). *)
+            rewrite elem_of_map_to_list.
+            ltac1:(rewrite - elem_of_list_to_map).
+            {
+                rewrite <- list_fmap_compose.
+                unfold compose.
+                simpl.
+                apply renaming_ok_nodup.
+                exact Hok.
+            }
+            {
+                rewrite elem_of_list_fmap.
+                exists (i, v).
+                split>[reflexivity|].
+                rewrite elem_of_map_to_list.
+                exact Hri.
+            }
+        }
+    }
+    {
+        apply not_elem_of_list_to_map_1.
+        intros HContra.
+        rewrite elem_of_list_fmap in HContra.
+        destruct HContra as [[a b] [H1 H2]].
+        simpl in *. subst.
+        rewrite elem_of_list_fmap in H2.
+        destruct H2 as [[c d][H3 H4]].
+        ltac1:(simpl in *; simplify_eq/=).
+        rewrite elem_of_map_to_list in H4.
+        ltac1:(rewrite - elem_of_list_to_map in H4).
+        {
+            rewrite <- list_fmap_compose.
+            unfold compose.
+            simpl.
+            apply renaming_ok_nodup.
+            exact Hok.
+        }
+        rewrite elem_of_list_fmap in H4.
+        destruct H4 as [[a b] [H5 H6]].
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        rewrite elem_of_map_to_list in H6.
+        rewrite H6 in Hri.
+        inversion Hri.
+    }
+Qed.
+
 Definition renaming_for
     {Σ : StaticModel}
     (sub_mm : SubP)
