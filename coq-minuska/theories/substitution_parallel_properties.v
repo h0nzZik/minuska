@@ -1175,11 +1175,79 @@ Proof.
                                 }
                             }
                             {
-                              
+                              inversion HContra.
+                            }
+                            {
+                              simpl in *.
+                              repeat split.
+                              {
+                                apply option_guard_True_pi.
+                                intros pf1 pf2.
+                                apply proof_irrelevance.
+                              }
                             }
                         }
                         {
+                          ltac1:(rewrite subp_app_union).
+                          {
+                            unfold subp_dom,subp_codom.
+                            rewrite elem_of_disjoint.
+                            intros x H1x H2x.
+                            ltac1:(rewrite elem_of_dom in H2x).
+                            rewrite elem_of_union_list in H1x.
+                            destruct H1x as [X [H1X H2X]].
+                            destruct H2x as [z Hz].
+                            unfold SubP in *.
+                            rewrite lookup_fmap in Hz.
+                            rewrite map_lookup_filter in Hz.
+                            destruct (b !! x) eqn:Hbx.
+                            {
+                              simpl in *.
+                              rewrite fmap_Some in Hz.
+                              destruct Hz as [t' [H1t' H2t']].
+                              subst z.
+                              rewrite bind_Some in H1t'.
+                              destruct H1t' as [pf [_ ?]].
+                              ltac1:(simplify_eq/=).
+                              ltac1:(rewrite elem_of_list_fmap in H1X).
+                              destruct H1X as [y [H1y H2y]].
+                              subst X.
+                              rewrite elem_of_elements in H2y.
+                              rewrite elem_of_map_img in H2y.
+                              destruct H2y as [i' Hi'].
+                              rewrite map_lookup_filter in Hi'.
+                              rewrite bind_Some in Hi'.
+                              destruct Hi' as [p' [H1p' H2p']].
+                              rewrite bind_Some in H2p'.
+                              destruct H2p' as [[pf1 pf2][_ ?]].
+                              ltac1:(simplify_eq/=).
+                              destruct t3; simpl in *.
+                              {
+                                destruct a0; simpl in *.
+                                {
+                                  destruct y; simpl in *.
+                                  {
+                                    destruct a0; simpl in *.
+                                    {
+                                      unfold vars_of in H2X; simpl in H2X.
+                                      unfold vars_of in H2X; simpl in H2X.
+                                      rewrite elem_of_empty in H2X.
+                                      destruct H2X.
+                                    }
+                                    {
+                                      unfold vars_of in H2X; simpl in H2X.
+                                      unfold vars_of in H2X; simpl in H2X.
+                                      rewrite elem_of_singleton in H2X.
+                                      subst x0.
+                                      clear t4 t5.
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            rewrite bind_Some in Hz.
 
+                          }
                         }
                         (* Search (guard _ = Some _). *)
                         (* apply option_guard_True_pi in H1t5. *)
