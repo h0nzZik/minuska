@@ -10,6 +10,7 @@ theories/spec_interpreter.v
 theories/valuation_merge.v
 
 theories/specb.v
+theories/quickchick_setup.v
 
 theories/minuska.v
 theories/string_variables.v
