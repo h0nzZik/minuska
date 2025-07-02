@@ -7,6 +7,8 @@ From Minuska Require Import
     termoverbov_subst_properties
 .
 
+From Coq Require Import Logic.Classical_Prop.
+
 Definition subtmm_closed {Σ : StaticModel} (s : SubP) :=
     forall k v, s !! k = Some v -> vars_of v = ∅
 .
@@ -1065,14 +1067,116 @@ Proof.
                                         rewrite map_lookup_filter in H.
                                         rewrite lookup_fmap in H.
                                         subst t.
-                                        ltac1:(simplify_option_eq).
+                                        rewrite union_Some in H.
+                                        destruct (a !! x) eqn:Hax.
                                         {
-                                          
+                                          simpl in H.
+                                          rewrite bind_Some in H.
+                                          lazy_match! (Constr.type (Control.hyp @H)) with
+                                          | ( ?l \/ _) => destruct (classic $l) as [Hmy|Hmy]
+                                          end.
+                                          {
+                                            destruct Hmy as [[pf1 pf2][pf3 pf4]].
+                                            ltac1:(simplify_eq/=).
+                                            clear pf3.
+                                            clear H.
+                                            destruct (b !! x) eqn:Hbx.
+                                            {
+                                              apply pf2.
+                                              ltac1:(rewrite elem_of_dom).
+                                              exists t.
+                                              exact Hbx.
+                                            }
+                                            {
+                                              ltac1:(rewrite Hbx in t4).
+                                              ltac1:(rewrite Hbx in t5).
+                                              simpl in *.
+                                              ltac1:(rewrite Hax in t5).
+                                              apply t5.
+                                              reflexivity.
+                                            }
+                                          }
+                                          {
+                                            lazy_match! (Constr.type (Control.hyp @H)) with
+                                            | ( _ \/ ?r) => destruct (classic $r) as [Hmy'|Hmy']
+                                            end.
+                                            {
+                                              destruct Hmy' as [Hm1 Hm2].
+                                              rewrite bind_None in Hm1.
+                                              rewrite fmap_Some in Hm2.
+                                              destruct Hm2 as [x0 [H1x0 H2x0]].
+                                              rewrite map_lookup_filter in H1x0.
+                                              rewrite bind_Some in H1x0.
+                                              destruct H1x0 as [x1 [H1x1 H2x1]].
+                                              rewrite bind_Some in H2x1.
+                                              destruct H2x1 as [pf1 [pf2 pf3]].
+                                              ltac1:(simplify_eq/=).
+                                              clear pf2.
+                                              clear H.
+                                              destruct (b !! x) eqn:Hbx.
+                                              {
+                                                ltac1:(rewrite Hbx in t4).
+                                                ltac1:(rewrite Hbx in t5).
+                                                ltac1:(congruence).
+                                              }
+                                              {
+                                                ltac1:(rewrite Hbx in t4).
+                                                ltac1:(rewrite Hbx in t5).
+                                                ltac1:(congruence).
+                                              }
+                                            }
+                                            {
+                                              ltac1:(naive_solver).
+                                            }
+                                          }
                                         }
+                                        {
+                                          simpl in H.
+                                          destruct H as [H|H].
+                                          { inversion H. }
+                                          destruct H as [_ H].
+                                          rewrite map_lookup_filter in H.
+                                          destruct (b !! x) eqn:Hbx.
+                                          {
+                                            simpl in *.
+                                            rewrite fmap_Some in H.                                            
+                                            destruct H as [t' [H1t' H2t']].
+                                            rewrite bind_Some in H1t'.
+                                            destruct H1t' as [x0 [H1x0 H2x0]].
+                                            ltac1:(simplify_eq/=).
+                                            clear H1x0.
+                                            ltac1:(rewrite Hbx in t4).
+                                            ltac1:(rewrite Hbx in t5).
+                                            ltac1:(congruence).
+                                          }
+                                          {
+                                            ltac1:(rewrite Hbx in t4).
+                                            ltac1:(rewrite Hbx in t5).
+                                            simpl in *.
+                                            inversion H.
+                                          }
+                                        }
+                                    }
+                                    {
+                                      ltac1:(simplify_eq/=).
+                                      destruct (b !! x) eqn:Hbx.
+                                      {
+                                        ltac1:(rewrite Hbx in t4).
+                                        ltac1:(rewrite Hbx in t5).
+                                        ltac1:(congruence).
+                                      }
+                                      {
+                                        ltac1:(rewrite Hbx in t4).
+                                        ltac1:(rewrite Hbx in t5).
+                                        simpl in *.
+                                        ltac1:(simplify_eq/=).
+                                      }
                                     }
                                 }
                             }
-                            split>[|reflexivity].
+                            {
+                              
+                            }
                         }
                         {
 
