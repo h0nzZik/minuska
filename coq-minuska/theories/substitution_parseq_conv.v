@@ -594,7 +594,7 @@ Lemma compose_renaming_inverse
     (r : RenamingT)
     :
     renaming_ok r ->
-    (subp_compose (rlift (r_inverse r)) (rlift r)) = rlift (idren (dom r))
+    (subp_compose (rlift (r_inverse r)) (rlift r)) = rlift (idren (dom r ∪ map_img r))
 .
 Proof.
     intros Hrok.
@@ -606,7 +606,7 @@ Proof.
     unfold compose.
     simpl.
     rewrite lookup_fmap.
-    destruct ((set_to_map _ (dom r)) !! i) eqn:Heq.
+    destruct ((set_to_map _ (dom r ∪ map_img r)) !! i) eqn:Heq.
     {
         simpl.
         ltac1:(rewrite lookup_set_to_map in Heq).
@@ -619,10 +619,11 @@ Proof.
         ltac1:(simplify_eq/=).
         rewrite lookup_union.
         rewrite lookup_fmap.
+        rewrite elem_of_union in H1y.
         (* rewrite lookup_fmap. *)
-        ltac1:(rewrite elem_of_dom in H1y).
-        destruct H1y as [v' Hv'].
-        rewrite Hv'.
+        (* ltac1:(rewrite elem_of_dom in H1y). *)
+        (* destruct H1y as [v' Hv']. *)
+        (* rewrite Hv'. *)
         simpl.
         rewrite map_lookup_filter.
         simpl.

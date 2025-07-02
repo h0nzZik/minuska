@@ -52,22 +52,33 @@ Definition subp_codom
   ⋃ (vs)
 .
 
-(* a after b *)
-(* 
-  examples:
-    1. a={(y,t)}, b={(x,f(y))} ==> {(x, f(t)), (y, t)}
-    2. a={(x,f(y))}, b={(y,t)} ==> {(x,f(y)), (y, t[f(y)/x])}
-    3. a={(y,x)}, b={(x, 0)}
+Definition subp_normalize
+  {Σ : StaticModel}
+  (a : gmap variable (TermOver BuiltinOrVar))
+  : gmap variable (TermOver BuiltinOrVar)
+:=
+  filter
+    (fun kv => t_over (bov_variable kv.1) <> kv.2)
+    a
+.
 
- *)
- (* About filter. *)
+Definition subp_is_normal
+  {Σ : StaticModel}
+  (a : gmap variable (TermOver BuiltinOrVar))
+  : Prop
+:=
+  subp_normalize a = a
+.
+
+(* a after b *)
 Definition subp_compose
   {Σ : StaticModel}
   (a b : gmap variable (TermOver BuiltinOrVar))
 :=
-  union 
-  (* ((filter (fun kv => kv.1 ∉ vars_of (subp_app b kv.2)) a)) *)
-    ((filter (fun kv => kv.1 ∉ subp_dom b) a))
-    (fmap (subp_app a) b) 
+  subp_normalize
+    (union
+      ((filter (fun kv => kv.1 ∉ subp_dom b) a))
+      (fmap (subp_app a) b) 
+    )
 .
 
