@@ -994,7 +994,7 @@ Proof.
         rewrite map_filter_fmap.
         rewrite map_filter_fmap.
 
-
+        Check map_eq.
         apply map_eq.
         intros i.
         do 3 (rewrite lookup_union).
@@ -1047,11 +1047,94 @@ Proof.
                         ltac1:(simplify_eq/=).
                         clear H1t5 H1t4.
                         rewrite fmap_Some.
-                        exists t3.
+                        (* REALLY? *)
+                        (* eexists. *)
+                        (* exists ((subp_app b t3)). *)
+                        (*exists (subp_app a (subp_app b t3)).*)
+                        (*exists t3.*)
+                        destruct t3.
+                        {
+                          simpl in *.
+                          destruct a0; simpl in *.
+                          {
+                            exists (t_over (bov_builtin b0)).
+                            split>[reflexivity|].
+                            simpl.
+                            reflexivity.
+                          }
+                          {
+                            destruct (b !! x) eqn:Hbx.
+                            {
+                              ltac1:(rewrite Hbx in t4).
+                              ltac1:(rewrite Hbx in t5).
+                              ltac1:(rewrite Hbx).
+                              destruct t; simpl in *.
+                              {
+                                destruct a0; simpl in *.
+                                {
+                                  clear t4 t5.
+                                  exists (t_over (bov_variable x)).
+                                  simpl.
+                                  rewrite bind_Some.
+                                  ltac1:(rewrite lookup_union).
+                                  ltac1:(rewrite lookup_fmap).
+                                  ltac1:(rewrite map_lookup_filter).
+                                  ltac1:(rewrite Hbx).
+                                  simpl.
+                                  ltac1:(rewrite map_lookup_filter).
+                                  destruct (a !! x) eqn:Hax.
+                                  {
+                                    simpl.
+                                    rewrite option_guard_False.
+                                    {
+                                      simpl.
+                                      split>[|reflexivity].
+                                      ltac1:(unshelve(eexists)).
+                                      {
+                                        ltac1:(discriminate).
+                                      }
+                                      {
+                                        split>[|reflexivity].
+                                        erewrite option_guard_True_pi.
+                                        { apply f_equal. reflexivity. }
+                                        {
+                                          intros pf1 pf2.
+                                          apply proof_irrelevance.
+                                        }
+                                      }
+                                      eexists.
+                                      split>[|reflexivity].
+                                      rewrite option_guard_True.
+                                      
+                                    }
+                                    {
+                                      intros [HH1 HH2].
+                                      apply HH2.
+                                      ltac1:(rewrite elem_of_dom).
+                                      eexists.
+                                      apply Hbx.
+                                    }
+                                    rewrite Hax.
+                                  }
+                                  eexists.
+                                  
+                                  erewrite option_guard_True_pi.
+                                  {
+                                    split.
+                                    { reflexivity. }
+                                  }
+                                  destr
+                                }
+                              }
+                            }
+                          }
+                        }
+                        exists (t_over (bov_variable i)).
                         split.
                         {
                             rewrite bind_Some.
                             ltac1:(unshelve(eexists)).
+                            {
                             intros HContra.
                             destruct t3; simpl in *.
                             {
@@ -1177,6 +1260,7 @@ Proof.
                             {
                               inversion HContra.
                             }
+                            }
                             {
                               simpl in *.
                               repeat split.
@@ -1184,6 +1268,29 @@ Proof.
                                 apply option_guard_True_pi.
                                 intros pf1 pf2.
                                 apply proof_irrelevance.
+                              }
+                              {
+                                (*ltac1:(exfalso).*)
+                                destruct t3.
+                                {
+                                  simpl in *.
+                                  destruct a0; simpl in *.
+                                  {
+                                    reflexivity.
+                                  }
+                                  {
+                                    ltac1:(destruct (b !! x) eqn:Hbx).
+                                    {
+                                      ltac1:(rewrite Hbx in t4).
+                                      ltac1:(rewrite Hbx in t5).
+                                      ltac1:(rewrite Hbx).
+                                      destruct t; simpl in *.
+                                      {
+                                        
+                                      }
+                                    }
+                                  }
+                                }
                               }
                             }
                         }
@@ -1240,6 +1347,13 @@ Proof.
                                       rewrite elem_of_singleton in H2X.
                                       subst x0.
                                       clear t4 t5.
+                                      destruct t'; simpl in *.
+                                      {
+                                        destruct a0; simpl in *.
+                                        {
+                                          clear pf.
+                                        }
+                                      }
                                     }
                                   }
                                 }

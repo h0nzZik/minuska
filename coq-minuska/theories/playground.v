@@ -26,6 +26,15 @@ Proof.
 Defined.
 
 Sample (genSubstitutionSized 3).
+Compute builtin_value.
+Definition SA := {["y3" := t_over (bov_variable "y2")]}:SubP.
+Definition SB := {["y2" := t_over (bov_builtin (inr 1%Z))]}:SubP.
+Definition SC := {["y1" := t_over (bov_builtin (inr 2%Z))]}:SubP.
+
+Compute (show (subp_compose SA (subp_compose SB SC))).
+Compute (show (subp_compose (subp_compose SA SB) (SC))).
+
+(* Compute (subp_compose {["y3" := "y2"]} {["y2" := "b1"]}). *)
 
 QuickChick (forAll (genSubstitutionSized 3)(fun a =>
     forAll (genSubstitutionSized 3)(fun b =>
