@@ -1474,19 +1474,25 @@ Proof.
                                 reflexivity.
                               }
                             }
+                            {
+                              apply nesym in n.
+                              exists n.
+                              split>[|reflexivity].
+                              apply option_guard_True_pi.
+                              intros pfa pfb. apply proof_irrelevance.
+                            }
                           }
                           {
                             ltac1:(replace (subp_app a (subp_app b t2))
                               with (((subp_app a) ∘ (subp_app b)) t2)
                               by reflexivity).
-                           Search subp_app compose.
                            rewrite <- subp_compose_correct.
                            reflexivity.
                           }
                         }
                       }
                     }
-                    {
+                  } {
                       destruct H1t as [p [H1p H2p]].
                       rewrite bind_Some in H1p.
                       destruct H1p as [q [H1q H2q]].
@@ -1507,38 +1513,7 @@ Proof.
                         (* I think that [H] is just a tautology.
                          *)
                         clear H.
-                        (*
-                        rewrite map_filter_union in H.
-                        {
-                          clear H0.
-                          rewrite map_filter_filter in H.
-                          simpl in H.
-                          rewrite map_filter_fmap in H.
-                          simpl in *.
-                          (* if [t2] is some variable that is not sent to [i] by [a],
-                             then 
-                           *)
-                        }
-                        {
-                          apply map_disjoint_spec.
-                          intros i0 x y Hx Hy.
-                          rewrite lookup_fmap in Hy.
-                          rewrite map_lookup_filter in Hx.
-                          rewrite bind_Some in Hx.
-                          destruct Hx as [o Ho].
-                          destruct Ho as [H1o H2o].
-                          simpl in *.
-                          rewrite bind_Some in H2o.
-                          destruct H2o as [? [_ ?]].
-                          ltac1:(simplify_eq/=).
-                          apply not_elem_of_dom_1 in x0.
-                          rewrite x0 in Hy.
-                          simpl in Hy.
-                          inversion Hy.
-                        }
-                        *)
                         
-                        Check 5.
                         destruct (decide (i ∈ dom (filter (λ kv : variable * TermOver' BuiltinOrVar, t_over (bov_variable kv.1) ≠ kv.2)
                    (filter (λ kv : variable * TermOver BuiltinOrVar, kv.1 ∉ dom c) b ∪ (subp_app b <$> c))))) as [Hin|Hnotin].
                         {
@@ -1602,361 +1577,91 @@ Proof.
                               intros HH. apply HH. eexists. reflexivity.
                             }
                             {
-                              rewrite map_filter_union.
+                              exists (subp_app b t2).
+                              ltac1:(replace (subp_app a (subp_app b t2)) with ((compose (subp_app a) (subp_app b)) t2) by reflexivity).
+                              rewrite <- subp_compose_correct.
+                              unfold subp_compose.
+                              unfold subp_normalize.
+                              split>[|reflexivity].
+                              exists (subp_app b t2).
+                              split.
                               {
-                                rewrite map_filter_filter.
+                                rewrite option_guard_False.
                                 simpl.
-                                rewrite map_filter_fmap.
-                                simpl.
-                                exists (subp_app (filter (fun kv => t_over (bov_variable kv.1) <> subp_app a kv.2) b) t2).
-                                split.
-                                { admit. }
-                                {
-                                  
-                                }
-                                
-                                
-                                Search subp_app.
-                                eexists (t_over (bov_variable ?[j])).
-                                simpl.
-                                destruct (a !! ?j) eqn:Haj.
-                                {
-                                  rewrite Haj.
-                                  simpl.
+                                reflexivity.
+                                intros HC. apply HC. clear HC.
+                                rewrite elem_of_dom.
+                                rewrite Hci.
+                                exists t2. reflexivity.
                               }
                               {
-                              
-                                apply map_disjoint_spec.
-                                intros i0 x' y' Hx' Hy'.
-                                rewrite lookup_fmap in Hy'.
-                                rewrite map_lookup_filter in Hx'.
-                                rewrite bind_Some in Hx'.
-                                destruct Hx' as [o Ho].
-                                destruct Ho as [H1o H2o].
-                                simpl in *.
-                                rewrite bind_Some in H2o.
-                                destruct H2o as [? [_ ?]].
-                                ltac1:(simplify_eq/=).
-                                apply not_elem_of_dom_1 in x0.
-                                rewrite x0 in Hy'.
-                                simpl in Hy'.
-                                inversion Hy'.
+                                exists x.
+                                split>[|reflexivity].
+                                apply option_guard_True_pi.
+                                intros pfa pfb.
+                                apply proof_irrelevance.
                               }
-                              eexists.
                             }
                           }
                         }
-                        destruct (decide (t0 = (subp_app
-              (filter (λ kv : variable * TermOver' BuiltinOrVar, t_over (bov_variable kv.1) ≠ kv.2)
-                 (filter (λ kv : variable * TermOver BuiltinOrVar, kv.1 ∉ dom b) a ∪ (subp_app a <$> b))) t2))).
                         {
-                          left.
-                          exists t0.
-                          split>[reflexivity|].
-                          subst t0.
-                          eexists.
-                          split>[|reflexivity].
-                          apply option_guard_True_pi.
-                          intros pfa pfb.
-                          apply proof_irrelevance.
-                        }
-                        {
-                          right.
-                          split.
+                          destruct (decide (t_over (bov_variable i) = subp_app b t2)).
                           {
-                            right.
+                            left.
                             exists t0.
                             split>[reflexivity|].
-                            rewrite option_guard_False.
-                            { reflexivity. }
-                            intros HContra. apply HContra.
-                            clear HContra.
+                            exists Hnotin.
+                            split.
+                            {
+                              apply option_guard_True_pi.
+                              intros pfa pfb. apply proof_irrelevance.
+                            }
+                            {
+                              apply f_equal.
+                              lazy_match! goal with
+                              | [|- _ = ?r] =>
+                                assert(Hr: $r = (subp_app (subp_compose a b) t2))
+                              end.
+                              {
+                                reflexivity.
+                              }
+                              rewrite Hr. clear Hr.
+                              rewrite subp_compose_correct.
+                              unfold compose.
+                              rewrite <- e.
+                              simpl.
+                              ltac1:(rewrite Hai).
+                              reflexivity.
+                            }
+                          }
+                          {
+                            ltac1:(exfalso).
+                            apply Hnotin. clear Hnotin.
                             rewrite elem_of_dom.
                             rewrite map_lookup_filter.
-                            simpl.
                             rewrite lookup_union.
                             rewrite lookup_fmap.
-                            rewrite Hci.
-                            simpl.
                             rewrite map_lookup_filter.
                             rewrite Hbi.
                             simpl.
-                            assert (subp_app b t2 <> t_over (bov_variable i)).
-                            {
-                              intros HContra.
-                              destruct t2; simpl in *.
-                              {
-                                destruct a0; simpl in *.
-                                {
-                                  ltac1:(simplify_eq/=).
-                                }
-                                destruct (b !! x) eqn:Hbx.
-                                {
-                                  ltac1:(rewrite Hbx in HContra).
-                                  subst.
-                                  simpl in *.
-                                  ltac1:(case_match).
-                                  {
-                                    ltac1:(rewrite map_lookup_filter in H1).
-                                    ltac1:(rewrite lookup_union in H1).
-                                    rewrite lookup_fmap in H1.
-                                    rewrite Hbx in H1.
-                                    rewrite map_lookup_filter in H1.
-                                    destruct (a !! x) eqn:Hax.
-                                    {
-                                      simpl in *.
-                                      ltac1:(rewrite Hai in H1).
-                                      rewrite bind_Some in H1.
-                                      destruct H1 as [q [H1q H2q]].
-                                      rewrite union_Some in H1q.
-                                      rewrite option_guard_decide in H2p.
-                                      clear H2p.
-                                      rewrite option_guard_decide in H2q.
-                                      ltac1:(case_match).
-                                      {
-                                        ltac1:(simplify_eq/=).
-                                        admit.
-                                      }
-                                      {
-                                        inversion H2q.
-                                      }
-                                    }
-
-                                  }
-                                }
-                              }
-                            }
+                            rewrite Hci.
                             rewrite option_guard_False.
                             {
                               simpl.
+                              rewrite option_guard_True.
+                              eexists. reflexivity.
+                              ltac1:(congruence).
                             }
                             {
-                              intros Hco. apply Hco. clear Hco.
+                              intros HH. apply HH. clear HH.
                               rewrite elem_of_dom.
-                              rewrite Hci.
-                              eexists.
-                              reflexivity.
+                              rewrite Hci. eexists. reflexivity.
                             }
-                            rewrite union_Some_r.
-                            simpl.
-                            eexists.
-                            rewrite bind_Some.
-                            Search guard None.
-                            rewrite bind_None.
                           }
                         }
-                        right.
-                        split.
-                        { admit. }
-                        {
-                          eexists.
-                          split.
-                          { admit. }
-                          { f_equal. reflexivity. }
-                        } 
-                        admit.
-                      }
-                    }
-                    rewrite lookup_union in H2t.
-                    
-                    
-                    
-                    
-                    
-                    destruct (decide (subp_app b t2 <> t_over (bov_variable i))).
-                    {
-                      right.
-                      split.
-                      {
                         
-                        right.
-                        exists t0.
-                        split>[reflexivity|].
-                        ltac1:(rewrite option_guard_False).
-                        {
-                          intros HContra.
-                          apply not_elem_of_dom_1 in HContra.
-                          rewrite map_lookup_filter in HContra.
-                          rewrite bind_None in HContra.
-                          rewrite lookup_union in HContra.
-                          rewrite lookup_fmap in HContra.
-                          rewrite Hci in HContra.
-                          simpl in HContra.
-                          rewrite union_None in HContra.
-                          destruct HContra as [HContra|HContra].
-                          {
-                            destruct HContra as [? HContra].
-                            inversion HContra.
-                          }
-                          {
-                            destruct HContra as [p [H1p H2p]].
-                            rewrite union_Some in H1p.
-                            rewrite map_lookup_filter in H1p.
-                            simpl in H1p.
-                            rewrite Hbi in H1p.
-                            simpl in H1p.
-                            destruct H1p as [H1p|H1p].
-                            {
-                              rewrite bind_Some in H1p.
-                              destruct H1p as [pf [_ ?]].
-                              apply not_elem_of_dom_1 in pf as Hci'.
-                              ltac1:(congruence).
-                            }
-                            {
-                              destruct H1p as [_ H1p].
-                              ltac1:(simplify_eq/=).
-                              rewrite bind_None in H2p.
-                              destruct H2p as [H2p|H2p].
-                              {
-                                unfold guard_or in H2p.
-                                ltac1:(case_match; try congruence).
-                                inversion H2p.
-                                ltac1:(contradiction n0).
-                                ltac1:(congruence).
-                              }
-                              {
-                                destruct H2p as [? [_ ?]].
-                                inversion H1.
-                              }
-                            }
-                          }
-                        }
-                        {
-                          reflexivity.
-                        }
-                      }
-                      {
-                        simpl in *.
-                        destruct H1t as [H1t|H1t].
-                        {
-                          destruct H1t as [H1t|H1t].
-                          {
-                            rewrite union_None in H1t.
-                            destruct H1t as [? H1t].
-                            inversion H1t.
-                          }
-                          {
-                            destruct H1t as [p Hp].
-                            destruct Hp as [H1p H2p].
-                            rewrite union_Some in H1p.
-                          }
-                        } 
-                        rewrite bind_Some.
-                      }
-                      rewrite bind_Some.
                     }
-                    admit.
                 }
-                {
-                  simpl.
-                }
-                rewrite bind_Some.
-                left.
-                exists t0.
-                split>[reflexivity|].
-                rewrite bind_Some.
-                ltac1:(unshelve(eexists)).
-                {
-                  apply not_elem_of_dom_2.
-                  rewrite map_lookup_filter_None.
-                  rewrite lookup_union.
-                  rewrite lookup_fmap.
-                  destruct (c !! i) eqn:Hci.
-                  {
-                    simpl in *.
-                    right.
-                    intros q Hq HContra.
-                    rewrite union_Some in Hq.
-                    rewrite map_lookup_filter in Hq.
-                    destruct (b !! i) eqn:Hbi.
-                    {
-                      simpl in *.
-                      destruct Hq as [Hq|Hq].
-                      {
-                        rewrite bind_Some in Hq.
-                        destruct Hq as [Hpf [_ ?]].
-                        apply not_elem_of_dom_1 in Hpf.
-                        ltac1:(congruence).
-                      }
-                      {
-                        destruct Hq as [Hq1 Hq2].
-                        ltac1:(simplify_eq/=).
-                        rewrite bind_None in Hq1.
-                        rewrite lookup_fmap in H2t.
-                        rewrite Hci in H2t.
-                        simpl in H2t.
-                        ltac1:(simplify_eq/=).
-                        destruct H1t as [H1t|H1t].
-                        {
-                          destruct H1t as [H1t|H1t].
-                          {
-                            rewrite union_None in H1t.
-                            destruct H1t as [? H1t].
-                            inversion H1t.
-                          }
-                          {
-                            destruct H1t as [q [H1q H2q]].
-                            rewrite union_Some in H1q.
-                            rewrite bind_Some in H1q.
-                            destruct H1q as [H1q|H1q].
-                            {
-                              destruct H1q as [H1q [_ ?]].
-                              apply not_elem_of_dom_1 in H1q.
-                              ltac1:(congruence).
-                            }
-                            {
-                              destruct H1q as [? H1q].
-                              ltac1:(simplify_eq/=).
-                              rewrite bind_None in H2q.
-                              rewrite bind_None in H1.
-                              destruct H2q as [H2q|H2q].
-                              {
-                                unfold guard_or in H2q.
-                                ltac1:(case_match).
-                                {
-                                  inversion H2q.
-                                }
-                                {
-                                  apply dec_stable in n as Htmp.
-                                  destruct t2; simpl in *.
-                                  {
-                                    destruct a0; simpl in *.
-                                    {
-                                      inversion Htmp.
-                                    }
-                                    {
-                                      destruct (a !! x) eqn:Hax.
-                                      {
-                                        ltac1:(rewrite Hax in Htmp).
-                                        subst t.
-                                        admit.
-                                      }
-                                      {
-                                        ltac1:(rewrite Hax in Htmp).
-                                      }
-                                    }
-                                  }
-                                  ltac1:(congruence).
-                                }
-                                rewrite option_guard_decide in H2q.
-                                Search guard None.
-                              }
-                              destruct t1; simpl in *.
-                              {
-                                destruct a0; simpl in *.
-                                {
-                                  
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                  rewrite map_lookup_filter_None.
-                }
-                admit.
               }
               {
                 simpl in *.
