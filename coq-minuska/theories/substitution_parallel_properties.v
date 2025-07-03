@@ -891,6 +891,22 @@ Proof.
     }
 Qed.
 
+
+Lemma helper_lemma {Σ : StaticModel}:
+  forall x m t, t_over (bov_variable x) = subp_app m t -> exists y, t = t_over (bov_variable y)
+.
+Proof.
+        {
+          intros x' m' t' HH.
+          destruct t'; simpl in HH.
+          {           destruct a; simpl in HH.
+            inversion HH.
+            exists x. reflexivity.
+          }
+          { inversion HH. }
+        }
+Qed.
+
 Lemma subp_compose_assoc
   {Σ : StaticModel}
   (a b c : SubP)
@@ -1934,23 +1950,18 @@ Proof.
 
         (* The above worked *)    
 
-        assert(Hlem: forall x m t, t_over (bov_variable x) = subp_app m t -> exists y, t = t_over (bov_variable y)).
-        {
-          intros x' m' t' HH.
-          destruct t'; simpl in HH.
-          {           destruct a0; simpl in HH.
-            inversion HH.
-            exists x. reflexivity.
-          }
-          { inversion HH. }
-        }
+      Ltac2 just_specialize () :=
+        match! goal with
+        | [h: (?p -> ?q) |- _] => 
+          let f1 := ltac1:(P |- match goal with
+                                | H : P |- _ => fail 1
+                                | _ => idtac
+                                end) in
+          (f1 (Ltac1.of_constr q));
+          let h := Control.hyp h in assert ($q) by (apply $h; ltac1:(tauto))
+        end.
 
-        Check guard.
-
-        repeat (try (match! goal with
-        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
-            let myf := (Fresh.in_goal ident:(h)) in
-            assert ($myf := $h2 constr:(t_over (bov_variable $y)))
+        Ltac2 mytac () := ((*try (just_specialize ());*) try (match! goal with
         | [x : (TermOver BuiltinOrVar), h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
            apply $h2 in $h as $my
         | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
@@ -1967,60 +1978,353 @@ Proof.
         | [h: ~ (~ _) |- _] => apply dec_stable in $h
         | [h: union _ _ = None |- _] => apply union_None in $h
         | [h: _ <$> _ = None |- _] => apply fmap_None in $h
-        | [h: (t_over (bov_variable _) = subp_app _ _) |- _] => apply Hlem in $h
         | [h: (ex _) |- _] => Std.destruct false [({Std.indcl_arg:=Std.ElimOnIdent(h); Std.indcl_eqn:=None; Std.indcl_as:=None; Std.indcl_in:=None})] None
-        | [h: (right _ = right _) |- _] => clear $h
+        | [h: (right _ = right _) |- _] => ltac1:(simplify_eq/=); clear $h
+        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
+            let myf := (Fresh.in_goal ident:(h)) in
+            let n := constr:($h2 (t_over (bov_variable $y))) in
+            let f1 := ltac1:(t |- learn_hyp (t)) in
+            f1 (Ltac1.of_constr n)
         | [h: (forall _, _), a:_ |- _] => let f := ltac1:(ra rb|- learn_hyp (ra rb)) in f (Ltac1.of_constr (Control.hyp h)) (Ltac1.of_constr (Control.hyp a))
-        (*| [h: (?p -> _) |- _] => let hmy := (Fresh.in_goal ident:(my)) in try ((assert ($hmy: $p)>[ltac1:(tauto)|]); let h2 := Control.hyp h in apply $h2 in $hmy; clear $h)*)
-        end); ltac1:(destruct_and?; destruct_or?; try congruence; (repeat case_match); simplify_eq/=); simpl in *;ltac1:(try tauto))
+        end); ltac1:(destruct_and?; (*destruct_or?; *)try congruence; (repeat case_match); simplify_eq/=); simpl in *;ltac1:(try tauto))
       .
       
-      lazy_match! goal with
-        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
-            let myf := (Fresh.in_goal ident:(h)) in
-            let my2 := Control.hyp my in
-            assert ($myf := $h2 $my2);
-            subst $my
-       end.
-
-        (lazy_match! goal with
-        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
-          let myf := (Fresh.in_goal ident:(h)) in
-            let my2 := Control.hyp my in
-            assert ($myf := $h2 $my2)
-        end).
-      specialize(n0 (t_over (bov_variable x)) ltac:(tauto)).
-     Search (None = Some _).
-     ltac1:(tauto).
-     setoid_rewrite Hbi in n0.
-     rewrite union_None in n0.
-     
-     setoid_rewrite lookup_union in n0.
-     setoid_rewrite map_lookup_filter in n0.
-     setoid_rewrite lookup_fmap in n0.
-     simpl in n0.
-     rewrite Hbi in n0.
-     simpl in n0.
-     setoid_rewrite option_guard_False in n0>[|ltac1:(set_solver)].
-     simpl in n0.
-     setoid_rewrite Hci in n0.
-     simpl in n0.
-     setoid_rewrite (left_id None union) in n0.
-     specialize (n0 _ eq_refl).
-     apply dec_stable in n0.
-     rewrite H in n0.
-     ltac1:(simplify_eq/=).
-     specialize (
-     Unset Printing Notations.
-
-                    
+      (* This loses information *)
+      Ltac2 apply_helper_lemma () :=
+        match! goal with
+        | [h: (t_over (bov_variable _) = subp_app _ _) |- _] => apply helper_lemma in $h
+        end
+      .
+      
+      { repeat (mytac ()); repeat (apply_helper_lemma ());
+        ltac1:(destruct_or!); (repeat (mytac ())).
+      }
+      { 
+        apply dec_stable in n3.
+        repeat (mytac ()).
+        ltac1:(destruct_or!); (repeat (just_specialize ())); repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n6.
+        rewrite Heqab in n6.
+        rewrite subp_compose_correct in n6.
+        unfold compose in n6.
+        rewrite <- n3 in n6.
+        simpl in *.
+        ltac1:(rewrite Hai in n6).
+        repeat (mytac ()).
+      }
+      {
+        repeat (mytac ()).
+        ltac1:(destruct_or!); (repeat (just_specialize ())); repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n4.
+        rewrite Heqab in n4.
+        rewrite subp_compose_correct in n4.
+        unfold compose in n4.
+        specialize (n0 (subp_app b t1) ltac:(tauto)).
+        apply dec_stable in n0.
+        ltac1:(contradiction n3).
+      }
+      {
+        apply dec_stable in n2.
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n4.
+        rewrite Heqab in n4.
+        rewrite subp_compose_correct in n4.
+        remember ((subp_compose b c)) as bc.
+        assert (Hbc := Heqbc).
+        unfold subp_compose in Hbc.
+        unfold subp_normalize in Hbc.
+        ltac1:(setoid_rewrite <- Hbc in n0).
+        rewrite Heqbc in n0.
+        unfold compose in n4.
+        apply dec_stable in n3.
+        rewrite <- n3 in n4.
+        simpl in n4.
+        ltac1:(rewrite Hai in n4).
+        apply dec_stable in n4.
+        subst t.
+        ltac1:(contradiction n5).
+        reflexivity.
+      }
+      {
+      
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n6.
+        rewrite Heqab in n6.
+        rewrite subp_compose_correct in n6.
+        unfold compose in n6.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n4.
+        rewrite Heqab in n4.
+        rewrite subp_compose_correct in n4.
+        remember ((subp_compose b c)) as bc.
+        assert (Hbc := Heqbc).
+        unfold subp_compose in Hbc.
+        unfold subp_normalize in Hbc.
+        ltac1:(setoid_rewrite <- Hbc in n0).
+        rewrite Heqbc in n0.
+        unfold compose in n4.
         
-
-        Search (_ <$> _ = None).
-        ltac1:(rewrite_strat (topdown _)).
-        apply not_elem_of_dom_1  
-        Search dom filter.
+        ltac1:(contradiction).
+      }
+      {
+        remember ((subp_compose b c)) as bc.
+        assert (Hbc := Heqbc).
+        unfold subp_compose in Hbc.
+        unfold subp_normalize in Hbc.
+        setoid_rewrite <- Hbc in n0.
+        rewrite Heqbc in n0.
+        apply not_elem_of_dom_1 in n0.
+        remember (subp_app (subp_compose b c) (t_over (bov_variable i))).
+        assert(Htmp := Heqt1).
+        rewrite subp_compose_correct in Heqt1.
+        unfold compose in Heqt1.
+        simpl in Heqt1.
+        ltac1:(rewrite Hci' in Heqt1).
+        simpl in Heqt1.
+        ltac1:(rewrite Hbi in Heqt1).
+        simpl in Htmp.
+        ltac1:(rewrite n0 in Htmp).
+        ltac1:(simplify_eq/=).
+      }
+      {
+        remember ((subp_compose b c)) as bc.
+        assert (Hbc := Heqbc).
+        unfold subp_compose in Hbc.
+        unfold subp_normalize in Hbc.
+        setoid_rewrite <- Hbc in n0.
+        rewrite Heqbc in n0.
+        apply not_elem_of_dom_1 in n0.
+        apply dec_stable in n3.
+        subst t0.
+        apply dec_stable in n2.
+        simpl in *.
+        ltac1:(rewrite Hai in n2).
+        subst t.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        apply not_elem_of_dom_2 in Hci.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        clear n0.
+        apply not_elem_of_dom_2 in Hci.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n4.
+        rewrite Heqab in n4.
+        rewrite subp_compose_correct in n4.
+        unfold compose in n4.
+        destruct t0; simpl in *.
+        {
+          destruct a0; simpl in *.
+          { ltac1:(simplify_eq/=). }
+          {
+            destruct (b !! x) eqn:Hbx.
+            { 
+              ltac1:(rewrite Hbx in n1).
+              ltac1:(rewrite Hbx in n0).
+              ltac1:(destruct_or!).
+              { repeat (mytac ()). }
+              {
+                specialize (n0 t0 ltac:(tauto)).
+                ltac1:(contradiction).
+              }
+            }
+            {
+              ltac1:(rewrite Hbx in n1).
+              ltac1:(rewrite Hbx in n0).
+              ltac1:(destruct_or!)>[repeat (mytac ())|].
+              specialize (n0 (t_over (bov_variable x)) ltac:(tauto)).
+              ltac1:(contradiction).
+            }
+          }
+        }
+        {
+          ltac1:(destruct_or!)>[repeat (mytac ())|].
+          specialize (n0 (t_term s (map (subp_app b) l)) ltac:(tauto)).
+          ltac1:(contradiction).
+        }
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n4.
+        rewrite Heqab in n4.
+        rewrite subp_compose_correct in n4.
+        unfold compose in n4.
+        ltac1:(destruct_or!)>[repeat (mytac ())|].
+        rewrite <- n1 in n4.
+        simpl in n4.
+        ltac1:(rewrite Hai in n4).
+        ltac1:(simplify_eq/=).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n5.
+        rewrite Heqab in n5.
+        rewrite subp_compose_correct in n5.
+        unfold compose in n5.
+        remember ((subp_compose b c)) as bc.
+        assert (Hbc := Heqbc).
+        unfold subp_compose in Hbc.
+        unfold subp_normalize in Hbc.
+        setoid_rewrite <- Hbc in n0.
+        rewrite Heqbc in n0.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n4.
+        rewrite Heqab in n4.
+        rewrite subp_compose_correct in n4.
+        unfold compose in n4.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n2.
+        rewrite Heqab in n2.
+        rewrite subp_compose_correct in n2.
+        unfold compose in n2.
+        ltac1:(destruct_or!)>[repeat (mytac ())|].
+        specialize (n0 (subp_app b t0) ltac:(tauto)).
+        apply dec_stable in n0.
+        rewrite <- n0 in n2.
+        simpl in *.
+        ltac1:(rewrite Hai in n2).
+        subst t.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n2.
+        rewrite Heqab in n2.
+        rewrite subp_compose_correct in n2.
+        ltac1:(destruct_or!)>[repeat (mytac ())|].
+        specialize (n0 (subp_app b t0) ltac:(tauto)).
+        apply dec_stable in n0.
+        unfold compose in n2.
+        rewrite <- n0 in n2.
+        simpl in *.
+        ltac1:(rewrite Hai in n2).
+        subst t.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n2.
+        rewrite Heqab in n2.
+        rewrite subp_compose_correct in n2.
+        unfold compose in n2.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        apply not_elem_of_dom_2 in Hci.
+        ltac1:(contradiction).
+      }
+      {
+              apply not_elem_of_dom_2 in Hbi.
+         ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n3.
+        rewrite Heqab in n3.
+        rewrite subp_compose_correct in n3.
+        unfold compose in n3.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n1.
+        rewrite Heqab in n1.
+        rewrite subp_compose_correct in n1.
+        unfold compose in n1.
+        ltac1:(contradiction).
+      }
+      {
+        repeat (mytac ()).
+        remember ((subp_compose a b)) as ab.
+        assert (Hab := Heqab).
+        unfold subp_compose in Hab.
+        unfold subp_normalize in Hab.
+        setoid_rewrite <- Hab in n.
+        rewrite Heqab in n.
+        rewrite subp_compose_correct in n.
+        unfold compose in n.
+        ltac1:(contradiction).
+      }
      }
+   }
+   Unshelve.
+   {
+    repeat (mytac ()).
+    apply not_elem_of_dom_2 in x0.
+    ltac1:(contradiction).
+   }
 Qed.
 
 (* 
