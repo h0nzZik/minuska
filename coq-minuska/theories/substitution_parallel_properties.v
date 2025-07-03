@@ -1793,7 +1793,53 @@ Proof.
                 ltac1:(simplify_eq/=).
                 destruct (decide (t_over (bov_variable i) = subp_app b t1)).
                 {
-                  admit.
+                  right.
+                  split.
+                  {
+                    left. reflexivity.
+                  }
+                  {
+                    destruct H1t as [[H1t|H1t]|H1t].
+                    { inversion H1t. }
+                    { destruct H1t as [? [H1t ?]].
+                      { rewrite (left_id None union) in H1t. ltac1:(simplify_eq/=). 
+                        rewrite lookup_fmap in H2t.
+                        rewrite Hci in H2t.
+                        simpl in H2t.
+                        ltac1:(simplify_eq/=).
+                        rewrite bind_None in H1.
+                        remember (subp_compose a b) as ab.
+                        assert (Hab := Heqab).
+                        unfold subp_compose,subp_normalize in Hab.
+                        ltac1:(setoid_rewrite <- Hab in H).
+                        rewrite Heqab in H.
+                        rewrite subp_compose_correct in H.
+                        unfold compose in H.
+                        rewrite <- e in H.
+                        simpl in H.
+                        ltac1:(rewrite Hai in H).
+                        ltac1:(contradiction).
+                      }
+                    }
+                    {
+                      destruct H1t as [? [_ H1t]].
+                      rewrite lookup_fmap in H2t.
+                      rewrite Hci in H2t.
+                      simpl in H2t.
+                      ltac1:(simplify_eq/=).
+                        remember (subp_compose a b) as ab.
+                        assert (Hab := Heqab).
+                        unfold subp_compose,subp_normalize in Hab.
+                        ltac1:(setoid_rewrite <- Hab in H).
+                        rewrite Heqab in H.
+                        rewrite subp_compose_correct in H.
+                        unfold compose in H.
+                        rewrite <- e in H.
+                        simpl in H.
+                        ltac1:(rewrite Hai in H).
+                        ltac1:(contradiction).
+                    }
+                  }
                 }
                 {
                   right. split. left. reflexivity.
