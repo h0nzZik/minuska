@@ -1664,10 +1664,71 @@ Proof.
                 }
               }
               {
+              
                 simpl in *.
-                right.
-                split>[reflexivity|].
+                rewrite lookup_fmap in H2t.
+                rewrite Hci in H2t.
+                simpl in H2t.
+                inversion H2t.
               }
+            }
+            {
+                simpl in *.
+                rewrite lookup_fmap in H2t.
+                destruct (c !! i) eqn:Hci.
+                {
+                  simpl in H2t.
+                  ltac1:(simplify_eq/=).
+                  destruct (decide (subp_app b t1 = t_over (bov_variable i))) as [Hiyes|Hino].
+                  {
+                    admit.
+                  }
+                  {
+                    right.
+                    split.
+                    {
+                      right.
+                      exists t0.
+                      split>[reflexivity|].
+                      rewrite option_guard_False.
+                      { reflexivity. }
+                      intros HH. apply HH. clear HH.
+                      rewrite elem_of_dom.
+                      rewrite map_lookup_filter.
+                      simpl.
+                      rewrite lookup_union.
+                      rewrite map_lookup_filter.
+                      rewrite Hbi.
+                      simpl.
+                      rewrite lookup_fmap.
+                      rewrite Hci.
+                      simpl.
+                      rewrite option_guard_True.
+                      { eexists. reflexivity. }
+                      {
+                        ltac1:(congruence).
+                      }
+                    }
+                    {
+                      exists (subp_app b t1).
+                      ltac1:(replace(subp_app a (subp_app b t1)) with (((subp_app a) ∘ (subp_app b)) t1) by reflexivity).
+                      rewrite <- subp_compose_correct.
+                      split>[|reflexivity].
+                      eexists.
+                      split>[reflexivity|].
+                      apply nesym in Hino.
+                      exists Hino.
+                      split>[|reflexivity].
+                      apply option_guard_True_pi.
+                      intros pfa pfb.
+                      apply proof_irrelevance.
+                    }
+                  }
+                }
+                {
+                  simpl in H2t.
+                  inversion H2t.
+                }
             }
           }
           {
