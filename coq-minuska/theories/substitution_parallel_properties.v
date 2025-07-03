@@ -1681,7 +1681,43 @@ Proof.
                   ltac1:(simplify_eq/=).
                   destruct (decide (subp_app b t1 = t_over (bov_variable i))) as [Hiyes|Hino].
                   {
-                    admit.
+                    left.
+                    exists t0.
+                    split>[reflexivity|].
+                    simpl.
+                    remember (subp_compose a b) as ab.
+                    assert(Hnice := Heqab).
+                    unfold subp_compose in Heqab.
+                    unfold subp_normalize in Heqab.
+                    setoid_rewrite <- Heqab.
+                    setoid_rewrite Hnice.
+                    rewrite subp_compose_correct.
+                    unfold compose.
+                    rewrite Hiyes.
+                    simpl.
+                    ltac1:(rewrite Hai).
+                    ltac1:(unshelve(eexists)).
+                    {
+                      rewrite elem_of_dom.
+                      intros [p Hp].
+                      rewrite map_lookup_filter in Hp.
+                      rewrite lookup_union in Hp.
+                      rewrite lookup_fmap in Hp.
+                      simpl in *.
+                      rewrite Hci in Hp.
+                      rewrite map_lookup_filter in Hp.
+                      rewrite Hbi in Hp.
+                      simpl in Hp.
+                      rewrite bind_Some in Hp.
+                      destruct Hp as [? [_ ?]].
+                      ltac1:(simplify_eq/=).
+                    }
+                    {
+                      split>[|reflexivity].
+                      apply option_guard_True_pi.
+                      intros ? ?.
+                      apply proof_irrelevance.
+                    }
                   }
                   {
                     right.
@@ -1731,10 +1767,87 @@ Proof.
                 }
             }
           }
-          {
-          
+          { 
+            destruct (b !! i) eqn:Hbi.
+            {
+              simpl in *.
+              destruct (c !! i) eqn:Hci.
+              {
+                simpl in H2t.
+                ltac1:(simplify_eq/=).
+                destruct (decide (t_over (bov_variable i) = subp_app b t1)).
+                {
+                  admit.
+                }
+                {
+                  right. split. left. reflexivity.
+                  rewrite map_lookup_filter.
+                  simpl.
+                  rewrite fmap_Some.
+                  setoid_rewrite lookup_union.
+                  setoid_rewrite lookup_fmap.
+                  setoid_rewrite map_lookup_filter.
+                  
+                  exists (subp_app b t1).
+                  split.
+                  {
+                    simpl.
+                    rewrite Hbi.
+                    simpl.
+                    rewrite Hci.
+                    rewrite option_guard_False.
+                    { simpl. rewrite option_guard_True. reflexivity.
+                      ltac1:(congruence).
+                    }
+                    {
+                      intros L. apply L. clear L.
+                      rewrite elem_of_dom.
+                      rewrite Hci.
+                      exists t1. reflexivity.
+                    } 
+                  }
+                  {
+                    fold (compose (subp_app a) (subp_app b) t1).
+                    rewrite <- subp_compose_correct.
+                    symmetry.
+                    unfold subp_compose.
+                    unfold subp_normalize.
+                    simpl in *.
+                    rewrite lookup_fmap in H2t.
+                    rewrite Hci in H2t.
+                    simpl in H2t.
+                    ltac1:(simplify_eq/=).
+                    reflexivity.
+                  }
+                }
+              }
+              { simpl in H2t. 
+                rewrite lookup_fmap in H2t.
+                rewrite Hci in H2t.
+                simpl in H2t.            
+                inversion H2t.                
+              }
+            }
+            {
+              simpl in H2t.
+              rewrite lookup_fmap in H2t.
+              destruct (c !! i) eqn:Hci.
+              {
+                admit.
+              }
+              {
+                simpl in *.
+                inversion H2t.
+              }
+            }
           }
         }
+       }
+       {
+        rewrite option_guard_True.
+        reflexivity.
+        ltac1:(congruence).
+       }
         {
           ltac1:(simplify_option_eq).
           reflexivity.
