@@ -1376,7 +1376,114 @@ Proof.
                       {
                         destruct H1p as [_ H1p].
                         ltac1:(simplify_eq/=).
-                        admit.
+                        destruct (decide (subp_app b t2 = t_over (bov_variable i))).
+                        {
+                          left.
+                          exists t0.
+                          split>[reflexivity|].
+                          remember (subp_compose a b) as ab.
+                          assert(Heqab' := Heqab).
+                          unfold subp_compose in Heqab'.
+                          unfold subp_normalize in Heqab'.
+                          setoid_rewrite <- Heqab.
+                          clear Heqab'.
+                          subst ab.
+                          rewrite subp_compose_correct.
+                          unfold compose.
+                          rewrite e.
+                          simpl.
+                          ltac1:(rewrite Hai).
+                          ltac1:(unshelve(eexists)).
+                          {
+                            rewrite elem_of_dom.
+                            rewrite map_lookup_filter.
+                            simpl.
+                            rewrite lookup_union.
+                            rewrite map_lookup_filter.
+                            rewrite Hbi.
+                            simpl.
+                            rewrite option_guard_False.
+                            { simpl. rewrite lookup_fmap. rewrite Hci. simpl.
+                              rewrite option_guard_False.
+                              { intros [u Hu].
+                                simpl in Hu.
+                                inversion Hu.
+                              }
+                              { ltac1:(congruence). }
+                            }
+                            rewrite elem_of_dom.
+                            rewrite Hci.
+                            intros Hu. apply Hu. exists t2. reflexivity.
+                          }
+                          {
+                            split.
+                            {
+                              apply option_guard_True_pi.
+                              intros pfa pfb.
+                              apply proof_irrelevance.
+                            }
+                            { reflexivity. }
+                          }
+                        }
+                        {
+                          right.
+                          split.
+                          { right.
+                            exists t0.
+                            split>[reflexivity|].
+                            rewrite option_guard_False.
+                            { simpl. reflexivity. }
+                            {
+                              intros HC. apply HC. clear HC.
+                              rewrite elem_of_dom.
+                              rewrite map_lookup_filter.
+                              rewrite lookup_union.
+                              rewrite map_lookup_filter.
+                              rewrite Hbi.
+                              simpl.
+                              rewrite lookup_fmap.
+                              rewrite Hci.
+                              simpl.
+                              rewrite option_guard_False.
+                              { simpl. rewrite option_guard_True.
+                                eexists. reflexivity.
+                                ltac1:(congruence).
+                              }
+                              {
+                                rewrite elem_of_dom.
+                                intros HH. apply HH. clear HH.
+                                rewrite Hci.
+                                eexists. reflexivity.
+                              }
+                          }  
+                        }
+                        {
+                          exists (subp_app b t2).
+                          split.
+                          {
+                            exists (subp_app b t2).
+                            repeat split. 
+                            {
+                              rewrite option_guard_False.
+                              { simpl. reflexivity. }
+                              {
+                                rewrite elem_of_dom.
+                                rewrite Hci.
+                                intros HContra. apply HContra.
+                                exists t2.
+                                reflexivity.
+                              }
+                            }
+                          }
+                          {
+                            ltac1:(replace (subp_app a (subp_app b t2))
+                              with (((subp_app a) ∘ (subp_app b)) t2)
+                              by reflexivity).
+                           Search subp_app compose.
+                           rewrite <- subp_compose_correct.
+                           reflexivity.
+                          }
+                        }
                       }
                     }
                     {
