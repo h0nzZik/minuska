@@ -1902,7 +1902,44 @@ Proof.
        }
      }
      {
-      
+        (* UFF, now the second inclusion *)
+        symmetry.
+        rewrite map_lookup_filter in Heql.
+        rewrite lookup_union in Heql.
+        rewrite map_lookup_filter in Heql.
+        rewrite lookup_fmap in Heql.
+        rewrite map_lookup_filter in Heql.
+        rewrite lookup_union in Heql.
+        simpl in Heql.
+        rewrite lookup_fmap in Heql.
+        rewrite map_lookup_filter in Heql.
+        simpl in Heql.
+        ltac1:(rewrite !(map_lookup_filter,lookup_union,lookup_fmap)).
+        destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi, (c !! i) eqn:Hci;
+          simpl in *;
+            assert(Hai' := Hai);
+            assert(Hbi' := Hbi);
+            assert(Hci' := Hci);
+            try (apply elem_of_dom_2 in Hai');
+            try (apply elem_of_dom_2 in Hbi');
+            try (apply elem_of_dom_2 in Hci');
+            try (apply not_elem_of_dom_1 in Hai');
+            try (apply not_elem_of_dom_1 in Hbi');
+            try (apply not_elem_of_dom_1 in Hci');
+            (repeat ((repeat (rewrite option_guard_decide));(repeat (rewrite option_guard_decide in Heql));ltac1:((repeat case_match); simplify_eq/=; simpl in *; try reflexivity)); try (solve [ltac1:(contradiction)]));
+            try reflexivity;
+            repeat (match! goal with
+            | [h: decide _ = _ |- _] => clear $h
+            end)
+        .
+                    
+        
+
+        match! goal with
+        | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
+        end.                    
+        apply not_elem_of_dom_1  
+        Search dom filter.
      }
 Qed.
 
