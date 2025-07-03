@@ -957,7 +957,6 @@ Proof.
                     rewrite (right_id None union).
                     split.
                     {
-                      Search "guard" "pi".
                       erewrite option_guard_True_pi. 
                       { reflexivity. }
                       { intros pfa pfb. apply proof_irrelevance. }
@@ -1025,6 +1024,143 @@ Proof.
                   {
                     destruct Hyes as [H1 H2].
                     inversion H2.
+                  }
+                }
+              }
+              {
+                apply not_and_or in Hno.
+                destruct (b !! i) eqn:Hbi.
+                {
+                  simpl in *.
+                  destruct H1y as [H1y|H1y].
+                  {
+                    rewrite bind_Some in H1y.
+                    destruct H1y as [? [_ ?]].
+                    apply not_elem_of_dom_1 in x.
+                    ltac1:(congruence).
+                  }
+                  {
+                    destruct H1y as [H1y Heq].
+                    ltac1:(simplify_eq/=).
+                    clear H1y.
+                    destruct Hno as [Hno|Hno].
+                    {
+                      apply not_eq_None_Some in Hno.
+                      destruct Hno as [q Hq].
+                      rewrite bind_Some in Hq.
+                      destruct Hq as [? [_ Htmp]].
+                      ltac1:(simplify_eq/=).
+                      apply not_elem_of_dom_1 in x.
+                      ltac1:(congruence).
+                    }
+                    {
+                      ltac1:(contradiction Hno).
+                      reflexivity.
+                    }
+                  }
+                }
+                {
+                  simpl in *.
+                  destruct H1y as [H1y|H1y],
+                      Hno as [Hno|Hno].
+                  {
+                    rewrite bind_Some in H1y.
+                    destruct H1y as [? [_ Htmp]].
+                    ltac1:(simplify_eq/=).
+                    apply not_eq_None_Some in Hno.
+                    destruct Hno as [q Hq].
+                    rewrite bind_Some in Hq.
+                    destruct Hq as [? [_ ?]].
+                    ltac1:(simplify_eq/=).
+                    apply not_elem_of_dom_1 in x0 as Hci.
+                    setoid_rewrite lookup_fmap.
+                    setoid_rewrite map_lookup_filter.
+                    simpl.
+                    setoid_rewrite bind_Some.
+                    setoid_rewrite bind_Some.
+                    setoid_rewrite lookup_union.
+                    setoid_rewrite lookup_fmap.
+                    rewrite Hci.
+                    simpl.
+                    left.
+                    exists q.
+                    split>[reflexivity|].
+                    ltac1:(unshelve(eexists)).
+                    {
+                      rewrite elem_of_dom.
+                      rewrite map_lookup_filter.
+                      intros [p Hp].
+                      rewrite bind_Some in Hp.
+                      destruct Hp as [o Ho].
+                      rewrite lookup_union in Ho.
+                      rewrite lookup_fmap in Ho.
+                      destruct Ho as [H1o H2o].
+                      rewrite map_lookup_filter in H1o.
+                      rewrite Hci in H1o.
+                      simpl in *.
+                      rewrite Hbi in H1o.
+                      simpl in H1o.
+                      inversion H1o.
+                    }
+                    {
+                      split>[|reflexivity].
+                      apply option_guard_True_pi.
+                      intros pfa pfb.
+                      apply proof_irrelevance.
+                    }
+                  }
+                  {
+                    rewrite bind_Some in H1y.
+                    clear Hno.
+                    destruct H1y as [? [_ ?]].
+                    ltac1:(simplify_eq/=).
+                    apply not_elem_of_dom_1 in x0 as Hci.
+                    setoid_rewrite lookup_fmap.
+                    setoid_rewrite map_lookup_filter.
+                    setoid_rewrite bind_Some.
+                    setoid_rewrite bind_Some.
+                    setoid_rewrite bind_Some.
+                    setoid_rewrite bind_None.
+                    setoid_rewrite lookup_union.
+                    setoid_rewrite lookup_fmap.
+                    rewrite Hci.
+                    simpl.
+                    setoid_rewrite map_lookup_filter.
+                    rewrite Hbi.
+                    simpl.
+                    left.
+                    exists t.
+                    split>[reflexivity|].
+                    ltac1:(unshelve(eexists)).
+                    {
+                      apply not_elem_of_dom_2.
+                      rewrite map_lookup_filter_None.
+                      rewrite lookup_union.
+                      rewrite lookup_fmap.
+                      rewrite Hci.
+                      simpl.
+                      rewrite (right_id None union).
+                      setoid_rewrite (right_id None union).
+                      rewrite map_lookup_filter.
+                      rewrite Hbi.
+                      simpl.
+                      left.
+                      reflexivity.
+                    }
+                    {
+                      split>[|reflexivity].
+                      apply option_guard_True_pi.
+                      intros pfa pfb.
+                      apply proof_irrelevance.
+                    }
+                  }
+                  {
+                    destruct H1y as [? H1y].
+                    inversion H1y.
+                  }
+                  {
+                    destruct H1y as [? H1y].
+                    inversion H1y.
                   }
                 }
               }
