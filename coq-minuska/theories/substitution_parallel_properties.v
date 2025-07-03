@@ -1930,14 +1930,72 @@ Proof.
             try reflexivity;
             repeat (match! goal with
             | [h: decide _ = _ |- _] => clear $h
-            end)
-        .
+            end).
+
+        (* The above worked *)    
+
+        assert(Hlem: forall x m t, t_over (bov_variable x) = subp_app m t -> exists y, t = t_over (bov_variable y)).
+        {
+          intros x' m' t' HH.
+          destruct t'; simpl in HH.
+          {           destruct a0; simpl in HH.
+            inversion HH.
+            exists x. reflexivity.
+          }
+          { inversion HH. }
+        }
+
+        Check guard.
+        repeat (try (match! goal with
+        | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
+        | [h: (?p -> _) |- _] => try ((assert ($p)>[ltac1:(tauto)|))
+        | [h: context [guard _] |- _] => rewrite option_guard_decide in $h
+        | [h1: (?m !! ?k = Some _), h2: context [?m !! ?k] |- _ ] => let h := Control.hyp h1 in rewrite $h in $h2
+        | [h1: (?m !! ?k = None), h2: context [?m !! ?k] |- _ ] => let h := Control.hyp h1 in rewrite $h in $h2
+        | [h: context [(union _ _) !! _ = _] |- _]  => setoid_rewrite lookup_union in $h
+        | [h: context [(union _ _) = None] |- _]  => setoid_rewrite union_None in $h
+        | [h: context [(union _ _) = Some _] |- _]  => setoid_rewrite union_Some in $h
+        | [h: context[(filter _ _) !! _ = Some _] |- _] => setoid_rewrite map_lookup_filter in $h
+        | [h: context[(filter _ _) !! _ = None] |- _] => setoid_rewrite map_lookup_filter_None in $h
+        | [h: context[(_ <$> _) !! _ = _] |- _] => setoid_rewrite lookup_fmap in $h
+        | [h: decide _ = _ |- _] => clear $h
+        | [h: ~ (~ _) |- _] => apply dec_stable in $h
+        | [h: union _ _ = None |- _] => apply union_None in $h
+        | [h: _ <$> _ = None |- _] => apply fmap_None in $h
+        | [h: (t_over (bov_variable _) = subp_app _ _) |- _] => apply Hlem in $h
+        | [h: (ex _) |- _] => Std.destruct false [({Std.indcl_arg:=Std.ElimOnIdent(h); Std.indcl_eqn:=None; Std.indcl_as:=None; Std.indcl_in:=None})] None
+        | [h: (right _ = right _) |- _] => clear $h
+        | [h: (forall _, _), a:_ |- _] => let f := ltac1:(ra rb|- learn_hyp (ra rb)) in f (Ltac1.of_constr (Control.hyp h)) (Ltac1.of_constr (Control.hyp a))
+        end); ltac1:(destruct_and?; destruct_or?; try congruence; (repeat case_match); simplify_eq/=); simpl in *;ltac1:(try tauto))
+     .
+     Search (None = Some _).
+     ltac1:(tauto).
+     setoid_rewrite Hbi in n0.
+     rewrite union_None in n0.
+     
+     setoid_rewrite lookup_union in n0.
+     setoid_rewrite map_lookup_filter in n0.
+     setoid_rewrite lookup_fmap in n0.
+     simpl in n0.
+     rewrite Hbi in n0.
+     simpl in n0.
+     setoid_rewrite option_guard_False in n0>[|ltac1:(set_solver)].
+     simpl in n0.
+     setoid_rewrite Hci in n0.
+     simpl in n0.
+     setoid_rewrite (left_id None union) in n0.
+     specialize (n0 _ eq_refl).
+     apply dec_stable in n0.
+     rewrite H in n0.
+     ltac1:(simplify_eq/=).
+     specialize (
+     Unset Printing Notations.
+
                     
         
 
-        match! goal with
-        | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
-        end.                    
+        Search (_ <$> _ = None).
+        ltac1:(rewrite_strat (topdown _)).
         apply not_elem_of_dom_1  
         Search dom filter.
      }
