@@ -819,6 +819,326 @@ Proof.
     unfold subp_dom.
     unfold SubP in *.
     unfold subp_normalize.
+    
+    
+    apply map_eq.
+    {
+      intros i.
+      lazy_match! goal with
+      | [|- ?l = _] =>
+        destruct ($l) eqn:Heql
+      end.
+      {
+        symmetry.
+        ltac1:(rewrite map_lookup_filter in Heql).
+        rewrite bind_Some in Heql.
+        destruct Heql as [t' [H1t' H2t']].
+        simpl in *.
+        rewrite map_lookup_filter.
+        rewrite bind_Some.
+        simpl in *.
+        ltac1:(simplify_option_eq).
+        exists t.
+        split.
+        {
+          rewrite lookup_union in H1t'.
+          rewrite union_Some in H1t'.
+          rewrite lookup_union.
+          rewrite union_Some.
+          rewrite map_lookup_filter in H1t'.
+          rewrite map_lookup_filter.
+          rewrite bind_Some in H1t'.
+          rewrite bind_Some.
+          simpl in *.
+          destruct H1t' as [H1t|H1t].
+          {
+            destruct H1t as [x [H1x H2x]].
+            rewrite map_lookup_filter in H1x.
+            rewrite bind_Some in H1x.
+            destruct H1x as [y [H1y H2y]].
+            rewrite bind_Some in H2y.
+            destruct H2y as [pf [_ ?]].
+            simpl in *.
+            apply (inj Some) in H1.
+            subst y.
+            rewrite lookup_union in H1y.
+            rewrite map_lookup_filter in H1y.
+            rewrite lookup_fmap in H1y.
+            rewrite union_Some in H1y.
+            simpl in *.
+            destruct (a !! i) eqn:Hai.
+            {
+              rewrite bind_Some in H2x.
+              destruct H2x as [? [_ Hxt]].
+              apply (inj Some) in Hxt.
+              subst x.
+              simpl.
+              setoid_rewrite bind_Some.
+              lazy_match! Constr.type (Control.hyp @H1y) with
+              | (_ \/ ?rr) => destruct (classic $rr) as [Hyes|Hno]
+              end.
+              {              
+                destruct H1y as [H1y|H1y].
+                {
+                  rewrite bind_Some in H1y.
+                  destruct H1y as [? [_ Htmp]].
+                  rewrite bind_Some in Htmp.
+                  destruct Htmp as [? [_ Htmp]].
+                  apply (inj Some) in Htmp.
+                  subst t.
+                  apply not_elem_of_dom_1 in x1 as Hb.
+                  apply not_elem_of_dom_1 in x0 as Hc.
+                  rewrite lookup_fmap.
+                  rewrite map_lookup_filter.
+                  setoid_rewrite bind_Some.
+                  setoid_rewrite bind_Some.
+                  simpl.
+                  setoid_rewrite lookup_union.
+                  setoid_rewrite map_lookup_filter.
+                  rewrite Hb.
+                  simpl.
+                  setoid_rewrite lookup_fmap.
+                  rewrite Hc.
+                  simpl.
+                  destruct Hyes as [H1y H2y].
+                  simpl in *.
+                  clear H1y.
+                  rewrite Hb in H2y.
+                  simpl in H2y.
+                  inversion H2y.
+               }
+               {
+                  destruct H1y as [H1 Htmp].
+                  simpl in H1.
+                  clear H1.
+                  ltac1:(setoid_rewrite bind_None).
+                  destruct (b !! i) eqn:Hbi.
+                  {
+                    simpl in *.
+                    ltac1:(simplify_eq/=).
+                    destruct Hyes as [H1 H2].
+                    clear H1 H2.
+                      apply not_elem_of_dom_1 in x0 as Hci.
+                      setoid_rewrite lookup_fmap.
+                      setoid_rewrite map_lookup_filter.
+                      setoid_rewrite bind_Some.
+                      setoid_rewrite bind_Some.
+                      setoid_rewrite bind_Some.
+                      setoid_rewrite lookup_union.
+                      setoid_rewrite lookup_fmap.
+                      setoid_rewrite Hci.
+                      simpl.
+                      setoid_rewrite (right_id None union).
+                      setoid_rewrite map_lookup_filter.
+                      setoid_rewrite bind_Some.
+                      setoid_rewrite bind_Some.
+                      setoid_rewrite Hbi.
+                    simpl.
+                    right.
+                    split.
+                    left.
+                    unfold guard_or.
+                    ltac1:(case_match; try reflexivity).
+                    ltac1:(exfalso; clear H1; rename n into H1).
+                    rewrite elem_of_dom in H1.
+                    rewrite map_lookup_filter in H1.
+                    rewrite lookup_union in H1.
+                    rewrite lookup_fmap in H1.
+                    rewrite Hci in H1.
+                    simpl in H1.
+                    rewrite map_lookup_filter in H1.
+                    rewrite Hbi in H1.
+                    simpl in H1.
+                    apply H1.
+                    eexists.
+                    rewrite bind_Some.
+                    eexists.
+                    rewrite bind_Some.
+                    rewrite (right_id None union).
+                    split.
+                    {
+                      Search "guard" "pi".
+                      erewrite option_guard_True_pi. 
+                      { reflexivity. }
+                      { intros pfa pfb. apply proof_irrelevance. }
+                    }
+                    {
+                      ltac1:(unshelve(eexists)).
+                      {
+                        unfold subp_is_normal in Hnormalb.
+                        rewrite <- Hnormalb in Hbi.
+                        unfold subp_normalize in Hbi.
+                        rewrite map_lookup_filter in Hbi.
+                        rewrite bind_Some in Hbi.
+                        destruct Hbi as [bv [H1bv H2bv]].
+                        rewrite bind_Some in H2bv.
+                        simpl in H2bv.
+                        destruct H2bv as [? [_ ?]].
+                        ltac1:(congruence).
+                      }
+                      {
+                        split>[|reflexivity].
+                        apply option_guard_True_pi.
+                        intros pfa pfb.
+                        apply proof_irrelevance.
+                      }
+                    }
+                    {
+                      exists t1.
+                      split>[|reflexivity].
+                      exists t1.
+                      (repeat split); try reflexivity.
+                      {
+                        exists t1.
+                        split>[reflexivity|].
+                        exists x0.
+                        split>[|reflexivity].
+                        apply option_guard_True_pi.
+                        intros pfa pfb.
+                        apply proof_irrelevance.
+                      }
+                      {
+                        ltac1:(unshelve(eexists)).  
+                        {
+                          intros HContra.
+                          subst t1.
+                          unfold subp_is_normal in Hnormalb.
+                          rewrite <- Hnormalb in Hbi.
+                          unfold subp_normalize in Hbi.
+                          rewrite map_lookup_filter in Hbi.
+                          rewrite bind_Some in Hbi.
+                          destruct Hbi as [p [H1p H2p]].
+                          rewrite bind_Some in H2p.
+                          simpl in H2p.
+                          destruct H2p as [? [_ ?]].
+                          ltac1:(simplify_eq/=).
+                        }
+                        {
+                          split>[|reflexivity].
+                          apply option_guard_True_pi.
+                          intros pfa pfb.
+                          apply proof_irrelevance.
+                        }
+                      }
+                    } 
+                  }
+                  {
+                    destruct Hyes as [H1 H2].
+                    inversion H2.
+                  }
+                }
+              }
+              {
+                destruct H1y as [HH1 HH2].
+                rewrite H1q in HH2.
+                simpl in HH2.
+                apply (inj Some) in HH2.
+                subst t.
+                clear HH1.
+                simpl in *.
+                destruct p; simpl in *.
+                {
+                  destruct a0; simpl in *.
+                  {
+                    
+                  }
+                }
+              }
+              left.
+              exists t0.
+              split>[reflexivity|].
+
+              
+              admit.
+            }
+            {
+              simpl in *.
+              right.
+              split>[reflexivity|].
+              destruct H1y as [H1y|[H1y H2y]].
+              {
+                inversion H1y.
+              }
+              {
+                destruct (b !! i) eqn:Hbi.
+                {
+                  simpl in *.
+                  apply (inj Some) in H2y.
+                  subst x.
+                  simpl in *.
+                  rewrite lookup_fmap.
+                  rewrite map_lookup_filter.
+                  simpl.
+                  rewrite fmap_Some.
+                  rewrite bind_Some in H2x.
+                  destruct H2x as [pf1 [_ H1]].
+                  apply (inj Some) in H1.
+                  subst t.
+                  exists t0.
+                  split>[|reflexivity].
+                  rewrite bind_Some.
+                  setoid_rewrite lookup_union.
+                  setoid_rewrite lookup_fmap.
+                  apply not_elem_of_dom_1 in pf1 as pf1'.
+                  rewrite pf1'.
+                  simpl.
+                  setoid_rewrite (right_id None union).
+                  setoid_rewrite map_lookup_filter.
+                  simpl.
+                  rewrite Hbi.
+                  simpl.
+                  exists t0.
+                  split.
+                  {
+                    rewrite bind_Some.
+                    exists pf1.
+                    split>[|reflexivity].
+                    apply option_guard_True_pi.
+                    intros pf8 pf9.
+                    apply proof_irrelevance.
+                  }
+                  {
+                    rewrite bind_Some.
+                    ltac1:(unshelve(eexists)).
+                    {
+                      intros HContra.
+                      subst t0.
+                      simpl in *.
+                      ltac1:(rewrite Hai in H).
+                      ltac1:(contradiction H).
+                      reflexivity.
+                    }
+                    {
+                      split>[|reflexivity].
+                      apply option_guard_True_pi.
+                      intros pfa pfb.
+                      apply proof_irrelevance.
+                    }
+                  }
+                  }
+                  {
+                    simpl in H2y.
+                    inversion H2y.
+                  }
+                }
+              }
+            }
+            {
+            
+            }
+          }
+          {
+          
+          }
+        }
+        {
+          ltac1:(simplify_option_eq).
+          reflexivity.
+        }
+      }
+    }
+    
+    
     ltac1:(rewrite !(map_filter_union, map_filter_filter)).
     {       
         apply map_disjoint_spec.
@@ -1012,6 +1332,342 @@ Proof.
             do 2 (rewrite map_lookup_filter).
             destruct (b !! i) eqn:Hbi.
             {
+              simpl.
+              destruct (c !! i) eqn:Hci.
+              {
+                simpl.
+                lazy_match! goal with
+                | [|- _ = ?r] => destruct ($r) eqn:Heqr
+                end.
+                {
+                  rewrite bind_Some in Heqr.
+                  destruct Heqr as [p [H1p H2p]].
+                  rewrite bind_Some in H2p.
+                  destruct H2p as [pf _].
+                  rewrite lookup_union in H1p.
+                  rewrite lookup_fmap in H1p.
+                  rewrite map_lookup_filter in H1p.
+                  rewrite Hbi in H1p.
+                  simpl in H1p.
+                  rewrite lookup_fmap in H1p.
+                  rewrite lookup_fmap in H1p.
+                  rewrite map_lookup_filter in H1p.
+                  rewrite Hci in H1p.
+                  simpl in H1p.
+                  rewrite union_Some in H1p.
+                  rewrite union_Some.
+                  rewrite fmap_Some in H1p.
+                  rewrite fmap_Some in H1p.
+                  destruct H1p as [H1p|H1p].
+                  {
+                    destruct H1p as [x [H1x H2x]].
+                    subst p.
+                    rewrite bind_Some in H1x.
+                    destruct H1x as [x0 [H1x0 H2x0]].
+                    apply (inj Some) in H2x0.
+                    subst x.
+                    clear H1x0.
+                    destruct x0 as [HH1 HH2].
+                    destruct t; simpl in *.
+                    {
+                      destruct a0; simpl in *.
+                      {
+                        clear HH1 pf.
+                        ltac1:(exfalso).
+                        apply HH2.
+                        ltac1:(rewrite elem_of_dom).
+                        rewrite Hci.
+                        exists t0.
+                        reflexivity.
+                      }
+                      {
+                        ltac1:(exfalso).
+                        apply HH2.
+                        ltac1:(rewrite elem_of_dom).
+                        rewrite Hci.
+                        exists t0.
+                        reflexivity.
+                      }
+                    }
+                    {
+                      ltac1:(exfalso).
+                        apply HH2.
+                        ltac1:(rewrite elem_of_dom).
+                        rewrite Hci.
+                        exists t0.
+                        reflexivity.
+                    }
+                  }
+                  {
+                    destruct H1p as [HH1 HH2].
+                    rewrite fmap_None in HH1.
+                    rewrite bind_None in HH1.
+                    destruct HH2 as [x [H1x H2x]].
+                    rewrite fmap_Some in H1x.
+                    destruct H1x as [x0 [H1x0 H2x0]].
+                    subst x p.
+                    rewrite bind_Some in H1x0.
+                    destruct H1x0 as [pf' _].
+                    destruct HH1 as [HH1|HH1].
+                    {
+                      rewrite fmap_Some.
+                      ltac1:(setoid_rewrite bind_Some).
+                      destruct t0; simpl in *.
+                      {
+                        destruct a0; simpl in *.
+                        {
+                          destruct t1; simpl in *.
+                          {
+                            destruct a0; simpl in *.
+                            {
+                              setoid_rewrite bind_None.
+                              destruct t; simpl in *.
+                              {
+                                destruct a0; simpl in *.
+                                {
+                                  destruct x0; simpl in *.
+                                  {
+                                    destruct a0; simpl in *.
+                                    {
+                                      clear HH1.
+                                      lazy_match! goal with
+                                      | [|- ?l \/ _] =>
+                                        destruct (classic $l) as [Hyes|Hno]
+                                      end.
+                                      {
+                                        left.
+                                        exact Hyes.
+                                      }
+                                      {
+                                        rewrite bind_None.
+                                        (* right.*)
+                                        lazy_match! goal with
+                                        | [|- _ \/ (((_ \/ ?l) \/ _) /\ _)] =>
+                                          destruct (classic $l) as [Hyes'|Hno']
+                                        end.
+                                        {
+                                          destruct Hyes' as [pf'' _].
+                                          destruct pf'' as [[H1 H2] H3].
+                                          ltac1:(exfalso).
+                                          apply H2.
+                                          ltac1:(rewrite elem_of_dom).
+                                          rewrite Hci.
+                                          eexists.
+                                          reflexivity.
+                                        }
+                                        {
+                                          destruct (decide (b0 = b1)).
+                                          {
+                                            right.
+                                            split.
+                                            {
+                                              left.
+                                              left.
+                                              unfold guard_or.
+                                              ltac1:(repeat case_match; try reflexivity).
+                                              {
+                                                clear H0.
+                                                ltac1:(exfalso).
+                                                destruct a0 as [[H1 H2] H3].
+                                                apply H2.
+                                                ltac1:(rewrite elem_of_dom).
+                                                rewrite Hci.
+                                                eexists.
+                                                reflexivity.
+                                              }
+                                              {
+                                                ltac1:(exfalso).
+                                                clear H0.
+                                                destruct a0 as [[H1 H2] H3].
+                                                apply n.
+                                                apply H2.
+                                              }
+                                            }
+                                            {
+                                              exists (t_over (bov_builtin b0)).
+                                              simpl.
+                                              subst.
+                                              ltac1:(naive_solver).
+                                              
+                                            }
+                                          }
+                                          {
+                                            right.
+                                            split.
+                                            {
+                                              left. left.
+                                              unfold guard_or.
+                                              ltac1:(repeat case_match; try reflexivity).
+                                              {
+                                                clear H0.
+                                                ltac1:(exfalso).
+                                                destruct a0 as [[H1 H2] H3].
+                                                apply H2.
+                                                ltac1:(rewrite elem_of_dom).
+                                                rewrite Hci.
+                                                eexists.
+                                                reflexivity.
+                                              }
+                                              {
+                                                ltac1:(exfalso).
+                                                clear H0.
+                                                destruct a0 as [[H1 H2] H3].
+                                                apply H2.
+                                                ltac1:(rewrite elem_of_dom).
+                                                rewrite Hci.
+                                                eexists.
+                                                reflexivity.
+                                              }
+                                            }
+                                            {
+                                              eexists.
+                                              split>[reflexivity|].
+                                              simpl.
+                                            }
+                                            destruct (decide (b2 = b1)).
+                                            {
+                                              subst.
+                                              ltac1:(exfalso).
+                                              
+                                            }
+                                          }
+                                          left.
+                                          Search (~ (∃ _, _)).
+                                          right.
+                                          apply not_eq_None_Some in Hno'.
+                                          destruct Hno' as [t' Ht'].
+                                          rewrite bind_Some in Ht'.
+                                          destruct Ht' as [y Hy].
+                                          destruct Hy as [HH1 HH2].
+                                          ltac1:(simplify_eq/=).
+                                          clear HH1.
+                                          destruct y as [[HH1 HH2] HH3].
+                                          ltac1:(exfalso).
+                                          apply HH2.
+                                          ltac1:(rewrite elem_of_dom).
+                                          rewrite Hci.
+                                          eexists.
+                                          reflexivity.
+                                        }
+                                        {
+                                          ltac1:(exfalso).
+                                        }
+                                        
+                                      right.
+                                      split.
+                                      { admit. }
+                                      exists (t_over (bov_builtin b0)).
+                                      split>[reflexivity|].
+                                      apply f_equal.
+                                      simpl.
+                                      
+                                    }
+                                  }
+                                  right.
+                                  split.
+                                  {
+                                    admit.
+                                  }
+                                  {
+                                    exists (t_over (bov_builtin b0)).                                  
+                                    split>[reflexivity|].
+                                    apply f_equal.
+                                    simpl.
+                                    split>[|reflexivity].
+                                }
+                              }
+                              left.
+                              exists (t_over (bov_builtin b1)).
+                              simpl.                           
+                              split>[|reflexivity].
+                              ltac1:(unshelve(eexists)).
+                              {
+                                ltac1:(discriminate).
+                              }
+                              {
+                                erewrite option_guard_True_pi.
+                                {
+                                  split.
+                                }
+                              }
+                            }
+                          }
+                          exists (t_over (bov_builtin b0)).
+                          simpl.
+                          split.
+                        }
+                      }
+                      right.
+                      split.
+                      {
+                        rewrite fmap_None.
+                        rewrite bind_None.
+                        rewrite option_guard_False.
+                        {
+                          left. reflexivity.
+                        }
+                        {
+                          intros HContra.
+                          destruct HContra as [[HH3 HH4] HH5].
+                          apply HH4.
+                          ltac1:(rewrite elem_of_dom).
+                          rewrite Hci.
+                          exists t0.
+                          reflexivity.
+                        }
+                      }
+                      {
+                        
+                        eexists.
+                        split.
+                        {
+                          rewrite bind_Some.
+                          ltac1:(unshelve(eexists)).
+                          {
+                            ltac1:(rewrite subp_app_union).
+                            {
+                              unfold subp_codom,subp_dom.
+                              rewrite elem_of_disjoint.
+                              intros x H1x H2x.
+                            ltac1:(rewrite elem_of_dom in H2x).
+                            rewrite elem_of_union_list in H1x.
+                            destruct H1x as [X [H1X H2X]].
+                            destruct H2x as [z Hz].
+                            unfold SubP in *.
+                            rewrite lookup_fmap in Hz.
+                            rewrite map_lookup_filter in Hz.
+                            rewrite fmap_Some in Hz.
+                            destruct Hz as [x0' [H1x0' H2x0']].
+                            rewrite bind_Some in H1x0'.
+                            destruct H1x0' as [? [? ?]].
+                            subst z.
+                            clear H0.
+                            ltac1:(rewrite elem_of_list_fmap in H1X).
+                              destruct H1X as [y [H1y H2y]].
+                              subst X.
+                              rewrite elem_of_elements in H2y.
+                              rewrite elem_of_map_img in H2y.
+                             destruct H2y as [j Hj].
+                             rewrite map_lookup_filter in Hj.
+                             destruct (a !! j) eqn:Haj.
+                             {
+                              simpl in *.
+                              rewrite bind_Some in Hj.
+                              destruct Hj as [? [_ ?]].
+                              apply (inj Some) in H0.
+                              subst y.
+                              destruct x2 as [ ? ?].
+                              destruct t2; simpl in *.
+                              
+                          }
+                        }
+                        rewrite bind_Some.
+                      }
+                    }
+                    right.
+                  }
+                }
+              }
               admit.
             }
             {
@@ -1102,10 +1758,6 @@ Proof.
                                           apply proof_irrelevance.
                                         }
                                       }
-                                      eexists.
-                                      split>[|reflexivity].
-                                      rewrite option_guard_True.
-                                      
                                     }
                                     {
                                       intros [HH1 HH2].
