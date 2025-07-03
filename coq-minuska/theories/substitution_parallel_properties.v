@@ -1946,9 +1946,14 @@ Proof.
         }
 
         Check guard.
+
         repeat (try (match! goal with
+        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
+            let myf := (Fresh.in_goal ident:(h)) in
+            assert ($myf := $h2 constr:(t_over (bov_variable $y)))
+        | [x : (TermOver BuiltinOrVar), h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
+           apply $h2 in $h as $my
         | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
-        | [h: (?p -> _) |- _] => try ((assert ($p)>[ltac1:(tauto)|))
         | [h: context [guard _] |- _] => rewrite option_guard_decide in $h
         | [h1: (?m !! ?k = Some _), h2: context [?m !! ?k] |- _ ] => let h := Control.hyp h1 in rewrite $h in $h2
         | [h1: (?m !! ?k = None), h2: context [?m !! ?k] |- _ ] => let h := Control.hyp h1 in rewrite $h in $h2
@@ -1966,8 +1971,25 @@ Proof.
         | [h: (ex _) |- _] => Std.destruct false [({Std.indcl_arg:=Std.ElimOnIdent(h); Std.indcl_eqn:=None; Std.indcl_as:=None; Std.indcl_in:=None})] None
         | [h: (right _ = right _) |- _] => clear $h
         | [h: (forall _, _), a:_ |- _] => let f := ltac1:(ra rb|- learn_hyp (ra rb)) in f (Ltac1.of_constr (Control.hyp h)) (Ltac1.of_constr (Control.hyp a))
+        (*| [h: (?p -> _) |- _] => let hmy := (Fresh.in_goal ident:(my)) in try ((assert ($hmy: $p)>[ltac1:(tauto)|]); let h2 := Control.hyp h in apply $h2 in $hmy; clear $h)*)
         end); ltac1:(destruct_and?; destruct_or?; try congruence; (repeat case_match); simplify_eq/=); simpl in *;ltac1:(try tauto))
-     .
+      .
+      
+      lazy_match! goal with
+        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
+            let myf := (Fresh.in_goal ident:(h)) in
+            let my2 := Control.hyp my in
+            assert ($myf := $h2 $my2);
+            subst $my
+       end.
+
+        (lazy_match! goal with
+        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
+          let myf := (Fresh.in_goal ident:(h)) in
+            let my2 := Control.hyp my in
+            assert ($myf := $h2 $my2)
+        end).
+      specialize(n0 (t_over (bov_variable x)) ltac:(tauto)).
      Search (None = Some _).
      ltac1:(tauto).
      setoid_rewrite Hbi in n0.
