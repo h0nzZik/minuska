@@ -95,5 +95,5 @@ Definition subp_restrict
   (to : gset variable)
   : SubP -> SubP
 :=
-  filter (fun x => x ∈ to)
+  filter (fun x => x.1 ∈ to)
 .
