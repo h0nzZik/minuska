@@ -82,3 +82,18 @@ Definition subp_compose
     )
 .
 
+Definition subp_id
+  {Σ : StaticModel}
+  :
+  gmap variable (TermOver BuiltinOrVar)
+:=
+  empty
+.
+
+Definition subp_restrict
+  {Σ : StaticModel}
+  (to : gset variable)
+  : SubP -> SubP
+:=
+  filter (fun x => x ∈ to)
+.

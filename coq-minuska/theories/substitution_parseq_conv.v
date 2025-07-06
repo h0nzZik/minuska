@@ -589,23 +589,513 @@ Definition idren
 .
 
 (* Likely is not true *)
+(* 
 Lemma compose_renaming_inverse
     {Σ : StaticModel}
     (r : RenamingT)
     :
+    (* dom r ## map_img r -> *)
+    subp_is_normal (rlift r) ->
     renaming_ok r ->
-    (subp_compose (rlift (r_inverse r)) (rlift r)) = rlift (idren (dom r ∪ map_img r))
+    (subp_compose (rlift (r_inverse r)) (rlift r)) = ∅
 .
 Proof.
-    intros Hrok.
-    unfold subp_compose.
+    intros Hnorm Hrok.
+    (* unfold subp_compose. *)
     apply map_eq_iff.
     intros i.
+    rewrite lookup_empty.
+    assert(Halmost: subp_app (subp_compose (rlift (r_inverse r)) (rlift r)) (t_over (bov_variable i)) = (t_over (bov_variable i))).
+    {
+        rewrite subp_compose_correct.
+        unfold compose.
+        simpl.
+        unfold rlift at 2.
+        unfold RenamingT, SubP in *.
+        rewrite lookup_fmap.
+
+        destruct (r !! i) eqn:Hri.
+        {
+            simpl.
+            unfold rlift.
+            unfold RenamingT, SubP in *.
+            rewrite lookup_fmap.
+            unfold r_inverse.
+            unfold RenamingT, SubP in *.
+            ltac1:(case_match).
+            {
+                rewrite fmap_Some in H.
+                destruct H as [w [H1w H2w]].
+                subst.
+                ltac1:(rewrite - elem_of_list_to_map in H1w).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    apply renaming_ok_nodup.
+                    exact Hrok.
+                }
+                rewrite elem_of_list_fmap in H1w.
+                destruct H1w as [[z t][HH1 HH2]].
+                ltac1:(simplify_eq/=).
+                rewrite elem_of_map_to_list in HH2.
+                specialize (Hrok _ _ _ Hri HH2).
+                ltac1:(congruence).
+            }
+            {
+                rewrite fmap_None in H.
+                rewrite <- not_elem_of_list_to_map in H.
+                rewrite elem_of_list_fmap in H.
+                destruct (decide (v = i)).
+                {
+                    ltac1:(congruence).
+                }
+                {
+                    ltac1:(contradiction H). clear H.
+                    exists (v, i). simpl.
+                    split>[reflexivity|].
+                    rewrite elem_of_list_fmap.
+                    simpl.
+                    exists (i, v).
+                    simpl.
+                    split>[reflexivity|].
+                    rewrite elem_of_map_to_list.
+                    exact Hri.
+                }
+            }
+        }
+        {
+            simpl.
+            ltac1:(case_match; simplify_eq/=).
+            {
+                unfold rlift in H.
+                ltac1:(rewrite lookup_fmap in H).
+                unfold r_inverse in H.
+                rewrite fmap_Some in H.
+                destruct H as [h [H1j H2j]].
+                subst.
+                ltac1:(rewrite - elem_of_list_to_map in H1j).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    apply renaming_ok_nodup.
+                    exact Hrok.
+                }
+                ltac1:(rewrite elem_of_list_fmap in H1j).
+                destruct H1j as [[x y][H1 H2]].
+                ltac1:(simpl in *; simplify_eq/=).
+                ltac1:(rewrite elem_of_map_to_list in H2).
+            }
+        }
+    }
+    assert (Halmost2 := Halmost).
+    rewrite subp_compose_correct in Halmost2.
+    simpl in Halmost.
+    ltac1:(case_match; simplify_eq/=; try assumption).
+    ltac1:(exfalso).
+    destruct (r !! i) eqn:Hri.
+    {
+        unfold rlift in Halmost2.
+    }
+    
+    
+    {
+
+    }
+    Check subp_compose_correct.
     unfold rlift,idren,r_inverse.
     rewrite <- map_fmap_compose.
     unfold compose.
     simpl.
+    unfold subp_normalize.
+    rewrite map_lookup_filter.
+    rewrite lookup_union.
     rewrite lookup_fmap.
+    rewrite map_lookup_filter.
+    rewrite lookup_fmap.
+    simpl.
+    
+    rewrite bind_None.
+    unfold RenamingT in *.
+    destruct (r !! i) eqn:Hri.
+    {
+        simpl.
+        rewrite union_None.
+        rewrite bind_None.
+        right.
+        setoid_rewrite union_Some.
+        setoid_rewrite bind_Some.
+        exists (t_over (bov_variable i)).
+        split.
+        {
+            simpl.
+            rewrite bind_None.
+            ltac1:(case_match).
+            {
+                ltac1:(rewrite lookup_fmap in H).
+                rewrite fmap_Some in H.
+                destruct H as [x [H1x H2x]].
+                ltac1:(simplify_eq/=).
+                ltac1:(rewrite - elem_of_list_to_map in H1x).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    apply renaming_ok_nodup.
+                    exact Hrok.
+                }
+                rewrite elem_of_list_fmap in H1x.
+                destruct H1x as [y [H1y H2y]].
+                ltac1:(simplify_eq/=).
+                destruct y as [y z].
+                simpl in *.
+                destruct (decide (y = i)).
+                {
+                    subst y.
+                    right.
+                    split>[|reflexivity].
+                    rewrite fmap_None.
+                    ltac1:(rewrite - not_elem_of_list_to_map).
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    rewrite elem_of_list_fmap.
+                    apply imply_to_or.
+                    intros [[a b][H1 H2]].
+                    ltac1:(simplify_eq/=).
+                    rewrite elem_of_map_to_list in H2.
+                    rewrite elem_of_map_to_list in H2y.
+                    setoid_rewrite option_guard_False.
+                    { simpl.
+                        setoid_rewrite fmap_Some.
+                        exists (t_over (bov_variable a)).
+                        split>[|reflexivity].
+                        exists a.
+                        split>[|reflexivity].
+                        ltac1:(rewrite - elem_of_list_to_map).
+                        {
+                            rewrite <- list_fmap_compose.
+                            unfold compose.
+                            simpl.
+                            apply renaming_ok_nodup.
+                            exact Hrok.
+                        }
+                        rewrite elem_of_list_fmap.
+                        exists (a,b).
+                        simpl.
+                        split>[reflexivity|].
+                        rewrite elem_of_map_to_list.
+                        exact H2.
+                    }
+                    {
+                        intros HC. apply HC. clear HC.
+                        unfold subp_dom.
+                        ltac1:(rewrite elem_of_dom).
+                        rewrite lookup_fmap.
+                        rewrite H2y.
+                        simpl.
+                        eexists.
+                        reflexivity.
+                    }
+                }
+                {
+                    ltac1:(exfalso).
+                    rewrite elem_of_map_to_list in H2y.
+                    specialize (Hrok i y z Hri H2y).
+                    ltac1:(congruence).
+                }
+            }
+            {
+                ltac1:(rewrite lookup_fmap in H).
+                rewrite fmap_None in H.
+                rewrite <- not_elem_of_list_to_map in H.
+                rewrite <- list_fmap_compose in H.
+                unfold compose in H; simpl in H.
+                rewrite elem_of_list_fmap in H.
+                ltac1:(contradiction H).
+                clear H.
+                exists (i,v).
+                simpl.
+                split>[reflexivity|].
+                rewrite elem_of_map_to_list.
+                exact Hri.
+            }
+        }
+        {
+            rewrite option_guard_False.
+            simpl. reflexivity.
+            ltac1:(congruence).
+        }
+    }
+    {
+
+        simpl.
+        rewrite (right_id None union).
+        rewrite bind_None.
+        ltac1:(rewrite fmap_None).
+        rewrite <- not_elem_of_list_to_map.
+        rewrite <- list_fmap_compose.
+        unfold compose.
+        simpl.
+        rewrite elem_of_list_fmap.
+        unfold subp_dom.
+        unfold SubP in *.
+        setoid_rewrite bind_None.
+        destruct (classic (∃ j, r !! j = Some i)).
+        {
+            destruct H as [j Hj].
+
+
+            left. right.
+
+            unfold TermOver in *.
+            assert(Hij: i<>j) by ltac1:(congruence).
+            exists (t_over (bov_variable j)).
+            split.
+            {
+
+            }
+            {
+                left.
+                rewrite option_guard_False.
+                { reflexivity. }
+                intros Ht. apply Ht. clear Ht.
+                rewrite elem_of_dom.
+            }
+            rewrite (right_id None union).
+            split.
+            {
+                rewrite bind_Some.
+                exists (t_over (bov_variable j)).
+                split.
+                {
+                    rewrite fmap_Some.
+                    exists j.
+                    split>[|reflexivity].
+                    ltac1:(rewrite - elem_of_list_to_map).
+                    {
+                        rewrite <- list_fmap_compose.
+                        unfold compose.
+                        simpl.
+                        apply renaming_ok_nodup.
+                        exact Hrok.
+                    }
+                    rewrite elem_of_list_fmap.
+                    exists (j, i).
+                    simpl.
+                    split>[reflexivity|].
+                    rewrite elem_of_map_to_list.
+                    exact Hj.
+                }
+                {
+                    rewrite option_guard_True.
+                    { reflexivity. }
+                    {
+                        rewrite elem_of_dom.
+                        rewrite lookup_fmap.
+                        rewrite Hri.
+                        simpl.
+                        intros [? Hc].
+                        inversion Hc.
+                    }
+                }
+            }
+            {
+                right.
+                ltac1:(unshelve(eexists)).
+                {
+                    ltac1:(congruence).
+                }
+                {
+                    split>[|reflexivity].
+                }
+            }
+            
+            
+            split.
+            {
+                
+                
+            }
+            {
+                right.
+                (* Set Printing All. *)
+                
+            }
+        }
+        {
+            left. left.
+            intros [[x y][H1 H2]].
+            ltac1:(simplify_eq/=).
+            apply H. clear H.
+            exists x.
+            rewrite elem_of_map_to_list in H2.
+            exact H2.
+        }
+
+
+        lazy_match! goal with
+        | [|- ?l \/ _] => destruct (classic $l)
+        end.
+        {
+            left. assumption.
+        }
+        {
+            apply not_or_and in H.
+            destruct H as [H1 H2].
+            apply NNPP in H1.
+            destruct H1 as [[x y][H3 H4]].
+            ltac1:(simpl in *; simplify_eq/=).
+            rewrite elem_of_map_to_list in H4.
+            
+            assert (y <> x).
+            {
+                intros HContar.
+                subst.
+                ltac1:(simplify_eq/=).
+            }
+            left.
+            apply imply_to_or.
+            intros [[z1 z2][H1z H2z]].
+            ltac1:(simpl in *; simplify_eq/=).
+            setoid_rewrite option_guard_True.
+            {
+
+            }
+            {
+                unfold subp_dom.
+                ltac1:(rewrite elem_of_dom).
+                rewrite lookup_fmap.
+                rewrite Hri.
+                simpl.
+                intros [? pf].
+                inversion pf.
+            }
+            (* right. *)
+            exists (t_over (bov_variable x)).
+            split.
+            {
+
+                rewrite (right_id None union).
+                rewrite bind_Some.
+                exists (t_over (bov_variable x)).
+                rewrite option_guard_True.
+                {
+                    split>[|reflexivity].
+                    rewrite fmap_Some.
+                    exists x.
+                    split>[|reflexivity].
+                    ltac1:(rewrite - elem_of_list_to_map).
+                    {
+                        rewrite <- list_fmap_compose.
+                        unfold compose.
+                        simpl.
+                        apply renaming_ok_nodup.
+                        exact Hrok.
+                    }
+                    rewrite elem_of_list_fmap.
+                    simpl.
+                    exists (x, y).
+                    simpl.
+                    split>[reflexivity|].
+                    rewrite elem_of_map_to_list.
+                    exact H4.
+                }
+                {
+                    unfold subp_dom.
+                    (* intros HH. apply HH. clear HH. *)
+                    ltac1:(rewrite elem_of_dom).
+                    rewrite lookup_fmap.
+                    rewrite Hri.
+                    simpl.
+                    intros [? HC].
+                    inversion HC.
+                }
+            }
+            {
+                ltac1:(contradiction H2).
+                clear H2.
+                rewrite option_guard_True.
+                { 
+                    reflexivity.
+                }
+                {
+                    ltac1:(congruence).
+                }
+            }
+            
+        }
+
+        (* Search (~ ~_ <-> _). *)
+
+
+
+(* 
+        left.
+        apply imply_to_or.
+        intros [[x y][H1 H2]].
+        ltac1:(simplify_eq/=).
+        rewrite elem_of_map_to_list in H2.
+        setoid_rewrite option_guard_False.
+
+
+ *)
+
+
+
+
+        right.
+        exists (t_over (bov_variable i)).
+        split.
+        {
+            rewrite union_Some.
+
+            (* right. *)
+
+            left.
+            rewrite bind_Some.
+            exists (t_over (bov_variable i)).
+            split.
+            {
+                rewrite fmap_Some.
+                exists i.
+                split.
+                {
+                    ltac1:(rewrite - elem_of_list_to_map).
+                    {
+                        rewrite <- list_fmap_compose.
+                        unfold compose.
+                        simpl.
+                        apply renaming_ok_nodup.
+                        exact Hrok.
+                    }
+                    rewrite elem_of_list_fmap.
+                }
+                ltac1:(rewrite lookup_fmap).
+            }
+            rewrite option_guard_True.
+        }
+        rewrite option_guard_True.
+        {
+
+        }
+        {
+            simpl.
+        }
+        split.
+
+        (* Probably wont work *)
+        left. right.
+        unfold subp_dom.
+        ltac1:(setoid_rewrite bind_None).
+        (* This wont work*)
+(*         
+        left. left. intros [[y z][H1 H2]].
+        ltac1:(simplify_eq/=).
+        rewrite elem_of_map_to_list in H2. *)
+    }
+    (* rewrite lookup_list_to_map. *)
     destruct ((set_to_map _ (dom r ∪ map_img r)) !! i) eqn:Heq.
     {
         simpl.
@@ -617,6 +1107,19 @@ Proof.
         }
         destruct Heq as [y [H1y H2y]].
         ltac1:(simplify_eq/=).
+        rewrite bind_Some.
+        (* exists (t_over (bov_variable v)). *)
+        simpl.
+        rewrite elem_of_union in H1y.
+        destruct H1y as [Hv|Hv].
+        {
+            unfold RenamingT in *.
+            rewrite elem_of_dom in Hv.
+            destruct Hv as [w Hw].
+            exists (t_over (bov_variable w)).
+            rewrite option_guard_True.
+            split>[|reflexivity].
+        }
         rewrite lookup_union.
         rewrite lookup_fmap.
         rewrite elem_of_union in H1y.
@@ -979,7 +1482,7 @@ Proof.
     (* destruct (dom r !! i). *)
     (* rewrite lookup_fmap. *)
     (* rewrite <- map_fmap_compose. *)
-Qed.
+Qed. *)
 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}

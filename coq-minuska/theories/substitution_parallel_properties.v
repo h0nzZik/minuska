@@ -225,6 +225,94 @@ Proof.
     }
 Qed.
 
+Lemma subp_normalize_normalize
+  {Σ : StaticModel}
+  :
+  subp_normalize ∘ subp_normalize
+  = subp_normalize
+.
+Proof.
+  apply functional_extensionality.
+  unfold compose.
+  intros s.
+  unfold subp_normalize.
+  rewrite map_filter_filter.
+  simpl.
+  apply map_filter_ext.
+  intros i x Hsix.
+  split.
+  {
+    intros [H1 H2].
+    simpl.
+    exact H2.
+  }
+  {
+    intros H.
+    split; exact H.
+  }
+Qed.
+
+Lemma subp_normalize_normal
+  {Σ : StaticModel}
+  (s : SubP)
+  :
+  subp_is_normal s ->
+  subp_normalize s = s
+.
+Proof.
+  intros H.
+  unfold subp_is_normal in H.
+  exact H.
+Qed.
+
+Lemma subp_id_compose
+  {Σ : StaticModel}
+  (s : SubP)
+  :
+  subp_is_normal s ->
+  subp_compose subp_id s = s .
+Proof.
+  intros Hnormal.
+  unfold subp_id.
+  unfold subp_compose.
+  rewrite map_filter_empty.
+  rewrite (left_id empty union).
+  ltac1:(rewrite subp_app_empty').
+  rewrite map_fmap_id.
+  rewrite subp_normalize_normal.
+  { reflexivity. }
+  { exact Hnormal. }
+Qed.
+
+Lemma subp_compose_id
+  {Σ : StaticModel}
+  (s : SubP)
+  :
+  subp_is_normal s ->
+  subp_compose s subp_id = s .
+Proof.
+  intros Hnormal.
+  unfold subp_id.
+  unfold subp_compose.
+  rewrite fmap_empty.
+  rewrite (right_id empty union).
+  unfold subp_dom.
+  unfold SubP in *.
+  rewrite map_filter_id.
+  {
+    rewrite subp_normalize_normal.
+    { reflexivity. }
+    { exact Hnormal. }
+  }
+  {
+    intros i x Hsix.
+    rewrite dom_empty.
+    apply not_elem_of_empty.
+  }
+Qed.
+
+
+
 Lemma subp_app_singleton
     {Σ : StaticModel}
     x p
@@ -911,15 +999,16 @@ Lemma subp_compose_assoc
   {Σ : StaticModel}
   (a b c : SubP)
 :
-    subp_is_normal a ->
+(*
+    subp_is_normal a -> *)
     subp_is_normal b ->
-    subp_is_normal c ->
+(*    subp_is_normal c ->*)
     subp_compose (subp_compose a b) c = subp_compose a (subp_compose b c)
 .
 Proof.
-    intros Hnormala.
+(*    intros Hnormala. *)
     intros Hnormalb.
-    intros Hnormalc.
+(*    intros Hnormalc.*)
     unfold SubP in *.
     unfold subp_compose.
     unfold subp_dom.
@@ -1068,6 +1157,7 @@ Proof.
                       { intros pfa pfb. apply proof_irrelevance. }
                     }
                     {
+                      
                       ltac1:(unshelve(eexists)).
                       {
                         unfold subp_is_normal in Hnormalb.
