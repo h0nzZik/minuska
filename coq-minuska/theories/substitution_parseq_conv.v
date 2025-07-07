@@ -1005,6 +1005,72 @@ Proof.
     exact Hxy.
 Qed.
 
+Lemma pair_swap_zip
+    {A B : Type}
+    (la : list A)
+    (lb : list B)
+    :
+    pair_swap <$> (zip la lb) = zip lb la
+.
+Proof.
+    revert lb.
+    induction la; intros lb.
+    {
+        destruct lb.
+        {
+            reflexivity.
+        }
+        {
+            reflexivity.
+        }
+    }
+    {
+        destruct lb.
+        {
+            reflexivity.
+        }
+        {
+            simpl.
+            f_equal.
+            apply IHla.
+        }
+    }
+Qed.
+
+Lemma subp_is_normal_spec
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_is_normal m <->
+    (
+        forall (k : variable) (v : TermOver BuiltinOrVar), m !! k = Some v -> t_over (bov_variable k) <> v
+    )
+.
+Proof.
+    unfold subp_is_normal.
+    unfold subp_normalize.
+    unfold SubP in *.
+    split.
+    {
+        intros H.
+        intros k v Hkv HContra.
+        subst v.
+        rewrite <- H in Hkv.
+        rewrite map_lookup_filter in Hkv.
+        rewrite bind_Some in Hkv.
+        destruct Hkv as [v [H1v H2v]].
+        simpl in H2v.
+        rewrite option_guard_decide in H2v.
+        ltac1:(case_match; simplify_eq/=).
+    }
+    {
+        intros H.
+        apply map_filter_id.
+        simpl.
+        ltac1:(naive_solver).
+    }
+Qed.
+
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
@@ -1083,6 +1149,32 @@ Proof.
         {
             rewrite H'.
             clear H H'.
+            subst e.
+            rewrite pair_swap_zip.
+            rewrite subp_is_normal_spec.
+            intros k v Hkv.
+            unfold rlift in Hkv.
+            rewrite lookup_fmap in Hkv.
+            rewrite fmap_Some in Hkv.
+            destruct Hkv as [v' [H1v' H2v']].
+            subst v.
+            intros HContra.
+            ltac1:(simplify_eq/=).
+            ltac1:(rewrite - elem_of_list_to_map in H1v').
+            {
+                rewrite <- list_fmap_compose.
+                unfold compose.
+                simpl.
+                rewrite fst_zip.
+                apply NoDup_fresh_var_seq.
+                rewrite length_fresh_var_seq.
+                ltac1:(lia).
+            }
+            apply elem_of_zip_l in H1v' as H1.
+            apply elem_of_zip_r in H1v' as H2.
+            apply elem_of_fresh_var_seq in H1.
+            clear H1v'.
+            ltac1:(set_solver).
         }
         {
             rewrite <- list_fmap_compose.
@@ -1098,7 +1190,181 @@ Proof.
         }
       }
     }
-    { admit. }
+    {
+        (* HMMMMM....... *)
+        rewrite elem_of_disjoint.
+        intros x H1x H2x.
+        rewrite elem_of_dom in H1x.
+        rewrite elem_of_dom in H2x.
+        destruct H1x as [y Hy].
+        destruct H2x as [z Hz].
+        unfold rlift in Hz.
+        rewrite lookup_fmap in Hz.
+        unfold subp_compose in Hy.
+        unfold subp_normalize in Hy.
+        rewrite map_lookup_filter in Hy.
+        rewrite lookup_union in Hy.
+        rewrite lookup_fmap in Hy.
+        rewrite map_lookup_filter in Hy.
+        unfold rlift in *.
+        unfold SubP in *.
+        simpl in *.
+        rewrite lookup_fmap in Hy.
+        destruct (m !! x) eqn:Hmx, ((r_inverse (renaming_for m) !! x)) eqn:Himx.
+        {
+            simpl in *.
+        }
+        {
+            simpl in *.
+            rewrite (right_id None union) in Hy.
+            rewrite bind_Some in Hy.
+            destruct Hy as [p [H1p H2p]].
+            rewrite option_guard_decide in H2p.
+            ltac1:(case_match; simplify_eq/=).
+            rewrite option_guard_decide in H1p.
+            ltac1:(case_match; simplify_eq/=).
+            clear H H0.
+            unfold subp_dom in *.
+            unfold SubP in *.
+            rewrite elem_of_dom in n0.
+            rewrite lookup_fmap in n0.
+            rewrite Himx in n0.
+            simpl in n0.
+            clear n0.
+            unfold r_inverse in Himx.
+            rewrite <- not_elem_of_list_to_map in Himx.
+            rewrite <- list_fmap_compose in Himx.
+            unfold compose in Himx.
+            simpl in Himx.
+            rewrite elem_of_list_fmap in Himx.
+            destruct (renaming_for m !! x) eqn:Hrmx;
+                ltac1:(simplify_eq/=).
+            unfold renaming_for in Hrmx.
+            ltac1:(rewrite - elem_of_list_to_map in Hrmx).
+            {
+                rewrite <- list_fmap_compose.
+                unfold compose.
+                simpl.
+                rewrite fst_zip.
+                apply NoDup_elements.
+                rewrite length_fresh_var_seq.
+                ltac1:(lia).
+            }
+            apply elem_of_zip_l in Hrmx as H1.
+            apply elem_of_zip_r in Hrmx as H2.
+            apply elem_of_fresh_var_seq in H2.
+            clear Hrmx.
+            (* apply Himx. clear Himx. *)
+            (* exists () *)
+        }
+        {
+            simpl in *.
+            unfold SubP in *.
+            destruct (m !! v) eqn:Hmv; simpl in *.
+            {
+                rewrite option_guard_decide in Hy.
+                ltac1:(case_match; simplify_eq/=).
+                clear H.
+                unfold r_inverse in Himx.
+                unfold SubP in *.
+                ltac1:(rewrite - elem_of_list_to_map in Himx).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    apply renaming_ok_nodup.
+                    apply renaming_for_ok.
+                }
+                unfold SubP in *.
+                rewrite elem_of_list_fmap in Himx.
+                destruct Himx as [[z1 z2][H1z H2z]].
+                unfold pair_swap in H1z.
+                ltac1:(simplify_eq/=).
+                rewrite elem_of_map_to_list in H2z.
+                rewrite fmap_Some in Hz.
+                destruct Hz as [z' [H1z' H2z']].
+                ltac1:(simplify_eq/=).
+                unfold renaming_for in *.
+                ltac1:(rewrite - elem_of_list_to_map in H1z').
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    rewrite fst_zip.
+                    apply NoDup_elements.
+                    rewrite length_fresh_var_seq.
+                    ltac1:(lia).
+                }
+                ltac1:(rewrite - elem_of_list_to_map in H2z).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    rewrite fst_zip.
+                    apply NoDup_elements.
+                    rewrite length_fresh_var_seq.
+                    ltac1:(lia).
+                }
+                apply elem_of_zip_l in H1z'.
+                apply elem_of_zip_r in H2z.
+                apply elem_of_fresh_var_seq in H2z.
+                ltac1:(set_solver).
+            }
+            {
+                rewrite option_guard_decide in Hy.
+                ltac1:(case_match; simplify_eq/=).
+                clear H.
+                unfold r_inverse in Himx.
+                unfold SubP in *.
+                ltac1:(rewrite - elem_of_list_to_map in Himx).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    apply renaming_ok_nodup.
+                    apply renaming_for_ok.
+                }
+                unfold SubP in *.
+                rewrite elem_of_list_fmap in Himx.
+                destruct Himx as [[z1 z2][H1z H2z]].
+                unfold pair_swap in H1z.
+                ltac1:(simplify_eq/=).
+                rewrite elem_of_map_to_list in H2z.
+                rewrite fmap_Some in Hz.
+                destruct Hz as [z' [H1z' H2z']].
+                ltac1:(simplify_eq/=).
+                unfold renaming_for in *.
+                ltac1:(rewrite - elem_of_list_to_map in H1z').
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    rewrite fst_zip.
+                    apply NoDup_elements.
+                    rewrite length_fresh_var_seq.
+                    ltac1:(lia).
+                }
+                ltac1:(rewrite - elem_of_list_to_map in H2z).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    rewrite fst_zip.
+                    apply NoDup_elements.
+                    rewrite length_fresh_var_seq.
+                    ltac1:(lia).
+                }
+                apply elem_of_zip_l in H1z'.
+                apply elem_of_zip_r in H2z.
+                apply elem_of_fresh_var_seq in H2z.
+                ltac1:(set_solver).
+            }
+        }
+        {
+            simpl in *.
+            inversion Hy.
+        }
+    }
     { admit. }
     { admit. }
     { admit. }

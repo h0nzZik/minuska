@@ -574,14 +574,13 @@ Lemma subp_union_is_compose__sometimes_1
   {Σ : StaticModel}
   (a b : gmap variable (TermOver BuiltinOrVar))
   :
-  dom a ## dom b ->
   (subp_app a <$> b) = b ->
   subp_is_normal a ->
   subp_is_normal b ->
-  a ∪ b = subp_compose a b
+  b ∪ a  = subp_compose a b
 .
 Proof.
-    intros Hdoms HH1 Hna Hnb.
+    intros HH1 Hna Hnb.
     unfold subp_compose.
     ltac1:(rewrite -> HH1 at 1).
     unfold subp_dom.
@@ -598,18 +597,42 @@ Proof.
       (b !! i) eqn:Hbi,
       (a !! i) eqn:Hai.
     {
-      ltac1:(exfalso).
-      rewrite elem_of_disjoint in Hdoms.
-      specialize (Hdoms i).
-      rewrite elem_of_dom in Hdoms.
-      rewrite elem_of_dom in Hdoms.
-      apply Hdoms.
-      exists t0. assumption.
-      exists t. assumption.
+      simpl.
+      rewrite option_guard_False.
+      { 
+        simpl.
+        rewrite option_guard_decide.
+        ltac1:(case_match).
+        {
+          clear H.
+          reflexivity.
+        }
+        {
+          ltac1:(exfalso).
+          clear H.
+          apply dec_stable in n.
+          subst t.
+          unfold subp_is_normal in Hnb.
+          rewrite <- Hnb in Hbi.
+          unfold subp_normalize in Hbi.
+          rewrite map_lookup_filter in Hbi.
+          rewrite bind_Some in Hbi.
+          destruct Hbi as [v [H1v H2v]].
+          simpl in *.
+          rewrite option_guard_decide in H2v.
+          ltac1:(case_match; simplify_eq/=).
+        }
+      }
+      {
+        rewrite elem_of_dom.
+        rewrite Hbi.
+        intros Ht. apply Ht. clear Ht.
+        exists t. reflexivity.
+      }
     }
     {
       simpl.
-      rewrite (left_id None union).
+      rewrite (right_id None union).
       rewrite option_guard_True.
       { reflexivity. }
       {
@@ -629,7 +652,7 @@ Proof.
     }
     {
       rewrite (right_id None union).
-      rewrite (right_id None union).
+      rewrite (left_id None union).
       simpl.
       rewrite option_guard_True.
       {
@@ -668,21 +691,6 @@ Proof.
       reflexivity.
     }
 Qed.
-
-(* 
-Lemma subp_union_is_compose__sometimes
-  {Σ : StaticModel}
-  (a b : gmap variable (TermOver BuiltinOrVar))
-  :
-  (subp_app b <$> a) = a ->
-  a ∪ b = subp_compose a b
-.
-Proof.
-    intros HH.
-    unfold subp_compose.
-    rewrite HH.
-    reflexivity.
-Qed. *)
 
 Lemma subp_compose_correct
     {Σ : StaticModel}
