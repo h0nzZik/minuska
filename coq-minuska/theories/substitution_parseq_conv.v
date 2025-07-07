@@ -825,63 +825,158 @@ Lemma subp_restrict_compose
   (a b : gmap variable (TermOver BuiltinOrVar))
   (vars : gset variable)
 :
-  subp_is_normal a ->
-  subp_is_normal b ->
+  dom a ⊆ vars ->
   subp_restrict vars (subp_compose a b) = subp_compose (subp_restrict vars a) (subp_restrict vars b)
 .
 Proof.
-  intros Hna Hnb.
-  unfold subp_restrict,subp_compose, subp_normalize.
-  unfold SubP in *.
-  rewrite map_filter_filter.
-  rewrite map_filter_filter.
-  simpl.
-  Set Printing Coercions.
-  simpl.
-  apply map_eq.
-  intros i.
-  rewrite map_lookup_filter.
-  rewrite map_lookup_filter.
-  rewrite lookup_union.
-  rewrite lookup_fmap.
-  rewrite map_lookup_filter.
-  unfold subp_dom.
-  unfold SubP.
-  rewrite lookup_union.
-  rewrite lookup_fmap.
-  rewrite map_lookup_filter.
-  rewrite map_lookup_filter.
-  simpl.
-  destruct (a !! i) eqn:Hai,
-    (b !! i) eqn:Hbi.
-  {
-    simpl.
-    rewrite option_guard_False.
-    {
-      simpl.
-      rewrite (right_id None union).
-      rewrite option_guard_False.
-      { admit. }
-      {
-        intros [H1 H2].
-        Unset Printing Notations.
-        rewrite elem_of_dom in H1.
-        rewrite map_lookup_filter in H1.
-        rewrite Hbi in H1.
-        simpl in H1.
-        clear H1.
-        
-        rewrite Hbi in H1. 
-      }
-    }
-    {
-      rewrite elem_of_dom.
-      rewrite Hbi.
-      intros HC. apply HC. clear HC.
-      eexists. reflexivity.
-    }
-  }
+  intros Hva.
 
+
+    unfold subp_restrict at 1.
+    unfold subp_compose at 1.
+    unfold subp_normalize at 1.
+    unfold SubP in *.
+    rewrite map_filter_comm.
+    (* Unset Printing Notations. *)
+    rewrite map_filter_union.
+    {
+        rewrite map_filter_fmap.
+        simpl.
+        unfold subp_compose.
+        unfold subp_normalize.
+        (* f_equal. *)
+        simpl in *.
+        f_equal.
+        rewrite map_filter_filter.
+        unfold subp_restrict at 4.
+        unfold SubP in *.
+        rewrite map_filter_filter.
+        simpl.
+        f_equal.
+        {
+            unfold subp_restrict,subp_dom.
+            unfold SubP in *.
+            apply map_filter_ext.
+            intros i x Haix.
+            split.
+            {
+                intros [Hiv Hib].
+                split>[|assumption].
+                rewrite elem_of_dom.
+                rewrite elem_of_dom in Hib.
+                intros HContra. apply Hib. clear Hib.
+                destruct HContra as [y Hy].
+                rewrite map_lookup_filter in Hy.
+                destruct (b !! i) eqn:Hbi.
+                {
+                    simpl in Hy.
+                    rewrite option_guard_True in Hy.
+                    {
+                        exists t.
+                        reflexivity.
+                    }
+                    {
+                        assumption.
+                    }
+                }
+                {
+                    inversion Hy.
+                }
+            }
+            {
+                intros [Hib Hiv].
+                split>[assumption|].
+                rewrite elem_of_dom.
+                rewrite elem_of_dom in Hib.
+                intros HContra.
+                apply Hib. clear Hib.
+                destruct HContra as [y Hy].
+                rewrite map_lookup_filter.
+                rewrite Hy.
+                simpl.
+                rewrite option_guard_True.
+                {
+                    exists y.
+                    reflexivity.
+                }
+                {
+                    assumption.
+                }
+            }
+        }
+        {
+            apply map_eq.
+            intros i.
+            rewrite lookup_fmap.
+            rewrite map_lookup_filter.
+            rewrite lookup_fmap.
+            unfold subp_restrict.
+            unfold SubP in *.
+            rewrite map_lookup_filter.
+            destruct (b !! i) eqn:Hbi.
+            {
+                simpl in *.
+                rewrite option_guard_decide.
+                destruct (decide (i ∈ vars)).
+                {
+                    simpl.
+                    apply f_equal.
+                    f_equal.
+                    symmetry.
+                    apply map_filter_id.
+                    intros i0 x0 Hai0.
+                    simpl.
+                    apply elem_of_dom_2 in Hai0.
+                    clear -Hai0 Hva.
+                    ltac1:(set_solver).
+                }
+                {
+                    simpl. reflexivity.
+                }
+            }
+            {
+                simpl in *.
+                reflexivity.
+            }
+        }
+    }
+    {
+        apply map_disjoint_spec.
+        intros i x y Hx Hy.
+        rewrite lookup_fmap in Hy.
+        rewrite map_lookup_filter in Hx.
+        simpl in *.
+        destruct (a !! i) eqn:Hai.
+        {
+            destruct (b !! i) eqn:Hbi.
+            {
+                simpl in Hx.
+                rewrite option_guard_False in Hx.
+                {
+                    simpl in Hx.
+                    inversion Hx.
+                }
+                {
+                    intros Hin.
+                    unfold subp_dom in Hin.
+                    unfold SubP in *.
+                    rewrite elem_of_dom in Hin.
+                    rewrite Hbi in Hin.
+                    apply Hin.
+                    exists t0.
+                    reflexivity.
+                }
+            }
+            {
+                simpl in Hy.
+                inversion Hy.
+            }
+        }
+        {
+            simpl in Hx.
+            inversion Hx.
+        }
+    }
 Qed.
 
 
