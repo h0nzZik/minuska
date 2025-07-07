@@ -551,9 +551,9 @@ Definition make_serial
 :=
     let r := renaming_for s in
     let rinv := r_inverse r in
-    (map_to_list (subp_compose s (rlift rinv)))
-    ++
     (map_to_list (rlift r))
+    ++
+    (map_to_list (subp_compose s (rlift rinv)))
 .
 
 Lemma make_parallel_app
@@ -1090,7 +1090,6 @@ Proof.
       {
         rewrite subp_restrict_compose.
         {
-
             rewrite compose_renaming_inverse_restrict.
             {
                 rewrite subp_compose_id.
@@ -1190,182 +1189,38 @@ Proof.
         }
       }
     }
-    {
-        (* HMMMMM....... *)
-        rewrite elem_of_disjoint.
-        intros x H1x H2x.
-        rewrite elem_of_dom in H1x.
-        rewrite elem_of_dom in H2x.
-        destruct H1x as [y Hy].
-        destruct H2x as [z Hz].
-        unfold rlift in Hz.
-        rewrite lookup_fmap in Hz.
-        unfold subp_compose in Hy.
-        unfold subp_normalize in Hy.
-        rewrite map_lookup_filter in Hy.
-        rewrite lookup_union in Hy.
-        rewrite lookup_fmap in Hy.
-        rewrite map_lookup_filter in Hy.
-        unfold rlift in *.
+    { 
+        apply map_eq.
+        intros i.
+        rewrite lookup_fmap.
         unfold SubP in *.
-        simpl in *.
-        rewrite lookup_fmap in Hy.
-        destruct (m !! x) eqn:Hmx, ((r_inverse (renaming_for m) !! x)) eqn:Himx.
+        destruct (rlift (renaming_for m) !! i) eqn:Hi.
         {
-            simpl in *.
-        }
-        {
-            simpl in *.
-            rewrite (right_id None union) in Hy.
-            rewrite bind_Some in Hy.
-            destruct Hy as [p [H1p H2p]].
-            rewrite option_guard_decide in H2p.
-            ltac1:(case_match; simplify_eq/=).
-            rewrite option_guard_decide in H1p.
-            ltac1:(case_match; simplify_eq/=).
-            clear H H0.
-            unfold subp_dom in *.
+            ltac1:(rewrite Hi).
+            simpl.
+            apply f_equal.
+            unfold rlift in Hi.
+            ltac1:(rewrite lookup_fmap in Hi).
+            rewrite fmap_Some in Hi.
+            destruct Hi as [j [H1j H2j]].
+            subst.
+            apply subp_app_almost_closed.
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            rewrite disjoint_singleton_l.
+            intros HContra.
+            unfold subp_dom in HContra.
             unfold SubP in *.
-            rewrite elem_of_dom in n0.
-            rewrite lookup_fmap in n0.
-            rewrite Himx in n0.
-            simpl in n0.
-            clear n0.
-            unfold r_inverse in Himx.
-            rewrite <- not_elem_of_list_to_map in Himx.
-            rewrite <- list_fmap_compose in Himx.
-            unfold compose in Himx.
-            simpl in Himx.
-            rewrite elem_of_list_fmap in Himx.
-            destruct (renaming_for m !! x) eqn:Hrmx;
-                ltac1:(simplify_eq/=).
-            unfold renaming_for in Hrmx.
-            ltac1:(rewrite - elem_of_list_to_map in Hrmx).
-            {
-                rewrite <- list_fmap_compose.
-                unfold compose.
-                simpl.
-                rewrite fst_zip.
-                apply NoDup_elements.
-                rewrite length_fresh_var_seq.
-                ltac1:(lia).
-            }
-            apply elem_of_zip_l in Hrmx as H1.
-            apply elem_of_zip_r in Hrmx as H2.
-            apply elem_of_fresh_var_seq in H2.
-            clear Hrmx.
-            (* apply Himx. clear Himx. *)
-            (* exists () *)
+            (* Need a lemma saying that dom of compose is under union of doms *)
+            (* Search subp_compose dom. *)
+            (* rewrite elem_of_dom in HContra. *)
+            (* destruct HContra as [v Hv]. *)
         }
         {
-            simpl in *.
-            unfold SubP in *.
-            destruct (m !! v) eqn:Hmv; simpl in *.
-            {
-                rewrite option_guard_decide in Hy.
-                ltac1:(case_match; simplify_eq/=).
-                clear H.
-                unfold r_inverse in Himx.
-                unfold SubP in *.
-                ltac1:(rewrite - elem_of_list_to_map in Himx).
-                {
-                    rewrite <- list_fmap_compose.
-                    unfold compose.
-                    simpl.
-                    apply renaming_ok_nodup.
-                    apply renaming_for_ok.
-                }
-                unfold SubP in *.
-                rewrite elem_of_list_fmap in Himx.
-                destruct Himx as [[z1 z2][H1z H2z]].
-                unfold pair_swap in H1z.
-                ltac1:(simplify_eq/=).
-                rewrite elem_of_map_to_list in H2z.
-                rewrite fmap_Some in Hz.
-                destruct Hz as [z' [H1z' H2z']].
-                ltac1:(simplify_eq/=).
-                unfold renaming_for in *.
-                ltac1:(rewrite - elem_of_list_to_map in H1z').
-                {
-                    rewrite <- list_fmap_compose.
-                    unfold compose.
-                    simpl.
-                    rewrite fst_zip.
-                    apply NoDup_elements.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }
-                ltac1:(rewrite - elem_of_list_to_map in H2z).
-                {
-                    rewrite <- list_fmap_compose.
-                    unfold compose.
-                    simpl.
-                    rewrite fst_zip.
-                    apply NoDup_elements.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }
-                apply elem_of_zip_l in H1z'.
-                apply elem_of_zip_r in H2z.
-                apply elem_of_fresh_var_seq in H2z.
-                ltac1:(set_solver).
-            }
-            {
-                rewrite option_guard_decide in Hy.
-                ltac1:(case_match; simplify_eq/=).
-                clear H.
-                unfold r_inverse in Himx.
-                unfold SubP in *.
-                ltac1:(rewrite - elem_of_list_to_map in Himx).
-                {
-                    rewrite <- list_fmap_compose.
-                    unfold compose.
-                    simpl.
-                    apply renaming_ok_nodup.
-                    apply renaming_for_ok.
-                }
-                unfold SubP in *.
-                rewrite elem_of_list_fmap in Himx.
-                destruct Himx as [[z1 z2][H1z H2z]].
-                unfold pair_swap in H1z.
-                ltac1:(simplify_eq/=).
-                rewrite elem_of_map_to_list in H2z.
-                rewrite fmap_Some in Hz.
-                destruct Hz as [z' [H1z' H2z']].
-                ltac1:(simplify_eq/=).
-                unfold renaming_for in *.
-                ltac1:(rewrite - elem_of_list_to_map in H1z').
-                {
-                    rewrite <- list_fmap_compose.
-                    unfold compose.
-                    simpl.
-                    rewrite fst_zip.
-                    apply NoDup_elements.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }
-                ltac1:(rewrite - elem_of_list_to_map in H2z).
-                {
-                    rewrite <- list_fmap_compose.
-                    unfold compose.
-                    simpl.
-                    rewrite fst_zip.
-                    apply NoDup_elements.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }
-                apply elem_of_zip_l in H1z'.
-                apply elem_of_zip_r in H2z.
-                apply elem_of_fresh_var_seq in H2z.
-                ltac1:(set_solver).
-            }
-        }
-        {
-            simpl in *.
-            inversion Hy.
+            ltac1:(rewrite Hi).
+            reflexivity.
         }
     }
-    { admit. }
     { admit. }
     { admit. }
     
