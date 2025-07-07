@@ -110,8 +110,12 @@ Proof.
     }
 Qed.
 
+Definition pair_swap {A B : Type} (x : (A*B)) : B*A :=
+    (snd x, fst x)
+.
+
 Definition r_inverse {Σ : StaticModel} (r : (gmap variable variable)) : (gmap variable variable) :=
-    list_to_map ((fun kv => (kv.2,kv.1))<$>(map_to_list r))
+    list_to_map (pair_swap <$> (map_to_list r))
 .
 
 Lemma renaming_ok_nodup
@@ -122,7 +126,6 @@ Lemma renaming_ok_nodup
     NoDup ([eta snd] <$> map_to_list r)
 .
 Proof.
-    unfold (gmap variable variable) in *.
     intros H.
     apply NoDup_fmap_2_strong.
     {
@@ -152,7 +155,6 @@ Lemma r_inverse_insert
 Proof.
     unfold r_inverse.
     intros HH2 HH3 HH1.
-    unfold (gmap variable variable) in *.
     ltac1:(apply map_eq_iff).
     intros i.
     assert(Htmp2 : NoDup ([eta snd] <$> map_to_list r)).
@@ -232,6 +234,7 @@ Proof.
             rewrite elem_of_list_fmap.
             destruct Heq as [[z1 z2][H1z H2z]].
             simpl in *.
+            unfold pair_swap in *.
             ltac1:(simplify_eq/=).
             exists (z1, z2).
             split>[reflexivity|].
@@ -325,6 +328,7 @@ Proof.
     destruct HH1 as [[a b][HH11 HH12]].
     destruct HH2 as [[c d][HH21 HH22]].
     simpl in *.
+    unfold pair_swap in *.
     ltac1:(simplify_eq/=).
     ltac1:(rewrite elem_of_map_to_list in HH12).
     ltac1:(rewrite elem_of_map_to_list in HH22).
@@ -339,7 +343,6 @@ Lemma r_inverse_inverse {Σ : StaticModel} (r : (gmap variable variable)) :
 Proof.
     intros Hok.
     unfold r_inverse.
-    unfold (gmap variable variable) in *.
     apply map_eq_iff.
     intros i.
     destruct (r !! i) eqn:Hri.
@@ -384,6 +387,7 @@ Proof.
         simpl in *. subst.
         rewrite elem_of_list_fmap in H2.
         destruct H2 as [[c d][H3 H4]].
+        unfold pair_swap in *.
         ltac1:(simpl in *; simplify_eq/=).
         rewrite elem_of_map_to_list in H4.
         ltac1:(rewrite - elem_of_list_to_map in H4).
@@ -638,6 +642,7 @@ Proof.
                 subst t0.
                 rewrite elem_of_list_fmap in H1.
                 destruct H1 as [[z1 z2][H1z H2z]].
+                unfold pair_swap in *.
                 ltac1:(simplify_eq/=).
                 ltac1:(rewrite elem_of_map_to_list in H2z).
                 unfold rlift in Hri.
@@ -665,6 +670,7 @@ Proof.
                     }
                     rewrite elem_of_list_fmap in H1.
                     destruct H1 as [[z'1 z'2][H'1z H'2z]].
+                    unfold pair_swap in *.
                     ltac1:(simplify_eq/=).
                     ltac1:(rewrite elem_of_map_to_list in H'2z).
                     assert(Htmp := Hrok _ _ _ H1ri H'2z).
@@ -740,6 +746,7 @@ Proof.
                 (* rewrite list_lookup_fmap in H1y. *)
                 rewrite elem_of_list_fmap in H1y'.
                 destruct H1y' as [[z1 z2][H1z H2z]].
+                unfold pair_swap in *.
                 ltac1:(simplify_eq/=).
                 rewrite elem_of_map_to_list in H2z.
                 assert(Htmp := Hrok _ _ _ H1y H2z).
@@ -983,6 +990,20 @@ Proof.
     ltac1:(rewrite Hm).
     reflexivity.
 Qed.
+(* 
+#[export]
+Instance subp_is_normal_proper {Σ : StaticModel}: Proper ((≡) ==> flip impl) subp_is_normal.
+Proof.
+    intros a.
+Qed. *)
+
+#[export]
+Instance pair_swap_perm {A B : Type}: Proper ((≡ₚ) ==> (≡ₚ)) (fmap (@pair_swap A B)).
+Proof.
+    intros x y Hxy.
+    apply fmap_Permutation.
+    exact Hxy.
+Qed.
 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
@@ -1043,367 +1064,45 @@ Proof.
         }
       }
       {
-        Search subp_is_normal.
-        admit.
+        unfold r_inverse,renaming_for.
+        lazy_match! goal with
+        | [|- subp_is_normal (rlift (list_to_map (_ <$> (map_to_list (list_to_map ?this)))))] =>
+            remember $this as e
+        end.
+        assert (map_to_list (list_to_map e) ≡ₚ e).
+        {
+            apply map_to_list_to_map.
+            subst e.
+            rewrite fst_zip.
+            apply NoDup_elements.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
+        apply pair_swap_perm in H as H'.
+        apply list_to_map_proper in H'.
+        {
+            rewrite H'.
+            clear H H'.
+        }
+        {
+            rewrite <- list_fmap_compose.
+            unfold compose.
+            unfold pair_swap.
+            simpl.
+            rewrite H.
+            subst e.
+            rewrite snd_zip.
+            apply NoDup_fresh_var_seq.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
       }
     }
     { admit. }
     { admit. }
     { admit. }
     { admit. }
-    rewrite map_union_comm.
-    {
-        (*rewrite subp_union_is_compose__sometimes.
-        {
-            rewrite subp_compose_assoc.
-            admit.
-        }
-        {
-          admit.
-        }
-        *)
-        admit.
-    }
-    {
-        apply map_disjoint_spec.
-        intros i x y Hx Hy.
-        (* This has to be simpler. If [i] is in the domain of the composition, then [i] is in the domain of one of the inputs.
-          Then, if [i] is in [m], then surely it HAS TO BE in the renaming, so this sucks, because this property does not hold.
-        
-         *)
-        Search subp_compose.
-        unfold subp_compose in Hy.
-        unfold subp_normalize in Hy.
-        rewrite map_lookup_filter in Hy.
-        rewrite lookup_union in Hy.
-        rewrite lookup_fmap in Hy.
-        rewrite map_lookup_filter in Hy.
-        unfold rlift in Hx.
-        rewrite lookup_fmap in Hx.
-        simpl in *.
-        unfold rlift in Hy.
-        rewrite lookup_fmap in Hy.
-        destruct (m !! i) eqn:Hmi,
-            (renaming_for m !! i) eqn:Hri,
-            (r_inverse (renaming_for m) !! i) eqn:Hiri
-        .
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-            unfold r_inverse in Hiri.
-            destruct (m !! v0) eqn:Hmv0.
-            {
-              ltac1:(rewrite Hmv0 in Hy).
-              simpl in Hy.
-              rewrite option_guard_decide in Hy.
-              ltac1:(case_match); simpl in *.
-              {
-                clear H. ltac1:(rename n into H).
-                unfold subp_dom in H.
-                ltac1:(rewrite elem_of_dom in H).
-                apply H. clear H.
-                unfold r_inverse.
-                rewrite lookup_fmap.
-                ltac1:(rewrite Hiri).
-                simpl.
-                eexists. reflexivity.
-              } 
-              {
-                clear H. ltac1:(rename n into H).
-                rewrite option_guard_decide in Hy.
-                ltac1:(case_match); simpl in *.
-                {
-                  ltac1:(simplify_eq/=).
-                  clear H0. ltac1:(rename n into H0).
-                  apply dec_stable in H.
-                  unfold subp_dom in H.
-                  ltac1:(rewrite elem_of_dom in H).
-                  destruct H as [z Hz].
-                  rewrite lookup_fmap in Hz.
-                  unfold r_inverse in Hz.
-                  ltac1:(rewrite Hiri in Hz).
-                  ltac1:(simplify_eq/=).
-                  
-                  ltac1:(rewrite - elem_of_list_to_map in Hiri).
-                  {
-                      rewrite <- list_fmap_compose.
-                      unfold compose.
-                      simpl.
-                      apply renaming_ok_nodup.
-                      apply renaming_for_ok.    
-                  }
-                  rewrite elem_of_list_fmap in Hiri.
-                  destruct Hiri as [[z1 z2][HH1 HH2]].
-                  ltac1:(simplify_eq/=).
-                  ltac1:(rewrite elem_of_map_to_list in HH2).
-                  ltac1:(simplify_eq/=).
-                  ltac1:(rewrite Hri in Hx).
-                  simpl in Hx.
-                  ltac1:(simplify_eq/=).
-                  (* Now, HH2 and Hmi are in conflict *)
-                  unfold renaming_for in HH2.
-                  ltac1:(rewrite - elem_of_list_to_map in HH2).
-                  {
-                    rewrite fst_zip.
-                    { apply NoDup_elements. }
-                    {
-                      rewrite length_fresh_var_seq.
-                      ltac1:(lia).
-                    }
-                  }
-                  apply elem_of_zip_l in HH2 as HH3.
-                  apply elem_of_zip_r in HH2 as HH4.
-                  clear HH2.
-                  apply elem_of_fresh_var_seq in HH4.
-                  
-                  unfold renaming_for in Hri.
-                  ltac1:(rewrite - elem_of_list_to_map in Hri).
-                  {
-                      rewrite fst_zip.
-                      { apply NoDup_elements. }
-                      {
-                        rewrite length_fresh_var_seq.
-                        ltac1:(lia).
-                      }
-                  }
-                  apply elem_of_zip_l in Hri as HH5.
-                  clear - HH5 HH4.
-                  ltac1:(set_solver).
-                }
-                {
-                  inversion Hy.
-                }
-              }
-            }
-            {
-              ltac1:(rewrite Hmv0 in Hy).
-              rewrite option_guard_decide in Hy.
-              unfold subp_dom in Hy.
-              unfold SubP in *.
-              ltac1:(case_match).
-              {
-                clear H. ltac1:(rename n into H).
-                ltac1:(rewrite elem_of_dom in H).              
-                simpl in Hy.
-                ltac1:(rewrite Hri in Hx).
-                simpl in Hx.
-                ltac1:(simplify_eq/=).
-                rewrite option_guard_decide in Hy.
-                ltac1:(case_match).
-                {
-                  clear H0. ltac1:(rename n into H0).
-                  ltac1:(simplify_eq/=).
-                  unfold r_inverse in H.
-                  rewrite lookup_fmap in H.
-                  ltac1:(rewrite Hiri in H).
-                  simpl in H.
-                  apply H.
-                  eexists. reflexivity.
-                }
-                {
-                  clear H0.
-                  apply dec_stable in n.
-                  subst t.
-                  inversion Hy.
-                }
-              }
-              {
-                clear H. ltac1:(rename n into H).
-                apply dec_stable in H.
-                ltac1:(rewrite elem_of_dom in H).
-                rewrite lookup_fmap in H.
-                rewrite (left_id None union) in Hy.
-                simpl in Hy.
-                rewrite option_guard_decide in Hy.
-                ltac1:(case_match).
-                {
-                  clear H0. ltac1:(rename n into H0).
-                  ltac1:(simplify_eq/=).
-                  unfold r_inverse in H.
-                  ltac1:(rewrite Hiri in H).
-                  simpl in H.
-                  clear H.
-                  ltac1:(rewrite - elem_of_list_to_map in Hiri).
-                  {
-                      rewrite <- list_fmap_compose.
-                      unfold compose.
-                      simpl.
-                      apply renaming_ok_nodup.
-                      apply renaming_for_ok.
-                  }
-                  rewrite elem_of_list_fmap in Hiri.
-                  destruct Hiri as [[z1 z2][HH1 HH2]].
-                  ltac1:(simplify_eq/=).
-                  ltac1:(rewrite elem_of_map_to_list in HH2).
-                  ltac1:(rewrite Hri in Hx).
-                  simpl in Hx.
-                  ltac1:(simplify_eq/=).
-                  unfold renaming_for in Hri.
-                  unfold renaming_for in HH2.
-                  ltac1:(rewrite - elem_of_list_to_map in Hri).
-                  {
-                      rewrite fst_zip.
-                      { apply NoDup_elements. }
-                      {
-                        rewrite length_fresh_var_seq.
-                        ltac1:(lia).
-                      }
-                  }
-                  ltac1:(rewrite - elem_of_list_to_map in HH2).
-                  {
-                      rewrite fst_zip.
-                      { apply NoDup_elements. }
-                      {
-                        rewrite length_fresh_var_seq.
-                        ltac1:(lia).
-                      }
-                  }
-                  apply elem_of_zip_l in Hri.
-                  apply elem_of_zip_r in HH2.
-                  apply elem_of_fresh_var_seq in HH2.
-                  ltac1:(set_solver).
-                }
-                {
-                  clear H0.
-                  apply dec_stable in n.
-                  inversion Hy.
-                }
-              }
-            }
-          }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-            unfold subp_dom in Hy.
-            unfold SubP in *.
-            rewrite (right_id None union) in Hy.
-            rewrite option_guard_decide in Hy.
-            ltac1:(case_match).
-            {
-              simpl in *.
-              rewrite option_guard_decide in Hy.
-              ltac1:(case_match).
-              {
-                ltac1:(simplify_eq/=).
-                clear H H0.
-                ltac1:(rename n into H; rename n0 into H0).
-                unfold SubP in *.
-                ltac1:(rewrite elem_of_dom in H).
-                rewrite lookup_fmap in H.
-                ltac1:(rewrite Hiri in H).
-                simpl in H.
-                clear H.
-                ltac1:(rewrite Hri in Hx).
-                simpl in Hx.
-                ltac1:(simplify_eq/=).
-                unfold renaming_for in Hri.
-                ltac1:(rewrite - elem_of_list_to_map in Hri).
-                {
-                    rewrite fst_zip.
-                    { apply NoDup_elements. }
-                    {
-                      rewrite length_fresh_var_seq.
-                      ltac1:(lia).
-                    }
-                }
-                rewrite elem_of_list_lookup in Hri.
-                destruct Hri as [j Hj].
-                apply lookup_of_zip_both_2 in Hj.
-                destruct Hj as [H1j H2j].
-                unfold r_inverse in Hiri.
-                unfold (gmap variable variable) in *.
-                unfold SubP in *.
-                apply not_elem_of_list_to_map_2 in Hiri.
-                rewrite <- list_fmap_compose in Hiri.
-                unfold compose in Hiri.
-                simpl in Hiri.
-                rewrite elem_of_list_lookup in Hiri.
-                ltac1:(setoid_rewrite list_lookup_fmap in Hiri).
-                unfold renaming_for in Hiri.
-                apply Hiri. clear Hiri.
-                rewrite elem_of_list_fmap.
-                exists (v, i).
-                simpl.
-                split>[reflexivity|].
-                rewrite elem_of_map_to_list.
-                unfold renaming_for.
-                ltac1:(rewrite - elem_of_list_to_map).
-                {
-                    rewrite fst_zip.
-                    { apply NoDup_elements. }
-                    {
-                      rewrite length_fresh_var_seq.
-                      ltac1:(lia).
-                    }
-                }
-                rewrite elem_of_list_lookup.
-                exists j.
-                apply lookup_of_zip_both.
-                {
-                  exact H1j.
-                }
-                {
-                  apply H2j.
-                }
-                Search zip lookup.
-                apply elem_of_zip_both.
-                ltac1:(rewrite lookup_fmap in Hiri).
-                ltac1:(rewrite <- not_elem_of_list_to_map in Hiri).
-              }
-            }
-
-        }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-        }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-            rewrite (right_id None union) in Hy.
-        }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-        }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-            inversion Hy.
-        }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-        }
-        {
-            simpl in *.
-            ltac1:(rewrite Hiri in Hy).
-            simpl in Hy.
-            inversion Hy.
-        }
-        (* Search map_disjoint. *)
-        (* Search "##ₘ". *)
-        (* rewrite elem_of_disjoint. *)
-    }
-    Search union "comm".
-    (* rewrite union_comm_L. *)
-    rewrite subp_union_is_compose__sometimes.
-    {
-
-    }
-    {
-
-    }
-    (* unfold subp_compose. *)
-    (* rewrite assoc. *)
-    Search make_parallel.
+    
 Qed.
 
 
