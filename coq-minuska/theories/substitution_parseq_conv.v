@@ -592,9 +592,11 @@ Lemma compose_renaming_inverse_restrict
     {Σ : StaticModel}
     (r : RenamingT)
     :
+    renaming_ok r ->
     subp_restrict (dom r) ((subp_compose (rlift (r_inverse r)) (rlift r))) = subp_id
 .
 Proof.
+    intros Hrok.
     unfold subp_restrict,subp_compose,subp_id.
     unfold RenamingT in *.
     unfold SubP in *.
@@ -607,32 +609,171 @@ Proof.
     rewrite lookup_union.
     rewrite lookup_fmap.
     rewrite map_lookup_filter.
+    simpl.
+    unfold subp_dom in *.
+    unfold SubP in *.
     destruct (rlift r !! i) eqn:Hri,
         (rlift (r_inverse r) !! i) eqn:Hnri.
     {
         ltac1:(rewrite Hnri Hri).
         simpl.
-        rewrite bind_None.
-        right.
-        exists (subp_app (rlift (r_inverse r)) t).
-        split>[|reflexivity].
         rewrite option_guard_False.
         {
-            simpl. reflexivity.
+            simpl.
+            rewrite option_guard_False.
+            {
+                reflexivity.
+            }
+            {
+                intros [HH1 HH2].
+                unfold rlift,r_inverse in Hnri.
+                ltac1:(rewrite lookup_fmap in Hnri).
+                rewrite fmap_Some in Hnri.
+                destruct Hnri as [x Hnri].
+                ltac1:(rewrite - elem_of_list_to_map in Hnri).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose. simpl.
+                    apply renaming_ok_nodup.
+                    exact Hrok.
+                }
+                destruct Hnri as [H1 H2].
+                subst t0.
+                rewrite elem_of_list_fmap in H1.
+                destruct H1 as [[z1 z2][H1z H2z]].
+                ltac1:(simplify_eq/=).
+                ltac1:(rewrite elem_of_map_to_list in H2z).
+                unfold rlift in Hri.
+                ltac1:(rewrite lookup_fmap in Hri).
+                rewrite fmap_Some in Hri.
+                destruct Hri as [x [H1ri H2ri]].
+                ltac1:(simplify_eq/=).
+                ltac1:(case_match).
+                {
+                    unfold rlift, r_inverse in H.
+                    unfold SubP in *.
+                    rewrite lookup_fmap in H.
+                    rewrite fmap_Some in H.
+                    destruct H as [x0 [H1 H2]].
+                    ltac1:(simplify_eq/=).
+                    rewrite elem_of_dom in HH1.
+                    destruct HH1 as [y Hy].
+                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite - elem_of_list_to_map in H1).
+                    {
+                        rewrite <- list_fmap_compose.
+                        unfold compose. simpl.
+                        apply renaming_ok_nodup.
+                        exact Hrok.
+                    }
+                    rewrite elem_of_list_fmap in H1.
+                    destruct H1 as [[z'1 z'2][H'1z H'2z]].
+                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite elem_of_map_to_list in H'2z).
+                    assert(Htmp := Hrok _ _ _ Hy H'2z).
+                    subst.
+                    ltac1:(simplify_eq/=).
+                }
+                {
+                    clear HH1.
+                    unfold rlift,r_inverse in H.
+                    unfold SubP in *.
+                    rewrite lookup_fmap in H.
+                    rewrite fmap_None in H.
+                    unfold RenamingT in *.
+                    ltac1:(rewrite <- not_elem_of_list_to_map in H).
+                    rewrite <- list_fmap_compose in H.
+                    unfold compose in H.
+                    simpl in H.
+                    rewrite elem_of_list_fmap in H.
+                    apply H. clear H.
+                    exists (z2, x).
+                    split>[reflexivity|].
+                    rewrite elem_of_map_to_list.
+                    exact H1ri.
+                }
+            }
         }
         {
-            intros HC. apply HC. clear HC.
-            unfold subp_dom.
-            unfold SubP in *.
+            intros HH. apply HH. clear HH.
             rewrite elem_of_dom.
-            exists t.
-            exact Hri.
+            ltac1:(rewrite Hri).
+            eexists. reflexivity.
         }
     }
     {
         ltac1:(rewrite Hnri Hri).
         simpl.
-        reflexivity.
+        rewrite option_guard_False.
+        { reflexivity. }
+        {
+            intros [H1 H2].
+            unfold rlift,r_inverse in Hnri.
+            unfold RenamingT in *.
+            unfold SubP in *.
+            rewrite lookup_fmap in Hnri.
+            rewrite fmap_None in Hnri.
+            rewrite <- not_elem_of_list_to_map in Hnri.
+            rewrite <- list_fmap_compose in Hnri.
+            unfold compose in Hnri.
+            simpl in Hnri.
+            rewrite elem_of_dom in H1.
+            rewrite elem_of_list_fmap in Hnri.
+            destruct H1 as [z Hz].
+            unfold rlift in Hri.
+            rewrite lookup_fmap in Hri.
+            unfold RenamingT in *.
+            unfold SubP in *.
+            ltac1:(rewrite fmap_Some in Hri).
+            destruct Hri as [y [H1y H2y]].
+            ltac1:(simplify_eq/=).
+            destruct (rlift (r_inverse r) !! z) eqn:H2z.
+            {
+                unfold rlift, r_inverse in H2z.
+                unfold RenamingT in *.
+                unfold SubP in *.
+                rewrite lookup_fmap in H2z.
+                rewrite fmap_Some in H2z.
+                destruct H2z as [y [H1y H2y]].
+                ltac1:(simplify_eq/=).
+                ltac1:(rewrite - elem_of_list_to_map in H1y).
+                {
+                    rewrite <- list_fmap_compose.
+                    unfold compose. simpl.
+                    apply renaming_ok_nodup.
+                    exact Hrok.
+                }
+                unfold RenamingT in *.
+                unfold SubP in *.
+                (* rewrite list_lookup_fmap in H1y. *)
+                rewrite elem_of_list_fmap in H1y.
+                destruct H1y as [[z1 z2][H1z H2z]].
+                ltac1:(simplify_eq/=).
+                rewrite elem_of_map_to_list in H2z.
+                assert(Htmp := Hrok _ _ _ Hz H2z).
+                subst i.
+                ltac1:(contradiction H2).
+                reflexivity.
+            }
+            {
+                unfold rlift, r_inverse in H2z.
+                unfold RenamingT in *.
+                unfold SubP in *.
+                rewrite lookup_fmap in H2z.
+                rewrite fmap_None in H2z.
+                rewrite <- not_elem_of_list_to_map in H2z.
+                rewrite <- list_fmap_compose in H2z.
+                unfold compose in H2z.
+                simpl in H2z.
+                rewrite elem_of_list_fmap in H2z.
+                apply H2z. clear H2z.
+                exists (i, z).
+                simpl.
+                split>[reflexivity|].
+                rewrite elem_of_map_to_list.
+                exact Hz.
+            }
+        }
     }
     {
         ltac1:(rewrite Hnri Hri).
@@ -640,14 +781,36 @@ Proof.
         rewrite (right_id None union).
         rewrite option_guard_True.
         {
-            simpl. reflexivity.
+            simpl. 
+            rewrite option_guard_False.
+            { reflexivity. }
+            {
+                unfold subp_dom.
+                unfold SubP in *.
+                rewrite elem_of_dom.
+                (* rewrite Hri. *)
+                intros [HH1 HH2].
+                unfold rlift,r_inverse in Hnri.
+                unfold rlift in Hri.
+                unfold RenamingT, SubP in *.
+                rewrite lookup_fmap in Hnri.
+                rewrite lookup_fmap in Hri.
+                destruct (r !! i) eqn:Hri2.
+                {
+                    simpl in Hri. inversion Hri.
+                }
+                {
+                    destruct HH1 as [? HH1].
+                    inversion HH1.
+                }
+            }
         }
         {
-            unfold subp_dom.
-            unfold SubP in *.
+            unfold RenamingT, SubP in *.
             rewrite elem_of_dom.
+            rewrite Hri.
             intros [? HContra].
-            ltac1:(congruence).
+            inversion HContra.
         }
     }
     {
