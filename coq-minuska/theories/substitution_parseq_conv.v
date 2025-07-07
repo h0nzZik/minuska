@@ -46,9 +46,7 @@ Fixpoint fresh_nth
     end
 .
 
-Definition RenamingT {Σ : StaticModel} : Type := gmap variable variable.
-
-Definition renaming_ok {Σ : StaticModel} (r : RenamingT) : Prop :=
+Definition renaming_ok {Σ : StaticModel} (r : (gmap variable variable)) : Prop :=
     forall k1 k2 v, r !! k1 = Some v -> r !! k2 = Some v -> k1 = k2
 .
 
@@ -65,7 +63,7 @@ Proof.
 Qed.
 
 Lemma renaming_ok_insert_inv {Σ : StaticModel}
-    (r : RenamingT)
+    (r : (gmap variable variable))
     (x y : variable)
 :
     x ∉ dom r ->
@@ -73,7 +71,6 @@ Lemma renaming_ok_insert_inv {Σ : StaticModel}
     renaming_ok r
 .
 Proof.
-    unfold RenamingT in *.
     intros HH1 HH.
     unfold renaming_ok in *.
     intros k1 k2 v H1 H2.
@@ -113,19 +110,19 @@ Proof.
     }
 Qed.
 
-Definition r_inverse {Σ : StaticModel} (r : RenamingT) : RenamingT :=
+Definition r_inverse {Σ : StaticModel} (r : (gmap variable variable)) : (gmap variable variable) :=
     list_to_map ((fun kv => (kv.2,kv.1))<$>(map_to_list r))
 .
 
 Lemma renaming_ok_nodup
     {Σ : StaticModel}
-    (r : RenamingT)
+    (r : (gmap variable variable))
     :
     renaming_ok r ->
     NoDup ([eta snd] <$> map_to_list r)
 .
 Proof.
-    unfold RenamingT in *.
+    unfold (gmap variable variable) in *.
     intros H.
     apply NoDup_fmap_2_strong.
     {
@@ -144,7 +141,7 @@ Qed.
 
 Lemma r_inverse_insert
     {Σ : StaticModel}
-    (r : RenamingT)
+    (r : (gmap variable variable))
     (x y : variable)
     :
     renaming_ok r ->
@@ -155,7 +152,7 @@ Lemma r_inverse_insert
 Proof.
     unfold r_inverse.
     intros HH2 HH3 HH1.
-    unfold RenamingT in *.
+    unfold (gmap variable variable) in *.
     ltac1:(apply map_eq_iff).
     intros i.
     assert(Htmp2 : NoDup ([eta snd] <$> map_to_list r)).
@@ -299,12 +296,11 @@ Proof.
     }
 Qed.
 
-Lemma r_inverse_ok {Σ : StaticModel} (r : RenamingT) :
+Lemma r_inverse_ok {Σ : StaticModel} (r : (gmap variable variable)) :
     renaming_ok r ->
     renaming_ok (r_inverse r)
 .
 Proof.
-    unfold RenamingT in *.
     intros H.
     unfold renaming_ok, r_inverse.
     intros k1 k2 v HH1 HH2.
@@ -336,14 +332,14 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma r_inverse_inverse {Σ : StaticModel} (r : RenamingT) :
+Lemma r_inverse_inverse {Σ : StaticModel} (r : (gmap variable variable)) :
     renaming_ok r ->
     r_inverse (r_inverse r) = r
 .
 Proof.
     intros Hok.
     unfold r_inverse.
-    unfold RenamingT in *.
+    unfold (gmap variable variable) in *.
     apply map_eq_iff.
     intros i.
     destruct (r !! i) eqn:Hri.
@@ -412,7 +408,7 @@ Definition renaming_for
     {Σ : StaticModel}
     (sub_mm : SubP)
     :
-    RenamingT
+    (gmap variable variable)
 :=
     let rhss : list (TermOver BuiltinOrVar) := snd <$> map_to_list sub_mm in
     let avoid : list variable := elements (union_list (vars_of <$> rhss)) in
@@ -536,7 +532,7 @@ Qed.
 
 Definition rlift
     {Σ : StaticModel}
-    (r : RenamingT)
+    (r : (gmap variable variable))
     :
     SubP
 :=
@@ -583,22 +579,23 @@ Qed.
 Definition idren
     {Σ : StaticModel}
     (vs : gset variable)
-    : RenamingT
+    : (gmap variable variable)
 :=
     set_to_map (fun x => (x,x)) vs
 .
 
 Lemma compose_renaming_inverse_restrict
     {Σ : StaticModel}
-    (r : RenamingT)
+    (r : (gmap variable variable))
+    (vars : gset variable)
     :
     renaming_ok r ->
-    subp_restrict (dom r) ((subp_compose (rlift (r_inverse r)) (rlift r))) = subp_id
+    vars ⊆ dom r  ->
+    subp_restrict vars ((subp_compose (rlift (r_inverse r)) (rlift r))) = subp_id
 .
 Proof.
-    intros Hrok.
+    intros Hrok Hvars.
     unfold subp_restrict,subp_compose,subp_id.
-    unfold RenamingT in *.
     unfold SubP in *.
     apply map_eq.
     intros i.
@@ -656,8 +653,8 @@ Proof.
                     rewrite fmap_Some in H.
                     destruct H as [x0 [H1 H2]].
                     ltac1:(simplify_eq/=).
-                    rewrite elem_of_dom in HH1.
-                    destruct HH1 as [y Hy].
+                    (* rewrite elem_of_dom in HH1. *)
+                    (* destruct HH1 as [y Hy]. *)
                     ltac1:(simplify_eq/=).
                     ltac1:(rewrite - elem_of_list_to_map in H1).
                     {
@@ -670,7 +667,7 @@ Proof.
                     destruct H1 as [[z'1 z'2][H'1z H'2z]].
                     ltac1:(simplify_eq/=).
                     ltac1:(rewrite elem_of_map_to_list in H'2z).
-                    assert(Htmp := Hrok _ _ _ Hy H'2z).
+                    assert(Htmp := Hrok _ _ _ H1ri H'2z).
                     subst.
                     ltac1:(simplify_eq/=).
                 }
@@ -680,7 +677,6 @@ Proof.
                     unfold SubP in *.
                     rewrite lookup_fmap in H.
                     rewrite fmap_None in H.
-                    unfold RenamingT in *.
                     ltac1:(rewrite <- not_elem_of_list_to_map in H).
                     rewrite <- list_fmap_compose in H.
                     unfold compose in H.
@@ -709,7 +705,6 @@ Proof.
         {
             intros [H1 H2].
             unfold rlift,r_inverse in Hnri.
-            unfold RenamingT in *.
             unfold SubP in *.
             rewrite lookup_fmap in Hnri.
             rewrite fmap_None in Hnri.
@@ -717,47 +712,43 @@ Proof.
             rewrite <- list_fmap_compose in Hnri.
             unfold compose in Hnri.
             simpl in Hnri.
-            rewrite elem_of_dom in H1.
+            (* rewrite elem_of_dom in H1. *)
             rewrite elem_of_list_fmap in Hnri.
-            destruct H1 as [z Hz].
+            (* destruct H1 as [z Hz]. *)
             unfold rlift in Hri.
             rewrite lookup_fmap in Hri.
-            unfold RenamingT in *.
             unfold SubP in *.
             ltac1:(rewrite fmap_Some in Hri).
             destruct Hri as [y [H1y H2y]].
             ltac1:(simplify_eq/=).
-            destruct (rlift (r_inverse r) !! z) eqn:H2z.
+            destruct (rlift (r_inverse r) !! y) eqn:H2z.
             {
                 unfold rlift, r_inverse in H2z.
-                unfold RenamingT in *.
                 unfold SubP in *.
                 rewrite lookup_fmap in H2z.
                 rewrite fmap_Some in H2z.
-                destruct H2z as [y [H1y H2y]].
+                destruct H2z as [y' [H1y' H2y']].
                 ltac1:(simplify_eq/=).
-                ltac1:(rewrite - elem_of_list_to_map in H1y).
+                ltac1:(rewrite - elem_of_list_to_map in H1y').
                 {
                     rewrite <- list_fmap_compose.
                     unfold compose. simpl.
                     apply renaming_ok_nodup.
                     exact Hrok.
                 }
-                unfold RenamingT in *.
                 unfold SubP in *.
                 (* rewrite list_lookup_fmap in H1y. *)
-                rewrite elem_of_list_fmap in H1y.
-                destruct H1y as [[z1 z2][H1z H2z]].
+                rewrite elem_of_list_fmap in H1y'.
+                destruct H1y' as [[z1 z2][H1z H2z]].
                 ltac1:(simplify_eq/=).
                 rewrite elem_of_map_to_list in H2z.
-                assert(Htmp := Hrok _ _ _ Hz H2z).
+                assert(Htmp := Hrok _ _ _ H1y H2z).
                 subst i.
                 ltac1:(contradiction H2).
                 reflexivity.
             }
             {
                 unfold rlift, r_inverse in H2z.
-                unfold RenamingT in *.
                 unfold SubP in *.
                 rewrite lookup_fmap in H2z.
                 rewrite fmap_None in H2z.
@@ -767,11 +758,11 @@ Proof.
                 simpl in H2z.
                 rewrite elem_of_list_fmap in H2z.
                 apply H2z. clear H2z.
-                exists (i, z).
+                exists (i, y).
                 simpl.
                 split>[reflexivity|].
                 rewrite elem_of_map_to_list.
-                exact Hz.
+                exact H1y.
             }
         }
     }
@@ -787,12 +778,11 @@ Proof.
             {
                 unfold subp_dom.
                 unfold SubP in *.
-                rewrite elem_of_dom.
+                (* rewrite elem_of_dom. *)
                 (* rewrite Hri. *)
                 intros [HH1 HH2].
                 unfold rlift,r_inverse in Hnri.
                 unfold rlift in Hri.
-                unfold RenamingT, SubP in *.
                 rewrite lookup_fmap in Hnri.
                 rewrite lookup_fmap in Hri.
                 destruct (r !! i) eqn:Hri2.
@@ -800,15 +790,15 @@ Proof.
                     simpl in Hri. inversion Hri.
                 }
                 {
-                    destruct HH1 as [? HH1].
-                    inversion HH1.
+                    apply not_elem_of_dom in Hri2.
+                    clear - Hvars HH1 Hri2.
+                    ltac1:(set_solver).
                 }
             }
         }
         {
-            unfold RenamingT, SubP in *.
             rewrite elem_of_dom.
-            rewrite Hri.
+            ltac1:(rewrite Hri).
             intros [? HContra].
             inversion HContra.
         }
@@ -837,14 +827,12 @@ Proof.
     unfold subp_normalize at 1.
     unfold SubP in *.
     rewrite map_filter_comm.
-    (* Unset Printing Notations. *)
     rewrite map_filter_union.
     {
         rewrite map_filter_fmap.
         simpl.
         unfold subp_compose.
         unfold subp_normalize.
-        (* f_equal. *)
         simpl in *.
         f_equal.
         rewrite map_filter_filter.
@@ -979,6 +967,22 @@ Proof.
     }
 Qed.
 
+Lemma subp_is_normal_restrict
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    (vars : gset variable)
+    :
+    subp_is_normal m ->
+    subp_is_normal (subp_restrict vars m)
+.
+Proof.
+    intros Hm.
+    unfold subp_is_normal, subp_restrict, subp_normalize in *.
+    unfold SubP in *.
+    rewrite map_filter_comm.
+    ltac1:(rewrite Hm).
+    reflexivity.
+Qed.
 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
@@ -997,8 +1001,46 @@ Proof.
     { 
       rewrite subp_compose_assoc.
       {
-        
-        admit.
+        rewrite subp_restrict_compose.
+        {
+
+            rewrite compose_renaming_inverse_restrict.
+            {
+                rewrite subp_compose_id.
+                {
+                    unfold subp_restrict.
+                    unfold SubP in *.
+                    apply map_filter_id.
+                    intros i x Hix.
+                    simpl.
+                    apply elem_of_dom.
+                    rewrite Hix.
+                    exists x.
+                    reflexivity.
+                }
+                {
+                    apply subp_is_normal_restrict.
+                    apply Hnorm.
+                }
+            }
+            {
+                apply renaming_for_ok.
+            }
+            {
+                unfold renaming_for.
+                rewrite dom_list_to_map.
+                rewrite fst_zip.
+                rewrite list_to_set_elements.
+                { ltac1:(set_solver). }
+                {
+                    rewrite length_fresh_var_seq.
+                    ltac1:(lia).
+                }
+            }
+        }
+        {
+            ltac1:(set_solver).
+        }
       }
       {
         Search subp_is_normal.
@@ -1271,7 +1313,7 @@ Proof.
                 apply lookup_of_zip_both_2 in Hj.
                 destruct Hj as [H1j H2j].
                 unfold r_inverse in Hiri.
-                unfold RenamingT in *.
+                unfold (gmap variable variable) in *.
                 unfold SubP in *.
                 apply not_elem_of_list_to_map_2 in Hiri.
                 rewrite <- list_fmap_compose in Hiri.
