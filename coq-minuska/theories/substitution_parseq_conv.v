@@ -1242,7 +1242,7 @@ Proof.
     }
 Qed.
 
-Lemma restrict_equiv
+Lemma restrict_equiv_2
     {Σ : StaticModel}
     (a b d : gmap variable (TermOver BuiltinOrVar))
     (vars : gset variable)
@@ -1403,6 +1403,266 @@ Proof.
     }
 Qed.
 
+Lemma restrict_id
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_restrict (dom m) m = m
+.
+Proof.
+    unfold subp_restrict.
+    unfold SubP in *.
+    apply map_filter_id.
+    intros i x Hix.
+    simpl.
+    apply elem_of_dom_2 in Hix.
+    exact Hix.
+Qed.
+
+Lemma subp_app_restrict
+    {Σ : StaticModel}
+    (a : gmap variable (TermOver BuiltinOrVar))
+    (vars : gset variable)
+    (p : TermOver BuiltinOrVar)
+    :
+    vars_of p ⊆ vars ->
+    subp_app (subp_restrict vars a) p = subp_app a p
+.
+Proof.
+    induction p; intros Hvars; simpl in *.
+    {
+        destruct a0; simpl.
+        { reflexivity. }
+        {
+            unfold subp_restrict.
+            unfold SubP in *.
+            rewrite map_lookup_filter.
+            destruct (a !! x) eqn:Hax.
+            {
+                simpl.
+                unfold vars_of in Hvars; simpl in Hvars.
+                unfold vars_of in Hvars; simpl in Hvars.
+                rewrite option_guard_True.
+                { reflexivity. }
+                {
+                    (* apply elem_of_dom_2 in Hax. *)
+                    rewrite singleton_subseteq_l in Hvars.
+                    exact Hvars.
+                }
+            }
+            {
+                simpl.
+                reflexivity.
+            }
+        }
+    }
+    {
+        f_equal.
+        ltac1:(replace (map) with (@fmap list list_fmap) by reflexivity).
+        apply list_fmap_ext.
+        rewrite Forall_forall in H.
+        intros i x Hix.
+        unfold SubP in *.
+        apply elem_of_list_lookup_2 in Hix as Hix'.
+        specialize (H x Hix').
+        rewrite vars_of_t_term in Hvars.
+        apply take_drop_middle in Hix as Hix''.
+        rewrite <- Hix'' in Hvars.
+        rewrite fmap_app in Hvars.
+        rewrite union_list_app in Hvars.
+        rewrite fmap_cons in Hvars.
+        rewrite union_list_cons in Hvars.
+        specialize (H ltac:(set_solver)).
+        apply H.
+    }
+Qed.
+
+Lemma restrict_equiv_1
+    {Σ : StaticModel}
+    (a b c : gmap variable (TermOver BuiltinOrVar))
+    (vars : gset variable)
+    :
+    subp_codom b ⊆ vars ->
+    subp_restrict vars a = subp_restrict vars c ->
+    subp_restrict vars (subp_compose a b) = subp_restrict vars (subp_compose c b)
+.
+Proof.
+    intros H1 H2.
+    unfold subp_compose.
+    unfold subp_normalize.
+    unfold subp_restrict.
+    unfold SubP in *.
+    rewrite map_filter_comm.
+    symmetry.
+    rewrite map_filter_comm.
+    symmetry.
+    f_equal.
+    rewrite map_filter_union.
+    {
+        symmetry.
+        rewrite map_filter_union.
+        {
+            symmetry.
+            f_equal.
+            {
+                rewrite map_filter_filter.
+                rewrite map_filter_filter.
+                simpl.
+                apply map_eq.
+                intros i.
+                rewrite map_lookup_filter.
+                rewrite map_lookup_filter.
+
+                rewrite map_eq_iff in H2.
+                specialize (H2 i).
+                unfold subp_restrict in H2.
+                unfold SubP in *.
+                rewrite map_lookup_filter in H2.
+                rewrite map_lookup_filter in H2.
+                destruct (a !! i) eqn:Hai, (c !! i) eqn:Hci.
+                {
+                    simpl.
+                    rewrite option_guard_decide.
+                    (* rewrite option_guard_decide. *)
+                    unfold subp_dom.
+                    unfold SubP in *.
+                    apply elem_of_dom_2 in Hai as Hai'.
+                    rewrite option_guard_decide.
+                    apply elem_of_dom_2 in Hci as Hci'.
+                    ltac1:(repeat case_match; simplify_eq/=;
+                        try naive_solver).
+                    {
+                        
+                        rewrite option_guard_decide in H2.
+                        rewrite option_guard_decide in H2.
+                        ltac1:(repeat case_match; simplify_eq/=;
+                        try naive_solver).
+                        clear H H0.
+                        ltac1:(naive_solver).
+                    }
+                }
+                {
+                    simpl in *.
+                    rewrite option_guard_decide.
+                    rewrite option_guard_decide in H2.
+                    ltac1:(repeat case_match; simplify_eq/=;
+                        try naive_solver).
+                    {
+                        clear H0 H.
+                        ltac1:(naive_solver).
+                    }
+                }
+                {
+                    simpl in *.
+                    rewrite option_guard_decide.
+                    rewrite option_guard_decide in H2.
+                    ltac1:(repeat case_match; simplify_eq/=;
+                        try naive_solver).
+                    {
+                        clear H0 H.
+                        ltac1:(naive_solver).
+                    }
+                }
+                {
+                    reflexivity.
+                }
+            }
+            {
+                rewrite map_filter_fmap.
+                rewrite map_filter_fmap.
+                simpl.
+                apply map_eq.
+                intros i.
+                rewrite lookup_fmap.
+                rewrite lookup_fmap.
+                rewrite map_lookup_filter.
+                destruct (b !! i) eqn:Hbi; simpl; try reflexivity.
+                rewrite option_guard_decide.
+                destruct (decide ( i ∈ vars)).
+                {
+                    simpl.
+                    apply f_equal.
+                    assert (Hvt: vars_of t ⊆ vars).
+                    {
+                        unfold subp_codom in H1.
+                        unfold SubP in *.
+                        unfold TermOver in *.
+                        assert (Ht: t ∈ ((map_img b):(listset _))).
+                        {
+                            eapply elem_of_map_img_2.
+                            apply Hbi.
+                        }
+                        apply elem_of_elements in Ht.
+                        rewrite elem_of_list_lookup in Ht.
+                        destruct Ht as [j Ht].
+                        apply take_drop_middle in Ht.
+                        rewrite <- Ht in H1.
+                        rewrite fmap_app in H1.
+                        rewrite fmap_cons in H1.
+                        rewrite union_list_app in H1.
+                        rewrite union_list_cons in H1.
+                        clear - H1.
+                        ltac1:(set_solver).
+                    }
+                    rewrite <- subp_app_restrict with (vars := vars).
+                    {
+                        rewrite H2.
+                        rewrite subp_app_restrict.
+                        { reflexivity. }
+                        {
+                            apply Hvt.
+                        }
+                    }
+                    {
+                        apply Hvt.
+                    }
+                }
+                {
+                    reflexivity.
+                }
+            }
+        }
+        {
+            apply map_disjoint_spec.
+            intros i x y Hx Hy.
+            rewrite lookup_fmap in Hy.
+            rewrite map_lookup_filter in Hx.
+            destruct (c !! i) eqn:Hci;
+                simpl in *; ltac1:(simplify_eq/=).
+            { rewrite option_guard_False in Hx.
+            
+                { simpl in Hx.
+                inversion Hx. }      
+                {
+                    intros HH. apply HH. clear HH.
+                    unfold subp_dom.
+                    rewrite fmap_Some in Hy.
+                    destruct Hy as [z [H1z H2z]].
+                    ltac1:(simplify_eq/=).
+                    apply elem_of_dom_2 in H1z.
+                    exact H1z.
+                }
+            }
+        }
+    }
+    {
+        apply map_disjoint_spec.
+        intros i x y Hx Hy.
+        rewrite lookup_fmap in Hy.
+        rewrite map_lookup_filter in Hx.
+        destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi;
+            simpl in *; ltac1:(simplify_eq/=).
+        rewrite option_guard_False in Hx.
+        { inversion Hx. }
+        {
+            intros HH. apply HH. clear HH.
+            unfold subp_dom.
+            apply elem_of_dom_2 in Hbi.
+            exact Hbi.
+        }
+    }
+Qed.
+
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
@@ -1420,6 +1680,12 @@ Proof.
     { 
         rewrite <- subp_compose_assoc.
         {
+            rewrite <- (restrict_id m) at 5.
+            unfold SubP in *.
+            (* apply restrict_equiv. *)
+            rewrite restrict_equiv with (d := subp_id).
+            Search subp_restrict.
+            (* This wont work *)
             rewrite subp_restrict_compose.
             {
                 rewrite compose_renaming_inverse_restrict.
@@ -1462,6 +1728,8 @@ Proof.
                 }
             }
             {
+                
+(*                 
                 rewrite elem_of_subseteq.
                 intros x Hx.
                 rewrite elem_of_dom in Hx.
@@ -1495,7 +1763,7 @@ Proof.
                     destruct H1q' as [p [H1p H2p]].
                     ltac1:(simplify_eq/=).
                     ltac1:(case_match; simplify_eq/=).
-                }
+                } *)
             }
         }
         {
