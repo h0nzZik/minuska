@@ -3,6 +3,7 @@ From Minuska Require Import
     spec
     basic_properties
     termoverbov_subst
+    termoverbov_subst_properties
 .
 
 From Equations Require Export Equations.

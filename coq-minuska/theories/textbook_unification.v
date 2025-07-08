@@ -5,6 +5,9 @@ From Minuska Require Import
     unification_interface
     termoverbov_subst
     substitution_sequential
+    substitution_sequential_properties
+    substitution_parallel
+    substitution_parallel_properties
     textbook_unification_alg
 .
 
