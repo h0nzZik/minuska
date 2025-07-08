@@ -942,9 +942,11 @@ Proof.
             unfold subp_restrict.
             unfold SubP in *.
             rewrite map_lookup_filter.
+            unfold RestrictP in *.
             destruct (b !! i) eqn:Hbi.
             {
                 simpl in *.
+                rewrite option_guard_decide.
                 rewrite option_guard_decide.
                 destruct (decide (i ∈ vars)).
                 {
@@ -1128,6 +1130,16 @@ Proof.
     }
 Qed.
 
+Ltac2 clear_decide () :=
+    repeat (
+        lazy_match! goal with
+        | [h: (decide _ = _) |- _] => clear $h
+        end
+    )
+.
+
+Ltac2 cases () := repeat (ltac1:(case_match); clear_decide ()).
+
 Lemma restrict_more
     {Σ : StaticModel}
     (a b : gmap variable (TermOver BuiltinOrVar))
@@ -1147,24 +1159,21 @@ Proof.
     rewrite map_lookup_filter.
     rewrite map_lookup_filter.
     specialize (H2 i).
+    unfold RestrictP in *.
+    simpl in *.
     rewrite map_lookup_filter in H2.
     rewrite map_lookup_filter in H2.
     destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi.
     {
         simpl.
-        rewrite option_guard_decide.
-        rewrite option_guard_decide.
-        ltac1:(case_match; simplify_eq/=; try reflexivity).
+        simpl in *.
         simpl in H2.
         rewrite option_guard_decide in H2.
         rewrite option_guard_decide in H2.
-        ltac1:(case_match; simplify_eq/=).
-        { reflexivity. }
-        {
-            ltac1:(exfalso).
-            clear H H0.
-            ltac1:(set_solver).
-        }
+        cases (); ltac1:(simplify_eq/=); try reflexivity.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide.
+        cases (); ltac1:(simplify_eq/=; try set_solver).
     }
     {
         simpl.
@@ -1248,10 +1257,9 @@ Proof.
                 ltac1:(repeat case_match; simplify_eq/=; try naive_solver).
             }
             {
-                ltac1:(repeat case_match; simplify_eq/=; try naive_solver).
-                clear H0.
-                destruct a0 as [H2 H3].
-                ltac1:(contradiction n).
+                unfold RestrictP in *.
+                simpl in *.
+                cases (); ltac1:(simplify_eq/=; try set_solver).
             }
         }
     }
@@ -1566,17 +1574,11 @@ Proof.
                     apply elem_of_dom_2 in Hai as Hai'.
                     rewrite option_guard_decide.
                     apply elem_of_dom_2 in Hci as Hci'.
-                    ltac1:(repeat case_match; simplify_eq/=;
-                        try naive_solver).
-                    {
-                        
-                        rewrite option_guard_decide in H2.
-                        rewrite option_guard_decide in H2.
-                        ltac1:(repeat case_match; simplify_eq/=;
-                        try naive_solver).
-                        clear H H0.
-                        ltac1:(naive_solver).
-                    }
+                    unfold RestrictP; simpl.
+                    cases (); ltac1:(simplify_eq/=; try naive_solver).
+                    rewrite option_guard_decide in H2.
+                    rewrite option_guard_decide in H2.
+                    cases (); ltac1:(simplify_eq/=; try naive_solver).
                 }
                 {
                     simpl in *.
@@ -1613,7 +1615,12 @@ Proof.
                 rewrite lookup_fmap.
                 rewrite lookup_fmap.
                 rewrite map_lookup_filter.
+                unfold RestrictP. simpl.
                 destruct (b !! i) eqn:Hbi; simpl; try reflexivity.
+                rewrite option_guard_decide.
+                rewrite map_lookup_filter.
+                rewrite Hbi.
+                simpl.
                 rewrite option_guard_decide.
                 destruct (decide ( i ∈ vars)).
                 {
@@ -1657,6 +1664,9 @@ Proof.
                 {
                     reflexivity.
                 }
+                rewrite map_lookup_filter.
+                rewrite Hbi.
+                reflexivity.
             }
         }
         {
@@ -1699,161 +1709,6 @@ Proof.
         }
     }
 Qed.
-
-(* This is probably useless *)
-Lemma restrict_equiv_1'
-    {Σ : StaticModel}
-    (a b c : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
-    :
-    subp_dom b ## vars ->
-    subp_restrict vars a = subp_restrict vars c ->
-    subp_restrict vars (subp_compose a b) = subp_restrict vars (subp_compose c b)
-.
-Proof.
-    intros H1 H2.
-    unfold subp_compose.
-    unfold subp_normalize.
-    unfold subp_restrict.
-    unfold SubP in *.
-    rewrite map_filter_comm.
-    symmetry.
-    rewrite map_filter_comm.
-    symmetry.
-    f_equal.
-    rewrite map_filter_union.
-    {
-        symmetry.
-        rewrite map_filter_union.
-        {
-            symmetry.
-            f_equal.
-            {
-                rewrite map_filter_filter.
-                rewrite map_filter_filter.
-                simpl.
-                apply map_eq.
-                intros i.
-                rewrite map_lookup_filter.
-                rewrite map_lookup_filter.
-
-                rewrite map_eq_iff in H2.
-                specialize (H2 i).
-                unfold subp_restrict in H2.
-                unfold SubP in *.
-                rewrite map_lookup_filter in H2.
-                rewrite map_lookup_filter in H2.
-                destruct (a !! i) eqn:Hai, (c !! i) eqn:Hci.
-                {
-                    simpl.
-                    rewrite option_guard_decide.
-                    (* rewrite option_guard_decide. *)
-                    unfold subp_dom.
-                    unfold SubP in *.
-                    apply elem_of_dom_2 in Hai as Hai'.
-                    rewrite option_guard_decide.
-                    apply elem_of_dom_2 in Hci as Hci'.
-                    ltac1:(repeat case_match; simplify_eq/=;
-                        try naive_solver).
-                    {
-                        
-                        rewrite option_guard_decide in H2.
-                        rewrite option_guard_decide in H2.
-                        ltac1:(repeat case_match; simplify_eq/=;
-                        try naive_solver).
-                        clear H H0.
-                        ltac1:(naive_solver).
-                    }
-                }
-                {
-                    simpl in *.
-                    rewrite option_guard_decide.
-                    rewrite option_guard_decide in H2.
-                    ltac1:(repeat case_match; simplify_eq/=;
-                        try naive_solver).
-                    {
-                        clear H0 H.
-                        ltac1:(naive_solver).
-                    }
-                }
-                {
-                    simpl in *.
-                    rewrite option_guard_decide.
-                    rewrite option_guard_decide in H2.
-                    ltac1:(repeat case_match; simplify_eq/=;
-                        try naive_solver).
-                    {
-                        clear H0 H.
-                        ltac1:(naive_solver).
-                    }
-                }
-                {
-                    reflexivity.
-                }
-            }
-            {
-                rewrite map_filter_fmap.
-                rewrite map_filter_fmap.
-                simpl.
-                apply map_eq.
-                intros i.
-                rewrite lookup_fmap.
-                rewrite lookup_fmap.
-                rewrite map_lookup_filter.
-                destruct (b !! i) eqn:Hbi; simpl; try reflexivity.
-                rewrite option_guard_decide.
-                destruct (decide ( i ∈ vars)) as [Hin|Hnotin].
-                {
-                    apply elem_of_dom_2 in Hbi.
-                    clear - Hbi Hin H1.
-                    ltac1:(set_solver).
-                }
-                {
-                    reflexivity.
-                }
-            }
-        }
-        {
-            apply map_disjoint_spec.
-            intros i x y Hx Hy.
-            rewrite lookup_fmap in Hy.
-            rewrite map_lookup_filter in Hx.
-            destruct (c !! i) eqn:Hci;
-                simpl in *; ltac1:(simplify_eq/=).
-            { rewrite option_guard_False in Hx.
-            
-                { simpl in Hx.
-                inversion Hx. }      
-                {
-                    intros HH. apply HH. clear HH.
-                    unfold subp_dom.
-                    rewrite fmap_Some in Hy.
-                    destruct Hy as [z [H1z H2z]].
-                    ltac1:(simplify_eq/=).
-                    apply elem_of_dom_2 in H1z.
-                    exact H1z.
-                }
-            }
-        }
-    }
-    {
-        apply map_disjoint_spec.
-        intros i x y Hx Hy.
-        rewrite lookup_fmap in Hy.
-        rewrite map_lookup_filter in Hx.
-        destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi;
-            simpl in *; ltac1:(simplify_eq/=).
-        rewrite option_guard_False in Hx.
-        { inversion Hx. }
-        {
-            intros HH. apply HH. clear HH.
-            unfold subp_dom.
-            apply elem_of_dom_2 in Hbi.
-            exact Hbi.
-        }
-    }
-Qed.
-
 
 Lemma dom_renaming_for
     {Σ : StaticModel}
@@ -2127,6 +1982,112 @@ Proof.
     }
 Qed.
 
+Lemma subp_app_insert_2
+    {Σ : StaticModel}
+    (sub_mm : SubP)
+    (x : variable)
+    (v : TermOver BuiltinOrVar)
+    (φ : TermOver BuiltinOrVar)
+    :
+    vars_of v = ∅ ->
+    subp_app (<[x:=v]>sub_mm) φ
+    = subp_app sub_mm (subs_app [(x,v)] φ)
+.
+Proof.
+    induction φ; intros Hvars; simpl.
+    {
+        destruct a; simpl.
+        {
+            reflexivity.
+        }
+        {
+            destruct (decide (x = x0)).
+            {
+                subst x0.
+                ltac1:(rewrite lookup_insert).
+                {
+                    rewrite subp_app_closed.
+                    reflexivity.
+                    exact Hvars.
+                }
+            }
+            {
+                ltac1:(rewrite lookup_insert_ne).
+                { assumption. }
+                {
+                    ltac1:(repeat case_match).
+                    {
+                        simpl.
+                        ltac1:(rewrite H).
+                        reflexivity.
+                    }
+                    {
+                        simpl.
+                        ltac1:(rewrite H).
+                        reflexivity.
+                    }
+                }
+            }
+        }
+    }
+    {
+        apply f_equal.
+        revert H.
+        induction l; intros H; simpl in *.
+        { reflexivity. }
+        {
+            rewrite Forall_cons_iff in H.
+            destruct H as [H1 H2].
+            rewrite (H1 Hvars).
+            rewrite (IHl H2).
+            reflexivity.
+        }
+    }
+Qed.
+
+Lemma make_parallel_correct
+    {Σ : StaticModel}
+    (sub : SubS)
+    (φ : TermOver BuiltinOrVar)
+    :
+    subt_closed sub ->
+    subp_app (make_parallel sub) φ = subs_app sub φ
+.
+Proof.
+    revert φ.
+    induction sub; intros φ HH; simpl.
+    {
+        ltac1:(rewrite subp_app_empty).
+        reflexivity.
+    }
+    {
+        unfold SubP in *.
+        destruct a; simpl in *.
+        unfold SubP in *.
+        ltac1:(rewrite subp_app_insert_2).
+        {
+            unfold subt_closed in HH.
+            unfold subt_closed.
+            (* intros k v0 H1. *)
+            specialize (HH 0 (v,t) eq_refl).
+            simpl in HH.
+            apply HH.
+        }
+        simpl.
+        ltac1:(rewrite IHsub).
+        {
+            unfold subt_closed in HH.
+            unfold subt_closed.
+            intros k v0 H1.
+            specialize (HH (S k)).
+            simpl in HH.
+            apply HH.
+            assumption.
+        }
+        { reflexivity. }
+    }
+Qed.
+
 Lemma make_parallel_2
     {Σ : StaticModel}
     (s1 s2 : SubS)
@@ -2217,6 +2178,10 @@ Proof.
             {
                 rewrite list_filter_comm.
                 rewrite map_to_list_fmap.
+                ltac1:(rewrite filter_fmap).
+                unfold compose.
+                simpl.
+                (* Search (filter _ (_ <$> _)). *)
                 ltac1:(over).
             }
             {
@@ -2234,7 +2199,13 @@ Proof.
         rewrite list_to_map_app.
         rewrite list_filter_Forall_all.
         {
-            
+            (* unfold prod_map. *)
+            (* simpl. *)
+            rewrite list_to_map_fmap.
+            Search (list_to_map (_ <$> _)).
+            rewrite <- map_to_list_fmap.
+            Search (_ <$> (map_to_list _)).
+            rewrite map_to_list_to_map.
             admit.
         }
         {
@@ -2747,111 +2718,6 @@ Proof.
     }
 Qed.
 
-
-Lemma subp_app_insert_2
-    {Σ : StaticModel}
-    (sub_mm : SubP)
-    (x : variable)
-    (v : TermOver BuiltinOrVar)
-    (φ : TermOver BuiltinOrVar)
-    :
-    vars_of v = ∅ ->
-    subp_app (<[x:=v]>sub_mm) φ
-    = subp_app sub_mm (subs_app [(x,v)] φ)
-.
-Proof.
-    induction φ; intros Hvars; simpl.
-    {
-        destruct a; simpl.
-        {
-            reflexivity.
-        }
-        {
-            destruct (decide (x = x0)).
-            {
-                subst x0.
-                ltac1:(rewrite lookup_insert).
-                {
-                    rewrite subp_app_closed.
-                    reflexivity.
-                    exact Hvars.
-                }
-            }
-            {
-                ltac1:(rewrite lookup_insert_ne).
-                { assumption. }
-                {
-                    ltac1:(repeat case_match).
-                    {
-                        simpl.
-                        ltac1:(rewrite H).
-                        reflexivity.
-                    }
-                    {
-                        simpl.
-                        ltac1:(rewrite H).
-                        reflexivity.
-                    }
-                }
-            }
-        }
-    }
-    {
-        apply f_equal.
-        revert H.
-        induction l; intros H; simpl in *.
-        { reflexivity. }
-        {
-            rewrite Forall_cons_iff in H.
-            destruct H as [H1 H2].
-            rewrite (H1 Hvars).
-            rewrite (IHl H2).
-            reflexivity.
-        }
-    }
-Qed.
-
-
-Lemma make_parallel_correct
-    {Σ : StaticModel}
-    (sub : SubS)
-    (φ : TermOver BuiltinOrVar)
-    :
-    subt_closed sub ->
-    subp_app (make_parallel sub) φ = subs_app sub φ
-.
-Proof.
-    revert φ.
-    induction sub; intros φ HH; simpl.
-    {
-        rewrite subp_app_empty.
-        reflexivity.
-    }
-    {
-        destruct a; simpl in *.
-        rewrite subp_app_insert_2.
-        simpl.
-        rewrite IHsub.
-        { reflexivity. }
-        {
-            unfold subt_closed in HH.
-            unfold subt_closed.
-            intros k v0 H1.
-            specialize (HH (S k)).
-            simpl in HH.
-            apply HH.
-            assumption.
-        }
-        {
-            unfold subt_closed in HH.
-            unfold subt_closed.
-            (* intros k v0 H1. *)
-            specialize (HH 0 (v,t) eq_refl).
-            simpl in HH.
-            apply HH.
-        }
-    }
-Qed.
 
 
 Lemma NoDup_1_renaming_for

@@ -90,10 +90,22 @@ Definition subp_id
   empty
 .
 
+Definition RestrictP {Σ : StaticModel} (to : gset variable) : (prod (variable) (TermOver BuiltinOrVar)) -> Prop :=
+  fun x => x.1 ∈ to
+.
+
+#[export]
+Instance restrictp_decision {Σ : StaticModel} (to : gset variable) : forall x, Decision (RestrictP to x).
+Proof.
+  intros x.
+  unfold RestrictP.
+  apply _.
+Defined.
+
 Definition subp_restrict
   {Σ : StaticModel}
   (to : gset variable)
   : SubP -> SubP
 :=
-  filter (fun x => x.1 ∈ to)
+  filter (RestrictP to)
 .
