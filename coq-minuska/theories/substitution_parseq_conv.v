@@ -596,7 +596,7 @@ Lemma compose_renaming_inverse_restrict
     (vars : gset variable)
     :
     renaming_ok r ->
-    vars ⊆ dom r  ->
+    map_img r ∩ vars ⊆ dom r  ->
     subp_restrict vars ((subp_compose (rlift (r_inverse r)) (rlift r))) = subp_id
 .
 Proof.
@@ -800,8 +800,38 @@ Proof.
                 }
                 {
                     apply not_elem_of_dom in Hri2.
-                    clear - Hvars HH1 Hri2.
-                    ltac1:(set_solver).
+                    clear Hri.
+                    rewrite fmap_Some in Hnri.
+                    destruct Hnri as [q [H1q H2q]].
+                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite - elem_of_list_to_map in H1q).
+                    {
+                        rewrite <- list_fmap_compose.
+                        unfold compose.
+                        simpl.
+                        apply renaming_ok_nodup.
+                        apply Hrok.
+                    }
+                    rewrite elem_of_list_fmap in H1q.
+                    destruct H1q as [[z1 z2][H1z H2z]].
+                    unfold pair_swap in H1z.
+                    simpl in *.
+                    symmetry in H1z.
+                    ltac1:(simplify_eq/=).
+                    rewrite elem_of_map_to_list in H2z.
+                    assert (i ∈ ((@map_img variable variable (gmap variable variable) _ (gset variable) _ _ _ r))).
+                    {
+                        apply elem_of_map_img.
+                        exists q.
+                        exact H2z.
+                    }
+                    clear - Hvars HH1 Hri2 H.
+                    apply Hri2. clear Hri2.
+                    rewrite elem_of_subseteq in Hvars.
+                    specialize (Hvars i).
+                    rewrite elem_of_intersection in Hvars.
+                    specialize (Hvars (conj H HH1)).
+                    exact Hvars.
                 }
             }
         }
@@ -1408,17 +1438,20 @@ Qed.
 Lemma restrict_id
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
+    (vars : gset variable)
     :
-    subp_restrict (dom m) m = m
+    (dom m) ⊆ vars ->
+    subp_restrict vars m = m
 .
 Proof.
+    intros Hdm.
     unfold subp_restrict.
     unfold SubP in *.
     apply map_filter_id.
     intros i x Hix.
     simpl.
     apply elem_of_dom_2 in Hix.
-    exact Hix.
+    ltac1:(set_solver).
 Qed.
 
 Lemma subp_app_restrict
@@ -1851,17 +1884,55 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma renaming_is_normal
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_is_normal (rlift (renaming_for m))
+.
+Proof.
+    rewrite subp_is_normal_spec.
+    intros k v Hkv HContra.
+    subst v.
+    unfold rlift in Hkv.
+    rewrite lookup_fmap in Hkv.
+    destruct (renaming_for m !! k) eqn:Hrmk.
+    {
+        simpl in Hkv.
+        ltac1:(simplify_eq/=).
+        unfold renaming_for in Hrmk.
+        ltac1:(rewrite - elem_of_list_to_map in Hrmk).
+        {
+            rewrite fst_zip.
+            apply NoDup_elements.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
+        apply elem_of_zip_l in Hrmk as H1.
+        apply elem_of_zip_r in Hrmk as H2.
+        clear Hrmk.
+        apply elem_of_fresh_var_seq in H2.
+        ltac1:(set_solver).
+    }
+    {
+        inversion Hkv.
+    }
+Qed.
+
+
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
     :
-    (* assuming closed subistutions *)
-    subp_codom m = ∅ ->
+    (* assuming closed subistutions, but that it is useless *)
+    (* subp_codom m = ∅ -> *)
     subp_is_normal m ->
     subp_restrict (dom m) (make_parallel (make_serial m)) = m
 .
 Proof.
-    intros Hnoloop Hnorm.
+    intros 
+        (* Hnoloop  *)
+        Hnorm.
     unfold make_serial.
     rewrite make_parallel_app.
     rewrite make_parallel_map_to_list.
@@ -1872,6 +1943,12 @@ Proof.
         {
             (* rewrite <- (restrict_id m) at 5. *)
             unfold SubP in *.
+            Check restrict_id.
+            rewrite <- (restrict_id m (dom m)) at 5>[|ltac1:(set_solver)].
+            apply restrict_more with (vars := dom m ∪ subp_codom m).
+            { ltac1:(set_solver). }
+            (* Check restrict_more. *)
+            (* Search subp_restrict. *)
             (* erewrite restrict_equiv_1. *)
             (* apply restrict_equiv. *)
             (* Check compose_renaming_inverse_restrict. *)
@@ -1880,7 +1957,8 @@ Proof.
                 rewrite subp_id_compose.
                 {
                     rewrite restrict_id.
-                    reflexivity.
+                    { reflexivity. }
+                    { ltac1:(set_solver). }
                 }
                 {
                     exact Hnorm.
@@ -1918,36 +1996,11 @@ Proof.
             
         }
         {
-            rewrite subp_is_normal_spec.
-            intros k v Hkv HContra.
-            subst v.
-            unfold rlift in Hkv.
-            rewrite lookup_fmap in Hkv.
-            destruct (renaming_for m !! k) eqn:Hrmk.
-            {
-                simpl in Hkv.
-                ltac1:(simplify_eq/=).
-                unfold renaming_for in Hrmk.
-                ltac1:(rewrite - elem_of_list_to_map in Hrmk).
-                {
-                    rewrite fst_zip.
-                    apply NoDup_elements.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }
-                apply elem_of_zip_l in Hrmk as H1.
-                apply elem_of_zip_r in Hrmk as H2.
-                clear Hrmk.
-                apply elem_of_fresh_var_seq in H2.
-                ltac1:(set_solver).
-            }
-            {
-                inversion Hkv.
-            }
+            apply renaming_is_normal.
         }
     }
     {
-        
+
     }
     {
 
