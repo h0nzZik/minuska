@@ -1093,13 +1093,6 @@ Proof.
         apply reflexivity.
     }
 Qed.
-(* 
-Lemma restrict_dom
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
-    :
-    subp_restrict vars a = subp_restrict vars b -> *)
 
 Lemma restrict_more
     {Σ : StaticModel}
@@ -1114,23 +1107,151 @@ Proof.
     intros H1 H2.
     unfold subp_restrict in *.
     unfold SubP in *.
+    rewrite map_eq_iff in H2.
     apply map_eq.
-    (* intros *)
-    Search filter.
+    intros i.
+    rewrite map_lookup_filter.
+    rewrite map_lookup_filter.
+    specialize (H2 i).
+    rewrite map_lookup_filter in H2.
+    rewrite map_lookup_filter in H2.
+    destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi.
+    {
+        simpl.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide.
+        ltac1:(case_match; simplify_eq/=; try reflexivity).
+        simpl in H2.
+        rewrite option_guard_decide in H2.
+        rewrite option_guard_decide in H2.
+        ltac1:(case_match; simplify_eq/=).
+        { reflexivity. }
+        {
+            ltac1:(exfalso).
+            clear H H0.
+            ltac1:(set_solver).
+        }
+    }
+    {
+        simpl.
+        simpl in H2.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide in H2.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        { clear H H0. ltac1:(set_solver). }
+    }
+    {
+        simpl.
+        simpl in H2.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide in H2.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        { clear H H0. ltac1:(set_solver). }
+    }
+    {
+        reflexivity.
+    }
 Qed.
 
+Lemma restrict_filter
+    {Σ : StaticModel}
+    (a b : gmap variable (TermOver BuiltinOrVar))
+    (vars : gset variable)
+    (P : prod variable (TermOver BuiltinOrVar) -> Prop)
+    {EP : forall x, Decision (P x)}
+    :
+    subp_restrict vars a = subp_restrict vars b ->
+    subp_restrict vars (filter P a) = subp_restrict vars (filter P b)
+.
+Proof.
+    intros HH.
+    unfold subp_restrict in *.
+    unfold SubP in *.
+    rewrite map_filter_filter.
+    rewrite map_filter_filter.
+
+    rewrite map_eq_iff in HH.
+    apply map_eq.
+    intros i.
+    rewrite map_lookup_filter.
+    rewrite map_lookup_filter.
+    specialize (HH i).
+    rewrite map_lookup_filter in HH.
+    rewrite map_lookup_filter in HH.
+    destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi.
+    {
+        simpl.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide.
+        ltac1:(case_match; simplify_eq/=; try reflexivity).
+        simpl in HH.
+        rewrite option_guard_decide in HH.
+        rewrite option_guard_decide in HH.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        {
+            ltac1:(exfalso).
+            clear H H0.
+            ltac1:(set_solver).
+        }
+        {
+            ltac1:(exfalso).
+            clear H H0.
+            ltac1:(set_solver).
+        }
+        {
+            ltac1:(exfalso).
+            clear H H0.
+            ltac1:(set_solver).
+        }
+        {
+            (* ltac1:(exfalso). *)
+            clear H H0.
+            apply not_and_or in n.
+            rewrite option_guard_decide in HH.
+            rewrite option_guard_decide in HH.
+            destruct n as [H1|H1].
+            {
+                ltac1:(repeat case_match; simplify_eq/=; try naive_solver).
+            }
+            {
+                ltac1:(repeat case_match; simplify_eq/=; try naive_solver).
+                clear H0.
+                destruct a0 as [H2 H3].
+                ltac1:(contradiction n).
+            }
+        }
+    }
+    {
+        simpl.
+        simpl in HH.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide in HH.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        { clear H H0. ltac1:(set_solver). }
+    }
+    {
+        simpl.
+        simpl in HH.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide in HH.
+        ltac1:(repeat case_match; simplify_eq/=; try reflexivity).
+        { clear H H0. ltac1:(set_solver). }
+    }
+    {
+        reflexivity.
+    }
+Qed.
 
 Lemma restrict_equiv
     {Σ : StaticModel}
-    (a b c d : gmap variable (TermOver BuiltinOrVar))
+    (a b d : gmap variable (TermOver BuiltinOrVar))
     (vars : gset variable)
     :
-    subp_restrict vars a = subp_restrict vars c ->
     subp_restrict vars b = subp_restrict vars d ->
-    subp_restrict vars (subp_compose a b) = subp_restrict vars (subp_compose c d)
+    subp_restrict vars (subp_compose a b) = subp_restrict vars (subp_compose a d)
 .
 Proof.
-    intros H1 H2.
+    intros H2.
     unfold subp_compose.
     unfold subp_normalize.
     unfold subp_restrict.
@@ -1148,15 +1269,97 @@ Proof.
             symmetry.
             f_equal.
             {
-                f_equal.
+                rewrite map_filter_filter.
+                rewrite map_filter_filter.
+                simpl.
+                apply map_eq.
+                intros i.
+                rewrite map_lookup_filter.
+                rewrite map_lookup_filter.
+                destruct (a !! i) eqn:Hai.
+                {
+                    simpl.
+                    rewrite option_guard_decide.
+                    rewrite option_guard_decide.
+                    unfold subp_dom.
+                    unfold SubP in *.
+                    apply elem_of_dom_2 in Hai as Hai'.
+                    rewrite map_eq_iff in H2.
+                    specialize (H2 i).
+                    unfold subp_restrict in H2.
+                    unfold SubP in *.
+                    rewrite map_lookup_filter in H2.
+                    rewrite map_lookup_filter in H2.
+                    destruct (b !! i) eqn:Hbi, (d !! i) eqn:Hdi;
+                        ltac1:(simplify_eq/=).
+                    {
+                        apply elem_of_dom_2 in Hbi as Hbi'.
+                        apply elem_of_dom_2 in Hdi as Hdi'.
+                        ltac1:(repeat case_match; simplify_eq/=;
+                            try naive_solver).
+                        {
+                            clear H0 H3.
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            clear H0 H3.
+                            ltac1:(naive_solver).
+                        }
+                    }
+                    {
+                        apply elem_of_dom_2 in Hbi as Hbi'.
+                        apply not_elem_of_dom_2 in Hdi as Hdi'.
+                        rewrite option_guard_decide in H2.
+                        ltac1:(repeat case_match; simplify_eq/=;
+                            try naive_solver).
+                        {
+                            clear H0 H3.
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            clear H0 H3.
+                            ltac1:(naive_solver).
+                        }
+                    }
+                    {
+                        apply not_elem_of_dom_2 in Hbi as Hbi'.
+                        apply elem_of_dom_2 in Hdi as Hdi'.
+                        rewrite option_guard_decide in H2.
+                        ltac1:(repeat case_match; simplify_eq/=;
+                            try naive_solver).
+                        {
+                            clear H0 H1 H3.
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            clear H0 H1 H3.
+                            ltac1:(naive_solver).
+                        }
+                    }
+                    {
+                        apply not_elem_of_dom_2 in Hbi as Hbi'.
+                        apply not_elem_of_dom_2 in Hdi as Hdi'.
+                        ltac1:(repeat case_match; simplify_eq/=;
+                            try naive_solver).
+                        {
+                            clear H H0 H2 H3.
+                            ltac1:(naive_solver).
+                        }
+                        {
+                            clear H H0 H2 H3.
+                            ltac1:(naive_solver).
+                        }
+                    }
+                }
+                {
+                    reflexivity.
+                }
             }
             {
                 rewrite map_filter_fmap.
                 rewrite map_filter_fmap.
-                simpl.
-                unfold subp_restrict in H2.
-                Set Printing Coercions.
-                rewrite H2.
+                f_equal.
+                apply H2.
             }
         }
         {
@@ -1164,15 +1367,21 @@ Proof.
             intros i x y Hx Hy.
             rewrite lookup_fmap in Hy.
             rewrite map_lookup_filter in Hx.
-            destruct (c !! i) eqn:Hci, (d !! i) eqn:Hdi;
+            destruct (a !! i) eqn:Hai;
                 simpl in *; ltac1:(simplify_eq/=).
-            rewrite option_guard_False in Hx.
-            { inversion Hx. }
-            {
-                intros HH. apply HH. clear HH.
-                unfold subp_dom.
-                apply elem_of_dom_2 in Hdi.
-                exact Hdi.
+            { rewrite option_guard_False in Hx.
+            
+                { simpl in Hx.
+                inversion Hx. }      
+                {
+                    intros HH. apply HH. clear HH.
+                    unfold subp_dom.
+                    rewrite fmap_Some in Hy.
+                    destruct Hy as [z [H1z H2z]].
+                    ltac1:(simplify_eq/=).
+                    apply elem_of_dom_2 in H1z.
+                    exact H1z.
+                }
             }
         }
     }
