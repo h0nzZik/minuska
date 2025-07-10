@@ -1858,55 +1858,27 @@ Next Obligation.
         {
             rewrite make_parallel_correct.
             rewrite make_parallel_correct.
-            {
-                rewrite reverse_involutive.
-                apply Hsound1.
-            }
-            {
-                
-            }
-            Search make_parallel.
+            rewrite reverse_involutive.
+            apply Hsound1.
         }
-        Search make_parallel.
-        rewrite <- subT_to_subTMM_correct in Hsound1.
-        rewrite <- subT_to_subTMM_correct in Hsound1.
-        split.
+        intros s Hs.
+        unfold least_of in Hsound2.
+        ltac1:(ospecialize (Hsound2 u' _)).
         {
-            rewrite fmap_Some in H.
-            destruct H as [ss [H1ss H2ss]].
-            subst.
-            ltac1:(rewrite H1ss in Heq).
-            apply (inj Some) in Heq.
-            subst l.
+            split.
             exact Hsound1.
+            exact I.
         }
-        {
-            intros u' Hu'.
-            unfold least_of in Hsound2.
-            unfold is_unifier_of in Hsound2.
-            Search subs_app t_over.
-            Search unify.
-        }
-        Search subp_app.
+        destruct Hsound2 as [s' Hs'].
+        assert(Hl := helper_lemma_3 _ _ Hs').
+        (* setoid_rewrite Hl in Hs'. *)
+        setoid_rewrite <- reverse_involutive at 2 in Hl.
+        assert (Hc := make_parallel_correct).
+        (* Search to_sequential. *)
+
+        (* rewrite <- make_parallel_correct. *)
+        Search subs_app.
     }
-    ltac1:(rewrite H in Hsound).
-    simpl in Hsound.
-    destruct Hsound as [H1 H2].
-    split.
-    {
-        apply (proj1 H1).
-    }
-    intros u'.
-    specialize (H2 u').
-    intros Hu'.
-    simpl in H2.
-    specialize (H2 (conj Hu' I)).
-    destruct H2 as [rest Hrest].
-    exists rest.
-    intros x.
-    specialize (Hrest x).
-    symmetry.
-    exact Hrest.
 Qed.
 Next Obligation.
     assert(Hsound := unify_sound2 [(t1,t2)] H).
