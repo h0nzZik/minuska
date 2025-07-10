@@ -579,20 +579,6 @@ Definition make_serial
 .
 
 
-(* 
-Lemma make_parallel_map_to_list
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
-    :
-    make_parallel (map_to_list s) = s
-.
-Proof.
-    unfold make_parallel.
-    unfold SubP in *.
-    Search foldr map_to_list.
-    apply list_to_map_to_list.
-Qed. *)
-
 Definition idren
     {Σ : StaticModel}
     (vs : gset variable)
@@ -2116,6 +2102,56 @@ Definition subs_is_normal
     Forall (fun x => t_over (bov_variable x.1) <> x.2) a
 .
 
+Lemma subp_compose_com
+    {Σ : StaticModel}
+    (a b : gmap variable (TermOver BuiltinOrVar))
+:
+    a ##ₘ b ->
+    subp_codom b ## subp_dom a ->
+    subp_codom a ## subp_dom b ->
+    subp_is_normal a ->
+    subp_is_normal b ->
+    subp_compose a b = subp_compose b a
+.
+Proof.
+    intros HH1 HH2 HH3 HH4 HH5.
+    ltac1:(rewrite <- subp_union_is_compose__sometimes_1).
+    {
+        ltac1:(rewrite <- subp_union_is_compose__sometimes_1).
+        {
+            rewrite map_union_comm.
+            {
+                reflexivity.
+            }
+            {
+                symmetry.
+                assumption.
+            }
+        }
+        {
+            apply subp_compose_helper_1.
+            assumption.
+        }
+        {
+            assumption.
+        }
+        {
+            assumption.
+        }
+    }
+    {
+        apply subp_compose_helper_1.
+        unfold subp_dom.
+        assumption.
+    }
+    {
+        assumption.
+    }
+    {
+        assumption.
+    }
+Qed.
+
 Lemma make_parallel0_compose
     {Σ : StaticModel}
     (init : gmap variable (TermOver BuiltinOrVar))
@@ -2166,68 +2202,49 @@ Proof.
                 ltac1:(rewrite <- subp_compose_assoc).
                 {
                     f_equal.
-                    ltac1:(rewrite <- subp_union_is_compose__sometimes_1).
+                    apply subp_compose_com.
                     {
-                        ltac1:(rewrite <- subp_union_is_compose__sometimes_1).
+                        clear - HH3.
+                        destruct a as [a b].
+                        ltac1:(rewrite list_to_map_cons in HH3).
+                        rewrite map_disjoint_insert_r in HH3.
+                        simpl.
+                        destruct HH3 as [HH3' HH3].
+                        rewrite map_disjoint_spec.
+                        intros i x y Hx Hy.
+                        unfold SubP in *.
+                        destruct (decide (a = i)).
                         {
-                            rewrite map_union_comm.
-                            {
-                                reflexivity.
-                            }
-                            {
-                                clear - HH3.
-                                destruct a as [a b].
-                                ltac1:(rewrite list_to_map_cons in HH3).
-                                rewrite map_disjoint_insert_r in HH3.
-                                simpl.
-                                destruct HH3 as [HH3' HH3].
-                                rewrite map_disjoint_spec.
-                                intros i x y Hx Hy.
-                                unfold SubP in *.
-                                destruct (decide (a = i)).
-                                {
-                                    subst.
-                                    ltac1:(simplify_eq/=).
-                                }
-                                {
-                                    rewrite lookup_singleton_ne in Hy.
-                                    { inversion Hy. }
-                                    { ltac1:(congruence). }
-                                }
-                            }
+                            subst.
+                            ltac1:(simplify_eq/=).
                         }
                         {
-                            rewrite map_fmap_singleton.
-                            rewrite subp_app_almost_closed.
-                            { reflexivity. }
-                            { 
-                                clear - HH2.                    
-                                rewrite fmap_cons in HH2.
-                                rewrite fmap_cons in HH2.
-                                rewrite union_list_cons in HH2.
-                                ltac1:(set_solver).
-                            }
-                        }
-                        {
-                            exact Hni.
-                        }
-                        {
-                            exact Hna.
+                            ltac1:(rewrite lookup_singleton_ne in Hx).
+                            { ltac1:(congruence). }
+                            { inversion Hx. }
                         }
                     }
                     {
-                        apply subp_compose_helper_1.
-                        unfold subp_dom.
-                        ltac1:(rewrite dom_singleton).
                         clear - HH1.
+                        unfold subp_dom, subp_codom, SubP in *.
+                        rewrite dom_singleton_L.
                         rewrite fmap_cons in HH1.
                         ltac1:(set_solver).
                     }
                     {
-                        exact Hna.
+                        unfold subp_dom, subp_codom, SubP in *.
+                        rewrite map_img_singleton.
+                        clear - HH2.
+                        rewrite fmap_cons in HH2.
+                        rewrite fmap_cons in HH2.
+                        rewrite union_list_cons in HH2.
+                        ltac1:(set_solver).
                     }
                     {
-                        exact Hni.
+                        assumption.
+                    }
+                    {
+                        assumption.
                     }
                 }
                 {
@@ -2279,21 +2296,217 @@ Definition make_parallel
     make_parallel0 ∅ sub
 .
 
-Lemma make_parallel_app
+Lemma subp_is_normal_normalize
     {Σ : StaticModel}
-    (s1 s2 : SubS)
+    a
     :
-    make_parallel (s1 ++ s2) = make_parallel s1 ∪ make_parallel s2
+    subp_is_normal (subp_normalize a).
+Proof.
+    unfold subp_is_normal.
+    unfold subp_normalize.
+    rewrite map_filter_id.
+    { reflexivity. }
+    {
+        intros i x Hx Hc.
+        simpl in *.
+        subst x.
+        rewrite map_lookup_filter in Hx.
+        rewrite bind_Some in Hx.
+        destruct Hx as [y [H1y H2y]].
+        rewrite option_guard_decide in H2y.
+        cases (); ltac1:(simplify_eq/=).
+    }
+Qed.
+
+Lemma make_parallel0_normal
+    {Σ : StaticModel}
+    init
+    (sub : list (variable*(TermOver BuiltinOrVar))%type)
+    :
+    subp_is_normal init ->
+    subp_is_normal (make_parallel0 init sub)
 .
 Proof.
+    destruct sub; intros Hni.
+    {
+        simpl. exact Hni.
+    }
+    {
+        simpl.
+        unfold subp_compose.
+        apply subp_is_normal_normalize.
+    }
+Qed.
+
+Lemma make_parallel_normal
+    {Σ : StaticModel}
+    (sub : list (variable*(TermOver BuiltinOrVar))%type)
+    :
+    subp_is_normal (make_parallel sub)
+.
+Proof.
+    apply make_parallel0_normal.
+    unfold subp_is_normal.
+    unfold subp_normalize.
+    rewrite map_filter_empty.
+    reflexivity.
+Qed.
+
+Lemma map_img_subp_compose
+    {Σ : StaticModel}
+    (a b : gmap variable (TermOver BuiltinOrVar))
+:
+    map_img (subp_compose a b) ⊆ @map_img _ _ _ _ (listset (TermOver BuiltinOrVar)) _ _ _  a ∪ (map_img (subp_app a <$> b))
+.
+Proof.
+    unfold subp_compose.
+    unfold subp_normalize.
+    eapply transitivity.
+    {
+        apply map_img_filter_subseteq.
+    }
+    {
+        eapply transitivity.
+        {
+            apply map_img_union_subseteq.
+        }
+        {
+            apply union_mono.
+            {
+                apply map_img_filter_subseteq.
+            }
+            {
+                apply reflexivity.
+            }
+        }
+    }
+Qed.
+
+(* Lemma subp_codom_make_parallel0
+    {Σ : StaticModel}
+    init
+    (s : list (variable*(TermOver BuiltinOrVar))%type)
+:
+    subp_codom (make_parallel0 init s) = subp_codom init ∪ union_list (vars_of <$> s.*2)
+.
+Proof.
+    unfold make_parallel0.
+    unfold subp_codom, SubP in *.
+    revert init.
+    induction s; intros init.
+    {
+        simpl.
+        ltac1:(set_solver).
+    }
+    {
+        simpl.
+        Check map_img_subp_compose.
+        Search map_img subp_compose.
+        ltac1:(rewrite IHs).
+    }
+Qed.
+
+
+Lemma subp_codom_make_parallel
+    {Σ : StaticModel}
+    (s : list (variable*(TermOver BuiltinOrVar))%type)
+:
+    subp_codom (make_parallel s) = union_list (vars_of <$> s.*2)
+.
+Proof.
+    unfold make_parallel.
+Qed. *)
+
+Lemma make_parallel_app
+    {Σ : StaticModel}
+    (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type)
+    :
+    subs_is_normal s1 ->
+    subp_codom (make_parallel s2) ## list_to_set s1.*1 ->
+    subp_dom (make_parallel s2) ## ⋃ (vars_of <$> s1.*2) ->
+    make_parallel s2 ##ₘ list_to_map s1 ->
+    make_parallel (s1 ++ s2) = subp_compose (make_parallel s2) (make_parallel s1)
+.
+Proof.
+    intros HH1 HH2 HH3 HH4.
     unfold make_parallel at 1.
     unfold make_parallel0.
     rewrite foldr_app.
     ltac1:(fold (make_parallel0 ∅ s2)).
-    simpl.
-    unfold SubS,SubP in *.
-    apply list_to_map_app.
+    ltac1:(fold (make_parallel s2)).
+    ltac1:(fold (make_parallel0 (make_parallel s2) s1)).
+    rewrite make_parallel0_compose.
+    {
+        fold (make_parallel s1).
+        reflexivity.
+    }
+    {
+        apply make_parallel_normal.
+    }
+    {
+        exact HH1.
+    }
+    {
+        exact HH2.
+    }
+    {
+        exact HH3.
+    }
+    {
+        exact HH4.
+    }
 Qed.
+
+Lemma make_parallel_perm
+    {Σ : StaticModel}
+    (a b : list (variable*(TermOver BuiltinOrVar))%type)
+    init
+    :
+    a ≡ₚ b ->
+    make_parallel0 init a = make_parallel0 init b
+.
+Proof.
+    intros Hp.
+    revert init.
+    induction Hp; intros init.
+    {
+        simpl. reflexivity.
+    }
+    {
+        simpl.
+        rewrite IHHp.
+        reflexivity.
+    }
+    {
+        simpl.
+    }
+Qed.
+
+
+Lemma make_parallel_map_to_list
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    :
+    make_parallel (map_to_list s) = s
+.
+Proof.
+    unfold make_parallel.
+    unfold SubP in *.
+    unfold make_parallel0.
+    ltac1:(induction s using map_ind).
+    {
+        rewrite map_to_list_empty.
+        simpl.
+        reflexivity.
+    }
+    {
+        Check map_to_list_insert.
+    }
+    Search foldr map_to_list.
+    apply list_to_map_to_list.
+Qed.
+
+
 
 (* 
 Lemma make_parallel_correct
@@ -2356,7 +2569,23 @@ Proof.
     intros 
         Hnorm.
     unfold make_serial0.
-    unfold make_parallel.
+    (* unfold make_parallel. *)
+    rewrite make_parallel_app.
+    {
+
+    }
+    {
+
+    }
+    {
+
+    }
+    {
+
+    }
+    {
+
+    }
     rewrite foldr_app.
 (*     
     rewrite make_parallel_map_to_list.
