@@ -387,3 +387,55 @@ Proof.
         }
     }
 Qed.
+
+
+(* Compute SubS. *)
+Definition subt_dom {Σ : StaticModel} (s : list (variable * @TermOver' symbol BuiltinOrVar)) : gset variable :=
+    list_to_set (s.*1)
+.
+
+Definition subt_codom {Σ : StaticModel} (s : list (variable * @TermOver' symbol BuiltinOrVar)) : gset variable :=
+    union_list (vars_of <$> s.*2)
+.
+
+
+Lemma vars_of_subs_app
+    {Σ : StaticModel}
+    a
+    (q : TermOver BuiltinOrVar)
+    :
+    vars_of (subs_app a q) ⊆ subt_codom a ∪ vars_of q
+.
+Proof.
+    revert q.
+    induction a; intros q.
+    {
+        simpl.
+        ltac1:(set_solver).
+    }
+    {
+        simpl.
+        destruct a.
+        rewrite IHa.
+        unfold subt_codom.
+        rewrite fmap_cons.
+        rewrite fmap_cons.
+        simpl.
+        destruct (decide (v ∈ vars_of q)) as [Hin|Hnotin].
+        {
+            assert (Htmp := vars_of_TermOverBoV_subst q t v Hin).
+            rewrite Htmp.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite subst_notin2.
+            {
+                ltac1:(set_solver).
+            }
+            {
+                exact Hnotin.
+            }
+        }
+    }
+Qed.
+

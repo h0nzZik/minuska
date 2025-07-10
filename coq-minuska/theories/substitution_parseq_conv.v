@@ -2047,16 +2047,6 @@ Proof.
         }
     }
 Qed.
-(* Compute SubS. *)
-Definition subt_dom {Σ : StaticModel} (s : list (variable * @TermOver' symbol BuiltinOrVar)) : gset variable :=
-    list_to_set (s.*1)
-.
-
-Definition subt_codom {Σ : StaticModel} (s : list (variable * @TermOver' symbol BuiltinOrVar)) : gset variable :=
-    union_list (vars_of <$> s.*2)
-.
-
-
 
 Definition make_parallel0
     {Σ : StaticModel}
@@ -3101,6 +3091,68 @@ Proof.
         exact Him.
     }
 Qed.
+
+
+Lemma make_parallel_correct
+    {Σ : StaticModel}
+    (sub : SubS)
+    (φ : TermOver BuiltinOrVar)
+    :
+    subt_dom sub ## subt_codom sub ->
+    subp_app (make_parallel sub) φ = subs_app (reverse sub) φ
+.
+Proof.
+    revert φ.
+    induction sub; intros φ HH; simpl.
+    {
+        ltac1:(rewrite subp_app_empty).
+        reflexivity.
+    }
+    {
+        unfold SubP in *.
+        destruct a; simpl in *.
+        unfold SubP in *.
+        rewrite subp_compose_correct.
+        unfold compose.
+        ltac1:(rewrite subp_app_insert_2).
+        {
+            unfold subp_dom, SubP in *.
+            rewrite dom_empty.
+            ltac1:(set_solver).
+        }
+        ltac1:(rewrite subp_app_empty').
+        simpl.
+        rewrite IHsub.
+        {
+            unfold subt_dom in HH.
+            unfold subt_codom in HH.
+            rewrite fmap_cons in HH.
+            rewrite fmap_cons in HH.
+            rewrite fmap_cons in HH.
+            rewrite union_list_cons in HH.
+            simpl in HH.
+            rewrite reverse_cons.
+            rewrite subs_app_app.
+            simpl.
+            reflexivity.
+        }
+        {
+            unfold subt_dom in HH.
+            rewrite fmap_cons in HH.
+            simpl in HH.
+            unfold subp_dom.
+            unfold make_parallel.
+            (* ltac1:(rewrite dom_list_to_map). *)
+            unfold subt_codom in HH.
+            rewrite fmap_cons in HH.
+            rewrite fmap_cons in HH.
+            rewrite union_list_cons in HH.
+            simpl in HH.
+            clear - HH.
+            ltac1:(set_solver).
+        }
+    }
+Qed.
 (* 
 Lemma make_parallel_map_to_list
     {Σ : StaticModel}
@@ -3605,55 +3657,6 @@ Proof.
 Qed.
 
 
-
-(* 
-Lemma make_parallel_correct
-    {Σ : StaticModel}
-    (sub : SubS)
-    (φ : TermOver BuiltinOrVar)
-    :
-    subt_dom sub ## subt_codom sub ->
-    subp_app (make_parallel sub) φ = subs_app sub φ
-.
-Proof.
-    revert φ.
-    induction sub; intros φ HH; simpl.
-    {
-        ltac1:(rewrite subp_app_empty).
-        reflexivity.
-    }
-    {
-        unfold SubP in *.
-        destruct a; simpl in *.
-        unfold SubP in *.
-        ltac1:(rewrite subp_app_insert_2).
-        {
-            unfold subt_dom in HH.
-            rewrite fmap_cons in HH.
-            simpl in HH.
-            unfold subp_dom.
-            unfold make_parallel.
-            ltac1:(rewrite dom_list_to_map).
-            unfold subt_codom in HH.
-            rewrite fmap_cons in HH.
-            rewrite fmap_cons in HH.
-            rewrite union_list_cons in HH.
-            simpl in HH.
-            clear - HH.
-            ltac1:(set_solver).
-        }
-        simpl.
-        ltac1:(rewrite IHsub).
-        {
-            unfold subt_dom, subt_codom in HH.
-            unfold subt_dom, subt_codom.
-            repeat (rewrite fmap_cons in HH).
-            simpl in HH.
-            ltac1:(set_solver).
-        }
-        { reflexivity. }
-    }
-Qed. *)
 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
@@ -4377,4 +4380,4 @@ Proof.
     {
         Search subt_closed.
     }
-Qed. )
+Qed. *)

@@ -2,13 +2,16 @@ From Minuska Require Import
     prelude
     spec
     basic_properties
+    properties
     unification_interface
     termoverbov_subst
+    termoverbov_subst_properties
     substitution_sequential
     substitution_sequential_properties
     substitution_parallel
     substitution_parallel_properties
     textbook_unification_alg
+    substitution_parseq_conv
 .
 
 Require Import Wellfounded.
@@ -1831,7 +1834,7 @@ Program Definition
 :
     UnificationAlgorithm
 := {|
-    ua_unify := fun t1 t2 => subT_to_subTMM <$> (textbook_unification_alg.unify [(t1,t2)]) ;
+    ua_unify := fun t1 t2 => make_parallel <$> reverse <$> (textbook_unification_alg.unify [(t1,t2)]) ;
 |}.
 Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).
@@ -1840,6 +1843,10 @@ Next Obligation.
         destruct Hsound as [Hsound1 Hsound2].
         simpl in Hsound1.
         destruct Hsound1 as [Hsound1 _].
+        rewrite fmap_Some in H.
+        destruct H as [u' [H1u' H2u']].
+        subst u.
+        Search make_parallel.
         rewrite <- subT_to_subTMM_correct in Hsound1.
         rewrite <- subT_to_subTMM_correct in Hsound1.
         split.
