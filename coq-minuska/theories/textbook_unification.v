@@ -1834,7 +1834,7 @@ Program Definition
 :
     UnificationAlgorithm
 := {|
-    ua_unify := fun t1 t2 => make_parallel <$> reverse <$> (textbook_unification_alg.unify [(t1,t2)]) ;
+    ua_unify := fun t1 t2 => make_parallel ∘ reverse <$> (textbook_unification_alg.unify [(t1,t2)]) ;
 |}.
 Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).
@@ -1845,7 +1845,28 @@ Next Obligation.
         destruct Hsound1 as [Hsound1 _].
         rewrite fmap_Some in H.
         destruct H as [u' [H1u' H2u']].
-        subst u.
+        ltac1:(simplify_eq/=).
+        assert (l = u').
+        {
+            ltac1:(rewrite Heq in H1u').
+            ltac1:(simplify_eq/=).
+            reflexivity.
+        }
+        subst l.
+        unfold compose.
+        split.
+        {
+            rewrite make_parallel_correct.
+            rewrite make_parallel_correct.
+            {
+                rewrite reverse_involutive.
+                apply Hsound1.
+            }
+            {
+                
+            }
+            Search make_parallel.
+        }
         Search make_parallel.
         rewrite <- subT_to_subTMM_correct in Hsound1.
         rewrite <- subT_to_subTMM_correct in Hsound1.

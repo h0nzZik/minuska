@@ -3098,12 +3098,11 @@ Lemma make_parallel_correct
     (sub : SubS)
     (φ : TermOver BuiltinOrVar)
     :
-    subt_dom sub ## subt_codom sub ->
     subp_app (make_parallel sub) φ = subs_app (reverse sub) φ
 .
 Proof.
     revert φ.
-    induction sub; intros φ HH; simpl.
+    induction sub; intros φ; simpl.
     {
         ltac1:(rewrite subp_app_empty).
         reflexivity.
@@ -3124,32 +3123,10 @@ Proof.
         simpl.
         rewrite IHsub.
         {
-            unfold subt_dom in HH.
-            unfold subt_codom in HH.
-            rewrite fmap_cons in HH.
-            rewrite fmap_cons in HH.
-            rewrite fmap_cons in HH.
-            rewrite union_list_cons in HH.
-            simpl in HH.
             rewrite reverse_cons.
             rewrite subs_app_app.
             simpl.
             reflexivity.
-        }
-        {
-            unfold subt_dom in HH.
-            rewrite fmap_cons in HH.
-            simpl in HH.
-            unfold subp_dom.
-            unfold make_parallel.
-            (* ltac1:(rewrite dom_list_to_map). *)
-            unfold subt_codom in HH.
-            rewrite fmap_cons in HH.
-            rewrite fmap_cons in HH.
-            rewrite union_list_cons in HH.
-            simpl in HH.
-            clear - HH.
-            ltac1:(set_solver).
         }
     }
 Qed.
