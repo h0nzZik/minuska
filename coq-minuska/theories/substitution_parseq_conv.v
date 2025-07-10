@@ -2747,25 +2747,227 @@ Qed.
 
 Lemma make_parallel_map_to_list
     {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
+    (init s : gmap variable (TermOver BuiltinOrVar))
+    (* (init : list (variable*(TermOver BuiltinOrVar))%type) *)
     :
-    make_parallel (map_to_list s) = s
+    subp_is_normal init ->
+    (subp_dom s) ## subp_codom init ->
+    (subp_dom s) ## subp_dom init ->
+    make_parallel0 init (map_to_list s) = subp_compose init s
 .
 Proof.
-    unfold make_parallel.
-    unfold SubP in *.
-    unfold make_parallel0.
-    ltac1:(induction s using map_ind).
+    revert init.
+    ltac1:(induction s using map_ind); intros init Hinit Hinit2 Hinit3.
     {
+        unfold make_parallel.
+        unfold SubP in *.
+        unfold make_parallel0.
         rewrite map_to_list_empty.
         simpl.
-        reflexivity.
+        rewrite subp_compose_empty_r.
+        { reflexivity. }
+        { exact Hinit. }
     }
     {
-        Check map_to_list_insert.
+        unfold make_parallel.
+        rewrite make_parallel_perm with (b := (i,x)::map_to_list m).
+        {
+            simpl.
+            rewrite IHs.
+            {
+                unfold subp_compose at 1 3.
+                (* rewrite fmap_insert. *)
+                rewrite <- insert_empty.
+                unfold SubP in *.
+                ltac1:(rewrite subp_app_insert0).
+                {
+                    unfold subp_dom.
+                    unfold SubP in *.
+                    rewrite dom_empty.
+                    ltac1:(set_solver).
+                }
+                {
+                    ltac1:(rewrite subp_app_empty').
+                    unfold compose.
+                    rewrite insert_empty.
+                    rewrite map_filter_singleton.
+                    simpl.
+                    unfold subp_dom, SubP in *.
+                    cases ().
+                    {
+                        rewrite fmap_insert.
+                        unfold subp_normalize.
+                        rewrite map_filter_union.
+                        {
+                            rewrite map_filter_singleton.
+                            simpl.
+                            rewrite map_filter_union.
+                            {
+                                rewrite map_filter_insert.
+                                simpl.
+                                cases ().
+                                {
+                                    rewrite subp_app_almost_closed.
+                                    {
+                                        (* clear. *)
+                                        rewrite dom_insert_L.
+                                        rewrite map_filter_fmap.
+                                        simpl.
+                                        About map_filter_id.
+                                        rewrite (map_filter_id _ init).
+                                        {
+                                            apply subp_normalize_normal in Hinit as Hinit'.
+                                            unfold subp_normalize in Hinit'.
+                                            ltac1:(rewrite Hinit').
+                                            clear Hinit'.
+                                            rewrite insert_union_singleton_l.
+                                            rewrite map_union_assoc.
+                                            rewrite (map_union_comm init).
+                                            {
+                                                
+                                                admit.
+                                            }
+                                            {
+                                                apply map_disjoint_spec.
+                                                intros j y1 y2 Hy1 Hy2.
+                                                destruct (decide (j = i)).
+                                                {
+                                                    subst.
+                                                    rewrite lookup_singleton in Hy2.
+                                                    ltac1:(simplify_eq/=).
+                                                    apply elem_of_dom_2 in Hy1.
+                                                    rewrite dom_insert in Hinit3.
+                                                    clear - Hinit3 Hy1.
+                                                    ltac1:(set_solver).
+                                                }
+                                                {
+                                                    rewrite lookup_singleton_ne in Hy2.
+                                                    { ltac1:(simplify_eq/=). }
+                                                    {
+                                                        ltac1:(congruence).
+                                                    }
+                                                }
+                                            }
+                                            (* Search insert union. *)
+                                            (* Print subp_normalize. *)
+                                            (* fold (@subp_normalize Σ init). *)
+                                            (* Search subp_is_normal. *)
+                                        }
+                                        {
+                                            intros j y Hy Hy'.
+                                            simpl in *.
+                                            apply elem_of_dom_2 in Hy.
+                                            rewrite dom_insert in Hinit3.
+                                            clear - Hy Hy' Hinit3.
+                                            ltac1:(set_solver).
+                                        }
+                                    }
+                                    {
+                                        admit.
+                                    }
+                                    (* 
+                                    {
+                                        reflexivity.
+                                    } *)
+                                    admit.
+                                }
+                                {
+                                    (* apply dec_stable in n0. *)
+                                    admit.
+                                }
+                                {
+                                    admit.
+                                }
+                                {
+                                    admit.
+                                }
+                            }
+                            {
+
+                            }
+                        }
+                        {
+                            
+                        }
+                    }
+                    {
+                        apply dec_stable in n.
+                    }
+                    
+                    Check fmap_insert.
+                    (* rewrite insert_fmap. *)
+                }
+            }
+            {
+                exact Hinit.
+            }
+            {
+                unfold subp_dom, SubP in *.
+                rewrite dom_insert in Hinit2.
+                clear - Hinit2.
+                ltac1:(set_solver).
+            }
+            
+        }
+        {
+            unfold subs_is_normal.
+            rewrite map_to_list_insert.
+            {
+                rewrite Forall_cons.
+                simpl.
+                admit.
+            }
+            { exact H. }
+        }
+        {
+            unfold subs_is_normal.
+            rewrite Forall_cons.
+            simpl.
+            admit.
+        }
+        {
+            rewrite map_to_list_insert.
+            {
+                rewrite fmap_cons.
+                rewrite NoDup_cons.
+                simpl.
+                admit.
+            }
+            { exact H. }
+        }
+        {
+            rewrite fmap_cons.
+            rewrite NoDup_cons.
+            simpl.
+        }
+        {
+            rewrite map_to_list_insert.
+            {
+                rewrite fmap_cons.
+                rewrite fmap_cons.
+                simpl.
+                admit.
+            }
+            { exact H. }
+        }
+        {
+            rewrite fmap_cons.
+            simpl.
+            rewrite map_to_list_insert.
+            {
+                rewrite fmap_cons.
+                rewrite fmap_cons.
+                simpl.
+                admit.
+            }
+            { exact H. }
+        }
+        {
+            rewrite map_to_list_insert.
+            { reflexivity. }
+            { exact H. }
+        }
     }
-    Search foldr map_to_list.
-    apply list_to_map_to_list.
 Qed.
 
 
