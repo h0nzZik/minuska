@@ -2462,23 +2462,285 @@ Lemma make_parallel_perm
     (a b : list (variable*(TermOver BuiltinOrVar))%type)
     init
     :
+    subs_is_normal a ->
+    subs_is_normal b ->
+    NoDup a.*1 ->
+    NoDup b.*1 ->
+    (list_to_set a.*1) ## ⋃ (vars_of <$> b.*2) ->
+    (list_to_set b.*1) ## ⋃ (vars_of <$> a.*2) ->
     a ≡ₚ b ->
     make_parallel0 init a = make_parallel0 init b
 .
 Proof.
-    intros Hp.
-    revert init.
-    induction Hp; intros init.
+    intros Hna Hnb Hda Hdb Hab Hba Hp.
+    revert init Hna Hnb Hda Hdb Hab Hba.
+    induction Hp; intros init Hna Hnb Hda Hdb Hab Hba.
     {
         simpl. reflexivity.
     }
     {
         simpl.
+        unfold subs_is_normal in *.
+        rewrite Forall_cons in Hna.
+        rewrite Forall_cons in Hnb.
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite union_list_cons in Hab.
+        rewrite list_to_set_cons in Hab.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite union_list_cons in Hba.
+        rewrite list_to_set_cons in Hba.
+
         rewrite IHHp.
-        reflexivity.
+        { reflexivity. }
+        {
+            apply Hna.
+        }
+        {
+            apply Hnb.
+        }
+        {
+            rewrite fmap_cons in Hda.
+            rewrite NoDup_cons in Hda.
+            destruct Hda as [Hx Hl].
+            exact Hl.
+        }
+        {
+            rewrite fmap_cons in Hdb.
+            rewrite NoDup_cons in Hdb.
+            destruct Hdb as [Hx Hl'].
+            exact Hl'.
+        }
+        {
+            clear - Hab.
+            ltac1:(set_solver).
+        }
+        {
+            clear - Hba.
+            ltac1:(set_solver).
+        }
     }
     {
         simpl.
+        unfold subs_is_normal in *.
+        rewrite Forall_cons in Hna.
+        rewrite Forall_cons in Hnb.
+        destruct Hna as [H1 H2].
+        destruct Hnb as [H3 H4].
+        rewrite Forall_cons in H2.
+        destruct H2 as [H7 H8].
+        rewrite Forall_cons in H4.
+        destruct H4 as [H9 H10].
+        rewrite fmap_cons in Hda.
+        rewrite fmap_cons in Hda.
+        rewrite NoDup_cons in Hda.
+        rewrite NoDup_cons in Hda.
+        rewrite fmap_cons in Hdb.
+        rewrite fmap_cons in Hdb.
+        rewrite NoDup_cons in Hdb.
+        rewrite NoDup_cons in Hdb.
+        destruct Hda as [H11 [H12 H13]].
+        destruct Hdb as [H14 [H15 H16]].
+        rewrite elem_of_cons in H11.
+        rewrite elem_of_cons in H14.
+        apply not_or_and in H11.
+        apply not_or_and in H14.
+        destruct H11 as [H17 H18].
+        destruct H14 as [H19 H20].
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite fmap_cons in Hab.
+        rewrite union_list_cons in Hab.
+        rewrite union_list_cons in Hab.
+        rewrite list_to_set_cons in Hab.
+        rewrite list_to_set_cons in Hab.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite fmap_cons in Hba.
+        rewrite union_list_cons in Hba.
+        rewrite union_list_cons in Hba.
+        rewrite list_to_set_cons in Hba.
+        rewrite list_to_set_cons in Hba.
+
+        rewrite <- subp_compose_assoc.
+        {
+            rewrite (subp_compose_com {[y.1 := y.2]} {[x.1 := x.2]}).
+            {
+                rewrite subp_compose_assoc.
+                {
+                    reflexivity.
+                }
+                {
+                    rewrite subp_is_normal_spec.
+                    intros k v H5 H6.
+                    ltac1:(simplify_eq/=).
+                    destruct (decide (k = y.1)).
+                    {
+                        subst.
+                        rewrite lookup_singleton in H5.
+                        ltac1:(simplify_eq/=).
+                    }
+                    {
+                        rewrite lookup_singleton_ne in H5.
+                        { inversion H5. }
+                        { ltac1:(congruence). }
+                    }
+                }
+            }
+            {
+                rewrite map_disjoint_spec.
+                intros k v v' H5 H6.
+                destruct x as [x1 x2], y as [y1 y2].
+                simpl in *.
+                destruct (decide(k = y1)), (decide(k = x1));
+                    ltac1:(simplify_eq/=).
+                {
+                    rewrite lookup_singleton in H5.
+                    rewrite lookup_singleton_ne in H6>[|ltac1:(congruence)].
+                    ltac1:(simplify_eq/=).
+                }
+                {
+                    rewrite lookup_singleton in H6.
+                    rewrite lookup_singleton_ne in H5>[|ltac1:(congruence)].
+                    ltac1:(simplify_eq/=).
+                }
+                {
+                    rewrite lookup_singleton_ne in H5>[|ltac1:(congruence)].
+                    rewrite lookup_singleton_ne in H6>[|ltac1:(congruence)].
+                    ltac1:(simplify_eq/=).
+                }
+            }
+            {
+                unfold subp_dom, subp_codom, SubP in *.
+                rewrite map_img_singleton.
+                rewrite dom_singleton.
+                rewrite elements_singleton.
+                simpl.
+                rewrite (right_id empty union).
+                clear - Hab.
+                ltac1:(set_solver).
+            }
+            {
+                unfold subp_dom, subp_codom, SubP in *.
+                rewrite map_img_singleton.
+                rewrite dom_singleton.
+                rewrite elements_singleton.
+                simpl.
+                rewrite (right_id empty union).
+                clear - Hba.
+                ltac1:(set_solver).
+            }
+            {
+                rewrite subp_is_normal_spec.
+                intros k v H1v H2v.
+                subst v.
+                destruct (decide (y.1 = k));
+                    ltac1:(simplify_eq/=).
+                {
+                    rewrite lookup_singleton in H1v.
+                    ltac1:(simplify_eq/=).
+                }
+                {
+                    rewrite lookup_singleton_ne in H1v.
+                    { ltac1:(simplify_eq/=). }
+                    {
+                        ltac1:(congruence).
+                    }
+                }
+            }
+            {
+                rewrite subp_is_normal_spec.
+                intros k v H1v H2v.
+                subst v.
+                destruct (decide (x.1 = k));
+                    ltac1:(simplify_eq/=).
+                {
+                    rewrite lookup_singleton in H1v.
+                    ltac1:(simplify_eq/=).
+                }
+                {
+                    rewrite lookup_singleton_ne in H1v.
+                    { ltac1:(simplify_eq/=). }
+                    {
+                        ltac1:(congruence).
+                    }
+                }
+            }
+        }
+        {
+            rewrite subp_is_normal_spec.
+            intros k v H1v H2v.
+            subst v.
+            destruct (decide (x.1 = k));
+                ltac1:(simplify_eq/=).
+            {
+                rewrite lookup_singleton in H1v.
+                ltac1:(simplify_eq/=).
+            }
+            {
+                rewrite lookup_singleton_ne in H1v.
+                { ltac1:(simplify_eq/=). }
+                {
+                    ltac1:(congruence).
+                }
+            }
+        }
+    }
+    {
+        assert (subs_is_normal l').
+        {
+            unfold subs_is_normal.
+            rewrite Hp2.
+            exact Hnb.
+        }
+        rewrite IHHp1.
+        {
+            rewrite IHHp2.
+            {
+                reflexivity.
+            }
+            { assumption. }
+            { assumption. }
+            {
+                rewrite Hp2.
+                assumption.
+            }
+            {
+                assumption.
+            }
+            {
+                rewrite <- Hp1.
+                exact Hab.
+            }
+            {
+                rewrite <- Hp1.
+                exact Hba.
+            }
+        }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        {
+            rewrite <- Hp1.
+            assumption.
+        }
+        {
+            rewrite Hp2.
+            assumption.
+        }
+        {
+            rewrite Hp2.
+            assumption.
+        }
     }
 Qed.
 
