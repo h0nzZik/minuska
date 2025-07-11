@@ -4575,6 +4575,90 @@ Proof.
 Qed.
 
 
+Lemma subp_dom_inverse {Σ : StaticModel} r:
+    renaming_ok r ->
+    subp_dom (rlift (r_inverse r)) = subp_codom (rlift r)
+.
+Proof.
+    intros Hrok.
+    unfold subp_dom, subp_codom, rlift, r_inverse, SubP in *.
+    rewrite dom_fmap_L.
+    unfold pair_swap.
+    (* Search map_img fmap. *)
+    apply set_eq.
+    intros x.
+    rewrite elem_of_dom.
+    rewrite elem_of_union_list.
+    split.
+    {
+        intros [y Hy].
+        rewrite <- elem_of_list_to_map in Hy.
+        {
+            rewrite elem_of_list_fmap in Hy.
+            destruct Hy as [[z1 z2][H1z H2z]].
+            ltac1:(simplify_eq/=).
+            rewrite elem_of_map_to_list in H2z.
+            exists ({[z2]}).
+            split>[|ltac1:(set_solver)].
+            rewrite elem_of_list_fmap.
+            exists (t_over (bov_variable z2)).
+            split.
+            {
+                reflexivity.
+            }
+            {
+                rewrite elem_of_elements.
+                rewrite elem_of_map_img.
+                exists z1.
+                rewrite lookup_fmap.
+                rewrite H2z.
+                simpl.
+                reflexivity.
+            }
+        }
+        {
+            rewrite <- list_fmap_compose.
+            unfold compose.
+            simpl.
+            apply renaming_ok_nodup.
+            exact Hrok.
+        }
+    }
+    {
+        intros [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        subst.
+        rewrite elem_of_elements in H2y.
+        rewrite elem_of_map_img in H2y.
+        destruct H2y as [i Hi].
+        rewrite lookup_fmap in Hi.
+        rewrite fmap_Some in Hi.
+        destruct Hi as [z [H1z H2z]].
+        subst.
+        unfold vars_of in H2X; simpl in H2X.
+        unfold vars_of in H2X; simpl in H2X.
+        rewrite elem_of_singleton in H2X.
+        subst.
+        exists i.
+        rewrite <- elem_of_list_to_map.
+        {
+            rewrite elem_of_list_fmap.
+            exists (i, z).
+            split>[reflexivity|].
+            rewrite elem_of_map_to_list.
+            exact H1z.
+        }
+        {
+            rewrite <- list_fmap_compose.
+            unfold compose.
+            simpl.
+            apply renaming_ok_nodup.
+            exact Hrok.   
+        }
+    }
+Qed.
+
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (avoid0 : gset variable)
@@ -4824,13 +4908,23 @@ Proof.
     {
         rewrite <- dom_alt.
         assert (Htmp1 := dom_subp_compose_subseteq (rlift (renaming_for avoid0 m)) m).
-        assert (Htmp2: subp_codom (make_parallel (map_to_list (rlift (r_inverse (renaming_for avoid0 m))))) ## ( dom (rlift (renaming_for avoid0 m)) ∪ dom m )).
+        assert (Htmp0 := subp_codom_make_parallel0 ∅ (map_to_list ((rlift (r_inverse (renaming_for avoid0 m)))))).
+        unfold make_parallel.
+        assert (Htmp3: subt_codom (map_to_list (rlift (r_inverse (renaming_for avoid0 m)))) ## dom m).
         {
-            unfold rlift, SubP.
-            rewrite dom_fmap.
-            rewrite dom_renaming_for.
-            unfold subp_dom.
+            clear Htmp0 Htmp1.
+            Search subp_dom r_inverse.
+            admit.
         }
+        unfold subp_codom in Htmp0 at 2.
+        unfold SubP in *.
+        rewrite map_img_empty in Htmp0.
+        rewrite elements_empty in Htmp0.
+        simpl in Htmp0.
+        rewrite (left_id empty union) in Htmp0.
+        unfold rlift in Htmp1 at 2.
+        rewrite dom_fmap in Htmp1.
+        ltac1:(rewrite dom_renaming_for in Htmp1).
         ltac1:(set_solver).
     }
 Qed.
