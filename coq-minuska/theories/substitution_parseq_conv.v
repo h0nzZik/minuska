@@ -564,9 +564,9 @@ Definition make_serial0
 :=
     let r := renaming_for avoid s in
     let rinv := r_inverse r in
-    (map_to_list (subp_compose (rlift r) s))
+    (map_to_list (subp_compose s (rlift rinv)))
     ++
-    (map_to_list (rlift rinv))
+    (map_to_list (rlift r))
 .
 
 Definition make_serial
@@ -1930,6 +1930,27 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma dom_rinverse
+    {Σ : StaticModel}
+    (r : gmap variable variable)
+    :
+    dom ((r_inverse r)) = map_img r
+.
+Proof.
+    unfold subp_dom.
+    (* unfold rlift. *)
+    unfold r_inverse.
+    unfold SubP in *.
+    (* rewrite dom_fmap_L. *)
+    rewrite dom_list_to_map_L.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    simpl.
+    rewrite map_img_alt_L.
+    reflexivity.
+Qed.
+
+
 Lemma map_disjoint_compose_inverse
     {Σ : StaticModel}
     (avoid0 : gset variable)
@@ -2203,6 +2224,70 @@ Proof.
     }
 Qed.
 
+
+Lemma subp_compose_empty_l
+    {Σ : StaticModel}
+    (a : gmap variable (TermOver BuiltinOrVar))
+:
+    subp_is_normal a ->
+    subp_compose ∅ a = a
+.
+Proof.
+    intros Hna.
+    unfold subp_compose.
+    rewrite map_filter_empty.
+    rewrite (left_id empty union).
+    ltac1:(rewrite subp_app_empty').
+    rewrite map_fmap_id.
+    apply Hna.
+Qed.
+
+
+Lemma subp_is_normal_normalize
+    {Σ : StaticModel}
+    a
+    :
+    subp_is_normal (subp_normalize a).
+Proof.
+    unfold subp_is_normal.
+    unfold subp_normalize.
+    rewrite map_filter_id.
+    { reflexivity. }
+    {
+        intros i x Hx Hc.
+        simpl in *.
+        subst x.
+        rewrite map_lookup_filter in Hx.
+        rewrite bind_Some in Hx.
+        destruct Hx as [y [H1y H2y]].
+        rewrite option_guard_decide in H2y.
+        cases (); ltac1:(simplify_eq/=).
+    }
+Qed.
+
+
+Lemma make_parallel0_normal
+    {Σ : StaticModel}
+    init
+    (sub : list (variable*(TermOver BuiltinOrVar))%type)
+    :
+    subp_is_normal init ->
+    subp_is_normal (make_parallel0 init sub)
+.
+Proof.
+    destruct sub; intros Hni.
+    {
+        simpl. exact Hni.
+    }
+    {
+        simpl.
+        unfold subp_compose.
+        apply subp_is_normal_normalize.
+    }
+Qed.
+
+
+(* Sadly, its precondition is too strong *)
 Lemma make_parallel0_compose
     {Σ : StaticModel}
     (init : gmap variable (TermOver BuiltinOrVar))
@@ -2210,19 +2295,16 @@ Lemma make_parallel0_compose
 :
     subp_is_normal init ->
     subs_is_normal sub ->
-    subp_codom init ## list_to_set (sub.*1) ->
-    subp_dom init ## union_list (vars_of <$> sub.*2) ->
-    init ##ₘ (list_to_map sub) ->
-    make_parallel0 init sub = subp_compose init (make_parallel0 ∅ sub)
+    make_parallel0 init sub = subp_compose (make_parallel0 ∅ sub) init
 .
 Proof.
-    intros Hni Hns HH1 HH2 HH3.
+    intros Hni Hns.
     unfold make_parallel0 at 1.
-    revert init Hni Hns HH1 HH2 HH3.
-    induction sub; intros init Hni Hns HH1 HH2 HH3.
+    revert init Hni Hns.
+    induction sub; intros init Hni Hns.
     {
         simpl.
-        rewrite subp_compose_empty_r.
+        rewrite subp_compose_empty_l.
         { reflexivity. }
         { exact Hni. }
     }
@@ -2250,62 +2332,15 @@ Proof.
             unfold SubP in *.
             ltac1:(rewrite <- subp_compose_assoc).
             {
-                ltac1:(rewrite <- subp_compose_assoc).
-                {
-                    f_equal.
-                    apply subp_compose_com.
-                    {
-                        clear - HH3.
-                        destruct a as [a b].
-                        ltac1:(rewrite list_to_map_cons in HH3).
-                        rewrite map_disjoint_insert_r in HH3.
-                        simpl.
-                        destruct HH3 as [HH3' HH3].
-                        rewrite map_disjoint_spec.
-                        intros i x y Hx Hy.
-                        unfold SubP in *.
-                        destruct (decide (a = i)).
-                        {
-                            subst.
-                            ltac1:(simplify_eq/=).
-                        }
-                        {
-                            ltac1:(rewrite lookup_singleton_ne in Hx).
-                            { ltac1:(congruence). }
-                            { inversion Hx. }
-                        }
-                    }
-                    {
-                        clear - HH1.
-                        unfold subp_dom, subp_codom, SubP in *.
-                        rewrite dom_singleton_L.
-                        rewrite fmap_cons in HH1.
-                        ltac1:(set_solver).
-                    }
-                    {
-                        unfold subp_dom, subp_codom, SubP in *.
-                        rewrite map_img_singleton.
-                        clear - HH2.
-                        rewrite fmap_cons in HH2.
-                        rewrite fmap_cons in HH2.
-                        rewrite union_list_cons in HH2.
-                        ltac1:(set_solver).
-                    }
-                    {
-                        assumption.
-                    }
-                    {
-                        assumption.
-                    }
-                }
-                {
-                    exact Hna.
-                }
+                reflexivity.
             }
             {
-                exact Hni.
+                apply make_parallel0_normal.
+                unfold subp_is_normal.
+                unfold subp_normalize.
+                rewrite map_filter_empty.
+                reflexivity.
             }
-            
         }
         {
             exact Hni.
@@ -2315,26 +2350,6 @@ Proof.
             rewrite Forall_cons in Hns.
             destruct Hns as [? Hns].
             exact Hns.
-        }
-        {
-            rewrite fmap_cons in HH1.
-            clear - HH1.
-            ltac1:(set_solver).
-        }
-        {
-            clear - HH2.
-            rewrite fmap_cons in HH2.
-            rewrite fmap_cons in HH2.
-            rewrite union_list_cons in HH2.
-            ltac1:(set_solver).
-        }
-        {
-            clear - HH3.
-            destruct a as [a b].
-            ltac1:(rewrite list_to_map_cons in HH3).
-            rewrite map_disjoint_insert_r in HH3.
-            destruct HH3 as [? HH3].
-            exact HH3.
         }
     }
 Qed.
@@ -2346,48 +2361,6 @@ Definition make_parallel
 :=
     make_parallel0 ∅ sub
 .
-
-Lemma subp_is_normal_normalize
-    {Σ : StaticModel}
-    a
-    :
-    subp_is_normal (subp_normalize a).
-Proof.
-    unfold subp_is_normal.
-    unfold subp_normalize.
-    rewrite map_filter_id.
-    { reflexivity. }
-    {
-        intros i x Hx Hc.
-        simpl in *.
-        subst x.
-        rewrite map_lookup_filter in Hx.
-        rewrite bind_Some in Hx.
-        destruct Hx as [y [H1y H2y]].
-        rewrite option_guard_decide in H2y.
-        cases (); ltac1:(simplify_eq/=).
-    }
-Qed.
-
-Lemma make_parallel0_normal
-    {Σ : StaticModel}
-    init
-    (sub : list (variable*(TermOver BuiltinOrVar))%type)
-    :
-    subp_is_normal init ->
-    subp_is_normal (make_parallel0 init sub)
-.
-Proof.
-    destruct sub; intros Hni.
-    {
-        simpl. exact Hni.
-    }
-    {
-        simpl.
-        unfold subp_compose.
-        apply subp_is_normal_normalize.
-    }
-Qed.
 
 Lemma make_parallel_normal
     {Σ : StaticModel}
@@ -2473,13 +2446,10 @@ Lemma make_parallel_app
     (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type)
     :
     subs_is_normal s1 ->
-    subp_codom (make_parallel s2) ## list_to_set s1.*1 ->
-    subp_dom (make_parallel s2) ## ⋃ (vars_of <$> s1.*2) ->
-    make_parallel s2 ##ₘ list_to_map s1 ->
-    make_parallel (s1 ++ s2) = subp_compose (make_parallel s2) (make_parallel s1)
+    make_parallel (s1 ++ s2) = subp_compose (make_parallel s1) (make_parallel s2)
 .
 Proof.
-    intros HH1 HH2 HH3 HH4.
+    intros HH1.
     unfold make_parallel at 1.
     unfold make_parallel0.
     rewrite foldr_app.
@@ -2496,15 +2466,6 @@ Proof.
     }
     {
         exact HH1.
-    }
-    {
-        exact HH2.
-    }
-    {
-        exact HH3.
-    }
-    {
-        exact HH4.
     }
 Qed.
 
@@ -4343,24 +4304,6 @@ Proof.
     }
 Qed.
 
-Lemma subp_compose_empty_l
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
-:
-    subp_is_normal a ->
-    subp_compose ∅ a = a
-.
-Proof.
-    intros Hna.
-    unfold subp_compose.
-    rewrite map_filter_empty.
-    rewrite (left_id empty union).
-    ltac1:(rewrite subp_app_empty').
-    rewrite map_fmap_id.
-    apply Hna.
-Qed.
-
-
 Lemma make_parallel_map_to_list
     {Σ : StaticModel}
     (s : gmap variable (TermOver BuiltinOrVar))
@@ -4659,6 +4602,76 @@ Proof.
     }
 Qed.
 
+Lemma subp_codom_inverse {Σ : StaticModel} r:
+    renaming_ok r ->
+    subp_codom (rlift (r_inverse r)) = subp_dom (rlift r)
+.
+Proof.
+    intros Hrok.
+    rewrite <- (r_inverse_inverse r) at 2.
+    symmetry.
+    rewrite subp_dom_inverse.
+    reflexivity.
+    apply r_inverse_ok.
+    exact Hrok.
+    exact Hrok.
+Qed.
+
+Lemma subt_codom_map_to_list
+    {Σ : StaticModel}
+    m
+    :
+    subt_codom (map_to_list m) = subp_codom m
+.
+Proof.
+    unfold subt_codom,subp_codom, SubP in *.
+    (* rewrite <- list_fmap_compose. *)
+    apply set_eq.
+    intros x.
+    rewrite elem_of_union_list.
+    rewrite elem_of_union_list.
+    split; intros [X HX].
+    {
+        destruct HX as [H1X H2X].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        rewrite elem_of_list_fmap in H2y.
+        destruct H2y as [z [H1z H2z]].
+        subst.
+        destruct z.
+        rewrite elem_of_map_to_list in H2z.
+        simpl in *.
+        exists (vars_of t).
+        split>[|assumption].
+        rewrite elem_of_list_fmap.
+        exists t.
+        split>[reflexivity|].
+        rewrite elem_of_elements.
+        rewrite elem_of_map_img.
+        exists v.
+        exact H2z.
+    }
+    {
+        destruct HX as [H1X H2X].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [y [H1y H2y]].
+        subst.
+        rewrite elem_of_elements in H2y.
+        rewrite elem_of_map_img in H2y.
+        destruct H2y as [i Hi].
+        exists (vars_of y).
+        split>[|assumption].
+        rewrite elem_of_list_fmap.
+        exists y.
+        split>[reflexivity|].
+        rewrite elem_of_list_fmap.
+        exists (i, y).
+        split>[reflexivity|].
+        rewrite elem_of_map_to_list.
+        exact Hi.
+    }
+Qed.
+
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (avoid0 : gset variable)
@@ -4812,13 +4825,20 @@ Proof.
             ltac1:(rewrite make_parallel_map_to_list).
             {
                 unfold SubP in *.
-                apply inverse_of_renaming_is_normal.
+                apply renaming_is_normal.
             }
             {
-                apply Hhelp.
+                rewrite subp_codom_inverse in Hhelp.
+                rewrite subp_dom_inverse in Hhelp.
+                ltac1:(set_solver).
+                apply renaming_for_ok.
+                apply renaming_for_ok.
             }
             {
-                rewrite <- subp_compose_assoc.
+                ltac1:(rewrite subp_compose_assoc).
+                {
+                    apply inverse_of_renaming_is_normal.
+                }
                 {
                     assert (Htmp1 := compose_renaming_inverse_restrict (renaming_for avoid0 m) (dom m ∪ subp_codom m)).
                     ltac1:(ospecialize (Htmp1 _)).
@@ -4846,26 +4866,18 @@ Proof.
                             clear.
                             ltac1:(set_solver).
                         }
-                        eapply restrict_equiv_1 in Htmp1.
+                        eapply restrict_equiv_2 in Htmp1.
                         erewrite Htmp1.
                         {
-                            rewrite subp_id_compose.
+                            rewrite subp_compose_id.
                             { reflexivity. }
                             { exact Hnorm. }
-                        }
-                        {
-                            clear.
-                            ltac1:(set_solver).
                         }
                     }
                     {
                         unfold subp_dom, SubP.
                         apply reflexivity.
                     }
-                    
-                }
-                {
-                    apply renaming_is_normal.
                 }
             }
         }
@@ -4886,7 +4898,7 @@ Proof.
                 unfold subp_dom.
                 ltac1:(set_solver).
             }
-            unfold subp_dom, SubP in *.
+            unfold subp_dom,subp_dom, SubP in *.
             ltac1:(set_solver).
         }
     }
@@ -4907,14 +4919,60 @@ Proof.
     }
     {
         rewrite <- dom_alt.
+        rewrite subp_codom_inverse in Hhelp.
+        {
+            rewrite subp_dom_inverse in Hhelp.
+            {
+                (* THIS DOES NOT MAKE ANY SENSE *)
+                rewrite subp_dom_renaming_for in Hhelp.
+            }
+            {
+                apply renaming_for_ok.
+            }
+        }
+        {
+            apply renaming_for_ok.
+        }
         assert (Htmp1 := dom_subp_compose_subseteq (rlift (renaming_for avoid0 m)) m).
         assert (Htmp0 := subp_codom_make_parallel0 ∅ (map_to_list ((rlift (r_inverse (renaming_for avoid0 m)))))).
         unfold make_parallel.
         assert (Htmp3: subt_codom (map_to_list (rlift (r_inverse (renaming_for avoid0 m)))) ## dom m).
         {
             clear Htmp0 Htmp1.
-            Search subp_dom r_inverse.
-            admit.
+            rewrite subp_codom_inverse in Hhelp.
+            {
+                rewrite subp_dom_inverse in Hhelp.
+                {
+                    unfold subp_dom in Hhelp.
+                    unfold rlift in Hhelp at 1.
+                    unfold SubP in *.
+                    rewrite dom_fmap in Hhelp.
+                    rewrite dom_renaming_for in Hhelp.
+                    (* Check subt_codom_map_to_list. *)
+                    ltac1:(rewrite subt_codom_map_to_list).
+                    rewrite subp_codom_inverse.
+                    {
+                        unfold subp_dom.
+                        unfold SubP in *.
+                        unfold rlift.
+                        rewrite dom_fmap.
+                        rewrite dom_renaming_for.
+                        (* Search subp_dom renaming_for. *)
+                    }
+                    {
+                        apply renaming_for_ok.
+                    }
+                    (* Search subt_codom. *)
+                    (* unfold subt_codom. *)
+                    Search subp_codom renaming_for.
+                }
+                {
+                    apply renaming_for_ok.    
+                }
+            }
+            {
+                apply renaming_for_ok.
+            }
         }
         unfold subp_codom in Htmp0 at 2.
         unfold SubP in *.
