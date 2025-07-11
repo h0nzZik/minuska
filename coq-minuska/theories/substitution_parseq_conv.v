@@ -3254,7 +3254,7 @@ Proof.
 Qed.
 
 
-Lemma make_parallel_map_to_list
+Lemma make_parallel0_map_to_list
     {Σ : StaticModel}
     (init s : gmap variable (TermOver BuiltinOrVar))
     :
@@ -4279,6 +4279,75 @@ Proof.
             { reflexivity. }
             { exact H. }
         }
+    }
+Qed.
+
+Lemma subp_compose_empty_l
+    {Σ : StaticModel}
+    (a : gmap variable (TermOver BuiltinOrVar))
+:
+    subp_is_normal a ->
+    subp_compose ∅ a = a
+.
+Proof.
+    intros Hna.
+    unfold subp_compose.
+    rewrite map_filter_empty.
+    rewrite (left_id empty union).
+    ltac1:(rewrite subp_app_empty').
+    rewrite map_fmap_id.
+    apply Hna.
+Qed.
+
+
+Lemma make_parallel_map_to_list
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_is_normal s ->
+    (subp_codom s) ## subp_dom s ->
+    make_parallel (map_to_list s) = s
+.
+Proof.
+    intros H1 H2.
+    unfold make_parallel.
+    rewrite make_parallel0_map_to_list.
+    {
+        rewrite subp_compose_empty_l.
+        { reflexivity. }
+        { exact H1. }
+    }
+    {
+        exact H1.
+    }
+    {
+        unfold subp_is_normal.
+        unfold subp_normalize.
+        rewrite map_filter_empty.
+        reflexivity.
+    }
+    {
+        unfold subp_codom.
+        unfold SubP in *.
+        rewrite map_img_empty.
+        rewrite elements_empty.
+        simpl.
+        ltac1:(set_solver).
+    }
+    {
+        unfold subp_dom.
+        unfold SubP.
+        rewrite dom_empty.
+        ltac1:(set_solver).
+    }
+    {
+        unfold subp_dom.
+        unfold SubP.
+        rewrite dom_empty.
+        ltac1:(set_solver).
+    }
+    {
+        exact H2.
     }
 Qed.
 
