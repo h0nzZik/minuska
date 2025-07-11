@@ -1773,6 +1773,67 @@ Proof.
     }
 Qed.
 
+
+Lemma inverse_of_renaming_is_normal
+    {Σ : StaticModel}
+    (avoid0 : gset variable)
+    (m : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_is_normal (rlift (r_inverse (renaming_for avoid0 m)))
+.
+Proof.
+    rewrite subp_is_normal_spec.
+    intros k v Hkv HContra.
+    subst v.
+    unfold rlift in Hkv.
+    rewrite lookup_fmap in Hkv.
+    destruct (r_inverse (renaming_for avoid0 m) !! k) eqn:Hrmk.
+    {
+        simpl in Hkv.
+        ltac1:(simplify_eq/=).
+        unfold renaming_for in Hrmk.
+        unfold r_inverse in Hrmk.
+        ltac1:(rewrite - elem_of_list_to_map in Hrmk).
+        {
+            rewrite <- list_fmap_compose.
+            unfold pair_swap.
+            unfold compose.
+            simpl.
+            rewrite map_to_list_to_map.
+            rewrite snd_zip.
+            apply NoDup_fresh_var_seq.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+            rewrite fst_zip.
+            apply NoDup_elements.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
+        rewrite elem_of_list_fmap in Hrmk.
+        destruct Hrmk as [[y z][H1 H2]].
+        unfold pair_swap in H1.
+        simpl in H1.
+        ltac1:(simplify_eq/=).
+        rewrite map_to_list_to_map in H2.
+        {
+            apply elem_of_zip_l in H2 as H3.
+            apply elem_of_zip_r in H2 as H4.
+            clear H2.
+            apply elem_of_fresh_var_seq in H4.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite fst_zip.
+            apply NoDup_elements.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
+    }
+    {
+        inversion Hkv.
+    }
+Qed.
+
 Lemma map_img_renaming_for_dom
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
@@ -4366,7 +4427,21 @@ Proof.
     (* unfold make_parallel. *)
     rewrite make_parallel_app.
     {
+        rewrite make_parallel_map_to_list.
+        {
+            ltac1:(rewrite make_parallel_map_to_list).
+            {
+                unfold SubP in *.
+                apply renaming_is_normal.
+                Search subp_is_normal renaming_for.
+            }
+        }
+        {
+            apply subp_is_normal_normalize.
+        }
+        {
 
+        }
     }
     {
 
