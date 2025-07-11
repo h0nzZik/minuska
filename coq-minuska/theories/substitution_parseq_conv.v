@@ -3253,11 +3253,10 @@ Proof.
     }
 Qed.
 
- (* Oh no, map_to_list can generate a looping substitution, I need to have something more clever there  *)
+
 Lemma make_parallel_map_to_list
     {Σ : StaticModel}
     (init s : gmap variable (TermOver BuiltinOrVar))
-    (* (init : list (variable*(TermOver BuiltinOrVar))%type) *)
     :
     subp_is_normal s ->
     subp_is_normal init ->
@@ -3644,35 +3643,26 @@ Proof.
                                                                             }
                                                                         }
                                                                         {
-
+                                                                            destruct HH2 as [x1 [H1x2 H2x1]].
+                                                                            rewrite option_guard_decide in H2x1.
+                                                                            cases (); ltac1:(simplify_eq/=).
+                                                                            clear n2.
+                                                                            ltac1:(exfalso).
+                                                                            apply elem_of_dom_2 in H1x2.
+                                                                            apply elem_of_dom_2 in H1x0.
+                                                                            clear - H1x2 H1x0 Hinit3.
+                                                                            rewrite dom_insert in Hinit3.
+                                                                            ltac1:(set_solver).
                                                                         }
-
                                                                     }
                                                                 }
                                                             }
-                                                            ltac1:(fold (@subp_normalize Σ ((fun (a : (TermOver' BuiltinOrVar)) => TermOverBoV_subst a i x) <$> (subp_compose init m)))).
-                                                            f_equal.
-                                                            apply map_eq.
-                                                            intros j.
-                                                            (* rewrite map_lookup_filter. *)
-                                                            (* rewrite map_lookup_filter. *)
-                                                            rewrite lookup_fmap.
-                                                            destruct (subp_compose init m !! j) eqn:Heq.
-                                                            {
-                                                                simpl.
-                                                                unfold subp_compose in Heq.
-                                                                unfold subp_normalize in Heq.
-                                                                ltac1:(rewrite Heq).
-                                                            }
-                                                            Search fmap "id".
                                                         }
                                                         {
                                                             rewrite map_filter_fmap.
                                                             simpl.
                                                             reflexivity.
                                                         }
-                                                        rewrite <- map_filter_fmap.
-                                                        ltac1:(fold (@subp_compose Σ init m)).
                                                     }
                                                     {
                                                         rewrite map_filter_id.
@@ -3725,10 +3715,6 @@ Proof.
                                                     }
                                                 }
                                             }
-                                            (* Search insert union. *)
-                                            (* Print subp_normalize. *)
-                                            (* fold (@subp_normalize Σ init). *)
-                                            (* Search subp_is_normal. *)
                                         }
                                         {
                                             intros j y Hy Hy'.
@@ -3740,43 +3726,238 @@ Proof.
                                         }
                                     }
                                     {
-                                        admit.
+                                        unfold subp_dom,SubP.
+                                        ltac1:(rewrite subp_codom_insert in Hinit4).
+                                        {
+                                            unfold SubP in *.
+                                            apply not_elem_of_dom_2.
+                                            exact H.
+                                        }
+                                        clear - Hinit4.
+                                        ltac1:(set_solver).
                                     }
-                                    (* 
+                                }
+                                {
+                                    apply dec_stable in n1.
+                                    apply helper_lemma' in n1.
+                                    destruct n1 as [y [H1y H2y]].
+                                    subst x.
+                                    destruct H2y as [H2y|H2y].
                                     {
+                                        rewrite dom_insert in Hinit2.
+                                        assert (Hii: i ∈  subp_codom init).
+                                        {
+                                            unfold subp_codom,SubP.
+                                            rewrite elem_of_union_list.
+                                            exists (vars_of (t_over (bov_variable i))).
+                                            unfold vars_of; simpl.
+                                            unfold vars_of; simpl.
+                                            split>[|clear; ltac1:(set_solver)].
+                                            rewrite elem_of_list_fmap.
+                                            exists (t_over (bov_variable i)).
+                                            split>[reflexivity|].
+                                            rewrite elem_of_elements.
+                                            rewrite elem_of_map_img.
+                                            exists y.
+                                            exact H2y.
+                                        }
+                                        ltac1:(exfalso).
+                                        clear - Hii Hinit2.
+                                        ltac1:(set_solver).
+                                    }
+                                    {
+                                        subst.
+                                        ltac1:(contradiction n0).
                                         reflexivity.
-                                    } *)
-                                    admit.
+                                    }
                                 }
                                 {
-                                    (* apply dec_stable in n0. *)
-                                    admit.
+                                    apply dec_stable in n0.
+                                    subst x.
+                                    rewrite dom_insert in Hinit2.
+                                    rewrite dom_insert in Hinit3.
+                                    ltac1:(rewrite subp_codom_insert in Hinit5).
+                                    {
+                                        unfold SubP.
+                                        apply not_elem_of_dom_2.
+                                        exact H.
+                                    }
+                                    ltac1:(rewrite subp_codom_insert in Hinit4).
+                                    {
+                                        unfold SubP.
+                                        apply not_elem_of_dom_2.
+                                        exact H.
+                                    }
+                                    unfold vars_of in Hinit4; simpl in Hinit4.
+                                    unfold vars_of in Hinit4; simpl in Hinit4.
+                                    unfold vars_of in Hinit5; simpl in Hinit5.
+                                    unfold vars_of in Hinit5; simpl in Hinit5.
+                                    rewrite dom_insert in Hinit5.
+                                    clear - Hinit5.
+                                    ltac1:(set_solver).
                                 }
                                 {
-                                    admit.
-                                }
-                                {
-                                    admit.
+                                    apply dec_stable in n0.
+                                    apply dec_stable in n1.
+                                    subst x.
+                                    apply helper_lemma' in n1.
+                                    destruct n1 as [y [H1y H2y]].
+                                    destruct H2y as [H2y|H2y].
+                                    {
+                                        inversion H1y; subst; clear H1y.
+                                        rewrite dom_insert in Hinit2.
+                                        rewrite dom_insert in Hinit3.
+                                        rewrite dom_insert in Hinit5.
+                                        ltac1:(rewrite subp_codom_insert in Hinit4).
+                                        {
+                                            unfold SubP.
+                                            apply not_elem_of_dom_2.
+                                            exact H.
+                                        }
+                                        ltac1:(rewrite subp_codom_insert in Hinit5).
+                                        {
+                                            unfold SubP.
+                                            apply not_elem_of_dom_2.
+                                            exact H.
+                                        }
+                                        unfold vars_of in Hinit5; simpl in Hinit5.
+                                        unfold vars_of in Hinit5; simpl in Hinit5.
+                                        ltac1:(exfalso).
+                                        clear - Hinit5.
+                                        ltac1:(set_solver).
+                                    }
+                                    {
+                                        rewrite dom_insert in Hinit2.
+                                        rewrite dom_insert in Hinit3.
+                                        rewrite dom_insert in Hinit5.
+                                        ltac1:(rewrite subp_codom_insert in Hinit4).
+                                        {
+                                            unfold SubP.
+                                            apply not_elem_of_dom_2.
+                                            exact H.
+                                        }
+                                        ltac1:(rewrite subp_codom_insert in Hinit5).
+                                        {
+                                            unfold SubP.
+                                            apply not_elem_of_dom_2.
+                                            exact H.
+                                        }
+                                        unfold vars_of in Hinit5; simpl in Hinit5.
+                                        unfold vars_of in Hinit5; simpl in Hinit5.
+                                        clear - Hinit5.
+                                        ltac1:(set_solver).
+                                    }
                                 }
                             }
                             {
-
+                                apply map_disjoint_spec.
+                                intros i0 x0 y0 Hx0 Hy0.
+                                destruct (decide (i0 = i)).
+                                {
+                                    subst.
+                                    ltac1:(rewrite subp_codom_insert in Hinit5).
+                                    {
+                                        unfold SubP.
+                                        apply not_elem_of_dom_2.
+                                        exact H.
+                                    }
+                                    rewrite dom_insert in Hinit5.
+                                    ltac1:(rewrite subp_codom_insert in Hinit4).
+                                    {
+                                        unfold SubP.
+                                        apply not_elem_of_dom_2.
+                                        exact H.
+                                    }
+                                    rewrite dom_insert in Hinit3.
+                                    rewrite dom_insert in Hinit2.
+                                    rewrite map_lookup_filter in Hx0.
+                                    rewrite bind_Some in Hx0.
+                                    destruct Hx0 as [x1 [H1x2 H2x1]].
+                                    apply elem_of_dom_2 in H1x2.
+                                    clear - H1x2 Hinit3.
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    rewrite dom_insert in Hinit5.
+                                    rewrite lookup_insert_ne in Hy0>[|ltac1:(congruence)].
+                                    rewrite lookup_fmap in Hy0.
+                                    rewrite fmap_Some in Hy0.
+                                    destruct Hy0 as [x1 [H1x1 H2x1]].
+                                    subst.
+                                    rewrite map_lookup_filter in Hx0.
+                                    rewrite bind_Some in Hx0.
+                                    destruct Hx0 as [x2 [H1x2 H2x2]].
+                                    simpl in *.
+                                    rewrite option_guard_decide in H2x2.
+                                    cases (); ltac1:(simplify_eq/=).
+                                    rewrite dom_insert in n1.
+                                    apply elem_of_dom_2 in H1x1.
+                                    clear - H1x1 n1.
+                                    ltac1:(set_solver).
+                                }
                             }
                         }
                         {
-                            
+                            apply map_disjoint_spec.
+                            intros i' x' y' Hx' Hy'.
+                            destruct (decide (i' = i)).
+                            {
+                                subst.
+                                rewrite lookup_singleton in Hx'.
+                                ltac1:(simplify_eq/=).
+                                rewrite lookup_fmap in Hy'.
+                                rewrite fmap_Some in Hy'.
+                                destruct Hy' as [x [H1x H2x]].
+                                ltac1:(simplify_eq/=).
+                                apply elem_of_dom_2 in H1x.
+                                ltac1:(contradiction n).
+                            }
+                            {
+                                rewrite lookup_singleton_ne in Hx'.
+                                inversion Hx'.
+                                ltac1:(congruence).
+                            }
                         }
                     }
                     {
                         apply dec_stable in n.
+                        eapply elem_of_weaken in n>[|apply dom_subp_compose_subseteq].
+                        rewrite dom_insert in Hinit3.
+                        rewrite elem_of_union in n.
+                        destruct n as [Hn|Hn].
+                        {
+                            clear - Hn Hinit3.
+                            ltac1:(set_solver).
+                        }
+                        {
+                            apply not_elem_of_dom_2 in H.
+                            clear - H Hn.
+                            ltac1:(set_solver).
+                        }
                     }
-                    
-                    Check fmap_insert.
-                    (* rewrite insert_fmap. *)
                 }
             }
             {
-                exact Hinit.
+                rewrite subp_is_normal_spec.
+                rewrite subp_is_normal_spec in Hsnorm.
+                intros.
+                destruct (decide (k = i)).
+                {
+                    subst.
+                    intros HContra.
+                    subst.
+                    rewrite H in H0.
+                    inversion H0.
+                }
+                {
+                    apply Hsnorm.
+                    rewrite lookup_insert_ne.
+                    assumption.
+                    ltac1:(congruence).
+                }
+            }
+            {
+                assumption.
             }
             {
                 unfold subp_dom, SubP in *.
@@ -3784,38 +3965,89 @@ Proof.
                 clear - Hinit2.
                 ltac1:(set_solver).
             }
-            
-        }
-        {
-            unfold subs_is_normal.
-            rewrite map_to_list_insert.
             {
-                rewrite Forall_cons.
-                simpl.
-                admit.
+                unfold subp_dom, SubP in *.
+                rewrite dom_insert in Hinit3.
+                ltac1:(set_solver).
             }
-            { exact H. }
+            {
+                unfold subp_dom, SubP in *.
+                ltac1:(rewrite subp_codom_insert in Hinit4).
+                {
+                    unfold SubP.
+                    apply not_elem_of_dom_2.
+                    exact H.
+                }
+                { ltac1:(set_solver). }
+            }
+            {
+                unfold subp_dom, SubP in *.
+                ltac1:(rewrite subp_codom_insert in Hinit5).
+                {
+                    unfold SubP.
+                    apply not_elem_of_dom_2.
+                    exact H.
+                }
+                rewrite dom_insert in Hinit5.
+                ltac1:(set_solver).
+            }
         }
         {
             unfold subs_is_normal.
-            rewrite Forall_cons.
+            rewrite subp_is_normal_spec in Hsnorm.
+            rewrite Forall_forall.
+            intros.
+            apply Hsnorm.
+            destruct x0.
+            rewrite elem_of_map_to_list in H0.
             simpl.
-            admit.
+            exact H0.
         }
         {
-            rewrite map_to_list_insert.
+            unfold subs_is_normal.
+            rewrite subp_is_normal_spec in Hsnorm.
+            rewrite Forall_forall.
+            intros.
+            apply Hsnorm.
+            destruct x0.
+            simpl.
+            rewrite elem_of_cons in H0.
+            destruct H0 as [H0|H0].
             {
-                rewrite fmap_cons.
-                rewrite NoDup_cons.
-                simpl.
-                admit.
+                ltac1:(simplify_eq/=).
+                rewrite lookup_insert.
+                reflexivity.
             }
-            { exact H. }
+            {
+                rewrite elem_of_map_to_list in H0.
+                rewrite lookup_insert_ne.
+                {
+                    exact H0.
+                }
+                {
+                    intros HContra.
+                    subst v.
+                    ltac1:(rewrite H in H0).
+                    inversion H0.
+                }
+            }
+        }
+        {
+            apply NoDup_fst_map_to_list.
         }
         {
             rewrite fmap_cons.
             rewrite NoDup_cons.
             simpl.
+            split>[|apply NoDup_fst_map_to_list].
+            rewrite elem_of_list_fmap.
+            intros [y [H1y H2y]].
+            subst.
+            destruct y.
+            ltac1:(rewrite elem_of_map_to_list in H2y).
+            simpl in H.
+            rewrite H in H2y.
+            inversion H2y.
         }
         {
             rewrite map_to_list_insert.
@@ -3823,7 +4055,108 @@ Proof.
                 rewrite fmap_cons.
                 rewrite fmap_cons.
                 simpl.
-                admit.
+                unfold subp_dom, SubP in *.
+                rewrite dom_insert in Hinit2.
+                rewrite dom_insert in Hinit3.
+                ltac1:(rewrite subp_codom_insert in Hinit4).
+                {
+                    unfold SubP.
+                    apply not_elem_of_dom_2.
+                    exact H.
+                }
+                ltac1:(rewrite subp_codom_insert in Hinit5).
+                {
+                    unfold SubP.
+                    apply not_elem_of_dom_2.
+                    exact H.
+                }
+                rewrite dom_insert in Hinit5.
+                unfold subp_codom in Hinit4.
+                unfold subp_codom in Hinit5.
+                apply not_elem_of_dom_2 in H.
+                clear IHs.
+                (* ltac1:(set_solver). *)
+                rewrite elem_of_disjoint.
+                intros x0 H1x0 H2x0.
+                rewrite elem_of_union in H1x0.
+                rewrite elem_of_union in H2x0.
+                destruct H1x0 as [H1x0|H1x0].
+                {
+                    rewrite elem_of_singleton in H1x0.
+                    subst x0.
+                    destruct H2x0 as [H2x0|H2x0].
+                    {
+                        ltac1:(set_solver).
+                    }
+                    {
+                        rewrite elem_of_union_list in H2x0.
+                        destruct H2x0 as [X [H1X H2X]].
+                        rewrite elem_of_list_fmap in H1X.
+                        destruct H1X as [y [H1y H2y]].
+                        subst.
+                        rewrite elem_of_list_fmap in H2y.
+                        destruct H2y as [z [H1z H2z]].
+                        subst.
+                        destruct z as [z1 z2].
+                        simpl in *.
+                        rewrite elem_of_map_to_list in H2z.
+                        assert (i ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        {
+                            rewrite elem_of_union_list.
+                            exists (vars_of z2).
+                            split>[|exact H2X].
+                            rewrite elem_of_list_fmap.
+                            exists z2.
+                            split>[reflexivity|].
+                            rewrite elem_of_elements.
+                            rewrite elem_of_map_img.
+                            exists z1.
+                            exact H2z.
+                        }
+                        ltac1:(set_solver).
+                    }
+                }
+                {
+                    rewrite elem_of_list_to_set in H1x0.
+                    rewrite elem_of_list_fmap in H1x0.
+                    destruct H1x0 as [[y y'][H1y H2y]].
+                    simpl in *.
+                    rewrite elem_of_map_to_list in H2y.
+                    subst.
+                    destruct H2x0 as [H2x0|H2x0].
+                    {
+                        apply elem_of_dom_2 in H2y.
+                        ltac1:(set_solver).
+                    }
+                    {
+                        rewrite elem_of_union_list in H2x0.
+                        destruct H2x0 as [X [H1X H2X]].
+                        rewrite elem_of_list_fmap in H1X.
+                        destruct H1X as [y'' [H1y'' H2y'']].
+                        subst.
+                        rewrite elem_of_list_fmap in H2y''.
+                        destruct H2y'' as [z [H1z H2z]].
+                        subst.
+                        destruct z as [z1 z2].
+                        simpl in *.
+                        rewrite elem_of_map_to_list in H2z.
+                        assert (y ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        {
+                            rewrite elem_of_union_list.
+                            exists (vars_of z2).
+                            split>[|exact H2X].
+                            rewrite elem_of_list_fmap.
+                            exists z2.
+                            split>[reflexivity|].
+                            rewrite elem_of_elements.
+                            rewrite elem_of_map_img.
+                            exists z1.
+                            exact H2z.
+                        }
+                        apply elem_of_dom_2 in H2y.
+                        ltac1:(set_solver).
+                    }
+                }
             }
             { exact H. }
         }
@@ -3835,7 +4168,109 @@ Proof.
                 rewrite fmap_cons.
                 rewrite fmap_cons.
                 simpl.
-                admit.
+
+                unfold subp_dom, SubP in *.
+                rewrite dom_insert in Hinit2.
+                rewrite dom_insert in Hinit3.
+                ltac1:(rewrite subp_codom_insert in Hinit4).
+                {
+                    unfold SubP.
+                    apply not_elem_of_dom_2.
+                    exact H.
+                }
+                ltac1:(rewrite subp_codom_insert in Hinit5).
+                {
+                    unfold SubP.
+                    apply not_elem_of_dom_2.
+                    exact H.
+                }
+                rewrite dom_insert in Hinit5.
+                unfold subp_codom in Hinit4.
+                unfold subp_codom in Hinit5.
+                apply not_elem_of_dom_2 in H.
+                clear IHs.
+                (* ltac1:(set_solver). *)
+                rewrite elem_of_disjoint.
+                intros x0 H1x0 H2x0.
+                rewrite elem_of_union in H1x0.
+                rewrite elem_of_union in H2x0.
+                destruct H1x0 as [H1x0|H1x0].
+                {
+                    rewrite elem_of_singleton in H1x0.
+                    subst x0.
+                    destruct H2x0 as [H2x0|H2x0].
+                    {
+                        ltac1:(set_solver).
+                    }
+                    {
+                        rewrite elem_of_union_list in H2x0.
+                        destruct H2x0 as [X [H1X H2X]].
+                        rewrite elem_of_list_fmap in H1X.
+                        destruct H1X as [y [H1y H2y]].
+                        subst.
+                        rewrite elem_of_list_fmap in H2y.
+                        destruct H2y as [z [H1z H2z]].
+                        subst.
+                        destruct z as [z1 z2].
+                        simpl in *.
+                        rewrite elem_of_map_to_list in H2z.
+                        assert (i ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        {
+                            rewrite elem_of_union_list.
+                            exists (vars_of z2).
+                            split>[|exact H2X].
+                            rewrite elem_of_list_fmap.
+                            exists z2.
+                            split>[reflexivity|].
+                            rewrite elem_of_elements.
+                            rewrite elem_of_map_img.
+                            exists z1.
+                            exact H2z.
+                        }
+                        ltac1:(set_solver).
+                    }
+                }
+                {
+                    rewrite elem_of_list_to_set in H1x0.
+                    rewrite elem_of_list_fmap in H1x0.
+                    destruct H1x0 as [[y y'][H1y H2y]].
+                    simpl in *.
+                    rewrite elem_of_map_to_list in H2y.
+                    subst.
+                    destruct H2x0 as [H2x0|H2x0].
+                    {
+                        apply elem_of_dom_2 in H2y.
+                        ltac1:(set_solver).
+                    }
+                    {
+                        rewrite elem_of_union_list in H2x0.
+                        destruct H2x0 as [X [H1X H2X]].
+                        rewrite elem_of_list_fmap in H1X.
+                        destruct H1X as [y'' [H1y'' H2y'']].
+                        subst.
+                        rewrite elem_of_list_fmap in H2y''.
+                        destruct H2y'' as [z [H1z H2z]].
+                        subst.
+                        destruct z as [z1 z2].
+                        simpl in *.
+                        rewrite elem_of_map_to_list in H2z.
+                        assert (y ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        {
+                            rewrite elem_of_union_list.
+                            exists (vars_of z2).
+                            split>[|exact H2X].
+                            rewrite elem_of_list_fmap.
+                            exists z2.
+                            split>[reflexivity|].
+                            rewrite elem_of_elements.
+                            rewrite elem_of_map_img.
+                            exists z1.
+                            exact H2z.
+                        }
+                        apply elem_of_dom_2 in H2y.
+                        ltac1:(set_solver).
+                    }
+                }
             }
             { exact H. }
         }
@@ -3846,8 +4281,6 @@ Proof.
         }
     }
 Qed.
-
-*)
 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
