@@ -3219,7 +3219,40 @@ Proof.
         }
     }
 Qed.
-(* 
+
+Lemma helper_lemma' {Σ : StaticModel}:
+  forall x m t, t_over (bov_variable x) = subp_app m t ->
+  exists y, t = t_over (bov_variable y) /\ (m !! y = Some (t_over (bov_variable x)) \/ y = x)
+.
+Proof.
+    intros x' m' t' HH.
+    destruct t'; simpl in HH.
+    {
+        destruct a; simpl in HH.
+        {
+            ltac1:(simplify_eq/=).
+        }
+        {
+            cases (); ltac1:(simplify_eq/=).
+            {
+                exists x.
+                split>[reflexivity|].
+                left.
+                assumption.
+            }
+            {
+                exists x.
+                split>[reflexivity|].
+                right.
+                reflexivity.
+            }
+        }
+    }
+    {
+        ltac1:(simplify_eq/=).
+    }
+Qed.
+
  (* Oh no, map_to_list can generate a looping substitution, I need to have something more clever there  *)
 Lemma make_parallel_map_to_list
     {Σ : StaticModel}
@@ -3368,217 +3401,253 @@ Proof.
                                                                             }
                                                                             {
                                                                                 intros HContra.
-                                                                                assert(HC: i ∈ subp_codom (subp_compose init m)).
+                                                                                ltac1:(rewrite subp_codom_insert in Hinit5).
                                                                                 {
-                                                                                    unfold subp_codom,subp_compose,SubP.
-                                                                                    rewrite elem_of_union_list.
-                                                                                    exists (vars_of z).
-                                                                                    split>[|assumption].
-                                                                                    rewrite elem_of_list_fmap.
-                                                                                    exists z.
-                                                                                    split>[reflexivity|].
-                                                                                    rewrite elem_of_elements.
-                                                                                    rewrite elem_of_map_img.
-                                                                                    exists j.
-                                                                                    unfold subp_normalize.
-                                                                                    rewrite map_lookup_filter.
-
-                                                                                    rewrite H1z'.
-                                                                                    simpl.
-                                                                                    rewrite option_guard_decide.
-                                                                                    cases (); try reflexivity.
-                                                                                    ltac1:(simplify_eq/=).
-                                                                                }
-                                                                                (* ltac1:(contradiction n). *)
-                                                                                (* exact HC. *)
-                                                                                (* Search subp_codom subp_compose. *)
-                                                                                assert (Htmp := subp_codom_subp_compose_2 init m).
-                                                                                eapply elem_of_weaken in Htmp>[|apply HC].
-                                                                                rewrite elem_of_union in Htmp.
-                                                                                destruct Htmp as [Htmp|Htmp].
-                                                                                {
-                                                                                    rewrite dom_insert in Hinit2.
-                                                                                    rewrite dom_insert in Hinit3.
-                                                                                    ltac1:(set_solver).
+                                                                                    unfold SubP in *.
+                                                                                    apply not_elem_of_dom_2.
+                                                                                    exact H.
                                                                                 }
                                                                                 {
-                                                                                    rewrite dom_insert in Hinit2.
-                                                                                    rewrite dom_insert in Hinit3.
-                                                                                    rewrite dom_insert in Hinit5.
-
-
-                                                                                    (* assert (Htmp' := subp_codom_subp_compose init m). *)
-
-                                                                                    assert (dom init ## subp_codom m).
+                                                                                    assert(HC: i ∈ subp_codom (subp_compose init m)).
                                                                                     {
-                                                                                        unfold subp_codom, SubP in Hinit4'.
-                                                                                        rewrite map_img_insert in Hinit4'.
-                                                                                        rewrite delete_notin in Hinit4'.
-                                                                                        {
-                                                                                            unfold subp_codom,SubP.
-                                                                                            clear IHs.
-                                                                                            rewrite elem_of_disjoint.
-                                                                                            rewrite elem_of_disjoint in Hinit4'.
-                                                                                            intros.
-                                                                                            apply Hinit4' with (x := x0).
-                                                                                            {
-                                                                                                rewrite elem_of_union_list in H1.
-                                                                                                rewrite elem_of_union_list.
-                                                                                                destruct H1 as [X [H1X H2X]].
-                                                                                                exists X.
-                                                                                                split>[|exact H2X].
-                                                                                                rewrite elem_of_list_fmap in H1X.
-                                                                                                destruct H1X as [y [H1y H2y]].
-                                                                                                rewrite elem_of_list_fmap.
-                                                                                                exists y.
-                                                                                                subst X.
-                                                                                                split>[reflexivity|].
-                                                                                                rewrite elem_of_elements.
-                                                                                                rewrite elem_of_union.
-                                                                                                right.
-                                                                                                rewrite elem_of_elements in H2y.
-                                                                                                exact H2y.
-                                                                                            }
-                                                                                            { exact H0. }
-                                                                                        }
-                                                                                        {
-                                                                                            assumption.
-                                                                                        }
-                                                                                    }
-                                                                                    assert (Htmp2 := subp_codom_subp_compose init (<[i := x]>m)).
-                                                                                    ltac1:(ospecialize (Htmp2 _ _ _ _)).
-                                                                                    {
-                                                                                        ltac1:(set_solver).
-                                                                                    }
-                                                                                    {
-                                                                                        ltac1:(set_solver).
-                                                                                    }
-                                                                                    {
-                                                                                        ltac1:(set_solver).
-                                                                                    }
-                                                                                    {
-                                                                                        assumption.
-                                                                                    }
-                                                                                    assert (Htmp3 := subp_codom_subp_compose_2 init (<[i:=x]>m)).
-
-                                                                                    ltac1:(set_solver).
-                                                                                }
-                                                                                (* clear - HC Hinit4 *)
-                                                                            }
-                                                                            Check subp_codom_insert_notin.
-                                                                            (* ltac1:(rewrite subp_codom_insert_notin in Hinit4).
-                                                                            {
-                                                                                unfold SubP in *.
-                                                                                apply not_elem_of_dom_2.
-                                                                                exact H.
-                                                                            } *)
-                                                                            
-                                                                            rewrite lookup_union in H1z'.
-                                                                            rewrite union_Some in H1z'.
-                                                                            destruct H1z' as [H1z'|H1z'].
-                                                                            {
-                                                                                rewrite map_lookup_filter in H1z'.
-                                                                                rewrite bind_Some in H1z'.
-                                                                                destruct H1z' as [q [H1q H2q]].
-                                                                                rewrite option_guard_decide in H2q.
-                                                                                cases (); ltac1:(simplify_eq/=).
-                                                                            }
-                                                                            {
-
-                                                                            }
-                                                                            ltac1:(rewrite subp_codom_insert_notin in Hinit4).
-                                                                            {
-                                                                                unfold SubP in *.
-                                                                                apply not_elem_of_dom_2.
-                                                                                exact H.
-                                                                            }
-                                                                            {
-                                                                                assert(Hsn := Hsnorm).
-                                                                                ltac1:(rewrite subp_is_normal_spec in Hsnorm).
-                                                                                intros HContar.
-                                                                                ltac1:(rewrite elem_of_map_img in HContar).
-                                                                                destruct HContar as [j' Hj'].
-                                                                                
-                                                                                specialize (Hsnorm j' x).
-                                                                                ltac1:(ospecialize (Hsnorm _)).
-                                                                                {
-                                                                                    rewrite lookup_insert_ne.
-                                                                                    {
-                                                                                        exact Hj'.
-                                                                                    }
-                                                                                    {
-                                                                                        intros ?.
-                                                                                        subst.
+                                                                                        unfold subp_codom,subp_compose,SubP.
+                                                                                        rewrite elem_of_union_list.
+                                                                                        exists (vars_of z).
+                                                                                        split>[|assumption].
+                                                                                        rewrite elem_of_list_fmap.
+                                                                                        exists z.
+                                                                                        split>[reflexivity|].
+                                                                                        rewrite elem_of_elements.
+                                                                                        rewrite elem_of_map_img.
+                                                                                        exists j.
+                                                                                        unfold subp_normalize.
+                                                                                        rewrite map_lookup_filter.
+                                                                                        rewrite H1z'.
+                                                                                        simpl.
+                                                                                        rewrite option_guard_decide.
+                                                                                        cases (); try reflexivity.
                                                                                         ltac1:(simplify_eq/=).
                                                                                     }
-                                                                                }
-
-                                                                            }
-
-
-                                                                            intros HContra.
-                                                                            assert (Htmp := subp_codom_subp_compose init m).
-                                                                            
-                                                                            ltac1:(ospecialize (Htmp _ _ _ _)).
-                                                                            {
-                                                                                rewrite dom_insert in Hinit3.
-                                                                                clear - Hinit3.
-                                                                                ltac1:(set_solver).
-                                                                            }
-                                                                            {
-                                                                                assumption.
-                                                                            }
-                                                                            {
-                                                                                apply Hinit.
-                                                                            }
-                                                                            {
-                                                                                rewrite subp_is_normal_spec in Hsnorm.
-                                                                                rewrite subp_is_normal_spec.
-                                                                                intros.
-                                                                                apply Hsnorm.
-                                                                                destruct (decide (i = k)).
-                                                                                {
-                                                                                    ltac1:(simplify_eq/=).
-                                                                                }
-                                                                                {
-                                                                                    rewrite lookup_insert_ne.
+                                                                                    (*  *)
+                                                                                    assert (Htmp := subp_codom_subp_compose_2 init m).
+                                                                                    eapply elem_of_weaken in Htmp>[|apply HC].
+                                                                                    rewrite elem_of_union in Htmp.
+                                                                                    destruct Htmp as [Htmp|Htmp].
                                                                                     {
-                                                                                        assumption.
+                                                                                        rewrite dom_insert in Hinit2.
+                                                                                        rewrite dom_insert in Hinit3.
+                                                                                        ltac1:(set_solver).
                                                                                     }
                                                                                     {
-                                                                                        ltac1:(congruence).
+                                                                                        rewrite dom_insert in Hinit5.
+                                                                                        clear - Htmp Hinit5.
+                                                                                        ltac1:(set_solver).
                                                                                     }
                                                                                 }
                                                                             }
-                                                                            
-                                                                            assert (Htmp4 := subp_codom_subp_compose_2 init (m)).
-                                                                            rewrite dom_insert in Hinit2.
-                                                                            rewrite dom_insert in Hinit3.
-                                                                            assert (i ∉ dom init) by ltac1:(set_solver).
-                                                                            assert (i ∉ subp_codom init) by ltac1:(set_solver).
-                                                                            (* ltac1:(set_solver). *)
                                                                         }
-                                                                        
-                                                                    }
-                                                                    {
-                                                                        
-                                                                        (* hmm *)
-
-                                                                        ltac1:(rewrite <- (right_id empty union (insert i x m)) in Htmp2 at 2).
-                                                                        rewrite <- insert_union_l in Htmp2.
-                                                                        Search subp_compose.
-
-                                                                        ltac1:(rewrite <- (left_id empty union (insert i x m)) in Htmp2 at 2).
-                                                                        rewrite <- insert_union_r in Htmp2.
-                                                                        Search insert union.
-                                                                        Check subp_union_is_compose__sometimes_1.
-                                                                        Search subp_compose union.
-                                                                        clear - HContra H1z n.
-                                                                        
                                                                     }
                                                                 }
                                                                 {
-                                                                    intros HH1 HH2.
+                                                                    intros [HH1 HH2].
+                                                                    split>[assumption|].
+                                                                    rewrite lookup_union in HH2.
+                                                                    rewrite map_lookup_filter in HH2.
+                                                                    rewrite lookup_fmap.
+                                                                    rewrite union_Some in HH2.
+                                                                    destruct HH2 as [HH2|HH2].
+                                                                    {
+                                                                        rewrite bind_Some in HH2.
+                                                                        destruct HH2 as [q [H1q H2q]].
+                                                                        rewrite option_guard_decide in H2q.
+                                                                        cases (); ltac1:(simplify_eq/=).
+                                                                        rewrite fmap_Some.
+                                                                        exists y.
+                                                                        split.
+                                                                        {
+                                                                            unfold subp_compose.
+                                                                            unfold subp_normalize.
+                                                                            rewrite map_lookup_filter.
+                                                                            rewrite bind_Some.
+                                                                            exists y.
+                                                                            rewrite option_guard_decide.
+                                                                            simpl.
+                                                                            split.
+                                                                            {
+                                                                                rewrite lookup_union.
+                                                                                rewrite map_lookup_filter.
+                                                                                rewrite union_Some.
+                                                                                left.
+                                                                                rewrite bind_Some.
+                                                                                exists y.
+                                                                                split>[exact H1q|].
+                                                                                rewrite option_guard_decide.
+                                                                                simpl.
+                                                                                cases (); try reflexivity.
+                                                                                ltac1:(contradiction).
+                                                                            }
+                                                                            { 
+                                                                                cases (); try ltac1:(congruence).
+                                                                                ltac1:(contradiction).
+                                                                            }
+                                                                        }
+                                                                        {
+                                                                            rewrite subst_notin2.
+                                                                            { reflexivity. }
+                                                                            {
+                                                                                assert (Hinit4' := Hinit4).
+                                                                                ltac1:(rewrite subp_codom_insert in Hinit4).
+                                                                                {
+                                                                                    unfold SubP in *.
+                                                                                    apply not_elem_of_dom_2.
+                                                                                    exact H.
+                                                                                }
+                                                                                {
+                                                                                    intros HContra.
+                                                                                    ltac1:(rewrite subp_codom_insert in Hinit5).
+                                                                                    {
+                                                                                        unfold SubP in *.
+                                                                                        apply not_elem_of_dom_2.
+                                                                                        exact H.
+                                                                                    }
+                                                                                    {
+                                                                                        assert(HC: i ∈ subp_codom (init)).
+                                                                                        {
+                                                                                            unfold subp_codom,SubP.
+                                                                                            rewrite elem_of_union_list.
+                                                                                            exists (vars_of y).
+                                                                                            split>[|assumption].
+                                                                                            rewrite elem_of_list_fmap.
+                                                                                            exists y.
+                                                                                            split>[reflexivity|].
+                                                                                            rewrite elem_of_elements.
+                                                                                            rewrite elem_of_map_img.
+                                                                                            exists j.
+                                                                                            exact H1q.
+                                                                                        }
+                                                                                        rewrite dom_insert in Hinit2.
+                                                                                        clear - Hinit2 HC.
+                                                                                        ltac1:(set_solver).
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    {
+                                                                        destruct HH2 as [HH2 HH3].
+                                                                        rewrite lookup_fmap in HH3.
+                                                                        rewrite bind_None in HH2.
+                                                                        rewrite fmap_Some in HH3.
+                                                                        destruct HH3 as [x0 [H1x0 H2x0]].
+                                                                        ltac1:(simplify_eq/=).
+                                                                        destruct HH2 as [HH2|HH2].
+                                                                        {
+                                                                            rewrite fmap_Some.
+                                                                            exists (subp_app init x0).
+                                                                            split.
+                                                                            {
+                                                                                unfold subp_compose.
+                                                                                unfold subp_normalize.
+                                                                                rewrite map_lookup_filter.
+                                                                                rewrite lookup_union.
+                                                                                rewrite lookup_fmap.
+                                                                                rewrite H1x0.
+                                                                                rewrite map_lookup_filter.
+                                                                                ltac1:(rewrite HH2).
+                                                                                simpl.
+                                                                                rewrite option_guard_decide.
+                                                                                cases (); try reflexivity.
+                                                                                ltac1:(contradiction).
+                                                                            }
+                                                                            {
+                                                                                rewrite subst_notin2.
+                                                                                { reflexivity. }
+                                                                                {
+                                                                                    intros HContra.
+                                                                                    assert (Ht1 := vars_of_subp_app init x0).
+                                                                                    rewrite dom_insert in Hinit2.
+                                                                                    rewrite dom_insert in Hinit3.
+                                                                                    assert (Hix0: i ∈ vars_of x0).
+                                                                                    {
+                                                                                        ltac1:(set_solver).
+                                                                                    }
+                                                                                    assert (i ∈ subp_codom m).
+                                                                                    {
+                                                                                        unfold subp_codom.
+                                                                                        rewrite elem_of_union_list.
+                                                                                        exists (vars_of x0).
+                                                                                        rewrite elem_of_list_fmap.
+                                                                                        split>[|assumption].
+                                                                                        exists x0.
+                                                                                        split>[reflexivity|].
+                                                                                        rewrite elem_of_elements.
+                                                                                        ltac1:(rewrite elem_of_map_img).
+                                                                                        exists j.
+                                                                                        exact H1x0.
+                                                                                    }
+                                                                                    rewrite dom_insert in Hinit5.
+                                                                                    assert (Hii: i ∉ dom init).
+                                                                                    {
+                                                                                        ltac1:(set_solver).
+                                                                                    }
+                                                                                    apply not_elem_of_dom_1 in Hii.
+                                                                                    assert (i ∉ dom m).
+                                                                                    (* destruct (decide (subp_app init )) *)
+                                                                                    {
+                                                                                        intros HContra'.
+                                                                                        apply n. clear n.
+                                                                                        (* Search (dom (subp_compose _ _)). *)
+                                                                                        unfold subp_compose.
+                                                                                        rewrite elem_of_dom.
+                                                                                        ltac1:(rewrite elem_of_dom in HContra').
+                                                                                        destruct HContra' as [u Hu].
+                                                                                        unfold subp_normalize.
+                                                                                        exists (subp_app init u).
+                                                                                        rewrite map_lookup_filter.
+                                                                                        rewrite lookup_union.
+                                                                                        rewrite map_lookup_filter.
+                                                                                        rewrite Hii.
+                                                                                        simpl.
+                                                                                        rewrite (left_id None union).
+                                                                                        rewrite lookup_fmap.
+                                                                                        rewrite Hu.
+                                                                                        simpl.
+                                                                                        rewrite option_guard_decide.
+                                                                                        cases (); try reflexivity.
+                                                                                        apply dec_stable in n.
+                                                                                        rewrite subp_is_normal_spec in Hsnorm.
+                                                                                        ltac1:(exfalso).
+                                                                                        (* clear - Hsnorm Hu n. *)
+                                                                                        apply helper_lemma' in n.
+                                                                                        destruct n as [y [H1y H2y]].
+                                                                                        subst u.
+                                                                                        destruct H2y as [H2y|H2y].
+                                                                                        {
+                                                                                            ltac1:(simplify_eq/=).
+                                                                                        }
+                                                                                        {
+                                                                                            subst y.
+                                                                                            ltac1:(simplify_eq/=).
+                                                                                        }
+                                                                                    }
+                                                                                    ltac1:(rewrite subp_codom_insert in Hinit4).
+                                                                                    {
+                                                                                        assumption.
+                                                                                    }
+                                                                                    ltac1:(rewrite subp_codom_insert in Hinit5).
+                                                                                    {
+                                                                                        assumption.
+                                                                                    }
+                                                                                    clear - Hinit5 H0.
+                                                                                    ltac1:(set_solver).
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        {
+
+                                                                        }
+
+                                                                    }
                                                                 }
                                                             }
                                                             ltac1:(fold (@subp_normalize Σ ((fun (a : (TermOver' BuiltinOrVar)) => TermOverBoV_subst a i x) <$> (subp_compose init m)))).
@@ -3778,7 +3847,7 @@ Proof.
     }
 Qed.
 
-
+*)
 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
