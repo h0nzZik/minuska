@@ -555,7 +555,7 @@ Definition rlift
     (map_to_list (rlift rinv))
 . *)
 
-Definition make_serial0
+(* Definition make_serial0
     {Σ : StaticModel}
     (s : gmap variable (TermOver BuiltinOrVar))
     (avoid : gset variable)
@@ -567,7 +567,25 @@ Definition make_serial0
     (map_to_list (subp_compose s (rlift rinv)))
     ++
     (map_to_list (rlift r))
+. *)
+
+
+Definition make_serial0
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    (avoid : gset variable)
+    :
+    list (variable*(TermOver BuiltinOrVar))%type
+:=
+    let r := renaming_for avoid s in
+    let rinv := r_inverse r in
+    (map_to_list (rlift rinv))
+    ++
+    (map_to_list s)
+    ++
+    (map_to_list (rlift r))
 .
+
 
 Definition make_serial
     {Σ : StaticModel}
@@ -3392,11 +3410,14 @@ Proof.
                                                                     rewrite fmap_Some in HH2.
                                                                     destruct HH2 as [z [H1z H2z]].
                                                                     subst y.
+                                                                    (* apply elem_of_dom_2 in H1z as H1z''. *)
                                                                     (* rewrite lookup_union. *)
                                                                     
                                                                     (* rewrite subst_notin2. *)
                                                                     {
                                                                         apply elem_of_dom_2 in H1z as H1z''.
+                                                                        eapply elem_of_weaken in H1z'' as H1z'''>[|apply dom_subp_compose_subseteq].
+                                                                        (* Search dom subp_compose. *)
                                                                         unfold subp_compose in H1z.
                                                                         unfold subp_normalize in H1z.
                                                                         rewrite map_lookup_filter in H1z.
@@ -4672,101 +4693,91 @@ Proof.
     }
 Qed.
 
-Lemma to_serial_then_to_parallel
+Lemma another_helper_lemma
     {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (m : gmap variable (TermOver BuiltinOrVar))
-    :
+    avoid0 m
+:
     dom m ## subp_codom m ->
     subp_is_normal m ->
-    subp_restrict (dom m) (make_parallel (make_serial0 m avoid0)) = m
+    subp_codom (rlift (r_inverse (renaming_for avoid0 m)))
+        ## subp_dom (rlift (r_inverse (renaming_for avoid0 m)))
 .
 Proof.
+
     intros 
         Hdocodo
         Hnorm.
-    (* TODO extract lemma *)
-    assert(Hhelp: subp_codom (rlift (r_inverse (renaming_for avoid0 m)))
-        ## subp_dom (rlift (r_inverse (renaming_for avoid0 m)))).
+    assert (Htmp2 := map_img_renaming_for_dom m avoid0).
+    assert (Htmp3 := map_img_renaming_for_codom avoid0 m).
+    rewrite elem_of_disjoint.
+    intros x H1x H2x.
+    unfold subp_codom,subp_dom,SubP in *.
+    rewrite elem_of_union_list in H1x.
+    destruct H1x as [X [H1X H2X]].
+    rewrite elem_of_list_fmap in H1X.
+    destruct H1X as [y [H1y H2y]].
+    subst.
+    rewrite elem_of_elements in H2y.
+    rewrite elem_of_map_img in H2y.
+    destruct H2y as [i H1i].
+    rewrite elem_of_dom in H2x.
+    destruct H2x as [z Hz].
+    unfold rlift in *.
+    rewrite lookup_fmap in H1i.
+    rewrite lookup_fmap in Hz.
+    rewrite fmap_Some in H1i.
+    rewrite fmap_Some in Hz.
+    destruct H1i as [z' [H1z' H2z']].
+    destruct Hz as [z'' [H1z'' H2z'']].
+    subst.
+    unfold r_inverse in *.
+    rewrite <- elem_of_list_to_map in H1z''.
     {
-        assert (Htmp2 := map_img_renaming_for_dom m avoid0).
-        assert (Htmp3 := map_img_renaming_for_codom avoid0 m).
-        rewrite elem_of_disjoint.
-        intros x H1x H2x.
-        unfold subp_codom,subp_dom,SubP in *.
-        rewrite elem_of_union_list in H1x.
-        destruct H1x as [X [H1X H2X]].
-        rewrite elem_of_list_fmap in H1X.
-        destruct H1X as [y [H1y H2y]].
-        subst.
-        rewrite elem_of_elements in H2y.
-        rewrite elem_of_map_img in H2y.
-        destruct H2y as [i H1i].
-        rewrite elem_of_dom in H2x.
-        destruct H2x as [z Hz].
-        unfold rlift in *.
-        rewrite lookup_fmap in H1i.
-        rewrite lookup_fmap in Hz.
-        rewrite fmap_Some in H1i.
-        rewrite fmap_Some in Hz.
-        destruct H1i as [z' [H1z' H2z']].
-        destruct Hz as [z'' [H1z'' H2z'']].
-        subst.
-        unfold r_inverse in *.
-        rewrite <- elem_of_list_to_map in H1z''.
+        rewrite <- elem_of_list_to_map in H1z'.
         {
-            rewrite <- elem_of_list_to_map in H1z'.
+            rewrite elem_of_list_fmap in H1z'.
+            rewrite elem_of_list_fmap in H1z''.
+            destruct H1z' as [[a a'][H1a H2a]].
+            destruct H1z'' as [[b b'][H1b H2b]].
+            unfold pair_swap in *.
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            unfold vars_of in H2X; simpl in H2X.
+            unfold vars_of in H2X; simpl in H2X.
+            rewrite elem_of_singleton in H2X.
+            subst b'.
+            rewrite elem_of_map_to_list in H2a.
+            rewrite elem_of_map_to_list in H2b.
+
+            
+            assert(H1: a ∈ @map_img _ _ _ _ (gset _) _ _ _ (renaming_for avoid0 m)).
             {
-                rewrite elem_of_list_fmap in H1z'.
-                rewrite elem_of_list_fmap in H1z''.
-                destruct H1z' as [[a a'][H1a H2a]].
-                destruct H1z'' as [[b b'][H1b H2b]].
-                unfold pair_swap in *.
-                simpl in *.
-                ltac1:(simplify_eq/=).
-                unfold vars_of in H2X; simpl in H2X.
-                unfold vars_of in H2X; simpl in H2X.
-                rewrite elem_of_singleton in H2X.
-                subst b'.
-                rewrite elem_of_map_to_list in H2a.
-                rewrite elem_of_map_to_list in H2b.
+                rewrite elem_of_map_img.
+                exists b.
+                apply H2b.
+            }
 
-                
-                assert(H1: a ∈ @map_img _ _ _ _ (gset _) _ _ _ (renaming_for avoid0 m)).
+
+            unfold renaming_for in H2b.
+            rewrite <- elem_of_list_to_map in H2b.
+            {
+                apply elem_of_zip_l in H2b.
+                rewrite elem_of_elements in H2b.
+                ltac1:(rewrite elem_of_dom in H2b).
+                destruct H2b as [x Hx].
+
+                unfold renaming_for in H2a.
+                rewrite <- elem_of_list_to_map in H2a.
                 {
-                    rewrite elem_of_map_img.
-                    exists b.
-                    apply H2b.
-                }
-
-
-                unfold renaming_for in H2b.
-                rewrite <- elem_of_list_to_map in H2b.
-                {
-                    apply elem_of_zip_l in H2b.
-                    rewrite elem_of_elements in H2b.
-                    ltac1:(rewrite elem_of_dom in H2b).
-                    destruct H2b as [x Hx].
-
-                    unfold renaming_for in H2a.
-                    rewrite <- elem_of_list_to_map in H2a.
+                    apply elem_of_zip_l in H2a.
+                    rewrite elem_of_elements in H2a.
+                    rewrite elem_of_disjoint in Htmp2.
+                    apply (Htmp2 a).
                     {
-                        apply elem_of_zip_l in H2a.
-                        rewrite elem_of_elements in H2a.
-                        rewrite elem_of_disjoint in Htmp2.
-                        apply (Htmp2 a).
-                        {
-                            exact H1.
-                        } 
-                        {
-                            exact H2a.
-                        }
-                    }
+                        exact H1.
+                    } 
                     {
-                        rewrite fst_zip.
-                        apply NoDup_elements.
-                        rewrite length_fresh_var_seq.
-                        ltac1:(lia).
+                        exact H2a.
                     }
                 }
                 {
@@ -4777,25 +4788,11 @@ Proof.
                 }
             }
             {
-                rewrite <- list_fmap_compose.
-                unfold pair_swap, compose.
-                simpl.
-                unfold renaming_for.
-                rewrite map_to_list_to_map.
-                {
-                    rewrite snd_zip.
-                    apply NoDup_fresh_var_seq.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }
-                {
-                    rewrite fst_zip.
-                    apply NoDup_elements.
-                    rewrite length_fresh_var_seq.
-                    ltac1:(lia).
-                }    
+                rewrite fst_zip.
+                apply NoDup_elements.
+                rewrite length_fresh_var_seq.
+                ltac1:(lia).
             }
-
         }
         {
             rewrite <- list_fmap_compose.
@@ -4814,13 +4811,135 @@ Proof.
                 apply NoDup_elements.
                 rewrite length_fresh_var_seq.
                 ltac1:(lia).
-            }
+            }    
+        }
+
+    }
+    {
+        rewrite <- list_fmap_compose.
+        unfold pair_swap, compose.
+        simpl.
+        unfold renaming_for.
+        rewrite map_to_list_to_map.
+        {
+            rewrite snd_zip.
+            apply NoDup_fresh_var_seq.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
+        {
+            rewrite fst_zip.
+            apply NoDup_elements.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
         }
     }
+Qed.
+
+Lemma to_serial_then_to_parallel
+    {Σ : StaticModel}
+    (avoid0 : gset variable)
+    (m : gmap variable (TermOver BuiltinOrVar))
+    :
+    dom m ## subp_codom m ->
+    subp_is_normal m ->
+    subp_restrict (dom m) (make_parallel (make_serial0 m avoid0)) = m
+.
+Proof.
+    intros 
+        Hdocodo
+        Hnorm.
+    (* TODO extract lemma *)
+    assert(Hhelp: subp_codom (rlift (r_inverse (renaming_for avoid0 m)))
+        ## subp_dom (rlift (r_inverse (renaming_for avoid0 m)))).
+    {
+        apply another_helper_lemma.
+        apply Hdocodo.
+        apply Hnorm.
+    }
+    assert(Hhelp2: subp_codom (rlift (renaming_for avoid0 m)) ## subp_dom (rlift (renaming_for avoid0 m))).
+    {
+        assert (Htmp := subp_codom_renaming_for_disjoint_dom_m avoid0 m).
+        unfold subp_dom, SubP.
+        unfold rlift at 2.
+        rewrite dom_fmap.
+        ltac1:(rewrite dom_renaming_for).
+        ltac1:(set_solver).
+    }
+
+    assert(Hhelp3: subp_dom (rlift (renaming_for avoid0 m)) ## subp_codom (rlift (renaming_for avoid0 m))).
+    {    
+        assert (Htmp := subp_codom_renaming_for_disjoint_dom_m avoid0 m).
+        unfold subp_dom, SubP.
+        unfold rlift at 1.
+        rewrite dom_fmap.
+        ltac1:(rewrite dom_renaming_for).
+        ltac1:(set_solver).
+    }
+
     unfold make_serial0.
     rewrite make_parallel_app.
     {
-        rewrite make_parallel_map_to_list.
+        rewrite make_parallel_app.
+        {
+            ltac1:(rewrite (make_parallel_map_to_list (rlift _))).
+            {
+                apply inverse_of_renaming_is_normal.
+            }
+            {
+                rewrite subp_codom_inverse.
+                {
+                    rewrite subp_dom_inverse.
+                    {
+                        apply Hhelp3.
+                    }
+                    {
+                        apply renaming_for_ok.
+                    }
+                }
+                {
+                    apply renaming_for_ok.
+                }
+            }
+            {
+                ltac1:(rewrite (make_parallel_map_to_list (rlift _))).
+                {
+                    apply renaming_is_normal.
+                }
+                {
+                    apply Hhelp2.
+                }
+                (* admit. *)
+            }
+        }
+        {
+            assert (H := Hnorm).
+            rewrite subp_is_normal_spec in H.
+            unfold subs_is_normal.
+            rewrite Forall_forall.
+            intros [x p] H1x H2x.
+            simpl in *.
+            subst p.
+            ltac1:(rewrite elem_of_map_to_list in H1x).
+            apply (H x (t_over (bov_variable x)) H1x eq_refl).
+        }
+    }
+    {
+        assert (H: subp_is_normal ((rlift (r_inverse (renaming_for avoid0 m))))).
+        {
+            apply inverse_of_renaming_is_normal.
+        }
+        rewrite subp_is_normal_spec in H.
+        unfold subs_is_normal.
+        rewrite Forall_forall.
+        intros [x p] H1x H2x.
+        simpl in *.
+        subst p.
+        ltac1:(rewrite elem_of_map_to_list in H1x).
+        apply (H x (t_over (bov_variable x)) H1x eq_refl).
+    }
+    {
+        (* rewrite make_parallel_map_to_list.
         {
             ltac1:(rewrite make_parallel_map_to_list).
             {
@@ -4880,13 +4999,13 @@ Proof.
                     }
                 }
             }
-        }
+        } *)
         {
             apply subp_is_normal_normalize.
         }
         {
-            assert (Htmp2 := subp_codom_subp_compose_2 (rlift (renaming_for avoid0 m)) m).
-            assert (Htmp3 := dom_subp_compose_subseteq (rlift (renaming_for avoid0 m)) m).
+            assert (Htmp2 := subp_codom_subp_compose_2 m (rlift (r_inverse (renaming_for avoid0 m)))).
+            assert (Htmp3 := dom_subp_compose_subseteq m (rlift (r_inverse (renaming_for avoid0 m)))).
             
             assert (Htmp4: subp_codom (rlift (renaming_for avoid0 m)) ∪ subp_codom m ## dom (rlift (renaming_for avoid0 m)) ∪ dom m).
             {
@@ -4898,8 +5017,41 @@ Proof.
                 unfold subp_dom.
                 ltac1:(set_solver).
             }
+            rewrite subp_codom_inverse in Hhelp>[|apply renaming_for_ok].
+            
+            rewrite subp_codom_inverse in Htmp2>[|apply renaming_for_ok].
+            rewrite subp_dom_inverse in Hhelp>[|apply renaming_for_ok].
+            assert(Htmp5 := subp_dom_inverse (renaming_for avoid0 m)).
+            ltac1:(ospecialize (Htmp5 _)).
+            {
+                apply renaming_for_ok.
+            }
+            unfold subp_dom in Htmp5.
+            ltac1:(rewrite Htmp5 in Htmp3).
+            clear Htmp5.
+            
             unfold subp_dom,subp_dom, SubP in *.
-            ltac1:(set_solver).
+            unfold rlift in Hhelp at 1.
+            rewrite dom_fmap in Hhelp.
+            rewrite dom_renaming_for in Hhelp.
+            unfold rlift in Htmp4 at 2.
+            rewrite dom_fmap in Htmp4.
+            rewrite dom_renaming_for in Htmp4.
+            unfold rlift in Htmp2 at 2.
+            rewrite dom_fmap in Htmp2.
+            rewrite dom_renaming_for in Htmp2.
+            unfold subp_dom,subp_dom, SubP in *.
+            (* rewrite dom_rlift_inverse in Htmp5. *)
+            remember (subp_codom (subp_compose m (rlift (r_inverse (renaming_for avoid0 m))))) as A.
+            remember (dom (subp_compose m (rlift (r_inverse (renaming_for avoid0 m))))) as B.
+
+            (* Search dom renaming_for. *)
+            (* remember (dom (rlift (renaming_for avoid0 m))) as A'. *)
+            (* remember (subp_codom (rlift (renaming_for avoid0 m))) as B'. *)
+            (* remember ((rlift (renaming_for avoid0 m))) as R. *)
+            (* ltac1:(rewrite dom_rlift_inverse in Htmp5). *)
+            (* ltac1:(rewrite <- HeqB' in Htmp2). *)
+            (* ltac1:(set_solver). *)
         }
     }
     {
