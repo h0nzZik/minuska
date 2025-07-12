@@ -4909,6 +4909,7 @@ Proof.
                 {
                     apply Hhelp2.
                 }
+                (* Maybe I need a new, completely different lemma.... and it has nothign to do with the associativity *)
                 (* admit. *)
             }
         }
