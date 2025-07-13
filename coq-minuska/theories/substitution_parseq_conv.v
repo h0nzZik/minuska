@@ -4835,7 +4835,7 @@ Proof.
         }
     }
 Qed.
-
+(* 
 Lemma to_serial_then_to_parallel
     {Σ : StaticModel}
     (avoid0 : gset variable)
@@ -5138,7 +5138,7 @@ Proof.
         ltac1:(rewrite dom_renaming_for in Htmp1).
         ltac1:(set_solver).
     }
-Qed.
+Qed. *)
 
 
 
@@ -5613,6 +5613,86 @@ Qed. *)
 (* I need to ensure that make_serial0 creates a non-looping substitution
    and then I can assume it with the ugly lemma above.
  *)
+
+(* Print subp_compose. *)
+
+Definition subp_precompose
+  {Σ : StaticModel}
+  (a b : gmap variable (TermOver BuiltinOrVar))
+:=
+      (fmap (subp_app a) b) 
+.
+
+Definition subs_precompose
+  {Σ : StaticModel}
+  (a b : list (variable*(TermOver BuiltinOrVar)))
+:=
+      fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
+.
+
+Definition subs_precomposep
+  {Σ : StaticModel}
+  (a : gmap variable (TermOver BuiltinOrVar))
+  (b : list (variable*(TermOver BuiltinOrVar)))
+:=
+      fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subp_app a x.2))) b
+.
+
+
+Lemma map_to_list_precompose
+    {Σ : StaticModel}
+    (a b : gmap variable (TermOver BuiltinOrVar))
+:
+    map_to_list (subp_precompose a b) ≡ₚ subs_precomposep a (map_to_list b)
+.
+Proof.
+    ltac1:(induction b using map_ind).
+    {
+        unfold subp_precompose.
+        rewrite fmap_empty.
+        rewrite map_to_list_empty.
+        simpl.
+        reflexivity.
+    }
+    {
+        unfold subp_precompose in *.
+        rewrite fmap_insert.
+        rewrite map_to_list_insert.
+        rewrite IHb.
+        unfold subs_precomposep.
+        rewrite map_to_list_insert.
+        rewrite fmap_cons.
+        simpl.
+        { reflexivity. }
+        exact H.
+        {
+            rewrite lookup_fmap.
+            rewrite H.
+            reflexivity.
+        }
+    }
+Qed.
+
+Definition make_serial1
+    {Σ : StaticModel}
+    (s : gmap variable (TermOver BuiltinOrVar))
+    (avoid : gset variable)
+    :
+    list (variable*(TermOver BuiltinOrVar))%type
+:=
+    let r := renaming_for avoid s in
+    let rinv := r_inverse r in
+    (map_to_list (rlift rinv))
+    ++
+    (map_to_list (subp_precompose (rlift r) (s)))
+.
+
+Check map_to_list_union.
+Check subp_compose_correct.
+Search map_to_list app.
+
+
+
 (* TODO *)
 Lemma make_serial_correct
     {Σ : StaticModel}
@@ -5644,6 +5724,10 @@ Proof.
             destruct (aa !! x) eqn:Haax.
             {
                 ltac1:(rewrite Haax).
+                unfold make_serial0.
+                rewrite subs_app_app.
+                rewrite subs_app_app.
+                Search renaming_for.
                 rewrite <- make_parallel_correct.
                 {
 
