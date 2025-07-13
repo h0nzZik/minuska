@@ -5623,12 +5623,12 @@ Definition subp_precompose
       (fmap (subp_app a) b) 
 .
 
-Definition subs_precompose
+(* Definition subs_precompose
   {Σ : StaticModel}
   (a b : list (variable*(TermOver BuiltinOrVar)))
 :=
       fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
-.
+. *)
 
 Definition subs_precomposep
   {Σ : StaticModel}
@@ -5672,6 +5672,23 @@ Proof.
         }
     }
 Qed.
+(* 
+Lemma subs_app_subs_precomposep
+    {Σ : StaticModel}
+    (a : gmap variable (TermOver BuiltinOrVar))
+    (b : list (variable*(TermOver BuiltinOrVar)))
+:
+    subs_app (subs_precomposep a b) = compose (subp_app a) (subs_app b)
+.  
+Proof.
+    revert a.
+    induction b; intros aa.
+    {
+        simpl.
+        Search subp_app subp_compose.
+    }
+Qed. *)
+
 
 Definition make_serial1
     {Σ : StaticModel}
@@ -5682,10 +5699,233 @@ Definition make_serial1
 :=
     let r := renaming_for avoid s in
     let rinv := r_inverse r in
-    (map_to_list (rlift rinv))
-    ++
     (map_to_list (subp_precompose (rlift r) (s)))
+    ++
+    (map_to_list (rlift rinv))
 .
+
+
+Lemma subs_app_app'
+    {Σ : StaticModel}
+    (s1 s2 : SubS)
+:
+    subs_app (s1 ++ s2) = (subs_app s2) ∘ (subs_app s1)
+.
+Proof.
+    apply functional_extensionality.
+    intros p.
+    apply subs_app_app.
+Qed.
+
+
+Definition srenaming_ok
+    {Σ : StaticModel}
+    (r : (list (variable*variable)))
+    :
+    Prop :=
+    forall k1 k2 v, (k1,v) ∈ r -> (k2,v) ∈ r -> k1 = k2
+.
+
+Definition srlift
+    {Σ : StaticModel}
+    (r : (list (variable*variable)))
+    :
+    list (variable*(TermOver BuiltinOrVar))
+:=
+   (fun x => (x.1, t_over (bov_variable x.2))) <$> r
+.
+
+Definition sr_inverse
+    {Σ : StaticModel}
+    (r : (list (variable*variable)))
+    :
+    (list (variable*variable))
+:=
+    pair_swap <$> r
+.
+
+
+Lemma TermOverBoV_subst_cancel
+    {Σ : StaticModel}
+    (x1 x2 : variable)
+    p
+    :
+    x2 ∉ vars_of p ->
+    TermOverBoV_subst (TermOverBoV_subst p x1 (t_over (bov_variable x2))) x2 (t_over (bov_variable x1)) = p
+.
+Proof.
+    induction p; intros Hvars.
+    {
+        simpl.
+        repeat (cases (); ltac1:(simplify_eq/=); try reflexivity).
+        unfold vars_of in Hvars; simpl in Hvars.
+        unfold vars_of in Hvars; simpl in Hvars.
+        ltac1:(set_solver).
+    }
+    {
+        simpl.
+        apply f_equal.
+        rewrite vars_of_t_term in Hvars.
+        revert H Hvars.
+        clear s.
+        induction l; intros H Hvars.
+        {
+            simpl. reflexivity.
+        }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            rewrite fmap_cons in Hvars.
+            rewrite union_list_cons in Hvars.
+            specialize (IHl H2 ltac:(set_solver)).
+            specialize (H1 ltac:(set_solver)).
+            rewrite map_cons.
+            rewrite map_cons.
+            rewrite H1.
+            apply f_equal.
+            apply IHl.
+        }
+    }
+Qed.
+
+
+Lemma subs_app_renaming_inverse_0
+    {Σ : StaticModel}
+    (r : list (variable*variable))
+    p
+    :
+    srenaming_ok r ->
+    (list_to_set (r.*2)) ## (list_to_set (r.*1)) ∪ vars_of p  ->
+    (* list_to_set (r.*2) ## (vars_of ((subs_app (srlift r) p))) -> *)
+    (subs_app (srlift (reverse (sr_inverse r))) (subs_app (srlift r) p))
+    = p
+.
+Proof.
+    intros Hrok Hdisj.
+    (* apply functional_extensionality. *)
+    revert Hrok p Hdisj.
+    induction r using rev_ind; intros Hrok x0 Hdisj.
+    {
+        simpl. reflexivity.
+    }
+    {
+        unfold srenaming_ok in *.
+        ltac1:(ospecialize (IHr _)).
+        {
+            intros.
+            apply (Hrok _ _ v).
+            ltac1:(set_solver).
+            ltac1:(set_solver).
+        }
+        
+        unfold sr_inverse in *.
+        rewrite fmap_app.
+        rewrite reverse_app.
+        rewrite fmap_cons.
+        rewrite fmap_nil.
+        unfold srlift.
+        rewrite fmap_app.
+        rewrite reverse_singleton.
+        rewrite fmap_cons.
+        unfold pair_swap.
+        ltac1:(simpl fst).
+        ltac1:(simpl snd).
+        rewrite fmap_app.
+        (* Unset Printing Notations. *)
+        ltac1:(rewrite subs_app_app').
+        ltac1:(rewrite subs_app_app').
+        simpl.
+        unfold compose.
+        ltac1:(rewrite -> TermOverBoV_subst_cancel).
+        {
+            unfold srlift, reverse, pair_swap in IHr.
+            unfold compose in IHr.
+            rewrite IHr.
+            { reflexivity. }
+            {
+                rewrite fmap_app in Hdisj.
+                ltac1:(rewrite list_to_set_app in Hdisj).
+                unfold srlift in Hdisj.
+                (* rewrite *)
+            }
+        }
+        {
+            intros HContra.
+            eapply elem_of_weaken in HContra>[|apply vars_of_subs_app].
+            rewrite fmap_app in Hdisj.
+            rewrite fmap_app in Hdisj.
+            simpl in Hdisj.
+            rewrite list_to_set_app in Hdisj.
+            rewrite list_to_set_app in Hdisj.
+            simpl in Hdisj.
+            simpl in HContra.
+            unfold subt_codom in HContra.
+            rewrite elem_of_union in HContra.
+            destruct HContra as [HC|HC].
+            {
+                rewrite elem_of_union_list in HC.
+                destruct HC as [X [H1X H2X]].
+                rewrite elem_of_list_fmap in H1X.
+                destruct H1X as [y [H1y H2y]].
+                subst.
+                rewrite elem_of_list_fmap in H2y.
+                destruct H2y as [z [H1z H2z]].
+                subst.
+                rewrite elem_of_list_fmap in H2z.
+                destruct H2z as [y[ H1y H2y]].
+                subst.
+                simpl in *.
+                unfold vars_of in H2X; simpl in H2X.
+                unfold vars_of in H2X; simpl in H2X.
+                rewrite elem_of_singleton in H2X.
+                destruct x,y.
+                ltac1:(simplify_eq/=).
+                (* assert (Htmp := Hrok v v v2). *)
+                ltac1:(set_solver).
+            }
+            {
+                ltac1:(set_solver).
+            }
+        }
+        
+    }
+Qed.
+
+Lemma make_serial1_correct
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    (avoid : gset variable)
+    :
+    subs_app (make_serial1 m avoid) = subp_app m
+.
+Proof.
+    unfold make_serial1.
+    rewrite subs_app_app'.
+    apply functional_extensionality.
+    intros x.
+    revert m avoid.
+    induction x; intros m avoid.
+    {
+        simpl.
+        destruct a; simpl in *.
+        {
+            rewrite subs_app_builtin.
+            rewrite subs_app_builtin.
+            reflexivity.
+        }
+        {
+            cases ().
+            {
+                simpl.
+            }
+            {
+
+            }
+        }
+    }
+    Search subs_app Permutation.
+    rewrite map_to_list_precompose.
+Qed.
 
 Check map_to_list_union.
 Check subp_compose_correct.
@@ -5873,4 +6113,4 @@ Proof.
     {
         Search subt_closed.
     }
-Qed. *)
+Qed.
