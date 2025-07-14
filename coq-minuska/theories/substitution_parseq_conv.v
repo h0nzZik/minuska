@@ -5638,6 +5638,23 @@ Definition subs_precomposep
       fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subp_app a x.2))) b
 .
 
+Definition subp_precomposes
+  {Σ : StaticModel}
+  (a : list (variable*(TermOver BuiltinOrVar)))
+  (b : gmap variable (TermOver BuiltinOrVar))
+:=
+      (fmap (subs_app a) b) 
+.
+
+
+Definition subs_precomposes
+  {Σ : StaticModel}
+  (a : list (variable*(TermOver BuiltinOrVar)))
+  (b : list (variable*(TermOver BuiltinOrVar)))
+:=
+      fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
+.
+
 
 Lemma map_to_list_precompose
     {Σ : StaticModel}
@@ -5690,19 +5707,6 @@ Proof.
 Qed. *)
 
 
-Definition make_serial1
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
-    (avoid : gset variable)
-    :
-    list (variable*(TermOver BuiltinOrVar))%type
-:=
-    let r := renaming_for avoid s in
-    let rinv := r_inverse r in
-    (map_to_list (subp_precompose (rlift r) (s)))
-    ++
-    (map_to_list (rlift rinv))
-.
 
 
 Lemma subs_app_app'
@@ -5741,7 +5745,7 @@ Definition sr_inverse
     :
     (list (variable*variable))
 :=
-    pair_swap <$> r
+    reverse (pair_swap <$> r)
 .
 
 
@@ -5853,7 +5857,7 @@ Lemma subs_app_renaming_inverse_0
     NoDup (r.*2) ->
     (list_to_set (r.*2)) ## vars_of p  ->
     ((r.*2)) ## ((r.*1)) ->
-    (subs_app (srlift (reverse (sr_inverse r))) (subs_app (srlift r) p))
+    (subs_app (srlift ((sr_inverse r))) (subs_app (srlift r) p))
     = p
 .
 Proof.
@@ -5920,7 +5924,10 @@ Proof.
                 clear - Htmp.
                 ltac1:(set_solver).                    
             }
-            { ltac1:(set_solver). }
+            { 
+                clear - H2in Hdisj.
+                ltac1:(set_solver).
+            }
         }
 
         assert (r2_disj_r1: r.*2 ## r.*1).
@@ -5980,6 +5987,129 @@ Proof.
     }
 Qed.
 
+Lemma subs_app_nodup_3
+    {Σ : StaticModel}
+    (x : variable)
+    (s : list (variable*(TermOver BuiltinOrVar)))
+    (p : TermOver BuiltinOrVar)
+    :
+    NoDup (s.*1) ->
+    vars_of p ## list_to_set (s.*1) ->
+    (x, p) ∈ s ->
+    subs_app s (t_over (bov_variable x)) = p
+.
+Proof.
+    revert x p.
+    induction s; intros x p Hnd H1 H2.
+    {
+        inversion H2.
+    }
+    {
+        simpl.
+        rewrite elem_of_cons in H2.
+        destruct H2 as [H2|H2].
+        {
+            destruct a as [x' p'].
+            simpl in *.
+            ltac1:(simplify_eq/=).
+            rewrite decide_True.
+            {
+                rewrite subs_app_untouched.
+                { reflexivity. }
+                {
+                    ltac1:(set_solver).
+                }
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+            destruct a as [x' p'].
+            rewrite fmap_cons in H1.
+            ltac1:(simpl fst in H1).
+            rewrite list_to_set_cons in H1.
+            rewrite fmap_cons in Hnd.
+            rewrite NoDup_cons in Hnd.
+            simpl in *.
+            destruct Hnd as [Hnd1 Hnd2].
+            destruct (decide (x' = x)).
+            {
+                subst.
+                ltac1:(exfalso).
+                apply Hnd1.
+                rewrite elem_of_list_fmap.
+                exists (x, p).
+                split>[reflexivity|].
+                exact H2.
+            }
+            {
+                apply IHs.
+                { assumption. }
+                {
+                    ltac1:(set_solver).
+                }
+                {
+                    assumption.
+                }
+            }
+        }
+    }
+Qed.
+
+(* Lemma subs_app_precomposes_variable
+    {Σ : StaticModel}
+    (x : variable)
+    (p : TermOver BuiltinOrVar)
+    (r : list (variable * variable))
+    (s : list (variable*(TermOver BuiltinOrVar)))
+    :
+    (x, p) ∈ s ->
+    subs_app (subs_precomposes (srlift r) s) (t_over (bov_variable x)) = subs_app (srlift r) p
+.
+Proof.
+    revert x p r.
+    induction s; intros x p r Hxps.
+    {
+        simpl.
+        inversion Hxps.
+    }
+    {
+        simpl.
+        rewrite elem_of_cons in Hxps.
+        destruct Hxps as [Hxpa|Hxps].
+        {
+            subst a.
+            simpl.
+            rewrite decide_True.
+            {
+                unfold subs_precomposes.
+            }
+            {
+                reflexivity.
+            }
+        }
+        {
+
+        }
+    }
+Qed. *)
+
+Definition make_serial1
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    (avoid : gset variable)
+    :
+    list (variable*(TermOver BuiltinOrVar))%type
+:=
+    let r := map_to_list (renaming_for avoid m) in
+    let rinv := sr_inverse r in
+    (* (map_to_list (subp_precomposes (srlift r) m)) *)
+    (subs_precomposes (srlift r) (map_to_list m))
+    ++
+    ((srlift rinv))
+.
+
 Lemma make_serial1_correct
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
@@ -6006,21 +6136,19 @@ Proof.
             cases ().
             {
                 simpl.
+                unfold subs_precomposes.
+                Search subs_app bov_variable.
+                Check subs_app_renaming_inverse_0.
             }
             {
 
             }
         }
     }
-    Search subs_app Permutation.
-    rewrite map_to_list_precompose.
+    (* Search subs_app Permutation. *)
+    (* rewrite map_to_list_precompose. *)
 Qed.
-
-Check map_to_list_union.
-Check subp_compose_correct.
-Search map_to_list app.
-
-
+(* 
 
 (* TODO *)
 Lemma make_serial_correct
@@ -6202,4 +6330,4 @@ Proof.
     {
         Search subt_closed.
     }
-Qed.
+Qed. *)
