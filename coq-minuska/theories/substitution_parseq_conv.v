@@ -5739,6 +5739,20 @@ Definition srlift
    (fun x => (x.1, t_over (bov_variable x.2))) <$> r
 .
 
+Lemma srlift_map_to_list
+    {Σ : StaticModel}
+    m
+:
+    srlift (map_to_list m) = map_to_list (rlift m)
+.
+Proof.
+    unfold srlift, rlift.
+    ltac1:(rewrite map_to_list_fmap).
+    unfold prod_map.
+    simpl.
+    reflexivity.
+Qed.
+
 Definition sr_inverse
     {Σ : StaticModel}
     (r : (list (variable*variable)))
@@ -6110,20 +6124,96 @@ Definition make_serial1
     ((srlift rinv))
 .
 
+Lemma renaming_for_contra
+    {Σ : StaticModel}
+    avoid m v v1 v2
+    :
+    renaming_for avoid m !! v = Some v1  ->
+    renaming_for avoid m !! v1 = Some v2 ->
+    False
+.
+Proof.
+    intros H1 H2.
+    unfold renaming_for in *.
+    rewrite <- elem_of_list_to_map in H1.
+    {
+        rewrite <- elem_of_list_to_map in H2.
+        {
+            apply elem_of_zip_r in H1.
+            apply elem_of_zip_l in H2.
+            apply elem_of_fresh_var_seq in H1.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite fst_zip.
+            apply NoDup_elements.
+            rewrite length_fresh_var_seq.
+            ltac1:(lia).
+        }
+    }
+    {
+        rewrite fst_zip.
+        apply NoDup_elements.
+        rewrite length_fresh_var_seq.
+        ltac1:(lia).
+    }
+Qed.
+
+Lemma NoDup_reverse {A : Type} (l : list A)
+    :
+    NoDup l ->
+    NoDup (reverse l)
+.
+Proof.
+    induction l; intros HH.
+    {
+        constructor.
+    }
+    {
+        rewrite NoDup_cons in HH.
+        destruct HH as [H1 H2].
+        specialize (IHl H2).
+        rewrite reverse_cons.
+        rewrite NoDup_app.
+        split>[exact IHl|].
+        split.
+        {
+            intros x Hx.
+            rewrite elem_of_reverse in Hx.
+            intros HC.
+            rewrite elem_of_list_singleton in HC.
+            subst x.
+            apply H1. apply Hx.
+        }
+        {
+            constructor.
+            {
+                apply not_elem_of_nil.
+            }
+            {
+                constructor.
+            }
+        }
+    }
+Qed.
+
 Lemma make_serial1_correct
     {Σ : StaticModel}
     (m : gmap variable (TermOver BuiltinOrVar))
     (avoid : gset variable)
     :
+    (* no-loop *)
+    dom m ## subp_codom m ->
     subs_app (make_serial1 m avoid) = subp_app m
 .
 Proof.
+    intros Hnl.
     unfold make_serial1.
     rewrite subs_app_app'.
     apply functional_extensionality.
     intros x.
-    revert m avoid.
-    induction x; intros m avoid.
+    revert m avoid Hnl.
+    induction x; intros m avoid Hnl.
     {
         simpl.
         destruct a; simpl in *.
@@ -6136,12 +6226,122 @@ Proof.
             cases ().
             {
                 simpl.
-                unfold subs_precomposes.
-                Search subs_app bov_variable.
-                Check subs_app_renaming_inverse_0.
+                assert (vars_of t ⊆ subp_codom m).
+                {
+                    rewrite elem_of_subseteq.
+                    intros x0 Hx0.
+                    unfold subp_codom.
+                    rewrite elem_of_union_list.
+                    exists (vars_of t).
+                    split>[|exact Hx0].
+                    rewrite elem_of_list_fmap.
+                    exists t.
+                    split>[reflexivity|].
+                    rewrite elem_of_elements.
+                    unfold SubP in *.
+                    rewrite elem_of_map_img.
+                    exists x.
+                    exact H.
+                }
+                assert (vars_of t ## dom m).
+                {
+                    ltac1:(set_solver).
+                }
+
+                (* [t] may contain variables from [m].. or cannot? *)
+                rewrite subs_app_nodup_3 with (p := subs_app (srlift (map_to_list (renaming_for avoid m))) t).
+                {
+                    apply subs_app_renaming_inverse_0.
+                    {
+                        apply NoDup_fst_map_to_list.
+                    }
+                    {
+                        apply renaming_ok_nodup.
+                        apply renaming_for_ok.
+                    }
+                    {
+                        rewrite <- map_img_alt.
+                        assert (Htmp := map_img_renaming_for_codom avoid m).
+                        ltac1:(set_solver).
+                    }
+                    {
+                        rewrite elem_of_disjoint.
+                        intros y H1y H2y.
+                        rewrite elem_of_list_fmap in H1y.
+                        rewrite elem_of_list_fmap in H2y.
+                        destruct H1y as [z1 [H1z1 H2z1]].
+                        destruct H2y as [z2 [H1z2 H2z2]].
+                        destruct z1, z2.
+                        ltac1:(simplify_eq/=).
+                        rewrite elem_of_map_to_list in H2z1.
+                        rewrite elem_of_map_to_list in H2z2.
+                        eapply renaming_for_contra.
+                        { apply H2z1. }
+                        { apply H2z2. }
+                    }
+                }
+                {
+                    unfold subs_precomposes.
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    unfold SubP in *.
+                    apply NoDup_fst_map_to_list.
+                }
+                {
+                    unfold subs_precomposes.
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    rewrite <- dom_alt.
+                    assert (Htmp1 := vars_of_subs_app ((srlift (map_to_list (renaming_for avoid m)))) t).
+                    ltac1:(cut (subt_codom (srlift (map_to_list (renaming_for avoid m))) ## dom m)).
+                    {
+                        intros Hcut.
+                        ltac1:(set_solver).
+                    }
+                    clear Htmp1.
+                    rewrite srlift_map_to_list.
+                    ltac1:(rewrite subt_codom_map_to_list).
+                    apply subp_codom_renaming_for_disjoint_dom_m.
+                }
+                {
+                    unfold subs_precomposes.
+                    rewrite elem_of_list_fmap.
+                    exists (x, t).
+                    split>[reflexivity|].
+                    rewrite elem_of_map_to_list.
+                    exact H.
+                }
             }
             {
-
+                rewrite subs_app_nodup_1.
+                {
+                    rewrite subs_app_nodup_1.
+                    {
+                        reflexivity.
+                    }
+                    {
+                        unfold srlift.
+                        rewrite <- list_fmap_compose.
+                        unfold compose.
+                        simpl.
+                        unfold sr_inverse.
+                        rewrite fmap_reverse.
+                        Search NoDup reverse.
+                        apply NoDup_reverse.
+                        Search NoDup sr_inverse.
+                    }
+                }
+                {
+                    unfold subs_precomposes.
+                    rewrite <- list_fmap_compose.
+                    unfold compose.
+                    simpl.
+                    unfold SubP in *.
+                    apply NoDup_fst_map_to_list.
+                }
+                Search subs_app.
             }
         }
     }
