@@ -5788,36 +5788,82 @@ Proof.
     }
 Qed.
 
+Lemma subt_codom_renaming
+    {Σ : StaticModel}
+    (r : list (variable * variable))
+    :
+ subt_codom
+  ((λ x1 : variable * variable, (x1.1, t_over (bov_variable x1.2))) <$>r)
+  = list_to_set (r.*2)
+.
+Proof.
+    unfold subt_codom.
+    apply set_eq.
+    intros x.
+    rewrite elem_of_union_list.
+    setoid_rewrite elem_of_list_fmap.
+    setoid_rewrite elem_of_list_fmap.
+    setoid_rewrite elem_of_list_fmap.
+    split.
+    {
+        intros [X [[y [H1 [H2 [H3 [z [H4 H5]]]]]] H6]].
+        ltac1:(simplify_eq/=).
+        rewrite elem_of_list_to_set.
+        rewrite elem_of_list_fmap.
+        unfold vars_of in H6; simpl in H6.
+        unfold vars_of in H6; simpl in H6.
+        rewrite elem_of_singleton in H6.
+        subst.
+        exists z.
+        split>[reflexivity|assumption].
+    }
+    {
+        intros H1.
+        rewrite elem_of_list_to_set in H1.
+        rewrite elem_of_list_fmap in H1.
+        destruct H1 as [[z1 z2][H1z H2z]].
+        simpl in *.
+        subst.
+        exists {[z2]}.
+        split>[|ltac1:(set_solver)].
+        exists (t_over (bov_variable z2)).
+        split.
+        {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            reflexivity.
+        }
+        {
+            exists (z1, t_over (bov_variable z2)).
+            split>[reflexivity|].
+            exists (z1, z2).
+            simpl.
+            split>[reflexivity|assumption].
+        }
+    }
+Qed.
+
 
 Lemma subs_app_renaming_inverse_0
     {Σ : StaticModel}
     (r : list (variable*variable))
     p
     :
-    srenaming_ok r ->
-    (list_to_set (r.*2)) ## (list_to_set (r.*1)) ∪ vars_of p  ->
-    (* list_to_set (r.*2) ## (vars_of ((subs_app (srlift r) p))) -> *)
+    NoDup (r.*1) ->
+    NoDup (r.*2) ->
+    (list_to_set (r.*2)) ## vars_of p  ->
+    ((r.*2)) ## ((r.*1)) ->
     (subs_app (srlift (reverse (sr_inverse r))) (subs_app (srlift r) p))
     = p
 .
 Proof.
-    intros Hrok Hdisj.
-    (* apply functional_extensionality. *)
-    revert Hrok p Hdisj.
-    induction r using rev_ind; intros Hrok x0 Hdisj.
+    intros Hnd Hnd2 Hdisj Hdisj2.
+    revert p Hnd Hnd2 Hdisj Hdisj2.
+    induction r using rev_ind; intros x0 Hnd Hnd2 Hdisj Hdisj2.
     {
         simpl. reflexivity.
     }
     {
-        unfold srenaming_ok in *.
-        ltac1:(ospecialize (IHr _)).
-        {
-            intros.
-            apply (Hrok _ _ v).
-            ltac1:(set_solver).
-            ltac1:(set_solver).
-        }
-        
         unfold sr_inverse in *.
         rewrite fmap_app.
         rewrite reverse_app.
@@ -5831,63 +5877,106 @@ Proof.
         ltac1:(simpl fst).
         ltac1:(simpl snd).
         rewrite fmap_app.
-        (* Unset Printing Notations. *)
         ltac1:(rewrite subs_app_app').
         ltac1:(rewrite subs_app_app').
         simpl.
-        unfold compose.
-        ltac1:(rewrite -> TermOverBoV_subst_cancel).
-        {
-            unfold srlift, reverse, pair_swap in IHr.
-            unfold compose in IHr.
-            rewrite IHr.
-            { reflexivity. }
-            {
-                rewrite fmap_app in Hdisj.
-                ltac1:(rewrite list_to_set_app in Hdisj).
-                unfold srlift in Hdisj.
-                (* rewrite *)
-            }
-        }
-        {
-            intros HContra.
-            eapply elem_of_weaken in HContra>[|apply vars_of_subs_app].
-            rewrite fmap_app in Hdisj.
-            rewrite fmap_app in Hdisj.
-            simpl in Hdisj.
-            rewrite list_to_set_app in Hdisj.
-            rewrite list_to_set_app in Hdisj.
-            simpl in Hdisj.
-            simpl in HContra.
-            unfold subt_codom in HContra.
-            rewrite elem_of_union in HContra.
-            destruct HContra as [HC|HC].
-            {
-                rewrite elem_of_union_list in HC.
-                destruct HC as [X [H1X H2X]].
-                rewrite elem_of_list_fmap in H1X.
-                destruct H1X as [y [H1y H2y]].
-                subst.
-                rewrite elem_of_list_fmap in H2y.
-                destruct H2y as [z [H1z H2z]].
-                subst.
-                rewrite elem_of_list_fmap in H2z.
-                destruct H2z as [y[ H1y H2y]].
-                subst.
-                simpl in *.
-                unfold vars_of in H2X; simpl in H2X.
-                unfold vars_of in H2X; simpl in H2X.
-                rewrite elem_of_singleton in H2X.
-                destruct x,y.
-                ltac1:(simplify_eq/=).
-                (* assert (Htmp := Hrok v v v2). *)
-                ltac1:(set_solver).
-            }
-            {
-                ltac1:(set_solver).
-            }
-        }
+
+
+        rewrite fmap_app in Hdisj.
+        rewrite fmap_app in Hdisj2.
+        rewrite list_to_set_app in Hdisj.
+        simpl in Hdisj.
+        rewrite fmap_app in Hdisj2.
+        simpl in Hdisj2.
         
+        rewrite fmap_app in Hnd.
+        rewrite NoDup_app in Hnd.
+        destruct Hnd as [Hnd'1 [Hnd'2 Hnd'3]].
+        rewrite fmap_app in Hnd2.
+        rewrite NoDup_app in Hnd2.
+        destruct Hnd2 as [Hnd1 [Hnd2 Hnd3]].
+        clear Hnd3 Hnd'3.
+
+
+        lazy_match! goal with
+        | [|- subs_app ?s1 (TermOverBoV_subst (TermOverBoV_subst ?q _ _) _ _) = _] =>
+            remember $q as q;
+            remember $s1 as s1
+        end.
+
+        assert (H2notin: x.2 ∉ vars_of q).
+        {
+            intros H2in.
+            subst q.
+            eapply elem_of_weaken in H2in>[|apply vars_of_subs_app].
+            rewrite subt_codom_renaming in H2in.
+            rewrite elem_of_union in H2in.
+            ltac1:(exfalso).
+            destruct H2in as [H2in|H2in].
+            {
+                rewrite elem_of_list_to_set in H2in.
+                assert (Htmp := Hnd2 _ H2in).
+                simpl in Htmp.
+                clear - Htmp.
+                ltac1:(set_solver).                    
+            }
+            { ltac1:(set_solver). }
+        }
+
+        assert (r2_disj_r1: r.*2 ## r.*1).
+        {
+            rewrite elem_of_disjoint.
+            rewrite elem_of_disjoint in Hdisj2.
+            intros x1 H1x1 H2x1.
+            specialize (Hdisj2 x1 ltac:(set_solver) ltac:(set_solver)).
+            exact Hdisj2.
+        }
+
+        destruct (decide (x.1 ∈  vars_of q)) as [H1in|H1notin].
+        {
+            subst q s1.
+            ltac1:(rewrite -> TermOverBoV_subst_cancel).
+            {
+                unfold srlift, reverse, pair_swap in IHr.
+                unfold compose in IHr.
+                rewrite IHr.
+                { reflexivity. }
+                {
+                    assumption.
+                }
+                {
+                    assumption.
+                }
+                {
+                    ltac1:(set_solver).
+                }
+                {
+                    assumption.
+                }
+            }
+            {
+                apply H2notin.
+            }
+        }
+        {
+            rewrite (subst_notin2 x.1).
+            {
+                rewrite (subst_notin2 x.2).
+                {
+                    subst s1 q.
+                    apply IHr; try assumption.
+                    {
+                        ltac1:(set_solver).
+                    }
+                }
+                {
+                    assumption.
+                }
+            }
+            {
+                assumption.
+            }
+        }
     }
 Qed.
 
