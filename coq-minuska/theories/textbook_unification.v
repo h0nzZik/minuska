@@ -1940,6 +1940,7 @@ Next Obligation.
 
         setoid_rewrite reverse_app in H3.
         setoid_rewrite make_parallel_app in H3.
+        Search subp_restrict.
         Check subp_app_compose_precompose.
         (* setoid_rewrite subs_app_app in Hs'. *)
         (* Search least_of. *)

@@ -6528,3 +6528,78 @@ Proof.
         ltac1:(contradiction Hbx).
     }
 Qed.
+
+
+Lemma subp_app_restrict_eq
+    {Σ : StaticModel}
+    (d : gset variable)
+    (a b : gmap variable (TermOver BuiltinOrVar))
+    :
+    subp_is_normal a ->
+    subp_is_normal b ->
+    (
+        forall (x : variable),
+            x ∈ d ->
+            subp_app a (t_over (bov_variable x))
+            =
+            subp_app b (t_over (bov_variable x))
+    ) ->
+    subp_restrict d a = subp_restrict d b
+.
+Proof.
+    intros Hna Hnb HH.
+    unfold SubP in *.
+    apply map_eq.
+    intros i.
+
+    unfold subp_restrict.
+    unfold SubP in *.
+    rewrite map_lookup_filter.
+    rewrite map_lookup_filter.
+    unfold RestrictP.
+    simpl.
+    destruct (a !! i) eqn:Hai, (b !! i) eqn:Hbi.
+    {
+        
+        simpl.
+        rewrite option_guard_decide.
+        rewrite option_guard_decide.
+        cases (); try reflexivity;
+            specialize (HH i ltac:(assumption));
+            simpl in *; cases (); unfold SubP in *; ltac1:(simplify_eq/=);
+            try reflexivity.
+        { ltac1:(contradiction). }
+        { ltac1:(contradiction). }
+    }
+    {
+        simpl.
+        rewrite option_guard_decide.
+        cases (); try reflexivity.
+        ltac1:(exfalso).
+        assert (HHi := HH i ltac:(assumption)).
+        simpl in HHi.
+        unfold SubP in *.
+        rewrite Hai in HHi.
+        rewrite Hbi in HHi.
+        subst.
+        rewrite subp_is_normal_spec in Hna.
+        ltac1:(naive_solver).
+    }
+    {
+        simpl.
+        rewrite option_guard_decide.
+        cases (); try reflexivity.
+        ltac1:(exfalso).
+        assert (HHi := HH i ltac:(assumption)).
+        simpl in HHi.
+        unfold SubP in *.
+        rewrite Hai in HHi.
+        rewrite Hbi in HHi.
+        subst.
+        rewrite subp_is_normal_spec in Hnb.
+        ltac1:(naive_solver).
+    }
+    {
+        reflexivity.
+    }
+Qed.
