@@ -109,3 +109,10 @@ Definition subp_restrict
 :=
   filter (RestrictP to)
 .
+
+Definition subp_precompose
+  {Σ : StaticModel}
+  (a b : gmap variable (TermOver BuiltinOrVar))
+:=
+      (fmap (subp_app a) b) 
+.

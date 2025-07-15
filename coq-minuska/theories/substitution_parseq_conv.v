@@ -5616,13 +5616,6 @@ Qed. *)
 
 (* Print subp_compose. *)
 
-Definition subp_precompose
-  {Σ : StaticModel}
-  (a b : gmap variable (TermOver BuiltinOrVar))
-:=
-      (fmap (subp_app a) b) 
-.
-
 (* Definition subs_precompose
   {Σ : StaticModel}
   (a b : list (variable*(TermOver BuiltinOrVar)))
@@ -6412,4 +6405,126 @@ Proof.
         
     }
 Qed.
+(* 
+Lemma make_parallel_eq
+    {Σ : StaticModel}
+    (a b : list (variable*(TermOver BuiltinOrVar)))
+    :
+    (
+        forall φ, subs_app a φ = subs_app b φ
+    ) ->
+    make_parallel a = make_parallel b
+.
+Proof.
+(* my make_parallel is broken *)
+    revert b.
+    induction a; intros b Hab.
+    {
+        destruct b.
+        { reflexivity. }
+        {
+            simpl.
+            ltac1:(exfalso).
+            destruct p as [x p].
+            simpl in Hab.
+            (* simpl. *)
+            specialize (Hab (t_term inhabitant [(t_over (bov_variable x))])).
+            simpl in Hab.
+            rewrite decide_True in Hab.
+            {
+                rewrite subs_app_term in Hab.
+                simpl in Hab.
+            }
+            {
+                reflexivity.
+            }
+            
+            simpl in Hab.
+        }
+    }
+    intros H1.
 
+Qed. *)
+(* 
+Lemma make_parallel_serial1
+    {Σ : StaticModel}
+    (m : gmap variable (TermOver BuiltinOrVar))
+    (avoid : gset variable)
+    :
+    dom m ## subp_codom m ->
+    make_parallel (make_serial1 m avoid) = m
+.
+Proof.
+    intros H1.
+    (* Search make_parallel app. *)
+    (* unfold make_parallel. *)
+    unfold make_serial1.
+    (* unfold make_parallel0. *)
+    rewrite make_parallel_app.
+    {
+
+    }
+    {
+
+    }
+Qed. *)
+
+Lemma subp_app_compose_precompose
+    {Σ : StaticModel}
+    (a b : gmap variable (TermOver BuiltinOrVar))
+    (x : variable)
+    :
+    x ∈ dom b ->
+    subp_app (subp_compose a b) (t_over (bov_variable x))
+    =
+    subp_app (subp_precompose a b) (t_over (bov_variable x))
+.
+Proof.
+    intros Hxb.
+    unfold subp_compose.
+    unfold subp_precompose.
+    unfold subp_normalize.
+    simpl.
+    unfold SubP in *.
+    rewrite lookup_fmap.
+    rewrite map_lookup_filter.
+    rewrite lookup_union.
+    rewrite lookup_fmap.
+    destruct (b !! x) eqn:Hbx.
+    {
+        simpl.
+        rewrite map_lookup_filter.
+        destruct (a !! x) eqn:Hax.
+        {
+            (* apply not_elem_of_dom_1 in Hxa. *)
+            (* rewrite Hxa. *)
+            simpl.
+            rewrite option_guard_False.
+            {
+                simpl.
+                (rewrite option_guard_decide).
+                cases (); ltac1:(simplify_eq/=).
+                { reflexivity. }
+                {
+                    apply dec_stable in n.
+                    ltac1:(congruence).
+                }
+            }
+            {
+                ltac1:(naive_solver).
+            }
+        }
+        {
+            simpl.
+            rewrite option_guard_decide.
+            cases (); ltac1:(simplify_eq/=).
+            { reflexivity. }
+            apply dec_stable in n.
+            ltac1:(naive_solver).
+        }
+    }
+    {
+        apply not_elem_of_dom_2 in Hbx.
+        ltac1:(contradiction Hbx).
+    }
+Qed.

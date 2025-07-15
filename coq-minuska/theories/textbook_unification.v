@@ -1861,19 +1861,97 @@ Next Obligation.
             rewrite reverse_involutive.
             apply Hsound1.
         }
-        intros s Hs.
+        intros s Hdoms Hs.
+        (* Some conjectures
+            1. least_of implies Nodup fst
+         *)
+        remember (make_serial1 s (vars_of t1 ∪ vars_of t2)) as ser.
+        assert (Hser: subs_app ser t1 = subs_app ser t2).
+        {
+            subst ser.
+            rewrite make_serial1_correct.
+            {
+                rewrite make_serial1_correct.
+                {
+                    exact Hs.
+                }
+                {
+                    assumption.
+                }
+                {
+                    ltac1:(set_solver).
+                }
+            }
+            {
+                assumption.
+            }
+            {
+                ltac1:(set_solver).
+            }
+        }
+        (* Search subp_app. *)
         unfold least_of in Hsound2.
-        ltac1:(ospecialize (Hsound2 u' _)).
+
+        ltac1:(ospecialize (Hsound2 ser _)).
+        {
+            (repeat split).
+            exact Hser.
+        }
+
+        (* ltac1:(ospecialize (Hsound2 u' _)).
         {
             split.
             exact Hsound1.
             exact I.
-        }
+        } *)
         destruct Hsound2 as [s' Hs'].
+        subst ser.
+        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
+        {
+            intros x.
+            specialize (Hs' x).
+            rewrite make_parallel_correct.
+            rewrite reverse_involutive.
+            exact Hs'.
+        }
+        clear Hs'.
+        assert(H3: forall x, x ∈ vars_of t1 ∪ vars_of t2 -> subp_app s (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
+        {
+            intros x Hx.
+            specialize (H2 x).
+            rewrite make_serial1_correct in H2.
+            {
+                exact H2.
+            }
+            {
+                exact Hdoms.
+            }
+            {
+                clear - Hx.
+                unfold vars_of; simpl.
+                unfold vars_of; simpl.
+                ltac1:(set_solver).
+            }
+            (* rewrite make_parallel_correct. *)
+            (* rewrite reverse_involutive. *)
+            (* exact Hs'. *)
+        }
+        (* Search make_serial1. *)
+
+        setoid_rewrite reverse_app in H3.
+        setoid_rewrite make_parallel_app in H3.
+        Check subp_app_compose_precompose.
+        (* setoid_rewrite subs_app_app in Hs'. *)
+        (* Search least_of. *)
+        (* Search unify. *)
+        (* Search subs_app. *)
         assert(Hl := helper_lemma_3 _ _ Hs').
+        clear Hs'.
+        (* setoid_rewrite subs_app_app in Hl. *)
+        
         (* setoid_rewrite Hl in Hs'. *)
-        setoid_rewrite <- reverse_involutive at 2 in Hl.
-        assert (Hc := make_parallel_correct).
+        (* setoid_rewrite <- reverse_involutive at 2 in Hl. *)
+        (* assert (Hc := make_parallel_correct). *)
         (* Search to_sequential. *)
 
         (* rewrite <- make_parallel_correct. *)

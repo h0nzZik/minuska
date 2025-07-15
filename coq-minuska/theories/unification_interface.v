@@ -25,13 +25,21 @@ Class UnificationAlgorithm
     ua_unify_sound :
         forall
             (t1 t2 : TermOver BuiltinOrVar)
-            (u : SubP),
+            (u : gmap variable (TermOver BuiltinOrVar)),
         ua_unify t1 t2 = Some u ->
         (subp_app u t1 = subp_app u t2) /\
         (
-            forall (u' : SubP),
+            forall (u' : gmap variable (TermOver BuiltinOrVar)),
+                dom u' ## subp_codom u' ->
                 subp_app u' t1 = subp_app u' t2 ->
-                    map_subseteq u u'
+                exists (u'' : gmap variable (TermOver BuiltinOrVar)),
+                    u' = subp_precompose u'' u
+                (* I think that [u ⊆ u'] would be too strong.
+                   For example, we may have a unifier u = {x -> f(5)}
+                   and u' = {x -> f(y)}, and clearly u ⊆ u' does not hold
+                   despite u being a specialization of u'
+                 *)
+                    (* u ⊆ u' *)
         )
     ;
 
