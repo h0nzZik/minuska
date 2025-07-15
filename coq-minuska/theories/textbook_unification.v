@@ -1982,8 +1982,9 @@ Next Obligation.
 
         destruct Hsound2 as [s' [H0s' Hs']].
         subst ser.
-        (* HERE I need fst <$> (make_serial) *)
-        (* Search fmap make_serial. *)
+        rewrite fst_make_serial1 in H0s'.
+        rewrite list_fmap_compose in H0s'.
+        assert (Hsms := snd_make_serial1 s (vars_of t1 ∪ vars_of t2)).
         (* When I obtain [s'] and [Hs'], I do not  *)
         assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2 ∪ (list_to_set s'.*1)))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
         {

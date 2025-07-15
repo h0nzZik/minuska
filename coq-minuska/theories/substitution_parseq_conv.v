@@ -6640,7 +6640,6 @@ Proof.
     simpl.
     unfold sr_inverse.
     rewrite list_to_set_app_L.
-    (* Search fmap reverse. *)
     rewrite fmap_reverse.
     rewrite list_to_set_reverse_var.
     rewrite <- list_fmap_compose.
@@ -6655,3 +6654,114 @@ Proof.
     ltac1:(set_solver).
 Qed.
 
+
+Lemma snd_make_serial1
+    {Σ : StaticModel}
+    m avoid
+    :
+    ⋃ (vars_of <$> (snd <$> make_serial1 m avoid)) ⊆ map_img (renaming_for avoid m) ∪ subp_codom m ∪ dom (renaming_for avoid m)
+.
+Proof.
+    unfold make_serial1.
+    rewrite fmap_app.
+    rewrite fmap_app.
+    unfold srlift,sr_inverse.
+    unfold subs_precomposes.
+    rewrite <- list_fmap_compose.
+    rewrite <- list_fmap_compose.
+    rewrite <- list_fmap_compose.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    simpl.
+    (* rewrite fmap_app. *)
+    rewrite union_list_app_L.
+    rewrite fmap_reverse.
+    rewrite union_list_reverse_L.
+    rewrite <- list_fmap_compose.
+    unfold pair_swap, compose.
+    simpl.
+
+    (* Unset Printing Notations. *)
+    rewrite elem_of_subseteq.
+    intros x.
+    {
+        intros Hx.
+        ltac1:(rewrite elem_of_union in Hx).
+        destruct Hx as [Hx|Hx].
+        {
+            rewrite elem_of_union_list in Hx.
+            destruct Hx as [X [H1X H2X]].
+            rewrite elem_of_list_fmap in H1X.
+            destruct H1X as [[y p][H1 H2]].
+            subst.
+            rewrite elem_of_map_to_list in H2.
+            simpl in H2X.
+            eapply elem_of_weaken in H2X>[|apply vars_of_subs_app].
+            rewrite elem_of_union in H2X.
+            destruct H2X as [H|H].
+            {
+                unfold subt_codom in H.
+                rewrite elem_of_union_list in H.
+                destruct H as [X [H1X H2X]].
+                rewrite elem_of_list_fmap in H1X.
+                destruct H1X as [z [H1z H2z]].
+                subst.
+                rewrite elem_of_list_fmap in H2z.
+                destruct H2z as [[z1 z2][H1z H2z]].
+                ltac1:(simplify_eq/=).
+                rewrite elem_of_list_fmap in H2z.
+                destruct H2z as [[z'1 z'2][H1z H2z]].
+                ltac1:(simplify_eq/=).
+                unfold vars_of in H2X; simpl in H2X.
+                unfold vars_of in H2X; simpl in H2X.
+                rewrite elem_of_singleton in H2X.
+                subst z'2.
+                rewrite elem_of_map_to_list in H2z.
+                rewrite elem_of_union.
+                left.
+                rewrite elem_of_union.
+                left.
+                rewrite elem_of_map_img.
+                exists z'1.
+                exact H2z.
+            }
+            {
+                rewrite elem_of_union.
+                left.
+                rewrite elem_of_union.
+                right.
+                unfold subp_codom.
+                rewrite elem_of_union_list.
+                exists (vars_of p).
+                split>[|assumption].
+                rewrite elem_of_list_fmap.
+                exists p.
+                split>[reflexivity|].
+                rewrite elem_of_elements.
+                ltac1:(rewrite elem_of_map_img).
+                exists y.
+                exact H2.
+            }
+        }
+        {
+            rewrite elem_of_union_list in Hx.
+            destruct Hx as [X [H1X H2X]].
+            rewrite elem_of_list_fmap in H1X.
+            destruct H1X as [y [H1y H2y]].
+            subst.
+            unfold SubP in *.
+            destruct y.
+            ltac1:(rewrite elem_of_map_to_list in H2y).
+            simpl in H2X.
+            unfold vars_of in H2X; simpl in H2X.
+            unfold vars_of in H2X; simpl in H2X.
+            rewrite elem_of_singleton in H2X.
+            subst.
+            rewrite elem_of_union.
+            right.
+            rewrite elem_of_dom.
+            exists v0.
+            exact H2y.
+        }
+    }
+Qed.
