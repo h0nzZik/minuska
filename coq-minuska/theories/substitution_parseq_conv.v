@@ -6603,3 +6603,55 @@ Proof.
         reflexivity.
     }
 Qed.
+
+Lemma list_to_set_reverse_var
+    {Σ : StaticModel}
+    (l : list variable)
+    :
+    @list_to_set _ (gset _) _ _ _ (reverse l) = list_to_set l
+.
+Proof.
+    induction l.
+    {
+        simpl. reflexivity.
+    }
+    {
+        simpl.
+        rewrite reverse_cons.
+        rewrite list_to_set_app_L.
+        rewrite IHl.
+        simpl.
+        ltac1:(set_solver).
+    }
+Qed.
+
+Lemma fst_make_serial1
+    {Σ : StaticModel}
+    m avoid
+    :
+    list_to_set (fst <$> make_serial1 m avoid) ≡ dom m ∪ (map_img (renaming_for avoid m))
+.
+Proof.
+    unfold make_serial1.
+    rewrite fmap_app.
+    unfold srlift.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    simpl.
+    unfold sr_inverse.
+    rewrite list_to_set_app_L.
+    (* Search fmap reverse. *)
+    rewrite fmap_reverse.
+    rewrite list_to_set_reverse_var.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    simpl.
+    rewrite <- map_img_alt.
+    unfold subs_precomposes.
+    rewrite <- list_fmap_compose.
+    unfold compose.
+    simpl.
+    rewrite <- dom_alt.
+    ltac1:(set_solver).
+Qed.
+

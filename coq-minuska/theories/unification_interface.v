@@ -30,6 +30,7 @@ Class UnificationAlgorithm
         (subp_app u t1 = subp_app u t2) /\
         (
             forall (u' : gmap variable (TermOver BuiltinOrVar)),
+                subp_is_normal u' ->
                 dom u' ## subp_codom u' ->
                 subp_app u' t1 = subp_app u' t2 ->
                 exists (u'' : gmap variable (TermOver BuiltinOrVar)),

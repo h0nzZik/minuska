@@ -170,13 +170,17 @@ match es with
 end
 .
 
+(* Here I strengten the 'least_of' .... *)
 Definition least_of
 {Σ : StaticModel}
 (s : SubS)
 (es : list eqn)
 :=
 ∀ s', is_unifier_of s' es ->
-∃ s1, ∀ x, subs_app s' (t_over (bov_variable x)) = subs_app (s ++ s1) (t_over (bov_variable x))
+∃ s1, 
+
+    list_to_set (s1.*1) ⊆ list_to_set s'.*1 ∪ ⋃ (vars_of ∘ snd <$> s') /\
+    ∀ x, subs_app s' (t_over (bov_variable x)) = subs_app (s ++ s1) (t_over (bov_variable x))
 .
 
 
@@ -253,16 +257,19 @@ Qed.
 
 
 Lemma least_of_nil_nil
-{Σ : StaticModel}
+    {Σ : StaticModel}
 :
-least_of [] []
+    least_of [] []
 .
 Proof.
-unfold least_of.
-intros s' Hs'.
-exists s'. simpl.
-intros x. reflexivity.
+    unfold least_of.
+    intros s' Hs'.
+    exists s'. simpl.
+    split.
+    { ltac1:(set_solver). }
+    { intros x. reflexivity. }
 Qed.
+
 (* Maybe I can make the relation is_unifier_of such that
 the unifier may map only variables that occur somewhere in the relation?
 *)
@@ -716,11 +723,18 @@ ltac1:(funelim(unify es)).
             unfold least_of in H2.
             specialize (H2 _ Hs'2).
             destruct H2 as [s1 Hs1].
+            destruct Hs1 as [Hs1' Hs1].
             exists s1.
-            intros x.
-            specialize (Hs1 x).
-            rewrite Hs1.
-            reflexivity.
+            split.
+            {
+                exact Hs1'.
+            }
+            {
+                intros x.
+                specialize (Hs1 x).
+                rewrite Hs1.
+                reflexivity.
+            }
         }
     }
     {
@@ -767,16 +781,24 @@ ltac1:(funelim(unify es)).
         }
         destruct H3 as [s1 Hs1]. simpl in *.
         destruct Hsss as [Hsss1 Hsss2].
-        exists s1. intros x0.
-        specialize (Hs1 x0).
-        rewrite subs_app_app in Hs1.
-        rewrite subs_app_app.
-        destruct (decide (x = x0))>[|auto].
-        subst.
-        rewrite subs_app_builtin.
-        rewrite subs_app_builtin in Hsss1.
-        rewrite subs_app_builtin.
-        ltac1:(congruence).
+        destruct Hs1 as [Hs1' Hs1].
+        exists s1.
+        split.
+        {
+            exact Hs1'.
+        }
+        {
+            intros x0.
+            specialize (Hs1 x0).
+            rewrite subs_app_app in Hs1.
+            rewrite subs_app_app.
+            destruct (decide (x = x0))>[|auto].
+            subst.
+            rewrite subs_app_builtin.
+            rewrite subs_app_builtin in Hsss1.
+            rewrite subs_app_builtin.
+            ltac1:(congruence).
+        }
     }
     }
     {
@@ -793,15 +815,6 @@ ltac1:(funelim(unify es)).
 {
     exact I.
 }
-(* {
-    ltac1:(case_match).
-    { 
-        ltac1:(simplify_eq/=). 
-    }
-    {
-    inversion e.
-    }
-} *)
 {
     (* rewrite <- Heqcall.  *)
     clear Heqcall. simpl.
@@ -824,19 +837,26 @@ ltac1:(funelim(unify es)).
             }
             {
             destruct H2 as [s1 Hs1].
+            destruct Hs1 as [Hs1' Hs1].
             exists s1.
-            intros x0. rewrite Hs1. simpl.
-            destruct (decide (x = x0))>[|reflexivity].
-            subst. simpl in Hss.
-            destruct Hss as [Hss1 Hss2].
-            do 2 (rewrite subs_app_app).
-            assert (Hs1x0 := Hs1 x0).
-            (rewrite subs_app_app in Hs1x0).
-            rewrite <- Hs1x0.
-            rewrite subs_app_builtin.
-            rewrite subs_app_builtin.
-            rewrite subs_app_builtin in Hss1.
-            apply Hss1.
+            split.
+            {
+                exact Hs1'.
+            }
+            {
+                intros x0. rewrite Hs1. simpl.
+                destruct (decide (x = x0))>[|reflexivity].
+                subst. simpl in Hss.
+                destruct Hss as [Hss1 Hss2].
+                do 2 (rewrite subs_app_app).
+                assert (Hs1x0 := Hs1 x0).
+                (rewrite subs_app_app in Hs1x0).
+                rewrite <- Hs1x0.
+                rewrite subs_app_builtin.
+                rewrite subs_app_builtin.
+                rewrite subs_app_builtin in Hss1.
+                apply Hss1.
+            }
             }
         }
     }
@@ -858,10 +878,17 @@ ltac1:(funelim(unify es)).
         simpl in Hss. apply Hss.
     }
     destruct H2 as [s1 Hs1].
+    destruct Hs1 as [Hs1' Hs1].
     exists s1.
-    intros x.
-    rewrite Hs1.
-    reflexivity.
+    split.
+    {
+        exact Hs1'.
+    }
+    {
+        intros x.
+        rewrite Hs1.
+        reflexivity.
+    }
 }
 {
     (* rewrite <- Heqcall.  *)
@@ -889,21 +916,28 @@ ltac1:(funelim(unify es)).
             exact Hss2.
         }
         destruct HH2 as [s1 Hs1].
+        destruct Hs1 as [Hs1' Hs1].
         exists s1.
-        intros x0.
-        simpl.
-        simpl in Hss.
-        destruct Hss as [Hss1 Hss2].
-        destruct (decide (x = x0)).
+        split.
         {
-            subst.
-            rewrite <- Hs1.
-            apply Hss1.
+            exact Hs1'.
         }
         {
-            subst.
-            rewrite <- Hs1.
-            reflexivity.
+            intros x0.
+            simpl.
+            simpl in Hss.
+            destruct Hss as [Hss1 Hss2].
+            destruct (decide (x = x0)).
+            {
+                subst.
+                rewrite <- Hs1.
+                apply Hss1.
+            }
+            {
+                subst.
+                rewrite <- Hs1.
+                reflexivity.
+            }
         }
     }
     exact I.
@@ -987,52 +1021,59 @@ ltac1:(funelim(unify es)).
             }
             destruct HH2u as [s1 Hs1].
             
+            destruct Hs1 as [Hs1' Hs1].
             exists (s1).
-            intros x0.
-            ltac1:(rename s1 into r).
-            (*rewrite subs_app_app.*)
+            split.
+            {
+                exact Hs1'.
+            }
+            {
+                intros x0.
+                ltac1:(rename s1 into r).
+                (*rewrite subs_app_app.*)
 
-            assert (Hunb := subs_app_unbound_var_2 l x).
-            ltac1:(ospecialize (Hunb _)).
-            {
-            rewrite list_fmap_compose in Hnoota.
-            destruct (decide (x ∈ eqns_vars es)).
-            {
-                rewrite eqns_vars_sub in Hnoota>[|assumption].
-                ltac1:(set_solver).
-            }
-            {
-                rewrite sub_notin in Hnoota>[|assumption].
-                ltac1:(set_solver).
-            }
-            }
-            assert (Hunb1 := Hunb _ n).
-            
-            simpl.
+                assert (Hunb := subs_app_unbound_var_2 l x).
+                ltac1:(ospecialize (Hunb _)).
+                {
+                rewrite list_fmap_compose in Hnoota.
+                destruct (decide (x ∈ eqns_vars es)).
+                {
+                    rewrite eqns_vars_sub in Hnoota>[|assumption].
+                    ltac1:(set_solver).
+                }
+                {
+                    rewrite sub_notin in Hnoota>[|assumption].
+                    ltac1:(set_solver).
+                }
+                }
+                assert (Hunb1 := Hunb _ n).
+                
+                simpl.
 
-            (* [l] does not contain [x] on its lhs *)
-            assert (Hnlx : x ∉ l.*1).
-            {
-            destruct (decide (x ∈ eqns_vars es)) as [Hin2|Hnotin2].
-            {
-                rewrite eqns_vars_sub in Hnoota>[|exact Hin2].
-                ltac1:(set_solver).
-            }
-            {
-                rewrite sub_notin in Hnoota>[|exact Hnotin2].
-                ltac1:(set_solver).
-            }
-            }
-            destruct (decide (x = x0)).
-            {
-            subst. ltac1:(rename x0 into x).
-            apply subs_app_unbound_var_1 in Hnlx as Hnlx'.
-            eapply helper_lemma_3 in Hs1 as Hs1'.
-            rewrite <- Hs1'. clear Hs1'.
-            exact Hu1.
-            }
-            {
-            apply Hs1.
+                (* [l] does not contain [x] on its lhs *)
+                assert (Hnlx : x ∉ l.*1).
+                {
+                destruct (decide (x ∈ eqns_vars es)) as [Hin2|Hnotin2].
+                {
+                    rewrite eqns_vars_sub in Hnoota>[|exact Hin2].
+                    ltac1:(set_solver).
+                }
+                {
+                    rewrite sub_notin in Hnoota>[|exact Hnotin2].
+                    ltac1:(set_solver).
+                }
+                }
+                destruct (decide (x = x0)).
+                {
+                    subst. ltac1:(rename x0 into x).
+                    apply subs_app_unbound_var_1 in Hnlx as Hnlx'.
+                    eapply helper_lemma_3 in Hs1 as Hs1''.
+                    rewrite <- Hs1''. clear Hs1''.
+                    exact Hu1.
+                }
+                {
+                    apply Hs1.
+                }
             }
         }
     }
@@ -1107,30 +1148,37 @@ ltac1:(funelim(unify es)).
             specialize (HH2 u).
             ltac1:(ospecialize (HH2 _)).
             {
-            apply helper_lemma_2.
-            symmetry. apply Hu1. apply Hu2.
+                apply helper_lemma_2.
+                symmetry. apply Hu1. apply Hu2.
             }
             destruct HH2 as [rest Hrest].
+            destruct Hrest as [H0rest Hrest].
             exists rest.
-            intros x0.
-            simpl.
-            destruct (decide (x = x0)).
+            split.
             {
-            subst.
-            ltac1:(rename x0 into x).
-            eapply helper_lemma_3 in Hrest as Hrest1.
-            rewrite <- Hrest1. clear Hrest1.
-            symmetry. apply Hu1.
+                exact H0rest.
             }
             {
-            eapply helper_lemma_3 in Hrest as Hrest1.
-            rewrite <- Hrest1. clear Hrest1.
-            reflexivity.
+                intros x0.
+                simpl.
+                destruct (decide (x = x0)).
+                {
+                    subst.
+                    ltac1:(rename x0 into x).
+                    eapply helper_lemma_3 in Hrest as Hrest1.
+                    rewrite <- Hrest1. clear Hrest1.
+                    symmetry. apply Hu1.
+                }
+                {
+                    eapply helper_lemma_3 in Hrest as Hrest1.
+                    rewrite <- Hrest1. clear Hrest1.
+                    reflexivity.
+                }
             }
         }
     }
     {
-    simpl. exact H.
+        simpl. exact H.
     }
 }
 {
@@ -1253,10 +1301,17 @@ ltac1:(funelim(unify es)).
             }
             }
             destruct HH4 as [rest Hrest].
+            destruct Hrest as [H0rest Hrest].
             exists rest.
-            intros x.
-            specialize (Hrest x).
-            apply Hrest.
+            split.
+            {
+                exact H0rest.
+            }
+            {   
+                intros x.
+                specialize (Hrest x).
+                apply Hrest.
+            }
         }
     }
     {
@@ -1827,6 +1882,36 @@ Proof.
         destruct (decide (s1 = s2)); auto.
     }
 Qed.
+(* 
+Lemma another_helper
+    {Σ : StaticModel}
+    s s' u'
+:
+    NoDup s'.*1 ->
+    (forall x, subs_app s' (t_over (bov_variable x)) = subs_app (u' ++ s) (t_over (bov_variable x))) ->
+    s'.*1 ⊆ u'.*1
+.
+Proof.
+    intros Hnd HH.
+    unfold SubS in *.
+    ltac1:(rewrite elem_of_subseteq).
+    intros x Hx.
+    rewrite elem_of_list_fmap.
+    rewrite elem_of_list_fmap in Hx.
+    destruct Hx as [[y p][H1 H2]].
+    ltac1:(simplify_eq/=).
+    setoid_rewrite subs_app_app in HH.
+    assert (Hy := HH y).
+    simpl in Hy.
+    rewrite subs_app_nodup_3 with (p := p) in Hy.
+    {
+
+    }
+    {
+        exact Hnd.
+    }
+    Search subs_app bov_variable.
+Qed. *)
 
 Program Definition
     textbook_unification_algorithm
@@ -1840,6 +1925,7 @@ Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).
     destruct (unify [(t1, t2)]) eqn:Heq.
     {
+        apply unify_no_variable_out_of_thin_air in Heq as Hnoota.
         destruct Hsound as [Hsound1 Hsound2].
         simpl in Hsound1.
         destruct Hsound1 as [Hsound1 _].
@@ -1861,10 +1947,7 @@ Next Obligation.
             rewrite reverse_involutive.
             apply Hsound1.
         }
-        intros s Hdoms Hs.
-        (* Some conjectures
-            1. least_of implies Nodup fst
-         *)
+        intros s Hnormal Hdoms Hs.
         remember (make_serial1 s (vars_of t1 ∪ vars_of t2)) as ser.
         assert (Hser: subs_app ser t1 = subs_app ser t2).
         {
@@ -1889,7 +1972,6 @@ Next Obligation.
                 ltac1:(set_solver).
             }
         }
-        (* Search subp_app. *)
         unfold least_of in Hsound2.
 
         ltac1:(ospecialize (Hsound2 ser _)).
@@ -1898,15 +1980,12 @@ Next Obligation.
             exact Hser.
         }
 
-        (* ltac1:(ospecialize (Hsound2 u' _)).
-        {
-            split.
-            exact Hsound1.
-            exact I.
-        } *)
-        destruct Hsound2 as [s' Hs'].
+        destruct Hsound2 as [s' [H0s' Hs']].
         subst ser.
-        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
+        (* HERE I need fst <$> (make_serial) *)
+        (* Search fmap make_serial. *)
+        (* When I obtain [s'] and [Hs'], I do not  *)
+        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2 ∪ (list_to_set s'.*1)))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
         {
             intros x.
             specialize (Hs' x).
@@ -1915,6 +1994,8 @@ Next Obligation.
             exact Hs'.
         }
         clear Hs'.
+        remember (vars_of t1 ∪ vars_of t2 ∪ dom (make_parallel (reverse (u' ++ s')))) as d.
+        (* the guard is unfortunate, but in principle I could choose arbitrarily big guard that would make it always true *)
         assert(H3: forall x, x ∈ vars_of t1 ∪ vars_of t2 -> subp_app s (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
         {
             intros x Hx.
@@ -1932,22 +2013,31 @@ Next Obligation.
                 unfold vars_of; simpl.
                 ltac1:(set_solver).
             }
-            (* rewrite make_parallel_correct. *)
-            (* rewrite reverse_involutive. *)
-            (* exact Hs'. *)
         }
-        (* Search make_serial1. *)
-
+        assert (Hr := subp_app_restrict_eq (vars_of t1 ∪ vars_of t2) s (make_parallel (reverse (u' ++ s')))).
+        specialize (Hr Hnormal).
+        ltac1:(ospecialize (Hr _)).
+        {
+            apply make_parallel_normal. 
+        }
+        specialize (Hr H3).
+        (* Here I would want the restriction in Hr to cover both u' and s'.
+          I know about u' from Hnoota,
+          but I do not know about s'.
+        *)
+        Search subp_restrict.
         setoid_rewrite reverse_app in H3.
         setoid_rewrite make_parallel_app in H3.
-        Search subp_restrict.
-        Check subp_app_compose_precompose.
+        
+        Check subp_app_restrict_eq.
+        (* Search subp_restrict. *)
+        (* Check subp_app_compose_precompose. *)
         (* setoid_rewrite subs_app_app in Hs'. *)
         (* Search least_of. *)
         (* Search unify. *)
         (* Search subs_app. *)
-        assert(Hl := helper_lemma_3 _ _ Hs').
-        clear Hs'.
+        (* assert(Hl := helper_lemma_3 _ _ Hs'). *)
+        (* clear Hs'. *)
         (* setoid_rewrite subs_app_app in Hl. *)
         
         (* setoid_rewrite Hl in Hs'. *)
