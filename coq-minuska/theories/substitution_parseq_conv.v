@@ -6805,3 +6805,12 @@ Proof.
         apply dom_make_parallel0|].
     ltac1:(set_solver).
 Qed.
+
+(* 
+Lemma eq_restrict_dom
+    {Σ : StaticModel}
+    (vars : gset variable)
+    (a b : gmap variable (TermOver BuiltinOrVar))
+    :
+    a = subp_restrict vars b ->
+. *)

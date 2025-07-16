@@ -35,7 +35,8 @@ Class UnificationAlgorithm
                 dom u' ## subp_codom u' ->
                 subp_app u' t1 = subp_app u' t2 ->
                 exists (u'' : gmap variable (TermOver BuiltinOrVar)),
-                    u' = subp_precompose u'' u
+                    (* u' = subp_precompose u'' u *)
+                    u' = subp_restrict (vars_of t1 ∪ vars_of t2) (subp_compose u'' u)
                 (* I think that [u ⊆ u'] would be too strong.
                    For example, we may have a unifier u = {x -> f(5)}
                    and u' = {x -> f(y)}, and clearly u ⊆ u' does not hold

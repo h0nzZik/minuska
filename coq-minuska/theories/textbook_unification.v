@@ -176,10 +176,9 @@ Definition least_of
 (s : SubS)
 (es : list eqn)
 :=
-∀ s', is_unifier_of s' es ->
+∀ s', is_unifier_of s' es /\ subs_is_normal s' ->
 ∃ s1, 
-
-    list_to_set (s1.*1) ⊆ list_to_set s'.*1 ∪ ⋃ (vars_of ∘ snd <$> s') /\
+    subs_is_normal s1 /\
     ∀ x, subs_app s' (t_over (bov_variable x)) = subs_app (s ++ s1) (t_over (bov_variable x))
 .
 
@@ -263,10 +262,10 @@ Lemma least_of_nil_nil
 .
 Proof.
     unfold least_of.
-    intros s' Hs'.
+    intros s' [Hs'1 Hs'2].
     exists s'. simpl.
     split.
-    { ltac1:(set_solver). }
+    { exact Hs'2. }
     { intros x. reflexivity. }
 Qed.
 
@@ -694,7 +693,7 @@ Lemma unify_sound
 match unify es with
 | None => True
 | Some ss =>
-    (is_unifier_of ss es /\ least_of ss es )
+    (is_unifier_of ss es /\ least_of ss es /\ subs_is_normal ss)
 end
 .
 Proof.
@@ -703,6 +702,10 @@ ltac1:(funelim(unify es)).
     simpl in *.
     ltac1:(simp unify). repeat split.
     apply least_of_nil_nil.
+    {
+        apply Forall_nil.
+        exact I.
+    }
 }
 {
     (* rewrite <- Heqcall. *)
@@ -718,10 +721,16 @@ ltac1:(funelim(unify es)).
             unfold least_of.
             intros s' Hs'.
             simpl in Hs'.
-            destruct Hs' as [Hs'1 Hs'2].
-            destruct H as [H1 H2].
+            destruct Hs' as [[Hs'0 Hs'1] Hs'2].
+            destruct H as [H1 [H2 Hnormal]].
             unfold least_of in H2.
-            specialize (H2 _ Hs'2).
+            specialize (H2 s').
+            ltac1:(ospecialize (H2 _)).
+            {
+                split.
+                { exact Hs'1. }
+                { exact Hs'2. }
+            }
             destruct H2 as [s1 Hs1].
             destruct Hs1 as [Hs1' Hs1].
             exists s1.
@@ -735,6 +744,10 @@ ltac1:(funelim(unify es)).
                 rewrite Hs1.
                 reflexivity.
             }
+        }
+        {
+            destruct H as [? [? Hthis]].
+            exact Hthis.
         }
     }
     {
@@ -756,53 +769,74 @@ ltac1:(funelim(unify es)).
     simpl.
     ltac1:( repeat (case_match; simpl in *; simplify_eq/=)).
     {
-    repeat split.
-    {
-        destruct H as [H2 H3]. clear H1 e.
-        apply is_unifier_of_cons. exact H2.
-    }
-    {
-        destruct H as [H2 H3].
-        clear H1 e.
-        intros sss Hsss.
-        specialize (H3 sss).
-        ltac1:(ospecialize (H3 _)).
+        repeat split.
         {
-        apply helper_lemma_2.
+            destruct H as [H2 H3]. clear H1 e.
+            apply is_unifier_of_cons. exact H2.
+        }
         {
-            simpl in Hsss.
+            destruct H as [H2 [H3 Hnorm]].
+            clear H1 e.
+            intros sss Hsss.
+            specialize (H3 sss).
+            ltac1:(ospecialize (H3 _)).
+            {
+                split.
+                {
+                    apply helper_lemma_2.
+                    {
+                        simpl in Hsss.
+                        destruct Hsss as [Hsss1 Hsss2].
+                        symmetry.
+                        apply Hsss1.
+                    }
+                    {
+                        simpl in Hsss. apply Hsss.
+                    }
+                }
+                {
+                    destruct Hsss as [? Hsss].
+                    apply Hsss.
+                }
+            }
+            destruct H3 as [s1 Hs1]. simpl in *.
             destruct Hsss as [Hsss1 Hsss2].
-            symmetry.
-            apply Hsss1.
+            destruct Hs1 as [Hs1' Hs1].
+            exists s1.
+            split.
+            {
+                exact Hs1'.
+            }
+            {
+                intros x0.
+                specialize (Hs1 x0).
+                rewrite subs_app_app in Hs1.
+                rewrite subs_app_app.
+                destruct (decide (x = x0))>[|auto].
+                subst.
+                rewrite subs_app_builtin.
+                rewrite subs_app_builtin in Hsss1.
+                rewrite subs_app_builtin.
+                destruct Hsss1 as [? ?].
+                ltac1:(congruence).
+            }
         }
         {
-            simpl in Hsss. apply Hsss.
+            destruct H as [H2 [H3 Hnorm]].
+            unfold subs_is_normal.
+            rewrite Forall_cons.
+            split.
+            {
+                simpl.
+                ltac1:(discriminate).
+            }
+            {
+                apply Hnorm.
+            }
         }
-        }
-        destruct H3 as [s1 Hs1]. simpl in *.
-        destruct Hsss as [Hsss1 Hsss2].
-        destruct Hs1 as [Hs1' Hs1].
-        exists s1.
-        split.
-        {
-            exact Hs1'.
-        }
-        {
-            intros x0.
-            specialize (Hs1 x0).
-            rewrite subs_app_app in Hs1.
-            rewrite subs_app_app.
-            destruct (decide (x = x0))>[|auto].
-            subst.
-            rewrite subs_app_builtin.
-            rewrite subs_app_builtin in Hsss1.
-            rewrite subs_app_builtin.
-            ltac1:(congruence).
-        }
-    }
     }
     {
-    apply H.
+        apply H.
     }
 }
 {
@@ -821,7 +855,7 @@ ltac1:(funelim(unify es)).
     ltac1:(repeat (case_match; simplify_eq/=)).
     {
         clear e H1.
-        destruct H as [H1 H2].
+        destruct H as [H1 [H2 Hnorm]].
         repeat split.
         {
             simpl.
@@ -831,32 +865,50 @@ ltac1:(funelim(unify es)).
             intros ss Hss. specialize (H2 ss).
             ltac1:(ospecialize (H2 _)).
             {
-            simpl in Hss.
-            destruct Hss as [Hss1 Hss2].
-            eapply helper_lemma_2; assumption.
+                simpl in Hss.
+                destruct Hss as [[Hsss0 Hss1] Hss2].
+                split.
+                {
+                    eapply helper_lemma_2; assumption.
+                }
+                {
+                    assumption.
+                }
             }
             {
-            destruct H2 as [s1 Hs1].
-            destruct Hs1 as [Hs1' Hs1].
-            exists s1.
+                destruct H2 as [s1 Hs1].
+                destruct Hs1 as [Hs1' Hs1].
+                exists s1.
+                split.
+                {
+                    exact Hs1'.
+                }
+                {
+                    intros x0. rewrite Hs1. simpl.
+                    destruct (decide (x = x0))>[|reflexivity].
+                    subst. simpl in Hss.
+                    destruct Hss as [Hss1 Hss2].
+                    do 2 (rewrite subs_app_app).
+                    assert (Hs1x0 := Hs1 x0).
+                    (rewrite subs_app_app in Hs1x0).
+                    rewrite <- Hs1x0.
+                    rewrite subs_app_builtin.
+                    rewrite subs_app_builtin.
+                    rewrite subs_app_builtin in Hss1.
+                    apply Hss1.
+                }
+            }
+        }
+        {
+            unfold subs_is_normal.
+            rewrite Forall_cons.
             split.
             {
-                exact Hs1'.
+                simpl.
+                ltac1:(discriminate).
             }
             {
-                intros x0. rewrite Hs1. simpl.
-                destruct (decide (x = x0))>[|reflexivity].
-                subst. simpl in Hss.
-                destruct Hss as [Hss1 Hss2].
-                do 2 (rewrite subs_app_app).
-                assert (Hs1x0 := Hs1 x0).
-                (rewrite subs_app_app in Hs1x0).
-                rewrite <- Hs1x0.
-                rewrite subs_app_builtin.
-                rewrite subs_app_builtin.
-                rewrite subs_app_builtin in Hss1.
-                apply Hss1.
-            }
+                apply Hnorm.
             }
         }
     }
@@ -868,26 +920,33 @@ ltac1:(funelim(unify es)).
     (* rewrite <- Heqcall. *)
     clear Heqcall.
     ltac1:(repeat (case_match; simplify_eq/=; try assumption)).
-    destruct H as [H1 H2].
+    destruct H as [H1 [H2 Hnorm]].
     repeat split.
     { assumption. }
-    intros ss Hss.
-    specialize (H2 ss).
-    ltac1:(ospecialize (H2 _)).
     {
-        simpl in Hss. apply Hss.
+        intros ss Hss.
+        specialize (H2 ss).
+        ltac1:(ospecialize (H2 _)).
+        {
+            simpl in Hss.
+            destruct Hss as [[H3 H4] H5].
+            split; assumption.
+        }
+        destruct H2 as [s1 Hs1].
+        destruct Hs1 as [Hs1' Hs1].
+        exists s1.
+        split.
+        {
+            exact Hs1'.
+        }
+        {
+            intros x.
+            rewrite Hs1.
+            reflexivity.
+        }
     }
-    destruct H2 as [s1 Hs1].
-    destruct Hs1 as [Hs1' Hs1].
-    exists s1.
-    split.
     {
-        exact Hs1'.
-    }
-    {
-        intros x.
-        rewrite Hs1.
-        reflexivity.
+        exact Hnorm.
     }
 }
 {
@@ -898,7 +957,7 @@ ltac1:(funelim(unify es)).
     clear HH.
     ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
     clear e H1 Heq n0 H2.
-    destruct H as [HH1 HH2].
+    destruct H as [HH1 [HH2 Hnorm]].
     (repeat split).
     {
         apply is_unifier_of_cons.
@@ -910,10 +969,16 @@ ltac1:(funelim(unify es)).
         ltac1:(ospecialize (HH2 _)).
         {
             simpl in Hss.
-            destruct Hss as [Hss1 Hss2].
-            eapply helper_lemma_2.
-            { apply Hss1. }
-            exact Hss2.
+            destruct Hss as [[Hss0 Hss1] Hss2].
+            split.
+            {
+                eapply helper_lemma_2.
+                { apply Hss0. }
+                exact Hss1.
+            }
+            {
+                apply Hss2.
+            }
         }
         destruct HH2 as [s1 Hs1].
         destruct Hs1 as [Hs1' Hs1].
@@ -940,7 +1005,19 @@ ltac1:(funelim(unify es)).
             }
         }
     }
-    exact I.
+    {
+        unfold subs_is_normal.
+        rewrite Forall_cons.
+        split.
+        {
+            simpl.
+            ltac1:(congruence).
+        }
+        {
+            exact Hnorm.
+        }
+    }
+    { exact I. }
 }
 {
     (* rewrite <- Heqcall.  *)
@@ -955,7 +1032,7 @@ ltac1:(funelim(unify es)).
     ltac1:(repeat (case_match; simpl in *; simplify_eq/=)).
     {
         clear e H1.
-        destruct H as [HH1 HH2].
+        destruct H as [HH1 [HH2 Hnorm]].
         rewrite subs_app_term.
         rewrite subs_app_term.
         simpl.
@@ -1004,10 +1081,16 @@ ltac1:(funelim(unify es)).
             intros u Hu.
             unfold least_of in HH2.
 
-            
-            assert (HH21 := HH2 _ HH1).
-            simpl in Hu.
-            destruct Hu as [Hu1 Hu2].
+            destruct Hu as [H1u H2u].
+            assert (HH21 := HH2 l).
+            ltac1:(ospecialize (HH21 _)).
+            {
+                split.
+                { apply HH1. }
+                { exact Hnorm. }
+            }
+            simpl in H1u.
+            destruct H1u as [Hu1 Hu2].
             (*
             destruct HH21 as [s1 Hs1].
             *)
@@ -1015,9 +1098,15 @@ ltac1:(funelim(unify es)).
             assert(HH2u := HH2 u).
             ltac1:(ospecialize (HH2u _)).
             {
-            apply helper_lemma_2.
-            apply Hu1.
-            exact Hu2.
+                split.
+                {
+                    apply helper_lemma_2.
+                    apply Hu1.
+                    exact Hu2.
+                }
+                {
+                    exact H2u.
+                }
             }
             destruct HH2u as [s1 Hs1].
             
@@ -1076,6 +1165,18 @@ ltac1:(funelim(unify es)).
                 }
             }
         }
+        {
+            unfold subs_is_normal.
+            rewrite Forall_cons.
+            split.
+            {
+                simpl.
+                ltac1:(discriminate).
+            }
+            {
+                exact Hnorm.
+            }
+        }
     }
 {
     exact H.
@@ -1102,7 +1203,7 @@ ltac1:(funelim(unify es)).
     destruct (unify (sub (t_term s l0) x es)) as [Hr |].
     {
         simpl.
-        destruct H as [HH1 HH2].
+        destruct H as [HH1 [HH2 Hnorm]].
         destruct (decide (x = x))>[|ltac1:(congruence)].
         (repeat split).
         {
@@ -1114,25 +1215,25 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             destruct (l0 !! i) eqn:Heqt.
             {
-            ltac1:(rewrite Heqt).
-            simpl.
-            apply f_equal.
-            rewrite subst_notin2.
-            { reflexivity. }
-            intros HContra.
-            apply n. clear n Heq.
-            rewrite vars_of_t_term.
-            apply take_drop_middle in Heqt.
-            rewrite <- Heqt.
-            rewrite fmap_app.
-            rewrite union_list_app.
-            rewrite fmap_cons.
-            simpl.
-            ltac1:(set_solver).
+                ltac1:(rewrite Heqt).
+                simpl.
+                apply f_equal.
+                rewrite subst_notin2.
+                { reflexivity. }
+                intros HContra.
+                apply n. clear n Heq.
+                rewrite vars_of_t_term.
+                apply take_drop_middle in Heqt.
+                rewrite <- Heqt.
+                rewrite fmap_app.
+                rewrite union_list_app.
+                rewrite fmap_cons.
+                simpl.
+                ltac1:(set_solver).
             }
             {
-            ltac1:(rewrite Heqt).
-            reflexivity.
+                ltac1:(rewrite Heqt).
+                reflexivity.
             }
         }
         {
@@ -1144,12 +1245,18 @@ ltac1:(funelim(unify es)).
             clear e.
             intros u Hu.
             simpl in Hu.
-            destruct Hu as [Hu1 Hu2].
+            destruct Hu as [[Hu1 Hu2] Hu3].
             specialize (HH2 u).
             ltac1:(ospecialize (HH2 _)).
             {
-                apply helper_lemma_2.
-                symmetry. apply Hu1. apply Hu2.
+                split.
+                {
+                    apply helper_lemma_2.
+                    symmetry. apply Hu1. apply Hu2.
+                }
+                {
+                    exact Hu3.
+                }
             }
             destruct HH2 as [rest Hrest].
             destruct Hrest as [H0rest Hrest].
@@ -1176,6 +1283,19 @@ ltac1:(funelim(unify es)).
                 }
             }
         }
+        {
+            unfold subs_is_normal.
+            rewrite Forall_cons.
+            split.
+            {
+                simpl.
+                ltac1:(discriminate).
+            }
+            {
+                apply Hnorm.
+            }
+
+        }
     }
     {
         simpl. exact H.
@@ -1188,7 +1308,7 @@ ltac1:(funelim(unify es)).
     destruct (unify (zip l1 l2 ++ es)) eqn:Heq2.
     {
         subst.
-        destruct H as [HH3 HH4].
+        destruct H as [HH3 [HH4 Hnorm]].
         simpl.
         repeat split.
         {
@@ -1203,62 +1323,64 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             destruct (l1!!i) eqn:Hl1i.
             {
-            ltac1:(rewrite Hl1i).
-            destruct (l2!!i) eqn:Hl2i.
+                ltac1:(rewrite Hl1i).
+                destruct (l2!!i) eqn:Hl2i.
+                {
+                    ltac1:(rewrite Hl2i).
+                    simpl.
+                    f_equal.
+                    remember (zip l1 l2) as z.
+                    destruct (z !! i) eqn:Hzi.
+                    {
+                        apply take_drop_middle in Hzi as Hzi'.
+                        rewrite <- Hzi' in HH31.
+                        rewrite is_unifier_of_app in HH31.
+                        simpl in HH31.
+                        destruct p; simpl in *.
+                        destruct HH31 as [HH311 [WHATIWANT HH312]].
+                        clear Hzi'.
+                        subst z.
+                        rewrite lookup_zip_with in Hzi.
+                        rewrite Hl1i in Hzi. simpl in Hzi.
+                        rewrite Hl2i in Hzi. simpl in Hzi.
+                        ltac1:(simplify_eq/=).
+                        exact WHATIWANT.
+                    }
+                    {
+                        subst z.
+                        rewrite lookup_zip_with in Hzi.
+                        rewrite bind_None in Hzi.
+                        destruct Hzi.
+                        {
+                            ltac1:(simplify_eq/=).
+                        }
+                        destruct H as [x [H1x H2x]].
+                        rewrite bind_None in H2x.
+                        destruct H2x.
+                        { ltac1:(simplify_eq/=). }
+                        destruct H as [x' [H1x' H2x']].
+                        { ltac1:(simplify_eq/=). }
+                    }
+                }
+                {
+                    apply lookup_lt_Some in Hl1i.
+                    apply lookup_ge_None in Hl2i.
+                    ltac1:(lia).
+                }
+            }
             {
-                ltac1:(rewrite Hl2i).
+                ltac1:(rewrite Hl1i).
                 simpl.
-                f_equal.
-                remember (zip l1 l2) as z.
-                destruct (z !! i) eqn:Hzi.
+                destruct (l2 !! i) eqn:Hl2i.
                 {
-                apply take_drop_middle in Hzi as Hzi'.
-                rewrite <- Hzi' in HH31.
-                rewrite is_unifier_of_app in HH31.
-                simpl in HH31.
-                destruct p; simpl in *.
-                destruct HH31 as [HH311 [WHATIWANT HH312]].
-                clear Hzi'.
-                subst z.
-                rewrite lookup_zip_with in Hzi.
-                rewrite Hl1i in Hzi. simpl in Hzi.
-                rewrite Hl2i in Hzi. simpl in Hzi.
-                ltac1:(simplify_eq/=).
-                exact WHATIWANT.
+                    apply lookup_lt_Some in Hl2i.
+                    apply lookup_ge_None in Hl1i.
+                    ltac1:(lia).
                 }
                 {
-                subst z.
-                rewrite lookup_zip_with in Hzi.
-                rewrite bind_None in Hzi.
-                destruct Hzi.
-                {
-                    ltac1:(simplify_eq/=).
+                    ltac1:(rewrite Hl2i).
+                    reflexivity.
                 }
-                destruct H as [x [H1x H2x]].
-                rewrite bind_None in H2x.
-                destruct H2x.
-                { ltac1:(simplify_eq/=). }
-                destruct H as [x' [H1x' H2x']].
-                { ltac1:(simplify_eq/=). }
-                }
-            }
-            apply lookup_lt_Some in Hl1i.
-            apply lookup_ge_None in Hl2i.
-            ltac1:(lia).
-            }
-            {
-            ltac1:(rewrite Hl1i).
-            simpl.
-            destruct (l2 !! i) eqn:Hl2i.
-            {
-                apply lookup_lt_Some in Hl2i.
-                apply lookup_ge_None in Hl1i.
-                ltac1:(lia).
-            }
-            {
-                ltac1:(rewrite Hl2i).
-                reflexivity.
-            }
             }
         }
         {
@@ -1268,7 +1390,7 @@ ltac1:(funelim(unify es)).
         {
             intros u Hu.
             simpl in Hu.
-            destruct Hu as [H1u H2u].
+            destruct Hu as [[H1u H2u] Hnorm'].
             specialize (HH4 u).
             rewrite is_unifier_of_app in HH4.
             rewrite subs_app_term in H1u.
@@ -1276,29 +1398,30 @@ ltac1:(funelim(unify es)).
             inversion H1u; subst; clear H1u.
             ltac1:(ospecialize (HH4 _)).
             {
-            split; try assumption.
-            clear -HH2 H0.
-            revert l2 HH2 H0.
-            induction l1; intros l2 HH2 H0.
-            {
-                destruct l2; simpl in *.
-                { exact I. }
-                { ltac1:(lia). }
-            }
-            {
-                simpl in *.
-                destruct l2; simpl in *.
+                split; try assumption.
+                clear - H2u HH2 H0.
+                revert l2 HH2 H0 H2u.
+                induction l1; intros l2 HH2 H0 H2u.
                 {
-                exact I.
+                    destruct l2; simpl in *.
+                    { repeat split; exact H2u. }
+                    { ltac1:(lia). }
                 }
                 {
-                inversion H0; subst; clear H0.
-                repeat split; try assumption.
-                apply IHl1.
-                { ltac1:(lia). }
-                { apply H2. }
+                    simpl in *.
+                    destruct l2; simpl in *.
+                    {
+                        repeat split; exact H2u.
+                    }
+                    {
+                        inversion H0; subst; clear H0.
+                        repeat split; try assumption.
+                        apply IHl1.
+                        { ltac1:(lia). }
+                        { apply H2. }
+                        { exact H2u. }
+                    }
                 }
-            }
             }
             destruct HH4 as [rest Hrest].
             destruct Hrest as [H0rest Hrest].
@@ -1313,9 +1436,12 @@ ltac1:(funelim(unify es)).
                 apply Hrest.
             }
         }
+        {
+            exact Hnorm.
+        }
     }
     {
-    exact H.
+        exact H.
     }
 }
 {
@@ -2054,11 +2180,16 @@ Next Obligation.
         rewrite (restrict_id s) in Hr.
         {
             rewrite make_parallel_app in Hr.
-            subst s.
-            Search subp_restrict.
-            (*  *)
-            Search subp_precompose.
-            exists (make_parallel s').
+            {
+                subst s.
+                exists (make_parallel (reverse s')).
+                reflexivity.            
+            }
+            {
+                Search s'.
+                Print subs_is_normal.
+                Search subs_is_normal.
+            }
         }
         {
             clear - Hsubseteq.
