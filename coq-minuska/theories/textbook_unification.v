@@ -2052,7 +2052,7 @@ Next Obligation.
     destruct (unify [(t1, t2)]) eqn:Heq.
     {
         apply unify_no_variable_out_of_thin_air in Heq as Hnoota.
-        destruct Hsound as [Hsound1 Hsound2].
+        destruct Hsound as [Hsound1 [Hsound2 Hnorm]].
         simpl in Hsound1.
         destruct Hsound1 as [Hsound1 _].
         rewrite fmap_Some in H.
@@ -2103,7 +2103,11 @@ Next Obligation.
         ltac1:(ospecialize (Hsound2 ser _)).
         {
             (repeat split).
-            exact Hser.
+            { exact Hser. }
+            {
+                subst ser.
+                Search subs_is_normal make_serial1.
+            }
         }
 
         destruct Hsound2 as [s' [H0s' Hs']].
