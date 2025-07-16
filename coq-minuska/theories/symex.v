@@ -8,6 +8,8 @@ From Minuska Require Import
     symex_spec
     valuation_merge
     fresher
+    substitution_parallel
+    substitution_parallel_properties
 .
 
 
@@ -245,7 +247,7 @@ Definition simpleStepByRule
         let to'' := replace_and_collect1 (elements ((vars_of sub) ∪ vars_of (sss.(sss_sc)))) r.(r_to) in
         let sceq := sclist_to_sceq to''.2 in
         let to' := to''.1 in
-        let to := subs_app sub to' in
+        let to := subp_app sub to' in
         [{|sss_term := to; sss_sc := sceq|}]
     end
 .

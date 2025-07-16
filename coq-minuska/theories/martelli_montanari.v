@@ -3,6 +3,8 @@ From Minuska Require Import
     spec
     unification_interface
     basic_properties
+    substitution_parallel
+    substitution_parallel_properties
 .
 
 From stdpp Require Import
