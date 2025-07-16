@@ -1985,8 +1985,10 @@ Next Obligation.
         rewrite fst_make_serial1 in H0s'.
         rewrite list_fmap_compose in H0s'.
         assert (Hsms := snd_make_serial1 s (vars_of t1 ∪ vars_of t2)).
+        remember (map_img (renaming_for (vars_of t1 ∪ vars_of t2) s)) as X1.
+        remember (⋃ (vars_of <$> (make_serial1 s (vars_of t1 ∪ vars_of t2)).*2)) as X2.
         (* When I obtain [s'] and [Hs'], I do not  *)
-        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2 ∪ (list_to_set s'.*1)))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
+        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
         {
             intros x.
             specialize (Hs' x).
@@ -2022,6 +2024,14 @@ Next Obligation.
             apply make_parallel_normal. 
         }
         specialize (Hr H3).
+        rewrite (restrict_id (make_parallel (reverse (u' ++ s')))) in Hr.
+        {
+
+        }
+        {
+            subst.
+            Search dom make_parallel.
+        }
         (* Here I would want the restriction in Hr to cover both u' and s'.
           I know about u' from Hnoota,
           but I do not know about s'.

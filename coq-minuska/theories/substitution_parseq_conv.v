@@ -6765,3 +6765,43 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma dom_make_parallel0
+    {Σ : StaticModel}
+    (init : gmap variable (TermOver BuiltinOrVar))
+    (a : list (variable*(TermOver BuiltinOrVar)))
+    :
+    dom (make_parallel0 init a) ⊆ dom init ∪ list_to_set (a.*1)
+.
+Proof.
+    revert init.
+    induction a; intros init.
+    {
+        simpl.
+        ltac1:(set_solver).
+    }
+    {
+        rewrite fmap_cons.
+        rewrite list_to_set_cons.
+        simpl.
+        eapply transitivity>[apply dom_subp_compose_subseteq|].
+        unfold SubP in *.
+        rewrite dom_singleton_L.
+        specialize (IHa init).
+        ltac1:(set_solver).
+    }
+Qed.
+
+Lemma dom_make_parallel
+    {Σ : StaticModel}
+    (a : list (variable*(TermOver BuiltinOrVar)))
+    :
+    dom (make_parallel a) ⊆ list_to_set (a.*1)
+.
+Proof.
+    unfold make_parallel.
+    eapply transitivity>[
+        apply dom_make_parallel0|].
+    ltac1:(set_solver).
+Qed.
