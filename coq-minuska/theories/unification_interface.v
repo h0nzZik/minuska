@@ -50,6 +50,7 @@ Class UnificationAlgorithm
         forall (t1 t2 : TermOver BuiltinOrVar),
             ua_unify t1 t2 = None ->
             forall (s : SubP),
+                dom s ## subp_codom s ->
                 subp_app s t1 <> subp_app s t2
     ;
 }.

@@ -2106,14 +2106,24 @@ Next Obligation.
             { exact Hser. }
             {
                 subst ser.
-                Search subs_is_normal make_serial1.
+                apply subs_is_normal_make_serial1.
+                {
+                    exact Hnormal.
+                }
+                {
+                    exact Hdoms.
+                }
             }
         }
 
         destruct Hsound2 as [s' [H0s' Hs']].
         subst ser.
-        rewrite fst_make_serial1 in H0s'.
-        rewrite list_fmap_compose in H0s'.
+
+        (* exists (make_parallel s'). *)
+
+
+        (* rewrite fst_make_serial1 in H0s'. *)
+        (* rewrite list_fmap_compose in H0s'. *)
         assert (Hsms := snd_make_serial1 s (vars_of t1 ∪ vars_of t2)).
         remember (map_img (renaming_for (vars_of t1 ∪ vars_of t2) s)) as X1.
         remember (⋃ (vars_of <$> (make_serial1 s (vars_of t1 ∪ vars_of t2)).*2)) as X2.
@@ -2159,16 +2169,6 @@ Next Obligation.
         ltac1:(ospecialize (Hr _)).
         {
             exact H3.
-            (* intros x Hx.
-            destruct (decide (x ∈ vars_of t1 ∪ vars_of t2)) as [Hin|Hnotin].
-            {
-                apply H3.
-                exact Hin.
-            }
-            {
-                (* I cannot use H3 *)
-                clear H3.
-            } *)
         }
         
         unfold eqns_vars,eqn_vars in Hnoota.
@@ -2190,87 +2190,57 @@ Next Obligation.
                 reflexivity.            
             }
             {
-                Search s'.
-                Print subs_is_normal.
-                Search subs_is_normal.
+                unfold subs_is_normal in *.
+                assert (s' ≡ₚ reverse s').
+                {
+                    symmetry.
+                    apply reverse_Permutation.
+                }
+                rewrite <- H.
+                apply H0s'.
             }
         }
         {
             clear - Hsubseteq.
             ltac1:(set_solver).
         }
-        
-        (*
-        (* Can I add [s'.*1] to the restriction in Hr? NO! *)
-        rewrite (restrict_id (make_parallel (reverse (u' ++ s')))) in Hr.
-        {
-            admit.
-        }
-        {
-            subst.
-            eapply transitivity>[apply dom_make_parallel|].
-            unfold SubP in *.
-            rewrite fmap_reverse.
-            rewrite list_to_set_reverse_var.
-            rewrite fmap_app.
-            rewrite list_to_set_app.
-            
-            rewrite dom_renaming_for in Hsms.
-            unfold subp_dom,SubP in Hsms.
-            assert (Htmp2: list_to_set s'.*1 ⊆ vars_of t1 ∪ vars_of t2).
-            {
-                clear Htmp1.
-                eapply transitivity>[apply H0s'|].
-                clear H0s'.
-                clear H2 H3 Hr.
-                (* Hsms will not help me because of the [map_img (renaming_for _ _)] component.
-                   Actually, this component is already present in the goal,
-                   and of course, these renamings will not be below [vars_of t1 ∪ vars_of t2].
-                 *)
-
-                Search map_img renaming_for.
-                (* what if dom s is not under vars_of t1 ∪ vars_of t2 ? *)
-            }
-            
-            (* ltac1:(set_solver). *)
-            (* see Hnoota and H0s' and Hsms *)
-            (* Search dom make_parallel. *)
-        }
-        (* Here I would want the restriction in Hr to cover both u' and s'.
-          I know about u' from Hnoota,
-          but I do not know about s'.
-        *)
-        Search subp_restrict.
-        setoid_rewrite reverse_app in H3.
-        setoid_rewrite make_parallel_app in H3.
-        
-        Check subp_app_restrict_eq.
-        (* Search subp_restrict. *)
-        (* Check subp_app_compose_precompose. *)
-        (* setoid_rewrite subs_app_app in Hs'. *)
-        (* Search least_of. *)
-        (* Search unify. *)
-        (* Search subs_app. *)
-        (* assert(Hl := helper_lemma_3 _ _ Hs'). *)
-        (* clear Hs'. *)
-        (* setoid_rewrite subs_app_app in Hl. *)
-        
-        (* setoid_rewrite Hl in Hs'. *)
-        (* setoid_rewrite <- reverse_involutive at 2 in Hl. *)
-        (* assert (Hc := make_parallel_correct). *)
-        (* Search to_sequential. *)
-
-        (* rewrite <- make_parallel_correct. *)
-        Search subs_app. *)
+    }
+    {
+        ltac1:(rewrite Heq in H).
+        simpl in H.
+        inversion H.
     }
 Qed.
 Next Obligation.
-    assert(Hsound := unify_sound2 [(t1,t2)] H).
+    assert(Hsound := unify_sound2 [(t1,t2)]).
+    ltac1:(ospecialize (Hsound _)).
+    {
+        rewrite fmap_None in H.
+        exact H.
+    }
     apply unify_failure_is_severe in Hsound.
     apply Hsound.
-    exists s.
-    simpl.
+    clear Hsound.
+    exists (make_serial1 s (vars_of t1 ∪ vars_of t2)).
     repeat split.
-    assumption.
+    rewrite make_serial1_correct.
+    {
+        rewrite make_serial1_correct.
+        {
+            assumption.
+        }
+        {
+            assumption.
+        }
+        {
+            ltac1:(set_solver).
+        }
+    }
+    {
+        assumption.
+    }
+    {
+        ltac1:(set_solver).
+    }
 Qed.
 
