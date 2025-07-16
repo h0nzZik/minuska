@@ -3,7 +3,7 @@
 (coq.theory
  (name Minuska)
  (package coq-minuska)
- (theories stdpp Ltac2 Equations QuickChick)
+ (theories stdpp Ltac2 Equations QuickChick ExtLib)
  (plugins coq-equations coq-quickchick)
  (coqdoc_flags 
    --toc --toc-depth 2 --html --interpolate
