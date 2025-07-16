@@ -1947,7 +1947,7 @@ Next Obligation.
             rewrite reverse_involutive.
             apply Hsound1.
         }
-        intros s Hnormal Hdoms Hs.
+        intros s Hnormal Hsubseteq Hdoms Hs.
         remember (make_serial1 s (vars_of t1 ∪ vars_of t2)) as ser.
         assert (Hser: subs_app ser t1 = subs_app ser t2).
         {
@@ -2017,20 +2017,89 @@ Next Obligation.
                 ltac1:(set_solver).
             }
         }
-        assert (Hr := subp_app_restrict_eq (vars_of t1 ∪ vars_of t2) s (make_parallel (reverse (u' ++ s')))).
+
+        (*I can't add [s'.*1] to the restriction in Hr?
+        *)
+        assert (Hr := subp_app_restrict_eq (vars_of t1 ∪ vars_of t2  (* ∪ (list_to_set s'.*1) *)) s (make_parallel (reverse (u' ++ s')))).
         specialize (Hr Hnormal).
         ltac1:(ospecialize (Hr _)).
         {
             apply make_parallel_normal. 
         }
-        specialize (Hr H3).
+        ltac1:(ospecialize (Hr _)).
+        {
+            exact H3.
+            (* intros x Hx.
+            destruct (decide (x ∈ vars_of t1 ∪ vars_of t2)) as [Hin|Hnotin].
+            {
+                apply H3.
+                exact Hin.
+            }
+            {
+                (* I cannot use H3 *)
+                clear H3.
+            } *)
+        }
+        
+        unfold eqns_vars,eqn_vars in Hnoota.
+        simpl in Hnoota.
+        assert (Htmp1: list_to_set u'.*1 ⊆ vars_of t1 ∪ vars_of t2).
+        {
+            clear - Hnoota H0s'.
+            ltac1:(set_solver).
+        }
+        (*  *)
+        
+        rewrite reverse_app in Hr.
+        rewrite (restrict_id s) in Hr.
+        {
+            rewrite make_parallel_app in Hr.
+            subst s.
+            Search subp_restrict.
+            (*  *)
+            Search subp_precompose.
+            exists (make_parallel s').
+        }
+        {
+            clear - Hsubseteq.
+            ltac1:(set_solver).
+        }
+        
+        (*
+        (* Can I add [s'.*1] to the restriction in Hr? NO! *)
         rewrite (restrict_id (make_parallel (reverse (u' ++ s')))) in Hr.
         {
-
+            admit.
         }
         {
             subst.
-            Search dom make_parallel.
+            eapply transitivity>[apply dom_make_parallel|].
+            unfold SubP in *.
+            rewrite fmap_reverse.
+            rewrite list_to_set_reverse_var.
+            rewrite fmap_app.
+            rewrite list_to_set_app.
+            
+            rewrite dom_renaming_for in Hsms.
+            unfold subp_dom,SubP in Hsms.
+            assert (Htmp2: list_to_set s'.*1 ⊆ vars_of t1 ∪ vars_of t2).
+            {
+                clear Htmp1.
+                eapply transitivity>[apply H0s'|].
+                clear H0s'.
+                clear H2 H3 Hr.
+                (* Hsms will not help me because of the [map_img (renaming_for _ _)] component.
+                   Actually, this component is already present in the goal,
+                   and of course, these renamings will not be below [vars_of t1 ∪ vars_of t2].
+                 *)
+
+                Search map_img renaming_for.
+                (* what if dom s is not under vars_of t1 ∪ vars_of t2 ? *)
+            }
+            
+            (* ltac1:(set_solver). *)
+            (* see Hnoota and H0s' and Hsms *)
+            (* Search dom make_parallel. *)
         }
         (* Here I would want the restriction in Hr to cover both u' and s'.
           I know about u' from Hnoota,
@@ -2057,7 +2126,7 @@ Next Obligation.
         (* Search to_sequential. *)
 
         (* rewrite <- make_parallel_correct. *)
-        Search subs_app.
+        Search subs_app. *)
     }
 Qed.
 Next Obligation.
