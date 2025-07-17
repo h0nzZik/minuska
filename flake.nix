@@ -37,6 +37,7 @@
  
             nativeBuildInputs = [
               pkgs.dune_3
+              pkgs.time # for QuickChick
             ] ++ bothNativeAndOtherInputs;
 
             passthru = {
