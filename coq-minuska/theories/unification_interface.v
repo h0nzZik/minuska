@@ -1,20 +1,17 @@
 From Minuska Require Import
     prelude
     spec
-    basic_properties
+    substitution_parallel
 .
 
-Definition SubT {Σ : StaticModel} : Type
-:=
-    list (variable*(TermOver BuiltinOrVar))%type
+Definition eqn {Σ : StaticModel} : Type :=
+    ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type
 .
 
-Fixpoint sub_app {Σ : StaticModel} (s : SubT) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
-match s with
-| [] => t
-| (x,t')::s' => sub_app s' (TermOverBoV_subst t x t')
-end
+Definition is_unifier_of {Σ : StaticModel} (s : SubP) (l : list eqn) :=
+  Forall (fun '(e1, e2) => subp_app s e1 = subp_app s e2) l
 .
+
 
 Class UnificationAlgorithm
     {Σ : StaticModel}
@@ -22,28 +19,38 @@ Class UnificationAlgorithm
     ua_unify :
         TermOver BuiltinOrVar ->
         TermOver BuiltinOrVar ->
-        option SubT
+        option SubP
     ;
     
     ua_unify_sound :
         forall
             (t1 t2 : TermOver BuiltinOrVar)
-            (u : SubT),
+            (u : gmap variable (TermOver BuiltinOrVar)),
         ua_unify t1 t2 = Some u ->
-        (sub_app u t1 = sub_app u t2) /\
+        (subp_app u t1 = subp_app u t2) /\
         (
-            forall u',
-                sub_app u' t1 = sub_app u' t2 ->
-                exists rest,
-                forall (x : variable),
-                    sub_app (u ++ rest) (t_over (bov_variable x)) = sub_app u' (t_over (bov_variable x))
+            forall (u' : gmap variable (TermOver BuiltinOrVar)),
+                subp_is_normal u' ->
+                dom u' ∪ subp_codom u' ⊆ vars_of t1 ∪ vars_of t2 ->
+                dom u' ## subp_codom u' ->
+                subp_app u' t1 = subp_app u' t2 ->
+                exists (u'' : gmap variable (TermOver BuiltinOrVar)),
+                    (* u' = subp_precompose u'' u *)
+                    u' = subp_restrict (vars_of t1 ∪ vars_of t2) (subp_compose u'' u)
+                (* I think that [u ⊆ u'] would be too strong.
+                   For example, we may have a unifier u = {x -> f(5)}
+                   and u' = {x -> f(y)}, and clearly u ⊆ u' does not hold
+                   despite u being a specialization of u'
+                 *)
+                    (* u ⊆ u' *)
         )
     ;
 
     ua_unify_complete :
         forall (t1 t2 : TermOver BuiltinOrVar),
             ua_unify t1 t2 = None ->
-            forall (s : SubT),
-                sub_app s t1 <> sub_app s t2
+            forall (s : SubP),
+                dom s ## subp_codom s ->
+                subp_app s t1 <> subp_app s t2
     ;
 }.

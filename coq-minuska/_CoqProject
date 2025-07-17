@@ -9,10 +9,15 @@ theories/spec_syntax.v
 theories/spec_interpreter.v
 theories/valuation_merge.v
 
+theories/specb.v
+theories/quickchick_setup.v
+
 theories/minuska.v
 theories/string_variables.v
 theories/BuiltinValue.v
 theories/builtins.v
+theories/termoverbov_subst.v
+theories/termoverbov_subst_properties.v
 theories/naive_interpreter.v
 theories/interpreter_results.v
 theories/default_static_model.v
@@ -25,10 +30,16 @@ theories/minusl_compile_properties.v
 theories/dt.v
 theories/interp_loop.v
 theories/default_everything.v
+theories/substitution_sequential.v
+theories/substitution_sequential_properties.v
+theories/substitution_parallel.v
+theories/substitution_parallel_properties.v
+theories/substitution_parseq_conv.v
 theories/unification_interface.v
 theories/textbook_unification_alg.v
 theories/textbook_unification.v
 theories/martelli_montanari.v
+theories/martelli_montanari_tests.v
 theories/symex_spec.v
 theories/symex.v
 theories/pval_ocaml_binding.v
@@ -46,8 +57,10 @@ theories/builtin/int_model.v
 theories/builtin/list_model.v
 theories/builtin/example_list_int_model.v
 theories/builtin/information_flow_functor.v
+theories/fresher.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v
 theories/pi/trivial.v
 
+theories/playground.v

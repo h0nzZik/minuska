@@ -3,6 +3,8 @@ From Minuska Require Import
     spec
     unification_interface
     basic_properties
+    substitution_parallel
+    substitution_parallel_properties
 .
 
 From stdpp Require Import
@@ -14,33 +16,6 @@ Ltac resymde S Name HName :=
   remember S as Name eqn:HName; symmetry in HName; destruct Name
 .
 
-(* Borrowed from textbook_unification_alg.v. 
-   Other functionality not yet required, but may be borrowed
-   as well; though then consider some restructuring and possibly importing. *)
-Definition eqn {Σ : StaticModel} : Type :=
-    ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type
-.
-
-Definition SubTMM {Σ : StaticModel} : Type
-:=
-    gmap variable (TermOver BuiltinOrVar)
-.
-
-Fixpoint sub_app_mm {Σ : StaticModel} (s : SubTMM) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
-match t with
-  | t_over (bov_variable v) => let t'_opt := s !! v in
-    match t'_opt with
-      | None => t
-      | Some t' => t'
-    end
-  | t_term sm l => t_term sm (map (λ t' : TermOver BuiltinOrVar, sub_app_mm s t') l)
-  | _ => t
-end
-.
-
-Definition is_unifier_of {Σ : StaticModel} (s : SubTMM) (l : list eqn) :=
-  Forall (fun '(e1, e2) => sub_app_mm s e1 = sub_app_mm s e2) l
-.
 
 Definition term_is_var {Σ : StaticModel} (t : TermOver BuiltinOrVar) : bool :=
   match t with
@@ -76,7 +51,7 @@ Definition term_has_same_symbol {Σ : StaticModel} (orig : TermOver BuiltinOrVar
 Definition UP {Σ : StaticModel} : Type := listset eqn.
 
 Definition equiv_UP {Σ : StaticModel} (up up' : UP) : Prop :=
-  ∀ s : SubTMM, is_unifier_of s (elements up) <-> is_unifier_of s (elements up')
+  ∀ s : SubP, is_unifier_of s (elements up) <-> is_unifier_of s (elements up')
 .
 
 Notation "x ~up y" := (equiv_UP x y) (at level 70).
@@ -95,8 +70,8 @@ Definition meqns_s_intersect {Σ : StaticModel} (meqn : Meqn) (meqn' : Meqn) : b
     bool_decide (s ∩ s' ≢ ∅)
 .
 
-Definition meqn_subst {Σ : StaticModel} (meqn : Meqn) (sub : SubTMM) : Meqn := 
-  let '(s, m) := meqn in (s, (sub_app_mm sub) <$> m)
+Definition meqn_subst {Σ : StaticModel} (meqn : Meqn) (sub : SubP) : Meqn := 
+  let '(s, m) := meqn in (s, (subp_app sub) <$> m)
 .
 
 Instance ls_to_bor_dec {Σ : StaticModel} : EqDecision (listset (TermOver BuiltinOrVar)).
@@ -3156,7 +3131,7 @@ Qed.
 Lemma compactify_by_var_keeps_unifier_of {Σ : StaticModel} {u_ops : U_ops} :
   ∀ (u u' : U) (v : variable), compactify_by_var u_ops u v = u' ->
   u_valid u ->
-  ∀ (s : SubTMM), is_unifier_of s (elements (up_of_u u)) <-> is_unifier_of s (elements (up_of_u u'))
+  ∀ (s : SubP), is_unifier_of s (elements (up_of_u u)) <-> is_unifier_of s (elements (up_of_u u'))
 .
 Proof.
 unfold is_unifier_of.
@@ -3189,7 +3164,7 @@ split.
       clear H3.
       ltac1:(pose proof (compactify_by_var_meqn_only_in_u' _ _ _ H _ H5 H2)).
       destruct H3 as [lm [H3 [H3' H3'']]].
-      assert (∀ (meqn' : Meqn) (t : TermOver BuiltinOrVar), meqn' ∈ lm -> t ∈ meqn' -> sub_app_mm s t = sub_app_mm s (var_to_term v)).
+      assert (∀ (meqn' : Meqn) (t : TermOver BuiltinOrVar), meqn' ∈ lm -> t ∈ meqn' -> subp_app s t = subp_app s (var_to_term v)).
       {
         intros.
         rewrite H3'' in H6.
@@ -3599,12 +3574,12 @@ Fixpoint u_insert_many {Σ : StaticModel} {u_ops : U_ops} (u : U) (lm : list Meq
   end
 .
 
-Definition u_subst {Σ : StaticModel} {u_ops : U_ops} (u : U) (sub : SubTMM) : U :=
+Definition u_subst {Σ : StaticModel} {u_ops : U_ops} (u : U) (sub : SubP) : U :=
   u_map (λ meqn, meqn_subst meqn sub) u
 .
 
 Lemma u_subst_keeps_u_valid {Σ : StaticModel} {u_ops : U_ops} :
-  ∀ (u : U) (sub : SubTMM),
+  ∀ (u : U) (sub : SubP),
     u_valid u ->
     u_valid (u_subst u sub)
 .
@@ -3612,7 +3587,7 @@ Proof.
 Abort.
 
 Lemma u_subst_keeps_equiv_UP {Σ : StaticModel} {u_ops : U_ops} :
-  ∀ (u : U) (sub : SubTMM),
+  ∀ (u : U) (sub : SubP),
     u_valid u ->
     (∀ (v : variable) (t : TermOver BuiltinOrVar), 
       lookup v sub = Some t -> (var_to_term v, t) ∈ up_of_u u) ->
@@ -3670,10 +3645,10 @@ Fixpoint dec_aux {Σ : StaticModel} (m : list (TermOver BuiltinOrVar)) (n : nat)
 
 Lemma dec_aux_TermOver_size_enough {Σ : StaticModel} :
   ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
-    dec_aux lt (sum_list_with TermOver_size lt) = Some (c, f) <-> ∃ (sub : SubTMM),
+    dec_aux lt (sum_list_with TermOver_size lt) = Some (c, f) <-> ∃ (sub : SubP),
       Forall
-      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), sub_app_mm sub t = sub_app_mm sub t')
-      ((λ x, sub_app_mm sub x) <$> lt)
+      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), subp_app sub t = subp_app sub t')
+      ((λ x, subp_app sub x) <$> lt)
 .
 Proof.
 Abort.
@@ -3684,10 +3659,10 @@ Definition dec {Σ : StaticModel} (m : list (TermOver BuiltinOrVar)) : option (T
 
 Lemma dec_exists {Σ : StaticModel} :
   ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
-    dec lt = Some (c, f) <-> ∃ (sub : SubTMM),
+    dec lt = Some (c, f) <-> ∃ (sub : SubP),
       Forall
-      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), sub_app_mm sub t = sub_app_mm sub t')
-      ((λ x, sub_app_mm sub x) <$> lt)
+      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), subp_app sub t = subp_app sub t')
+      ((λ x, subp_app sub x) <$> lt)
 .
 Proof.
 Abort.
@@ -3799,7 +3774,7 @@ Definition unify_r_step {Σ : StaticModel} {u_ops : U_ops} (r : R) : option (R) 
                         let frontier_l := elements frontier in
                           if existsb (meqns_s_intersect (s, m)) frontier_l then None
                           else
-                              let sub : SubTMM := gset_to_gmap common_part s in
+                              let sub : SubP := gset_to_gmap common_part s in
                               let u_meqn_reduced := u_insert_many u_rest frontier_l in
                               let u_compactified := compactify u_meqn_reduced in
                                   Some ((init_meqn s [common_part])::t, u_subst u_compactified sub)
@@ -3832,7 +3807,7 @@ Fixpoint unify_r_aux {Σ : StaticModel} {u_ops : U_ops} (r : R) (n : nat) : opti
 
 Lemma unify_r_aux_n_enough {Σ : StaticModel} {u_ops : U_ops} :
   ∀ (u : U) (t t' : T), r_valid (t, u) ->
-    unify_r_aux (t, u) (length (elements u) + 1) = Some t' <-> ∃ (sub : SubTMM), is_unifier_of sub (elements (up_of_r (t, u)))
+    unify_r_aux (t, u) (length (elements u) + 1) = Some t' <-> ∃ (sub : SubP), is_unifier_of sub (elements (up_of_r (t, u)))
 .
 Proof.
 Abort.
@@ -3862,7 +3837,7 @@ Definition take_any {A : Type} (a b : option A) :=
   end
 .
 
-Fixpoint extract_mgu_aux {Σ : StaticModel} (t : T) (sub : SubTMM) : SubTMM :=
+Fixpoint extract_mgu_aux {Σ : StaticModel} (t : T) (sub : SubP) : SubP :=
   match t with
     | [] => sub
     | ((s, m)::xs) => 
@@ -3876,12 +3851,12 @@ Fixpoint extract_mgu_aux {Σ : StaticModel} (t : T) (sub : SubTMM) : SubTMM :=
   end
 .
 
-Definition extract_mgu {Σ : StaticModel} (t : T) : SubTMM :=
+Definition extract_mgu {Σ : StaticModel} (t : T) : SubP :=
   extract_mgu_aux (reverse t) empty
 .
 
 Lemma extract_mgu_contains_var {Σ : StaticModel} :
-  ∀ (t : T) (sub : SubTMM), t_valid t ->
+  ∀ (t : T) (sub : SubP), t_valid t ->
     extract_mgu t = sub ->
     ∀ (v : variable) (t : TermOver BuiltinOrVar), lookup v sub = Some t ->
     ∀ (v' : variable), v' ∈ vars_of t ->
@@ -3895,7 +3870,7 @@ Lemma sub_is_unifier {Σ : StaticModel} {u_ops : U_ops} :
     unify_terms lt = Some r_t ->
     ∀ (t : TermOver BuiltinOrVar), t ∈ lt ->
     ∀ (t' : TermOver BuiltinOrVar), t' ∈ lt ->
-    sub_app_mm (extract_mgu r_t) t = sub_app_mm (extract_mgu r_t) t'
+    subp_app (extract_mgu r_t) t = subp_app (extract_mgu r_t) t'
 .
 Proof.
 Abort.
@@ -3905,7 +3880,7 @@ Lemma sub_no_unifier {Σ : StaticModel} {u_ops : U_ops} :
     unify_terms lt = None ->
     ∃ (t : TermOver BuiltinOrVar), t ∈ lt ->
     ∃ (t' : TermOver BuiltinOrVar), t' ∈ lt ->
-    ∀ (sub : SubTMM), sub_app_mm sub t ≠ sub_app_mm sub t'
+    ∀ (sub : SubP), subp_app sub t ≠ subp_app sub t'
 .
 Proof.
 Abort.

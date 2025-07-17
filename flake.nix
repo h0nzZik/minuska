@@ -37,6 +37,7 @@
  
             nativeBuildInputs = [
               pkgs.dune_3
+              pkgs.time # for QuickChick
             ] ++ bothNativeAndOtherInputs;
 
             passthru = {
@@ -186,18 +187,18 @@
       in {
         # Contains compiled Coq sources of Minuska
         packages.coq-minuska = coqMinuskaFun {
-          coqPackages = pkgs.coqPackages_8_19;
+          coqPackages = pkgs.coqPackages_8_20;
         };
         
         # Contains OCaml sources of Minuska,
         # including those extracted from Coq
         packages.libminuska-src = libminuskaSrcFun {
-          coqPackages = pkgs.coqPackages_8_19;
+          coqPackages = pkgs.coqPackages_8_20;
         };
 
         # Contains compiled Minuska executable
         packages.minuska = minuskaFun { 
-          coqPackages = pkgs.coqPackages_8_19;
+          coqPackages = pkgs.coqPackages_8_20;
           ocamlPackages = pkgs.ocamlPackages;
         };
 
@@ -210,8 +211,8 @@
             self.outputs.packages.${system}.minuska
             pkgs.dune_3
             pkgs.time
-            pkgs.coqPackages_8_19.coqide # for user builtins
-            pkgs.coqPackages_8_19.coq
+            pkgs.coqPackages_8_20.coqide # for user builtins
+            pkgs.coqPackages_8_20.coq
           ] ++ example_languages_parser_deps;
           buildInputs = [
             self.outputs.packages.${system}.coq-minuska

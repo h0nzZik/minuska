@@ -4,6 +4,7 @@ From Minuska Require Import
     basic_properties
     properties
     minusl_syntax
+    termoverbov_subst
 .
 
 Require Import Ring.

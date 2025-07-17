@@ -3,8 +3,12 @@
 (coq.theory
  (name Minuska)
  (package coq-minuska)
- (theories stdpp Ltac2 Equations)
- (plugins coq-equations)
+ (theories stdpp Ltac2 Equations QuickChick 
+  ; These are dependencies of QuickChick. I would prefer to not list them here,
+  ; but `dune` does not build `quickchick_setup.v` without these
+  ExtLib mathcomp.ssreflect HB elpi elpi_elpi SimpleIO
+  )
+ (plugins coq-equations coq-quickchick)
  (coqdoc_flags 
    --toc --toc-depth 2 --html --interpolate
   --index indexpage --no-lib-name --parse-comments

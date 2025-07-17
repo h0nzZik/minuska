@@ -6,6 +6,8 @@ From Minuska Require Import
     minusl_compile
     minusl_syntax
     minusl_semantics
+    termoverbov_subst
+    termoverbov_subst_properties
 .
 
 Require Import Ring.

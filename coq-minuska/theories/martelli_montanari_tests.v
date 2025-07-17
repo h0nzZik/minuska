@@ -1,9 +1,12 @@
 From Minuska Require Import
     spec
-    empty
-    trivial
+    builtin.empty
+    pi.trivial
     default_everything
     martelli_montanari
+    basic_properties
+    substitution_parallel
+    substitution_parallel_properties
 .
 
 (*

@@ -14,16 +14,31 @@ From stdpp Require Export
     gmap
     hlist
     sets
-    strings
+    (* strings *)
     tactics
     list
     list_numbers
+    listset
     numbers
     pmap
     pretty
 .
 
-(* This is unset by stdpp. We need to set it again.*)
+(* I really, really do not want to import stdpp.strings.String, because it makes problems in the extraction *)
+(* https://github.com/rocq-prover/rocq/issues/15247 *)
+Require stdpp.strings.
+
+Definition string_eq_dec0 := Eval vm_compute in stdpp.strings.String.eq_dec.
+Definition string_countable0 := Eval vm_compute in stdpp.strings.String.countable.
+#[export]
+Instance string_eq_dec : EqDecision string := string_eq_dec0.
+#[export]
+Instance string_countable : Countable string := string_countable0.
+#[export]
+Program Instance string_infinite : Infinite string :=
+  search_infinite pretty.
+
+
 
 (*
 #[global]
@@ -1487,3 +1502,54 @@ match l with
     "[ " +:+ x +:+ (fold_right (fun b a => b +:+ "; " +:+ a) "]" (y::zs))
 end
 .
+
+
+Lemma lookup_of_zip_both
+    {A B : Type}
+    (a : A)
+    (b : B)
+    (i : nat)
+    (la : list A)
+    (lb : list B)
+:
+    la !! i = Some a ->
+    lb !! i = Some b ->
+    (zip la lb) !! i = Some (a,b)
+.
+Proof.
+    revert a b la lb.
+    induction i; intros a b la lb Hla Hlb.
+    {
+        destruct la,lb; simpl in *; ltac1:(simplify_eq/=).
+        reflexivity.
+    }
+    {
+        destruct la,lb; simpl in *; ltac1:(simplify_eq/=).
+        apply IHi; assumption.
+    }
+Qed.
+
+Lemma lookup_of_zip_both_2
+    {A B : Type}
+    (a : A)
+    (b : B)
+    (i : nat)
+    (la : list A)
+    (lb : list B)
+:
+    (zip la lb) !! i = Some (a,b) ->
+    la !! i = Some a /\ lb !! i = Some b
+.
+Proof.
+    revert a b la lb.
+    induction i; intros a b la lb H.
+    {
+        destruct la, lb; simpl in *; ltac1:(simplify_eq/=).
+        split; reflexivity.
+    }
+    {
+        destruct la, lb; simpl in *; ltac1:(simplify_eq/=).
+        apply IHi in H.
+        exact H.
+    }
+Qed.
