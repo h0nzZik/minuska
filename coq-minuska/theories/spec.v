@@ -72,6 +72,7 @@ Class Signature := {
     builtin_predicate_symbol_countable
         :: Countable builtin_predicate_symbol ;
     
+    (* TODO get rid of these with the help of hidden algebra *)
     bps_ar : builtin_predicate_symbol -> nat ;
     bps_neg : builtin_predicate_symbol -> option builtin_predicate_symbol ;
     bps_neg_ar : forall p p', bps_neg p = Some p' -> bps_ar p = bps_ar p' ;
@@ -139,7 +140,7 @@ Class ProgramInfo
         ProgramT -> 
         QuerySymbol -> 
         list (@TermOver' symbol builtin_value) ->
-        (@TermOver' symbol builtin_value) ;
+        option (@TermOver' symbol builtin_value) ;
 }.
 
 Class StaticModel := mkStaticModel {
@@ -548,7 +549,7 @@ match t with
     fun nv =>
     let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
     es ← list_collect es';
-    Some (pi_symbol_interp program q es)
+    pi_symbol_interp program q es
 | e_fun f l =>
     fun nv =>
     let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
