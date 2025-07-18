@@ -39,7 +39,7 @@ Instance MyProgramInfo
     ProgramT := @TermOver' symbol builtin_value ;
     pi_symbol_interp := fun my_program q es =>
         match q with
-        | qs_program => my_program
+        | qs_program => Some my_program
         end ;
 |}.
 

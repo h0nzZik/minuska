@@ -169,7 +169,8 @@ Proof.
         rewrite bind_Some in HH.
         rewrite bind_Some.
         destruct HH as [x [H1x H2x]].
-        injection H2x as H2x.
+
+        (* injection H2x as H2x. *)
         apply list_collect_inv in H1x as H3x.
         assert (HSome : Forall isSome ((fun e => Expression2_evaluate program ρ2 e nv) <$> l)).
         {
@@ -203,7 +204,7 @@ Proof.
         destruct HSome as [l_out [H1l_out H2l_out]].
         exists l_out.
         split>[exact H1l_out|].
-        apply f_equal.
+        (* apply f_equal. *)
         rewrite <- H2x. clear H2x.
         (* apply functional_extensionality. *)
         (* intros nv. *)
@@ -317,7 +318,7 @@ Proof.
         simpl in Hb.
         rewrite bind_Some in Hb.
         destruct Hb as [x [H1x H2x]].
-        injection H2x as H2x.
+        (* injection H2x as H2x. *)
         unfold vars_of; simpl.
         rewrite elem_of_subseteq.
         intros x0 Hx0.
@@ -620,7 +621,10 @@ Proof.
             right.
             destruct H3 as [result [H1result H2result]].
             exists result.
-            inversion H2result.
+            split>[|exact H2result].
+            eapply list_collect_Expression2_evaluate_extensive_Some.
+            { apply H2. }
+            { apply H1result. }
         }
     }
 Qed.

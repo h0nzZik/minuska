@@ -1143,16 +1143,6 @@ Proof.
     }
 Qed.
 
-Ltac2 clear_decide () :=
-    repeat (
-        lazy_match! goal with
-        | [h: (decide _ = _) |- _] => clear $h
-        end
-    )
-.
-
-Ltac2 cases () := repeat (ltac1:(case_match); clear_decide ()).
-
 Lemma restrict_more
     {Σ : StaticModel}
     (a b : gmap variable (TermOver BuiltinOrVar))
