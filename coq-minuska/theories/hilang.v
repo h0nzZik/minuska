@@ -194,7 +194,28 @@ Definition ExtendedSM (Σ : StaticModel) : StaticModel := {|
     nondet_gen := Σ.(nondet_gen) ;
 |}.
 
-(* This should depend on a collection of contexts *)
+
+Inductive Context_ {Σ : StaticModel} :=
+| ctx_hole
+| ctx_term (s : symbol)
+           (l : list (TermOver BuiltinOrVar)) 
+           (m : Context_)
+           (r : list (TermOver BuiltinOrVar))
+.
+
+Fixpoint ctx_subst
+    {Σ : StaticModel}
+    (c : Context_)
+    (p : TermOver BuiltinOrVar)
+    :
+    TermOver BuiltinOrVar
+:=
+    match c with
+    | ctx_hole => p
+    | ctx_term s l m r => t_term s (l++(ctx_subst m p)::r)
+    end
+.
+
 Inductive collapses_to
     (Σ : StaticModel)
     :
@@ -209,9 +230,26 @@ Inductive collapses_to
                 (extend_term _ x); 
                 (t_term sym_emptyCseq [])])
             x
+| ctx_seq:
+    forall x x' s n l,
+    collapses_to Σ x' x ->
+    collapses_to Σ
+        (t_term (sym_cseq) [
+            x';
+            (t_term (sym_heatedAt s n) (extend_term _ <$>l))
+        ])
+        (t_term s (take n l ++ x::(drop n l)))        
 .
 
+(* 
+    heating preserves [collapses_to]:
+    ∀ x y d d'
+    collapses_to Σ x y ->
+    (t_term sym_top [x;d]) ~>_(heat) (t_term sym_top [x';d']) ->
+    collapses_to Σ x' y.
 
+    The same with cooling.
+ *)
 
 
 
