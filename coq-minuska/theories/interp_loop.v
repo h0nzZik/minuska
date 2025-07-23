@@ -46,8 +46,8 @@ end
 
 Definition interp_in_from'
         {Σ : StaticModel}
-        {Act : Set}
-        (Γ : (list (RewritingRule2 Act))*(list string))
+        {Label : Set}
+        (Γ : (list (RewritingRule2 Label))*(list string))
         (program : ProgramT)
         (nvs : nat -> NondetValue)
         (fuel : nat)
@@ -77,9 +77,9 @@ Definition concat_list_option_str
 
 Definition interp_in_from
         {Σ : StaticModel}
-        {Act : Set}
+        {Label : Set}
         (program : ProgramT)
-        (Γ : (list (RewritingRule2 Act))*(list string))
+        (Γ : (list (RewritingRule2 Label))*(list string))
         (nvs : nat -> NondetValue)
         (fuel : nat)
         (from : (TermOver builtin_value))

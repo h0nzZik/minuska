@@ -2932,10 +2932,10 @@ Fixpoint try_neg
         sc1' ← try_neg sc1;
         sc2' ← try_neg sc2;
         Some (sc_and sc1' sc2')
-    | sc_atom p l =>
+    | sc_pred p l =>
         if decide (length l = bps_ar p) then 
             p' ← bps_neg p;
-            Some (sc_atom p' l)
+            Some (sc_pred p' l)
         else None
     end
 .

@@ -6,8 +6,8 @@ From Minuska Require Import
 
 Definition not_stuck
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (e : TermOver builtin_value) : Type
 :=
@@ -16,8 +16,8 @@ Definition not_stuck
 
 Definition stuck
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (e : TermOver builtin_value) : Type
 :=
@@ -27,16 +27,16 @@ Definition stuck
 
 Definition Interpreter
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     : Type
     := ProgramT -> NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
 .
 
 Definition Interpreter_ext
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     : Type
     := ProgramT -> NondetValue -> TermOver builtin_value -> option ((TermOver builtin_value)*nat)
 .
@@ -44,8 +44,8 @@ Definition Interpreter_ext
 
 Definition Interpreter_sound'
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (interpreter : Interpreter Γ)
     : Type
     := ((
@@ -64,8 +64,8 @@ Definition Interpreter_sound'
 
 Definition RewritingRule2_wf
     {Σ : StaticModel}
-    {Act : Set}
-    (r : RewritingRule2 Act)
+    {Label : Set}
+    (r : RewritingRule2 Label)
     : Prop
 :=
     vars_of (r_scs r) ⊆ vars_of (r_from r)
@@ -75,8 +75,8 @@ Definition RewritingRule2_wf
 
 Definition RewritingTheory2_wf
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     : Prop
 :=
     Forall RewritingRule2_wf Γ
@@ -84,8 +84,8 @@ Definition RewritingTheory2_wf
 
 Definition Interpreter_sound
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (interpreter : Interpreter Γ)
     : Type
 := 

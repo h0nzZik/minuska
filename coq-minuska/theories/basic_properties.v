@@ -396,9 +396,9 @@ Proof. ltac1:(solve_decision). Defined.
 #[export]
 Instance RewritingRule2_eqdec
     {Σ : StaticModel}
-    {Act : Set}
-    {_EA : EqDecision Act}
-    : EqDecision (RewritingRule2 Act)
+    {Label : Set}
+    {_EA : EqDecision Label}
+    : EqDecision (RewritingRule2 Label)
 .
 Print RewritingRule2.
 Proof. ltac1:(solve_decision). Defined.
@@ -430,7 +430,7 @@ Fixpoint SideCondition_subst
     match c with
     | sc_true => sc_true
     | sc_false => sc_false
-    | sc_atom p es => sc_atom p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_pred p es => sc_pred p ((fun e1 => Expression2_subst e1 x e') <$> es)
     | sc_and l r => sc_and (SideCondition_subst l x e') (SideCondition_subst r x e')
     | sc_or l r => sc_or (SideCondition_subst l x e') (SideCondition_subst r x e')
     end

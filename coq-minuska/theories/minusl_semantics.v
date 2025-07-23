@@ -10,16 +10,16 @@ From Minuska Require Import
 Section MinusL_sem.
     Context
         {Σ : StaticModel}
-        (Act : Set)
+        (Label : Set)
     .
 
     Inductive MinusL_rewrites
-        (D : MinusL_LangDef Act)
+        (D : MinusL_LangDef Label)
         (program : ProgramT)
         :
         (TermOver builtin_value) ->
         (TermOver builtin_value) ->
-        (list Act)  ->
+        (list Label)  ->
         (TermOver builtin_value) ->
         (TermOver builtin_value) ->
         Type :=
@@ -31,10 +31,10 @@ Section MinusL_sem.
     | mlr_rule : 
         forall
             (lc : TermOver BuiltinOrVar) (ld : TermOver BuiltinOrVar)
-            (a : Act)
+            (a : Label)
             (rc : TermOver Expression2) (rd : TermOver Expression2)
             (c : SideCondition),
-            (mld_rewrite Act lc ld a rc rd c) ∈ (mlld_decls Act D) ->
+            (mld_rewrite Label lc ld a rc rd c) ∈ (mlld_decls Label D) ->
         forall (ctrl1 state1 ctrl2 state2 : TermOver builtin_value) (nv : NondetValue)
             (ρ : Valuation2),
             satisfies ρ ctrl1 lc ->
@@ -47,7 +47,7 @@ Section MinusL_sem.
     | mlr_trans :
         forall
             (ctrl1 state1 ctrl2 state2 ctrl3 state3 : TermOver builtin_value)
-            (w1 w2 : list Act),
+            (w1 w2 : list Label),
         MinusL_rewrites D program ctrl1 state1 w1 ctrl2 state2 ->
         MinusL_rewrites D program ctrl2 state2 w2 ctrl3 state3 ->
         MinusL_rewrites D program ctrl1 state1 (w1 ++ w2) ctrl3 state3
@@ -57,9 +57,9 @@ Section MinusL_sem.
             (ctx : TermOver BuiltinOrVar)
             (h : variable)
             (c : SideCondition),
-            (mld_context Act ctx h c) ∈ (mlld_decls Act D) ->
+            (mld_context Label ctx h c) ∈ (mlld_decls Label D) ->
         forall (ctrl1 state1 ctrl2 state2 r v : TermOver builtin_value)
-            (w : list Act)
+            (w : list Label)
             (ρ1 : Valuation2)
             (ρ2 : Valuation2)
             (nv : NondetValue),
@@ -67,7 +67,7 @@ Section MinusL_sem.
             satisfies (<[h := r]>ρ1) ctrl1 ctx ->
             satisfies ρ1 (program, nv) c ->
             satisfies (<[h := v]>ρ2) ctrl2 ctx ->
-            satisfies ρ2 (program, nv) (MinusL_isValue Act D (e_ground v)) ->
+            satisfies ρ2 (program, nv) (MinusL_isValue Label D (e_ground v)) ->
             MinusL_rewrites D program r state1 w v state2 ->
             MinusL_rewrites D program ctrl1 state1 w ctrl2 state2
     .

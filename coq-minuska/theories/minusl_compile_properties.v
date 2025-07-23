@@ -240,13 +240,13 @@ Qed.
 (*
 Lemma frto_step_app
     {Σ : StaticModel}
-    (Act : Set)
+    (Label : Set)
     :
     forall
         Γ
         (t1 t2 t3 : TermOver builtin_value)
-        (w : list Act)
-        (a : Act)
+        (w : list Label)
+        (a : Label)
         r,
     r ∈ Γ ->
     flattened_rewrites_to_over Γ t1 w t2 ->
@@ -276,12 +276,12 @@ Qed.
 (*
 Lemma frto_app
     {Σ : StaticModel}
-    (Act : Set)
+    (Label : Set)
     :
     forall
         Γ
         (t1 t2 t3 : TermOver builtin_value)
-        (w1 w2 : list Act),
+        (w1 w2 : list Label),
     flattened_rewrites_to_over Γ t1 w1 t2 ->
     flattened_rewrites_to_over Γ t2 w2 t3 ->
     flattened_rewrites_to_over Γ t1 (w1++w2) t3
@@ -437,13 +437,13 @@ Defined.
 
 Lemma in_compile_inv
     {Σ : StaticModel}
-    (Act : Set)
-    {_aD : EqDecision Act}
-    (D: MinusL_LangDef Act)
-    (invisible_act : Act)
+    (Label : Set)
+    {_aD : EqDecision Label}
+    (D: MinusL_LangDef Label)
+    (invisible_act : Label)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
-    (r : RewritingRule2 Act)
+    (r : RewritingRule2 Label)
 :
   r
 ∈ compile invisible_act topSymbol cseqSymbol holeSymbol
@@ -452,11 +452,11 @@ Lemma in_compile_inv
     (
         { lc : TermOver BuiltinOrVar &
         { ld : TermOver BuiltinOrVar &
-        { a : Act &
+        { a : Label &
         { rc : TermOver Expression2 &
         { rd : TermOver Expression2 &
         { cond : SideCondition &
-            mld_rewrite Act lc ld a rc rd cond ∈ mlld_decls Act D /\
+            mld_rewrite Label lc ld a rc rd cond ∈ mlld_decls Label D /\
             r =
             {|
                 r_from :=
@@ -470,33 +470,33 @@ Lemma in_compile_inv
                 [rc; t_over (e_variable continuationVariable)];
                 rd];
                 r_scs := cond;
-                r_act := a
+                r_label := a
             |}
         }}}}}}
     ) + (
         { c : _ &
         { h : variable &
         { cond : SideCondition &
-        mld_context Act c h cond ∈ mlld_decls Act D /\
+        mld_context Label c h cond ∈ mlld_decls Label D /\
         (
             r = ctx_heat invisible_act topSymbol cseqSymbol holeSymbol
                 (fresh
                 (h
                 :: vars_of_to_l2r c ++
                 elements (vars_of cond) ++
-                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
+                elements ((vars_of (mlld_isValue_c Label D)) ∪  (vars_of (mlld_isNonValue_c Label D)))))
                 (fresh
                 (h
                 :: fresh
                 (h
                 :: vars_of_to_l2r c ++
                 elements (vars_of cond) ++
-                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D))))
+                elements ((vars_of (mlld_isValue_c Label D)) ∪  (vars_of (mlld_isNonValue_c Label D))))
                 :: vars_of_to_l2r c ++
                 elements (vars_of cond) ++
-                elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
-                (MinusL_isValue Act D)
-                (MinusL_isNonValue Act D)
+                elements ((vars_of (mlld_isValue_c Label D)) ∪  (vars_of (mlld_isNonValue_c Label D)))))
+                (MinusL_isValue Label D)
+                (MinusL_isNonValue Label D)
                 c h
                 cond
             \/
@@ -506,19 +506,19 @@ Lemma in_compile_inv
             (h
             :: vars_of_to_l2r c ++
             elements (vars_of cond) ++
-            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
+            elements ((vars_of (mlld_isValue_c Label D)) ∪  (vars_of (mlld_isNonValue_c Label D)))))
             (fresh
             (h
             :: fresh
             (h
             :: vars_of_to_l2r c ++
             elements (vars_of cond) ++
-            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D))))
+            elements ((vars_of (mlld_isValue_c Label D)) ∪  (vars_of (mlld_isNonValue_c Label D))))
             :: vars_of_to_l2r c ++
             elements (vars_of cond) ++
-            elements ((vars_of (mlld_isValue_c Act D)) ∪  (vars_of (mlld_isNonValue_c Act D)))))
-            (MinusL_isValue Act D)
-            (MinusL_isNonValue Act D)
+            elements ((vars_of (mlld_isValue_c Label D)) ∪  (vars_of (mlld_isNonValue_c Label D)))))
+            (MinusL_isValue Label D)
+            (MinusL_isNonValue Label D)
             c
             h
         )
@@ -600,11 +600,11 @@ Qed.
 (*
 Fixpoint frto_all_nonlast_states_satisfy
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : RewritingTheory2 Act)
+    {Label : Set}
+    (Γ : RewritingTheory2 Label)
     (P : TermOver builtin_value -> Prop)
     (x y : TermOver builtin_value)
-    (w : list Act)
+    (w : list Label)
     (r : rewrites_to_thy Γ x w y)
     :
     Prop
@@ -619,17 +619,17 @@ Fixpoint frto_all_nonlast_states_satisfy
 
 Lemma split_frto_by_state_pred
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : RewritingTheory Act)
+    {Label : Set}
+    (Γ : RewritingTheory Label)
     (P : TermOver builtin_value -> Prop)
     (_dP : forall t, Decision (P t))
     (x z : TermOver builtin_value)
-    (w : list Act)
+    (w : list Label)
     (r : flattened_rewrites_to_over Γ x w z)
     :
     (
-    { w1 : list Act &
-    { w2 : list Act &
+    { w1 : list Label &
+    { w2 : list Label &
     { y : TermOver builtin_value &
     { r1 : flattened_rewrites_to_over Γ x w1 y & 
         (
@@ -647,22 +647,22 @@ Abort.
 
 Lemma compile_correct_2
     {Σ : StaticModel}
-    {Act : Set}
-    {_AD : EqDecision Act}
-    (invisible_act : Act)
+    {Label : Set}
+    {_AD : EqDecision Label}
+    (invisible_act : Label)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable) 
-    (D : MinusL_LangDef Act)
+    (D : MinusL_LangDef Label)
     (HcvD: continuationVariable ∉ vars_of D)
-    (wfD : MinusL_LangDef_wf Act D)
+    (wfD : MinusL_LangDef_wf Label D)
     :
-    ~ (invisible_act ∈ actions_of_ldef Act D) ->
+    ~ (invisible_act ∈ actions_of_ldef Label D) ->
     let Γ := compile invisible_act topSymbol cseqSymbol holeSymbol continuationVariable D in
     forall
         (lc ld rc rd : TermOver builtin_value)
-        (w : list Act),
+        (w : list Label),
         (
-            { w' : list Act & 
+            { w' : list Label & 
             ((w = (filter (fun x => x <> invisible_act) w')) *
             (* w <> [] /\ *)
             forall cont,
@@ -673,7 +673,7 @@ Lemma compile_correct_2
             )%type
             }
         ) ->
-        MinusL_rewrites Act D lc ld w rc rd
+        MinusL_rewrites Label D lc ld w rc rd
 .
 Proof.
 Abort.

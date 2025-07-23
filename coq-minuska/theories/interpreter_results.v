@@ -80,8 +80,8 @@ Qed.
 #[export]
 Instance RewritingTheory2_wf_dec
     {Σ : StaticModel}
-    (Act : Set)
-    (Γ : list (RewritingRule2 Act))
+    (Label : Set)
+    (Γ : list (RewritingRule2 Label))
     :
     Decision (RewritingTheory2_wf Γ)
 .

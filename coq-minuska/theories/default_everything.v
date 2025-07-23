@@ -42,11 +42,11 @@ From Coq Require Import String Bool Arith ZArith List.
 
 Require Minuska.BuiltinValue Minuska.builtins.
 
-Variant Act := default_act | invisible_act.
+Variant Label := default_act | invisible_act.
 
 
 #[export]
-Instance Act_eqDec : EqDecision Act.
+Instance Label_eqDec : EqDecision Label.
 Proof.
     ltac1:(solve_decision).
 Defined.
@@ -75,9 +75,9 @@ Definition basic_rule
     (name : string)
     (l : @TermOver' string StringBuiltinOrVar)
     (r : @TermOver' string StringExpression)
-    (cond : StringSideCondition) : Declaration Act
+    (cond : StringSideCondition) : Declaration Label
 :=
-    (decl_rule _ (@mkRuleDeclaration Act name (@mkStringRewritingRule Act l r cond default_act)))
+    (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label l r cond default_act)))
 .
 
 
@@ -140,9 +140,9 @@ Definition framed_rule
     (name : string)
     (l : @TermOver' string StringBuiltinOrVar)
     (r : @TermOver' string StringExpression)
-    (cond : StringSideCondition) : Declaration Act
+    (cond : StringSideCondition) : Declaration Label
 :=
-    (decl_rule _ (@mkRuleDeclaration Act name (@mkStringRewritingRule Act
+    (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label
         (sTermOverBoV_subst frame.2 frame.1 l)
         (sTermOverBoV_subst_expr2 frame.2 frame.1 r)
         cond default_act)))
@@ -153,7 +153,7 @@ Definition global_naive_interpreter
     {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     :=
-    @naive_interpreter (DSM program_info) Act
+    @naive_interpreter (DSM program_info) Label
 .
 
 Definition global_naive_interpreter_ext
@@ -161,7 +161,7 @@ Definition global_naive_interpreter_ext
     {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     :=
-    @naive_interpreter_ext (DSM program_info) Act
+    @naive_interpreter_ext (DSM program_info) Label
 .
 
 Definition global_naive_interpreter_sound
@@ -169,5 +169,5 @@ Definition global_naive_interpreter_sound
     {β : Model mysignature MyUnit}
     (program_info : ProgramInfo)
     :=
-    @naive_interpreter_sound (DSM program_info) Act
+    @naive_interpreter_sound (DSM program_info) Label
 .

@@ -172,11 +172,11 @@ Qed.
 
 Definition try_match_lhs_with_sc
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
     (g : TermOver builtin_value)
     (nv : NondetValue)
-    (r : RewritingRule2 Act)
+    (r : RewritingRule2 Label)
     : option (Valuation2*(TermOver builtin_value))
 :=
     ρ ← try_match_new g (r_from r);
@@ -193,12 +193,12 @@ Definition try_match_lhs_with_sc
 
 Definition thy_lhs_match_one
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (e : TermOver builtin_value)
     (nv : NondetValue)
-    (Γ : list (RewritingRule2 Act))
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    : option (RewritingRule2 Act * Valuation2 * (TermOver builtin_value) * nat)%type
+    : option (RewritingRule2 Label * Valuation2 * (TermOver builtin_value) * nat)%type
 :=
     let froms : list (TermOver BuiltinOrVar)
         := r_from <$> Γ
@@ -220,14 +220,14 @@ Definition thy_lhs_match_one
 
 Definition naive_interpreter_ext
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
     (e : TermOver builtin_value)
     : option ((TermOver builtin_value)*nat)
 :=
-    let oρ : option ((RewritingRule2 Act)*Valuation2*(TermOver builtin_value)*nat)
+    let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver builtin_value)*nat)
         := thy_lhs_match_one e nv Γ program in
     match oρ with
     | None => None
@@ -238,8 +238,8 @@ Definition naive_interpreter_ext
 
 Definition naive_interpreter
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
     (e : TermOver builtin_value)
@@ -1410,10 +1410,10 @@ Qed.
 
 Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
     (g g' : TermOver builtin_value)
-    (r : RewritingRule2 Act)
+    (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)
     :
@@ -1577,15 +1577,15 @@ Qed.
 
 Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
     (e : TermOver builtin_value)
-    (Γ : RewritingTheory2 Act)
+    (Γ : RewritingTheory2 Label)
     (wfΓ : RewritingTheory2_wf Γ)
     (nv : NondetValue)
     :
     thy_lhs_match_one e nv Γ program = None ->
-    notT { r : RewritingRule2 Act & { ρ : Valuation2 & { e' : TermOver builtin_value &
+    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver builtin_value &
         ((r ∈ Γ) *
          (satisfies ρ e (r_from r)) *
          (satisfies ρ (program, nv) (r_scs r)) *
@@ -1771,11 +1771,11 @@ Qed.
 
 Lemma thy_lhs_match_one_Some
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (e e' : TermOver builtin_value)
-    (Γ : list (RewritingRule2 Act))
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (r : RewritingRule2 Act)
+    (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)
     (rule_idx : nat)
@@ -1908,8 +1908,8 @@ Qed.
 
 Lemma naive_interpreter_sound
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : RewritingTheory2 Act)
+    {Label : Set}
+    (Γ : RewritingTheory2 Label)
     : Interpreter_sound Γ (naive_interpreter Γ).
 Proof.
     unfold Interpreter_sound.
@@ -1934,7 +1934,7 @@ Proof.
             simpl.
             exists r.
             destruct Hmatch as [[[Hin Hm1] Hm2] Hm3].
-            exists (r_act r).
+            exists (r_label r).
             split>[apply Hin|].
             unfold rewrites_to.
             exists ρ.
@@ -1980,7 +1980,7 @@ Proof.
                 clear Hev.
                 apply Hstuck. clear Hstuck.
                 exists pg'. exists nv. exists r.
-                exists (r_act r).
+                exists (r_label r).
                 (* destruct Hin. *)
                 split>[apply Hin|].
                 exists ρ.

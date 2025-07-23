@@ -71,7 +71,19 @@ Class Signature := {
         :: EqDecision builtin_predicate_symbol ;
     builtin_predicate_symbol_countable
         :: Countable builtin_predicate_symbol ;
-    
+
+    AttributeSymbol : Type;
+    AttributeSymbol_eqdec :: EqDecision AttributeSymbol ;
+    AttributeSymbol_countable :: Countable AttributeSymbol ;
+
+    MethodSymbol : Type ;
+    MethodSymbol_eqdec :: EqDecision MethodSymbol ;
+    MethodSymbol_countable :: Countable MethodSymbol ;
+
+    HiddenPredicateSymbol : Type ;
+    HiddenPredicateSymbol_eqdec :: EqDecision HiddenPredicateSymbol;
+    HiddenPredicateSymbol_countable :: Countable HiddenPredicateSymbol;
+
     (* TODO get rid of these with the help of hidden algebra *)
     bps_ar : builtin_predicate_symbol -> nat ;
     bps_neg : builtin_predicate_symbol -> option builtin_predicate_symbol ;
@@ -117,6 +129,40 @@ Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (
     builtin_model_over :: ModelOver signature NondetValue builtin_value ;
 }.
 
+
+Class HiddenModel
+    {symbol : Type}
+    {symbols : Symbols symbol}
+    {signature : Signature}
+    {NondetValue : Type}
+    (M : Model signature NondetValue)
+    :=
+{
+    hidden_data : Type ;
+    
+    attribute_interpretation :
+        AttributeSymbol ->
+        hidden_data ->
+        list (@TermOver' symbol builtin_value) ->
+        option builtin_value ;
+    
+
+    method_interpretation:
+        MethodSymbol ->
+        hidden_data ->
+        list (@TermOver' symbol builtin_value) ->
+        option hidden_data ;
+
+    hidden_predicate_interpretation :
+        HiddenPredicateSymbol ->
+        hidden_data ->
+        list (@TermOver' symbol builtin_value) ->
+        option bool ;
+
+    hidden_init : hidden_data ;
+}.
+
+
 Set Primitive Projections.
 CoInductive Stream (A : Type) : Type := Seq {
     hd : A;
@@ -150,6 +196,7 @@ Class StaticModel := mkStaticModel {
     NondetValue : Type ;
     signature :: Signature ;
     builtin :: Model signature NondetValue;
+    hidden :: HiddenModel builtin ;
     variables :: MVariables variable ;
     program_info :: ProgramInfo ;
     nondet_gen : nat -> NondetValue ;
@@ -213,6 +260,7 @@ Inductive Expression2
 | e_variable (x : variable)
 | e_fun (f : builtin_function_symbol) (l : list Expression2)
 | e_query (q : QuerySymbol) (l : list Expression2)
+| e_attr (a : AttributeSymbol) (l : list Expression2)
 .
 Set Elimination Schemes.
 
@@ -237,6 +285,13 @@ Section custom_induction_principle.
                 Forall P l ->
                 P (e_query q l)
         )
+        (preserved_by_attribute :
+            forall
+                (q : AttributeSymbol)
+                (l : list Expression2),
+                Forall P l ->
+                P (e_attr q l)
+        )
     .
 
     Fixpoint Expression2_ind (e : Expression2) : P e :=
@@ -245,6 +300,7 @@ Section custom_induction_principle.
     | e_variable x => true_for_var x
     | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2_ind)
     | e_query q l => preserved_by_query q l (Forall_true P l Expression2_ind)
+    | e_attr q l => preserved_by_attribute q l (Forall_true P l Expression2_ind)
     end.
 
 End custom_induction_principle.
@@ -259,6 +315,7 @@ match t with
 | e_variable x => {[x]}
 | e_fun _ l => ⋃ (fmap vars_of_Expression2 l)
 | e_query _ l => ⋃ (fmap vars_of_Expression2 l)
+| e_attr _ l => ⋃ (fmap vars_of_Expression2 l)
 end.
 
 
@@ -322,7 +379,12 @@ Definition TermOverBuiltin_to_TermOverBoV
 Inductive SideCondition {Σ : StaticModel} :=
 | sc_true
 | sc_false
-| sc_atom (pred : builtin_predicate_symbol) (args : list Expression2)
+(* positive literal *)
+| sc_pred (pred : builtin_predicate_symbol) (args : list Expression2)
+(* negative literal *)
+| sc_npred (pred : builtin_predicate_symbol) (args : list Expression2)
+(* Positive literal over hidden data. NOTE: we do not have negatives over hiden data *)
+| sc_hpred (pred : HiddenPredicateSymbol) (args : list Expression2)
 | sc_and (left : SideCondition) (right : SideCondition)
 | sc_or (left : SideCondition) (right : SideCondition)
 .
@@ -341,7 +403,9 @@ Fixpoint vars_of_sc {Σ : StaticModel} (sc : SideCondition) : gset variable :=
 match sc with
 | sc_true => ∅
 | sc_false => ∅
-| sc_atom _ args => vars_of args
+| sc_pred _ args => vars_of args
+| sc_npred _ args => vars_of args
+| sc_hpred _ args => vars_of args
 | sc_and l r => vars_of_sc l ∪ vars_of_sc r
 | sc_or l r => vars_of_sc l ∪ vars_of_sc r
 end
@@ -355,21 +419,34 @@ Instance  VarsOf_sc
     vars_of := vars_of_sc ;
 |}.
 
+Variant BasicEffect {Σ : StaticModel} := 
+| be_method (s : MethodSymbol) (args : list Expression2)
+(* This is like a binder *)
+| be_remember (x : variable) (e : Expression2)
+.
+
+Definition Effect {Σ : StaticModel} : Type :=
+    list BasicEffect
+.
+
+
 Record RewritingRule2
     {Σ : StaticModel}
-    (Act : Set)
+    (Label : Set)
 := mkRewritingRule2
 {
     r_from : TermOver BuiltinOrVar ;
     r_to : TermOver Expression2 ;
     r_scs : SideCondition ;
-    r_act : Act ;
+    r_eff : Effect ;
+    r_label : Label ;
 }.
 
-Arguments r_from {Σ} {Act%_type_scope} r.
-Arguments r_to {Σ} {Act%_type_scope} r.
-Arguments r_scs {Σ} {Act%_type_scope} r.
-Arguments r_act {Σ} {Act%_type_scope} r.
+Arguments r_from {Σ} {Label%_type_scope} r.
+Arguments r_to {Σ} {Label%_type_scope} r.
+Arguments r_scs {Σ} {Label%_type_scope} r.
+Arguments r_eff {Σ} {Label%_type_scope} r.
+Arguments r_label {Σ} {Label%_type_scope} r.
 
 
 Definition vars_of_BoV
@@ -414,37 +491,12 @@ Defined.
 (* A rewriting theory is a list of rewriting rules. *)
 Definition RewritingTheory2
     {Σ : StaticModel}
-    (Act : Set)
-    := list (RewritingRule2 Act)
+    (Label : Set)
+    := list (RewritingRule2 Label)
 .
 
-(*
-    Interface representing the satisfaction relation (⊨)
-    between various things.
-*)
-Class Satisfies
-    {Σ : StaticModel}
-    (V A B var : Type)
-    {_SV : SubsetEq V}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_VV: VarsOf V var}
-    :=
-mkSatisfies {
-    (*
-        `satisfies` lives in `Type`, because (1) the lowlevel language
-         uses `Inductive`s to give meaning to `satisfies`,
-         and in the translation from MinusL we need to do case analysis on these
-         whose result is not in Prop.
-    *)
-    satisfies :
-        V -> A -> B -> Type ;
-}.
-
-Arguments satisfies : simpl never.
 
 (* A valuation is a mapping from variables to groun terms. *)
-(* TODO why not making this a notation? *)
 Definition Valuation2
     {Σ : StaticModel}
 :=
@@ -492,18 +544,6 @@ Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     end
 .
 
-#[export]
-Instance Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_instnace
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (BuiltinOrVar)
-        variable
-:= {|
-    satisfies := fun ρ tg ts => Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ tg ts ;
-|}.
-
 Equations? sat2B
     {Σ : StaticModel}
     (ρ : Valuation2)
@@ -524,7 +564,7 @@ Equations? sat2B
 .
 Proof.
     abstract(
-    unfold satisfies in *; simpl in *;
+    simpl in *;
     simpl;
     apply take_drop_middle in pf1;
     rewrite <- pf1;
@@ -535,6 +575,7 @@ Defined.
 Fixpoint Expression2_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (t : Expression2)
     : NondetValue -> option (TermOver builtin_value) :=
@@ -547,20 +588,26 @@ match t with
     end
 | e_query q l =>
     fun nv =>
-    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
+    let es' := (fun e => Expression2_evaluate program h ρ e nv) <$> l in
     es ← list_collect es';
     pi_symbol_interp program q es
 | e_fun f l =>
     fun nv =>
-    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
+    let es' := (fun e => Expression2_evaluate program h ρ e nv) <$> l in
     es ← list_collect es';
     builtin_function_interp f nv es
+| e_attr a l =>
+    fun nv =>
+    let es' := (fun e => Expression2_evaluate program h ρ e nv) <$> l in
+    es ← list_collect es';
+    t_over <$> attribute_interpretation a h es
 end.
 
 
 Equations? sat2E
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (t : TermOver builtin_value)
     (φ : TermOver Expression2)
@@ -568,17 +615,17 @@ Equations? sat2E
     : Prop
     by wf (TermOver_size φ) lt
 :=
-    sat2E program ρ t (t_over e) nv :=
-        match Expression2_evaluate program ρ e nv with 
+    sat2E program h ρ t (t_over e) nv :=
+        match Expression2_evaluate program h ρ e nv with 
         | Some t' => t' = t
         | None => False
         end ;
-    sat2E program ρ (t_over a) (t_term s l) _ := False ;
-    sat2E program ρ (t_term s' l') (t_term s l) nv := 
+    sat2E program h ρ (t_over a) (t_term s l) _ := False ;
+    sat2E program h ρ (t_term s' l') (t_term s l) nv := 
         s' = s /\
         length l' = length l /\
         forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
-            sat2E program ρ t' φ' nv
+            sat2E program h ρ t' φ' nv
     ;
 .
 Proof.
@@ -591,22 +638,10 @@ Proof.
     ).
 Defined.
 
-
-#[export]
-Instance Satisfies_TermOverBuiltin_TermOverExpression2
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (ProgramT*(NondetValue*(TermOver builtin_value)))
-        (TermOver Expression2)
-        variable
-:= {|
-    satisfies := fun ρ tgnv ts => sat2E tgnv.1 ρ (tgnv.2.2) ts (tgnv.2.1) ;
-|}.
-
 Definition SideCondition_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideCondition)
@@ -617,10 +652,20 @@ Definition SideCondition_evaluate
         match sc with
         | sc_true => Some true
         | sc_false => Some false
-        | sc_atom pred args => (
-            let ts' := (fun e => Expression2_evaluate program ρ e nv) <$> args in
+        | sc_pred pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
             ts ← list_collect ts';
             builtin_predicate_interp pred nv ts
+        )
+        | sc_npred pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            negb <$> builtin_predicate_interp pred nv ts
+        )
+        | sc_hpred pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            hidden_predicate_interpretation pred h ts
         )
         | sc_and l r => 
             l' ← (go l);
@@ -634,99 +679,79 @@ Definition SideCondition_evaluate
     ) sc
 .
 
-#[export]
-Instance Satisfies_SideCondition
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (ProgramT*NondetValue)
-        SideCondition
-        variable
-:= {|
-    satisfies := fun ρ pgnv sc =>
-        SideCondition_evaluate pgnv.1 ρ pgnv.2 sc = Some true
-|}.
-
-#[export]
-Instance Satisfies_Valuation2_TermOverBuiltin_TermOverBoV
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (TermOver BuiltinOrVar)
-        variable
-:= {|
-    satisfies := fun ρ tg ts => sat2B ρ tg ts
-|}.
-
 Definition rewrites_in_valuation_under_to
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
-    (r : RewritingRule2 Act)
+    (r : RewritingRule2 Label)
     (from : TermOver builtin_value)
-    (under : Act)
+    (under : Label)
     (nv : NondetValue)
     (to : TermOver builtin_value)
     : Type
-:= ((satisfies ρ from (r_from r))
-* (satisfies ρ (program,(nv,to)) (r_to r))
-* (satisfies ρ (program,nv) (r_scs r))
-* (under = r_act r)
+:= ((sat2B ρ from (r_from r))
+* (sat2E program h ρ to (r_to r) nv)
+* (SideCondition_evaluate program h ρ nv (r_scs r))
+* (under = r_label r)
 )%type
 .
 
 Definition rewrites_to
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
-    (r : RewritingRule2 Act)
+    (h : hidden_data)
+    (r : RewritingRule2 Label)
     (from : TermOver builtin_value)
-    (under : Act)
+    (under : Label)
     (nv : NondetValue)
     (to : TermOver builtin_value)
     : Type
 := { ρ : Valuation2 &
-        rewrites_in_valuation_under_to program ρ r from under nv to
+        rewrites_in_valuation_under_to program h ρ r from under nv to
    }
 .
 
 Definition rewriting_relation
     {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
+    (h : hidden_data)
     (nv : NondetValue)
     : TermOver builtin_value -> TermOver builtin_value -> Type
     := fun from to =>
-        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program r from a nv to)%type}}
+        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program h r from a nv to)%type}}
 .
 
 Definition rewrites_to_nondet
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
-    (r : RewritingRule2 Act)
+    (h : hidden_data)
+    (r : RewritingRule2 Label)
     (from : TermOver builtin_value)
-    (under : Act)
+    (under : Label)
     (to : TermOver builtin_value)
     : Type
 := { nv : NondetValue &
-        rewrites_to program r from under nv to
+        rewrites_to program h r from under nv to
    }
 .
 
 Definition rewrites_to_thy
     {Σ : StaticModel}
-    {Act : Set}
+    {Label : Set}
     (program : ProgramT)
-    (Γ : RewritingTheory2 Act)
+    (h : hidden_data)
+    (Γ : RewritingTheory2 Label)
     (from : TermOver builtin_value)
-    (under : Act)
+    (under : Label)
     (to : TermOver builtin_value)
-:= { r : RewritingRule2 Act &
-    ((r ∈ Γ)*(rewrites_to_nondet program r from under to))%type
+:= { r : RewritingRule2 Label &
+    ((r ∈ Γ)*(rewrites_to_nondet program h r from under to))%type
 
 }
 .

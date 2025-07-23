@@ -16,8 +16,8 @@ Require Import Coq.Logic.FunctionalExtensionality.
 *)
 Definition ctx_heat
     {Σ : StaticModel}
-    {Act : Set}
-    (invisible_act : Act)
+    {Label : Set}
+    (invisible_act : Label)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
     (isValue : Expression2 -> SideCondition)
@@ -26,7 +26,7 @@ Definition ctx_heat
     (h : variable) (* occurs once in `c` *)
     (cond : SideCondition)
     :
-    RewritingRule2 Act
+    RewritingRule2 Label
 := {|
     r_from := ((t_term topSymbol [
         (t_term cseqSymbol [
@@ -48,13 +48,13 @@ Definition ctx_heat
         t_over (e_variable dataVariable)])
     );
     r_scs := cond;
-    r_act := invisible_act ;
+    r_label := invisible_act ;
 |}.
 
 Definition ctx_cool
     {Σ : StaticModel}
-    {Act : Set}
-    (invisible_act : Act)
+    {Label : Set}
+    (invisible_act : Label)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (contVariable dataVariable : variable)
     (isValue : Expression2 -> SideCondition)
@@ -62,7 +62,7 @@ Definition ctx_cool
     (c : TermOver BuiltinOrVar)
     (h : variable)
     :
-    RewritingRule2 Act
+    RewritingRule2 Label
 := {|
     r_from := ((t_term topSymbol [
         (t_term cseqSymbol [
@@ -85,12 +85,12 @@ Definition ctx_cool
 
     r_scs := isValue (e_variable h);
 
-    r_act := invisible_act ;
+    r_label := invisible_act ;
 |}.
 
 
-Definition CompileT {Σ : StaticModel} {Act : Set} : Type :=
-    MinusL_LangDef Act -> RewritingTheory2 Act
+Definition CompileT {Σ : StaticModel} {Label : Set} : Type :=
+    MinusL_LangDef Label -> RewritingTheory2 Label
 .
 
 Definition down2
@@ -149,15 +149,15 @@ Definition downC
         ]
 .
 
-Definition compile' {Σ : StaticModel} {Act : Set}
-    (invisible_act : Act)
+Definition compile' {Σ : StaticModel} {Label : Set}
+    (invisible_act : Label)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
     (isValue : Expression2 -> SideCondition)
     (isNonValue : Expression2 -> SideCondition)
     (avoid : gset variable)
-    (d : MinusL_Decl Act)
-    : (list (RewritingRule2 Act))
+    (d : MinusL_Decl Label)
+    : (list (RewritingRule2 Label))
 :=
     match d with
     | mld_rewrite _ lc ld a rc rd cond => [
@@ -165,7 +165,7 @@ Definition compile' {Σ : StaticModel} {Act : Set}
             r_from := (down2 topSymbol cseqSymbol continuationVariable lc ld) ;
             r_to := (down2E topSymbol cseqSymbol continuationVariable rc rd) ;
             r_scs := cond ;
-            r_act := a;
+            r_label := a;
         |})
         ]
     | mld_context _ c h scs =>
@@ -196,8 +196,8 @@ Definition compile' {Σ : StaticModel} {Act : Set}
 .
 
 Definition compile {Σ : StaticModel}
-    {Act : Set}
-    (invisible_act : Act)
+    {Label : Set}
+    (invisible_act : Label)
     (topSymbol cseqSymbol holeSymbol : symbol)
     (continuationVariable : variable)
     : CompileT :=
@@ -208,12 +208,12 @@ Definition compile {Σ : StaticModel}
             cseqSymbol
             holeSymbol
             continuationVariable
-            (MinusL_isValue Act D)
-            (MinusL_isNonValue Act D)
+            (MinusL_isValue Label D)
+            (MinusL_isNonValue Label D)
             (
-                (vars_of (mlld_isValue_c Act D))
+                (vars_of (mlld_isValue_c Label D))
                 ∪
-                (vars_of (mlld_isNonValue_c Act D))
+                (vars_of (mlld_isNonValue_c Label D))
             )
-        ) (mlld_decls Act D))
+        ) (mlld_decls Label D))
 .

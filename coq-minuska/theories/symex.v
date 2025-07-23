@@ -96,7 +96,7 @@ Fixpoint asIfWithEq {Σ : StaticModel} (sc : SideCondition) : SideConditionEq :=
     match sc with
     | sc_true => sce_true
     | sc_false => sce_false
-    | sc_atom p a => sce_atom p a
+    | sc_pred p a => sce_atom p a
     | sc_and l r => sce_and (asIfWithEq l) (asIfWithEq r)
     | sc_or l r => sce_or (asIfWithEq l) (asIfWithEq r)
     end
@@ -236,8 +236,8 @@ Definition simpleStepByRule
     {Σ : StaticModel}
     (UA : UnificationAlgorithm)
     (sss : SimpleSymbolicState)
-    (Act : Set)
-    (r : RewritingRule2 Act)
+    (Label : Set)
+    (r : RewritingRule2 Label)
     : SymbolicState
 :=
     let osub := UA.(ua_unify) sss.(sss_term) r.(r_from) in

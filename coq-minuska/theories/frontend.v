@@ -150,7 +150,7 @@ Inductive StringSideCondition
 :=
 | ssc_true
 | ssc_false
-| ssc_atom
+| ssc_pred
     (pred : string)
     (args : list (StringExpression))
 | ssc_and
@@ -171,11 +171,11 @@ Fixpoint ssc_to_sc
     match ssc with
     | ssc_true => inl sc_true
     | ssc_false => inl sc_false
-    | ssc_atom p args =>
+    | ssc_pred p args =>
         match string2p p with
         | Some p' =>
             match list_collect_e ((se_to_Expression) <$> args) with
-            | inl args' => inl (sc_atom p' args')
+            | inl args' => inl (sc_pred p' args')
             | inr e => inr e
             end
         | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate symbol")
@@ -238,18 +238,18 @@ Definition sbov_to_e_bov
 .
 
 Record StringRewritingRule
-    (Act : Set)
+    (Label : Set)
 := mkStringRewritingRule
 {
     sr_from : @TermOver' string StringBuiltinOrVar ;
     sr_to : @TermOver' string StringExpression ;
     sr_scs : StringSideCondition ;
-    sr_act : Act ;
+    sr_label : Label ;
 }.
 
 Definition transl_string_pattern
     {Σ : StaticModel}
-    (Act : Set)
+    (Label : Set)
     {R : Realization}
     (p : @TermOver' string StringBuiltinOrVar)
     :
@@ -263,15 +263,15 @@ Definition transl_string_pattern
 
 Definition srr_to_rr
     {Σ : StaticModel}
-    (Act : Set)
+    (Label : Set)
     {R : Realization}
-    (srr : StringRewritingRule Act)
+    (srr : StringRewritingRule Label)
     :
-    (RewritingRule2 Act)+string
+    (RewritingRule2 Label)+string
 :=
     match srr with
     | mkStringRewritingRule _ from to scs act =>
-        match transl_string_pattern Act from with
+        match transl_string_pattern Label from with
         | inl from' =>
             match tosse_to_e_tose to with
             | inl to' =>
@@ -281,7 +281,7 @@ Definition srr_to_rr
                         r_from := from';
                         r_to := to';
                         r_scs := scs';
-                        r_act := act;
+                        r_label := act;
                     |}
                 | inr e => inr e
                 end
@@ -294,13 +294,13 @@ Definition srr_to_rr
 
 Definition realize_thy
     {Σ : StaticModel}
-    (Act : Set)
+    (Label : Set)
     {R : Realization}
-    (srrl : list (StringRewritingRule Act))
+    (srrl : list (StringRewritingRule Label))
     :
-    (list (RewritingRule2 Act))+string
+    (list (RewritingRule2 Label))+string
 :=
-    list_collect_e (map (srr_to_rr Act) srrl)
+    list_collect_e (map (srr_to_rr Label) srrl)
 .
 
 Definition sSymbolicTerm_to_ExprTerm
@@ -360,14 +360,14 @@ Definition strictness_to_contexts
         (sd_positions sd)
 .
 
-Record RuleDeclaration (Act : Set)
+Record RuleDeclaration (Label : Set)
 := mkRuleDeclaration {
     rd_label : string ;
-    rd_rule : StringRewritingRule Act ;
+    rd_rule : StringRewritingRule Label ;
 }.
 
-Inductive Declaration (Act : Set) :=
-| decl_rule (r : RuleDeclaration Act)
+Inductive Declaration (Label : Set) :=
+| decl_rule (r : RuleDeclaration Label)
 | decl_ctx (c : ContextDeclaration)
 | decl_strict (s : StrictnessDeclaration)
 .
@@ -386,23 +386,23 @@ Definition argument_sequence
     (argument_name <$> (seq 0 arity))
 .
 
-Record State (Act : Set)
+Record State (Label : Set)
 := mkState {
-    st_rules : (gmap string (StringRewritingRule Act)) ;
+    st_rules : (gmap string (StringRewritingRule Label)) ;
 }.
 
 Definition process_rule_declaration
-    {Act : Set}
-    (s : State Act)
-    (r : RuleDeclaration Act)
-    : (State Act)+string
+    {Label : Set}
+    (s : State Label)
+    (r : RuleDeclaration Label)
+    : (State Label)+string
 :=
 match (st_rules _ s) !! (rd_label _ r) with
 | Some _
     => inr
         ("Rule with name '" +:+ (rd_label _ r) ++ "' already present")%string
 | None
-    => inl (mkState Act
+    => inl (mkState Label
         (<[(rd_label _ r) := (rd_rule _ r)]>(st_rules _ s))
     )
 end
@@ -425,10 +425,10 @@ Fixpoint try_neg_s
         sc1' ← try_neg_s sbps_ar sbps_neg sc1;
         sc2' ← try_neg_s sbps_ar sbps_neg sc2;
         Some (ssc_and sc1' sc2')
-    | ssc_atom p l =>
+    | ssc_pred p l =>
         if decide (length l = sbps_ar p) then 
             p' ← sbps_neg p;
-            Some (ssc_atom p' l)
+            Some (ssc_pred p' l)
         else None
     end
 .
@@ -436,8 +436,8 @@ Fixpoint try_neg_s
 
 Section wsm.
     Context
-        (Act : Set)
-        (default_act : Act)
+        (Label : Set)
+        (default_act : Label)
     .
     Context
         (* (signature : Signature) *)
@@ -477,7 +477,7 @@ Section wsm.
         (position : nat)
         (isValue : StringExpression -> StringSideCondition)
         (cseq_context : ContextTemplate)
-        : (RuleDeclaration Act)+string
+        : (RuleDeclaration Label)+string
     :=
         let vars : list string
             := argument_sequence arity in
@@ -508,7 +508,7 @@ Section wsm.
                     ])%list
                 ]))));
                 sr_scs := (ssc_and (is_value_neg) side_condition) ;
-                sr_act := default_act ;
+                sr_label := default_act ;
             |})
             )
         end
@@ -524,7 +524,7 @@ Section wsm.
         (position : nat)
         (isValue : StringExpression -> StringSideCondition)
         (cseq_context : ContextTemplate)
-        : RuleDeclaration Act
+        : RuleDeclaration Label
     :=
         let vars : list string
             := argument_sequence arity in
@@ -550,18 +550,18 @@ Section wsm.
                 (t_term sym lhs_vars);
                 (t_over (sbov_var REST_SEQ))
             ])%list)));
-            sr_act := default_act;
+            sr_label := default_act;
             sr_scs := (isValue (se_variable selected_var));
         |})
     .
 
     Definition process_context_declaration
         {defaults : Defaults}
-        (s : State Act)
+        (s : State Label)
         (c : ContextDeclaration)
-        : (State Act)+string
+        : (State Label)+string
     := 
-        let hr' : (RuleDeclaration Act)+string
+        let hr' : (RuleDeclaration Label)+string
             := heating_rule_seq
                     ((cd_label c) +:+ "-heat")
                     (cd_label c)
@@ -574,7 +574,7 @@ Section wsm.
             in
         match hr' with
         | inl hr => (
-            let cr : RuleDeclaration Act
+            let cr : RuleDeclaration Label
                 := cooling_rule
                         ((cd_label c) +:+ "-cool")
                         (cd_label c)
@@ -601,9 +601,9 @@ Section wsm.
 
     Definition process_strictness_declaration
         {defaults : Defaults}
-        (s : State Act)
+        (s : State Label)
         (c : StrictnessDeclaration)
-        : (State Act)+string
+        : (State Label)+string
     :=
         foldr
             (fun a b' => match b' with inr s => inr s | inl b => process_context_declaration b a end)
@@ -612,7 +612,7 @@ Section wsm.
     .
 
     Definition initialState
-        : State Act
+        : State Label
     := {|
         st_rules := ∅ ;
     |}.
@@ -621,9 +621,9 @@ Section wsm.
 
     Definition process_declaration
         {defaults : Defaults}
-        (s : State Act)
-        (d : Declaration Act)
-        : (State Act)+string
+        (s : State Label)
+        (d : Declaration Label)
+        : (State Label)+string
     :=
     match d with
     | decl_rule _ rd => process_rule_declaration s rd
@@ -633,15 +633,15 @@ Section wsm.
 
     Definition process_declarations
         {defaults : Defaults}
-        (ld : list (Declaration Act))
-        : (State Act)+string
+        (ld : list (Declaration Label))
+        : (State Label)+string
     :=
         fold_left (fun s' d => match s' with inl s => process_declaration s d | inr s => inr s end) ld (inl initialState)
     .
 
     Definition to_theory
-        (s : State Act)
-        : (list (StringRewritingRule Act))*(list string)
+        (s : State Label)
+        : (list (StringRewritingRule Label))*(list string)
     :=
         let l := (map_to_list (st_rules _ s)) in
         (l.*2,l.*1)
