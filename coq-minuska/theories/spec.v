@@ -83,12 +83,6 @@ Class Signature := {
     HiddenPredicateSymbol : Type ;
     HiddenPredicateSymbol_eqdec :: EqDecision HiddenPredicateSymbol;
     HiddenPredicateSymbol_countable :: Countable HiddenPredicateSymbol;
-
-    (* TODO get rid of these with the help of hidden algebra *)
-    bps_ar : builtin_predicate_symbol -> nat ;
-    bps_neg : builtin_predicate_symbol -> option builtin_predicate_symbol ;
-    bps_neg_ar : forall p p', bps_neg p = Some p' -> bps_ar p = bps_ar p' ;
-    bps_neg__sym : forall p p', bps_neg p = Some p' -> bps_neg p' = Some p ;
 }.
 
 Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
@@ -107,12 +101,6 @@ Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signatur
         -> list (@TermOver' symbol Carrier)
         -> option bool ;
     
-    bps_neg_correct : forall p p' nv l b b',
-        bps_neg p = Some p' ->
-        length l = bps_ar p ->
-        builtin_predicate_interp p' nv l = Some b ->
-        builtin_predicate_interp p nv l = Some b' ->
-        b = ~~ b' ;
 }.
 
 (* This should be called [Carrier] instead*)
