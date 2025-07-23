@@ -238,6 +238,7 @@ Qed.
 Equations? sat2Eb
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (t : TermOver builtin_value)
     (φ : TermOver Expression2)
@@ -245,19 +246,19 @@ Equations? sat2Eb
     : bool
     by wf (TermOver_size φ) lt
 :=
-    sat2Eb program ρ t (t_over e) nv :=
-        match Expression2_evaluate program ρ e nv with 
+    sat2Eb program h ρ t (t_over e) nv :=
+        match Expression2_evaluate program h ρ e nv with 
         | Some t' => bool_decide (t' = t)
         | None => false
         end ;
-    sat2Eb program ρ (t_over a) (t_term s l) _ := false ;
-    sat2Eb program ρ (t_term s' l') (t_term s l) nv := 
+    sat2Eb program h ρ (t_over a) (t_term s l) _ := false ;
+    sat2Eb program h ρ (t_term s' l') (t_term s l) nv := 
         bool_decide (s' = s) &&
         match (decide (length l' = length l)) with
         | right _ => false
         | left _ => 
             forallbin (zip l l') (fun i xx' pf => let x := xx'.1 in let x' := xx'.2 in
-            sat2Eb program ρ x' x nv
+            sat2Eb program h ρ x' x nv
         )
         end
     ;
@@ -284,12 +285,13 @@ Defined.
 Lemma sat2E_refl
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (t : TermOver builtin_value)
     (φ : TermOver Expression2)
     (nv : NondetValue)
     :
-    reflect (sat2E program ρ t φ nv) (sat2Eb program ρ t φ nv)
+    reflect (sat2E program h ρ t φ nv) (sat2Eb program h ρ t φ nv)
 .
 Proof.
     revert φ.
