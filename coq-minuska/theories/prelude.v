@@ -1565,3 +1565,18 @@ Ltac2 clear_decide () :=
 
 Ltac2 cases () := repeat (ltac1:(case_match); clear_decide ()).
 
+
+Lemma elem_of_next
+    {A : Type}
+    (x y : A)
+    (l : list A)
+    :
+    x <> y ->
+    x ∈ (y::l) ->
+    x ∈ l
+.
+Proof.
+    intros. inversion H0; subst; clear H0.
+    { ltac1:(contradiction). }
+    { assumption. }
+Qed.

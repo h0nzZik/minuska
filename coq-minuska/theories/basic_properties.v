@@ -4,20 +4,6 @@ From Minuska Require Import
 .
 
 
-Lemma elem_of_next
-    {A : Type}
-    (x y : A)
-    (l : list A)
-    :
-    x <> y ->
-    x ∈ (y::l) ->
-    x ∈ l
-.
-Proof.
-    intros. inversion H0; subst; clear H0.
-    { ltac1:(contradiction). }
-    { assumption. }
-Qed.
 
 Section custom_induction_principle_2.
 
@@ -321,6 +307,45 @@ Section custom_induction_principle_2.
                 | _ => right _
                 end
                 )
+            | e_attr a1 l1 => (
+                match e2 with
+                | e_attr a2 l2 => (
+                    match (decide (a1 = a2)) with
+                    | left _ => (
+                        let tmp := (
+                            fix go' (l1' l2' : list Expression2) : {l1' = l2'} + {l1' <> l2'} :=
+                            match l1' with
+                            | [] =>
+                                match l2' with
+                                | [] => left _
+                                | _::_ => right _
+                                end
+                            | x1::xs1 =>
+                                match l2' with
+                                | [] => right _
+                                | x2::xs2 =>
+                                    match (go x1 x2) with
+                                    | left _ =>
+                                        match (go' xs1 xs2) with
+                                        | left _ => left _
+                                        | right _ => right _
+                                        end
+                                    | right _ => right _
+                                    end
+                                end
+                            end
+                            ) l1 l2 in
+                        match tmp with
+                        | left _ => left _
+                        | right _ => right _
+                        end
+                    )
+                    | right _ => right _
+                    end
+                )
+                | _ => right _
+                end
+            )
             end
         )); abstract(congruence)).
     Defined.
@@ -343,6 +368,13 @@ Section custom_induction_principle_2.
                 (forall x, x ∈ l -> P x) ->
                 P (e_query q l)
         )
+        (preserved_by_attribute :
+            forall
+                (q : AttributeSymbol)
+                (l : list Expression2),
+                (forall x, x ∈ l -> P x) ->
+                P (e_attr q l)
+        )
         (e : Expression2)
     :
         P e :=
@@ -356,7 +388,7 @@ Section custom_induction_principle_2.
             | nil => fun pf' => match not_elem_of_nil _ pf' with end
             | y::ys => 
                 match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query y) x (eq_sym e)) 
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query preserved_by_attribute y) x (eq_sym e)) 
                 | right n => fun pf' =>
                     let H := @elem_of_next _ _ _ _ n pf' in
                     go ys H
@@ -371,7 +403,22 @@ Section custom_induction_principle_2.
             | nil => fun pf' => match not_elem_of_nil _ pf' with end
             | y::ys => 
                 match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query y) x (eq_sym e)) 
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query preserved_by_attribute y) x (eq_sym e)) 
+                | right n => fun pf' =>
+                    let H := @elem_of_next _ _ _ _ n pf' in
+                    go ys H
+                end
+            end
+            ) l pf
+        )
+    | e_attr a l => preserved_by_attribute a l
+        (fun x pf => 
+            (fix go (l' : list Expression2) : x ∈ l' -> P x :=
+            match l' as l'0 return x ∈ l'0 -> P x with
+            | nil => fun pf' => match not_elem_of_nil _ pf' with end
+            | y::ys => 
+                match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query preserved_by_attribute y) x (eq_sym e)) 
                 | right n => fun pf' =>
                     let H := @elem_of_next _ _ _ _ n pf' in
                     go ys H
@@ -394,13 +441,23 @@ Instance SideCondition_eqdec
 Proof. ltac1:(solve_decision). Defined.
 
 #[export]
+Instance BasicEffect_eqdec
+    {Σ : StaticModel}
+    :
+    EqDecision BasicEffect
+.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+
+#[export]
 Instance RewritingRule2_eqdec
     {Σ : StaticModel}
     {Label : Set}
     {_EA : EqDecision Label}
     : EqDecision (RewritingRule2 Label)
 .
-Print RewritingRule2.
 Proof. ltac1:(solve_decision). Defined.
 
 
@@ -417,6 +474,7 @@ match e with
     if (decide (y = x)) then e' else (e_variable y)
 | e_fun f l => e_fun f ((fun e1 => Expression2_subst e1 x e') <$> l)
 | e_query q l => e_query q ((fun e1 => Expression2_subst e1 x e') <$> l)
+| e_attr a l => e_attr a ((fun e1 => Expression2_subst e1 x e') <$> l)
 end
 .
 
@@ -431,6 +489,8 @@ Fixpoint SideCondition_subst
     | sc_true => sc_true
     | sc_false => sc_false
     | sc_pred p es => sc_pred p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_npred p es => sc_npred p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_hpred p es => sc_hpred p ((fun e1 => Expression2_subst e1 x e') <$> es)
     | sc_and l r => sc_and (SideCondition_subst l x e') (SideCondition_subst r x e')
     | sc_or l r => sc_or (SideCondition_subst l x e') (SideCondition_subst r x e')
     end
@@ -612,34 +672,40 @@ Fixpoint E_to_tree
     {Σ : StaticModel}
     (e : Expression2)
     :
-    (gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol))%type)
+    (gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol)+(AttributeSymbol))%type)
 :=
     match e with
-    | e_ground a => GenLeaf (inl (inl (inl a)))
-    | e_variable x => GenLeaf (inl (inl (inr x)))
+    | e_ground a => GenLeaf (inl (inl (inl (inl a))))
+    | e_variable x => GenLeaf (inl (inl (inl (inr x))))
     | e_fun f l =>
         let l' := E_to_tree <$> l in
-        GenNode 0 ((GenLeaf (inl (inr f)))::l')
+        GenNode 0 ((GenLeaf (inl (inl (inr f))))::l')
     | e_query q l =>
         let l' := E_to_tree <$> l in
-        GenNode 1 ((GenLeaf (inr q))::l')
+        GenNode 1 ((GenLeaf (inl (inr q)))::l')
+    | e_attr a l =>
+        let l' := E_to_tree <$> l in
+        GenNode 2 ((GenLeaf (inr a))::l')
     end
 .
 
 Fixpoint E_of_tree
     {Σ : StaticModel}
-    (t : gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol))%type)
+    (t : gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol)+(AttributeSymbol))%type)
     : option Expression2
 :=
     match t with
-    | GenLeaf (inl (inl (inl a))) => Some (e_ground a)
-    | GenLeaf (inl (inl (inr x))) => Some (e_variable x)
-    | GenNode 0 ((GenLeaf (inl (inr f)))::l') =>
+    | GenLeaf (inl (inl (inl (inl a)))) => Some (e_ground a)
+    | GenLeaf (inl (inl (inl (inr x)))) => Some (e_variable x)
+    | GenNode 0 ((GenLeaf (inl (inl (inr f))))::l') =>
         l ← list_collect (E_of_tree <$> l');
         Some (e_fun f l)
-    | GenNode 1 ((GenLeaf (inr q))::l') =>
+    | GenNode 1 ((GenLeaf (inl (inr q)))::l') =>
         l ← list_collect (E_of_tree <$> l');
         Some (e_query q l)
+    | GenNode 2 ((GenLeaf (inr a))::l') =>
+        l ← list_collect (E_of_tree <$> l');
+        Some (e_attr a l)
     | _ => None
     end
 .
@@ -655,6 +721,27 @@ Proof.
     intros e; induction e.
     { reflexivity. }
     { reflexivity. }
+    {
+        simpl.
+        rewrite bind_Some.
+        exists l.
+        (repeat split).
+        induction l.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            specialize (IHl IH2).
+            clear IH2.
+            rewrite fmap_cons.
+            rewrite fmap_cons.
+            rewrite IH1. clear IH1.
+            simpl.
+            rewrite IHl.
+            simpl.
+            reflexivity.
+        }
+    }
     {
         simpl.
         rewrite bind_Some.
