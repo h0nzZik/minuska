@@ -65,19 +65,9 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Program Definition int_signature : Signature := {|
+Definition int_signature : Signature := {|
     builtin_function_symbol := IntFunSymbol ;
     builtin_predicate_symbol := IntPredSymbol ;
-    bps_ar := fun p =>
-        match p with
-        | int_is => 1
-        end ;
-    bps_neg := fun p =>
-        match p with
-        | int_is => None
-        end ;
-    bps_neg_ar := _;
-    bps_neg__sym := _;
 |}.
 Next Obligation.
     destruct p,p'; simpl in *; ltac1:(lia).

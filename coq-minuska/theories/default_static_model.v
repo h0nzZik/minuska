@@ -11,6 +11,7 @@ Section default_model.
     Context
         (signature : Signature)
         (β : Model signature MyUnit)
+        (Hβ : HiddenModel β)
         (my_program_info : ProgramInfo)
     .
 
@@ -23,6 +24,7 @@ Section default_model.
         symbols :=  MySymbols;
         variables := StringVariables ;
         builtin := β ;
+        hidden := Hβ ;
         program_info := my_program_info ;
         (* nondet_stream := trivial_stream; *)
         nondet_gen := fun _ => mytt ;

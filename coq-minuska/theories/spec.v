@@ -71,7 +71,9 @@ Class Signature := {
         :: EqDecision builtin_predicate_symbol ;
     builtin_predicate_symbol_countable
         :: Countable builtin_predicate_symbol ;
+}.
 
+Class HiddenSignature := {
     AttributeSymbol : Type;
     AttributeSymbol_eqdec :: EqDecision AttributeSymbol ;
     AttributeSymbol_countable :: Countable AttributeSymbol ;
@@ -86,9 +88,6 @@ Class Signature := {
 }.
 
 Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
-    (* builtin_value_eqdec
-        :: EqDecision Carrier ; *)
-
     builtin_function_interp
         : builtin_function_symbol
         -> NondetValue
@@ -99,11 +98,9 @@ Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signatur
         : builtin_predicate_symbol
         -> NondetValue
         -> list (@TermOver' symbol Carrier)
-        -> option bool ;
-    
+        -> option bool ;    
 }.
 
-(* This should be called [Carrier] instead*)
 Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
     builtin_value
         : Type ;
@@ -122,6 +119,7 @@ Class HiddenModel
     {symbol : Type}
     {symbols : Symbols symbol}
     {signature : Signature}
+    {hidden_signature : HiddenSignature}
     {NondetValue : Type}
     (M : Model signature NondetValue)
     :=
@@ -183,6 +181,7 @@ Class StaticModel := mkStaticModel {
     symbols :: Symbols symbol ;
     NondetValue : Type ;
     signature :: Signature ;
+    hidden_signature :: HiddenSignature ;
     builtin :: Model signature NondetValue;
     hidden :: HiddenModel builtin ;
     variables :: MVariables variable ;
