@@ -69,10 +69,3 @@ Definition int_signature : Signature := {|
     builtin_function_symbol := IntFunSymbol ;
     builtin_predicate_symbol := IntPredSymbol ;
 |}.
-Next Obligation.
-    destruct p,p'; simpl in *; ltac1:(lia).
-Qed.
-Next Obligation.
-    destruct p,p'; simpl in *; ltac1:(simplify_eq/=).
-Qed.
-Fail Next Obligation.

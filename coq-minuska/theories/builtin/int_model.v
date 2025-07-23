@@ -133,14 +133,7 @@ Program Definition int_model_over
 := {|
     builtin_function_interp := fun (f : @builtin_function_symbol int_signature) => int_function_interp NondetValue Carrier asi f;
     builtin_predicate_interp := fun (p : @builtin_predicate_symbol int_signature) => int_predicate_interp NondetValue Carrier asi p;
-    bps_neg_correct := _;
 |}.
-Next Obligation.
-    destruct p; simpl in *;
-        case_on_length (); simpl in *;
-        ltac1:(simplify_eq/=).
-Qed.
-Fail Next Obligation.
 
 Definition int_relaxed_model
     (symbol : Type)

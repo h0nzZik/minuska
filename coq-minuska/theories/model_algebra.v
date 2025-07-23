@@ -184,7 +184,7 @@ Definition rmf_apply
     rmf_model _ f _ _ M
 .
 
-Program Definition model_reduction
+Definition model_reduction
     (s1 s2 : Signature)
     (μ : SignatureMorphism s1 s2)
     (NV Carrier : Type)
@@ -206,58 +206,16 @@ Program Definition model_reduction
             (nv : NV)
             (args : list (@TermOver' symbol Carrier))
         => spec.builtin_predicate_interp m2 (predicate_symbol_morphism μ p) nv args;
-    
-    bps_neg_correct := _ ;
 |}
 .
-Next Obligation.
-    destruct μ as [μf μp H1μp H2μp].
-    destruct m2 as [bf bp Hbp].
-    simpl in *.
-    assert (Hmy := Hbp (μp p) (μp p') nv l b b').
-    ltac1:(ospecialize (Hmy _ _)).
-    {
-        rewrite H2μp.
-        rewrite H.
-        reflexivity.
-    }
-    {
-        rewrite H1μp.
-        exact H0.
-    }
-    specialize (Hmy H1 H2).
-    exact Hmy.
-Qed.
-Fail Next Obligation.
 
 Section sum.
 
-    Program Definition signature_sum (s1 s2 : Signature) : Signature := {|
+    Definition signature_sum (s1 s2 : Signature) : Signature := {|
         builtin_function_symbol := sum (builtin_function_symbol s1) (builtin_function_symbol s2) ;
         builtin_predicate_symbol := sum (builtin_predicate_symbol s1) (builtin_predicate_symbol s2) ;
-        bps_ar := fun p =>
-            match p with
-            | inl p' => @bps_ar s1 p'
-            | inr p' => @bps_ar s2 p'
-            end;
-        bps_neg := fun p =>
-            match p with
-            | inl p' => inl <$> @bps_neg s1 p'
-            | inr p' => inr <$> @bps_neg s2 p'
-            end ;
-        bps_neg_ar := _;
-        bps_neg__sym := _;
     |}.
-    Next Obligation.
-        destruct p,p'; simpl in *; ltac1:(simplify_option_eq);
-            apply bps_neg_ar; assumption.
-    Qed.
-    Next Obligation.
-        destruct p, p'; simpl in *; ltac1:(simplify_option_eq);
-            erewrite bps_neg__sym; simpl; try reflexivity; assumption.
-    Qed.
-    Fail Next Obligation.
-
+    
     Definition signature_sum_morphism_1_function
         (s1 s2 : Signature)
         : (builtin_function_symbol s1) -> (builtin_function_symbol (signature_sum s1 s2))
@@ -272,14 +230,13 @@ Section sum.
         fun f => inl f
     .
 
-    Program Definition signature_sum_morphism_1 (s1 s2 : Signature)
+    Definition signature_sum_morphism_1 (s1 s2 : Signature)
         : SignatureMorphism s1 (signature_sum s1 s2)
     := {|
         function_symbol_morphism := signature_sum_morphism_1_function s1 s2 ;
         predicate_symbol_morphism := signature_sum_morphism_1_predicate s1 s2 ;
     |}.
-    Fail Next Obligation.
-
+    
     Definition signature_sum_morphism_2_function
         (s1 s2 : Signature)
         : (builtin_function_symbol s2) -> (builtin_function_symbol (signature_sum s1 s2))
@@ -294,14 +251,13 @@ Section sum.
         fun f => inr f
     .
 
-    Program Definition signature_sum_morphism_2 (s1 s2 : Signature)
+    Definition signature_sum_morphism_2 (s1 s2 : Signature)
         : SignatureMorphism s2 (signature_sum s1 s2)
     := {|
         function_symbol_morphism := signature_sum_morphism_2_function s1 s2 ;
         predicate_symbol_morphism := signature_sum_morphism_2_predicate s1 s2 ;
     |}.
-    Fail Next Obligation.
-
+    
     #[export]
     Program Instance signature_sum_morph_1_inj
         (s1 s2 : Signature)
@@ -309,7 +265,7 @@ Section sum.
         SMInj (signature_sum_morphism_1 s1 s2)
     .
     Fail Next Obligation.
-
+    
     #[export]
     Program Instance signature_sum_morph_2_inj
         (s1 s2 : Signature)
@@ -317,7 +273,6 @@ Section sum.
         SMInj (signature_sum_morphism_2 s1 s2)
     .
     Fail Next Obligation.
-
 
     Definition function_interp_sum
         {symbol : Type}
@@ -357,7 +312,7 @@ Section sum.
         end
     .
 
-    Program Definition modelover_sum
+    Definition modelover_sum
         {symbol : Type}
         {symbols : Symbols symbol}
         (s1 s2 : Signature)
@@ -370,28 +325,8 @@ Section sum.
     := {|
         builtin_function_interp :=  function_interp_sum s1 s2 NV Carrier m1 m2;
         builtin_predicate_interp :=  predicate_interp_sum s1 s2 NV Carrier m1 m2;
-        bps_neg_correct := _;
     |}
     .
-    Next Obligation.
-        Check bps_neg_correct.
-        destruct p,p'; simpl in *; ltac1:(simplify_option_eq).
-        {
-            eapply bps_neg_correct in Heqo.
-            { apply Heqo. }
-            { apply H0. }
-            { apply H1. }
-            { apply H2. }
-        }
-        {
-            eapply bps_neg_correct in Heqo.
-            { apply Heqo. }
-            { apply H0. }
-            { apply H1. }
-            { apply H2. }
-        }
-    Qed.
-    Fail Next Obligation.
 
     Lemma modelover_sum_reduce_1
         {symbol : Type}
@@ -410,10 +345,9 @@ Section sum.
         = m1.
     Proof.
         unfold model_reduction.
-        destruct m1 as [f1 p1 Hneg1]; simpl in *.
-        destruct m2 as [f2 p2 Hneg2]; simpl in *.
+        destruct m1 as [f1 p1]; simpl in *.
+        destruct m2 as [f2 p2]; simpl in *.
         f_equal.
-        apply proof_irrelevance.
     Qed.
 
     Lemma modelover_sum_reduce_2
@@ -435,13 +369,12 @@ Section sum.
         unfold model_reduction.
         destruct m2; simpl in *.
         f_equal.
-        apply proof_irrelevance.
     Qed.
 
 
 End sum.
 
-Program Definition modelover_nv_lift 
+Definition modelover_nv_lift 
     {symbol : Type}
     {symbols : Symbols symbol}
     {signature: Signature}
@@ -459,14 +392,6 @@ Program Definition modelover_nv_lift
         fun p nv args => @builtin_predicate_interp _ _ _ _ _ m p (nvf nv) args
     ;
 |}.
-Next Obligation.
-    eapply bps_neg_correct in H.
-    { apply H. }
-    { apply H0. }
-    { apply H1. }
-    { apply H2. }
-Qed.
-Fail Next Obligation.
 
 (* 
 Definition modelover_carrier_lift 

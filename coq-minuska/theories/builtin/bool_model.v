@@ -125,7 +125,7 @@ Definition bool_predicate_interp
     end
 .
 
-Program Definition bool_model_over
+Definition bool_model_over
     (symbol : Type)
     (symbols : Symbols symbol)
     (NondetValue : Type)
@@ -137,19 +137,7 @@ Program Definition bool_model_over
 := {|
     builtin_function_interp := fun (f : @builtin_function_symbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
     builtin_predicate_interp := fun (p : @builtin_predicate_symbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
-    bps_neg_correct := _;
 |}.
-Next Obligation.
-    destruct p,p'; simpl in *; case_on_length (); simpl in *;
-        ltac1:(simplify_eq/=).
-    {
-        ltac1:(repeat case_match; simplify_eq/=); reflexivity.
-    }
-    {
-        ltac1:(repeat case_match; simplify_eq/=); reflexivity.
-    }
-Qed.
-Fail Next Obligation.
 
 Definition bool_relaxed_model
     (symbol : Type)
