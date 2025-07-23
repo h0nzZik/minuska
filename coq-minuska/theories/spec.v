@@ -118,8 +118,8 @@ Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (
 Class HiddenModel
     {symbol : Type}
     {symbols : Symbols symbol}
-    {signature : Signature}
-    {hidden_signature : HiddenSignature}
+    (signature : Signature)
+    (hidden_signature : HiddenSignature)
     {NondetValue : Type}
     (M : Model signature NondetValue)
     :=
@@ -183,7 +183,7 @@ Class StaticModel := mkStaticModel {
     signature :: Signature ;
     hidden_signature :: HiddenSignature ;
     builtin :: Model signature NondetValue;
-    hidden :: HiddenModel builtin ;
+    hidden :: HiddenModel signature hidden_signature builtin ;
     variables :: MVariables variable ;
     program_info :: ProgramInfo ;
     nondet_gen : nat -> NondetValue ;

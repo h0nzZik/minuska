@@ -7,6 +7,7 @@ From Minuska Require Import
     builtin.int_signature
     builtin.int_model
     pi.trivial
+    hidden.hidden_unit
 .
 About stdpp.strings.String.
 Locate String.
@@ -14,7 +15,15 @@ From QuickChick Require Export QuickChick.
 Export QcDefaultNotation.
 
 #[export]
-Instance Σ : StaticModel := @default_model int_signature (int_model _ _ _) MyProgramInfo.
+Instance Σ : StaticModel
+:=
+    @default_model
+        int_signature
+        (unit_hidden_signature int_signature)
+        (int_model _ _ _)
+        (unit_hidden_model _ _ _)
+        MyProgramInfo
+.
 
 #[export]
 Instance show_builtin : Show builtin_value := {|
@@ -104,6 +113,11 @@ Instance showQery : Show QuerySymbol := {|
     end ;
 |}.
 
+#[export]
+Instance showAttribute : Show AttributeSymbol := {|
+    show := fun a => "some-attribute-symbol" ; 
+|}.
+
 
 Fixpoint show_e (e : Expression2) : string  :=
     match e with
@@ -111,6 +125,7 @@ Fixpoint show_e (e : Expression2) : string  :=
     | e_variable x => show x
     | e_fun f l => show f +:+ "(" +:+ (concat "," (show_e <$> l ))  +:+ ")"
     | e_query q l => show q +:+ "(" +:+ (concat "," (show_e <$> l ))  +:+ ")"
+    | e_attr a l => show a +:+ "(" +:+ (concat "," (show_e <$> l ))  +:+ ")"
     end
 .
 

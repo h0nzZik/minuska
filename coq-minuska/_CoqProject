@@ -62,6 +62,7 @@ theories/fresher.v
 theories/builtin/empty.v
 theories/builtin/klike.v
 theories/pi/trivial.v
+theories/hidden/hidden_unit.v
 
 theories/playground.v
 theories/hilang.v
