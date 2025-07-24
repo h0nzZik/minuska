@@ -2091,7 +2091,7 @@ Proof.
         ltac1:(simp sat2B).
         simpl.
         split>[reflexivity|].
-        rewrite map_length.
+        rewrite length_map.
         split>[reflexivity|].
         intros i t' φ' HH1 HH2.
         ltac1:(replace (map) with (@fmap list list_fmap) in HH1 by reflexivity).
@@ -3302,3 +3302,53 @@ Proof.
     reflexivity.
 Qed.
 
+Fixpoint TermOver_collect
+    {Σ : StaticModel}
+    {A : Type}
+    (t : TermOver (option A))
+    : option (TermOver A)
+:=
+    match t with
+    | t_over None => None
+    | t_over (Some x) => Some (t_over x)
+    | t_term s l =>
+        l' ← list_collect (TermOver_collect <$> l);
+        Some (t_term s l')
+    end
+.
+
+Fixpoint TermOver'_join
+    {T A : Type}
+    (t : @TermOver' T (@TermOver' T A))
+    : @TermOver' T A
+:=
+    match t with
+    | t_over x => x
+    | t_term s l =>
+        t_term s (TermOver'_join <$> l)
+    end
+.
+
+
+
+Lemma sc_satisfies_insensitive
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (nv : NondetValue)
+    :
+    ∀ (v1 v2 : Valuation2) (sc : SideCondition) (b : bool),
+            Valuation2_restrict v1 (vars_of sc) = Valuation2_restrict v2 (vars_of sc) ->
+            SideCondition_evaluate program h v1 nv sc = Some b ->
+            SideCondition_evaluate program h v2 nv sc = Some b
+.
+Proof.
+    intros v1 v2 sc b H X.
+    unfold Valuation2_restrict in H.
+    unfold is_true in *.
+    eapply SideCondition_satisfies_strip in X.
+    rewrite H in X.
+    eapply SideCondition_satisfies_extensive>[|apply X].
+    unfold Valuation2 in *.
+    apply map_filter_subseteq.
+Qed.

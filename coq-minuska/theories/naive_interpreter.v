@@ -49,66 +49,43 @@ Fixpoint try_match_new
     end
 .
 
-(* TODO move *)
-Fixpoint TermOver_collect
-    {Σ : StaticModel}
-    {A : Type}
-    (t : TermOver (option A))
-    : option (TermOver A)
-:=
-    match t with
-    | t_over None => None
-    | t_over (Some x) => Some (t_over x)
-    | t_term s l =>
-        l' ← list_collect (TermOver_collect <$> l);
-        Some (t_term s l')
-    end
-.
-
-Fixpoint TermOver'_join
-    {T A : Type}
-    (t : @TermOver' T (@TermOver' T A))
-    : @TermOver' T A
-:=
-    match t with
-    | t_over x => x
-    | t_term s l =>
-        t_term s (TermOver'_join <$> l)
-    end
-.
 
 Definition Expression2_evaluate_nv
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (t : Expression2)
 :=
-    gt ← Expression2_evaluate program ρ t nv;
+    gt ← Expression2_evaluate program h ρ t nv;
     Some (gt)
 .
 
 Definition eval_et
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (et : TermOver Expression2)
     : option (TermOver builtin_value)
 :=
-    x ← TermOver'_option_map (Expression2_evaluate_nv program ρ nv) et;
+    x ← TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et;
     Some (TermOver'_join x)
 .
 
+(* TODO this should be more general lemma somewhere in [properties.v] *)
 Lemma eval_et_Some_val
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (et : TermOver Expression2)
     (t : TermOver builtin_value)
 :
-    eval_et program ρ nv et = Some t ->
+    eval_et program h ρ nv et = Some t ->
     vars_of et ⊆ vars_of ρ 
 .
 Proof.
@@ -174,16 +151,17 @@ Definition try_match_lhs_with_sc
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
+    (h : hidden_data)
     (g : TermOver builtin_value)
     (nv : NondetValue)
     (r : RewritingRule2 Label)
     : option (Valuation2*(TermOver builtin_value))
 :=
     ρ ← try_match_new g (r_from r);
-    b ← SideCondition_evaluate program ρ nv (r_scs r);
+    b ← SideCondition_evaluate program h ρ nv (r_scs r);
     if b
     then (
-        match (eval_et program ρ nv (r_to r)) with
+        match (eval_et program h ρ nv (r_to r)) with
         | None => None
         | Some g' => Some (ρ, g')
         end
@@ -195,6 +173,7 @@ Definition thy_lhs_match_one
     {Σ : StaticModel}
     {Label : Set}
     (e : TermOver builtin_value)
+    (h : hidden_data)
     (nv : NondetValue)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
@@ -204,7 +183,7 @@ Definition thy_lhs_match_one
         := r_from <$> Γ
     in
     let vs : list (option (Valuation2 * (TermOver builtin_value)))
-        := (try_match_lhs_with_sc program e nv) <$> Γ
+        := (try_match_lhs_with_sc program h e nv) <$> Γ
     in
     let found : option (nat * option (Valuation2*(TermOver builtin_value)))
         := list_find isSome vs
@@ -224,15 +203,16 @@ Definition naive_interpreter_ext
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    (e : TermOver builtin_value)
-    : option ((TermOver builtin_value)*nat)
+    (e : (TermOver builtin_value)*(hidden_data))
+    : option (((TermOver builtin_value)*(hidden_data))*nat)
 :=
     let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver builtin_value)*nat)
-        := thy_lhs_match_one e nv Γ program in
+        := thy_lhs_match_one e.1 e.2 nv Γ program in
     match oρ with
     | None => None
     | Some (r,ρ,g',idx) =>
-        Some (g',idx)
+        h' ← Effect_evaluate program e.2 ρ nv (r_eff r);
+        Some ((g',h'),idx)
     end
 .
 
@@ -242,8 +222,8 @@ Definition naive_interpreter
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    (e : TermOver builtin_value)
-    : option (TermOver builtin_value)
+    (e : (TermOver builtin_value)*(hidden_data))
+    : option ((TermOver builtin_value)*hidden_data)
 :=
     ei ← naive_interpreter_ext Γ program nv e;
     Some (ei.1)
@@ -255,7 +235,7 @@ Lemma try_match_new_complete
     {Σ : StaticModel}
     :
     ∀ (a : (TermOver builtin_value)) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
-        satisfies ρ a b ->
+        sat2B ρ a b ->
         { ρ' : Valuation2 &
             vars_of ρ' = vars_of b /\
             ρ' ⊆ ρ /\
@@ -267,7 +247,6 @@ Proof.
     ltac1:(induction a using TermOver_rect); intros b' ρ Hb'; destruct b'.
     {
         simpl in *.
-        unfold satisfies in Hb'; simpl in Hb'.
         ltac1:(simp sat2B in Hb').
         destruct a0; simpl in *.
         {
@@ -300,13 +279,11 @@ Proof.
     }
     {
         simpl in *.
-        unfold satisfies in Hb'; simpl in Hb'.
         ltac1:(simp sat2B in Hb').
         destruct Hb'.
     }
     {
         simpl in *.
-        unfold satisfies in Hb'; simpl in Hb'.
         ltac1:(simp sat2B in Hb').
         destruct a.
         {
@@ -333,7 +310,6 @@ Proof.
         }
     }
     {
-        unfold satisfies in Hb'; simpl in Hb'.
         ltac1:(simp sat2B in Hb').
         destruct Hb' as [H1 [H2 H3]].
         subst b.
@@ -433,7 +409,7 @@ Qed.
 Lemma try_match_new_correct {Σ : StaticModel} :
     ∀ (a : TermOver builtin_value) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
         try_match_new a b = Some ρ ->
-        satisfies ρ a b
+        sat2B ρ a b
 .
 Proof.
     intros a b.
@@ -443,9 +419,8 @@ Proof.
     {
         simpl in *.
         ltac1:(repeat case_match; simpl in *; simplify_eq/=).
-        { unfold satisfies; simpl. ltac1:(simp sat2B). simpl. reflexivity. }
+        { ltac1:(simp sat2B). simpl. reflexivity. }
         {
-            unfold satisfies; simpl.
             ltac1:(simp sat2B).
             simpl.
             unfold Valuation2 in *.
@@ -458,7 +433,6 @@ Proof.
         { inversion HH. }
         {
             ltac1:(simplify_eq/=).
-            unfold satisfies; simpl.
             ltac1:(simp sat2B).
             simpl.
             unfold Valuation2 in *.
@@ -472,7 +446,6 @@ Proof.
         simpl in *.
         ltac1:(repeat case_match); subst.
         {
-            unfold satisfies; simpl in *.
             ltac1:(simp sat2B).
             split>[reflexivity|].
             split>[ltac1:(lia)|].
@@ -489,7 +462,7 @@ Proof.
                 simpl in HH.
                 apply Valuation2_merge_olist_inv with (i := i) in HH as HH''.
                 destruct HH'' as [ρ' HHρ'].
-                eapply TermOverBoV_satisfies_extensive>[|apply X].
+                eapply TermOverBoV_satisfies_extensive>[|apply H].
                 { 
                     eapply Valuation2_merge_olist_correct in HH as HH'.
                     apply HH'.
@@ -594,27 +567,6 @@ Proof.
     }
 Qed.
 
-
-Lemma sc_satisfies_insensitive
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (nv : NondetValue)
-    :
-    ∀ (v1 v2 : Valuation2) (sc : SideCondition) (b : bool),
-            Valuation2_restrict v1 (vars_of sc) = Valuation2_restrict v2 (vars_of sc) ->
-            SideCondition_evaluate program v1 nv sc = Some b ->
-            SideCondition_evaluate program v2 nv sc = Some b
-.
-Proof.
-    intros v1 v2 sc b H X.
-    unfold Valuation2_restrict in H.
-    unfold is_true in *.
-    eapply SideCondition_satisfies_strip in X.
-    rewrite H in X.
-    eapply SideCondition_satisfies_extensive>[|apply X].
-    unfold Valuation2 in *.
-    apply map_filter_subseteq.
-Qed.
 
 Lemma eval_et_strip_helper
     {Σ : StaticModel}

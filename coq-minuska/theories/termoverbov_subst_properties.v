@@ -225,7 +225,7 @@ Proof.
         rewrite sum_list_with_compose.
         unfold compose.
         do 2 (rewrite sum_list_with_S).
-        do 2 (rewrite map_length).
+        do 2 (rewrite length_map).
         do 2 (rewrite sum_list_fmap).
         rewrite length_fmap.
 
@@ -398,7 +398,7 @@ Proof.
         {
             apply sum_list_with_eq_pairwise.
             {
-                rewrite map_length.
+                rewrite length_map.
                 reflexivity.
             }
             {
@@ -431,7 +431,7 @@ Proof.
         {
             apply sum_list_with_eq_pairwise.
             {
-                rewrite map_length.
+                rewrite length_map.
                 reflexivity.
             }
             {
