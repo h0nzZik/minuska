@@ -666,21 +666,58 @@ Definition SideCondition_evaluate
     ) sc
 .
 
+Definition BasicEffect_evaluate
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (f : BasicEffect)
+    : option (hidden_data*Valuation2)
+:=
+    match f with
+    | be_method m args =>
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            h' ← method_interpretation m h ts;
+            Some (h', ρ)
+    | be_remember x e => 
+        v ← Expression2_evaluate program h ρ e nv;
+        Some (h, <[x := v]>ρ)
+    end
+.
+
+Definition Effect_evaluate
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (f : Effect)
+    : option hidden_data
+:=
+    fmap fst (fold_right
+        (fun (bf : BasicEffect) (p' : option (hidden_data*Valuation2)) => p ← p'; BasicEffect_evaluate program p.1 p.2 nv bf)
+        (Some (h,ρ))
+        f
+    )
+.
+
 Definition rewrites_in_valuation_under_to
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
-    (h : hidden_data)
     (ρ : Valuation2)
     (r : RewritingRule2 Label)
-    (from : TermOver builtin_value)
+    (from : (TermOver builtin_value)*(hidden_data))
     (under : Label)
     (nv : NondetValue)
-    (to : TermOver builtin_value)
+    (to : (TermOver builtin_value)*(hidden_data))
     : Type
-:= ((sat2B ρ from (r_from r))
-* (sat2E program h ρ to (r_to r) nv)
-* (SideCondition_evaluate program h ρ nv (r_scs r))
+:= ((sat2B ρ from.1 (r_from r))
+* (sat2E program from.2 ρ to.1 (r_to r) nv)
+* (SideCondition_evaluate program from.2 ρ nv (r_scs r))
+* (Some to.2 = Effect_evaluate program from.2 ρ nv (r_eff r))
 * (under = r_label r)
 )%type
 .
@@ -689,15 +726,14 @@ Definition rewrites_to
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
-    (h : hidden_data)
     (r : RewritingRule2 Label)
-    (from : TermOver builtin_value)
+    (from : (TermOver builtin_value)*(hidden_data))
     (under : Label)
     (nv : NondetValue)
-    (to : TermOver builtin_value)
+    (to : (TermOver builtin_value)*(hidden_data))
     : Type
 := { ρ : Valuation2 &
-        rewrites_in_valuation_under_to program h ρ r from under nv to
+        rewrites_in_valuation_under_to program ρ r from under nv to
    }
 .
 
@@ -706,25 +742,23 @@ Definition rewriting_relation
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (h : hidden_data)
     (nv : NondetValue)
-    : TermOver builtin_value -> TermOver builtin_value -> Type
+    : (TermOver builtin_value)*(hidden_data) -> (TermOver builtin_value)*(hidden_data) -> Type
     := fun from to =>
-        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program h r from a nv to)%type}}
+        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program r from a nv to)%type}}
 .
 
 Definition rewrites_to_nondet
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
-    (h : hidden_data)
     (r : RewritingRule2 Label)
-    (from : TermOver builtin_value)
+    (from : (TermOver builtin_value)*(hidden_data))
     (under : Label)
-    (to : TermOver builtin_value)
+    (to : (TermOver builtin_value)*(hidden_data))
     : Type
 := { nv : NondetValue &
-        rewrites_to program h r from under nv to
+        rewrites_to program r from under nv to
    }
 .
 
@@ -732,13 +766,12 @@ Definition rewrites_to_thy
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
-    (h : hidden_data)
     (Γ : RewritingTheory2 Label)
-    (from : TermOver builtin_value)
+    (from : (TermOver builtin_value)*(hidden_data))
     (under : Label)
-    (to : TermOver builtin_value)
+    (to : (TermOver builtin_value)*(hidden_data))
 := { r : RewritingRule2 Label &
-    ((r ∈ Γ)*(rewrites_to_nondet program h r from under to))%type
+    ((r ∈ Γ)*(rewrites_to_nondet program r from under to))%type
 
 }
 .
