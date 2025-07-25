@@ -3636,6 +3636,214 @@ Proof.
         }
     }
 Qed.
+(* 
+Lemma BasicEffect_evaluate_strip
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : BasicEffect)
+    (ρ ρ' : Valuation2)
+    (nv : NondetValue)
+    (h' : hidden_data)
+    (vars : gset variable)
+:
+    vars_of f ∪ remembered_vars_of_effect f ⊆ vars ->
+    BasicEffect_evaluate program h ρ nv f = Some (h', ρ') ->
+    BasicEffect_evaluate program h (filter (fun kv => kv.1 ∈ vars) ρ) nv f = Some (h', (filter (fun kv => kv.1 ∈ vars \/ kv.1 ∈ remembered_vars_of_effect f) ρ'))
+. *)
+
+Lemma BasicEffect_evaluate'_extensive
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : BasicEffect)
+    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    ρ1 ⊆ ρ2 ->
+    BasicEffect_evaluate program h ρ1 nv f = Some (h', ρ'1) ->
+    BasicEffect_evaluate program h ρ2 nv f = Some (h', ρ'1 ∪ ρ2)
+.
+Proof.
+    intros HH1 HH2.
+    destruct f; simpl in *.
+    {
+        rewrite bind_Some in HH2.
+        destruct HH2 as [ts [H1ts H2ts]].
+        eapply list_collect_Expression2_evaluate_extensive_Some in H1ts.
+        {
+            rewrite H1ts.
+            simpl.
+            rewrite bind_Some in H2ts.
+            destruct H2ts as [h'' [H1h'' H2h'']].
+            ltac1:(simplify_eq/=).
+            rewrite H1h''.
+            simpl.
+            f_equal.
+            f_equal.
+            symmetry.
+            apply map_subseteq_union.
+            apply HH1.
+        }
+        { exact HH1. }
+    }
+    {
+        rewrite bind_Some in HH2.
+        destruct HH2 as [ts [H1ts H2ts]].
+        eapply Expression2_evaluate_extensive_Some in H1ts.
+        {
+            rewrite H1ts.
+            simpl.
+            ltac1:(simplify_eq/=).
+            f_equal.
+            f_equal.
+            ltac1:(rewrite - insert_union_l).
+            symmetry.
+            apply f_equal.
+            apply map_subseteq_union.
+            apply HH1.
+        }
+        {
+            exact HH1.
+        }
+    }
+Qed.
+
+Lemma BasicEffect_evaluate'_frame
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : BasicEffect)
+    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    BasicEffect_evaluate program h ρ1 nv f = Some (h', ρ'1) ->
+    BasicEffect_evaluate program h (ρ1 ∪ ρ2) nv f = Some (h', ρ'1 ∪ ρ2)
+.
+Proof.
+    intros HH2.
+    destruct f; simpl in *.
+    {
+        rewrite bind_Some in HH2.
+        destruct HH2 as [ts [H1ts H2ts]].
+        eapply list_collect_Expression2_evaluate_extensive_Some in H1ts.
+        {
+            rewrite H1ts.
+            simpl.
+            rewrite bind_Some in H2ts.
+            destruct H2ts as [h'' [H1h'' H2h'']].
+            ltac1:(simplify_eq/=).
+            rewrite H1h''.
+            simpl.
+            f_equal.
+        }
+        {
+            apply map_union_subseteq_l.
+        }
+    }
+    {
+        rewrite bind_Some in HH2.
+        destruct HH2 as [ts [H1ts H2ts]].
+        eapply Expression2_evaluate_extensive_Some in H1ts.
+        {
+            rewrite H1ts.
+            simpl.
+            ltac1:(simplify_eq/=).
+            f_equal.
+            f_equal.
+            ltac1:(rewrite - insert_union_l).
+            symmetry.
+            apply f_equal.
+            reflexivity.
+        }
+        {
+            apply map_union_subseteq_l.
+        }
+    }
+Qed.
+
+
+Lemma Effect_evaluate'_extensive
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : Effect)
+    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    ρ1 ⊆ ρ2 ->
+    Effect_evaluate' program h ρ1 nv f = Some (h', ρ'1) ->
+    Effect_evaluate' program h ρ2 nv f = Some (h', ρ'1 ∪ ρ2)
+.
+Proof.
+    revert h h' ρ1 ρ2 ρ'1.
+    induction f;
+        intros h h' ρ1 ρ2 ρ'1 HH1 HH2.
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        f_equal.
+        f_equal.
+        symmetry.
+        apply map_subseteq_union.
+        exact HH1.
+    }
+    {
+        simpl in *.
+        rewrite bind_Some in HH2.
+        destruct HH2 as [[h'' ρ''][HH3 HH4]].
+        simpl in *.
+        specialize (IHf _ _ _ _ _ HH1 HH3).
+        rewrite IHf.
+        simpl.
+        eapply BasicEffect_evaluate'_frame with (ρ2 := ρ2) in HH4.
+        {
+            rewrite HH4.
+            reflexivity.
+        }
+    }
+Qed.
+
+Lemma Effect_evaluate'_frame
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : Effect)
+    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    Effect_evaluate' program h ρ1 nv f = Some (h', ρ'1) ->
+    Effect_evaluate' program h (ρ1 ∪ ρ2) nv f = Some (h', ρ'1 ∪ ρ2)
+.
+Proof.
+    revert h h' ρ1 ρ2 ρ'1.
+    induction f;
+        intros h h' ρ1 ρ2 ρ'1 HH2.
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        reflexivity.
+    }
+    {
+        simpl in *.
+        rewrite bind_Some in HH2.
+        destruct HH2 as [[h'' ρ''][HH3 HH4]].
+        simpl in *.
+        erewrite IHf.
+        {
+            simpl.
+            eapply BasicEffect_evaluate'_frame with (ρ2 := ρ2) in HH4.
+            apply HH4.
+        }
+        {
+            apply HH3.
+        }
+    }
+Qed.
 
 Lemma Effect_evaluate_strip
     {Σ : StaticModel}
@@ -3676,6 +3884,11 @@ Proof.
         split>[|reflexivity].
         exact Hcut.
     }
+    eexists.
+    Search Effect_evaluate.
+    (* TODO extensivity of effect_evaluate *)
+    apply Effect_evaluate'_strip>[|apply H1].
+    { clear. ltac1:(set_solver). }
 
     revert h' ρ' H1.
     induction f;
