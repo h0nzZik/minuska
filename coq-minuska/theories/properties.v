@@ -3488,7 +3488,7 @@ Lemma Effect_evaluate'_strip
     (h' : hidden_data)
     (vars : gset variable)
 :
-    vars_of f ⊆ vars ->
+    vars_of f ∪ remembered_vars_of_effect f ⊆ vars ->
     Effect_evaluate' program h ρ nv f = Some (h', ρ') ->
     Effect_evaluate' program h (filter (fun kv => kv.1 ∈ vars) ρ) nv f = Some (h', (filter (fun kv => kv.1 ∈ vars \/ kv.1 ∈ remembered_vars_of_effect f) ρ'))
 .
@@ -3511,7 +3511,6 @@ Proof.
         rewrite bind_Some in HH.
         destruct HH as [[h'' ρ''][H1 H2]].
         simpl in *.
-        (* specialize (IHf _ _ _ H1). *)
         destruct a; simpl in *.
         {
             rewrite bind_Some in H2.
@@ -3523,20 +3522,118 @@ Proof.
             erewrite IHf>[|(clear - HHvars; unfold vars_of; simpl; ltac1:(set_solver))|apply H1].
             clear IHf.
             simpl.
+            eapply list_collect_Expression2_evaluate_strip in H1ts.
             eapply list_collect_Expression2_evaluate_extensive_Some in H1ts.
             {
                 rewrite H1ts.
+                simpl.
+                rewrite H1h'''.
+                simpl.
+                f_equal.
+                f_equal.
+                ltac1:(rewrite - map_filter_ext).
+                intros i x Hix.
+                simpl.
+                clear.
+                ltac1:(set_solver).
             }
             {
-                Search filter subseteq.
-                (* Search (?a ⊆ filter _ ?a). *)
+                apply map_subseteq_spec.
+                intros i x Hix.
+                ltac1:(rewrite map_lookup_filter_Some in Hix).
+                ltac1:(rewrite map_lookup_filter_Some).
+                destruct Hix as [H3 H4].
+                split>[exact H3|].
+                simpl in *.
+                clear - H4 HHvars.
+                ltac1:(set_solver).
             }
-            (* Search list_collect Expression2_evaluate. *)
         }
         {
-
+            rewrite bind_Some in H2.
+            destruct H2 as [ts [H1ts H2ts]].
+            ltac1:(simplify_eq/=).
+            unfold vars_of in HHvars; simpl in HHvars.
+            erewrite IHf>[|()|apply H1].
+            {
+                simpl.
+                clear IHf.
+                simpl.
+                eapply Expression2_evalute_strip in H1ts.
+                eapply Expression2_evaluate_extensive_Some in H1ts.
+                {
+                    rewrite H1ts.
+                    simpl.
+                    simpl.
+                    f_equal.
+                    f_equal.
+                    unfold Valuation2 in *.
+                    apply map_eq.
+                    intros i.
+                    destruct (decide (i = x)).
+                    {
+                        subst.
+                        rewrite lookup_insert.
+                        rewrite map_lookup_filter.
+                        rewrite lookup_insert.
+                        simpl.
+                        rewrite option_guard_decide.
+                        cases ().
+                        { reflexivity. }
+                        {
+                            ltac1:(contradiction n).
+                            clear n.
+                            ltac1:(set_solver).
+                        }
+                    }
+                    {
+                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                        rewrite map_lookup_filter.
+                        rewrite map_lookup_filter.
+                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+                        ltac1:(simplify_option_eq);
+                            simpl.
+                        { reflexivity. }
+                        { reflexivity. }
+                        {
+                            ltac1:(set_solver).
+                        }
+                        {
+                            ltac1:(set_solver).
+                        }
+                        {
+                            reflexivity.
+                        }
+                    }
+                }
+                {
+                    apply map_subseteq_spec.
+                    intros i x' Hix.
+                    ltac1:(rewrite map_lookup_filter_Some in Hix).
+                    ltac1:(rewrite map_lookup_filter_Some).
+                    destruct Hix as [H3 H4].
+                    split>[exact H3|].
+                    simpl in *.
+                    clear - H4 HHvars.
+                    ltac1:(set_solver).
+                }
+            }
+            {
+                clear - HHvars.
+                unfold vars_of; simpl.
+                rewrite elem_of_subseteq.
+                intros x0 Hx0.
+                destruct (decide (x0 = x)).
+                {
+                    subst.
+                    ltac1:(set_solver).
+                }
+                {
+                    ltac1:(set_solver).
+                }
+            }
+            
         }
-        rewrite IHf.
     }
 Qed.
 
