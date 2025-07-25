@@ -155,7 +155,7 @@ Definition try_match_lhs_with_sc
     (g : TermOver builtin_value)
     (nv : NondetValue)
     (r : RewritingRule2 Label)
-    : option (Valuation2*(TermOver builtin_value))
+    : option (Valuation2*(TermOver builtin_value)*hidden_data)
 :=
     ρ ← try_match_new g (r_from r);
     b ← SideCondition_evaluate program h ρ nv (r_scs r);
@@ -163,7 +163,11 @@ Definition try_match_lhs_with_sc
     then (
         match (eval_et program h ρ nv (r_to r)) with
         | None => None
-        | Some g' => Some (ρ, g')
+        | Some g' => 
+            match (Effect_evaluate program h ρ nv (r_eff r)) with
+            | None => None
+            | Some h' => Some (ρ, g', h')
+            end
         end
     )
     else None
@@ -177,23 +181,26 @@ Definition thy_lhs_match_one
     (nv : NondetValue)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    : option (RewritingRule2 Label * Valuation2 * (TermOver builtin_value) * nat)%type
+    : option (RewritingRule2 Label * Valuation2 * (TermOver builtin_value) * hidden_data * nat)%type
 :=
     let froms : list (TermOver BuiltinOrVar)
         := r_from <$> Γ
     in
-    let vs : list (option (Valuation2 * (TermOver builtin_value)))
+    let vs : list (option (Valuation2 * (TermOver builtin_value) * hidden_data))
         := (try_match_lhs_with_sc program h e nv) <$> Γ
     in
-    let found : option (nat * option (Valuation2*(TermOver builtin_value)))
+    let found : option (nat * option (Valuation2*(TermOver builtin_value) * hidden_data))
         := list_find isSome vs
     in
-    nov ← found;
-    let idx : nat := nov.1 in
-    let ov : option (Valuation2 * (TermOver builtin_value)) := nov.2 in
-    v ← ov;
-    r ← Γ !! idx;
-    Some (r, v.1, v.2, idx)
+    flip mbind found (fun (nov : (nat * option (Valuation2*(TermOver builtin_value) * hidden_data))) => (
+        let idx : nat := nov.1 in
+        let ov : option (Valuation2 * (TermOver builtin_value) * hidden_data) := nov.2 in
+        flip mbind ov (fun (v : (Valuation2 * (TermOver builtin_value) * hidden_data)) =>
+            flip mbind (Γ !! idx) (fun r =>
+                Some (r, v.1.1, v.1.2, v.2, idx)
+            )
+        )
+    ))
 .
 
 
@@ -206,12 +213,11 @@ Definition naive_interpreter_ext
     (e : (TermOver builtin_value)*(hidden_data))
     : option (((TermOver builtin_value)*(hidden_data))*nat)
 :=
-    let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver builtin_value)*nat)
+    let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver builtin_value)*hidden_data*nat)
         := thy_lhs_match_one e.1 e.2 nv Γ program in
     match oρ with
     | None => None
-    | Some (r,ρ,g',idx) =>
-        h' ← Effect_evaluate program e.2 ρ nv (r_eff r);
+    | Some (r,ρ,g',h',idx) =>
         Some ((g',h'),idx)
     end
 .
@@ -520,64 +526,18 @@ Proof.
     }
 Qed.
 
-
-Definition Valuation2_restrict
-    {Σ : StaticModel}
-    (ρ : Valuation2)
-    (r : gset variable)
-    : Valuation2
-:=
-    filter
-        (λ x : variable * (TermOver builtin_value), x.1 ∈ r)
-        ρ
-.
-
-
-Lemma Valuation2_restrict_eq_subseteq
-    {Σ : StaticModel}
-    (ρ1 ρ2 : Valuation2)
-    (r r' : gset variable)
-:
-    r ⊆ r' ->
-    Valuation2_restrict ρ1 r' = Valuation2_restrict ρ2 r' ->
-    Valuation2_restrict ρ1 r = Valuation2_restrict ρ2 r
-.
-Proof.
-    intros H1 H2.
-    unfold Valuation2 in *.
-    unfold Valuation2_restrict in *.
-    rewrite map_eq_iff.
-    rewrite map_eq_iff in H2.
-    intros x.
-    specialize (H2 x).
-    do 2 ltac1:(rewrite map_lookup_filter in H2).
-    do 2 ltac1:(rewrite map_lookup_filter).
-    simpl in *.
-    rewrite elem_of_subseteq in H1.
-    specialize (H1 x).
-    simpl in *.
-    ltac1:(case_guard as Hcg1; case_guard as Hcg2); simpl in *; try ltac1:(auto with nocore).
-    {
-        destruct (ρ1 !! x) eqn:Hρ1x, (ρ2 !! x) eqn:Hρ2x; simpl in *;
-            reflexivity.
-    }
-    {
-        ltac1:(exfalso).
-        ltac1:(auto with nocore).
-    }
-Qed.
-
-
+(* TODO this should also be moved somewhere *)
 Lemma eval_et_strip_helper
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
     (gg : TermOver (TermOver builtin_value))
 :
-    TermOver'_option_map (Expression2_evaluate_nv program ρ nv) et = Some gg ->
-    TermOver'_option_map (Expression2_evaluate_nv program (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of et) ρ) nv) et = Some gg
+    TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et = Some gg ->
+    TermOver'_option_map (Expression2_evaluate_nv program h (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of et) ρ) nv) et = Some gg
 .
 Proof.
     revert gg.
@@ -800,13 +760,14 @@ Qed.
 Lemma eval_et_strip
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
     (g : TermOver builtin_value)
 :
-    eval_et program ρ nv et = Some g ->
-    eval_et program (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of et) ρ) nv et = Some g
+    eval_et program h ρ nv et = Some g ->
+    eval_et program h (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of et) ρ) nv et = Some g
 .
 Proof.
     unfold eval_et.
@@ -825,22 +786,22 @@ Qed.
 Lemma eval_et_correct
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
     (g : TermOver builtin_value)
     :
-    eval_et program ρ nv et = Some g ->
-    satisfies ρ (program, (nv,g)) et
+    eval_et program h ρ nv et = Some g ->
+    sat2E program h ρ g et nv
 .
 Proof.
     intros HH.
-    unfold satisfies; simpl.
     unfold eval_et in HH.
     revert g HH.
     induction et; simpl in *; intros g HH.
     {
-        destruct (Expression2_evaluate program ρ a nv) eqn:Heq.
+        destruct (Expression2_evaluate program h ρ a nv) eqn:Heq.
         {
             simpl in *.
             ltac1:(simplify_eq/=).
@@ -900,7 +861,7 @@ Proof.
                     simpl in HH.
                     ltac1:(simplify_option_eq).
                     symmetry in Heqo0.
-                    destruct (list_collect (TermOver_collect <$> map (TermOver_map (fun e => Expression2_evaluate program ρ e nv)) l)) eqn:Heq';
+                    destruct (list_collect (TermOver_collect <$> map (TermOver_map (fun e => Expression2_evaluate program h ρ e nv)) l)) eqn:Heq';
                         ltac1:(simplify_eq/=).
                     specialize (IHl _ erefl).
                     intros.
@@ -941,32 +902,31 @@ Qed.
 Lemma eval_et_correct_2
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
     (g : TermOver builtin_value)
     :
-    satisfies ρ (program, (nv,g)) et ->
-    eval_et program ρ nv et = Some g
+    sat2E program h ρ g et nv ->
+    eval_et program h ρ nv et = Some g
 .
 Proof.
     revert g.
     induction et; intros g; destruct g; simpl in *; intros HH.
     {
-        unfold satisfies in HH. simpl in HH.
         ltac1:(simp sat2E in HH).
         unfold eval_et. simpl.
-        destruct (Expression2_evaluate program ρ a) eqn:Heq>[|ltac1:(contradiction)].
+        destruct (Expression2_evaluate program h ρ a) eqn:Heq>[|ltac1:(contradiction)].
         simpl.
         unfold Expression2_evaluate_nv.
         rewrite Heq. simpl.
         rewrite HH. reflexivity.
     }
     {
-        unfold satisfies in HH. simpl in HH.
         ltac1:(simp sat2E in HH).
         unfold eval_et. simpl. 
-        destruct (Expression2_evaluate program ρ a) eqn:Heq>[|ltac1:(contradiction)].
+        destruct (Expression2_evaluate program h ρ a) eqn:Heq>[|ltac1:(contradiction)].
         simpl.
         unfold Expression2_evaluate_nv.
         rewrite Heq.
@@ -974,12 +934,10 @@ Proof.
         rewrite HH. reflexivity.
     }
     {
-        unfold satisfies in HH. simpl in HH.
         ltac1:(simp sat2E in HH).
         destruct HH.
     }
     {
-        unfold satisfies in HH. simpl in HH.
         ltac1:(simp sat2E in HH).
         destruct HH as [HH1 [HH2 HH3]].
         subst s0.
@@ -1016,14 +974,10 @@ Proof.
 
 
                 unfold eval_et in *.
-                (* ltac1:(rewrite [TermOver_map _ _]/=). *)
-                (* rewrite fmap_Some. *)
                 simpl.
                 ltac1:(setoid_rewrite bind_Some).
                 ltac1:(setoid_rewrite bind_Some).
                 ltac1:(setoid_rewrite bind_Some).
-                
-                (* split>[|reflexivity]. *)
 
                 specialize (IH1 _ HH3). clear HH3.
                 rewrite bind_Some in IH1.
@@ -1056,18 +1010,18 @@ Proof.
 Qed.
 
 Lemma TermOver'_option_map__Expression2_evaluate__extensive
-{Σ : StaticModel} a nv ρ1 ρ2 program
+{Σ : StaticModel} a nv ρ1 ρ2 program h
 :
     ρ1 ⊆ ρ2 ->
     ∀ t : TermOver' (TermOver builtin_value),
     TermOver'_option_map
     (λ t0 : Expression2,
-    Expression2_evaluate program ρ1 t0 nv
+    Expression2_evaluate program h ρ1 t0 nv
     ≫= λ gt : TermOver builtin_value, Some (gt))
     a = Some t
     → @TermOver'_option_map symbol _ _
     (λ t0 : Expression2,
-    Expression2_evaluate program ρ2 t0 nv
+    Expression2_evaluate program h ρ2 t0 nv
     ≫= λ gt : TermOver builtin_value, Some (gt))
     a = Some t
 .
@@ -1142,14 +1096,15 @@ Qed.
 Lemma eval_et_evaluate_None_relative
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (et : TermOver Expression2)
     (ρ1 ρ2 : Valuation2)
     (nv : NondetValue)
     :
     vars_of et ⊆ vars_of ρ1 ->
     ρ1 ⊆ ρ2 ->
-    eval_et program ρ1 nv et = None ->
-    eval_et program ρ2 nv et = None
+    eval_et program h ρ1 nv et = None ->
+    eval_et program h ρ2 nv et = None
 .
 Proof.
     induction et; simpl in *; intros HH1 HH2 HH3.
@@ -1266,20 +1221,21 @@ Qed.
 Lemma eval_et_extensive_Some
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ1 ρ2 : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
     (t : TermOver builtin_value)
     :
     ρ1 ⊆ ρ2 ->
-    eval_et program ρ1 nv et = Some t ->
-    eval_et program ρ2 nv et = Some t.
+    eval_et program h ρ1 nv et = Some t ->
+    eval_et program h ρ2 nv et = Some t.
 Proof.
     revert t.
     induction et; intros t H1 H2; simpl in *.
     {
         unfold eval_et in *. simpl in *.
-        destruct (Expression2_evaluate program ρ1 a nv) eqn:Heq1.
+        destruct (Expression2_evaluate program h ρ1 a nv) eqn:Heq1.
         {
             simpl in *.
             rewrite bind_Some in H2.
@@ -1320,8 +1276,6 @@ Proof.
         apply bind_Some.
         exists H2.
         split> [|reflexivity].
-        Check TermOver'_option_map__Expression2_evaluate__extensive.
-        (* Search list_collect. *)
         revert H2 H Heqo0.
         induction l;
             intros l' H Heqo0.
@@ -1364,6 +1318,7 @@ Lemma try_match_lhs_with_sc_complete
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
+    (h h' : hidden_data)
     (g g' : TermOver builtin_value)
     (r : RewritingRule2 Label)
     (ρ : Valuation2)
@@ -1371,15 +1326,18 @@ Lemma try_match_lhs_with_sc_complete
     :
     vars_of (r_scs r) ⊆ vars_of (r_from r) ->
     vars_of (r_to r) ⊆ vars_of (r_from r) ->
-    satisfies ρ g (r_from r) ->
-    eval_et program ρ nv (r_to r) = Some g' ->
-    satisfies ρ (program, nv) (r_scs r) ->
+    sat2B ρ g (r_from r) ->
+    eval_et program h ρ nv (r_to r) = Some g' ->
+    SideCondition_evaluate program h ρ nv (r_scs r) = Some true ->
+    Effect_evaluate program h ρ nv (r_eff r) = Some h' ->
     {
         ρ' : (gmap variable (TermOver builtin_value)) &
         { g'' : TermOver builtin_value &
-            vars_of ρ' = vars_of (r_from r) ∧
-            ρ' ⊆ ρ ∧
-            try_match_lhs_with_sc program g nv r = Some (ρ', g'')
+            { h'' : hidden_data &
+                vars_of ρ' = vars_of (r_from r) ∧
+                ρ' ⊆ ρ ∧
+                try_match_lhs_with_sc program h g nv r = Some (ρ', g'', h'')
+            }
         }
     }   
 .
@@ -1388,7 +1346,6 @@ Proof.
     apply try_match_new_complete in H1.
     destruct H1 as [ρ1 [H1ρ1 H2ρ1]].
     destruct H2ρ1 as [H2ρ1 H3ρ2].
-    unfold satisfies in H2; simpl in H2.
     unfold try_match_lhs_with_sc.
     rewrite H3ρ2.
     simpl.
@@ -1401,12 +1358,16 @@ Proof.
             rewrite HX'.
             exists ρ1.
             exists g'.
+            exists h'.
             repeat split.
             {
                 exact H1ρ1.
             }
             {
                 exact H2ρ1.
+            }
+            {
+                simpl. rewrite H.
             }
         }
         {
@@ -1531,17 +1492,18 @@ Lemma thy_lhs_match_one_None
     {Σ : StaticModel}
     {Label : Set}
     (program : ProgramT)
+    (h : hidden_data)
     (e : TermOver builtin_value)
     (Γ : RewritingTheory2 Label)
     (wfΓ : RewritingTheory2_wf Γ)
     (nv : NondetValue)
     :
-    thy_lhs_match_one e nv Γ program = None ->
+    thy_lhs_match_one e h nv Γ program = None ->
     notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver builtin_value &
         ((r ∈ Γ) *
-         (satisfies ρ e (r_from r)) *
-         (satisfies ρ (program, nv) (r_scs r)) *
-         (eval_et program ρ nv (r_to r) = Some e') *
+         (sat2B ρ e (r_from r)) *
+         (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
+         (eval_et program h ρ nv (r_to r) = Some e') *
          (vars_of (r_to r) ⊆ vars_of (r_from r))
         )%type
     } } }
@@ -1551,7 +1513,7 @@ Proof.
     unfold thy_lhs_match_one.
     intros H.
     intros [r [ρ [e' [[[[Hin HContra1] HContra2] HContra3] HContra4]]]].
-    destruct (list_find isSome (try_match_lhs_with_sc program e nv <$> Γ)) eqn:Heqfound.
+    destruct (list_find isSome (try_match_lhs_with_sc program h e nv <$> Γ)) eqn:Heqfound.
     {
         destruct p as [n oρ].
         rewrite list_find_Some in Heqfound.
@@ -1589,10 +1551,9 @@ Proof.
         rewrite Forall_forall in Heqfound.
         ltac1:(rename HContra1 into Hsat1).
         ltac1:(rename HContra2 into Hsat2).
-        unfold satisfies in Hsat1; simpl in Hsat1.
         apply try_match_new_complete in Hsat1.
         destruct Hsat1 as [ρ' [H1 [H2 H3]]].
-        assert (Hc := try_match_lhs_with_sc_complete program e e' r).
+        assert (Hc := try_match_lhs_with_sc_complete program h e e' r).
         specialize (Hc ρ').
         ltac1:(ospecialize (Hc nv _ _)).
         {
@@ -1659,7 +1620,6 @@ Proof.
             }
         }
         {
-            unfold satisfies; simpl.
             eapply sc_satisfies_insensitive in Hsat2 as Hsat2'.
             apply Hsat2'.
             assert (Htmp := valuation_restrict_vars_of_self ρ' ρ H2).
@@ -1680,9 +1640,6 @@ Proof.
         unfold try_match_lhs_with_sc in H4ρ''.
         rewrite bind_Some in H4ρ''.
         destruct H4ρ'' as [x [H1x H2x]].
-        (* apply try_match_new_correct in H1x. *)
-        unfold satisfies in *; simpl in *.
-        (* Search try_match_new. *)
         ltac1:(repeat case_match).
         {
             rewrite bind_Some in H2x.
@@ -1727,13 +1684,14 @@ Lemma thy_lhs_match_one_Some
     (e e' : TermOver builtin_value)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
+    (h : hidden_data)
     (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)
     (rule_idx : nat)
     :
-    thy_lhs_match_one e nv Γ program = Some (r, ρ, e', rule_idx) ->
-    ((r ∈ Γ) * (satisfies ρ e (r_from r)) * (eval_et program ρ nv (r_to r) = Some e') * (satisfies ρ (program, nv) (r_scs r)))%type
+    thy_lhs_match_one e h nv Γ program = Some (r, ρ, e', rule_idx) ->
+    ((r ∈ Γ) * (sat2B ρ e (r_from r)) * (eval_et program h ρ nv (r_to r) = Some e') * (SideCondition_evaluate program h ρ nv (r_scs r) = Some true ))%type
 .
 Proof.
     intros H.
@@ -1757,7 +1715,6 @@ Proof.
         inversion H2r'; subst; clear H2r'.
         rewrite Hot1 in H1r'.
         inversion H1r'; subst; clear H1r'.
-        unfold satisfies; simpl.
         split.
         {
             split.
@@ -1770,17 +1727,17 @@ Proof.
                 {
                     destruct H12 as [H1 H2].
                     unfold is_true, isSome in H1.
-                    destruct (try_match_lhs_with_sc program e nv r) eqn:HTM>[|inversion H1].
+                    destruct (try_match_lhs_with_sc program h e nv r) eqn:HTM>[|inversion H1].
                     clear H1.
                     inversion H1ρ'; subst; clear H1ρ'.
                     unfold try_match_lhs_with_sc in HTM.
                     apply bind_Some_T_1 in HTM.
                     destruct HTM as [x [H1x H2x]].
                     apply try_match_new_correct in H1x.
-                    destruct (SideCondition_evaluate program x nv (r_scs r)) eqn:Heq.
+                    destruct (SideCondition_evaluate program h x nv (r_scs r)) eqn:Heq.
                     {
                         unfold isSome in H2x.
-                        destruct (eval_et program x nv (r_to r)) eqn:Heq2.
+                        destruct (eval_et program h x nv (r_to r)) eqn:Heq2.
                         {
                             rewrite bind_Some in H2x.
                             destruct H2x as [b' [H1b' H2b']].
@@ -1821,16 +1778,16 @@ Proof.
         {
             destruct H12 as [H1 H2].
             unfold is_true, isSome in H1.
-            destruct (try_match_lhs_with_sc program e nv r) eqn:HTM>[|inversion H1].
+            destruct (try_match_lhs_with_sc program h e nv r) eqn:HTM>[|inversion H1].
             clear H1.
             inversion H1ρ'; subst; clear H1ρ'.
             unfold try_match_lhs_with_sc in HTM.
             apply bind_Some_T_1 in HTM.
             destruct HTM as [x [H1x H2x]].
-            destruct (SideCondition_evaluate program x nv (r_scs r)) eqn:Heq.
+            destruct (SideCondition_evaluate program h x nv (r_scs r)) eqn:Heq.
             {
                 unfold isSome in H2x.
-                destruct (eval_et program x nv (r_to r)) eqn:Heq2.
+                destruct (eval_et program h x nv (r_to r)) eqn:Heq2.
                 {
                     destruct b.
                     {
@@ -1839,7 +1796,6 @@ Proof.
                         subst ρ'.
                         simpl in *.
                         apply Heq.
-                        
                     }
                     {
                         simpl in *.
@@ -1872,11 +1828,11 @@ Proof.
     unfold naive_interpreter_ext.
     repeat split.
     {
-        intros program e1 e2 nv.
+        intros program [e1 h] [e2 h'] nv.
         intros Hbind.
         apply bind_Some_T_1 in Hbind.
         destruct Hbind as [x [H1x H2x]].
-        destruct (thy_lhs_match_one e1 nv Γ) eqn:Hmatch.
+        destruct (thy_lhs_match_one e1 h nv Γ) eqn:Hmatch.
         {
             destruct p as [p idx].
             destruct p as [p g].
@@ -1893,14 +1849,15 @@ Proof.
             unfold rewrites_in_valuation_under_to.
             apply eval_et_correct in Hm2.
             (repeat split); try assumption.
+            { symmetry. simpl. assumption. }
         }
         {
             inversion H1x.
         }
     }
     {
-        intros program e Hstuck nv.
-        destruct (thy_lhs_match_one e nv Γ) eqn:Hmatch>[|reflexivity].
+        intros program [e h] Hstuck nv.
+        destruct (thy_lhs_match_one e h nv Γ) eqn:Hmatch>[|reflexivity].
         {
             destruct p as [p idx].
             destruct p as [p g].
@@ -1913,8 +1870,8 @@ Proof.
                 unfold rewriting_relation in Hstuck.
                 unfold rewrites_to in Hstuck.
                 unfold rewrites_in_valuation_under_to in Hstuck.
-                assert (Hev := eval_et_correct program ρ (r_to r) nv).
-                ltac1:(cut (~ ∃ g', eval_et program ρ nv (r_to r) = Some g')).
+                assert (Hev := eval_et_correct program h ρ (r_to r) nv).
+                ltac1:(cut (~ ∃ g', eval_et program h ρ nv (r_to r) = Some g')).
                 {
                     intros HContra.
                     rewrite <- eq_None_ne_Some.
@@ -1931,13 +1888,18 @@ Proof.
                 apply Hev in Hg'.
                 clear Hev.
                 apply Hstuck. clear Hstuck.
-                exists pg'. exists nv. exists r.
+                unfold not_stuck.
+                exists (pg',h). exists nv. exists r.
                 exists (r_label r).
-                (* destruct Hin. *)
                 split>[apply Hin|].
                 exists ρ.
                 repeat split; try assumption.
-                apply Hin.
+                { apply Hin. }
+                {
+                    symmetry.
+                    simpl.
+                    assumption.
+                }
             }
         }
     }

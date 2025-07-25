@@ -416,6 +416,29 @@ Definition Effect {Σ : StaticModel} : Type :=
     list BasicEffect
 .
 
+Definition vars_of_Effect'
+    {Σ : StaticModel}
+    (f : Effect)
+    : gset variable
+:=
+    fold_right (fun be vs =>
+        match be with
+        | be_method s args =>
+            vs ∪ (union_list (fmap vars_of args))
+        | be_remember x e =>
+            (vs ∖ {[x]}) ∪ (vars_of e)
+        end
+    ) empty f
+.
+
+#[export]
+Instance VarsOf_Effect
+    {Σ : StaticModel}
+    : VarsOf Effect variable
+:= {|
+    vars_of := vars_of_Effect' ; 
+|}.
+
 
 Record RewritingRule2
     {Σ : StaticModel}
@@ -687,6 +710,23 @@ Definition BasicEffect_evaluate
     end
 .
 
+Definition Effect_evaluate'
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (f : Effect)
+    : option (hidden_data*Valuation2)
+:=
+    (fold_right
+        (fun (bf : BasicEffect) (p' : option (hidden_data*Valuation2)) => p ← p'; BasicEffect_evaluate program p.1 p.2 nv bf)
+        (Some (h,ρ))
+        f
+    )
+.
+
+
 Definition Effect_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
@@ -696,11 +736,7 @@ Definition Effect_evaluate
     (f : Effect)
     : option hidden_data
 :=
-    fmap fst (fold_right
-        (fun (bf : BasicEffect) (p' : option (hidden_data*Valuation2)) => p ← p'; BasicEffect_evaluate program p.1 p.2 nv bf)
-        (Some (h,ρ))
-        f
-    )
+    fmap fst (Effect_evaluate' program h ρ nv f)
 .
 
 Definition rewrites_in_valuation_under_to
@@ -716,7 +752,7 @@ Definition rewrites_in_valuation_under_to
     : Type
 := ((sat2B ρ from.1 (r_from r))
 * (sat2E program from.2 ρ to.1 (r_to r) nv)
-* (SideCondition_evaluate program from.2 ρ nv (r_scs r))
+* (SideCondition_evaluate program from.2 ρ nv (r_scs r) = Some true)
 * (Some to.2 = Effect_evaluate program from.2 ρ nv (r_eff r))
 * (under = r_label r)
 )%type
