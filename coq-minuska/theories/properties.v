@@ -4098,6 +4098,64 @@ Proof.
     }
 Qed.
 
+
+Lemma Effect_evaluate'_vars_of
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : Effect)
+    (ρ ρ' : Valuation2)
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    Effect_evaluate' program h ρ nv f = Some (h', ρ') ->
+    vars_of ρ ⊆ vars_of ρ'
+.
+Proof.
+    revert ρ ρ' h h'.
+    induction f;
+        intros ρ ρ' h h' HH.
+    {
+        unfold Effect_evaluate' in *.
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        apply reflexivity.
+    }
+    {
+        unfold Effect_evaluate' in *.
+        simpl in *.
+        destruct ( (BasicEffect_evaluate program h ρ nv a)) eqn:Hbeval.
+        {
+            destruct p.
+            specialize (IHf _ _ _ _ HH).
+            eapply transitivity>[|apply IHf].
+            clear IHf HH.
+            destruct a; simpl in Hbeval.
+            {
+                rewrite bind_Some in Hbeval.
+                destruct Hbeval as [x [H1x H2x]].
+                rewrite bind_Some in H2x.
+                destruct H2x as [y [H1y H2y]].
+                ltac1:(simplify_eq/=).
+                apply reflexivity.
+            }
+            {
+                rewrite bind_Some in Hbeval.
+                destruct Hbeval as [y [H1y H2y]].
+                ltac1:(simplify_eq/=).
+                unfold vars_of; simpl.
+                unfold Valuation2 in *.
+                rewrite dom_insert.
+                ltac1:(set_solver).
+            }
+        }
+        {
+            rewrite fold_left_BasicEffect_evaluate_None in HH.
+            inversion HH.
+        }
+    }
+Qed.
+
 Lemma Effect_evaluate'_strip_1
     {Σ : StaticModel}
     (program : ProgramT)
@@ -4352,7 +4410,34 @@ Proof.
                         }
                     }
                     {
-                        
+                        rewrite map_filter_insert in IH1f.
+                        simpl in IH1f.
+                        rewrite decide_False in IH1f>[|exact Hnotin].
+                        rewrite map_filter_delete in IH1f.
+                        rewrite valuation_delete_union.
+                        rewrite <- map_union_assoc.
+                        eapply Effect_evaluate'_frame in IH1f.
+                        ltac1:(unfold Effect_evaluate' in IH1f).
+                        rewrite IH1f.
+                        f_equal.
+                        f_equal.
+                        (* We have to be able to prove that [ρ'] will contain [x] *)
+                        (* ??? *)
+
+                        apply map_eq.
+                        intros i.
+                        unfold Valuation2 in *.
+                        rewrite map_lookup_filter.
+                        rewrite lookup_union.
+                        rewrite map_lookup_filter.
+                        rewrite map_lookup_singleton.
+                        clear IHf IH1f.
+                        unfold vars_of; simpl.
+                        destruct (ρ' !! i) eqn:Hρ'i, (ρ !! i) eqn:Hρi;
+                            simpl;
+                            repeat (rewrite option_guard_decide);
+                            cases ();
+                            try reflexivity.
                     }
                     
                 }
