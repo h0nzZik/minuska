@@ -3823,6 +3823,96 @@ Proof.
     }
 Qed.
 
+Lemma Effect_evaluate'_notin_remembered_2'
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h h' : hidden_data)
+    (nv : NondetValue)
+    (f : Effect)
+    (x : variable)
+    (t : TermOver builtin_value)
+    (ρ ρ' : Valuation2)
+    :
+    Effect_evaluate' program h ρ nv f = Some (h', ρ') ->
+    ρ !! x = Some t ->
+    ρ' !! x <> None
+.
+Proof.
+    revert ρ ρ' h h' t.
+    induction f;
+        intros ρ ρ' h h' t HH2 HH3.
+    {
+        unfold Effect_evaluate' in *.
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        rewrite HH3.
+        ltac1:(discriminate).
+    }
+    {
+        simpl in *.
+        destruct a.
+        {
+            unfold Effect_evaluate' in *.
+            simpl in *.
+            ltac1:(simplify_option_eq).
+            lazy_match! Constr.type (Control.hyp @HH2) with
+            | (fold_left _ _ ?c = _) =>
+                remember $c as c
+            end.
+            destruct c as [[c1 c2]|].
+            {
+                specialize (IHf c2 ρ' c1 h' t).
+                specialize (IHf HH2).
+                symmetry in Heqc.
+                rewrite bind_Some in Heqc.
+                destruct Heqc as [x0 [H1x0 H2x0]].
+                rewrite bind_Some in H2x0.
+                destruct H2x0 as [x1 [H1x1 H2x1]].
+                ltac1:(simplify_eq/=).
+                exact (IHf HH3).
+            }
+            {
+                rewrite fold_left_BasicEffect_evaluate_None in HH2.
+                inversion HH2.
+            }
+        }
+        {
+            unfold Effect_evaluate' in *.
+            simpl in *.
+            (* rewrite elem_of_singleton in HH1. *)
+            lazy_match! Constr.type (Control.hyp @HH2) with
+            | (fold_left _ _ ?c = _) =>
+                remember $c as c
+            end.
+            destruct c as [[c1 c2]|].
+            {
+                symmetry in Heqc.
+                rewrite bind_Some in Heqc.
+                destruct Heqc as [x1 [H1x1 H2x1]].
+                ltac1:(simplify_eq/=).
+                destruct (decide (x0 = x)).
+                {
+                    subst.
+                    specialize (IHf (<[x := x1]>ρ) ρ' c1 h' x1 HH2).
+                    ltac1:(rewrite lookup_insert in IHf).
+                    exact (IHf eq_refl).
+                }
+                {
+                    specialize (IHf (<[x0 := x1]>ρ) ρ' c1 h' t HH2).
+                    unfold Valuation2 in *.
+                    rewrite lookup_insert_ne in IHf>[|ltac1:(congruence)].
+                    specialize (IHf HH3).
+                    exact IHf.
+                }
+            }
+            {
+                rewrite fold_left_BasicEffect_evaluate_None in HH2.
+                inversion HH2.
+            }
+        }
+    }
+Qed.
+
 Lemma helper_filter
     {Σ : StaticModel}
     bf f (ρ : gmap variable (TermOver builtin_value))
@@ -3874,20 +3964,6 @@ Proof.
     }
 Qed.
 
-(* 
-Lemma BasicEffect_evaluate'_strip
-    {Σ : StaticModel}
-    (program : ProgramT)
-    (h : hidden_data)
-    (f : BasicEffect)
-    (ρ ρ' : gmap variable (TermOver builtin_value))
-    (nv : NondetValue)
-    (h' : hidden_data)
-:
-    BasicEffect_evaluate program h ρ nv f = Some (h', ρ') ->
-    BasicEffect_evaluate program h (filter (fun kv => kv.1 ∈ vars_of f) ρ) nv f = Some (h', ρ')
-.
-Proof. *)
 
 Lemma Effect_evaluate'_strip_1
     {Σ : StaticModel}
@@ -3954,13 +4030,37 @@ Proof.
                         rewrite map_lookup_filter.
                         rewrite map_lookup_filter.
                         clear IHf IH1f.
+                        unfold vars_of; simpl.
                         destruct (ρ' !! i) eqn:Hρ'i, (x2 !! i) eqn:Hx2i;
                             simpl;
                             repeat (rewrite option_guard_decide);
                             cases ();
-                            try reflexivity.
+                            try reflexivity;
+                            try ltac1:(set_solver).
                         {
-                            
+                            apply Decidable.not_or in n.
+                            destruct n as [H3 H4].
+                            ltac1:(rename e into H2).
+                            rewrite (left_id empty union) in H2.
+                            assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
+                            unfold Valuation2 in *.
+                            rewrite Hx2i in Htmp.
+                            inversion Htmp; subst; clear Htmp.
+                            reflexivity.
+                        }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct n as [H3 H4].
+                            assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
+                            ltac1:(rewrite Hx2i in Htmp).
+                            inversion Htmp.
+                        }
+                        {
+                            ltac1:(rename e into H2).
+                            rewrite (left_id empty union) in H2.
+                            (* According to [H2], the variable [i] is used by some arguments in [args].
+                               But since.
+                             *)
                         }
 
                         (* lazy_match! goal with
