@@ -4421,32 +4421,13 @@ Proof.
                         rewrite IH1f.
                         f_equal.
                         f_equal.
-                        (* We have to be able to prove that [ρ'] will contain [x] *)
-                        (* Check Effect_evaluate'_vars_of. *)
+                        
                         apply Effect_evaluate'_vars_of in HH as HH'.
                         unfold vars_of in HH'; simpl in HH'.
                         unfold Valuation2 in *.
                         rewrite dom_insert in HH'.
                         assert (Htmp1: x ∈ dom ρ') by ltac1:(clear - HH'; set_solver).
-                        (* 
-                            What if:
-                            1. x ∉ remembered_vars_of_effect f
-                            2. x ∉ dom ρ
-                         *)
-                         
-                        (* assert (x ∈ dom (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of f ∨ kv.1 ∈ remembered_vars_of_effect f) ρ')).
-                        {
-                            assert (Htmp0: dom (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of f ∨ kv.1 ∈ remembered_vars_of_effect f) ρ') = filter (λ k : variable, k ∈ vars_of f ∨ k ∈ remembered_vars_of_effect f) (dom ρ')).
-                            {
-                                rewrite filter_dom_L.
-                                reflexivity.
-                            }
-                            rewrite Htmp0.
-                            rewrite elem_of_filter.
-                            split>[|(clear - HH'; ltac1:(set_solver))].
-                        }
-                        (* ??? *)
-                        *)
+                        
                         apply map_eq.
                         intros i.
                         unfold Valuation2 in *.
@@ -4481,15 +4462,209 @@ Proof.
                                 {
                                     apply Decidable.not_or in n.
                                     destruct n as [H1 H2].
+                                    assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
+                                    unfold Valuation2 in *.
+                                    rewrite lookup_insert in Htmp.
+                                    ltac1:(simplify_eq/=).
+                                    reflexivity.
+                                }
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H3 H4].
+                                    clear -e0 H1.
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H3 H4].
+                                    assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
+                                    unfold Valuation2 in *.
+                                    rewrite lookup_insert in Htmp.
+                                    ltac1:(simplify_eq/=).
+                                    reflexivity.
+                                }
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H1 H2].
+                                    apply Decidable.not_or in n1.
+                                    destruct n1 as [H3 H4].
+                                    clear - H4.
+                                    ltac1:(set_solver).
+                                }
+                            }
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H1 H2].
+                                    clear - H2.
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H1 H2].
+                                    assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
+                                    unfold Valuation2 in *.
+                                    rewrite lookup_insert in Htmp.
+                                    ltac1:(simplify_eq/=).
+                                    reflexivity.
+                                }
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H1 H2].
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H3 H4].
+                                    clear - H4.
+                                    ltac1:(set_solver).
+                                }
+                            }
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv _ i x0 _ _ HH).
+                                    unfold Valuation2 in *.
+                                    rewrite lookup_insert in Htmp.
+                                    specialize (Htmp eq_refl).
+                                    unfold Valuation2 in *.
+                                    rewrite Hρ'i in Htmp.
+                                    ltac1:(contradiction Htmp).
+                                    reflexivity.
+                                }
+                                {
+                                    assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv _ i x0 _ _ HH).
+                                    unfold Valuation2 in *.
+                                    rewrite lookup_insert in Htmp.
+                                    specialize (Htmp eq_refl).
+                                    unfold Valuation2 in *.
+                                    rewrite Hρ'i in Htmp.
+                                    ltac1:(contradiction Htmp).
+                                    reflexivity.
+                                }
+                            }
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    unfold Valuation2 in *.
+                                    apply not_elem_of_dom_2 in Hρ'i.
+                                    ltac1:(contradiction Hρ'i).
                                 }
                             }
                         }
                         {
                             rewrite lookup_singleton_ne>[|ltac1:(congruence)].
+                            destruct (ρ' !! i) eqn:Hρ'i, (ρ !! i) eqn:Hρi;
+                                simpl;
+                                repeat (rewrite option_guard_decide).
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n1.
+                                    destruct n1 as [H1 H2].
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    destruct (decide (i = x)).
+                                    {
+                                        subst.
+                                        ltac1:(set_solver).
+                                    }
+                                    {
+                                        assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
+                                        unfold Valuation2 in *.
+                                        rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
+                                        rewrite Hρi in Htmp.
+                                        ltac1:(simplify_eq/=).
+                                        reflexivity.
+                                    }
+                                }
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    apply Decidable.not_or in n1.
+                                    destruct n1 as [H3 H4].
+                                    clear - e0 H3.
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    destruct (decide (i = x)).
+                                    {
+                                        subst.
+                                        ltac1:(set_solver).
+                                    }
+                                    {
+                                        assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
+                                        unfold Valuation2 in *.
+                                        rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
+                                        rewrite Hρi in Htmp.
+                                        ltac1:(simplify_eq/=).
+                                        ltac1:(set_solver).
+                                    }
+                                }
+                            }
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
+                                    unfold Valuation2 in *.
+                                    rewrite lookup_insert_ne in Htmp>[|ltac1:(set_solver)].
+                                    rewrite Hρi in Htmp.
+                                    inversion Htmp.
+                                }
+                            }
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    
+                                    destruct (decide (i = x)).
+                                    {
+                                        assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv _ i x0 _ _ HH).
+                                        unfold Valuation2 in *.
+                                        subst.
+                                        rewrite lookup_insert in Htmp.
+                                        specialize (Htmp eq_refl).
+                                        unfold Valuation2 in *.
+                                        rewrite Hρ'i in Htmp.
+                                        ltac1:(contradiction Htmp).
+                                        reflexivity.
+                                    }
+                                    {
+                                        assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv _ i t _ _ HH).
+                                        unfold Valuation2 in *.
+                                        rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
+                                        specialize (Htmp Hρi Hρ'i).
+                                        destruct Htmp.
+                                    }
+                                }
+                            }
+                            {
+                                reflexivity.
+                            }
                         }
-                        
                     }
-                    
                 }
                 {
                     apply map_subseteq_spec.
