@@ -4422,22 +4422,72 @@ Proof.
                         f_equal.
                         f_equal.
                         (* We have to be able to prove that [ρ'] will contain [x] *)
+                        (* Check Effect_evaluate'_vars_of. *)
+                        apply Effect_evaluate'_vars_of in HH as HH'.
+                        unfold vars_of in HH'; simpl in HH'.
+                        unfold Valuation2 in *.
+                        rewrite dom_insert in HH'.
+                        assert (Htmp1: x ∈ dom ρ') by ltac1:(clear - HH'; set_solver).
+                        (* 
+                            What if:
+                            1. x ∉ remembered_vars_of_effect f
+                            2. x ∉ dom ρ
+                         *)
+                         
+                        (* assert (x ∈ dom (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of f ∨ kv.1 ∈ remembered_vars_of_effect f) ρ')).
+                        {
+                            assert (Htmp0: dom (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of f ∨ kv.1 ∈ remembered_vars_of_effect f) ρ') = filter (λ k : variable, k ∈ vars_of f ∨ k ∈ remembered_vars_of_effect f) (dom ρ')).
+                            {
+                                rewrite filter_dom_L.
+                                reflexivity.
+                            }
+                            rewrite Htmp0.
+                            rewrite elem_of_filter.
+                            split>[|(clear - HH'; ltac1:(set_solver))].
+                        }
                         (* ??? *)
-
+                        *)
                         apply map_eq.
                         intros i.
                         unfold Valuation2 in *.
                         rewrite map_lookup_filter.
                         rewrite lookup_union.
                         rewrite map_lookup_filter.
-                        rewrite map_lookup_singleton.
-                        clear IHf IH1f.
+                        rewrite lookup_union.
+                        rewrite map_lookup_filter.
                         unfold vars_of; simpl.
-                        destruct (ρ' !! i) eqn:Hρ'i, (ρ !! i) eqn:Hρi;
-                            simpl;
-                            repeat (rewrite option_guard_decide);
-                            cases ();
-                            try reflexivity.
+                        destruct (decide (x = i)).
+                        {
+                            subst.
+                            rewrite lookup_singleton.
+                            destruct (ρ' !! i) eqn:Hρ'i, (ρ !! i) eqn:Hρi;
+                                simpl;
+                                repeat (rewrite option_guard_decide).
+                            {
+                                cases ();
+                                    try reflexivity.
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H1 H2].
+                                    clear - H2.
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n0.
+                                    destruct n0 as [H1 H2].
+                                    clear - H2.
+                                    ltac1:(set_solver).
+                                }
+                                {
+                                    apply Decidable.not_or in n.
+                                    destruct n as [H1 H2].
+                                }
+                            }
+                        }
+                        {
+                            rewrite lookup_singleton_ne>[|ltac1:(congruence)].
+                        }
+                        
                     }
                     
                 }
