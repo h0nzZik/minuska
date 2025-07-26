@@ -710,6 +710,7 @@ Definition BasicEffect_evaluate
     end
 .
 
+(* Print fold_left. *)
 Definition Effect_evaluate'
     {Σ : StaticModel}
     (program : ProgramT)
@@ -719,11 +720,11 @@ Definition Effect_evaluate'
     (f : Effect)
     : option (hidden_data*Valuation2)
 :=
-    (fold_right
-        (fun (bf : BasicEffect) (p' : option (hidden_data*Valuation2)) => p ← p'; BasicEffect_evaluate program p.1 p.2 nv bf)
-        (Some (h,ρ))
+    fold_left
+        (fun (p' : option (hidden_data*Valuation2)) (bf : BasicEffect) => p ← p'; BasicEffect_evaluate program p.1 p.2 nv bf)
         f
-    )
+        (Some (h,ρ))
+    
 .
 
 

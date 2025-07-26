@@ -3590,46 +3590,28 @@ Proof.
     }
 Qed.
 
-
-Lemma Effect_evaluate'_extensive
+Lemma fold_left_BasicEffect_evaluate_None
     {Σ : StaticModel}
     (program : ProgramT)
-    (h : hidden_data)
-    (f : Effect)
-    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
     (nv : NondetValue)
-    (h' : hidden_data)
-:
-    ρ1 ⊆ ρ2 ->
-    Effect_evaluate' program h ρ1 nv f = Some (h', ρ'1) ->
-    Effect_evaluate' program h ρ2 nv f = Some (h', ρ'1 ∪ ρ2)
+    (f : Effect)
+    :
+    fold_left
+        (
+            λ (p' : option (hidden_data * Valuation2)) (bf : BasicEffect),
+            p'
+            ≫= λ p : hidden_data * Valuation2,
+            BasicEffect_evaluate program p.1 p.2 nv bf
+        )
+        f
+        None
+    = None
 .
 Proof.
-    revert h h' ρ1 ρ2 ρ'1.
-    induction f;
-        intros h h' ρ1 ρ2 ρ'1 HH1 HH2.
+    induction f; simpl.
+    { reflexivity. }
     {
-        simpl in *.
-        ltac1:(simplify_eq/=).
-        f_equal.
-        f_equal.
-        symmetry.
-        apply map_subseteq_union.
-        exact HH1.
-    }
-    {
-        simpl in *.
-        rewrite bind_Some in HH2.
-        destruct HH2 as [[h'' ρ''][HH3 HH4]].
-        simpl in *.
-        specialize (IHf _ _ _ _ _ HH1 HH3).
-        rewrite IHf.
-        simpl.
-        eapply BasicEffect_evaluate'_frame with (ρ2 := ρ2) in HH4.
-        {
-            rewrite HH4.
-            reflexivity.
-        }
+        apply IHf.
     }
 Qed.
 
@@ -3650,28 +3632,80 @@ Proof.
     induction f;
         intros h h' ρ1 ρ2 ρ'1 HH2.
     {
+        unfold Effect_evaluate' in *.
         simpl in *.
         ltac1:(simplify_eq/=).
         reflexivity.
     }
     {
+        unfold Effect_evaluate' in *.
         simpl in *.
-        rewrite bind_Some in HH2.
-        destruct HH2 as [[h'' ρ''][HH3 HH4]].
-        simpl in *.
-        erewrite IHf.
+        destruct (BasicEffect_evaluate program h ρ1 nv a) as [[c c']|] eqn:Heval.
         {
-            simpl.
-            eapply BasicEffect_evaluate'_frame with (ρ2 := ρ2) in HH4.
-            apply HH4.
+            specialize (IHf _ _ _ ρ2 _ HH2).
+            eapply BasicEffect_evaluate'_frame in Heval.
+            rewrite Heval.
+            exact IHf.
         }
         {
-            apply HH3.
+            rewrite fold_left_BasicEffect_evaluate_None in HH2.
+            inversion HH2.
         }
     }
 Qed.
 
-Lemma Effect_evaluate'_notin_remembered
+Lemma Effect_evaluate'_notin_remembered_1
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h h' : hidden_data)
+    (nv : NondetValue)
+    (f : Effect)
+    (x : variable)
+    (t : TermOver builtin_value)
+    (ρ ρ' : Valuation2)
+    :
+    x ∉ remembered_vars_of_effect f ->
+    Effect_evaluate' program h ρ nv f = Some (h', ρ') ->
+    ρ' !! x = Some t ->
+    ρ !! x = Some t
+.
+Proof.
+    revert ρ ρ' h h'.
+    induction f;
+        intros ρ ρ' h h' HH1 HH2 HH3.
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        exact HH3.
+    }
+    {
+        simpl in *.
+        destruct a.
+        {
+            simpl in *.
+            ltac1:(simplify_option_eq).
+            destruct H.
+            eapply IHf.
+            { ltac1:(set_solver). }
+            { apply Heqo. }
+            { exact HH3. }
+        }
+        {
+            simpl in *.
+            ltac1:(simplify_option_eq).
+            destruct H.
+            assert (x <> x0) by ltac1:(set_solver).
+            unfold Valuation2 in *.
+            rewrite lookup_insert_ne in HH3>[|ltac1:(congruence)].
+            eapply IHf.
+            { ltac1:(set_solver). }
+            { apply Heqo. }
+            { exact HH3. }
+        }
+    }
+Qed.
+
+Lemma Effect_evaluate'_notin_remembered_2
     {Σ : StaticModel}
     (program : ProgramT)
     (h h' : hidden_data)
@@ -3722,6 +3756,61 @@ Proof.
     }
 Qed.
 
+Lemma Effect_evaluate'_notin_remembered_2'
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h h' : hidden_data)
+    (nv : NondetValue)
+    (f : Effect)
+    (x : variable)
+    (t : TermOver builtin_value)
+    (ρ ρ' : Valuation2)
+    :
+    Effect_evaluate' program h ρ nv f = Some (h', ρ') ->
+    ρ !! x = Some t ->
+    ρ' !! x <> None
+.
+Proof.
+    revert ρ ρ' h h'.
+    induction f;
+        intros ρ ρ' h h' HH2 HH3.
+    {
+        simpl in *.
+        ltac1:(simplify_eq/=).
+        rewrite HH3.
+        ltac1:(discriminate).
+    }
+    {
+        simpl in *.
+        destruct a.
+        {
+            simpl in *.
+            ltac1:(simplify_option_eq).
+            destruct H.
+            eapply IHf.
+            { ltac1:(set_solver). }
+            { exact HH3. }
+        }
+        {
+            simpl in *.
+            ltac1:(simplify_option_eq).
+            destruct H.
+            simpl in *.
+            destruct (decide (x = x0)).
+            {
+                subst.
+                ltac1:(rewrite lookup_insert).
+                ltac1:(discriminate).
+            }
+            {
+                ltac1:(rewrite lookup_insert_ne)>[ltac1:(congruence)|].
+                eapply IHf.
+                { apply Heqo. }
+                { apply HH3. }
+            }
+        }
+    }
+Qed.
 
 Lemma Effect_evaluate'_strip_1
     {Σ : StaticModel}
@@ -3759,15 +3848,6 @@ Proof.
             ltac1:(simplify_eq/=).
             specialize (IHf _ _ _ H1).
             unfold Valuation2 in *.
-            (* assert (Hfil0: (fun (kv : variable * (TermOver builtin_value) ) => kv.1 ∈ vars_of (be_method s args :: f)) = (fun kv => kv.1 ∈ vars_of args \/ kv.1 ∈ vars_of f)).
-            {
-                apply functional_extensionality.
-                intros [x t]. simpl.
-                unfold vars_of; simpl.
-                apply propositional_extensionality.
-                rewrite elem_of_union.
-                ltac1:(naive_solver).
-            } *)
             assert(Hfil1: (filter (fun kv => kv.1 ∈ vars_of (be_method s args :: f)) ρ)
               = (filter (fun kv => kv.1 ∈ vars_of (f)) ρ ∪ (filter (fun kv => kv.1 ∈ vars_of (args)) ρ))
             ).
@@ -3816,6 +3896,98 @@ Proof.
                 eapply list_collect_Expression2_evaluate_extensive_Some in H1ts'.
                 {
                     rewrite H1ts'.
+                    simpl.
+                    rewrite H1h'''.
+                    simpl.
+                    f_equal.
+                    f_equal.
+                    apply map_eq.
+                    intros i.
+                    rewrite map_lookup_filter.
+                    rewrite lookup_union.
+                    rewrite map_lookup_filter.
+                    rewrite map_lookup_filter.
+                    destruct (ρ' !! i) eqn:H'i, (ρ !! i) eqn:Hi.
+                    {
+                        simpl.
+                        repeat (rewrite option_guard_decide).
+                        unfold vars_of; simpl.
+                        cases(); try reflexivity.
+                        {
+                            ltac1:(set_solver).
+                        }
+                        {
+                            ltac1:(set_solver).
+                        }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct o; try ltac1:(set_solver).
+                            destruct n.
+                            clear H.
+                            eapply Effect_evaluate'_notin_remembered_1 in H'i>[|()|apply H1].
+                            {
+                                ltac1:(rewrite Hi in H'i).
+                                inversion H'i.
+                                subst.
+                                reflexivity.
+                            }
+                            { exact H2. }
+                        }
+                        {
+                            ltac1:(set_solver).
+                        }
+                        {
+                            ltac1:(set_solver).
+                        }
+                    }
+                    {
+                        simpl.
+                        repeat (rewrite option_guard_decide).
+                        cases (); ltac1:(simplify_eq/=).
+                        { reflexivity. }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct n as [H4 H5].
+                            eapply Effect_evaluate'_notin_remembered_1 in H'i>[|()|apply H1].
+                            {
+                                ltac1:(rewrite Hi in H'i).
+                                inversion H'i.
+                            }
+                            { ltac1:(set_solver). }
+                        }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct n as [H4 H5].
+
+                            eapply Effect_evaluate'_notin_remembered_1 in H'i>[|()|apply H1].
+                            {
+                                ltac1:(rewrite Hi in H'i).
+                                inversion H'i.
+                            }
+                            { ltac1:(set_solver). }
+                        }
+                        {
+                            ltac1:(set_solver).
+                        }
+                    }
+                    {
+                        simpl.
+                        repeat (rewrite option_guard_decide).
+                        cases (); ltac1:(simplify_eq/=).
+                        {
+                            eapply Effect_evaluate'_notin_remembered_2' in Hi>[|apply H1].
+                            {
+                                ltac1:(exfalso).
+                                exact (Hi H'i).
+                            }
+                        }
+                        {
+                            reflexivity.
+                        }
+                    }
+                    {
+                        simpl. reflexivity.
+                    }
                 }
                 {
                     apply map_subseteq_spec.
@@ -3839,9 +4011,17 @@ Proof.
                         {
                             ltac1:(rename n into Hn).
                             apply Decidable.not_or in Hn.
+                            destruct Hn as [H3 H4].
                             assert (x = t0).
                             {
-                                admit.
+                                eapply Effect_evaluate'_notin_remembered_2 in H1>[|()|apply H2i].
+                                {
+                                    ltac1:(rewrite H1i in H1).
+                                    inversion H1.
+                                    subst.
+                                    reflexivity.
+                                }
+                                { exact H4. }
                             }
                             subst.
                             reflexivity.
@@ -3852,6 +4032,20 @@ Proof.
                         rewrite option_guard_decide.
                         simpl in Hix.
                         rewrite option_guard_decide in Hix.
+                        cases (); ltac1:(simplify_eq/=).
+                        { reflexivity. }
+                        {
+                            ltac1:(rename n into Hn).
+                            apply Decidable.not_or in Hn.
+                            destruct Hn as [H3 H4].
+                            eapply Effect_evaluate'_notin_remembered_1 in H1>[|()|apply H1i].
+                            {
+                                ltac1:(rewrite H1 in H2i).
+                                inversion H2i.
+
+                            }
+                            { exact H4. }
+                        }
                     }
                     {
                         simpl.
@@ -3865,163 +4059,75 @@ Proof.
                         inversion Hix.
                     }
                 }
-                
-
-
-(*                 
-                
-                eapply list_collect_Expression2_evaluate_extensive_Some in H1ts.
-                {
-                    rewrite H1ts.
-                    simpl.
-                    rewrite H1h'''.
-                    simpl.
-                    f_equal.
-                    f_equal.
-                    ltac1:(rewrite - map_filter_ext).
-                    intros i x Hix.
-                    simpl.
-                    clear.
-                    ltac1:(set_solver).
-                }
-                {
-                    apply map_subseteq_spec.
-                    intros i x Hix.
-                    ltac1:(rewrite map_lookup_filter_Some in Hix).
-                    ltac1:(rewrite map_lookup_filter_Some).
-                    destruct Hix as [H3 H4].
-                    split>[exact H3|].
-                    simpl in *.
-                    clear - H4 HHvars.
-                    ltac1:(set_solver).
-                } *)
-                admit.
             }
-            
-            (* {
-                apply map_subseteq_spec.
-                intros i x Hix.
-                ltac1:(rewrite map_lookup_filter_Some in Hix).
-                ltac1:(rewrite map_lookup_filter_Some).
-                destruct Hix as [H1ix H2ix].
-                split>[exact H1ix|].
-                simpl in *.
-                unfold vars_of; simpl.
-                clear - H2ix.
-                ltac1:(set_solver).
-            }
-            erewrite IHf.
-            (* unfold vars_of in HHvars; simpl in HHvars. *)
-            erewrite IHf>[|(clear - HHvars; unfold vars_of; simpl; ltac1:(set_solver))|apply H1].
-            clear IHf.
-            simpl.
-             *)
         }
         {
             rewrite bind_Some in H2.
-            destruct H2 as [ts [H1ts H2ts]].
+            destruct H2 as [t [H1t H2t]].
             ltac1:(simplify_eq/=).
-            unfold vars_of in HHvars; simpl in HHvars.
-            assert(Htmpv: vars_of f ⊆ (vars ∪ {[x]})).
+            unfold vars_of; simpl.
+            unfold Valuation2 in *.
+            assert(Hfil:
+            (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect' f ∖ {[x]} ∪ vars_of e) ρ
+            = filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect' f) (filter (λ kv : variable * TermOver builtin_value, kv.1 <> x) ρ)
+            ∪ filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Expression2 e) ρ)).
             {
-                clear -HHvars.
+                apply map_eq.
+                intros i.
+                rewrite lookup_union.
+                rewrite map_lookup_filter.
+                rewrite map_lookup_filter.
+                rewrite map_lookup_filter.
+                rewrite map_lookup_filter.
                 unfold vars_of; simpl.
-                rewrite elem_of_subseteq.
-                intros x0 Hx0.
-                destruct (decide (x0 = x)).
-                {
-                    subst.
-                    ltac1:(set_solver).
-                }
-                {
-                    ltac1:(set_solver).
-                }
+                destruct (ρ !! i) eqn:Hρi>[|reflexivity].
+                simpl.
+                repeat (rewrite option_guard_decide; cases(); simpl; try reflexivity); try ltac1:(set_solver).
             }
-            specialize (IHf _ _ _ ((vars ∪ {[x]})) Htmpv H1).
-            (* FIXME *)
-            erewrite IHf >[|()|apply H1].
+            rewrite Hfil.
+            clear Hfil.
+            specialize (IHf _ _ _ H1).
+            (* specialize (IHf (filter (fun kv => kv.1 <> x) ρ)). *)
+                
+            (* }
+            eapply Effect_evaluate'_frame with (ρ2 := {[x:=t]}) in H1 as H1'.
+            (* specialize (IHf ). *)
+            specialize (IHf _ _ _ H1).
+            eapply Effect_evaluate'_frame in IHf as IHff.
+            (* clear H1. *)
+            eapply Effect_evaluate'_extensive in IHf.
             {
+                rewrite IHf.
+            }
+            {
+                apply map_subseteq_spec.
+                intros i x0 Hix0.
+                ltac1:(rewrite map_lookup_filter in Hix0).
+                rewrite bind_Some in Hix0.
+                destruct Hix0 as [t' [H1t' H2t']].
+                rewrite option_guard_decide in H2t'.
+                cases (); ltac1:(simplify_eq/=).
+                ltac1:(rewrite map_lookup_filter).
+                rewrite H1t'.
                 simpl.
-                clear IHf.
-                simpl.
-                eapply Expression2_evalute_strip in H1ts.
-                eapply Expression2_evaluate_extensive_Some in H1ts.
+                rewrite option_guard_decide.
+                cases (); ltac1:(simplify_eq/=).
+                { reflexivity. }
                 {
-                    rewrite H1ts.
-                    simpl.
-                    simpl.
-                    f_equal.
-                    f_equal.
-                    unfold Valuation2 in *.
-                    apply map_eq.
-                    intros i.
+                    unfold vars_of in n; simpl in n.
+                    unfold vars_of in e0; simpl in e0.
                     destruct (decide (i = x)).
                     {
                         subst.
-                        rewrite lookup_insert.
-                        rewrite map_lookup_filter.
-                        rewrite lookup_insert.
-                        simpl.
-                        rewrite option_guard_decide.
-                        cases ().
-                        { reflexivity. }
-                        {
-                            ltac1:(contradiction n).
-                            clear n.
-                            ltac1:(set_solver).
-                        }
                     }
-                    {
-                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                        rewrite map_lookup_filter.
-                        rewrite map_lookup_filter.
-                        rewrite lookup_insert_ne>[|ltac1:(congruence)].
-                        ltac1:(simplify_option_eq);
-                            simpl.
-                        { reflexivity. }
-                        { reflexivity. }
-                        {
-                            ltac1:(set_solver).
-                        }
-                        {
-                            ltac1:(set_solver).
-                        }
-                        {
-                            reflexivity.
-                        }
-                    }
+                    { ltac1:(set_solver). }
                 }
-                {
-                    apply map_subseteq_spec.
-                    intros i x' Hix.
-                    ltac1:(rewrite map_lookup_filter_Some in Hix).
-                    ltac1:(rewrite map_lookup_filter_Some).
-                    destruct Hix as [H3 H4].
-                    split>[exact H3|].
-                    simpl in *.
-                    clear - H4 HHvars.
-                    ltac1:(set_solver).
-                }
-            }
-            {
-                clear - HHvars.
-                unfold vars_of; simpl.
-                rewrite elem_of_subseteq.
-                intros x0 Hx0.
-                destruct (decide (x0 = x)).
-                {
-                    subst.
-                    ltac1:(set_solver).
-                }
-                {
-                    ltac1:(set_solver).
-                }
-            }
-            
+            } *)
+
         }
     }
 Qed.
-
+(* 
 Lemma Effect_evaluate'_strip
     {Σ : StaticModel}
     (program : ProgramT)
@@ -4196,7 +4302,7 @@ Proof.
             
         }
     }
-Qed.
+Qed. *)
 (* 
 Lemma BasicEffect_evaluate_strip
     {Σ : StaticModel}
