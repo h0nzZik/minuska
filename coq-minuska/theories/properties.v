@@ -3965,6 +3965,139 @@ Proof.
 Qed.
 
 
+Lemma helper_filter_2
+    {Σ : StaticModel}
+    x e f (ρ : gmap variable (TermOver builtin_value))
+    :
+    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect' ((be_remember x e) :: f)) ρ =
+    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect' (f)) (delete x ρ) ∪
+    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of e)  ρ
+.
+Proof.
+    (* intros HH. *)
+    apply map_eq.
+    intros i.
+    rewrite map_lookup_filter.
+    rewrite lookup_union.
+    rewrite map_lookup_filter.
+    rewrite map_lookup_filter.
+    destruct (ρ !! i) eqn:Hρi.
+    {
+        simpl.
+        {
+            repeat (rewrite option_guard_decide).
+            cases (); try reflexivity; try ltac1:(set_solver).
+            { 
+                destruct (decide (i = x)).
+                {
+                    subst.
+                    apply elem_of_dom_2 in Hρi as Htmp.
+                    rewrite lookup_delete.
+                    reflexivity.
+                }
+                {
+                    rewrite lookup_delete_ne>[|ltac1:(congruence)].
+                    rewrite Hρi.
+                    simpl.
+                    rewrite option_guard_decide.
+                    cases ();
+                        reflexivity.
+                }
+            }
+            {
+                destruct (decide (i = x)).
+                {
+                    subst.
+                    (* simpl in HH. *)
+                    apply elem_of_dom_2 in Hρi as Htmp.
+                    rewrite lookup_delete.
+                    simpl.
+                    ltac1:(set_solver).
+                }
+                {
+                    rewrite lookup_delete_ne>[|ltac1:(congruence)].
+                    rewrite Hρi.
+                    simpl.
+                    rewrite option_guard_decide.
+                    cases ();
+                        simpl;
+                        try reflexivity.
+                    ltac1:(set_solver).
+                }
+            }
+            {
+                destruct (decide (i = x)).
+                {
+                    subst.
+                    (* simpl in HH. *)
+                    apply elem_of_dom_2 in Hρi as Htmp.
+                    rewrite lookup_delete.
+                    simpl.
+                    ltac1:(set_solver).
+                }
+                {
+                    rewrite lookup_delete_ne>[|ltac1:(congruence)].
+                    rewrite Hρi.
+                    simpl.
+                    rewrite option_guard_decide.
+                    cases ();
+                        simpl;
+                        try reflexivity.
+                    ltac1:(set_solver).
+                }
+            }
+        }
+    }
+    {
+        simpl.
+        destruct (decide (i = x)).
+        {
+            subst.
+            rewrite lookup_delete.
+            simpl.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite lookup_delete_ne>[|ltac1:(congruence)].
+            rewrite Hρi.
+            simpl.
+            reflexivity.
+        }
+    }
+Qed.
+
+Lemma valuation_delete_union
+    {Σ : StaticModel}
+    (ρ : gmap variable (TermOver builtin_value))
+    (x : variable)
+    (t : TermOver builtin_value)
+    :
+    <[x:=t]>ρ = delete x ρ ∪ {[x:=t]}
+.
+Proof.
+    apply map_eq.
+    intros i.
+    destruct (decide (x = i)).
+    {
+        subst.
+        rewrite lookup_insert.
+        rewrite lookup_union.
+        rewrite lookup_delete.
+        rewrite lookup_singleton.
+        rewrite (left_id None union).
+        reflexivity.
+    }
+    {
+        rewrite lookup_insert_ne>[|ltac1:(congruence)].
+
+        rewrite lookup_union.
+        rewrite lookup_delete_ne>[|ltac1:(congruence)].
+        rewrite lookup_singleton_ne>[|ltac1:(congruence)].
+        rewrite (right_id None union).
+        reflexivity.
+    }
+Qed.
+
 Lemma Effect_evaluate'_strip_1
     {Σ : StaticModel}
     (program : ProgramT)
@@ -3994,11 +4127,10 @@ Proof.
         destruct (BasicEffect_evaluate program h ρ nv a) eqn:Hbeval.
         {
             destruct p as [x1 x2].
-            assert (IH1f := IHf _ _ _ _ HH).
-            (* Search BasicEffect_evaluate. *)
-            (* eapply BasicEffect_evaluate_restrict in Hbeval. *)
+            
             destruct a; simpl in *.
             {
+                assert (IH1f := IHf _ _ _ _ HH).
                 rewrite bind_Some in Hbeval.
                 destruct Hbeval as [x3 [H1x3 H2x3]].
                 rewrite bind_Some in H2x3.
@@ -4058,15 +4190,9 @@ Proof.
                         {
                             ltac1:(rename e into H2).
                             rewrite (left_id empty union) in H2.
-                            (* According to [H2], the variable [i] is used by some arguments in [args].
-                               But since.
-                             *)
+                            assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv f i t x2 ρ' HH Hx2i Hρ'i).
+                            destruct Htmp.
                         }
-
-                        (* lazy_match! goal with
-                        | [ |- fold_left _ _ ?c = _] => remember $c as c
-                        end. *)
-                        (* erewrite IHf. *)
                     }
                     {
                         simpl.
@@ -4095,302 +4221,170 @@ Proof.
                 }
             }
             {
+                rewrite bind_Some in Hbeval.
+                destruct Hbeval as [x0 [H1x0 H2x0]].
+                ltac1:(simplify_eq/=).
+                apply Expression2_evalute_strip in H1x0 as H1x0'.
+                eapply Expression2_evaluate_extensive_Some in H1x0'.
+                { 
+                    rewrite H1x0'.
+                    simpl.
+                    unfold Valuation2 in *.
+                    (* assert (IH1f' := IHf (delete x ρ) (ρ') x1 h'). *)
+                    assert (IH1f := IHf _ _ _ _ HH).
+                    rewrite map_filter_insert in IH1f.
+                    simpl in IH1f.
+                    destruct (decide (x ∈ vars_of f)).
+                    {
+                        setoid_rewrite helper_filter_2.
+                        rewrite insert_union_l.
+                        (* Search (insert _ _ (union _ _)). *)
+                        eapply Effect_evaluate'_frame in IH1f.
+                        ltac1:(unfold Effect_evaluate' in IH1f).
+                        unfold vars_of in IH1f; simpl in IH1f.
+                        rewrite map_filter_delete.
+                        (* Search (insert _ _ (delete _ _)). *)
+                        rewrite insert_delete_insert.
+                        erewrite IH1f.
 
-            }
-            
+
+                        f_equal.
+                        f_equal.
+                        
+                        (* clear. *)
+
+                        apply map_eq.
+                        intros i.
+                        unfold Valuation2 in *.
+                        rewrite map_lookup_filter.
+                        rewrite lookup_union.
+                        rewrite map_lookup_filter.
+                        rewrite map_lookup_filter.
+                        clear IHf IH1f.
+                        unfold vars_of; simpl.
+                        destruct (ρ' !! i) eqn:Hρ'i, (ρ !! i) eqn:Hρi;
+                            simpl;
+                            repeat (rewrite option_guard_decide);
+                            cases ();
+                            try reflexivity;
+                            try ltac1:(set_solver).
+                        {
+                            apply Decidable.not_or in n0.
+                            destruct n0 as [H3 H4].
+                            ltac1:(rename n into H1).
+                            ltac1:(rename e0 into H2).
+                            ltac1:(set_solver).
+                        }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct n as [H3 H4].
+                            (* ltac1:(set_solver). *)
+                            assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
+                            destruct (decide (x = i)).
+                            {
+                                subst.
+                                unfold Valuation2 in *.
+                                rewrite lookup_insert in Htmp.
+                                ltac1:(simplify_eq/=).
+                                ltac1:(set_solver).
+                            }
+                            {
+                                unfold Valuation2 in *.
+                                rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
+                                rewrite Hρi in Htmp.
+                                inversion Htmp; subst; clear Htmp.
+                                reflexivity.
+                            }
+                        }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct n as [H3 H4].
+                            ltac1:(set_solver).
+                        }
+                        {
+                            apply Decidable.not_or in n.
+                            destruct n as [H3 H4].
+                            assert (Htmp := Effect_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
+                            destruct (decide (x = i)).
+                            {
+                                subst.
+                                unfold Valuation2 in *.
+                                rewrite lookup_insert in Htmp.
+                                ltac1:(simplify_eq/=).
+                                ltac1:(set_solver).
+                            }
+                            {
+                                unfold Valuation2 in *.
+                                rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
+                                rewrite Hρi in Htmp.
+                                inversion Htmp.
+                            }
+                        }
+                        {
+
+                            destruct (decide (x = i)).
+                            {
+                                subst.
+                                assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv f i x0 _ _ HH).
+                                unfold Valuation2 in *.
+                                rewrite lookup_insert in Htmp.
+                                specialize (Htmp eq_refl Hρ'i).
+                                destruct Htmp.
+                            }
+                            {
+                                assert (Htmp := Effect_evaluate'_notin_remembered_2' program x1 h' nv f i t _ _ HH).
+                                unfold Valuation2 in *.
+                                rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
+                                specialize (Htmp Hρi Hρ'i).
+                                destruct Htmp.
+                            }
+                        }
+                    }
+                    {
+                        setoid_rewrite helper_filter_2.
+                        rewrite insert_union_l.
+                        rewrite map_filter_delete.
+                        rewrite insert_delete_insert.
+                        Check valuation_delete_union.
+                        rewrite map_filter_delete in IH1f.
+                        (* rewrite insert_delete_insert in IH1f. *)
+                        (* Search (insert _ _ (union _ _)). *)
+                        eapply Effect_evaluate'_frame in IH1f.
+                        ltac1:(unfold Effect_evaluate' in IH1f).
+                        unfold vars_of in IH1f; simpl in IH1f.
+                        
+                        Search insert delete union.
+                        (* Search (insert _ _ (delete _ _)). *)
+                        
+                        erewrite IH1f.
+
+                    }
+                    
+                }
+                {
+                    apply map_subseteq_spec.
+                    intros i x' Hix'.
+                    ltac1:(rewrite map_lookup_filter).
+                    ltac1:(rewrite map_lookup_filter in Hix').
+                    unfold Valuation2 in *.
+                    destruct (ρ !! i) eqn:H2i.
+                    {
+                        simpl in *.
+                        rewrite option_guard_decide.
+                        rewrite option_guard_decide in Hix'.
+                        unfold vars_of; simpl.
+                        unfold vars_of in Hix; simpl in Hix'.
+                        cases (); ltac1:(set_solver).
+                    }
+                    {
+                        simpl in Hix'. inversion Hix'.
+                    }
+                }
+            }        
         }
         {
             rewrite fold_left_BasicEffect_evaluate_None in HH.
             inversion HH.
-        }
-        rewrite bind_Some in HH.
-        destruct HH as [[h'' ρ''][H1 H2]].
-        simpl in *.
-        destruct a; simpl in *.
-        {
-            rewrite bind_Some in H2.
-            destruct H2 as [ts [H1ts H2ts]].
-            rewrite bind_Some in H2ts.
-            destruct H2ts as [h''' [H1h''' H2h''']].
-            ltac1:(simplify_eq/=).
-            specialize (IHf _ _ _ H1).
-            unfold Valuation2 in *.
-            assert(Hfil1: (filter (fun kv => kv.1 ∈ vars_of (be_method s args :: f)) ρ)
-              = (filter (fun kv => kv.1 ∈ vars_of (f)) ρ ∪ (filter (fun kv => kv.1 ∈ vars_of (args)) ρ))
-            ).
-            {
-                apply map_eq.
-                intros i.
-                rewrite map_lookup_filter.
-                rewrite lookup_union.
-                rewrite map_lookup_filter.
-                rewrite map_lookup_filter.
-                destruct (ρ !! i) eqn:Hρi.
-                {
-                    simpl.
-                    rewrite option_guard_decide.
-                    rewrite option_guard_decide.
-                    rewrite option_guard_decide.
-                    unfold vars_of; simpl.
-                    cases ();
-                        try reflexivity.
-                    {
-                        ltac1:(set_solver).
-                    }
-                    {
-                        ltac1:(set_solver).
-                    }
-                    {
-                        ltac1:(set_solver).
-                    }
-                    {
-                        ltac1:(set_solver).
-                    }
-                }
-                {
-                    simpl. reflexivity.
-                }
-            }
-            rewrite Hfil1.
-            clear Hfil1.
-
-            eapply Effect_evaluate'_frame in IHf.
-            {
-                rewrite IHf.
-                simpl.
-                clear IHf.
-                eapply list_collect_Expression2_evaluate_strip in H1ts as H1ts'.
-                eapply list_collect_Expression2_evaluate_extensive_Some in H1ts'.
-                {
-                    rewrite H1ts'.
-                    simpl.
-                    rewrite H1h'''.
-                    simpl.
-                    f_equal.
-                    f_equal.
-                    apply map_eq.
-                    intros i.
-                    rewrite map_lookup_filter.
-                    rewrite lookup_union.
-                    rewrite map_lookup_filter.
-                    rewrite map_lookup_filter.
-                    destruct (ρ' !! i) eqn:H'i, (ρ !! i) eqn:Hi.
-                    {
-                        simpl.
-                        repeat (rewrite option_guard_decide).
-                        unfold vars_of; simpl.
-                        cases(); try reflexivity.
-                        {
-                            ltac1:(set_solver).
-                        }
-                        {
-                            ltac1:(set_solver).
-                        }
-                        {
-                            apply Decidable.not_or in n.
-                            destruct o; try ltac1:(set_solver).
-                            destruct n.
-                            clear H.
-                            eapply Effect_evaluate'_notin_remembered_1 in H'i>[|()|apply H1].
-                            {
-                                ltac1:(rewrite Hi in H'i).
-                                inversion H'i.
-                                subst.
-                                reflexivity.
-                            }
-                            { exact H2. }
-                        }
-                        {
-                            ltac1:(set_solver).
-                        }
-                        {
-                            ltac1:(set_solver).
-                        }
-                    }
-                    {
-                        simpl.
-                        repeat (rewrite option_guard_decide).
-                        cases (); ltac1:(simplify_eq/=).
-                        { reflexivity. }
-                        {
-                            apply Decidable.not_or in n.
-                            destruct n as [H4 H5].
-                            eapply Effect_evaluate'_notin_remembered_1 in H'i>[|()|apply H1].
-                            {
-                                ltac1:(rewrite Hi in H'i).
-                                inversion H'i.
-                            }
-                            { ltac1:(set_solver). }
-                        }
-                        {
-                            apply Decidable.not_or in n.
-                            destruct n as [H4 H5].
-
-                            eapply Effect_evaluate'_notin_remembered_1 in H'i>[|()|apply H1].
-                            {
-                                ltac1:(rewrite Hi in H'i).
-                                inversion H'i.
-                            }
-                            { ltac1:(set_solver). }
-                        }
-                        {
-                            ltac1:(set_solver).
-                        }
-                    }
-                    {
-                        simpl.
-                        repeat (rewrite option_guard_decide).
-                        cases (); ltac1:(simplify_eq/=).
-                        {
-                            eapply Effect_evaluate'_notin_remembered_2' in Hi>[|apply H1].
-                            {
-                                ltac1:(exfalso).
-                                exact (Hi H'i).
-                            }
-                        }
-                        {
-                            reflexivity.
-                        }
-                    }
-                    {
-                        simpl. reflexivity.
-                    }
-                }
-                {
-                    apply map_subseteq_spec.
-                    intros i x Hix.
-                    ltac1:(rewrite map_lookup_filter in Hix).
-                    rewrite lookup_union.
-                    ltac1:(rewrite map_lookup_filter).
-                    ltac1:(rewrite map_lookup_filter).
-                    destruct (ρ' !! i) eqn:H1i, (ρ !! i) eqn:H2i.
-                    {
-                        simpl.
-                        rewrite option_guard_decide.
-                        rewrite option_guard_decide.
-                        simpl in Hix.
-                        rewrite option_guard_decide in Hix.
-                        cases ();
-                            ltac1:(simplify_eq/=).
-                        {
-                            reflexivity.
-                        }
-                        {
-                            ltac1:(rename n into Hn).
-                            apply Decidable.not_or in Hn.
-                            destruct Hn as [H3 H4].
-                            assert (x = t0).
-                            {
-                                eapply Effect_evaluate'_notin_remembered_2 in H1>[|()|apply H2i].
-                                {
-                                    ltac1:(rewrite H1i in H1).
-                                    inversion H1.
-                                    subst.
-                                    reflexivity.
-                                }
-                                { exact H4. }
-                            }
-                            subst.
-                            reflexivity.
-                        }
-                    }
-                    {
-                        simpl.
-                        rewrite option_guard_decide.
-                        simpl in Hix.
-                        rewrite option_guard_decide in Hix.
-                        cases (); ltac1:(simplify_eq/=).
-                        { reflexivity. }
-                        {
-                            ltac1:(rename n into Hn).
-                            apply Decidable.not_or in Hn.
-                            destruct Hn as [H3 H4].
-                            eapply Effect_evaluate'_notin_remembered_1 in H1>[|()|apply H1i].
-                            {
-                                ltac1:(rewrite H1 in H2i).
-                                inversion H2i.
-
-                            }
-                            { exact H4. }
-                        }
-                    }
-                    {
-                        simpl.
-                        rewrite option_guard_decide.
-                        simpl in Hix.
-                        inversion Hix.
-                    }
-                    {
-                        simpl.
-                        simpl in Hix.
-                        inversion Hix.
-                    }
-                }
-            }
-        }
-        {
-            rewrite bind_Some in H2.
-            destruct H2 as [t [H1t H2t]].
-            ltac1:(simplify_eq/=).
-            unfold vars_of; simpl.
-            unfold Valuation2 in *.
-            assert(Hfil:
-            (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect' f ∖ {[x]} ∪ vars_of e) ρ
-            = filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect' f) (filter (λ kv : variable * TermOver builtin_value, kv.1 <> x) ρ)
-            ∪ filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Expression2 e) ρ)).
-            {
-                apply map_eq.
-                intros i.
-                rewrite lookup_union.
-                rewrite map_lookup_filter.
-                rewrite map_lookup_filter.
-                rewrite map_lookup_filter.
-                rewrite map_lookup_filter.
-                unfold vars_of; simpl.
-                destruct (ρ !! i) eqn:Hρi>[|reflexivity].
-                simpl.
-                repeat (rewrite option_guard_decide; cases(); simpl; try reflexivity); try ltac1:(set_solver).
-            }
-            rewrite Hfil.
-            clear Hfil.
-            specialize (IHf _ _ _ H1).
-            (* specialize (IHf (filter (fun kv => kv.1 <> x) ρ)). *)
-                
-            (* }
-            eapply Effect_evaluate'_frame with (ρ2 := {[x:=t]}) in H1 as H1'.
-            (* specialize (IHf ). *)
-            specialize (IHf _ _ _ H1).
-            eapply Effect_evaluate'_frame in IHf as IHff.
-            (* clear H1. *)
-            eapply Effect_evaluate'_extensive in IHf.
-            {
-                rewrite IHf.
-            }
-            {
-                apply map_subseteq_spec.
-                intros i x0 Hix0.
-                ltac1:(rewrite map_lookup_filter in Hix0).
-                rewrite bind_Some in Hix0.
-                destruct Hix0 as [t' [H1t' H2t']].
-                rewrite option_guard_decide in H2t'.
-                cases (); ltac1:(simplify_eq/=).
-                ltac1:(rewrite map_lookup_filter).
-                rewrite H1t'.
-                simpl.
-                rewrite option_guard_decide.
-                cases (); ltac1:(simplify_eq/=).
-                { reflexivity. }
-                {
-                    unfold vars_of in n; simpl in n.
-                    unfold vars_of in e0; simpl in e0.
-                    destruct (decide (i = x)).
-                    {
-                        subst.
-                    }
-                    { ltac1:(set_solver). }
-                }
-            } *)
-
         }
     }
 Qed.
