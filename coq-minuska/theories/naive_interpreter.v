@@ -1326,6 +1326,7 @@ Lemma try_match_lhs_with_sc_complete
     :
     vars_of (r_scs r) ⊆ vars_of (r_from r) ->
     vars_of (r_to r) ⊆ vars_of (r_from r) ->
+    vars_of (r_eff r) ⊆ vars_of (r_from r) ->
     sat2B ρ g (r_from r) ->
     eval_et program h ρ nv (r_to r) = Some g' ->
     SideCondition_evaluate program h ρ nv (r_scs r) = Some true ->
@@ -1342,7 +1343,7 @@ Lemma try_match_lhs_with_sc_complete
     }   
 .
 Proof.
-    intros Hn Hn' H1 HX H2 Hf.
+    intros Hn Hn' Hn'' H1 HX H2 Hf.
     apply try_match_new_complete in H1.
     destruct H1 as [ρ1 [H1ρ1 H2ρ1]].
     destruct H2ρ1 as [H2ρ1 H3ρ2].
@@ -1369,7 +1370,27 @@ Proof.
             {
                 simpl. 
                 apply Effect_evaluate_strip in Hf.
-                rewrite H.
+                eapply Effect_evaluate_extensive in Hf.
+                {
+                    rewrite Hf.
+                    reflexivity.
+                }
+                {
+                    apply map_subseteq_spec.
+                    intros i x Hfil.
+                    unfold Valuation2 in *.
+                    rewrite map_lookup_filter_Some in Hfil.
+                    destruct Hfil as [H1fil H2fil].
+                    simpl in H2fil.
+                    eapply elem_of_weaken in H2fil>[|apply Hn''].
+                    rewrite <- H1ρ1 in H2fil.
+                    unfold vars_of in H2fil; simpl in H2fil.
+                    unfold Valuation2 in *.
+                    rewrite elem_of_dom in H2fil.
+                    destruct H2fil as [x' Hx'].
+                    eapply lookup_weaken in Hx' as H'x'>[|apply H2ρ1].
+                    ltac1:(congruence).
+                }
             }
         }
         {
