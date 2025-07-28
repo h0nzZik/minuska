@@ -1522,50 +1522,42 @@ Lemma thy_lhs_match_one_None
     (nv : NondetValue)
     :
     thy_lhs_match_one e h nv Γ program = None ->
-    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver builtin_value &
+    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver builtin_value & { h' : _ &
         ((r ∈ Γ) *
          (sat2B ρ e (r_from r)) *
          (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
          (eval_et program h ρ nv (r_to r) = Some e') *
-         (vars_of (r_to r) ⊆ vars_of (r_from r))
+         (Effect_evaluate program h ρ nv (r_eff r) = Some h') *
+         (vars_of (r_to r) ⊆ vars_of (r_from r)) *
+         (vars_of (r_eff r) ⊆ vars_of (r_from r))
         )%type
-    } } }
+    } } } }
         
 .
 Proof.
     unfold thy_lhs_match_one.
     intros H.
-    intros [r [ρ [e' [[[[Hin HContra1] HContra2] HContra3] HContra4]]]].
+    intros [r [ρ [e' [h' [[[[[[Hin HContra1] HContra2] HContra3] HContra3'] HContra4] HContra5]]]]].
     destruct (list_find isSome (try_match_lhs_with_sc program h e nv <$> Γ)) eqn:Heqfound.
     {
         destruct p as [n oρ].
         rewrite list_find_Some in Heqfound.
+        ltac1:(destruct Heqfound as [Hfound [Hop HFirst]]).
+        simpl in H.
         rewrite bind_None in H.
-        ltac1:(destruct H as [H|H];[inversion H|]).
+        destruct H as [H|H].
+        {
+            subst.
+            inversion Hop.
+        }
         destruct H as [[idx ρ2][H1 H2]].
         simpl in H2.
         inversion H1; subst; clear H1.
-        ltac1:(destruct Heqfound as [Hfound [HSome HFirst]]).
-        apply bind_None_T_1 in H2.
-        destruct H2 as [H2|H2].
-        {
-            rewrite H2 in HSome. inversion HSome.
-        }
-        {
-            destruct H2 as [x [H21 H22]].
-            apply bind_None_T_1 in H22.
-            destruct H22 as [H22|H22].
-            {
-                rewrite list_lookup_fmap in Hfound.
-                rewrite H22 in Hfound.
-                simpl in Hfound. inversion Hfound.
-            }
-            {
-                subst ρ2.
-                destruct H22 as [x0 [H221 HContra]].
-                inversion HContra.
-            }
-        }
+        rewrite list_lookup_fmap_Some in Hfound.
+        destruct Hfound as [r' [H1r' H2r']].
+        rewrite H1r' in H2.
+        simpl in H2.
+        inversion H2.
     }
     {
         simpl in H.
@@ -1576,9 +1568,9 @@ Proof.
         ltac1:(rename HContra2 into Hsat2).
         apply try_match_new_complete in Hsat1.
         destruct Hsat1 as [ρ' [H1 [H2 H3]]].
-        assert (Hc := try_match_lhs_with_sc_complete program h e e' r).
-        specialize (Hc ρ').
-        ltac1:(ospecialize (Hc nv _ _)).
+        assert (Hc := try_match_lhs_with_sc_complete program h h' e e' r).
+        specialize (Hc ρ' nv).
+        ltac1:(ospecialize (Hc _ _ _)).
         {
             unfold RewritingTheory2_wf in wfΓ.
             rewrite Forall_forall in wfΓ.
@@ -1589,17 +1581,21 @@ Proof.
         {
             apply HContra4.
         }
+        {
+            apply HContra5.
+        }
         assert (H3' := H3).
         apply try_match_new_correct in H3'.
         specialize (Hc H3').
-        ltac1:(ospecialize (Hc _ _)).
+        (* specialize (Hc HContra3). *)
+        ltac1:(ospecialize (Hc _ _ _)).
         {
             clear Hc.
-            apply eval_et_strip in HContra3 as HContra3'.
-            eapply eval_et_extensive_Some in HContra3'.
-            { apply HContra3'. }
+            apply eval_et_strip in HContra3 as HContra3''.
+            eapply eval_et_extensive_Some in HContra3''.
+            { apply HContra3''. }
             {
-                clear HContra3'.
+                clear HContra3''.
                 assert (Hfs: filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_to r)) ρ ⊆ filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_from r)) ρ).
                 {
                     unfold Valuation2 in *.
@@ -1659,6 +1655,56 @@ Proof.
             unfold vars_of; simpl.
             ltac1:(set_solver).
         }
+        {
+            clear Hc.
+            apply Effect_evaluate_strip in HContra3' as HContra3''.
+            eapply Effect_evaluate_extensive in HContra3''.
+            { apply HContra3''. }
+            {
+                clear HContra3''.
+                assert (Hfs: filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_eff r)) ρ ⊆ filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_from r)) ρ).
+                {
+                    unfold Valuation2 in *.
+                    unfold Subseteq_Valuation2.
+                    rewrite map_filter_subseteq_ext.
+                    intros i x Hix.
+                    simpl.
+                    intros HH.
+                    eapply elem_of_weaken.
+                    { apply HH. }
+                    { apply HContra5. }
+                }
+                unfold Valuation2 in *.
+                apply transitivity with (y := filter
+                    (λ kv : variable * TermOver builtin_value,
+                    kv.1 ∈ vars_of (r_from r))
+                    ρ).
+                { apply Hfs. }
+                {
+                    clear Hfs.
+                    rewrite <- H1.
+                    unfold Valuation2 in *.
+                    apply map_subseteq_spec.
+                    intros i x Hfltr.
+                    rewrite map_lookup_filter in Hfltr.
+                    rewrite bind_Some in Hfltr.
+                    destruct Hfltr as [x0 [H1x0 H2x0]].
+                    rewrite bind_Some in H2x0.
+                    simpl in H2x0.
+                    destruct H2x0 as [HHH [H1x1 H2x1]].
+                    apply (inj Some) in H2x1.
+                    subst x0.
+                    clear H1x1.
+                    unfold vars_of in HHH; simpl in HHH.
+                    unfold Valuation2 in *.
+                    rewrite elem_of_dom in HHH.
+                    destruct HHH as [y Hy].
+                    eapply lookup_weaken in Hy as Hy'>[|apply H2].
+                    ltac1:(congruence).
+                }
+            }
+        }
+        
         destruct Hc as [ρ'' [H1ρ'' [H2ρ'' [H3ρ'' H4ρ'']]]].
         unfold try_match_lhs_with_sc in H4ρ''.
         rewrite bind_Some in H4ρ''.
@@ -1666,21 +1712,29 @@ Proof.
         ltac1:(repeat case_match).
         {
             rewrite bind_Some in H2x.
-            destruct H2x as [b' [H1b' H2b']].
+            destruct H2x as [Hwhat [b' [H1b' H2b']]].
+            destruct b'>[|inversion H2b'].
+            ltac1:(simplify_eq/=).
+            eapply Heqfound.
+            rewrite elem_of_list_fmap.
+            unfold try_match_lhs_with_sc.
+            exists r.
+            rewrite H3.
+            simpl.
+            rewrite H.
+            rewrite H1b'.
+            split>[reflexivity|].
+            exact Hin.
+            simpl.
+            rewrite H0.
+            reflexivity.
+        }
+        {
+            rewrite bind_Some in H2x.
+            destruct H2x as [Hwhatever [b' [H1b' H2b']]].
             destruct b'.
             {
-                ltac1:(simplify_eq/=).
-                eapply Heqfound.
-                rewrite elem_of_list_fmap.
-                unfold try_match_lhs_with_sc.
-                exists r.
-                rewrite H3.
-                simpl.
-                rewrite H.
-                rewrite H1b'.
-                split>[reflexivity|].
-                exact Hin.
-                simpl. reflexivity.
+                inversion H2b'.
             }
             {
                 inversion H2b'.
@@ -1688,7 +1742,7 @@ Proof.
         }
         {
             rewrite bind_Some in H2x.
-            destruct H2x as [b' [H1b' H2b']].
+            destruct H2x as [Hwhatever [b' [H1b' H2b']]].
             destruct b'.
             {
                 inversion H2b'.
@@ -1707,14 +1761,19 @@ Lemma thy_lhs_match_one_Some
     (e e' : TermOver builtin_value)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (h : hidden_data)
+    (h h' : hidden_data)
     (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)
     (rule_idx : nat)
     :
-    thy_lhs_match_one e h nv Γ program = Some (r, ρ, e', rule_idx) ->
-    ((r ∈ Γ) * (sat2B ρ e (r_from r)) * (eval_et program h ρ nv (r_to r) = Some e') * (SideCondition_evaluate program h ρ nv (r_scs r) = Some true ))%type
+    thy_lhs_match_one e h nv Γ program = Some (r, ρ, e', h', rule_idx) ->
+    ((r ∈ Γ) * 
+    (sat2B ρ e (r_from r)) * 
+    (eval_et program h ρ nv (r_to r) = Some e') * 
+    (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
+    (Effect_evaluate program h ρ nv (r_eff r) = Some h')
+    )%type
 .
 Proof.
     intros H.
@@ -1744,58 +1803,94 @@ Proof.
             {
                 split.
                 {
-                    rewrite elem_of_list_lookup.
-                    exists rule_idx. apply Hot1.
-                }
-                {
-                    destruct H12 as [H1 H2].
-                    unfold is_true, isSome in H1.
-                    destruct (try_match_lhs_with_sc program h e nv r) eqn:HTM>[|inversion H1].
-                    clear H1.
-                    inversion H1ρ'; subst; clear H1ρ'.
-                    unfold try_match_lhs_with_sc in HTM.
-                    apply bind_Some_T_1 in HTM.
-                    destruct HTM as [x [H1x H2x]].
-                    apply try_match_new_correct in H1x.
-                    destruct (SideCondition_evaluate program h x nv (r_scs r)) eqn:Heq.
+                    split.
                     {
-                        unfold isSome in H2x.
-                        destruct (eval_et program h x nv (r_to r)) eqn:Heq2.
-                        {
-                            rewrite bind_Some in H2x.
-                            destruct H2x as [b' [H1b' H2b']].
-                            apply (inj Some) in H1b'.
-                            subst b'.
-                            destruct b.
-                            {
-                                apply (inj Some) in H2b'.
-                                subst ρ'.
-                                simpl.
-                                apply H1x.
-                            }
-                            {
-                                inversion H2b'.
-                            }
-                        }
-                        {
-                            destruct b;
-                                simpl in *;
-                                inversion H2x.
-                        }
+                        rewrite elem_of_list_lookup.
+                        exists rule_idx. apply Hot1.
                     }
                     {
-                        inversion H2x.
-                    }   
+                        destruct H12 as [H1 H2].
+                        unfold is_true, isSome in H1.
+                        destruct (try_match_lhs_with_sc program h e nv r) eqn:HTM>[|inversion H1].
+                        clear H1.
+                        inversion H1ρ'; subst; clear H1ρ'.
+                        unfold try_match_lhs_with_sc in HTM.
+                        apply bind_Some_T_1 in HTM.
+                        destruct HTM as [x [H1x H2x]].
+                        apply try_match_new_correct in H1x.
+                        destruct (SideCondition_evaluate program h x nv (r_scs r)) eqn:Heq.
+                        {
+                            unfold isSome in H2x.
+                            destruct (eval_et program h x nv (r_to r)) eqn:Heq2.
+                            {
+                                rewrite bind_Some in H2x.
+                                destruct H2x as [b' [H1b' H2b']].
+                                apply (inj Some) in H1b'.
+                                subst b'.
+                                destruct b.
+                                {
+                                    cases ();
+                                        ltac1:(simplify_eq/=).
+                                    apply H1x.
+                                }
+                                {
+                                    inversion H2b'.
+                                }
+                            }
+                            {
+                                destruct b;
+                                    simpl in *;
+                                    inversion H2x.
+                            }
+                        }
+                        {
+                            inversion H2x.
+                        }   
+                    }
+                }
+                {
+                    unfold try_match_lhs_with_sc in H1ρ'.
+                    apply bind_Some_T_1 in H1ρ'.
+                    destruct H1ρ' as [x [H1x H2x]].
+                    rewrite bind_Some in H2x.
+                    destruct H2x as [b' [H1b' H2b']].
+                    ltac1:(repeat case_match; simpl in *; simplify_eq/=).
+                    assumption.
                 }
             }
             {
-                unfold try_match_lhs_with_sc in H1ρ'.
-                apply bind_Some_T_1 in H1ρ'.
-                destruct H1ρ' as [x [H1x H2x]].
-                rewrite bind_Some in H2x.
-                destruct H2x as [b' [H1b' H2b']].
-                ltac1:(repeat case_match; simpl in *; simplify_eq/=).
-                assumption.
+                destruct H12 as [H1 H2].
+                unfold is_true, isSome in H1.
+                destruct (try_match_lhs_with_sc program h e nv r) eqn:HTM>[|inversion H1].
+                clear H1.
+                inversion H1ρ'; subst; clear H1ρ'.
+                unfold try_match_lhs_with_sc in HTM.
+                apply bind_Some_T_1 in HTM.
+                destruct HTM as [x [H1x H2x]].
+                destruct (SideCondition_evaluate program h x nv (r_scs r)) eqn:Heq.
+                {
+                    unfold isSome in H2x.
+                    destruct (eval_et program h x nv (r_to r)) eqn:Heq2.
+                    {
+                        destruct b.
+                        {
+                            simpl in *.
+                            cases ();
+                                ltac1:(simplify_eq/=).
+                            apply Heq.
+                        }
+                        {
+                            simpl in *.
+                            inversion H2x.
+                        }
+                    }
+                    {
+                        destruct b; simpl in *; inversion H2x.
+                    }
+                }
+                {
+                    inversion H2x.
+                }
             }
         }
         {
@@ -1815,10 +1910,9 @@ Proof.
                     destruct b.
                     {
                         simpl in *.
-                        apply (inj Some) in H2x.
-                        subst ρ'.
-                        simpl in *.
-                        apply Heq.
+                        cases ();
+                            ltac1:(simplify_eq/=).
+                        apply H.
                     }
                     {
                         simpl in *.
@@ -1849,6 +1943,7 @@ Proof.
     unfold Interpreter_sound.
     unfold stuck,not_stuck.
     unfold naive_interpreter_ext.
+    (* Set Printing All. *)
     repeat split.
     {
         intros program [e1 h] [e2 h'] nv.
@@ -1858,18 +1953,20 @@ Proof.
         destruct (thy_lhs_match_one e1 h nv Γ) eqn:Hmatch.
         {
             destruct p as [p idx].
+            destruct p as [p h''].
             destruct p as [p g].
-            destruct p as [r ρ].
+            destruct p.
             ltac1:(simplify_option_eq).
             apply thy_lhs_match_one_Some in Hmatch.
             simpl.
             exists r.
-            destruct Hmatch as [[[Hin Hm1] Hm2] Hm3].
+            destruct Hmatch as [[[[Hin Hm1] Hm2] Hm3] Hm4].
             exists (r_label r).
             split>[apply Hin|].
             unfold rewrites_to.
-            exists ρ.
+            exists v.
             unfold rewrites_in_valuation_under_to.
+            simpl.
             apply eval_et_correct in Hm2.
             (repeat split); try assumption.
             { symmetry. simpl. assumption. }
@@ -1883,8 +1980,9 @@ Proof.
         destruct (thy_lhs_match_one e h nv Γ) eqn:Hmatch>[|reflexivity].
         {
             destruct p as [p idx].
-            destruct p as [p g].
-            destruct p as [r ρ].
+            destruct p as [p h'].
+            destruct p as [r g].
+            destruct r as [r ρ].
             (* destruct p as [[r ρ] rule_idx]. *)
             {
                 apply thy_lhs_match_one_Some in Hmatch.
@@ -1912,11 +2010,12 @@ Proof.
                 clear Hev.
                 apply Hstuck. clear Hstuck.
                 unfold not_stuck.
-                exists (pg',h). exists nv. exists r.
+                exists (pg',h'). exists nv. exists r.
                 exists (r_label r).
                 split>[apply Hin|].
                 exists ρ.
                 repeat split; try assumption.
+                { apply Hin. }
                 { apply Hin. }
                 {
                     symmetry.
@@ -1938,13 +2037,12 @@ Proof.
         unfold rewrites_in_valuation_under_to in Hρ'.
         destruct Hρ' as [[[H1ρ' H2ρ'] H3ρ'] H4ρ'].
         subst a.
-        unfold satisfies in *; simpl in *.
         (* Search thy_lhs_match_one. *)
 
         
-        destruct (thy_lhs_match_one e nv Γ program) eqn:Hmatch.
+        destruct (thy_lhs_match_one e.1 e.2 nv Γ program) eqn:Hmatch.
         {
-            destruct p as [[[r ρ] e''] rule_idx]; cbn in *.
+            destruct p as [[[[r ρ] e''] h''] rule_idx]; cbn in *.
             apply thy_lhs_match_one_Some in Hmatch as Hmatch'.
             destruct Hmatch' as [[Hin H1sat] H2sat].
             eexists. eexists. rewrite Hmatch.
@@ -1956,13 +2054,26 @@ Proof.
             apply Hmatch.
             clear Hmatch.
             exists r'.
-            unfold satisfies; simpl.
             exists ρ'.
-            exists e'.
+            exists e'.1.
+            exists e'.2.
             (repeat split); try assumption.
             {
+                apply H1ρ'.
+            }
+            {
                 apply eval_et_correct_2.
-                apply H2ρ'.
+                apply H1ρ'.
+            }
+            {
+                symmetry.
+                apply H3ρ'.
+            }
+            {
+                unfold RewritingTheory2_wf in wfΓ.
+                rewrite Forall_forall in wfΓ.
+                apply wfΓ.
+                apply H1r'.
             }
             {
                 unfold RewritingTheory2_wf in wfΓ.

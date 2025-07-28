@@ -71,6 +71,8 @@ Definition RewritingRule2_wf
     vars_of (r_scs r) ⊆ vars_of (r_from r)
     /\
     vars_of (r_to r) ⊆ vars_of (r_from r)
+    /\
+    vars_of (r_eff r) ⊆ vars_of (r_from r)
 .
 
 Definition RewritingTheory2_wf
