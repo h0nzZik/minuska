@@ -18,7 +18,7 @@ Extraction
     frontend.process_declarations
     frontend.to_theory
     frontend.realize_thy
-    default_everything.Act
+    (* default_everything.Act *)
     default_everything.default_act
     default_everything.invisible_act
     default_everything.DSM
