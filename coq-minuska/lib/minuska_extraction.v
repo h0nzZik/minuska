@@ -6,10 +6,12 @@ From Minuska Require Export
     builtin.empty
     builtin.klike
     pi.trivial
+    ocaml_interface
 .
 Extraction
     "Dsm.ml"
     mkRewritingRule2
+    ocaml_interface.combine_symbol_classifiers
     builtin.empty.β
     builtin.empty.bindings
     builtin.klike.β
