@@ -42,7 +42,7 @@ From Coq Require Import String Bool Arith ZArith List.
 
 Require Minuska.BuiltinValue Minuska.builtins.
 
-Variant Label := default_act | invisible_act.
+Variant Label := default_label | invisible_label.
 
 
 #[export]

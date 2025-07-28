@@ -9,7 +9,7 @@ let convert_builtin (pvae : primitiveValueAlgebraEntry) (b : builtin_repr)  : ((
   | None -> failwith "Cannot represent primitive value in chosen builtin model"
   | Some v -> v
 
-let rec convert_groundterm (pvae : primitiveValueAlgebraEntry) (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
+let rec convert_groundterm (pvae : primitiveValueAlgebraEntry) (iface : 'a Extracted.valueAlgebraInterface) (g : Syntax.groundterm): Extracted.gT =
   match g with
   | `GTb b ->
     Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin pvae b)
@@ -139,7 +139,7 @@ let command_run
 
 let main0
   (pvae : primitiveValueAlgebraEntry) 
-  (iface : 'a Extracted.builtinInterface)
+  (iface : 'a Extracted.valueAlgebraInterface)
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
   (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
@@ -171,8 +171,8 @@ let wrap_interpreter_ext pvae iface interpreter_ext =
 
 let main
       (pvae : primitiveValueAlgebraEntry)
+      (hae : hiddenAlgebraEntry)
       (pie : programInfoEntry)
-      (* (iface : 'a Extracted.builtinInterface) *)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
@@ -180,7 +180,15 @@ let main
   let mysignature = pvae.pvae_builtin_interface.bi_signature in
   let mybeta = pvae.pvae_builtin_interface.bi_beta in
   let my_program_info = (pie.pie_constructor) in
-  let mysigma = Extracted.dSM mysignature mybeta my_program_info in
+  let myhiddensignature = hae.hae_interface.hai_signature in
+  let myhiddenmodel = hae.hae_interface.hai_model in
+  let mysigma = Extracted.dSM
+    mysignature
+    myhiddensignature
+    mybeta
+    myhiddenmodel
+    my_program_info
+  in
   let name2ar = (fun name ->
     match (pvae.pvae_builtin_interface.bi_sym_info name) with
     | Extracted.Si_predicate(_,n,_) -> n
@@ -216,7 +224,7 @@ let main
       | Extracted.Si_none -> failwith (sprintf "Can't realize predicate: %s" s)  
     );
   } in
-  let pre1T = Extracted.process_declarations Extracted.Default_act name2ar nameneg langDefaults lang_Decls in
+  let pre1T = Extracted.process_declarations Extracted.Default_act langDefaults lang_Decls in
   match pre1T with
   | Extracted.Inl(st) -> (
     match (Extracted.to_theory st) with
@@ -224,13 +232,13 @@ let main
       match (Extracted.realize_thy mysigma r thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
       | Extracted.Inl thy2 -> (
-        let is_valid_dec = Extracted.rewritingTheory2_wf_dec (Extracted.dSM mysignature mybeta my_program_info) thy2 in
+        let is_valid_dec = Extracted.rewritingTheory2_wf_dec mysigma thy2 in
         let _ = (match is_valid_dec with
          | true -> () (* OK *)
          | false -> printf "Warning: the given theory is not well-formed\n"; ()
         ) in
-        let basic_interpreter = Extracted.global_naive_interpreter mysignature mybeta my_program_info thy2 in
-        let ext_interpreter = Extracted.global_naive_interpreter_ext mysignature mybeta my_program_info thy2 in
+        let basic_interpreter = Extracted.global_naive_interpreter mysignature myhiddensignature mybeta myhiddenmodel my_program_info thy2 in
+        let ext_interpreter = Extracted.global_naive_interpreter_ext mysignature myhiddensignature mybeta myhiddenmodel my_program_info thy2 in
         main0
         pvae
         (pvae.pvae_builtin_interface)

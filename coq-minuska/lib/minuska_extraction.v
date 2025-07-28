@@ -8,19 +8,21 @@ From Minuska Require Export
 Extraction
     "Dsm.ml"
     mkRewritingRule2
-    ValueAlgebraInterface
+    pval_ocaml_binding.ValueAlgebraInterface
     mkValueAlgebraInterface
+    pval_ocaml_binding.HiddenAlgebraInterface
     builtins_empty
     builtins_klike
+    pval_ocaml_binding.hai_klike
     pi_trivial
     interpreter_results.RewritingTheory2_wf_dec
     frontend.srr_to_rr
     frontend.process_declarations
     frontend.to_theory
     frontend.realize_thy
-    (* default_everything.Act *)
-    default_everything.default_act
-    default_everything.invisible_act
+    default_everything.Label
+    default_everything.default_label
+    default_everything.invisible_label
     default_everything.DSM
     default_everything.GT
     default_everything.gt_term

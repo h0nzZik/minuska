@@ -153,6 +153,9 @@ Inductive StringSideCondition
 | ssc_pred
     (pred : string)
     (args : list (StringExpression))
+| ssc_npred
+    (pred : string)
+    (args : list (StringExpression))
 | ssc_and
     (left : (StringSideCondition))
     (right : (StringSideCondition))
@@ -176,6 +179,15 @@ Fixpoint ssc_to_sc
         | Some p' =>
             match list_collect_e ((se_to_Expression) <$> args) with
             | inl args' => inl (sc_pred p' args')
+            | inr e => inr e
+            end
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate symbol")
+        end
+    | ssc_npred p args =>
+        match string2p p with
+        | Some p' =>
+            match list_collect_e ((se_to_Expression) <$> args) with
+            | inl args' => inl (sc_npred p' args')
             | inr e => inr e
             end
         | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate symbol")
@@ -411,8 +423,6 @@ end
 .
 
 Fixpoint try_neg_s
-    (sbps_ar : string -> nat)
-    (sbps_neg : string -> option string)
     (sc : StringSideCondition)
     : option StringSideCondition
 := 
@@ -420,18 +430,15 @@ Fixpoint try_neg_s
     | ssc_true => Some ssc_false
     | ssc_false => Some ssc_true
     | ssc_and sc1 sc2 =>
-        sc1' ← try_neg_s sbps_ar sbps_neg sc1;
-        sc2' ← try_neg_s sbps_ar sbps_neg sc2;
+        sc1' ← try_neg_s  sc1;
+        sc2' ← try_neg_s  sc2;
         Some (ssc_or sc1' sc2')
     | ssc_or sc1 sc2 =>
-        sc1' ← try_neg_s sbps_ar sbps_neg sc1;
-        sc2' ← try_neg_s sbps_ar sbps_neg sc2;
+        sc1' ← try_neg_s  sc1;
+        sc2' ← try_neg_s  sc2;
         Some (ssc_and sc1' sc2')
-    | ssc_pred p l =>
-        if decide (length l = sbps_ar p) then 
-            p' ← sbps_neg p;
-            Some (ssc_pred p' l)
-        else None
+    | ssc_pred p l => Some (ssc_npred p l)
+    | ssc_npred p l => Some (ssc_pred p l)
     end
 .
 
@@ -441,14 +448,6 @@ Section wsm.
         (Label : Set)
         (default_act : Label)
     .
-    Context
-        (* (signature : Signature) *)
-        (* (β : Model signature MyUnit) *)
-        (* (my_program_info : ProgramInfo) *)
-        (sbps_ar : string -> nat)
-        (sbps_neg : string -> option string)
-    .
-
     Definition REST_SEQ : string := "$REST_SEQ".
 
     Definition cseq {defaults : Defaults} {T : Type}
@@ -489,7 +488,7 @@ Section wsm.
             := (map t_over (map se_variable vars)) in
         let selected_var : string
             := (argument_name position) in
-        match try_neg_s sbps_ar sbps_neg (isValue (se_variable selected_var)) with
+        match try_neg_s (isValue (se_variable selected_var)) with
         | None => inr "Cannot negate given isValue condition"
         | Some is_value_neg => inl (
             let lhs_selected_var : (@TermOver' string StringBuiltinOrVar)

@@ -37,6 +37,7 @@ rule read =
   | "@false"       { KEYWORD_FALSE }
   | "@and"       { KEYWORD_AND }
   | "@or"        { KEYWORD_OR }
+  | "@not"        { KEYWORD_NOT }
   | "of_arity"         { KEYWORD_OF_ARITY }
   | "in"         { KEYWORD_IN }
   | "where"      { KEYWORD_WHERE }

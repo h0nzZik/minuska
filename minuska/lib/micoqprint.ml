@@ -123,9 +123,13 @@ let rec cond_w_hole_to_str
   (hole : string option)
   : string =
   match c with
-  | `CondAtomic (`Id s, es) -> (
+  | `CondAtomicPred (`Id s, es) -> (
     let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
-    sprintf "(ssc_atom \"%s\" %s)" s (Util.format_coq_string_list es_str)
+    sprintf "(ssc_pred \"%s\" %s)" s (Util.format_coq_string_list es_str)
+  )
+  | `CondAtomicNPred (`Id s, es) -> (
+    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
+    sprintf "(ssc_npred \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
   | `CondAnd (c1, c2) -> (
     sprintf "(ssc_and %s %s)" (cond_w_hole_to_str c1 hole) (cond_w_hole_to_str c2 hole)
@@ -163,7 +167,7 @@ let frame_definition_to_str fr : string =
   sprintf "Definition frame_%s : (string*(@TermOver' string StringBuiltinOrVar)) := %s.\n" (match fr.fd_name with `Id s -> s) (frame_to_str fr)
 
 let decl_strict_to_str strictness : string = (
-  sprintf "(decl_strict Act (mkStrictnessDeclaration \"%s\" %d %s isValue myContext))\n"
+  sprintf "(decl_strict Label (mkStrictnessDeclaration \"%s\" %d %s isValue myContext))\n"
     (match strictness.symbol with `Id s -> s)
     (strictness.arity)
     (Util.format_coq_string_list (List.map ~f:(fun a -> sprintf "%d" a) strictness.strict_places))
@@ -190,7 +194,7 @@ Require Import Minuska.pval_ocaml_binding Minuska.default_everything.
 Instance LangDefaults : Defaults := mkDefaults "builtin.cseq" "builtin.empty_cseq" myContext isValue.
   
 %s
-Definition Lang_Decls : list (Declaration Act) :=
+Definition Lang_Decls : list (Declaration Label) :=
   (%s)
   ++
   (%s)
