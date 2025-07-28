@@ -224,7 +224,7 @@ let main
       | Extracted.Si_none -> failwith (sprintf "Can't realize predicate: %s" s)  
     );
   } in
-  let pre1T = Extracted.process_declarations Extracted.Default_act langDefaults lang_Decls in
+  let pre1T = Extracted.process_declarations Extracted.Default_label langDefaults lang_Decls in
   match pre1T with
   | Extracted.Inl(st) -> (
     match (Extracted.to_theory st) with
