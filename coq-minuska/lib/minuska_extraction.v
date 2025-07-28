@@ -15,7 +15,7 @@ Extraction
     builtin.empty.β
     builtin.empty.bindings
     builtin.klike.β
-    builtin.klike.β.bindings
+    builtin.klike.bindings
     pi.trivial.MyProgramInfo
     pi.trivial.bindings
     interpreter_results.RewritingTheory2_wf_dec
@@ -26,10 +26,10 @@ Extraction
     default_everything.Label
     default_everything.default_label
     default_everything.invisible_label
-    default_everything.DSM
+    (* default_everything.DSM
     default_everything.GT
     default_everything.gt_term
-    default_everything.gt_over
+    default_everything.gt_over *)
     default_everything.global_naive_interpreter
     default_everything.global_naive_interpreter_ext
     (*

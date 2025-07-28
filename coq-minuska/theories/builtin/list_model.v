@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     model_functor
-    model_traits
     list_signature
     model_algebra
     (* model_functor *)

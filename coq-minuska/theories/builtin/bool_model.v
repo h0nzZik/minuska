@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     bool_signature
-    model_traits
     model_algebra
     (* model_functor *)
 .

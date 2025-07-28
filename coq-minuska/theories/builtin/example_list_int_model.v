@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     model_algebra
-    model_traits
     builtin.list_signature
     builtin.bool_model
     builtin.int_model

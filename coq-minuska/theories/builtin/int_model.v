@@ -3,7 +3,6 @@ From Minuska Require Import
     spec
     bool_model
     int_signature
-    model_traits
     model_algebra
     (* model_functor *)
 .
