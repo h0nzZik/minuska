@@ -1342,7 +1342,7 @@ Lemma try_match_lhs_with_sc_complete
     }   
 .
 Proof.
-    intros Hn Hn' H1 HX H2.
+    intros Hn Hn' H1 HX H2 Hf.
     apply try_match_new_complete in H1.
     destruct H1 as [ρ1 [H1ρ1 H2ρ1]].
     destruct H2ρ1 as [H2ρ1 H3ρ2].
@@ -1368,7 +1368,7 @@ Proof.
             }
             {
                 simpl. 
-                
+                apply Effect_evaluate_strip in Hf.
                 rewrite H.
             }
         }

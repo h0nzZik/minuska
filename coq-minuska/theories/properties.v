@@ -4726,3 +4726,37 @@ Proof.
     }
 Qed.
 
+Lemma Effect_evaluate_extensive
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : Effect)
+    (ρ1 ρ2 : gmap variable (TermOver builtin_value))
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    ρ1 ⊆ ρ2 ->
+    Effect_evaluate program h ρ1 nv f = Some h' ->
+    Effect_evaluate program h ρ2 nv f = Some h'
+.
+Proof.
+    intros HH1 HH2.
+    unfold Effect_evaluate in HH2.
+    rewrite fmap_Some in HH2.
+    destruct HH2 as [[h'' ρ''][H1 H2]].
+    ltac1:(simplify_eq/=).
+    unfold Effect_evaluate.
+    apply map_difference_union in HH1.
+    rewrite <- HH1.
+    rewrite fmap_Some.
+    eexists.
+    split.
+    { 
+        eapply Effect_evaluate'_frame in H1.
+        apply H1.
+    }
+    {
+        simpl.
+        reflexivity.
+    }
+Qed.
