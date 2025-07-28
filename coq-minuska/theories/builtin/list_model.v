@@ -222,10 +222,6 @@ Next Obligation.
     apply (inj (inject bool Carrier)) in H.
     exact H.
 Qed.
-Next Obligation.
-    destruct p; simpl in *;
-        ltac1:(simplify_eq/=).
-Qed.
 Fail Next Obligation.
 
 

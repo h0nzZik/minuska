@@ -2,6 +2,7 @@ From Minuska Require Import
     spec
     builtin.empty
     pi.trivial
+    hidden.hidden_unit
     default_everything
     martelli_montanari
     basic_properties
@@ -24,7 +25,7 @@ because, any mistakes will inherently be found out
 during the proving of the rest of the implementation.
 *)
 
-Instance sm : StaticModel := @DSM mysignature β MyProgramInfo.
+Instance sm : StaticModel := @DSM mysignature (unit_hidden_signature mysignature) β (unit_hidden_model _ _ β) MyProgramInfo.
 
 Definition dec_paper_input1 : list (TermOver BuiltinOrVar) := [
     t_term "f"

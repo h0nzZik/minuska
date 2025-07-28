@@ -22,7 +22,7 @@ From Coq Require Import Logic.Eqdep_dec.
 From Equations Require Export Equations.
 
 
-Definition ScList {Σ : StaticModel} := (list (variable*(QuerySymbol+builtin_function_symbol)*(list (Expression2)))).
+Definition ScList {Σ : StaticModel} := (list (variable*(AttributeSymbol+QuerySymbol+builtin_function_symbol)*(list (Expression2)))).
 
 (* To make sense, vars of F and vars of et should not overlap *)
 Fixpoint replace_and_collect0
@@ -41,7 +41,11 @@ Fixpoint replace_and_collect0
         )
     | t_over (e_query q l) => 
         freshFresher (fun x =>
-            (t_over (bov_variable x),[(x,(inl q), l)])
+            (t_over (bov_variable x),[(x,(inl (inr q)), l)])
+        )
+    | t_over (e_attr a l) => 
+        freshFresher (fun x =>
+            (t_over (bov_variable x),[(x,(inl (inl a)), l)])
         )
     | t_term s l => 
         let a := (fix go (l : (list (TermOver Expression2))) : FresherM ((list (TermOver BuiltinOrVar))*ScList) :=
@@ -88,6 +92,8 @@ Inductive SideConditionEq {Σ : StaticModel} :=
 | sce_false
 | sce_eq (l r : Expression2)
 | sce_atom (pred : builtin_predicate_symbol) (args : list Expression2)
+| sce_natom (pred : builtin_predicate_symbol) (args : list Expression2)
+| sce_hatom (pred : HiddenPredicateSymbol) (args : list Expression2)
 | sce_and (left : SideConditionEq) (right : SideConditionEq)
 | sce_or (left : SideConditionEq) (right : SideConditionEq)
 .
@@ -97,6 +103,8 @@ Fixpoint asIfWithEq {Σ : StaticModel} (sc : SideCondition) : SideConditionEq :=
     | sc_true => sce_true
     | sc_false => sce_false
     | sc_pred p a => sce_atom p a
+    | sc_npred p a => sce_natom p a
+    | sc_hpred p a => sce_hatom p a
     | sc_and l r => sce_and (asIfWithEq l) (asIfWithEq r)
     | sc_or l r => sce_or (asIfWithEq l) (asIfWithEq r)
     end
@@ -107,6 +115,8 @@ match sc with
 | sce_true => ∅
 | sce_false => ∅
 | sce_atom _ args => vars_of args
+| sce_natom _ args => vars_of args
+| sce_hatom _ args => vars_of args
 | sce_eq l r => vars_of l ∪ vars_of r
 | sce_and l r => vars_of_sce l ∪ vars_of_sce r
 | sce_or l r => vars_of_sce l ∪ vars_of_sce r
@@ -124,6 +134,7 @@ Instance  VarsOf_sce
 Definition SideConditionEq_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
+    (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideConditionEq)
@@ -135,13 +146,23 @@ Definition SideConditionEq_evaluate
         | sce_true => Some true
         | sce_false => Some false
         | sce_atom pred args => (
-            let ts' := (fun e => Expression2_evaluate program ρ e nv) <$> args in
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
             ts ← list_collect ts';
             builtin_predicate_interp pred nv ts
         )
+        | sce_natom pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            negb <$> builtin_predicate_interp pred nv ts
+        )
+        | sce_hatom pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            hidden_predicate_interpretation pred h ts
+        )
         | sce_eq l r =>
-            gl ← Expression2_evaluate program ρ l nv;
-            gr ← Expression2_evaluate program ρ r nv;
+            gl ← Expression2_evaluate program h ρ l nv;
+            gr ← Expression2_evaluate program h ρ r nv;
             Some (bool_decide (gl = gr))
         | sce_and l r => 
             l' ← (go l);
@@ -159,14 +180,17 @@ Lemma SideConditionEq_evaluate_asIfWithEq
     {Σ : StaticModel}
     (sc : SideCondition)
     (program : ProgramT)
+    (h : hidden_data)
     (nv : NondetValue)
     (ρ : Valuation2)
     :
-    SideConditionEq_evaluate program ρ nv (asIfWithEq sc)
-    = SideCondition_evaluate program ρ nv sc
+    SideConditionEq_evaluate program h ρ nv (asIfWithEq sc)
+    = SideCondition_evaluate program h ρ nv sc
 .
 Proof.
     induction sc; simpl.
+    { reflexivity. }
+    { reflexivity. }
     { reflexivity. }
     { reflexivity. }
     { reflexivity. }
@@ -224,7 +248,8 @@ Fixpoint sclist_to_sceq {Σ : StaticModel} (l : ScList) : SideConditionEq :=
     | xfl::xs =>
         let part_1 := sce_eq (e_variable xfl.1.1) (
         match xfl.1.2 with
-        | inl q => e_query q xfl.2
+        | inl (inl a) => e_attr a xfl.2
+        | inl (inr q) => e_query q xfl.2
         | inr f => e_fun f xfl.2
         end) in
         let part_2 := sclist_to_sceq xs in

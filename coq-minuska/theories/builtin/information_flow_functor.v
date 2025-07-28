@@ -162,14 +162,6 @@ Defined.
 Next Obligation.
     intros. simpl in *. ltac1:(simplify_eq/=). reflexivity.
 Qed.
-Next Obligation.
-    intros. simpl in *.
-    eapply bps_neg_correct.
-    { apply H. }
-    { apply H0. }
-    { apply H1. }
-    { apply H2. }
-Qed.
 Fail Next Obligation.
 
 Definition information_flow_functor_tagged

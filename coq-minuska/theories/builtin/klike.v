@@ -1970,76 +1970,17 @@ Section sec2.
     .
 
     #[local]
-    Program Instance mysignature : Signature := {|
+    Instance mysignature : Signature := {|
         builtin_function_symbol
             := FunctionSymbol ;
 
         builtin_predicate_symbol
             := PredicateSymbol ;
-    
-        bps_ar := fun p =>
-            match p with
-            | b_isBuiltin => 1
-            | b_isNotBuiltin => 1
-            | b_isSymbol => 1
-            | b_isNotSymbol => 1
-            | b_isZ => 1
-            | b_isNotZ => 1
-            | b_isBool => 1
-            | b_isNotBool => 1
-            | b_isString => 1
-            | b_isNotString => 1
-            | b_isList => 1
-            | b_isNotList => 1
-            | b_isMap => 1
-            | b_isNotMap => 1
-            | b_bool_is_true => 1
-            | b_bool_is_false => 1
-            | b_term_eq => 2
-            | b_map_hasKey => 2
-            | b_is_applied_symbol => 2
-            | b_is_not_applied_symbol => 2
-            | b_have_same_symbol => 2
-            | b_have_different_symbols => 2
-            end ;
-        bps_neg := fun p =>
-            match p with
-            | b_isBuiltin => Some b_isNotBuiltin
-            | b_isNotBuiltin => Some b_isBuiltin
-            | b_isSymbol => Some b_isNotSymbol
-            | b_isNotSymbol => Some b_isSymbol
-            | b_isZ => Some b_isNotZ
-            | b_isNotZ => Some b_isZ
-            | b_isBool => Some b_isNotBool
-            | b_isNotBool => Some b_isBool
-            | b_isString => Some b_isNotString
-            | b_isNotString => Some b_isString
-            | b_isList => Some b_isNotList
-            | b_isNotList => Some b_isList
-            | b_isMap => Some b_isNotMap
-            | b_isNotMap => Some b_isMap
-            | b_bool_is_true => Some b_bool_is_false
-            | b_bool_is_false => Some b_bool_is_true
-            | b_term_eq => None
-            | b_map_hasKey => None
-            | b_is_applied_symbol => Some b_is_not_applied_symbol
-            | b_is_not_applied_symbol => Some b_is_applied_symbol
-            | b_have_same_symbol => Some b_have_different_symbols
-            | b_have_different_symbols => Some b_have_same_symbol
-            end ;
-
     |}.
-    Next Obligation.
-        intros p p' H; destruct p, p'; ltac1:(simplify_eq/=); reflexivity.
-    Qed.
-    Next Obligation.
-        intros p p' H; destruct p; simpl; ltac1:(simplify_eq/=); try reflexivity.
-    Qed.
-    Fail Next Obligation.
-
-    #[local]
-    Obligation Tactic := Program.Tactics.program_simpl.
-    Program
+    
+    (* #[local] *)
+    (* Obligation Tactic := Program.Tactics.program_simpl. *)
+    
     Definition βover
         : ModelOver mysignature MyUnit BuiltinValue0
     := {|
@@ -2343,42 +2284,7 @@ Section sec2.
                 end
             )
             end ;
-            bps_neg_correct := _;
     |}.
-    (* Solve All Obligations with (simpl; intros; try discriminate). *)
-    (* Fail Next Obligation. *)
-    Next Obligation.
-        intros.
-        destruct p,p'; simpl in *; case_on_length (); ltac1:(repeat case_match; simplify_eq/=); try reflexivity.
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          destruct b0; reflexivity.
-        }
-        {
-          destruct b0; reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-    Qed.
-    Fail Next Obligation.
 
     #[local]
     Instance β
@@ -2421,77 +2327,3 @@ Section sec2.
     end.
 
 End sec2.
-(* 
-Definition builtins_binding : BuiltinsBinding := {|
-    bb_function_names := [
-        (* Sort predicates *)
-        ("sym.is", "b_isSymbol");
-        ("sym.isNot", "b_isNotSymbol");
-        ("bool.is", "b_isBool");
-        ("bool.isNot", "b_isNotBool");
-        ("string.is", "b_isString");
-        ("string.isNot", "b_isNotString");
-        ("z.is", "b_isZ");
-        ("z.isNot", "b_isZNot");
-
-        ("bool.neg", "b_bool_neg");
-        ("bool.is_true", "b_bool_is_true");
-        ("bool.is_false", "b_bool_is_false");
-        
-        ("term.eq", "b_term_eq");
-        ("term.same_symbol", "b_have_same_symbol");
-        ("term.different_symbol", "b_have_different_symbols");        ("z.minus", "b_Z_minus");
-        ("z.plus", "b_Z_plus");
-        ("z.eq", "b_Z_eq");
-        ("z.le", "b_Z_isLe");
-        ("z.lt", "b_Z_isLt");
-        ("map.hasKey", "b_map_hasKey");
-        ("map.lookup", "b_map_lookup");
-        ("map.size", "b_map_size");
-        ("map.empty", "b_map_empty");
-        ("map.update", "b_map_update")
-    ];
-|}. *)
-(* 
-Definition eject
-    {symbol : Type}
-    (v : @BuiltinValue0 symbol)
-    :
-    option (bool+(Z+(string)))%type
-    :=
-    match v with
-    | bv_bool b => Some (inl b)
-    | bv_Z z => Some (inr(inl z))
-    | bv_str s => Some (inr(inr (s)))
-    | _ => None
-    end 
-. *)
-
-
-(* Print bv_list. *)
-(* 
-Section sb.
-    Context
-        {symbol : Type}
-        (show_symbol : symbol -> string)
-    .
-
-    (* Doing recursion of BuiltinValue0 is really hard. I gave up, as we need to deprecate klike anyway. *)
-    Definition show_builtin
-        (v : @BuiltinValue symbol)
-        : string
-    :=
-        match v with
-        | bv_bool true => "true"
-        | bv_bool false => "false"
-        | bv_Z z => pretty_Z z
-        | bv_sym s => (show_symbol s) +:+ "@sym"
-        | bv_str s => (s) +:+ "@str"
-        | bv_list l =>
-            "<unsupported (list of stuff)>"
-        | bv_pmap p =>
-            "<unsupported (map of stuff)>"
-        end
-.
-
-End sb. *)

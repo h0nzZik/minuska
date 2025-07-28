@@ -131,7 +131,7 @@ Proof.
     }
 Qed.
 
-Program Definition ExtendedModel (Σ : StaticModel)
+Definition ExtendedModel (Σ : StaticModel)
 : @Model (@ExtendedSymbols (Σ.(symbol))) _ (Σ.(signature)) (Σ.(NondetValue))
 := {|
     builtin_value := Σ.(builtin).(builtin_value) ;
@@ -146,34 +146,8 @@ Program Definition ExtendedModel (Σ : StaticModel)
         args' ← list_collect (contract_term Σ <$> args);
             Σ.(builtin).(builtin_model_over).(builtin_predicate_interp) p nd args'
         ;
-        (* Looking forward to get rid of this *)
-        bps_neg_correct := _;
     |};
 |}.
-Next Obligation.
-    rewrite bind_Some in H1.
-    destruct H1 as [l' [H3 H4]].
-    rewrite bind_Some in H2.
-    destruct H2 as [l'' [H5 H6]].
-    assert (Htmp := @bps_neg_correct (Σ.(symbol)) _ _ (Σ.(NondetValue)) (Σ.(builtin).(builtin_value))).
-    specialize (Htmp (Σ.(builtin).(builtin_model_over)) p p' nv l' b b' H).
-    ltac1:(ospecialize (Htmp _)).
-    {
-        apply length_list_collect_Some in H3.
-        rewrite length_fmap in H3.
-        ltac1:(lia).
-    }
-    specialize (Htmp H4).
-    assert (l' = l'').
-    {
-        ltac1:(simplify_eq/=).
-        reflexivity.
-    }
-    subst l''.
-    specialize (Htmp H6).
-    exact Htmp.
-Qed.
-Fail Next Obligation.
 
 Definition ExtendedSM (Σ : StaticModel) : StaticModel := {|
     symbol := @ExtendedSymbols (Σ.(symbol)) ;
@@ -191,6 +165,25 @@ Definition ExtendedSM (Σ : StaticModel) : StaticModel := {|
             Some (extend_term Σ r)
             ;
     |} ;
+    hidden := {|
+        hidden_data := Σ.(hidden).(hidden_data) ;
+        attribute_interpretation := fun a h args =>
+            args'' ← list_collect (contract_term Σ <$> args);
+            r ← Σ.(hidden).(attribute_interpretation) a h args'';
+            Some (r)
+        ;
+        method_interpretation := fun m h args =>
+            args'' ← list_collect (contract_term Σ <$> args);
+            r ← Σ.(hidden).(method_interpretation) m h args'';
+            Some (r)
+        ;
+        hidden_predicate_interpretation := fun p h args =>
+            args'' ← list_collect (contract_term Σ <$> args);
+            r ← Σ.(hidden).(hidden_predicate_interpretation) p h args'';
+            Some (r)
+        ;
+        hidden_init := Σ.(hidden).(hidden_init) ;
+    |};
     nondet_gen := Σ.(nondet_gen) ;
 |}.
 

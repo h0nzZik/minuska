@@ -39,8 +39,6 @@ Section sec.
             := Emptyset ;
         builtin_predicate_symbol
             := Emptyset ;
-        bps_ar := fun _ => 0 ;
-        bps_neg := fun _ => None;
     |}.
     Fail Next Obligation.
 
