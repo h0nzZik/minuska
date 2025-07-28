@@ -110,7 +110,7 @@ Extract Inductive string => "string"
       Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
       Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, c) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_show_builtin = c; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b; Libminuska.Extracted.bi_show_builtin = c} -> (myf a0 a b c))" .
+      Extract Inductive ValueAlgebraInterface => "Libminuska.Extracted.valueAlgebraInterface" [ "(fun (a0, a, b, c) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_show_builtin = c; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b; Libminuska.Extracted.bi_show_builtin = c} -> (myf a0 a b c))" .
 
       Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
       Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].

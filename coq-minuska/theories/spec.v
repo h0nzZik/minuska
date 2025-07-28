@@ -406,19 +406,19 @@ Instance  VarsOf_sc
     vars_of := vars_of_sc ;
 |}.
 
-Variant BasicEffect {Σ : StaticModel} := 
+Variant BasicEffect0 {Σ : StaticModel} := 
 | be_method (s : MethodSymbol) (args : list Expression2)
 (* This is like a binder *)
 | be_remember (x : variable) (e : Expression2)
 .
 
-Definition Effect {Σ : StaticModel} : Type :=
-    list BasicEffect
+Definition Effect0 {Σ : StaticModel} : Type :=
+    list BasicEffect0
 .
 
-Definition vars_of_Effect'
+Definition vars_of_Effect0'
     {Σ : StaticModel}
-    (f : Effect)
+    (f : Effect0)
     : gset variable
 :=
     fold_right (fun be vs =>
@@ -432,11 +432,11 @@ Definition vars_of_Effect'
 .
 
 #[export]
-Instance VarsOf_Effect
+Instance VarsOf_Effect0
     {Σ : StaticModel}
-    : VarsOf Effect variable
+    : VarsOf Effect0 variable
 := {|
-    vars_of := vars_of_Effect' ; 
+    vars_of := vars_of_Effect0' ; 
 |}.
 
 
@@ -448,7 +448,7 @@ Record RewritingRule2
     r_from : TermOver BuiltinOrVar ;
     r_to : TermOver Expression2 ;
     r_scs : SideCondition ;
-    r_eff : Effect ;
+    r_eff : Effect0 ;
     r_label : Label ;
 }.
 
@@ -689,13 +689,13 @@ Definition SideCondition_evaluate
     ) sc
 .
 
-Definition BasicEffect_evaluate
+Definition BasicEffect0_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (f : BasicEffect)
+    (f : BasicEffect0)
     : option (hidden_data*Valuation2)
 :=
     match f with
@@ -711,33 +711,33 @@ Definition BasicEffect_evaluate
 .
 
 (* Print fold_left. *)
-Definition Effect_evaluate'
+Definition Effect0_evaluate'
     {Σ : StaticModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (f : Effect)
+    (f : Effect0)
     : option (hidden_data*Valuation2)
 :=
     fold_left
-        (fun (p' : option (hidden_data*Valuation2)) (bf : BasicEffect) => p ← p'; BasicEffect_evaluate program p.1 p.2 nv bf)
+        (fun (p' : option (hidden_data*Valuation2)) (bf : BasicEffect0) => p ← p'; BasicEffect0_evaluate program p.1 p.2 nv bf)
         f
         (Some (h,ρ))
     
 .
 
 
-Definition Effect_evaluate
+Definition Effect0_evaluate
     {Σ : StaticModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (f : Effect)
+    (f : Effect0)
     : option hidden_data
 :=
-    fmap fst (Effect_evaluate' program h ρ nv f)
+    fmap fst (Effect0_evaluate' program h ρ nv f)
 .
 
 Definition rewrites_in_valuation_under_to
@@ -754,7 +754,7 @@ Definition rewrites_in_valuation_under_to
 := ((sat2B ρ from.1 (r_from r))
 * (sat2E program from.2 ρ to.1 (r_to r) nv)
 * (SideCondition_evaluate program from.2 ρ nv (r_scs r) = Some true)
-* (Some to.2 = Effect_evaluate program from.2 ρ nv (r_eff r))
+* (Some to.2 = Effect0_evaluate program from.2 ρ nv (r_eff r))
 * (under = r_label r)
 )%type
 .

@@ -8,8 +8,8 @@ From Minuska Require Export
 Extraction
     "Dsm.ml"
     mkRewritingRule2
-    BuiltinInterface
-    mkBuiltinInterface
+    ValueAlgebraInterface
+    mkValueAlgebraInterface
     builtins_empty
     builtins_klike
     pi_trivial

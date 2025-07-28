@@ -441,10 +441,10 @@ Instance SideCondition_eqdec
 Proof. ltac1:(solve_decision). Defined.
 
 #[export]
-Instance BasicEffect_eqdec
+Instance BasicEffect0_eqdec
     {Σ : StaticModel}
     :
-    EqDecision BasicEffect
+    EqDecision BasicEffect0
 .
 Proof.
     ltac1:(solve_decision).

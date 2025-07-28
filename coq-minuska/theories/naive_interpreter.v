@@ -164,7 +164,7 @@ Definition try_match_lhs_with_sc
         match (eval_et program h ρ nv (r_to r)) with
         | None => None
         | Some g' => 
-            match (Effect_evaluate program h ρ nv (r_eff r)) with
+            match (Effect0_evaluate program h ρ nv (r_eff r)) with
             | None => None
             | Some h' => Some (ρ, g', h')
             end
@@ -1330,7 +1330,7 @@ Lemma try_match_lhs_with_sc_complete
     sat2B ρ g (r_from r) ->
     eval_et program h ρ nv (r_to r) = Some g' ->
     SideCondition_evaluate program h ρ nv (r_scs r) = Some true ->
-    Effect_evaluate program h ρ nv (r_eff r) = Some h' ->
+    Effect0_evaluate program h ρ nv (r_eff r) = Some h' ->
     {
         ρ' : (gmap variable (TermOver builtin_value)) &
         { g'' : TermOver builtin_value &
@@ -1369,8 +1369,8 @@ Proof.
             }
             {
                 simpl. 
-                apply Effect_evaluate_strip in Hf.
-                eapply Effect_evaluate_extensive in Hf.
+                apply Effect0_evaluate_strip in Hf.
+                eapply Effect0_evaluate_extensive in Hf.
                 {
                     rewrite Hf.
                     reflexivity.
@@ -1527,7 +1527,7 @@ Lemma thy_lhs_match_one_None
          (sat2B ρ e (r_from r)) *
          (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
          (eval_et program h ρ nv (r_to r) = Some e') *
-         (Effect_evaluate program h ρ nv (r_eff r) = Some h') *
+         (Effect0_evaluate program h ρ nv (r_eff r) = Some h') *
          (vars_of (r_to r) ⊆ vars_of (r_from r)) *
          (vars_of (r_eff r) ⊆ vars_of (r_from r))
         )%type
@@ -1657,8 +1657,8 @@ Proof.
         }
         {
             clear Hc.
-            apply Effect_evaluate_strip in HContra3' as HContra3''.
-            eapply Effect_evaluate_extensive in HContra3''.
+            apply Effect0_evaluate_strip in HContra3' as HContra3''.
+            eapply Effect0_evaluate_extensive in HContra3''.
             { apply HContra3''. }
             {
                 clear HContra3''.
@@ -1772,7 +1772,7 @@ Lemma thy_lhs_match_one_Some
     (sat2B ρ e (r_from r)) * 
     (eval_et program h ρ nv (r_to r) = Some e') * 
     (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
-    (Effect_evaluate program h ρ nv (r_eff r) = Some h')
+    (Effect0_evaluate program h ρ nv (r_eff r) = Some h')
     )%type
 .
 Proof.

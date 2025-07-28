@@ -23,10 +23,16 @@ type coqModuleName =
 type primitiveValueAlgebraEntry = {
   pvae_coq_import : string ;
   pvae_coq_entity_name : string ;
-  pvae_builtin_interface : Dsm.__ Dsm.builtinInterface ;
+  pvae_builtin_interface : Dsm.__ Dsm.valueAlgebraInterface ;
   pvae_builtin_inject : builtin_repr -> ((string, Dsm.__) Dsm.builtin_value) option ;
   pvae_builtin_eject : (string, Dsm.__) Dsm.builtin_value -> builtin_repr option ;
   pvae_builtin_coq_quote : builtin_repr -> string
+}
+
+
+type hiddenAlgebraEntry = {
+  hae_coq_import : string ;
+  hae_coq_entity_name : string ;
 }
 
 type programInfoEntry = {
