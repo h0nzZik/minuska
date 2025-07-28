@@ -4693,3 +4693,36 @@ Proof.
         }
     }
 Qed.
+
+
+Lemma Effect_evaluate_strip
+    {Σ : StaticModel}
+    (program : ProgramT)
+    (h : hidden_data)
+    (f : Effect)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (h' : hidden_data)
+:
+    Effect_evaluate program h ρ nv f = Some h' ->
+    Effect_evaluate program h (filter (fun kv => kv.1 ∈ vars_of f) ρ) nv f = Some h'
+.
+Proof.
+    intros HH.
+    unfold Effect_evaluate in HH.
+    rewrite fmap_Some in HH.
+    destruct HH as [[h'' ρ'][H1 H2]].
+    ltac1:(simplify_eq/=).
+    apply Effect_evaluate'_strip_1 in H1.
+    unfold Effect_evaluate.
+    rewrite fmap_Some.
+    eexists.
+    split.
+    {
+        apply H1.
+    }
+    {
+        reflexivity.
+    }
+Qed.
+

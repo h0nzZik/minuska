@@ -1367,7 +1367,9 @@ Proof.
                 exact H2ρ1.
             }
             {
-                simpl. rewrite H.
+                simpl. 
+                
+                rewrite H.
             }
         }
         {
