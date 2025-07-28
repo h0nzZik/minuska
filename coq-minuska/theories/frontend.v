@@ -47,10 +47,7 @@ Inductive StringExpression
     (g : @TermOver' string BuiltinRepr)
 | se_variable
     (x : string)
-| se_applyf
-    (s : string)
-    (l : list StringExpression)
-| se_applyq
+| se_apply
     (s : string)
     (l : list StringExpression)
 .
@@ -101,9 +98,8 @@ Class Realization {Σ : StaticModel} := {
     realize_br : BuiltinRepr -> option builtin_value ;
     string2sym : string -> symbol ;
     string2var : string -> variable ;
-    string2q : string -> option QuerySymbol ;
-    string2f : string -> option builtin_function_symbol ;
-    string2p : string -> option builtin_predicate_symbol;
+    string2qfa : string -> option (QuerySymbol+builtin_function_symbol+AttributeSymbol) ;
+    string2p : string -> option (builtin_predicate_symbol+HiddenPredicateSymbol)
 }.
 
 Fixpoint se_to_Expression
@@ -121,27 +117,21 @@ Fixpoint se_to_Expression
         end
     | se_variable x =>
         inl (e_variable (string2var x))
-    | se_applyf s l =>
-        match (string2f s) with
-        | None => inr ("Can't convert " +:+ s +:+ " to function symbol")
-        | Some (f) => 
+    | se_apply s l =>
+        match (string2qfa s) with
+        | None => inr ("The string " +:+ s +:+ " does not represent a function or a query")
+        | Some (s') => 
             let l' := (se_to_Expression) <$> l in
             match list_collect_e l' with
-            | inl l'' => inl (e_fun f l'')
+            | inl l'' => 
+                match s' with
+                | inl (inl q) => inl (e_query q l'')
+                | inl (inr f) => inl (e_fun f l'')
+                | inr a => inl (e_attr a l'')
+                end
             | inr e => inr e
             end
         end
-    | se_applyq s l =>
-        match (string2q s) with
-        | None => inr ("Can't convert " +:+ s +:+ " to query symbol")
-        | Some (q) => 
-            let l' := (se_to_Expression) <$> l in
-            match list_collect_e l' with
-            | inl l'' => inl (e_query q l'')
-            | inr e => inr e
-            end
-        end
-
     end
 .
 
@@ -178,19 +168,27 @@ Fixpoint ssc_to_sc
         match string2p p with
         | Some p' =>
             match list_collect_e ((se_to_Expression) <$> args) with
-            | inl args' => inl (sc_pred p' args')
+            | inl args' => 
+                match p' with
+                | inl vp => inl (sc_pred vp args')
+                | inr hp => inl (sc_hpred hp args')
+                end
             | inr e => inr e
             end
-        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate symbol")
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) symbol")
         end
     | ssc_npred p args =>
         match string2p p with
         | Some p' =>
             match list_collect_e ((se_to_Expression) <$> args) with
-            | inl args' => inl (sc_npred p' args')
+            | inl args' => 
+                match p' with
+                | inl vp => inl (sc_npred vp args')
+                | inr hp => inr ("The hidden predicate symbol '" +:+ p +:+ "' can't be negated")
+                end
             | inr e => inr e
             end
-        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate symbol")
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) symbol")
         end
     | ssc_and l r =>
         match ssc_to_sc l with
