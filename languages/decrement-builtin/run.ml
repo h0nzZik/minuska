@@ -11,6 +11,7 @@ let main () =
 
   Libminuska.Miskeleton.main
     pvae
+    (get_default_hidden_algebra_with_klike ())
     pie
     Transform.parse
     Internal.langDefaults

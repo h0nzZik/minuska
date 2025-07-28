@@ -4,35 +4,76 @@ open Libminuskapluginbase
 open Util
 open Pluginbase
 
-let convert_builtin (pvae : primitiveValueAlgebraEntry) (b : builtin_repr)  : ((string, 'a) Extracted.builtin_value)  =
-  match (pvae.pvae_builtin_inject b) with
-  | None -> failwith "Cannot represent primitive value in chosen builtin model"
-  | Some v -> v
+let klike_builtin_inject (b : builtin_repr) : string Dsm.builtinValue0 =
+  match b.br_kind with
+  | "int" -> ((Dsm.Bv_Z (Z.of_string (b.br_value))))
+  | "bool" -> (
+    match b.br_value with
+    | "true" -> ((Dsm.Bv_bool true))
+    | "false" -> ((Dsm.Bv_bool false))
+    | _ -> failwith (sprintf "Unknown boolean value '%s': only 'true' and 'false' are allowed" b.br_value)
+  )
+  | "string" -> ((Dsm.Bv_str (b.br_value)))
+  | _ -> failwith (sprintf "Unknown kind of builtins '%s' for module 'klike'" b.br_kind)
 
-let rec convert_groundterm (pvae : primitiveValueAlgebraEntry) (iface : 'a Extracted.valueAlgebraInterface) (g : Syntax.groundterm): Extracted.gT =
+let klike_builtin_eject (b : string Dsm.builtinValue0) : builtin_repr =
+  match b with
+  | Dsm.Bv_Z z -> (({br_kind="int"; br_value=(Z.to_string z);}))
+  | Dsm.Bv_bool b' -> (({br_kind="bool"; br_value=(if b' then "true" else "false");}))
+  | Dsm.Bv_str s -> ((({br_kind="string"; br_value=s};)))
+  | Dsm.Bv_list _ -> ({br_kind="list"; br_value="_"})
+  | Dsm.Bv_pmap _ -> ({br_kind="map"; br_value="_"})
+
+
+let klike_builtin_coq_quote (b : builtin_repr) : string = 
+  match b.br_kind with
+  | "int" -> (sprintf "(bv_Z (%s)%%Z)" (b.br_value))
+  | "bool" -> (
+    match b.br_value with
+    | "true" -> ("(bv_bool true)")
+    | "false" -> ("(bv_bool false)")
+    | _ -> failwith (sprintf "Unknown boolean value '%s': only 'true' and 'false' are allowed" b.br_value)
+  )
+  | "string" -> (sprintf "(bv_str \"%s\")" b.br_value)
+
+let empty_builtin_coq_quote (b : builtin_repr) : Dsm.emptyset =
+  failwith (sprintf "Cannot represent given builtin using module 'empty'")
+
+let empty_builtin_inject (b : builtin_repr) : Dsm.emptyset =
+  match b with
+  | _ -> failwith (sprintf "Cannot represent given builtin using module 'empty'")
+
+let empty_builtin_eject (b : Dsm.emptyset) : builtin_repr =
+  match b with
+  | _ -> failwith "This should be unreachable"
+
+let rec convert_groundterm
+  (builtin_inject : builtin_repr -> 'builtin)
+  (g : Syntax.groundterm)
+  : ((string, 'builtin) Extracted.termOver') =
   match g with
   | `GTb b ->
-    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin pvae b)
+    Extracted.T_over (builtin_inject b)
   | `GTerm (`Id s, gs) ->
-    Extracted.T_term (((*Stringutils.explode*) s),(List.map ~f:(convert_groundterm pvae iface) gs))
+    Extracted.T_term (s,(List.map ~f:(convert_groundterm builtin_inject) gs))
 
-let wrap_init (g : Extracted.gT) : Extracted.gT =
-  Extracted.T_term (((*Stringutils.explode*) "builtin.init"), [g])
+let wrap_init (g : ((string, 'builtin) Extracted.termOver')) : ((string, 'builtin) Extracted.termOver') =
+  Extracted.T_term (("builtin.init"), [g])
 
-let wrap_init0 : Extracted.gT =
-  Extracted.T_term (((*Stringutils.explode*) "builtin.init"), [])
+let wrap_init0 : ((string, 'builtin) Extracted.termOver') =
+  Extracted.T_term (("builtin.init"), [])
   
-
-let rec groundterm_coq_quote (pvae : primitiveValueAlgebraEntry) (g : Extracted.gT) : string =
+let rec groundterm_coq_quote
+  (builtin_eject : 'builtin -> builtin_repr)
+  (g : Extracted.gT)
+  : string =
   match g with
   | Extracted.T_over b ->
-    let b'' = (Option.value_exn (pvae.pvae_builtin_eject b)) in
+    let b'' = ((builtin_eject b)) in
     (sprintf "(@builtin:%s(\"%s\"))" b''.br_kind b''.br_value)
-    (* (pvae.pvae_builtin_coq_quote b'') *)
   | Extracted.T_term (s, gs) ->
-    let ss = List.map ~f:(groundterm_coq_quote pvae) gs in
+    let ss = List.map ~f:(groundterm_coq_quote builtin_eject) gs in
     sprintf "%s %s" s (format_string_list ss)
-
 
 let rec run_n_steps
   (step : Extracted.gT -> (Extracted.gT*'a) option)
@@ -73,8 +114,9 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
+  (builtin_inject : builtin_repr -> 'builtin)
+  (builtin_eject : 'builtin -> builtin_repr )
   (parser : Lexing.lexbuf -> 'programT)
-  (pvae : primitiveValueAlgebraEntry)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
   (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
   (lang_debug_info : string list)
@@ -129,7 +171,7 @@ let command_run
           fprintf stdout "Taken %d steps\n" actual_depth;
           (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
           with_output_file_or_stdout output_file (fun f_out -> 
-            fprintf f_out "%s\n" (groundterm_coq_quote pvae result);
+            fprintf f_out "%s\n" (groundterm_coq_quote builtin_eject result);
             ()
           );
           ()
@@ -138,8 +180,8 @@ let command_run
     )
 
 let main0
-  (pvae : primitiveValueAlgebraEntry) 
-  (iface : 'a Extracted.valueAlgebraInterface)
+  (builtin_inject : builtin_repr -> 'builtin)
+  (builtin_eject : 'builtin -> builtin_repr )
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> Extracted.gT -> Extracted.gT option)
   (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
@@ -147,8 +189,9 @@ let main0
   =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.6" (command_run
+      builtin_inject
+      builtin_eject
       parser
-      pvae
       step
       step_ext
       lang_debug_info (*(List.map lang_debug_info ~f:Stringutils.implode)*)
@@ -156,12 +199,12 @@ let main0
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 
-let wrap_interpreter pvae iface interpreter : 'programT -> Extracted.gT -> Extracted.gT option =
-  (fun a b -> Stdlib.Obj.magic (interpreter (Stdlib.Obj.magic (convert_groundterm pvae iface a)) (Stdlib.Obj.magic b)))
+let wrap_interpreter builtin_inject interpreter : 'programT -> Extracted.gT -> Extracted.gT option =
+  (fun a b -> (*Stdlib.Obj.magic*) (interpreter ((*Stdlib.Obj.magic*) (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)))
 
-let wrap_interpreter_ext pvae iface interpreter_ext =
+let wrap_interpreter_ext builtin_inject interpreter_ext =
   (fun a b -> 
-    let r = Stdlib.Obj.magic (interpreter_ext (Stdlib.Obj.magic (convert_groundterm pvae iface a)) (Stdlib.Obj.magic b)) in
+    let r = Stdlib.Obj.magic (interpreter_ext (Stdlib.Obj.magic (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)) in
     match r with
     | Some v ->
       Some ((fst v), (Z.to_int (snd v)))
@@ -170,39 +213,16 @@ let wrap_interpreter_ext pvae iface interpreter_ext =
 
 
 let main
-      (pvae : primitiveValueAlgebraEntry)
-      (hae : hiddenAlgebraEntry)
-      (pie : programInfoEntry)
+      (builtin_inject : builtin_repr -> 'builtin)
+      (builtin_eject : 'builtin -> builtin_repr )
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
       =
-  let mysignature = pvae.pvae_builtin_interface.bi_signature in
-  let mybeta = pvae.pvae_builtin_interface.bi_beta in
-  let my_program_info = (pie.pie_constructor) in
-  let myhiddensignature = hae.hae_interface.hai_signature in
-  let myhiddenmodel = hae.hae_interface.hai_model in
-  let mysigma = Extracted.dSM
-    mysignature
-    myhiddensignature
-    mybeta
-    myhiddenmodel
-    my_program_info
-  in
-  let name2ar = (fun name ->
-    match (pvae.pvae_builtin_interface.bi_sym_info name) with
-    | Extracted.Si_predicate(_,n,_) -> n
-    | _ -> failwith (sprintf "Given string predicate '%s' does not represent a predicate" name)  
-  ) in
-  let nameneg = ( fun name ->
-    match (pvae.pvae_builtin_interface.bi_sym_info name) with
-      | Extracted.Si_predicate(_,_,nname) -> nname
-      | _ -> failwith (sprintf "Given string predicate '%s' does not represent a predicate" name)
-  ) in
   let r : Extracted.realization = {
     realize_br = (fun br ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
-      match (pvae.pvae_builtin_inject br') with
+      match (builtin_inject br') with
       | None -> failwith "Cannot realize builtin"
       | Some b -> Some b
     );
@@ -243,8 +263,8 @@ let main
         pvae
         (pvae.pvae_builtin_interface)
         parser
-        (wrap_interpreter pvae (pvae.pvae_builtin_interface) basic_interpreter)
-        (wrap_interpreter_ext pvae (pvae.pvae_builtin_interface) ext_interpreter)
+        (wrap_interpreter builtin_inject basic_interpreter)
+        (wrap_interpreter_ext builtin_inject ext_interpreter)
         (dbg)  
       )
     )

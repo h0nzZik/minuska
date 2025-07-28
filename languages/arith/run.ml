@@ -8,9 +8,11 @@ let main () =
   let signature = (pvae.pvae_builtin_interface.bi_signature) in
   let builtins = (pvae.pvae_builtin_interface.bi_beta) in
   let pie = (get_trivial_program_info signature builtins) in
+  let hie = (get_default_hidden_algebra_with_klike ()) in
 
   Libminuska.Miskeleton.main
     pvae
+    hie
     pie
     Transform.parse
     Internal.langDefaults

@@ -21,7 +21,7 @@ Require Export
   Coq.extraction.ExtrOcamlZBigInt
   Coq.extraction.ExtrOcamlNatBigInt
 .
-
+(*
 (* Adapted from [Coq.extraction.ExtrOcamlNativeString], using [Stdlib.String] instead of [String]*)
 Extract Inductive string => "string"
 [
@@ -37,7 +37,7 @@ Extract Inductive string => "string"
     let l = Stdlib.String.length s in
     if l = 0 then f0 () else f1 (Stdlib.String.get s 0) (Stdlib.String.sub s 1 (l-1)))
 ".
-
+*)
 From Coq Require Import String Bool Arith ZArith List.
 
 Require Minuska.BuiltinValue Minuska.builtins.
