@@ -446,7 +446,7 @@ Fixpoint try_neg_s
 Section wsm.
     Context
         (Label : Set)
-        (default_act : Label)
+        (default_label : Label)
     .
     Definition REST_SEQ : string := "$REST_SEQ".
 
@@ -509,7 +509,7 @@ Section wsm.
                     ])%list
                 ]))));
                 sr_scs := (ssc_and (is_value_neg) side_condition) ;
-                sr_label := default_act ;
+                sr_label := default_label ;
             |})
             )
         end
@@ -551,7 +551,7 @@ Section wsm.
                 (t_term sym lhs_vars);
                 (t_over (sbov_var REST_SEQ))
             ])%list)));
-            sr_label := default_act;
+            sr_label := default_label;
             sr_scs := (isValue (se_variable selected_var));
         |})
     .

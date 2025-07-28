@@ -79,7 +79,7 @@ Definition basic_rule
     (r : @TermOver' string StringExpression)
     (cond : StringSideCondition) : Declaration Label
 :=
-    (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label l r cond default_act)))
+    (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label l r cond default_label)))
 .
 
 
@@ -137,7 +137,7 @@ Definition framed_rule
     (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label
         (sTermOverBoV_subst frame.2 frame.1 l)
         (sTermOverBoV_subst_expr2 frame.2 frame.1 r)
-        cond default_act)))
+        cond default_label)))
 .
 
 Definition global_naive_interpreter
