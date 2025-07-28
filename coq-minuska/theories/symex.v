@@ -3,7 +3,6 @@ From Minuska Require Import
     spec
     basic_properties
     properties
-    minusl_syntax
     unification_interface
     symex_spec
     valuation_merge
