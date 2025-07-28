@@ -53,17 +53,19 @@ Defined.
 
 #[export]
 Instance DSM
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
+    (mysignature : Signature)
+    (hiddensignature : HiddenSignature)
+    (β : Model mysignature MyUnit)
+    (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
     : StaticModel :=
-    default_model mysignature β program_info
+    default_model mysignature hiddensignature β hiddenβ program_info
 .
 
 Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (builtin_value).
 
-Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT.
-Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat).
+(* Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT. *)
+(* Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat). *)
 
 Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
 Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
@@ -81,16 +83,6 @@ Definition basic_rule
 .
 
 
-Definition BoV_to_Expr2
-    {Σ : StaticModel}
-    (bov : BuiltinOrVar)
-    : Expression2
-:=
-    match bov with
-    | bov_builtin b => (e_ground (t_over b))
-    | bov_variable x => e_variable x
-    end
-.
 
 Fixpoint sTermOverBoV_subst_gen
     {B : Type}
@@ -149,25 +141,31 @@ Definition framed_rule
 .
 
 Definition global_naive_interpreter
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
+    (mysignature : Signature)
+    (hiddensignature : HiddenSignature)
+    (β : Model mysignature MyUnit)
+    (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
     :=
-    @naive_interpreter (DSM program_info) Label
+    @naive_interpreter (DSM mysignature hiddensignature β hiddenβ program_info) Label
 .
 
 Definition global_naive_interpreter_ext
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
+    (mysignature : Signature)
+    (hiddensignature : HiddenSignature)
+    (β : Model mysignature MyUnit)
+    (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
     :=
-    @naive_interpreter_ext (DSM program_info) Label
+    @naive_interpreter_ext (DSM mysignature hiddensignature β hiddenβ program_info) Label
 .
 
 Definition global_naive_interpreter_sound
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
+    (mysignature : Signature)
+    (hiddensignature : HiddenSignature)
+    (β : Model mysignature MyUnit)
+    (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
     :=
-    @naive_interpreter_sound (DSM program_info) Label
+    @naive_interpreter_sound (DSM mysignature hiddensignature β hiddenβ program_info) Label
 .

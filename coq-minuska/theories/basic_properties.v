@@ -802,3 +802,15 @@ Proof.
         intros. apply E_from_to_tree.
     }
 Defined.
+
+(* 
+Definition BoV_to_Expr2
+    {Σ : StaticModel}
+    (bov : BuiltinOrVar)
+    : Expression2
+:=
+    match bov with
+    | bov_builtin b => (e_ground (t_over b))
+    | bov_variable x => e_variable x
+    end
+. *)

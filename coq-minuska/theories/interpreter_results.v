@@ -13,11 +13,10 @@ Lemma vars_of_sat_tobov
     (ρ : Valuation2)
     (g : TermOver builtin_value)
     :
-    satisfies ρ g φ ->
+    sat2B ρ g φ ->
     vars_of φ ⊆ vars_of ρ
 .
 Proof.
-    unfold satisfies; simpl.
     revert g.
     induction φ; intros g HH; simpl in *.
     {

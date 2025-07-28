@@ -28,17 +28,17 @@ Fixpoint interp_loop_ext
     {Σ : StaticModel}
     (nvs : nat -> NondetValue)
     (idx : nat)
-    (interp : NondetValue -> (TermOver builtin_value) -> option ((TermOver builtin_value)*nat))
+    (interp : NondetValue -> (TermOver builtin_value)*hidden_data -> option ((TermOver builtin_value)*hidden_data*nat))
     (fuel : nat)
-    (g : (TermOver builtin_value))
+    (g : (TermOver builtin_value)*hidden_data)
     (log : list nat)
-    : (nat*(TermOver builtin_value)*(list nat))
+    : (nat*(TermOver builtin_value)*hidden_data*(list nat))
 :=
 match fuel with
-| 0 => (0,g,log)
+| 0 => (0,g.1,g.2,log)
 | S fuel' =>
     match interp (nvs idx) g with
-    | None => (fuel', g, log)
+    | None => (fuel', g.1, g.2, log)
     | Some (g',log_entry) => interp_loop_ext nvs (S idx) interp fuel' g' (cons log_entry log)
     end
 end
@@ -51,8 +51,8 @@ Definition interp_in_from'
         (program : ProgramT)
         (nvs : nat -> NondetValue)
         (fuel : nat)
-        (from : (TermOver builtin_value))
-        :  nat * (TermOver builtin_value) * list (option string)
+        (from : (TermOver builtin_value)*hidden_data)
+        :  nat * (TermOver builtin_value) * hidden_data * list (option string)
     :=
         let res := interp_loop_ext nvs 0 (naive_interpreter_ext Γ.1 program)
             fuel
@@ -82,8 +82,8 @@ Definition interp_in_from
         (Γ : (list (RewritingRule2 Label))*(list string))
         (nvs : nat -> NondetValue)
         (fuel : nat)
-        (from : (TermOver builtin_value))
-        :  nat * (TermOver builtin_value) * string
+        (from : (TermOver builtin_value)*hidden_data)
+        :  nat * (TermOver builtin_value)*hidden_data * string
 :=
     let r := interp_in_from' Γ program nvs fuel from in
     (r.1, concat_list_option_str r.2)

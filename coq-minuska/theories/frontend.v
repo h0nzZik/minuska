@@ -281,6 +281,8 @@ Definition srr_to_rr
                         r_from := from';
                         r_to := to';
                         r_scs := scs';
+                        (* TODO we do not support effects in the frontend yet *)
+                        r_eff := [];
                         r_label := act;
                     |}
                 | inr e => inr e
