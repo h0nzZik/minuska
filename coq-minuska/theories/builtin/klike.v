@@ -7,6 +7,7 @@ From Minuska Require Import
     notations
     default_static_model
     BuiltinValue
+    ocaml_interface
 .
 
 From Coq Require Import ZArith Ring.
@@ -2297,3 +2298,34 @@ Section sec2.
     |}.
 
 End sec2.
+
+
+
+Definition bindings (Q : Type) : string -> SymbolInfo PredicateSymbol void _ void Q void:=
+fun s => match s with
+| "sym.is" => si_predicate _ _ _ _ _ _ (b_isSymbol)
+| "sym.isNot" => si_predicate _ _ _ _ _ _ b_isNotSymbol
+| "bool.is" => si_predicate _ _ _ _ _ _ b_isBool
+| "bool.isNot" => si_predicate _ _ _ _ _ _ b_isNotBool
+| "string.is" => si_predicate _ _ _ _ _ _ b_isString
+| "string.isNot" => si_predicate _ _ _ _ _ _ b_isNotString
+| "z.is" => si_predicate _ _ _ _ _ _ b_isZ
+| "z.isNot" => si_predicate _ _ _ _ _ _ b_isNotZ
+| "bool.neg" => si_function _ _ _ _ _ _ b_bool_neg
+| "bool.is_true" => si_predicate _ _ _ _ _ _ b_bool_is_true
+| "bool.is_false" => si_predicate _ _ _ _ _ _ b_bool_is_false
+| "term.eq" => si_predicate _ _ _ _ _ _ b_term_eq
+| "term.same_symbol" =>  si_predicate _ _ _ _ _ _ b_have_same_symbol
+| "term.different_symbol" => si_predicate _ _ _ _ _ _ b_have_different_symbols
+| "z.plus" => si_function _ _ _ _ _ _ b_Z_plus
+| "z.minus" => si_function _ _ _ _ _ _ b_Z_minus
+| "z.eq" => si_function _ _ _ _ _ _ b_Z_eq
+| "z.le" => si_function _ _ _ _ _ _ b_Z_isLe
+| "z.lt" => si_function _ _ _ _ _ _ b_Z_isLt
+| "map.hasKey" => si_predicate _ _ _ _ _ _ b_map_hasKey
+| "map.lookup" => si_function _ _ _ _ _ _ b_map_lookup
+| "map.size" => si_function _ _ _ _ _ _ b_map_size
+| "map.empty" => si_function _ _ _ _ _ _ b_map_empty
+| "map.update" => si_function _ _ _ _ _ _ b_map_update
+| _ => si_none _ _ _ _ _ _
+end.

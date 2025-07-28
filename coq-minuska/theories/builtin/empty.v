@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec
+    ocaml_interface
 .
 
 
@@ -61,42 +62,7 @@ Section sec.
 
 End sec.
 
-Definition builtins_binding : BuiltinsBinding := {|
-    bb_function_names := [] ;
-|}.
-
-Definition inject_bool
-    {symbol : Type}
-    (Fret : option Emptyset -> Emptyset)
-    (b : bool)
-    :
-    Emptyset :=
-    Fret None
-.
-
-Definition inject_Z
-    {symbol : Type}
-    (Fret : option Emptyset -> Emptyset)
-    (z : Z)
-    :
-    Emptyset :=
-    Fret None
-.
-
-Definition inject_string
-    {symbol : Type}
-    (Fret : option Emptyset -> Emptyset)
-    (s : string)
-    :
-    Emptyset :=
-    Fret None
-.
-
-Definition eject
-    {symbol : Type}
-    (v : Emptyset)
-    :
-    option (bool+(Z+(string)))%type
-    :=
-    None
+Definition bindings (Q : Type) : string -> SymbolInfo Emptyset void Emptyset void Q void
+:=
+    fun s => si_none _ _ _ _ _ _
 .

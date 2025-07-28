@@ -215,6 +215,7 @@ let wrap_interpreter_ext builtin_inject interpreter_ext =
 let main
       (builtin_inject : builtin_repr -> 'builtin)
       (builtin_eject : 'builtin -> builtin_repr )
+      (sym_info : string -> ('pred,'hpred,'func,'attr,'meth) Extracted.symbolInfo)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
@@ -228,20 +229,10 @@ let main
     );
     string2sym = (fun x -> Obj.magic x);
     string2var = (fun x -> Obj.magic x);
-    string2q = (fun s ->
-      match (pie.pie_inject s) with
-        | Some a -> Some a
-        | None -> failwith (sprintf "Can't realize query: %s" s)
-    );
-    string2f = (fun s ->
-      match (pvae.pvae_builtin_interface.bi_sym_info s) with
-      | Extracted.Si_function f -> Some f
-      | Extracted.Si_none -> failwith (sprintf "Can't realize function: %s" s)  
-    );
-    string2p = (fun s ->
-      match (pvae.pvae_builtin_interface.bi_sym_info s) with
-      | Extracted.Si_predicate(p,_,_) -> Some p
-      | Extracted.Si_none -> failwith (sprintf "Can't realize predicate: %s" s)  
+    string2p = (fun x -> x);
+    string2qfa = (fun s -> match sym_info s with
+    | Extracted.Si_none -> failwith (sprintf "Bad string: '%s'" s)
+    | Extracted.Si_predicate p -> Some (Extracted.Inl (Extracted.Inl (p)))
     );
   } in
   let pre1T = Extracted.process_declarations Extracted.Default_label langDefaults lang_Decls in

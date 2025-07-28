@@ -98,6 +98,7 @@ Class Realization {Σ : StaticModel} := {
     realize_br : BuiltinRepr -> option builtin_value ;
     string2sym : string -> symbol ;
     string2var : string -> variable ;
+    string2m : string -> option MethodSymbol ;
     string2qfa : string -> option (QuerySymbol+builtin_function_symbol+AttributeSymbol) ;
     string2p : string -> option (builtin_predicate_symbol+HiddenPredicateSymbol)
 }.

@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec
+    ocaml_interface
 .
 
 Inductive MyQuerySymbol : Set :=
@@ -43,9 +44,12 @@ Instance MyProgramInfo
         end ;
 |}.
 
-Definition my_binding : string -> option MyQuerySymbol :=
+Definition bindings (P HP F A M : Type)
+    :
+    string -> SymbolInfo P HP F A _ M
+:=
 fun s =>
 match s with
-| "program.ast" => Some qs_program
-| _ => None
+| "program.ast" => si_query _ _ _ _ _ _ qs_program
+| _ => si_none _ _ _ _ _ _
 end.

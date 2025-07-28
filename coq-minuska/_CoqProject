@@ -38,9 +38,7 @@ theories/martelli_montanari.v
 theories/martelli_montanari_tests.v
 theories/symex_spec.v
 theories/symex.v
-theories/pval_ocaml_binding.v
 theories/model_algebra.v
-theories/model_traits.v
 theories/signature_morphism.v
 theories/model_functor.v
 theories/conservative_merge.v
@@ -54,6 +52,7 @@ theories/builtin/list_model.v
 theories/builtin/example_list_int_model.v
 theories/builtin/information_flow_functor.v
 theories/fresher.v
+theories/ocaml_interface.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v

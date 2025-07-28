@@ -2,19 +2,20 @@
 From Minuska Require Export
     prelude
     default_everything
-    pval_ocaml_binding
     frontend
+    builtin.empty
+    builtin.klike
+    pi.trivial
 .
 Extraction
     "Dsm.ml"
     mkRewritingRule2
-    pval_ocaml_binding.ValueAlgebraInterface
-    mkValueAlgebraInterface
-    pval_ocaml_binding.HiddenAlgebraInterface
-    builtins_empty
-    builtins_klike
-    pval_ocaml_binding.hai_klike
-    pi_trivial
+    builtin.empty.β
+    builtin.empty.bindings
+    builtin.klike.β
+    builtin.klike.β.bindings
+    pi.trivial.MyProgramInfo
+    pi.trivial.bindings
     interpreter_results.RewritingTheory2_wf_dec
     frontend.srr_to_rr
     frontend.process_declarations
