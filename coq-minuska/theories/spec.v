@@ -818,12 +818,3 @@ Record BuiltinsBinding := {
     bb_function_names : list (string * string) ;
 }.
 
-
-Variant SymbolInfo {Σ0 : Signature}{HΣ0 : HiddenSignature} :=
-| si_none
-| si_predicate (p : builtin_predicate_symbol)
-| si_hidden_predicate (hp : HiddenPredicateSymbol)
-| si_function (f : builtin_function_symbol)
-| si_attribute (a : AttributeSymbol)
-| si_method (m : MethodSymbol)
-.

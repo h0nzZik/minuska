@@ -2296,34 +2296,4 @@ Section sec2.
         builtin_model_over := βover ;
     |}.
 
-
-    Definition sym_info : string -> SymbolInfo :=
-    fun s => match s with
-    | "sym.is" => si_predicate b_isSymbol
-    | "sym.isNot" => si_predicate b_isNotSymbol
-    | "bool.is" => si_predicate b_isBool
-    | "bool.isNot" => si_predicate b_isNotBool
-    | "string.is" => si_predicate b_isString
-    | "string.isNot" => si_predicate b_isNotString
-    | "z.is" => si_predicate b_isZ
-    | "z.isNot" => si_predicate b_isNotZ
-    | "bool.neg" => si_function b_bool_neg
-    | "bool.is_true" => si_predicate b_bool_is_true
-    | "bool.is_false" => si_predicate b_bool_is_false
-    | "term.eq" => si_predicate b_term_eq
-    | "term.same_symbol" => si_predicate b_have_same_symbol
-    | "term.different_symbol" => si_predicate b_have_different_symbols
-    | "z.plus" => si_function b_Z_plus
-    | "z.minus" => si_function b_Z_minus
-    | "z.eq" => si_function b_Z_eq
-    | "z.le" => si_function b_Z_isLe
-    | "z.lt" => si_function b_Z_isLt
-    | "map.hasKey" => si_predicate b_map_hasKey
-    | "map.lookup" => si_function b_map_lookup
-    | "map.size" => si_function b_map_size
-    | "map.empty" => si_function b_map_empty
-    | "map.update" => si_function b_map_update
-    | _ => si_none
-    end.
-
 End sec2.
