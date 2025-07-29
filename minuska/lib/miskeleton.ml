@@ -4,6 +4,22 @@ open Libminuskapluginbase
 open Util
 open Pluginbase
 
+
+type ('builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI =
+  {
+    signature         : (Extracted.signature) ;
+    hidden_signature  : (Extracted.hiddenSignature) ;
+    value_algebra     : ((string, Extracted.__) Extracted.model) ;
+    hidden_algebra    : ((string, Extracted.__) Extracted.hiddenModel) ;
+    program_info      : ((string, Extracted.__) Extracted.programInfo) ;
+    static_model      : (Extracted.staticModel) ;
+    builtin_inject    : (builtin_repr -> 'builtin) ;
+    builtin_eject     : ('builtin -> builtin_repr ) ;
+    builtin_coq_quote : builtin_repr -> string ;
+    bindings          : (string -> ('pred,'hpred,'func,'attr,'query,'meth) Extracted.symbolInfo) ;
+  }
+
+
 let klike_builtin_inject (b : builtin_repr) : string Dsm.builtinValue0 =
   match b.br_kind with
   | "int" -> ((Dsm.Bv_Z (Z.of_string (b.br_value))))
@@ -36,7 +52,17 @@ let klike_builtin_coq_quote (b : builtin_repr) : string =
   )
   | "string" -> (sprintf "(bv_str \"%s\")" b.br_value)
 
-let empty_builtin_coq_quote (b : builtin_repr) : Dsm.emptyset =
+(* let klike_static_model : Extracted.staticModel =  (
+  let s  = (Extracted.top_builtin_klike_signature) in
+  let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_klike_signature) in
+  let m  = (Extracted.top_builtin_klike_model Extracted.top_symbols_strings) in
+  let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
+  let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
+  (Extracted.top_build_static_model s hs m hm pi)
+) *)
+
+
+let empty_builtin_coq_quote (b : builtin_repr) : string =
   failwith (sprintf "Cannot represent given builtin using module 'empty'")
 
 let empty_builtin_inject (b : builtin_repr) : Dsm.emptyset =
@@ -46,6 +72,60 @@ let empty_builtin_inject (b : builtin_repr) : Dsm.emptyset =
 let empty_builtin_eject (b : Dsm.emptyset) : builtin_repr =
   match b with
   | _ -> failwith "This should be unreachable"
+
+
+let klike_interface = (
+  let s  = (Extracted.top_builtin_klike_signature) in
+  let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_klike_signature) in
+  let m  = (Extracted.top_builtin_klike_model Extracted.top_symbols_strings) in
+  let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
+  let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
+  let sm = (Extracted.top_build_static_model s hs m hm pi) in
+  let bs = (Extracted.top_builtin_klike_bindings) in
+  {
+    signature = s ;
+    hidden_signature = hs;
+    value_algebra = m;
+    hidden_algebra = hm;
+    program_info = pi;
+    static_model = sm;
+    builtin_inject = klike_builtin_inject;
+    builtin_eject = klike_builtin_eject;
+    builtin_coq_quote = klike_builtin_coq_quote;
+    bindings = bs;
+  }
+)
+(* 
+let empty_static_model : Extracted.staticModel =  (
+  let s  = (Extracted.top_builtin_empty_signature) in
+  let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_empty_signature) in
+  let m  = (Extracted.top_builtin_empty_model Extracted.top_symbols_strings) in
+  let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
+  let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
+  (Extracted.top_build_static_model s hs m hm pi)
+) *)
+
+let empty_interface = (
+  let s  = (Extracted.top_builtin_empty_signature) in
+  let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_empty_signature) in
+  let m  = (Extracted.top_builtin_empty_model Extracted.top_symbols_strings) in
+  let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
+  let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
+  let sm = (Extracted.top_build_static_model s hs m hm pi) in
+  let bs = (Extracted.top_builtin_empty_bindings) in
+  {
+    signature = s ;
+    hidden_signature = hs;
+    value_algebra = m;
+    hidden_algebra = hm;
+    program_info = pi;
+    static_model = sm;
+    builtin_inject = empty_builtin_inject;
+    builtin_eject = empty_builtin_eject;
+    builtin_coq_quote = empty_builtin_coq_quote;
+    bindings = bs;
+  }
+)
 
 let rec convert_groundterm
   (builtin_inject : builtin_repr -> 'builtin)
@@ -204,7 +284,7 @@ let wrap_interpreter builtin_inject interpreter :
   ((string, 'builtin) Extracted.termOver') ->
   ((string, 'builtin) Extracted.termOver') option
   =
-  (fun a b -> (*Stdlib.Obj.magic*) (interpreter ((*Stdlib.Obj.magic*) (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)))
+  (fun a b -> Stdlib.Obj.magic (interpreter (Stdlib.Obj.magic (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)))
 
 let wrap_interpreter_ext builtin_inject interpreter_ext =
   (fun a b -> 
@@ -217,9 +297,7 @@ let wrap_interpreter_ext builtin_inject interpreter_ext =
 
 
 let main
-      (builtin_inject : builtin_repr -> 'builtin)
-      (builtin_eject : 'builtin -> builtin_repr )
-      (sym_info : string -> ('pred,'hpred,'func,'attr,'query,'meth) Extracted.symbolInfo)
+      (iface : ('builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
@@ -228,26 +306,26 @@ let main
   let r : Extracted.realization = {
     realize_br = (fun br ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
-      match (builtin_inject br') with
+      match (iface.builtin_inject br') with
       | None -> failwith "Cannot realize builtin"
       | Some b -> Some b
     );
     string2sym = (fun x -> Obj.magic x);
     string2var = (fun x -> Obj.magic x);
     string2m = (fun x ->
-      match sym_info x with
+      match iface.bindings x with
       | Extracted.Si_method m -> Some m
       | _ -> None
     );
     string2p = (fun x ->
-      match sym_info x with
+      match iface.bindings x with
       | Extracted.Si_predicate p -> Some (Extracted.Inl p)
       | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr p)
       | _ -> None
     );
 
     string2qfa = (fun x ->
-      match sym_info x with
+      match iface.bindings x with
       | Si_attribute a -> Some (Extracted.Inr a)
       | Si_query q -> Some (Extracted.Inl (Extracted.Inl q))
       | Si_function f -> Some (Extracted.Inl (Extracted.Inr f))
@@ -259,23 +337,38 @@ let main
   | Extracted.Inl(st) -> (
     match (Extracted.to_theory st) with
     | (thy, dbg) -> (
-      match (Extracted.realize_thy mysigma r thy) with
+      match (Extracted.top_frontend_realize_thy iface.static_model r thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
       | Extracted.Inl thy2 -> (
-        let is_valid_dec = Extracted.rewritingTheory2_wf_dec mysigma thy2 in
+        let is_valid_dec = Extracted.top_thy_wf iface.static_model thy2 in
         let _ = (match is_valid_dec with
          | true -> () (* OK *)
          | false -> printf "Warning: the given theory is not well-formed\n"; ()
         ) in
-        let basic_interpreter = Extracted.global_naive_interpreter mysignature myhiddensignature mybeta myhiddenmodel my_program_info thy2 in
-        let ext_interpreter = Extracted.global_naive_interpreter_ext mysignature myhiddensignature mybeta myhiddenmodel my_program_info thy2 in
-        main0
-        pvae
-        (pvae.pvae_builtin_interface)
-        parser
-        (wrap_interpreter builtin_inject basic_interpreter)
-        (wrap_interpreter_ext builtin_inject ext_interpreter)
-        (dbg)  
+        let basic_interpreter = (Extracted.top_naive_interpreter 
+          iface.signature 
+          iface.hidden_signature
+          iface.value_algebra
+          iface.hidden_algebra
+          iface.program_info
+          thy2 
+        ) in
+        let ext_interpreter = (Extracted.top_naive_interpreter_ext 
+          iface.signature 
+          iface.hidden_signature
+          iface.value_algebra
+          iface.hidden_algebra
+          iface.program_info
+          thy2 
+        ) in
+        (main0
+          iface.builtin_inject
+          iface.builtin_eject
+          parser
+          (wrap_interpreter iface.builtin_inject basic_interpreter)
+          (wrap_interpreter_ext iface.builtin_inject ext_interpreter)
+          (dbg)  
+        )
       )
     )
   )
