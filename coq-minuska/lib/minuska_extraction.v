@@ -16,13 +16,14 @@ Definition top_combine_symbol_classifiers := @ocaml_interface.combine_symbol_cla
 Definition top_builtin_empty_signature := @builtin.empty.mysignature.
 Definition top_builtin_empty_model := @builtin.empty.β.
 Definition top_builtin_empty_bindings := @builtin.empty.bindings.
-Definition top_builtin_klike_signature := @builtin.empty.mysignature.
+Definition top_builtin_klike_signature := @builtin.klike.mysignature.
 Definition top_builtin_klike_model := @builtin.klike.β.
 Definition top_builtin_klike_bindings := @builtin.klike.bindings.
 Definition top_pi_trivial_pi := @pi.trivial.MyProgramInfo.
 Definition top_pi_trivial_bindings := @pi.trivial.bindings.
 Definition top_hidden_unit_signature := @hidden.hidden_unit.unit_hidden_signature.
 Definition top_hidden_unit_model := @hidden.hidden_unit.unit_hidden_model.
+Definition top_hidden_unit_bindings := @hidden.hidden_unit.bindings.
 Definition top_frontend_realize_thy := @frontend.realize_thy.
 Definition top_frontend_to_thy := @frontend.to_theory.
 Definition top_frontend_srr_to_rr := @frontend.srr_to_rr.
@@ -53,6 +54,7 @@ Extraction
     top_pi_trivial_bindings
     top_hidden_unit_signature
     top_hidden_unit_model
+    top_hidden_unit_bindings
     top_thy_wf
     (* interpreter_results.RewritingTheory2_wf_dec *)
     top_frontend_srr_to_rr

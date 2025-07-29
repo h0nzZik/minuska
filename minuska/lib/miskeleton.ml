@@ -74,14 +74,18 @@ let empty_builtin_eject (b : Dsm.emptyset) : builtin_repr =
   | _ -> failwith "This should be unreachable"
 
 
-let klike_interface = (
+let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*) = (
   let s  = (Extracted.top_builtin_klike_signature) in
   let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_klike_signature) in
   let m  = (Extracted.top_builtin_klike_model Extracted.top_symbols_strings) in
   let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
   let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
   let sm = (Extracted.top_build_static_model s hs m hm pi) in
-  let bs = (Extracted.top_builtin_klike_bindings) in
+  let bs = (Extracted.combine_symbol_classifiers
+    (Extracted.top_builtin_klike_bindings)
+    (Extracted.top_pi_trivial_bindings)
+    (Extracted.top_hidden_unit_bindings)
+  ) in
   {
     signature = s ;
     hidden_signature = hs;
@@ -112,7 +116,11 @@ let empty_interface = (
   let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
   let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
   let sm = (Extracted.top_build_static_model s hs m hm pi) in
-  let bs = (Extracted.top_builtin_empty_bindings) in
+  let bs = (Extracted.combine_symbol_classifiers
+    (Extracted.top_builtin_empty_bindings)
+    (Extracted.top_pi_trivial_bindings)
+    (Extracted.top_hidden_unit_bindings)
+  ) in
   {
     signature = s ;
     hidden_signature = hs;
@@ -156,19 +164,23 @@ let rec groundterm_coq_quote
     sprintf "%s %s" s (format_string_list ss)
 
 let rec run_n_steps
-  (step : (string, 'builtin) Extracted.termOver' -> (((string, 'builtin) Extracted.termOver')*'a) option)
+  (step :
+    (((string, 'builtin) Extracted.termOver')*'hidden_data) ->
+    (((((string, 'builtin) Extracted.termOver')*'hidden_data)*'a) option)
+  )
   (generate_debug : 'a list -> string)
   (rev_trace : 'a list)
   (max_depth : int)
   (curr_depth : int)
   gterm
+  (h : 'hidden_data)
   =
   if curr_depth >= max_depth then (curr_depth, gterm, generate_debug (List.rev rev_trace))
   else (
-    let ogterm2 = step gterm in
+    let ogterm2 = step (gterm,h) in
     match ogterm2 with
     | None -> (curr_depth, gterm, generate_debug (List.rev rev_trace))
-    | Some (gterm2,info) ->
+    | Some ((gterm2,h'),info) ->
         run_n_steps
           step
           generate_debug
@@ -176,6 +188,7 @@ let rec run_n_steps
           max_depth
           (curr_depth + 1)
           gterm2
+          h'
   )
 
 let with_bench (f : unit -> 'a) =
@@ -194,11 +207,18 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (builtin_inject : builtin_repr -> 'builtin)
-  (builtin_eject : 'builtin -> builtin_repr )
+  (iface : ('builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'programT)
-  (step : 'programT -> ((string, 'builtin) Extracted.termOver') -> ((string, 'builtin) Extracted.termOver') option)
-  (step_ext : 'programT -> ((string, 'builtin) Extracted.termOver') -> (((string, 'builtin) Extracted.termOver')*int) option)
+  (step :
+    'programT ->
+    (((string, 'a) Extracted.termOver')*'hidden_data) ->
+    (((string, 'a) Extracted.termOver')*'hidden_data) option
+  )
+  (step_ext :
+    'programT ->
+    (((string, 'a) Extracted.termOver')*'hidden_data) ->
+    ((((string, 'a) Extracted.termOver')*'hidden_data')*int) option
+  )
   (lang_debug_info : string list)
   =
   Command.basic
@@ -222,7 +242,7 @@ let command_run
               match with_trace with
               | false -> (
                   (
-                    (fun g -> (match step program g with None -> None | Some g' -> Some (g', -1))), (
+                    (fun (g : (((string, 'a) Extracted.termOver')*'hidden_data)) -> (match step program g with None -> None | Some g' -> Some (g', -1))), (
                     (fun _ -> "No debug info."),
                     []
                     )
@@ -231,9 +251,9 @@ let command_run
               | true -> (
                   (
                     (step_ext program), (
-                    (fun indices ->
-                      let names = List.mapi ~f:(fun step_number rule_idx -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
-                      let log = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
+                    (fun (indices : 'b list) : string ->
+                      let names : string list = List.mapi ~f:(fun (step_number : int) (rule_idx : 'b) -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
+                      let log : string = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
                       log
                     ),
                     []
@@ -241,7 +261,11 @@ let command_run
                   )
               )
             ) in
-            let res0 = run_n_steps (fst my_step) (fst (snd my_step)) (snd (snd my_step)) depth 0 wrap_init0 in
+            let actual_step : ((((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'b) option) = (fst my_step) in
+            let show_log : 'b list -> string = (fst (snd my_step)) in
+            let initial_log = (snd (snd my_step)) in
+            let (initial_h : 'hidden_data) = iface.hidden_algebra.hidden_init in
+            let res0 = run_n_steps actual_step show_log initial_log depth 0 wrap_init0 initial_h in
             res0
           )) in
           let res = fst res0 in
@@ -251,7 +275,7 @@ let command_run
           fprintf stdout "Taken %d steps\n" actual_depth;
           (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
           with_output_file_or_stdout output_file (fun f_out -> 
-            fprintf f_out "%s\n" (groundterm_coq_quote builtin_eject result);
+            fprintf f_out "%s\n" (groundterm_coq_quote iface.builtin_eject result);
             ()
           );
           ()
@@ -260,31 +284,29 @@ let command_run
     )
 
 let main0
-  (builtin_inject : builtin_repr -> 'builtin)
-  (builtin_eject : 'builtin -> builtin_repr )
+  (iface : ('builtin0,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'programT)
-  (step : 'programT -> ((string, 'builtin) Extracted.termOver') -> ((string, 'builtin) Extracted.termOver') option)
-  (step_ext : 'programT -> ((string, 'builtin) Extracted.termOver') -> (((string, 'builtin) Extracted.termOver')*int) option)
+  (step : 'programT -> (((string, 'a) Extracted.termOver')*'hidden_data) -> (((string, 'a) Extracted.termOver')*'hidden_data) option)
+  (step_ext : 'programT -> (((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*int) option)
   (lang_debug_info : string list)
   =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.6" (command_run
-      builtin_inject
-      builtin_eject
+      iface
       parser
       step
       step_ext
-      lang_debug_info (*(List.map lang_debug_info ~f:Stringutils.implode)*)
+      lang_debug_info
       )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
-
+(* 
 let wrap_interpreter builtin_inject interpreter :
   'programT ->
   ((string, 'builtin) Extracted.termOver') ->
   ((string, 'builtin) Extracted.termOver') option
   =
-  (fun a b -> Stdlib.Obj.magic (interpreter (Stdlib.Obj.magic (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)))
+  (fun (a : 'programT) (b : ((string, 'builtin) Extracted.termOver')) -> (*Stdlib.Obj.magic*) (interpreter ((*Stdlib.Obj.magic*) (convert_groundterm builtin_inject a)) ((*Stdlib.Obj.magic*) b)))
 
 let wrap_interpreter_ext builtin_inject interpreter_ext =
   (fun a b -> 
@@ -293,7 +315,7 @@ let wrap_interpreter_ext builtin_inject interpreter_ext =
     | Some v ->
       Some ((fst v), (Z.to_int (snd v)))
     | None -> None
-  )
+  ) *)
 
 
 let main
@@ -302,40 +324,39 @@ let main
       langDefaults
       lang_Decls
       =
-  (* let c = Extracted.combine_symbol_classifiers in *)
   let r : Extracted.realization = {
-    realize_br = (fun br ->
+    realize_br = (fun (br : Extracted.builtinRepr) (*: 'builtin0*) ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
       match (iface.builtin_inject br') with
       | None -> failwith "Cannot realize builtin"
       | Some b -> Some b
     );
-    string2sym = (fun x -> Obj.magic x);
-    string2var = (fun x -> Obj.magic x);
-    string2m = (fun x ->
+    string2sym = (fun (x : string) -> Obj.magic x);
+    string2var = (fun (x : string) -> Obj.magic x);
+    string2m = (fun (x : string) (*: 'meth option*) ->
       match iface.bindings x with
-      | Extracted.Si_method m -> Some m
+      | Extracted.Si_method m -> Some (Obj.magic m)
       | _ -> None
     );
-    string2p = (fun x ->
+    string2p = (fun (x : string) (*('pred, 'hpred) Extracted.sum option*)  ->
       match iface.bindings x with
-      | Extracted.Si_predicate p -> Some (Extracted.Inl p)
-      | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr p)
+      | Extracted.Si_predicate p -> Some (Extracted.Inl (Obj.magic p))
+      | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr (Obj.magic p))
       | _ -> None
     );
 
-    string2qfa = (fun x ->
+    string2qfa = (fun (x : string) (*(('query,'func) Extracted.sum, 'attr) Extracted.sum option*) ->
       match iface.bindings x with
-      | Si_attribute a -> Some (Extracted.Inr a)
-      | Si_query q -> Some (Extracted.Inl (Extracted.Inl q))
-      | Si_function f -> Some (Extracted.Inl (Extracted.Inr f))
+      | Si_attribute a -> Some (Extracted.Inr (Obj.magic a))
+      | Si_query q -> Some (Extracted.Inl (Extracted.Inl (Obj.magic q)))
+      | Si_function f -> Some (Extracted.Inl (Extracted.Inr (Obj.magic f)))
       | _ -> None
     );
   } in
-  let pre1T = Extracted.process_declarations Extracted.Default_label langDefaults lang_Decls in
+  let pre1T = Extracted.top_frontend_process_declarations Extracted.Default_label langDefaults lang_Decls in
   match pre1T with
   | Extracted.Inl(st) -> (
-    match (Extracted.to_theory st) with
+    match (Extracted.top_frontend_to_thy st) with
     | (thy, dbg) -> (
       match (Extracted.top_frontend_realize_thy iface.static_model r thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
@@ -345,28 +366,34 @@ let main
          | true -> () (* OK *)
          | false -> printf "Warning: the given theory is not well-formed\n"; ()
         ) in
-        let basic_interpreter = (Extracted.top_naive_interpreter 
-          iface.signature 
-          iface.hidden_signature
-          iface.value_algebra
-          iface.hidden_algebra
-          iface.program_info
-          thy2 
+        let basic_interpreter : 'programT -> (((string, 'builtin) Extracted.termOver')*'hidden_data) -> (((string, 'builtin) Extracted.termOver')*'hidden_data) option = (
+          Obj.magic (
+            Extracted.top_naive_interpreter 
+              iface.signature 
+              iface.hidden_signature
+              iface.value_algebra
+              iface.hidden_algebra
+              iface.program_info
+              thy2 
+          )
         ) in
-        let ext_interpreter = (Extracted.top_naive_interpreter_ext 
-          iface.signature 
-          iface.hidden_signature
-          iface.value_algebra
-          iface.hidden_algebra
-          iface.program_info
-          thy2 
+        let ext_interpreter : 'programT -> (((string, 'builtin) Extracted.termOver')*'hidden_data) -> ((((string, 'builtin) Extracted.termOver')*'hidden_data)*int) option = (
+          Obj.magic (Extracted.top_naive_interpreter_ext 
+            iface.signature 
+            iface.hidden_signature
+            iface.value_algebra
+            iface.hidden_algebra
+            iface.program_info
+            thy2
+          )
         ) in
         (main0
-          iface.builtin_inject
-          iface.builtin_eject
+          iface
           parser
-          (wrap_interpreter iface.builtin_inject basic_interpreter)
-          (wrap_interpreter_ext iface.builtin_inject ext_interpreter)
+          basic_interpreter
+          (* (wrap_interpreter iface.builtin_inject basic_interpreter) *)
+          ext_interpreter
+          (* (wrap_interpreter_ext iface.builtin_inject ext_interpreter) *)
           (dbg)  
         )
       )

@@ -68,14 +68,14 @@ let rec expr_w_hole_to_str
   | `EGround g -> (
     sprintf "(se_ground %s)" (groundterm_to_string g)
   )
-  | `ECallF (`Id s, es) -> (
+  | `ECall (`Id s, es) -> (
     let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
-    sprintf "(se_applyf \"%s\" %s)" s (Util.format_coq_string_list es_str)
+    sprintf "(se_apply \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
-  | `ECallQ (`Id s, es) -> (
+  (* | `ECallQ (`Id s, es) -> (
     let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
-    sprintf "(se_applyq \"%s\" %s)" s (Util.format_coq_string_list es_str)
-  )
+    sprintf "(. \"%s\" %s)" s (Util.format_coq_string_list es_str)
+  ) *)
 
   let expr_to_str (e : Syntax.expr) : string =
     (expr_w_hole_to_str e None)
@@ -161,7 +161,7 @@ let isvalue_decl_to_str value : string = (
 let definition_to_str def : string = (
   sprintf
 {delimiter|
-Require Import Minuska.pval_ocaml_binding Minuska.default_everything.
+Require Import Minuska.default_everything.
   %s
   %s
 #[local]

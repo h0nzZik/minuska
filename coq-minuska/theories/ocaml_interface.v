@@ -15,10 +15,10 @@ Variant SymbolInfo (P HP F A Q M : Type)
 .
 
 Definition combine_symbol_classifiers
-    {Σ : StaticModel}
-    (from_pi from_value_algebra from_hidden_algebra : string -> SymbolInfo builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol)
+    {P HP F A Q M : Type}
+    (from_pi from_value_algebra from_hidden_algebra : string -> SymbolInfo P HP F A Q M)
     :
-    (string -> SymbolInfo builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol)
+    (string -> SymbolInfo P HP F A Q M)
 :=
     fun s =>
         match (from_pi s) with

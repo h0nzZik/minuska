@@ -47,8 +47,8 @@ type groundterm = Pluginbase.groundterm
 type expr =
   [ `EVar of vari
   | `EGround of groundterm
-  | `ECallF of (id*(expr list)) 
-  | `ECallQ of (id*(expr list))
+  | `ECall of (id*(expr list)) 
+  (* | `ECallQ of (id*(expr list)) *)
   ]
 
 type condition =

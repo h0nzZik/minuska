@@ -113,14 +113,14 @@ expr:
     BRACKET_ROUND_LEFT
     es = separated_list(COMMA, expr)
     BRACKET_ROUND_RIGHT
-    { `ECallF ((`Id s),es) }
-  | KEYWORD_QUERY
-    COLON
-    s = ID
-    BRACKET_ROUND_LEFT
-    es = separated_list(COMMA, expr)
-    BRACKET_ROUND_RIGHT
-    { `ECallQ ((`Id s),es) }
+    { `ECall ((`Id s),es) }
+  // | KEYWORD_QUERY
+  //   COLON
+  //   s = ID
+  //   BRACKET_ROUND_LEFT
+  //   es = separated_list(COMMA, expr)
+  //   BRACKET_ROUND_RIGHT
+  //   { `ECallQ ((`Id s),es) }
   ;
 
 condition:

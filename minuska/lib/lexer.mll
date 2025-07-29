@@ -32,7 +32,7 @@ rule read =
   | "@rule"       { KEYWORD_RULE }
   | "@context"       { KEYWORD_CONTEXT }
   | "@builtin"       { KEYWORD_BUILTIN }
-  | "@query"       { KEYWORD_QUERY }
+  (* | "@query"       { KEYWORD_QUERY } *)
   | "@true"       { KEYWORD_TRUE }
   | "@false"       { KEYWORD_FALSE }
   | "@and"       { KEYWORD_AND }
