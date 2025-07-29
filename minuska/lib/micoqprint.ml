@@ -3,38 +3,12 @@ open Core
 open Libminuskapluginbase
 open Syntax
 open Libminuskapluginbase.Pluginbase
-
-(*
-type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
-type query_map_t = (string, string, String.comparator_witness) Map.t ;;
-*)
-
+(* 
 let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
     let ln = List.length l in
     List.iteri ~f:(fun idx x -> if (idx + 1 = ln) then (f x) else (f x; g ())) l;
-    ()
-(*
-let translate_name
-  (my_builtins_map : builtins_map_t)
-  (my_query_map : query_map_t)
-  (name : string)
-  : (string*string)
-  =
-  let name0 = Map.find my_builtins_map name in
-    match name0 with
-    | None ->  (
-      let name1 = Map.find my_query_map name in
-      match name1 with
-      | None ->
-        failwith (String.append "Unknown builtin: " name)
-      | Some name2 ->
-        let name = (name2) in
-        ("e_query", name)
-    )
-    | Some name1 ->
-        let name = (name1) in
-        ("e_fun", name)
-*)
+    () *)
+
 let rec groundterm_to_string
     (g : Syntax.groundterm)
     : string =
@@ -183,7 +157,7 @@ let isvalue_decl_to_str value : string = (
   sprintf "Definition isValue (%s : StringExpression) := %s.\n" varname (cond_w_hole_to_str (snd value) (Some varname))
 )
 
-
+(* This expects an instance of a StaticModel to be in context. *)
 let definition_to_str def : string = (
   sprintf
 {delimiter|

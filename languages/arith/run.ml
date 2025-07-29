@@ -11,6 +11,9 @@ let main () =
   let hie = (get_default_hidden_algebra_with_klike ()) in
 
   Libminuska.Miskeleton.main
+    Libminuska.Miskeleton.klike_builtin_inject
+    Libminuska.Miskeleton.klike_builtin_eject
+    Libminuska.Miskeleton.klike_builtin_coq_quote
     pvae
     hie
     pie

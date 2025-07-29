@@ -65,7 +65,7 @@ let wrap_init0 : ((string, 'builtin) Extracted.termOver') =
   
 let rec groundterm_coq_quote
   (builtin_eject : 'builtin -> builtin_repr)
-  (g : Extracted.gT)
+  (g : (string, 'builtin) Extracted.termOver')
   : string =
   match g with
   | Extracted.T_over b ->
@@ -76,7 +76,7 @@ let rec groundterm_coq_quote
     sprintf "%s %s" s (format_string_list ss)
 
 let rec run_n_steps
-  (step : Extracted.gT -> (Extracted.gT*'a) option)
+  (step : (string, 'builtin) Extracted.termOver' -> (((string, 'builtin) Extracted.termOver')*'a) option)
   (generate_debug : 'a list -> string)
   (rev_trace : 'a list)
   (max_depth : int)
@@ -117,8 +117,8 @@ let command_run
   (builtin_inject : builtin_repr -> 'builtin)
   (builtin_eject : 'builtin -> builtin_repr )
   (parser : Lexing.lexbuf -> 'programT)
-  (step : 'programT -> Extracted.gT -> Extracted.gT option)
-  (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
+  (step : 'programT -> ((string, 'builtin) Extracted.termOver') -> ((string, 'builtin) Extracted.termOver') option)
+  (step_ext : 'programT -> ((string, 'builtin) Extracted.termOver') -> (((string, 'builtin) Extracted.termOver')*int) option)
   (lang_debug_info : string list)
   =
   Command.basic
@@ -183,8 +183,8 @@ let main0
   (builtin_inject : builtin_repr -> 'builtin)
   (builtin_eject : 'builtin -> builtin_repr )
   (parser : Lexing.lexbuf -> 'programT)
-  (step : 'programT -> Extracted.gT -> Extracted.gT option)
-  (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
+  (step : 'programT -> ((string, 'builtin) Extracted.termOver') -> ((string, 'builtin) Extracted.termOver') option)
+  (step_ext : 'programT -> ((string, 'builtin) Extracted.termOver') -> (((string, 'builtin) Extracted.termOver')*int) option)
   (lang_debug_info : string list)
   =
   Printexc.record_backtrace true;
@@ -199,7 +199,11 @@ let main0
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 
-let wrap_interpreter builtin_inject interpreter : 'programT -> Extracted.gT -> Extracted.gT option =
+let wrap_interpreter builtin_inject interpreter :
+  'programT ->
+  ((string, 'builtin) Extracted.termOver') ->
+  ((string, 'builtin) Extracted.termOver') option
+  =
   (fun a b -> (*Stdlib.Obj.magic*) (interpreter ((*Stdlib.Obj.magic*) (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)))
 
 let wrap_interpreter_ext builtin_inject interpreter_ext =
@@ -215,11 +219,12 @@ let wrap_interpreter_ext builtin_inject interpreter_ext =
 let main
       (builtin_inject : builtin_repr -> 'builtin)
       (builtin_eject : 'builtin -> builtin_repr )
-      (sym_info : string -> ('pred,'hpred,'func,'attr,'meth) Extracted.symbolInfo)
+      (sym_info : string -> ('pred,'hpred,'func,'attr,'query,'meth) Extracted.symbolInfo)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
       =
+  (* let c = Extracted.combine_symbol_classifiers in *)
   let r : Extracted.realization = {
     realize_br = (fun br ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
@@ -229,10 +234,24 @@ let main
     );
     string2sym = (fun x -> Obj.magic x);
     string2var = (fun x -> Obj.magic x);
-    string2p = (fun x -> x);
-    string2qfa = (fun s -> match sym_info s with
-    | Extracted.Si_none -> failwith (sprintf "Bad string: '%s'" s)
-    | Extracted.Si_predicate p -> Some (Extracted.Inl (Extracted.Inl (p)))
+    string2m = (fun x ->
+      match sym_info x with
+      | Extracted.Si_method m -> Some m
+      | _ -> None
+    );
+    string2p = (fun x ->
+      match sym_info x with
+      | Extracted.Si_predicate p -> Some (Extracted.Inl p)
+      | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr p)
+      | _ -> None
+    );
+
+    string2qfa = (fun x ->
+      match sym_info x with
+      | Si_attribute a -> Some (Extracted.Inr a)
+      | Si_query q -> Some (Extracted.Inl (Extracted.Inl q))
+      | Si_function f -> Some (Extracted.Inl (Extracted.Inr f))
+      | _ -> None
     );
   } in
   let pre1T = Extracted.process_declarations Extracted.Default_label langDefaults lang_Decls in

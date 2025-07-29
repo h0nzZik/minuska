@@ -8,30 +8,52 @@ From Minuska Require Export
     pi.trivial
     ocaml_interface
 .
+
+Definition top_combine_symbol_classifiers := @ocaml_interface.combine_symbol_classifiers.
+Definition top_builtin_empty_beta := @builtin.empty.β.
+Definition top_builtin_empty_bindings := @builtin.empty.bindings.
+Definition top_builtin_klike_beta := @builtin.klike.β.
+Definition top_builtin_klike_bindings := @builtin.klike.bindings.
+Definition top_pi_trivial_pi := @pi.trivial.MyProgramInfo.
+Definition top_pi_trivial_bindings := @pi.trivial.bindings.
+Definition top_frontend_realize_thy := @frontend.realize_thy.
+Definition top_frontend_to_thy := @frontend.to_theory.
+Definition top_frontend_srr_to_rr := @frontend.srr_to_rr.
+Definition top_frontend_process_declarations := @frontend.process_declarations.
+Definition top_Label := @default_everything.Label.
+Definition top_default_label := @default_everything.default_label.
+Definition top_invisible_label := @default_everything.invisible_label.
+Definition top_naive_interpreter := default_everything.global_naive_interpreter.
+Definition top_naive_interpreter_ext := default_everything.global_naive_interpreter_ext.
+
+(* We extract only definitions from this module,
+   and they all are prefixed with "top_"
+   so that they do not collide with all the auxilliary definitions.
+ *)
 Extraction
     "Dsm.ml"
-    mkRewritingRule2
-    ocaml_interface.combine_symbol_classifiers
-    builtin.empty.β
-    builtin.empty.bindings
-    builtin.klike.β
-    builtin.klike.bindings
-    pi.trivial.MyProgramInfo
-    pi.trivial.bindings
-    interpreter_results.RewritingTheory2_wf_dec
-    frontend.srr_to_rr
-    frontend.process_declarations
-    frontend.to_theory
-    frontend.realize_thy
-    default_everything.Label
-    default_everything.default_label
-    default_everything.invisible_label
+    (* mkRewritingRule2 *)
+    top_combine_symbol_classifiers
+    top_builtin_empty_beta
+    top_builtin_empty_bindings
+    top_builtin_klike_beta
+    top_builtin_klike_bindings
+    top_pi_trivial_pi
+    top_pi_trivial_bindings
+    (* interpreter_results.RewritingTheory2_wf_dec *)
+    top_frontend_srr_to_rr
+    top_frontend_process_declarations
+    top_frontend_to_thy
+    top_frontend_realize_thy
+    top_Label
+    top_default_label
+    top_invisible_label
     (* default_everything.DSM
     default_everything.GT
     default_everything.gt_term
     default_everything.gt_over *)
-    default_everything.global_naive_interpreter
-    default_everything.global_naive_interpreter_ext
+    top_naive_interpreter
+    top_naive_interpreter_ext
     (*
       Error:
 The informative inductive type prod has a Prop instance
