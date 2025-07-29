@@ -3,11 +3,6 @@ open Core
 open Libminuskapluginbase
 open Syntax
 open Libminuskapluginbase.Pluginbase
-(* 
-let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
-    let ln = List.length l in
-    List.iteri ~f:(fun idx x -> if (idx + 1 = ln) then (f x) else (f x; g ())) l;
-    () *)
 
 let rec groundterm_to_string
     (g : Syntax.groundterm)
