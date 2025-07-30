@@ -9,7 +9,7 @@ Fixpoint interp_loop
     {Σ : BackgroundModel}
     (nvs : nat -> NondetValue)
     (idx : nat)
-    (interp : NondetValue -> TermOver BasicValue -> option (@TermOver' TermSymbol BasicValue))
+    (interp : NondetValue -> (@TermOver' TermSymbol BasicValue) -> option (@TermOver' TermSymbol BasicValue))
     (fuel : nat)
     (g : @TermOver' TermSymbol BasicValue)
     : (nat*(@TermOver' TermSymbol BasicValue))

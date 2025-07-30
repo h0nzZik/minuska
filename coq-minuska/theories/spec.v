@@ -153,13 +153,14 @@ Class ProgramInfo
 
 Class BackgroundModelOver
     (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
-:= {
+:= Build_BackgroundModelOver {
     value_algebra :: ValueAlgebra BVal NdVal Sy Fs Ps;
     hidden_algebra :: HiddenAlgebra HVal BVal NdVal Sy As Ms HPs ;
     program_info :: ProgramInfo PT BVal Sy Qs;
+    nondet_gen : nat -> NdVal ;
 }.
 
-Class BackgroundModel := {
+Class BackgroundModel := Build_BackgroundModel {
     basic_types :: BasicTypes ;
     basic_types_edc :: BasicTypesEDC basic_types ;
   
@@ -177,8 +178,6 @@ Class BackgroundModel := {
         basic_types.(HPredSymbol)
         basic_types.(ProgramT)
     ;
-
-    nondet_gen : nat -> basic_types.(NondetValue) ;
 }.
 
 

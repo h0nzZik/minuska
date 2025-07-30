@@ -13,7 +13,7 @@ Definition SymbolicTerm_to_ExprTerm
     (t : @TermOver' TermSymbol BuiltinOrVar)
     : @TermOver' TermSymbol Expression2
 :=
-    TermOver_map (fun x:BuiltinOrVar =>
+    TermOver'_map (fun x:BuiltinOrVar =>
         match x with
         | bov_builtin b => e_ground (t_over b)
         | bov_Variabl x => e_Variabl x

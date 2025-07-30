@@ -70,7 +70,6 @@ Proof.
             apply lookup_ge_None in Heq.
             apply lookup_lt_Some in Hi.
             ltac1:(exfalso).
-            unfold TermOver in *.
             ltac1:(lia).
         }
     }

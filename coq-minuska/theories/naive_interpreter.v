@@ -385,7 +385,7 @@ Proof.
                     ltac1:(rewrite vars_of_t_term).
                     rewrite fmap_cons.
                     rewrite union_list_cons.
-                    unfold TermOver,Valuation2 in *.
+                    unfold Valuation2 in *.
                     unfold vars_of; simpl.
                     ltac1:(rewrite dom_merge_use_left).
                     unfold vars_of in HH1; simpl in HH1.
@@ -480,9 +480,9 @@ Proof.
                 rewrite lookup_app_r in HHρ'.
                 rewrite length_take in HHρ'.
                 rewrite length_zip_with in HHρ'.
-                unfold Valuation2,TermOver in *.
+                unfold Valuation2 in *.
                 rewrite e0 in HHρ'.
-                unfold Valuation2,TermOver in *.
+                unfold Valuation2 in *.
                 rewrite Nat.min_id in HHρ'.
                 assert (Hm : i `min` length l0 = i).
                 {
@@ -506,12 +506,12 @@ Proof.
                 rewrite length_zip_with.
                 rewrite length_drop.
                 rewrite length_drop.
-                unfold Valuation2,TermOver in *.
+                unfold Valuation2 in *.
                 apply lookup_lt_Some in HHφ'.
                 ltac1:(lia).
             }
             {
-                unfold Valuation2,TermOver in *.
+                unfold Valuation2 in *.
                 rewrite length_take.
                 rewrite length_take.
                 ltac1:(lia).
@@ -537,7 +537,7 @@ Lemma eval_et_strip_helper
     (gg : @TermOver' TermSymbol (@TermOver' TermSymbol BasicValue))
 :
     TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et = Some gg ->
-    TermOver'_option_map (Expression2_evaluate_nv program h (filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of et) ρ) nv) et = Some gg
+    TermOver'_option_map (Expression2_evaluate_nv program h (filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of et) ρ) nv) et = Some gg
 .
 Proof.
     revert gg.
@@ -633,12 +633,12 @@ Proof.
                 (* unfold Valuation2 in *. *)
                 assert(Hfilter: 
                     (filter
-                        (λ kv : Variabl * TermOver BasicValue,
+                        (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
                       kv.1 ∈ ⋃ (vars_of <$> l))
                     ρ)
                     ⊆
                     (filter
-                        (λ kv : Variabl * TermOver BasicValue,
+                        (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
                         kv.1 ∈ (vars_of a ∪ (⋃ (vars_of <$> l))))
                     ρ)
                 ).
@@ -767,7 +767,7 @@ Lemma eval_et_strip
     (g : @TermOver' TermSymbol BasicValue)
 :
     eval_et program h ρ nv et = Some g ->
-    eval_et program h (filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of et) ρ) nv et = Some g
+    eval_et program h (filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of et) ρ) nv et = Some g
 .
 Proof.
     unfold eval_et.
@@ -836,7 +836,7 @@ Proof.
         {   
             ltac1:(simplify_option_eq).
             ltac1:(simp sat2E).
-            inversion HH; subst; clear HH.
+            (* inversion HH; subst; clear HH. *)
             split>[reflexivity|].
             rewrite length_fmap.
             ltac1:(rename H1 into l1).
@@ -861,7 +861,7 @@ Proof.
                     simpl in HH.
                     ltac1:(simplify_option_eq).
                     symmetry in Heqo0.
-                    destruct (list_collect (TermOver_collect <$> map (TermOver_map (fun e => Expression2_evaluate program h ρ e nv)) l)) eqn:Heq';
+                    destruct (list_collect (TermOver_collect <$> map (TermOver'_map (fun e => Expression2_evaluate program h ρ e nv)) l)) eqn:Heq';
                         ltac1:(simplify_eq/=).
                     specialize (IHl _ erefl).
                     intros.
@@ -1596,7 +1596,7 @@ Proof.
             { apply HContra3''. }
             {
                 clear HContra3''.
-                assert (Hfs: filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_to r)) ρ ⊆ filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_from r)) ρ).
+                assert (Hfs: filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_to r)) ρ ⊆ filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_from r)) ρ).
                 {
                     unfold Valuation2 in *.
                     unfold Subseteq_Valuation2.
@@ -1610,7 +1610,7 @@ Proof.
                 }
                 unfold Valuation2 in *.
                 apply transitivity with (y := filter
-                    (λ kv : Variabl * TermOver BasicValue,
+                    (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
                     kv.1 ∈ vars_of (r_from r))
                     ρ).
                 { apply Hfs. }
@@ -1662,7 +1662,7 @@ Proof.
             { apply HContra3''. }
             {
                 clear HContra3''.
-                assert (Hfs: filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_eff r)) ρ ⊆ filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_from r)) ρ).
+                assert (Hfs: filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_eff r)) ρ ⊆ filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_from r)) ρ).
                 {
                     unfold Valuation2 in *.
                     unfold Subseteq_Valuation2.
@@ -1676,7 +1676,7 @@ Proof.
                 }
                 unfold Valuation2 in *.
                 apply transitivity with (y := filter
-                    (λ kv : Variabl * TermOver BasicValue,
+                    (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
                     kv.1 ∈ vars_of (r_from r))
                     ρ).
                 { apply Hfs. }

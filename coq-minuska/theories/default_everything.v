@@ -49,10 +49,11 @@ Proof.
     ltac1:(solve_decision).
 Defined.
 
+Print BackgroundModel.
 #[export]
 Instance DSM
-    (mysignature : Signature)
-    (hiddensignature : HiddenSignature)
+    (* (mysignature : Signature) *)
+    (* (hiddensignature : HiddenSignature) *)
     (β : Model mysignature MyUnit)
     (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
@@ -60,13 +61,13 @@ Instance DSM
     default_model mysignature hiddensignature β hiddenβ program_info
 .
 
-Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (BasicValue).
+(* Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (BasicValue).
 
 (* Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT. *)
 (* Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat). *)
 
 Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : BasicValue) : GT := @t_over string BasicValue b.
-Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string BasicValue s l.
+Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string BasicValue s l. *)
 
 Definition basic_rule
     (* {mysignature : Signature} *)

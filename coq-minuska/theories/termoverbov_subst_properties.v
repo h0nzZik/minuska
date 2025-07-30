@@ -345,7 +345,6 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
-            unfold TermOver in *.
             ltac1:(lia).
         }
 
@@ -387,7 +386,6 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
-            unfold TermOver in *.
             ltac1:(lia).
         }
 
@@ -405,7 +403,6 @@ Proof.
                 intros i0 x1 x2 Hx1 Hx2.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
-                unfold TermOver in *.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
                 rewrite subst_notin.
                 {
@@ -436,7 +433,6 @@ Proof.
             }
             {
                 intros i0 x1 x2 Hx1 Hx2.
-                unfold TermOver in *.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
@@ -457,7 +453,6 @@ Proof.
                 }
             }
         }
-        unfold TermOver in *.
         rewrite HH1. clear HH1.
         rewrite HH2. clear HH2.
         remember (sum_list_with TermOver_size (take j l) ) as N1.
@@ -505,15 +500,13 @@ Proof.
             specialize (Hnotindrop _ H2x1).
             apply Hnotindrop. apply H2x.
         }
-        unfold TermOver in *.
         specialize (H ltac:(lia)).
         rewrite H.
         assert (Htmp1 := TermOver_size_not_zero x0).
-        unfold TermOver in *.
-        rewrite length_app.
+        (* rewrite length_app. *)
         simpl.
-        rewrite length_drop.
-        rewrite length_take.
+        (* rewrite length_drop. *)
+        (* rewrite length_take. *)
         ltac1:(lia).
     }
 Qed.
@@ -552,7 +545,6 @@ Proof.
         }
     }
     {
-        unfold TermOver in *.
         rewrite vars_of_t_term.
         rewrite vars_of_t_term.
         apply set_eq.
