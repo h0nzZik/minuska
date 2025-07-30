@@ -105,7 +105,7 @@ Class Realization (Bu Sy Va P HP F A Q M : Type) := {
 
 Fixpoint se_to_Expression
     {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (se : StringExpression)
     :
     Expression2+string
@@ -157,7 +157,7 @@ Inductive StringSideCondition
 
 Fixpoint ssc_to_sc
     {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (ssc : StringSideCondition)
     :
     SideCondition+string
@@ -214,7 +214,7 @@ Fixpoint ssc_to_sc
 
 Definition tosse_to_e_tose
     {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (t : @TermOver' string StringExpression)
     :
     (TermOver Expression2)+string
@@ -233,7 +233,7 @@ Variant StringBuiltinOrVar :=
 
 Definition sbov_to_e_bov
     {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (sbov : StringBuiltinOrVar)
     :
     BuiltinOrVar+string
@@ -261,7 +261,7 @@ Record StringRewritingRule
 Definition transl_string_pattern
     {Σ : StaticModel}
     (Label : Set)
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (p : @TermOver' string StringBuiltinOrVar)
     :
     (TermOver BuiltinOrVar)+string
@@ -275,7 +275,7 @@ Definition transl_string_pattern
 Definition srr_to_rr
     {Σ : StaticModel}
     (Label : Set)
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (srr : StringRewritingRule Label)
     :
     (RewritingRule2 Label)+string
@@ -308,7 +308,7 @@ Definition srr_to_rr
 Definition realize_thy
     {Σ : StaticModel}
     (Label : Set)
-    {R : Realization builtin_value symbol variable builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
     (srrl : list (StringRewritingRule Label))
     :
     (list (RewritingRule2 Label))+string

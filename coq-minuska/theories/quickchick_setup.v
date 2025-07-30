@@ -65,9 +65,9 @@ Definition genSymbol : G symbol :=
 .
 
 (* Print IntFunSymbol. *)
-(* Compute builtin_function_symbol. *)
+(* Compute FunctionSymbol. *)
 
-Definition genFunction : G builtin_function_symbol :=
+Definition genFunction : G FunctionSymbol :=
     elems [int_plus; int_minus; int_uminus; int_zero; int_one; int_eq; int_le; int_lt]
 .
 
@@ -93,8 +93,8 @@ Definition genPatternSized sz := genTermSized' sz (fun _ =>
 (* Print Expression2. *)
 
 #[export]
-Instance showFun : Show builtin_function_symbol := {|
-    show := fun f => match (f : builtin_function_symbol) with
+Instance showFun : Show FunctionSymbol := {|
+    show := fun f => match (f : FunctionSymbol) with
     | int_plus => "plus"
     | int_minus => "minus"
     | int_uminus => "uminus"

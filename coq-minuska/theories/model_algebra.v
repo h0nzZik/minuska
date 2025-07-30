@@ -8,9 +8,9 @@ From Coq Require Import Logic.Eqdep_dec.
 From Coq Require Import Logic.PropExtensionality.
 
 #[local]
-Arguments builtin_function_symbol (Signature) : clear implicits.
+Arguments FunctionSymbol (Signature) : clear implicits.
 #[local]
-Arguments builtin_predicate_symbol (Signature) : clear implicits.
+Arguments PredicateSymbol (Signature) : clear implicits.
 #[local]
 Arguments builtin_function_interp {symbol} {symbols signature}
   {NondetValue Carrier} (ModelOver) _ _ _
@@ -196,13 +196,13 @@ Definition model_reduction
 := fun m2 =>
 {|
     builtin_function_interp :=
-        fun (f : builtin_function_symbol s1)
+        fun (f : FunctionSymbol s1)
             (nv : NV)
             (args : list (@TermOver' symbol Carrier))
         => spec.builtin_function_interp m2 (function_symbol_morphism μ f) nv args;
 
     builtin_predicate_interp :=
-        fun (p : builtin_predicate_symbol s1)
+        fun (p : PredicateSymbol s1)
             (nv : NV)
             (args : list (@TermOver' symbol Carrier))
         => spec.builtin_predicate_interp m2 (predicate_symbol_morphism μ p) nv args;
@@ -212,20 +212,20 @@ Definition model_reduction
 Section sum.
 
     Definition signature_sum (s1 s2 : Signature) : Signature := {|
-        builtin_function_symbol := sum (builtin_function_symbol s1) (builtin_function_symbol s2) ;
-        builtin_predicate_symbol := sum (builtin_predicate_symbol s1) (builtin_predicate_symbol s2) ;
+        FunctionSymbol := sum (FunctionSymbol s1) (FunctionSymbol s2) ;
+        PredicateSymbol := sum (PredicateSymbol s1) (PredicateSymbol s2) ;
     |}.
     
     Definition signature_sum_morphism_1_function
         (s1 s2 : Signature)
-        : (builtin_function_symbol s1) -> (builtin_function_symbol (signature_sum s1 s2))
+        : (FunctionSymbol s1) -> (FunctionSymbol (signature_sum s1 s2))
     :=
         fun f => inl f
     .
 
     Definition signature_sum_morphism_1_predicate
         (s1 s2 : Signature)
-        : (builtin_predicate_symbol s1) -> (builtin_predicate_symbol (signature_sum s1 s2))
+        : (PredicateSymbol s1) -> (PredicateSymbol (signature_sum s1 s2))
     :=
         fun f => inl f
     .
@@ -239,14 +239,14 @@ Section sum.
     
     Definition signature_sum_morphism_2_function
         (s1 s2 : Signature)
-        : (builtin_function_symbol s2) -> (builtin_function_symbol (signature_sum s1 s2))
+        : (FunctionSymbol s2) -> (FunctionSymbol (signature_sum s1 s2))
     :=
         fun f => inr f
     .
 
     Definition signature_sum_morphism_2_predicate
         (s1 s2 : Signature)
-        : (builtin_predicate_symbol s2) -> (builtin_predicate_symbol (signature_sum s1 s2))
+        : (PredicateSymbol s2) -> (PredicateSymbol (signature_sum s1 s2))
     :=
         fun f => inr f
     .
@@ -281,7 +281,7 @@ Section sum.
         (NV Carrier : Type)
         (m1 : ModelOver s1 NV Carrier)
         (m2 : ModelOver s2 NV Carrier)
-        (f : @builtin_function_symbol (signature_sum s1 s2))
+        (f : @FunctionSymbol (signature_sum s1 s2))
         (nv : NV)
         (args : list (@TermOver' symbol Carrier))
         :
@@ -300,7 +300,7 @@ Section sum.
         (NV Carrier : Type)
         (m1 : ModelOver s1 NV Carrier)
         (m2 : ModelOver s2 NV Carrier)
-        (p : @builtin_predicate_symbol (signature_sum s1 s2))
+        (p : @PredicateSymbol (signature_sum s1 s2))
         (nv : NV)
         (args : list (@TermOver' symbol Carrier))
         :

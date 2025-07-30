@@ -59,19 +59,19 @@ Class Symbols (symbol : Type) := {
 
 (* TODO FunctionSymbol and PredicateSymbol *)
 Class Signature := {
-    builtin_function_symbol
+    FunctionSymbol
         : Type ;
-    builtin_function_symbol_eqdec
-        :: EqDecision builtin_function_symbol ;
-    builtin_function_symbol_countable
-        :: Countable builtin_function_symbol ;
+    FunctionSymbol_eqdec
+        :: EqDecision FunctionSymbol ;
+    FunctionSymbol_countable
+        :: Countable FunctionSymbol ;
 
-    builtin_predicate_symbol
+    PredicateSymbol
         : Type ;
-    builtin_predicate_symbol_eqdec
-        :: EqDecision builtin_predicate_symbol ;
-    builtin_predicate_symbol_countable
-        :: Countable builtin_predicate_symbol ;
+    PredicateSymbol_eqdec
+        :: EqDecision PredicateSymbol ;
+    PredicateSymbol_countable
+        :: Countable PredicateSymbol ;
 }.
 
 Class HiddenSignature := {
@@ -90,13 +90,13 @@ Class HiddenSignature := {
 
 Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
     builtin_function_interp
-        : builtin_function_symbol
+        : FunctionSymbol
         -> NondetValue
         -> list (@TermOver' symbol Carrier)
         -> option (@TermOver' symbol Carrier) ;
         
     builtin_predicate_interp
-        : builtin_predicate_symbol
+        : PredicateSymbol
         -> NondetValue
         -> list (@TermOver' symbol Carrier)
         -> option bool ;    
@@ -246,7 +246,7 @@ Inductive Expression2
     :=
 | e_ground (e : @TermOver' (symbol) builtin_value)
 | e_variable (x : variable)
-| e_fun (f : builtin_function_symbol) (l : list Expression2)
+| e_fun (f : FunctionSymbol) (l : list Expression2)
 | e_query (q : QuerySymbol) (l : list Expression2)
 | e_attr (a : AttributeSymbol) (l : list Expression2)
 .
@@ -261,7 +261,7 @@ Section custom_induction_principle.
         (true_for_var : forall x, P (e_variable x))
         (preserved_by_fun :
             forall
-                (f : builtin_function_symbol)
+                (f : FunctionSymbol)
                 (l : list Expression2),
                 Forall P l ->
                 P (e_fun f l)
@@ -368,9 +368,9 @@ Inductive SideCondition {Σ : StaticModel} :=
 | sc_true
 | sc_false
 (* positive literal *)
-| sc_pred (pred : builtin_predicate_symbol) (args : list Expression2)
+| sc_pred (pred : PredicateSymbol) (args : list Expression2)
 (* negative literal *)
-| sc_npred (pred : builtin_predicate_symbol) (args : list Expression2)
+| sc_npred (pred : PredicateSymbol) (args : list Expression2)
 (* Positive literal over hidden data. NOTE: we do not have negatives over hiden data *)
 | sc_hpred (pred : HiddenPredicateSymbol) (args : list Expression2)
 | sc_and (left : SideCondition) (right : SideCondition)

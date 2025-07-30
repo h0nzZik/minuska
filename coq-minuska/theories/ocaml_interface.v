@@ -34,9 +34,9 @@ Definition combine_symbol_classifiers
 
 Definition si2qfa
     {Σ : StaticModel}
-    (si : SymbolInfo builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol)
+    (si : SymbolInfo PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol)
     :
-    option (QuerySymbol+builtin_function_symbol+AttributeSymbol)
+    option (QuerySymbol+FunctionSymbol+AttributeSymbol)
 :=
     match si with
     | si_query _ _ _ _ _ _ q => Some (inl (inl q))
@@ -52,7 +52,7 @@ Definition si2qfa
 
 Definition si2m
     {Σ : StaticModel}
-    (si : SymbolInfo builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol)
+    (si : SymbolInfo PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol)
     :
     option (MethodSymbol)
 :=
@@ -69,9 +69,9 @@ Definition si2m
 
 Definition si2p
     {Σ : StaticModel}
-    (si : SymbolInfo builtin_predicate_symbol HiddenPredicateSymbol builtin_function_symbol AttributeSymbol QuerySymbol MethodSymbol)
+    (si : SymbolInfo PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol)
     :
-    option (builtin_predicate_symbol+HiddenPredicateSymbol)
+    option (PredicateSymbol+HiddenPredicateSymbol)
 :=
     match si with
     | si_query _ _ _ _ _ _ q => None

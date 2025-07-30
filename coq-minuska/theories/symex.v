@@ -21,7 +21,7 @@ From Coq Require Import Logic.Eqdep_dec.
 From Equations Require Export Equations.
 
 
-Definition ScList {Σ : StaticModel} := (list (variable*(AttributeSymbol+QuerySymbol+builtin_function_symbol)*(list (Expression2)))).
+Definition ScList {Σ : StaticModel} := (list (variable*(AttributeSymbol+QuerySymbol+FunctionSymbol)*(list (Expression2)))).
 
 (* To make sense, vars of F and vars of et should not overlap *)
 Fixpoint replace_and_collect0
@@ -90,8 +90,8 @@ Inductive SideConditionEq {Σ : StaticModel} :=
 | sce_true
 | sce_false
 | sce_eq (l r : Expression2)
-| sce_atom (pred : builtin_predicate_symbol) (args : list Expression2)
-| sce_natom (pred : builtin_predicate_symbol) (args : list Expression2)
+| sce_atom (pred : PredicateSymbol) (args : list Expression2)
+| sce_natom (pred : PredicateSymbol) (args : list Expression2)
 | sce_hatom (pred : HiddenPredicateSymbol) (args : list Expression2)
 | sce_and (left : SideConditionEq) (right : SideConditionEq)
 | sce_or (left : SideConditionEq) (right : SideConditionEq)

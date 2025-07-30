@@ -356,7 +356,7 @@ Section custom_induction_principle_2.
         (true_for_var : forall x, P (e_variable x))
         (preserved_by_fun :
             forall
-                (f : builtin_function_symbol)
+                (f : FunctionSymbol)
                 (l : list Expression2),
                 (forall x, x ∈ l -> P x) ->
                 P (e_fun f l)
@@ -672,7 +672,7 @@ Fixpoint E_to_tree
     {Σ : StaticModel}
     (e : Expression2)
     :
-    (gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol)+(AttributeSymbol))%type)
+    (gen_tree ((TermOver' builtin_value)+(variable)+(FunctionSymbol)+(QuerySymbol)+(AttributeSymbol))%type)
 :=
     match e with
     | e_ground a => GenLeaf (inl (inl (inl (inl a))))
@@ -691,7 +691,7 @@ Fixpoint E_to_tree
 
 Fixpoint E_of_tree
     {Σ : StaticModel}
-    (t : gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol)+(AttributeSymbol))%type)
+    (t : gen_tree ((TermOver' builtin_value)+(variable)+(FunctionSymbol)+(QuerySymbol)+(AttributeSymbol))%type)
     : option Expression2
 :=
     match t with
