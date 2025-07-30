@@ -6,150 +6,83 @@ From Minuska Require Import
 
 From Coq Require Import Logic.Eqdep_dec.
 From Coq Require Import Logic.PropExtensionality.
+
 (* 
-#[local]
-Arguments FunSymbol (Signature) : clear implicits.
-#[local]
-Arguments PredSymbol (Signature) : clear implicits.
-#[local]
-Arguments builtin_function_interp {TermSymbol} {TermSymbols signature}
-  {NondetValue Carrier} (ModelOver) _ _ _
-.
-#[local]
-Arguments builtin_predicate_interp {TermSymbol} {TermSymbols signature}
-  {NondetValue Carrier} (ModelOver) _ _ _
-. *)
-
-
-(* Of course not.
-Program Definition inj_fst (A B : Type) : Injection (prod A B) A :=
-{|
-    inject := fst ;
-|}.
-Next Obligation.
-Fail Next Obligation. *)
-
-Record RelaxedModel
-    {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
-    (signature : Signature)
-    (NondetValue : Type)
-    (FromT : Type)
-:= {
-    rm_carrier :
-        Type
-    ;
-    rm_carrier_eqdec :
-        EqDecision rm_carrier
-    ;
-    rm_carrier_countable :
-        Countable rm_carrier
-    ;
-    rm_model_over :
+    This is for extensible value algebras.
+    For example, integers should work not only on our carrier [Vours]
+    containing exclusively integers,
+    but on any carrier [Carrier] in which [Z] is included.
+    However, integers also need booleans (if they are to be compared).
+    Thus, we have [Vdeps].
+*)
+Class RelaxedValueAlgebra
+    (Vdeps Vours : Type)
+    (NV Sy Fs Ps : Type)
+:= {        
+    rva_over :
         forall (Carrier : Type),
-        Injection FromT Carrier ->
-        ReversibleInjection rm_carrier Carrier ->
-        ModelOver signature NondetValue Carrier
-    ;
+            Injection Vdeps Carrier ->
+            ReversibleInjection Vours Carrier ->
+            ValueAlgebra Carrier NV Sy Fs Ps
 }.
 
-Program Definition model_of_relaxed
-    {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
-    {signature : Signature}
-    {NondetValue : Type}
-    {FromT : Type}
-    {_EFT : EqDecision FromT}
-    {_CT : Countable FromT}
-    (RM : RelaxedModel signature NondetValue FromT)
+(* 
+    The small model of a relaxed value algebra
+    contains just the dependencies in addition to own values
+    of that relaxed value algebra.
+ *)
+Program Definition small_model_of_relaxed
+    (Vdeps Vours : Type)
+    (NV Sy Fs Ps : Type)
+    (rva : RelaxedValueAlgebra Vdeps Vours NV Sy Fs Ps)
     :
-    Model signature NondetValue
-:= {|
-    BasicValue := sum FromT (rm_carrier _ _ _ RM) ;
-    builtin_model_over :=
-        rm_model_over signature NondetValue FromT RM
-        (sum FromT (rm_carrier _ _ _ RM))
+    ValueAlgebra (Vdeps+Vours) NV Sy Fs Ps
+:=
+    (rva.(rva_over)
+        (Vdeps+Vours)
         {| inject := inl |}
         {|
             ri_injection := {| inject := inr |} ;
             ri_reverse := fun x => match x with inr x' => Some x' | _ => None end ;
         |}
-        
-|}.
-Next Obligation.
-    destruct RM as [c ed ov].
-    apply _.
-Defined.
-Next Obligation.
-    destruct RM.
-    apply _.
-Defined.
+    )
+.
 Fail Next Obligation.
 
-Record RelaxedModelFunctorT (FromT : Type) := {
-    rmf_signature : Signature -> Signature ;
-    rmf_nondet : Type -> Type ;
-
-    rmf_model :
-        forall
-            (signature : Signature)
-            (NondetValue : Type)
-            {TermSymbol : Type}
-            {TermSymbols : Symbols TermSymbol},
-            @RelaxedModel TermSymbol TermSymbols signature NondetValue FromT ->
-            (* (inja : Injection FromT Carrier) *)
-            (* (injb : ReversibleInjection (rmf_carrier Carrier) Carrier), *)
-            @RelaxedModel
-                TermSymbol
-                TermSymbols
-                (rmf_signature signature)
-                (rmf_nondet NondetValue)
-                FromT
-}.
-
-Definition rmf_apply
-    {FromT : Type}
-    (f : RelaxedModelFunctorT FromT)
-    {signature : Signature}
-    {NondetValue : Type}
-    {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
-    (M : @RelaxedModel TermSymbol TermSymbols signature NondetValue FromT)
-    :
-    @RelaxedModel
-        TermSymbol
-        TermSymbols
-        (rmf_signature _ f signature)
-        (rmf_nondet _ f NondetValue)
-        FromT
-:= 
-    rmf_model _ f _ _ M
-.
-
-Definition model_reduction
-    (s1 s2 : Signature)
-    (μ : SignatureMorphism s1 s2)
-    (NV Carrier : Type)
-    {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
-    :
-    ModelOver s2 NV Carrier ->
-    ModelOver s1 NV Carrier
+(* TODO generalize such that we can rename term symbols also *)
+Definition va_reduction
+    {BV Ts : Type}
+    {A_Var A_Fs A_Ps A_Hps A_As A_Ms A_Qs A_HV A_NV : Type}
+    {B_Var B_Fs B_Ps B_Hps B_As B_Ms B_Qs B_HV B_NV : Type}
+    (μ : @BasicTypesMorphism'
+        A_Var Ts A_Fs A_Ps A_Hps A_As A_Ms A_Qs BV A_HV A_NV
+        B_Var Ts B_Fs B_Ps B_Hps B_As B_Ms B_Qs BV B_HV B_NV
+    )
+:
+    ValueAlgebra BV B_NV Ts B_Fs B_Ps ->
+    ValueAlgebra BV A_NV Ts A_Fs A_Ps
 := fun m2 =>
 {|
     builtin_function_interp :=
-        fun (f : FunSymbol s1)
-            (nv : NV)
-            (args : list (@TermOver' TermSymbol Carrier))
-        => spec.builtin_function_interp m2 (function_TermSymbol_morphism μ f) nv args;
+        fun (f : A_Fs)
+            (nv : A_NV)
+            (args : list (@TermOver' Ts BV))
+        => m2.(builtin_function_interp)
+            (μ.(FunSymbol_morph) f)
+            (μ.(NondetValue_morph) nv)
+            args
+    ;
 
     builtin_predicate_interp :=
-        fun (p : PredSymbol s1)
-            (nv : NV)
-            (args : list (@TermOver' TermSymbol Carrier))
-        => spec.builtin_predicate_interp m2 (predicate_TermSymbol_morphism μ p) nv args;
-|}
-.
+        fun (p : A_Ps)
+            (nv : A_NV)
+            (args : list (@TermOver' Ts BV))
+        => m2.(builtin_predicate_interp)
+            (μ.(PredSymbol_morph) p)
+            (μ.(NondetValue_morph) nv)
+            args
+    ;
+|}.
 
 Section sum.
 

@@ -7,6 +7,11 @@ From Minuska Require Import
 
 From stdpp Require Import decidable.
 
+(* I commented this out because it was only a WIP
+   and I do not have time to refactor this now.
+   But see also https://h0nzzik.github.io/posts/019-language-parametric-information-flow-control/.
+ *)
+(* 
 Class IFLattice (TagType : Type) := {
     ifl_meet :
         TagType -> TagType -> TagType
@@ -497,7 +502,7 @@ Class IFCRelaxedModelTrait1
             end
         end
     ;
-}.
+}. *)
 
 
 (* TODO need "the rest" of the natural transformation *)
