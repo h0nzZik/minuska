@@ -48,7 +48,7 @@ Instance Label_eqDec : EqDecision Label.
 Proof.
     ltac1:(solve_decision).
 Defined.
-
+(* 
 Print BackgroundModel.
 #[export]
 Instance DSM
@@ -59,7 +59,7 @@ Instance DSM
     (program_info : ProgramInfo)
     : BackgroundModel :=
     default_model mysignature hiddensignature β hiddenβ program_info
-.
+. *)
 
 (* Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (BasicValue).
 
@@ -126,6 +126,7 @@ match t with
 | t_term s l => t_term s (map (fun t'' => sTermOverBoV_subst t'' x t') l)
 end.
 
+(* TODO move this to frontend? *)
 Definition framed_rule
     (frame : (string*(@TermOver' string StringBuiltinOrVar)))
     (name : string)
@@ -139,47 +140,54 @@ Definition framed_rule
         cond default_label)))
 .
 
-Definition global_naive_interpreter
-    (mysignature : Signature)
-    (hiddensignature : HiddenSignature)
-    (β : Model mysignature MyUnit)
-    (hiddenβ : HiddenModel mysignature hiddensignature β)
-    (program_info : ProgramInfo)
-    :=
-    @naive_interpreter (DSM mysignature hiddensignature β hiddenβ program_info) Label
-.
-
-Definition global_naive_interpreter_ext
-    (mysignature : Signature)
-    (hiddensignature : HiddenSignature)
-    (β : Model mysignature MyUnit)
-    (hiddenβ : HiddenModel mysignature hiddensignature β)
-    (program_info : ProgramInfo)
-    :=
-    @naive_interpreter_ext (DSM mysignature hiddensignature β hiddenβ program_info) Label
-.
-
-Definition global_naive_interpreter_sound
-    (mysignature : Signature)
-    (hiddensignature : HiddenSignature)
-    (β : Model mysignature MyUnit)
-    (hiddenβ : HiddenModel mysignature hiddensignature β)
-    (program_info : ProgramInfo)
-    :=
-    @naive_interpreter_sound (DSM mysignature hiddensignature β hiddenβ program_info) Label
-.
-(* 
-Definition poly_naive_interpreter_ext
-    (Bu Hd Ps HPs Fs As Qs Ms : Type)
-    (e : (@TermOver' string Bu)*(Hd))
-    : option (((@TermOver' string Bu)*(Hd))*nat)
+Definition poly_naive_interpreter
+    (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
+    (_EBBVal : EDC BVal)
+    (_EBHVal : EDC HVal)
+    (_EBNdVal : EDC NdVal)
+    (_EBVar : EDC Var)
+    (_EBSy : EDC Sy)
+    (_EBFs : EDC Fs)
+    (_EBPs : EDC Ps)
+    (_EBAs : EDC As)
+    (_EBMs : EDC Ms)
+    (_EBQs : EDC Qs)
+    (_EBHPs : EDC HPs)
+    (bgm : BackgroundModelOver BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT)
+    (Γ : list (RewritingRule2 Label))
+    (program : PT)
+    (nv : NdVal)
+    (x : (@TermOver' Sy BVal)*(HVal))
+    : option ((@TermOver' Sy BVal)*HVal)
 :=
-    let Sy : Type := string in
-    let Va : Type := string in
-    let mysignature := {|
-        FunSymbol := Fs;    
-    |} in
-    mysignature
-    (* let SM := 0 in
-    0 *)
-. *)
+    let basic_types := Build_BasicTypes Var Sy Fs Ps HPs As Ms Qs BVal HVal NdVal PT in
+    let basic_types_edc := Build_BasicTypesEDC _ _ _ _ _ _ _ _ _ _ _ _ in
+    let bgm : BackgroundModel := Build_BackgroundModel basic_types basic_types_edc bgm in
+    (@naive_interpreter bgm Label Γ program nv x)
+.
+
+Definition poly_naive_interpreter_ext
+    (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
+    (_EBBVal : EDC BVal)
+    (_EBHVal : EDC HVal)
+    (_EBNdVal : EDC NdVal)
+    (_EBVar : EDC Var)
+    (_EBSy : EDC Sy)
+    (_EBFs : EDC Fs)
+    (_EBPs : EDC Ps)
+    (_EBAs : EDC As)
+    (_EBMs : EDC Ms)
+    (_EBQs : EDC Qs)
+    (_EBHPs : EDC HPs)
+    (bgm : BackgroundModelOver BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT)
+    (Γ : list (RewritingRule2 Label))
+    (program : PT)
+    (nv : NdVal)
+    (x : (@TermOver' Sy BVal)*(HVal))
+    : option ((@TermOver' Sy BVal)*HVal*nat)
+:=
+    let basic_types := Build_BasicTypes Var Sy Fs Ps HPs As Ms Qs BVal HVal NdVal PT in
+    let basic_types_edc := Build_BasicTypesEDC _ _ _ _ _ _ _ _ _ _ _ _ in
+    let bgm : BackgroundModel := Build_BackgroundModel basic_types basic_types_edc bgm in
+    (@naive_interpreter_ext bgm Label Γ program nv x)
+.

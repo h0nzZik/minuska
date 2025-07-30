@@ -63,7 +63,7 @@ Definition Σ1 : BackgroundModel := {|
         value_algebra := int_va string unit ;
         hidden_algebra := hidden_unit.unit_hidden_model unit ;
         program_info := @pi.trivial.MyProgramInfo _ _ unit  ;
+        nondet_gen := fun _ => tt ;
     |};
-    nondet_gen := fun _ => tt ;
 |}.
 

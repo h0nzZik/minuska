@@ -66,7 +66,7 @@ CoInductive Stream (A : Type) : Type := Seq {
 }.
 
 
-Class BasicTypes := {
+Class BasicTypes := Build_BasicTypes {
     Variabl     : Type ; (* Would be [Variable] but that is a keyword in Rocq. *)
     TermSymbol  : Type ;
     FunSymbol   : Type ;
@@ -81,7 +81,8 @@ Class BasicTypes := {
     ProgramT    : Type ;
 }.
 
-Class BasicTypesEDC (basic_types : BasicTypes) := {
+Class BasicTypesEDC (basic_types : BasicTypes)
+:= Build_BasicTypesEDC {
     Variabl_edc :: EDC basic_types.(Variabl) ;
     TermSymbol_edc :: EDC basic_types.(TermSymbol) ;
     FunSymbol_edc :: EDC basic_types.(FunSymbol) ;
