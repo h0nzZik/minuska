@@ -1633,7 +1633,6 @@ Proof.
                     {
                         unfold subp_codom in H1.
                         unfold SubP in *.
-                        unfold TermOver in *.
                         assert (Ht: t ∈ ((map_img b):(listset _))).
                         {
                             eapply elem_of_map_img_2.
@@ -1774,6 +1773,7 @@ Proof.
         apply elem_of_zip_r in Hrmk as H2.
         clear Hrmk.
         apply elem_of_fresh_var_seq in H2.
+        inversion Hkv; subst; clear Hkv.
         ltac1:(set_solver).
     }
     {
@@ -1828,7 +1828,14 @@ Proof.
             apply elem_of_zip_r in H2 as H4.
             clear H2.
             apply elem_of_fresh_var_seq in H4.
-            ltac1:(set_solver).
+            apply H4.
+            rewrite elem_of_app.
+            left.
+            inversion Hkv; subst; clear Hkv.
+            clear - H3.
+            rewrite elem_of_elements in H3.
+            rewrite elem_of_elements.
+            apply H3.
         }
         {
             rewrite fst_zip.
@@ -3380,7 +3387,7 @@ Proof.
                                                 unfold subp_normalize.
                                                 rewrite <- map_filter_union.
                                                 {
-                                                    ltac1:(replace (init) with ((filter (λ kv : Variabl * TermOver BuiltinOrVar, kv.1 ∉ subp_dom m) init)) at 2).
+                                                    ltac1:(replace (init) with ((filter (λ kv : Variabl * (@TermOver' TermSymbol BuiltinOrVar), kv.1 ∉ subp_dom m) init)) at 2).
                                                     {
                                                         ltac1:(
                                                             replace

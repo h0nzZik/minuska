@@ -17,8 +17,8 @@ Class UnificationAlgorithm
     {Σ : BackgroundModel}
 := {
     ua_unify :
-        TermOver BuiltinOrVar ->
-        TermOver BuiltinOrVar ->
+        @TermOver' TermSymbol BuiltinOrVar ->
+        @TermOver' TermSymbol BuiltinOrVar ->
         option SubP
     ;
     
