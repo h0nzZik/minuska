@@ -16,8 +16,8 @@ Require Import Coq.Logic.FunctionalExtensionality.
 
 Fixpoint try_match_new
     {Σ : BackgroundModel}
-    (g : TermOver BasicValue)
-    (φ : TermOver BuiltinOrVar)
+    (g : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     : option Valuation2
 :=
     match φ with
@@ -53,7 +53,7 @@ Fixpoint try_match_new
 Definition Expression2_evaluate_nv
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (t : Expression2)
@@ -65,11 +65,11 @@ Definition Expression2_evaluate_nv
 Definition eval_et
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (et : TermOver Expression2)
-    : option (TermOver BasicValue)
+    (et : @TermOver' TermSymbol Expression2)
+    : option (@TermOver' TermSymbol BasicValue)
 :=
     x ← TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et;
     Some (TermOver'_join x)
@@ -79,11 +79,11 @@ Definition eval_et
 Lemma eval_et_Some_val
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (et : TermOver Expression2)
-    (t : TermOver BasicValue)
+    (et : @TermOver' TermSymbol Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
 :
     eval_et program h ρ nv et = Some t ->
     vars_of et ⊆ vars_of ρ 
@@ -151,11 +151,11 @@ Definition try_match_lhs_with_sc
     {Σ : BackgroundModel}
     {Label : Set}
     (program : ProgramT)
-    (h : hidden_data)
-    (g : TermOver BasicValue)
+    (h : HiddenValue)
+    (g : @TermOver' TermSymbol BasicValue)
     (nv : NondetValue)
     (r : RewritingRule2 Label)
-    : option (Valuation2*(TermOver BasicValue)*hidden_data)
+    : option (Valuation2*(@TermOver' TermSymbol BasicValue)*HiddenValue)
 :=
     ρ ← try_match_new g (r_from r);
     b ← SideCondition_evaluate program h ρ nv (r_scs r);
@@ -176,26 +176,26 @@ Definition try_match_lhs_with_sc
 Definition thy_lhs_match_one
     {Σ : BackgroundModel}
     {Label : Set}
-    (e : TermOver BasicValue)
-    (h : hidden_data)
+    (e : @TermOver' TermSymbol BasicValue)
+    (h : HiddenValue)
     (nv : NondetValue)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    : option (RewritingRule2 Label * Valuation2 * (TermOver BasicValue) * hidden_data * nat)%type
+    : option (RewritingRule2 Label * Valuation2 * (@TermOver' TermSymbol BasicValue) * HiddenValue * nat)%type
 :=
-    let froms : list (TermOver BuiltinOrVar)
+    let froms : list (@TermOver' TermSymbol BuiltinOrVar)
         := r_from <$> Γ
     in
-    let vs : list (option (Valuation2 * (TermOver BasicValue) * hidden_data))
+    let vs : list (option (Valuation2 * (@TermOver' TermSymbol BasicValue) * HiddenValue))
         := (try_match_lhs_with_sc program h e nv) <$> Γ
     in
-    let found : option (nat * option (Valuation2*(TermOver BasicValue) * hidden_data))
+    let found : option (nat * option (Valuation2*(@TermOver' TermSymbol BasicValue) * HiddenValue))
         := list_find isSome vs
     in
-    flip mbind found (fun (nov : (nat * option (Valuation2*(TermOver BasicValue) * hidden_data))) => (
+    flip mbind found (fun (nov : (nat * option (Valuation2*(@TermOver' TermSymbol BasicValue) * HiddenValue))) => (
         let idx : nat := nov.1 in
-        let ov : option (Valuation2 * (TermOver BasicValue) * hidden_data) := nov.2 in
-        flip mbind ov (fun (v : (Valuation2 * (TermOver BasicValue) * hidden_data)) =>
+        let ov : option (Valuation2 * (@TermOver' TermSymbol BasicValue) * HiddenValue) := nov.2 in
+        flip mbind ov (fun (v : (Valuation2 * (@TermOver' TermSymbol BasicValue) * HiddenValue)) =>
             flip mbind (Γ !! idx) (fun r =>
                 Some (r, v.1.1, v.1.2, v.2, idx)
             )
@@ -210,10 +210,10 @@ Definition naive_interpreter_ext
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    (e : (TermOver BasicValue)*(hidden_data))
-    : option (((TermOver BasicValue)*(hidden_data))*nat)
+    (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    : option (((@TermOver' TermSymbol BasicValue)*(HiddenValue))*nat)
 :=
-    let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver BasicValue)*hidden_data*nat)
+    let oρ : option ((RewritingRule2 Label)*Valuation2*(@TermOver' TermSymbol BasicValue)*HiddenValue*nat)
         := thy_lhs_match_one e.1 e.2 nv Γ program in
     match oρ with
     | None => None
@@ -228,8 +228,8 @@ Definition naive_interpreter
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    (e : (TermOver BasicValue)*(hidden_data))
-    : option ((TermOver BasicValue)*hidden_data)
+    (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    : option ((@TermOver' TermSymbol BasicValue)*HiddenValue)
 :=
     ei ← naive_interpreter_ext Γ program nv e;
     Some (ei.1)
@@ -240,7 +240,7 @@ Definition naive_interpreter
 Lemma try_match_new_complete
     {Σ : BackgroundModel}
     :
-    ∀ (a : (TermOver BasicValue)) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
+    ∀ (a : (@TermOver' TermSymbol BasicValue)) (b : @TermOver' TermSymbol BuiltinOrVar) (ρ : Valuation2),
         sat2B ρ a b ->
         { ρ' : Valuation2 &
             vars_of ρ' = vars_of b /\
@@ -413,7 +413,7 @@ Proof.
 Qed.
 
 Lemma try_match_new_correct {Σ : BackgroundModel} :
-    ∀ (a : TermOver BasicValue) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
+    ∀ (a : @TermOver' TermSymbol BasicValue) (b : @TermOver' TermSymbol BuiltinOrVar) (ρ : Valuation2),
         try_match_new a b = Some ρ ->
         sat2B ρ a b
 .
@@ -530,11 +530,11 @@ Qed.
 Lemma eval_et_strip_helper
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (et : TermOver Expression2)
+    (et : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
-    (gg : TermOver (TermOver BasicValue))
+    (gg : @TermOver' TermSymbol (@TermOver' TermSymbol BasicValue))
 :
     TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et = Some gg ->
     TermOver'_option_map (Expression2_evaluate_nv program h (filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of et) ρ) nv) et = Some gg
@@ -760,11 +760,11 @@ Qed.
 Lemma eval_et_strip
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (et : TermOver Expression2)
+    (et : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
-    (g : TermOver BasicValue)
+    (g : @TermOver' TermSymbol BasicValue)
 :
     eval_et program h ρ nv et = Some g ->
     eval_et program h (filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of et) ρ) nv et = Some g
@@ -786,11 +786,11 @@ Qed.
 Lemma eval_et_correct
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (et : TermOver Expression2)
+    (et : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
-    (g : TermOver BasicValue)
+    (g : @TermOver' TermSymbol BasicValue)
     :
     eval_et program h ρ nv et = Some g ->
     sat2E program h ρ g et nv
@@ -902,11 +902,11 @@ Qed.
 Lemma eval_et_correct_2
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (et : TermOver Expression2)
+    (et : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
-    (g : TermOver BasicValue)
+    (g : @TermOver' TermSymbol BasicValue)
     :
     sat2E program h ρ g et nv ->
     eval_et program h ρ nv et = Some g
@@ -1013,16 +1013,16 @@ Lemma TermOver'_option_map__Expression2_evaluate__extensive
 {Σ : BackgroundModel} a nv ρ1 ρ2 program h
 :
     ρ1 ⊆ ρ2 ->
-    ∀ t : TermOver' (TermOver BasicValue),
+    ∀ t : TermOver' (@TermOver' TermSymbol BasicValue),
     TermOver'_option_map
     (λ t0 : Expression2,
     Expression2_evaluate program h ρ1 t0 nv
-    ≫= λ gt : TermOver BasicValue, Some (gt))
+    ≫= λ gt : @TermOver' TermSymbol BasicValue, Some (gt))
     a = Some t
     → @TermOver'_option_map TermSymbol _ _
     (λ t0 : Expression2,
     Expression2_evaluate program h ρ2 t0 nv
-    ≫= λ gt : TermOver BasicValue, Some (gt))
+    ≫= λ gt : @TermOver' TermSymbol BasicValue, Some (gt))
     a = Some t
 .
 Proof.
@@ -1096,8 +1096,8 @@ Qed.
 Lemma eval_et_evaluate_None_relative
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
-    (et : TermOver Expression2)
+    (h : HiddenValue)
+    (et : @TermOver' TermSymbol Expression2)
     (ρ1 ρ2 : Valuation2)
     (nv : NondetValue)
     :
@@ -1221,11 +1221,11 @@ Qed.
 Lemma eval_et_extensive_Some
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ1 ρ2 : Valuation2)
-    (et : TermOver Expression2)
+    (et : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
-    (t : TermOver BasicValue)
+    (t : @TermOver' TermSymbol BasicValue)
     :
     ρ1 ⊆ ρ2 ->
     eval_et program h ρ1 nv et = Some t ->
@@ -1318,8 +1318,8 @@ Lemma try_match_lhs_with_sc_complete
     {Σ : BackgroundModel}
     {Label : Set}
     (program : ProgramT)
-    (h h' : hidden_data)
-    (g g' : TermOver BasicValue)
+    (h h' : HiddenValue)
+    (g g' : @TermOver' TermSymbol BasicValue)
     (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)
@@ -1332,9 +1332,9 @@ Lemma try_match_lhs_with_sc_complete
     SideCondition_evaluate program h ρ nv (r_scs r) = Some true ->
     Effect0_evaluate program h ρ nv (r_eff r) = Some h' ->
     {
-        ρ' : (gmap Variabl (TermOver BasicValue)) &
-        { g'' : TermOver BasicValue &
-            { h'' : hidden_data &
+        ρ' : (gmap Variabl (@TermOver' TermSymbol BasicValue)) &
+        { g'' : @TermOver' TermSymbol BasicValue &
+            { h'' : HiddenValue &
                 vars_of ρ' = vars_of (r_from r) ∧
                 ρ' ⊆ ρ ∧
                 try_match_lhs_with_sc program h g nv r = Some (ρ', g'', h'')
@@ -1515,14 +1515,14 @@ Lemma thy_lhs_match_one_None
     {Σ : BackgroundModel}
     {Label : Set}
     (program : ProgramT)
-    (h : hidden_data)
-    (e : TermOver BasicValue)
+    (h : HiddenValue)
+    (e : @TermOver' TermSymbol BasicValue)
     (Γ : RewritingTheory2 Label)
     (wfΓ : RewritingTheory2_wf Γ)
     (nv : NondetValue)
     :
     thy_lhs_match_one e h nv Γ program = None ->
-    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver BasicValue & { h' : _ &
+    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : @TermOver' TermSymbol BasicValue & { h' : _ &
         ((r ∈ Γ) *
          (sat2B ρ e (r_from r)) *
          (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
@@ -1758,10 +1758,10 @@ Qed.
 Lemma thy_lhs_match_one_Some
     {Σ : BackgroundModel}
     {Label : Set}
-    (e e' : TermOver BasicValue)
+    (e e' : @TermOver' TermSymbol BasicValue)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (h h' : hidden_data)
+    (h h' : HiddenValue)
     (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)

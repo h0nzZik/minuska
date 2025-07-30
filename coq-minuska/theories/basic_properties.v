@@ -104,13 +104,12 @@ End custom_induction_principle_2.
 #[export]
 Existing Instance TermOver_eqdec.
 
-
 Fixpoint TermOverBuiltin_subst
     {Σ : BackgroundModel}
-    (t m v : TermOver BasicValue)
-    : TermOver BasicValue
+    (t m v : @TermOver' TermSymbol BasicValue)
+    : @TermOver' TermSymbol BasicValue
 :=
-    if (decide (t = m)) then v else
+    if (@decide (t = m) (_)) then v else
     match t with
     | t_over o => t_over o
     | t_term s l => t_term s (map (fun t'' => TermOverBuiltin_subst t'' m v) l)
@@ -121,7 +120,7 @@ Fixpoint is_subterm_b
     {Σ : BackgroundModel}
     {A : Type}
     {_edA : EqDecision A}
-    (m t : TermOver A)
+    (m t : @TermOver' TermSymbol A)
     : bool
 :=
     if (decide (t = m)) then true else
@@ -133,7 +132,7 @@ Fixpoint is_subterm_b
 
 Lemma not_subterm_subst
     {Σ : BackgroundModel}
-    (t m v : TermOver BasicValue)
+    (t m v : @TermOver' TermSymbol BasicValue)
     :
     is_subterm_b m t = false ->
     TermOverBuiltin_subst t m v = t
@@ -156,7 +155,7 @@ Lemma is_subterm_sizes
     {Σ : BackgroundModel}
     {A : Type}
     {_edA : EqDecision A}
-    (p q : TermOver A)
+    (p q : @TermOver' TermSymbol A)
     :
     is_subterm_b p q = true ->
     TermOver_size p <= TermOver_size q
@@ -498,7 +497,7 @@ Fixpoint SideCondition_subst
 
 Fixpoint vars_of_to_l2r
     {Σ : BackgroundModel}
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
     : list Variabl
 := 
     match t with
@@ -512,7 +511,7 @@ Fixpoint vars_of_to_l2r
 Lemma vars_of_t_term
     {Σ : BackgroundModel}
     (s : TermSymbol)
-    (l : list (TermOver BuiltinOrVar))
+    (l : list (@TermOver' TermSymbol BuiltinOrVar))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
@@ -521,7 +520,7 @@ Proof. reflexivity. Qed.
 Lemma vars_of_t_term_e
     {Σ : BackgroundModel}
     (s : TermSymbol)
-    (l : list (TermOver Expression2))
+    (l : list (@TermOver' TermSymbol Expression2))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
@@ -646,10 +645,10 @@ Definition BoV_to_Expr2
 
 Definition TermOverBoV_to_TermOverExpr2
     {Σ : BackgroundModel}
-    (t : TermOver BuiltinOrVar)
-    : TermOver Expression2
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    : @TermOver' TermSymbol Expression2
 :=
-    TermOver_map BoV_to_Expr2 t
+    TermOver'_map BoV_to_Expr2 t
 .
 
 
@@ -659,7 +658,7 @@ Definition TermOverBoV_to_TermOverExpr2
 Lemma TermOver_size_not_zero
     {Σ : BackgroundModel}
     {A : Type}
-    (t : TermOver A)
+    (t : @TermOver' TermSymbol A)
     : TermOver_size t <> 0
 .
 Proof.
@@ -802,6 +801,37 @@ Proof.
         intros. apply E_from_to_tree.
     }
 Defined.
+
+
+#[export]
+Instance cancel_TermOver_map
+    {Σ : BackgroundModel}
+    (T A B : Type)
+    (f : A -> B)
+    (g : B -> A)
+    :
+    Cancel eq f g ->
+    Cancel eq (@TermOver'_map T _ _ f) (TermOver'_map g)
+.
+Proof.
+    intros Hcancel.
+    intros t.
+    induction t; simpl.
+    { rewrite (cancel f g). reflexivity. }
+    {
+        f_equal.
+        induction l; simpl.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2).
+            rewrite H1. rewrite IHl.
+            reflexivity.
+        }
+    }
+Qed.
+
 
 (* 
 Definition BoV_to_Expr2

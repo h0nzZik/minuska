@@ -10,7 +10,7 @@ From Minuska Require Import
 Lemma subs_app_app
     {Σ : BackgroundModel}
     (s1 s2 : SubS)
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
 :
     subs_app (s1 ++ s2) t = subs_app s2 (subs_app s1 t)
 .
@@ -28,7 +28,7 @@ Lemma subs_app_cons
     {Σ : BackgroundModel}
     x p
     (s2 : SubS)
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
 :
     subs_app ((x,p)::s2) t = subs_app s2 (subs_app [(x,p)] t)
 .
@@ -59,7 +59,7 @@ Lemma subs_app_term
 {Σ : BackgroundModel}
 (ss : SubS)
 (sym : TermSymbol)
-(l : list (TermOver BuiltinOrVar))
+(l : list (@TermOver' TermSymbol BuiltinOrVar))
 :
 subs_app ss (t_term sym l) = t_term sym ((subs_app ss) <$> l)
 .
@@ -83,7 +83,7 @@ Lemma helper_lemma_1
 {Σ : BackgroundModel}
 (s : SubS)
 (x : Variabl)
-(t t' : TermOver BuiltinOrVar)
+(t t' : @TermOver' TermSymbol BuiltinOrVar)
 :
 subs_app s (t_over (bov_Variabl x)) = subs_app s t' ->
 subs_app s t = subs_app s  (TermOverBoV_subst t x t')
@@ -363,7 +363,7 @@ Qed.
 Lemma subs_app_untouched
     {Σ : BackgroundModel}
     (s : SubS)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of φ ## (list_to_set s.*1) ->
     subs_app s φ = φ
@@ -402,7 +402,7 @@ Definition subt_codom {Σ : BackgroundModel} (s : list (Variabl * @TermOver' Ter
 Lemma vars_of_subs_app
     {Σ : BackgroundModel}
     a
-    (q : TermOver BuiltinOrVar)
+    (q : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of (subs_app a q) ⊆ subt_codom a ∪ vars_of q
 .

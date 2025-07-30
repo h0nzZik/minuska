@@ -166,7 +166,7 @@ Definition ExtendedSM (Σ : BackgroundModel) : BackgroundModel := {|
             ;
     |} ;
     hidden := {|
-        hidden_data := Σ.(hidden).(hidden_data) ;
+        HiddenValue := Σ.(hidden).(HiddenValue) ;
         attribute_interpretation := fun a h args =>
             args'' ← list_collect (contract_term Σ <$> args);
             r ← Σ.(hidden).(attribute_interpretation) a h args'';
@@ -191,15 +191,15 @@ Definition ExtendedSM (Σ : BackgroundModel) : BackgroundModel := {|
 Inductive Context_ {Σ : BackgroundModel} :=
 | ctx_hole
 | ctx_term (s : TermSymbol)
-           (l : list (TermOver BuiltinOrVar)) 
+           (l : list (@TermOver' TermSymbol BuiltinOrVar)) 
            (m : Context_)
-           (r : list (TermOver BuiltinOrVar))
+           (r : list (@TermOver' TermSymbol BuiltinOrVar))
 .
 
 Fixpoint ctx_subst
     {Σ : BackgroundModel}
     (c : Context_)
-    (p : TermOver BuiltinOrVar)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     TermOver BuiltinOrVar
 :=

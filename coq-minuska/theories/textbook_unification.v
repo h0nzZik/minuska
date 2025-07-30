@@ -32,7 +32,7 @@ Proof.
 unfold eqns_vars. simpl. ltac1:(set_solver).
 Qed.
 
-Definition wft {Σ : BackgroundModel} (V : gset Variabl) (t : TermOver BuiltinOrVar)
+Definition wft {Σ : BackgroundModel} (V : gset Variabl) (t : @TermOver' TermSymbol BuiltinOrVar)
 : Prop
 := vars_of t ⊆ V
 .
@@ -112,7 +112,7 @@ intros HH1 HH2.
 ltac1:(set_solver).
 Qed.
 
-Lemma wft_minus {Σ : BackgroundModel} (V : gset Variabl) (t : TermOver BuiltinOrVar) (a : Variabl) :
+Lemma wft_minus {Σ : BackgroundModel} (V : gset Variabl) (t : @TermOver' TermSymbol BuiltinOrVar) (a : Variabl) :
 wft V t ->
 a ∉ vars_of t ->
 wft (V ∖ {[a]}) t
@@ -187,7 +187,7 @@ Definition least_of
 Lemma helper_lemma_2
 {Σ : BackgroundModel}
 (x : Variabl)
-(t : TermOver BuiltinOrVar)
+(t : @TermOver' TermSymbol BuiltinOrVar)
 (es : list eqn)
 (s : SubS)
 :
@@ -542,7 +542,7 @@ Lemma subs_app_unbound_var_2
 (x : Variabl)
 :
 x ∉ ⋃ (vars_of <$> ss.*2) ->
-forall (t : TermOver BuiltinOrVar),
+forall (t : @TermOver' TermSymbol BuiltinOrVar),
 x ∉ vars_of t ->
 x ∉ vars_of (subs_app ss t)
 .
@@ -622,14 +622,14 @@ length l1 <> length l2 ->
 unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
 
 (*
-| uf_subterm : forall es (s : TermSymbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat) (t1 t2 : TermOver BuiltinOrVar),
+| uf_subterm : forall es (s : TermSymbol) (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar)) (idx : nat) (t1 t2 : @TermOver' TermSymbol BuiltinOrVar),
 l1 !! idx = Some t1 ->
 l2 !! idx = Some t2 ->
 unify_failure ((t1,t2)::(drop (S idx) (zip l1 l2))++es) ->
 unify_failure (((t_term s l1),(t_term s l2))::es)
 *)
 
-| uf_subterm : forall es (s : TermSymbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat),
+| uf_subterm : forall es (s : TermSymbol) (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar)) (idx : nat),
 unify_failure ((take idx (zip l1 l2))++es) ->
 unify_failure (((t_term s l1),(t_term s l2))::es)
 
@@ -1499,7 +1499,7 @@ Qed.
 
 Lemma subs_app_preserves_subterm
 {Σ : BackgroundModel}
-(t1 t2 : TermOver BuiltinOrVar)
+(t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 forall s,
@@ -1567,7 +1567,7 @@ Qed.
 
 Lemma is_subterm_size
 {Σ : BackgroundModel}
-(t1 t2 : TermOver BuiltinOrVar)
+(t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 TermOver_size t1 <= TermOver_size t2
@@ -1597,7 +1597,7 @@ Qed.
 
 Lemma is_subterm_antisym
 {Σ : BackgroundModel}
-(t1 t2 : TermOver BuiltinOrVar)
+(t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 is_subterm_b t2 t1 ->

@@ -460,40 +460,10 @@ Proof.
     simpl. reflexivity.
 Qed.
 
-#[export]
-Instance cancel_TermOver_map
-    {Σ : BackgroundModel}
-    (A B : Type)
-    (f : A -> B)
-    (g : B -> A)
-    :
-    Cancel eq f g ->
-    Cancel eq (TermOver_map f) (TermOver_map g)
-.
-Proof.
-    unfold TermOver_map.
-    intros Hcancel.
-    intros t.
-    induction t; simpl.
-    { rewrite (cancel f g). reflexivity. }
-    {
-        f_equal.
-        induction l; simpl.
-        { reflexivity. }
-        {
-            rewrite Forall_cons in H.
-            destruct H as [H1 H2].
-            specialize (IHl H2).
-            rewrite H1. rewrite IHl.
-            reflexivity.
-        }
-    }
-Qed.
-
 Lemma map_uglify'_inj
     {Σ : BackgroundModel}
     {T : Type}
-    (l1 l2 : list (TermOver T))
+    (l1 l2 : list (@TermOver' TermSymbol T))
     :
     map uglify' l1 = map uglify' l2 ->
     l1 = l2
@@ -861,7 +831,7 @@ Qed.
 Lemma fmap_prettify_uglify_list
     {Σ : BackgroundModel}
     {T : Type}
-    (l : list (TermOver T))
+    (l : list (@TermOver' TermSymbol T))
     :
     (prettify <$> (uglify' <$> l)) = l
 .
@@ -890,7 +860,7 @@ Qed.
 Lemma fmap_prettify_uglify_option
     {Σ : BackgroundModel}
     {T : Type}
-    (o : option (TermOver T))
+    (o : option (@TermOver' TermSymbol T))
     :
     (prettify <$> (uglify' <$> o)) = o
 .
@@ -974,7 +944,7 @@ Lemma vars_of_uglify'
     {_EDv : EqDecision var}
     {_Cv : Countable var}
     {_VT : VarsOf T var}
-    (t : TermOver T)
+    (t : @TermOver' TermSymbol T)
     :
     vars_of (uglify' t) = vars_of t
 .
@@ -1041,7 +1011,6 @@ Proof.
         { ltac1:(set_solver). }
     }
     {
-        unfold TermOver in *.
         unfold to_PreTerm''; simpl.
         revert s h H.
         induction l using rev_ind; intros s h H.

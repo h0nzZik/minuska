@@ -9,10 +9,10 @@ Fixpoint TermOverBoV_subst_gen
     {B : Type}
     (lift_builtin : BasicValue -> B)
     (lift_Variabl : Variabl -> B)
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
     (x : Variabl)
-    (t' : TermOver B)
-    : TermOver B
+    (t' : @TermOver' TermSymbol B)
+    : @TermOver' TermSymbol B
 :=
 match t with
 | t_over (bov_builtin b) => t_over (lift_builtin b)
@@ -26,19 +26,19 @@ end.
 
 Definition TermOverBoV_subst_expr2
     {Σ : BackgroundModel}
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
     (x : Variabl)
-    (t' : TermOver Expression2)
-    : TermOver Expression2
+    (t' : @TermOver' TermSymbol Expression2)
+    : @TermOver' TermSymbol Expression2
 :=
     TermOverBoV_subst_gen (fun b => e_ground (t_over b)) (fun x => e_Variabl x) t x t'
 .
 
 Fixpoint TermOverBoV_subst
     {Σ : BackgroundModel}
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
     (x : Variabl)
-    (t' : TermOver BuiltinOrVar)
+    (t' : @TermOver' TermSymbol BuiltinOrVar)
 :=
 match t with
 | t_over (bov_builtin b) => t_over (bov_builtin b)

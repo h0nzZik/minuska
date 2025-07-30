@@ -9,7 +9,7 @@ From Minuska Require Import
 From Equations Require Export Equations.
 
 
-Definition eqn {Σ : BackgroundModel} : Type := ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type.
+Definition eqn {Σ : BackgroundModel} : Type := ((@TermOver' TermSymbol BuiltinOrVar)*(@TermOver' TermSymbol BuiltinOrVar))%type.
 
 Definition eqn_size {Σ : BackgroundModel} (e : eqn) : nat := TermOver_size (e.1) + TermOver_size (e.2).
 
@@ -40,7 +40,7 @@ Definition deg {Σ : BackgroundModel} (es : list eqn) : (nat*nat)%type :=
 Lemma deg_swap_head
     {Σ : BackgroundModel}
     (es : list eqn)
-    (t1 t2 : TermOver BuiltinOrVar)
+    (t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
     deg ((t1,t2)::es) = deg ((t2,t1)::es)
 .
@@ -60,7 +60,7 @@ Qed.
 
 Definition sub
     {Σ : BackgroundModel}
-    (t' : TermOver BuiltinOrVar)
+    (t' : @TermOver' TermSymbol BuiltinOrVar)
     (x : Variabl)
     (es : list eqn)
 :=
@@ -92,7 +92,7 @@ Proof.
     }
 Qed.
 
-Lemma eqns_vars_sub {Σ : BackgroundModel} (t : TermOver BuiltinOrVar) (x : Variabl)
+Lemma eqns_vars_sub {Σ : BackgroundModel} (t : @TermOver' TermSymbol BuiltinOrVar) (x : Variabl)
     (es : list eqn):
     x ∈ eqns_vars es ->
     eqns_vars (sub t x es) = vars_of t ∪ (eqns_vars es ∖ {[x]})
@@ -431,7 +431,7 @@ Qed.
 
 Lemma eqns_vars_zip
     {Σ : BackgroundModel}
-    (l1 l2 : list (TermOver BuiltinOrVar))
+    (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar))
     :
     length l1 = length l2 ->
     eqns_vars (zip l1 l2) = union_list (vars_of <$> l1) ∪ union_list (vars_of <$> l2)
@@ -462,7 +462,7 @@ Qed.
 Lemma fewer_arrows_lower_degree
     {Σ : BackgroundModel}
     (s : TermSymbol)
-    (l1 l2 : list (TermOver BuiltinOrVar))
+    (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar))
     (es : list eqn)
 :
     length l1 = length l2 ->
@@ -504,7 +504,7 @@ Equations? unify
     {Σ : BackgroundModel}
     (l : list eqn)
 :
-    option (list (Variabl * (TermOver BuiltinOrVar)))
+    option (list (Variabl * (@TermOver' TermSymbol BuiltinOrVar)))
     by wf (deg l) (lexprod nat nat lt lt)
 :=
 

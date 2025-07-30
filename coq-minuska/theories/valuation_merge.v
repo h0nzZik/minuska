@@ -7,7 +7,7 @@ From Minuska Require Import
 
   Definition Valuation2_use_left
   {Σ : BackgroundModel}
-  (og1 og2: option (TermOver BasicValue)): option (TermOver BasicValue) :=
+  (og1 og2: option (@TermOver' TermSymbol BasicValue)): option (@TermOver' TermSymbol BasicValue) :=
   match og1, og2 with
   | None, None => None
   | Some g1, None => Some g1

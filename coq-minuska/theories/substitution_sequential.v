@@ -6,7 +6,7 @@ From Minuska Require Import
 
 Definition SubS {Σ : BackgroundModel} : Type
 :=
-    list (Variabl*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 .
 
 Definition subt_closed {Σ : BackgroundModel} (s : SubS) :=
@@ -14,7 +14,7 @@ Definition subt_closed {Σ : BackgroundModel} (s : SubS) :=
 .
 
 (* TODO use fold *)
-Fixpoint subs_app {Σ : BackgroundModel} (s : SubS) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
+Fixpoint subs_app {Σ : BackgroundModel} (s : SubS) (t : @TermOver' TermSymbol BuiltinOrVar) : @TermOver' TermSymbol BuiltinOrVar :=
 match s with
 | [] => t
 | (x,t')::s' => subs_app s' (TermOverBoV_subst t x t')

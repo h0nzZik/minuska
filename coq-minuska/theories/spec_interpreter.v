@@ -9,7 +9,7 @@ Definition not_stuck
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (e : (TermOver BasicValue)*(hidden_data)) : Type
+    (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue)) : Type
 :=
     { e' : _ & { nv : NondetValue & rewriting_relation Γ program nv e e' } }
 .
@@ -19,7 +19,7 @@ Definition stuck
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (e : (TermOver BasicValue)*(hidden_data)) : Type
+    (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue)) : Type
 :=
     notT (not_stuck Γ program e)
 .
@@ -30,7 +30,7 @@ Definition Interpreter
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     : Type
-    := ProgramT -> NondetValue -> (TermOver BasicValue)*(hidden_data) -> option ((TermOver BasicValue)*(hidden_data))
+    := ProgramT -> NondetValue -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> option ((@TermOver' TermSymbol BasicValue)*(HiddenValue))
 .
 
 Definition Interpreter_ext
@@ -38,7 +38,7 @@ Definition Interpreter_ext
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     : Type
-    := ProgramT -> NondetValue -> (TermOver BasicValue)*(hidden_data) -> option (((TermOver BasicValue)*(hidden_data))*nat)
+    := ProgramT -> NondetValue -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> option (((@TermOver' TermSymbol BasicValue)*(HiddenValue))*nat)
 .
 
 

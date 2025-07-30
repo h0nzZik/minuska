@@ -34,7 +34,7 @@ Definition combine_TermSymbol_classifiers
 
 Definition si2qfa
     {Σ : BackgroundModel}
-    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol)
+    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol)
     :
     option (QuerySymbol+FunSymbol+AttrSymbol)
 :=
@@ -52,9 +52,9 @@ Definition si2qfa
 
 Definition si2m
     {Σ : BackgroundModel}
-    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol)
+    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol)
     :
-    option (MethodSymbol)
+    option (MethSymbol)
 :=
     match si with
     | si_query _ _ _ _ _ _ q => None
@@ -69,7 +69,7 @@ Definition si2m
 
 Definition si2p
     {Σ : BackgroundModel}
-    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol)
+    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol)
     :
     option (PredSymbol+HPredSymbol)
 :=

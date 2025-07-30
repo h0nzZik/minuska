@@ -78,11 +78,12 @@ Class BasicTypes := {
     BasicValue  : Type ;
     HiddenValue : Type ;
     NondetValue : Type ;
-    ProgramType : Type ;
+    ProgramT    : Type ;
 }.
 
 Class BasicTypesEDC (basic_types : BasicTypes) := {
     Variabl_edc :: EDC basic_types.(Variabl) ;
+    TermSymbol_edc :: EDC basic_types.(TermSymbol) ;
     FunSymbol_edc :: EDC basic_types.(FunSymbol) ;
     PredSymbol_edc :: EDC basic_types.(PredSymbol) ;
     HPredSymbol_edc :: EDC basic_types.(HPredSymbol) ;
@@ -174,7 +175,7 @@ Class BackgroundModel := {
         basic_types.(MethSymbol)
         basic_types.(QuerySymbol)
         basic_types.(HPredSymbol)
-        basic_types.(ProgramType)
+        basic_types.(ProgramT)
     ;
 
     nondet_gen : nat -> basic_types.(NondetValue) ;
@@ -311,8 +312,6 @@ Inductive BuiltinOrVar {Σ : BackgroundModel} :=
 | bov_Variabl (x : Variabl)
 .
 
-Definition TermOver {Σ : BackgroundModel} (A : Type) : Type := @TermOver' TermSymbol A.
-
 Fixpoint TermOver_size
     {T : Type}
     {A : Type}
@@ -336,21 +335,13 @@ Fixpoint TermOver'_map
     end
 .
 
-Definition TermOver_map
-    {Σ : BackgroundModel}
-    {A B : Type}
-    (f : A -> B)
-    (t : TermOver A)
-:=
-    TermOver'_map f t
-.
-
 Definition TermOverBuiltin_to_TermOverBoV
     {Σ : BackgroundModel}
-    (t : TermOver BasicValue)
-    : TermOver BuiltinOrVar
+    {A : Type}
+    (t : @TermOver' A BasicValue)
+    : @TermOver' A BuiltinOrVar
 :=
-    TermOver_map bov_builtin t
+    TermOver'_map bov_builtin t
 .
 
 
@@ -398,7 +389,7 @@ Instance  VarsOf_sc
 |}.
 
 Variant BasicEffect0 {Σ : BackgroundModel} := 
-| be_method (s : MethodSymbol) (args : list Expression2)
+| be_method (s : MethSymbol) (args : list Expression2)
 (* This is like a binder *)
 | be_remember (x : Variabl) (e : Expression2)
 .
@@ -436,8 +427,8 @@ Record RewritingRule2
     (Label : Set)
 := mkRewritingRule2
 {
-    r_from : TermOver BuiltinOrVar ;
-    r_to : TermOver Expression2 ;
+    r_from : @TermOver' TermSymbol BuiltinOrVar ;
+    r_to : @TermOver' TermSymbol Expression2 ;
     r_scs : SideCondition ;
     r_eff : Effect0 ;
     r_label : Label ;
@@ -473,7 +464,7 @@ Instance VarsOf_BoV
 Instance VarsOf_TermOver_BuiltinOrVar
     {Σ : BackgroundModel}
     :
-    VarsOf (TermOver BuiltinOrVar) Variabl
+    VarsOf (@TermOver' TermSymbol BuiltinOrVar) Variabl
 .
 Proof.
     apply VarsOf_TermOver.
@@ -483,7 +474,7 @@ Defined.
 Instance VarsOf_TermOver_Expression2
     {Σ : BackgroundModel}
     :
-    VarsOf (TermOver Expression2) Variabl
+    VarsOf (@TermOver' TermSymbol Expression2) Variabl
 .
 Proof.
     apply VarsOf_TermOver.
@@ -501,7 +492,7 @@ Definition RewritingTheory2
 Definition Valuation2
     {Σ : BackgroundModel}
 :=
-    gmap Variabl (TermOver BasicValue)
+    gmap Variabl (@TermOver' TermSymbol BasicValue)
 .
 
 (* TODO Do we even need this?*)
@@ -520,7 +511,7 @@ Instance VarsOf_Valuation2_
     {var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
-    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
+    : VarsOf (gmap var (@TermOver' TermSymbol BuiltinOrVar)) var
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
@@ -536,7 +527,7 @@ Instance VarsOf_Valuation2
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
+    (t : @TermOver' TermSymbol BasicValue)
     (bv : BuiltinOrVar)
     : Prop
 := match bv with
@@ -548,8 +539,8 @@ Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
 Equations? sat2B
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
-    (φ : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     : Prop
     by wf (TermOver_size φ) lt
 :=
@@ -576,10 +567,10 @@ Defined.
 Fixpoint Expression2_evaluate
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (t : Expression2)
-    : NondetValue -> option (TermOver BasicValue) :=
+    : NondetValue -> option (@TermOver' TermSymbol BasicValue) :=
 match t with
 | e_ground e => fun _ =>  Some (e)
 | e_Variabl x =>
@@ -608,10 +599,10 @@ end.
 Equations? sat2E
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
-    (φ : TermOver Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
     : Prop
     by wf (TermOver_size φ) lt
@@ -642,7 +633,7 @@ Defined.
 Definition SideCondition_evaluate
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideCondition)
@@ -683,11 +674,11 @@ Definition SideCondition_evaluate
 Definition BasicEffect0_evaluate
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (f : BasicEffect0)
-    : option (hidden_data*Valuation2)
+    : option (HiddenValue*Valuation2)
 :=
     match f with
     | be_method m args =>
@@ -705,14 +696,14 @@ Definition BasicEffect0_evaluate
 Definition Effect0_evaluate'
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (f : Effect0)
-    : option (hidden_data*Valuation2)
+    : option (HiddenValue*Valuation2)
 :=
     fold_left
-        (fun (p' : option (hidden_data*Valuation2)) (bf : BasicEffect0) => p ← p'; BasicEffect0_evaluate program p.1 p.2 nv bf)
+        (fun (p' : option (HiddenValue*Valuation2)) (bf : BasicEffect0) => p ← p'; BasicEffect0_evaluate program p.1 p.2 nv bf)
         f
         (Some (h,ρ))
     
@@ -722,11 +713,11 @@ Definition Effect0_evaluate'
 Definition Effect0_evaluate
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (f : Effect0)
-    : option hidden_data
+    : option HiddenValue
 :=
     fmap fst (Effect0_evaluate' program h ρ nv f)
 .
@@ -737,10 +728,10 @@ Definition rewrites_in_valuation_under_to
     (program : ProgramT)
     (ρ : Valuation2)
     (r : RewritingRule2 Label)
-    (from : (TermOver BasicValue)*(hidden_data))
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     (under : Label)
     (nv : NondetValue)
-    (to : (TermOver BasicValue)*(hidden_data))
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := ((sat2B ρ from.1 (r_from r))
 * (sat2E program from.2 ρ to.1 (r_to r) nv)
@@ -755,10 +746,10 @@ Definition rewrites_to
     {Label : Set}
     (program : ProgramT)
     (r : RewritingRule2 Label)
-    (from : (TermOver BasicValue)*(hidden_data))
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     (under : Label)
     (nv : NondetValue)
-    (to : (TermOver BasicValue)*(hidden_data))
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := { ρ : Valuation2 &
         rewrites_in_valuation_under_to program ρ r from under nv to
@@ -771,7 +762,7 @@ Definition rewriting_relation
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    : (TermOver BasicValue)*(hidden_data) -> (TermOver BasicValue)*(hidden_data) -> Type
+    : (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> Type
     := fun from to =>
         { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program r from a nv to)%type}}
 .
@@ -781,9 +772,9 @@ Definition rewrites_to_nondet
     {Label : Set}
     (program : ProgramT)
     (r : RewritingRule2 Label)
-    (from : (TermOver BasicValue)*(hidden_data))
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     (under : Label)
-    (to : (TermOver BasicValue)*(hidden_data))
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := { nv : NondetValue &
         rewrites_to program r from under nv to
@@ -795,9 +786,9 @@ Definition rewrites_to_thy
     {Label : Set}
     (program : ProgramT)
     (Γ : RewritingTheory2 Label)
-    (from : (TermOver BasicValue)*(hidden_data))
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     (under : Label)
-    (to : (TermOver BasicValue)*(hidden_data))
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
 := { r : RewritingRule2 Label &
     ((r ∈ Γ)*(rewrites_to_nondet program r from under to))%type
 

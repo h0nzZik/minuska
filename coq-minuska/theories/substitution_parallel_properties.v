@@ -15,7 +15,7 @@ Definition subtmm_closed {Σ : BackgroundModel} (s : SubP) :=
 
 Lemma subp_app_empty
     {Σ : BackgroundModel}
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     subp_app ∅ φ = φ
 .
@@ -55,7 +55,7 @@ Qed.
 Lemma subp_app_closed
     {Σ : BackgroundModel}
     (sub_mm : SubP)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of φ = ∅ ->
     subp_app sub_mm φ = φ
@@ -94,7 +94,7 @@ Qed.
 Lemma subp_app_almost_closed
     {Σ : BackgroundModel}
     (s : SubP)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of φ ## subp_dom s ->
     subp_app s φ = φ
@@ -157,7 +157,7 @@ Lemma subp_app_insert0
     {Σ : BackgroundModel}
     (s : SubP)
     (x : Variabl)
-    (v : TermOver BuiltinOrVar)
+    (v : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of v ## subp_dom s ->
     subp_app (<[x:=v]>s)
@@ -334,7 +334,7 @@ Qed.
 
 Lemma subp_app_union_comm
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_dom a ## subp_dom b ->
     subp_app (a ∪ b) = subp_app (b ∪ a)
@@ -486,7 +486,7 @@ Qed.
 
 Lemma subp_app_union
     {Σ : BackgroundModel}
-    (b c : gmap Variabl (TermOver BuiltinOrVar))
+    (b c : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_codom b ## subp_dom c ->
     subp_app (b ∪ c) = (subp_app c) ∘ (subp_app b)
@@ -572,7 +572,7 @@ Qed.
 
 Lemma subp_union_is_compose__sometimes_1
   {Σ : BackgroundModel}
-  (a b : gmap Variabl (TermOver BuiltinOrVar))
+  (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
   :
   (subp_app a <$> b) = b ->
   subp_is_normal a ->
@@ -1972,7 +1972,7 @@ Proof.
         end.
 
         Ltac2 mytac () := ((*try (just_specialize ());*) try (match! goal with
-        | [x : (TermOver BuiltinOrVar), h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_Variabl $y)) as $my;
+        | [x : (@TermOver' TermSymbol BuiltinOrVar), h : (forall (_ : @TermOver' TermSymbol BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_Variabl $y)) as $my;
            apply $h2 in $h as $my
         | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
         | [h: context [guard _] |- _] => rewrite option_guard_decide in $h
@@ -1990,7 +1990,7 @@ Proof.
         | [h: _ <$> _ = None |- _] => apply fmap_None in $h
         | [h: (ex _) |- _] => Std.destruct false [({Std.indcl_arg:=Std.ElimOnIdent(h); Std.indcl_eqn:=None; Std.indcl_as:=None; Std.indcl_in:=None})] None
         | [h: (right _ = right _) |- _] => ltac1:(simplify_eq/=); clear $h
-        | [x : Variabl, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
+        | [x : Variabl, h : (forall (_ : @TermOver' TermSymbol BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
             let myf := (Fresh.in_goal ident:(h)) in
             let n := constr:($h2 (t_over (bov_Variabl $y))) in
             let f1 := ltac1:(t |- learn_hyp (t)) in

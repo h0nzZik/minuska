@@ -411,7 +411,7 @@ Definition renaming_for
     :
     (gmap Variabl Variabl)
 :=
-    let rhss : list (TermOver BuiltinOrVar) := snd <$> map_to_list sub_mm in
+    let rhss : list (@TermOver' TermSymbol BuiltinOrVar) := snd <$> map_to_list sub_mm in
     let avoid : list Variabl := elements (avoid0 ∪ (union_list (vars_of <$> rhss))) in
     let to_be_renamed : list Variabl := elements (dom sub_mm) in
     let r' := zip to_be_renamed (fresh_var_seq (to_be_renamed ++ avoid) (length to_be_renamed)) in
@@ -544,7 +544,7 @@ Definition rlift
 
 (* Definition make_serial
     {Σ : BackgroundModel}
-    (s : gmap Variabl (TermOver BuiltinOrVar))
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     SubS
 :=
@@ -557,10 +557,10 @@ Definition rlift
 
 (* Definition make_serial0
     {Σ : BackgroundModel}
-    (s : gmap Variabl (TermOver BuiltinOrVar))
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (avoid : gset Variabl)
     :
-    list (Variabl*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     let r := renaming_for avoid s in
     let rinv := r_inverse r in
@@ -572,10 +572,10 @@ Definition rlift
 
 Definition make_serial0
     {Σ : BackgroundModel}
-    (s : gmap Variabl (TermOver BuiltinOrVar))
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (avoid : gset Variabl)
     :
-    list (Variabl*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     let r := renaming_for avoid s in
     let rinv := r_inverse r in
@@ -589,9 +589,9 @@ Definition make_serial0
 
 Definition make_serial
     {Σ : BackgroundModel}
-    (s : gmap Variabl (TermOver BuiltinOrVar))
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
-    list (Variabl*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     make_serial0 s ∅
 .
@@ -866,7 +866,7 @@ Qed.
 
 Lemma subp_restrict_compose
   {Σ : BackgroundModel}
-  (a b : gmap Variabl (TermOver BuiltinOrVar))
+  (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
   (vars : gset Variabl)
 :
   dom a ⊆ vars ->
@@ -1025,7 +1025,7 @@ Qed.
 
 Lemma subp_is_normal_restrict
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
     :
     subp_is_normal m ->
@@ -1088,11 +1088,11 @@ Qed.
 
 Lemma subp_is_normal_spec
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal m <->
     (
-        forall (k : Variabl) (v : TermOver BuiltinOrVar), m !! k = Some v -> t_over (bov_Variabl k) <> v
+        forall (k : Variabl) (v : @TermOver' TermSymbol BuiltinOrVar), m !! k = Some v -> t_over (bov_Variabl k) <> v
     )
 .
 Proof.
@@ -1145,7 +1145,7 @@ Qed.
 
 Lemma restrict_more
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars vars' : gset Variabl)
 :
     vars' ⊆ vars ->
@@ -1201,9 +1201,9 @@ Qed.
 
 Lemma restrict_filter
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
-    (P : prod Variabl (TermOver BuiltinOrVar) -> Prop)
+    (P : prod Variabl (@TermOver' TermSymbol BuiltinOrVar) -> Prop)
     {EP : forall x, Decision (P x)}
     :
     subp_restrict vars a = subp_restrict vars b ->
@@ -1289,7 +1289,7 @@ Qed.
 
 Lemma restrict_equiv_2
     {Σ : BackgroundModel}
-    (a b d : gmap Variabl (TermOver BuiltinOrVar))
+    (a b d : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
     :
     subp_restrict vars b = subp_restrict vars d ->
@@ -1450,7 +1450,7 @@ Qed.
 
 Lemma restrict_id
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
     :
     (dom m) ⊆ vars ->
@@ -1469,9 +1469,9 @@ Qed.
 
 Lemma subp_app_restrict
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
-    (p : TermOver BuiltinOrVar)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of p ⊆ vars ->
     subp_app (subp_restrict vars a) p = subp_app a p
@@ -1527,7 +1527,7 @@ Qed.
 
 Lemma restrict_equiv_1
     {Σ : BackgroundModel}
-    (a b c : gmap Variabl (TermOver BuiltinOrVar))
+    (a b c : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
     :
     subp_codom b ⊆ vars ->
@@ -1748,7 +1748,7 @@ Qed.
 Lemma renaming_is_normal
     {Σ : BackgroundModel}
     (avoid0 : gset Variabl)
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal (rlift (renaming_for avoid0 m))
 .
@@ -1785,7 +1785,7 @@ Qed.
 Lemma inverse_of_renaming_is_normal
     {Σ : BackgroundModel}
     (avoid0 : gset Variabl)
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal (rlift (r_inverse (renaming_for avoid0 m)))
 .
@@ -1844,7 +1844,7 @@ Qed.
 
 Lemma map_img_renaming_for_dom
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (avoid0 : gset Variabl)
     :
     map_img (renaming_for avoid0 m) ## dom m
@@ -1872,7 +1872,7 @@ Qed.
 Lemma map_img_renaming_for_codom
     {Σ : BackgroundModel}
     (avoid0 : gset Variabl)
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     map_img (renaming_for avoid0 m) ## subp_codom m
 .
@@ -1962,7 +1962,7 @@ Qed.
 Lemma map_disjoint_compose_inverse
     {Σ : BackgroundModel}
     (avoid0 : gset Variabl)
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     subp_compose (rlift (renaming_for avoid0 m)) m
     ##ₘ rlift (r_inverse (renaming_for avoid0 m))
@@ -2079,8 +2079,8 @@ Lemma subp_app_insert_2
     {Σ : BackgroundModel}
     (sub_mm : SubP)
     (x : Variabl)
-    (v : TermOver BuiltinOrVar)
-    (φ : TermOver BuiltinOrVar)
+    (v : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of v ## subp_dom sub_mm ->
     subp_app (<[x:=v]>sub_mm) φ
@@ -2140,16 +2140,16 @@ Qed.
 
 Definition make_parallel0
     {Σ : BackgroundModel}
-    (init : gmap Variabl (TermOver BuiltinOrVar))
-    (sub : list (Variabl*(TermOver BuiltinOrVar))%type)
-    : (gmap Variabl (TermOver BuiltinOrVar))
+    (init : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
+    : (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
     foldr (fun a b => subp_compose ({[a.1 := a.2]}) b) init sub
 .
 
 Lemma subp_compose_empty_r
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     subp_is_normal a ->
     subp_compose a ∅ = a
@@ -2176,7 +2176,7 @@ Qed.
 
 Definition subs_is_normal
     {Σ : BackgroundModel}
-    (a : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     : Prop
 :=
     Forall (fun x => t_over (bov_Variabl x.1) <> x.2) a
@@ -2184,7 +2184,7 @@ Definition subs_is_normal
 
 Lemma subp_compose_com
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     a ##ₘ b ->
     subp_codom b ## subp_dom a ->
@@ -2235,7 +2235,7 @@ Qed.
 
 Lemma subp_compose_empty_l
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     subp_is_normal a ->
     subp_compose ∅ a = a
@@ -2277,7 +2277,7 @@ Qed.
 Lemma make_parallel0_normal
     {Σ : BackgroundModel}
     init
-    (sub : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     :
     subp_is_normal init ->
     subp_is_normal (make_parallel0 init sub)
@@ -2298,8 +2298,8 @@ Qed.
 (* Sadly, its precondition is too strong *)
 Lemma make_parallel0_compose
     {Σ : BackgroundModel}
-    (init : gmap Variabl (TermOver BuiltinOrVar))
-    (sub : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (init : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
 :
     subp_is_normal init ->
     subs_is_normal sub ->
@@ -2364,15 +2364,15 @@ Qed.
 
 Definition make_parallel
     {Σ : BackgroundModel}
-    (sub : list (Variabl*(TermOver BuiltinOrVar))%type)
-    : (gmap Variabl (TermOver BuiltinOrVar))
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
+    : (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
     make_parallel0 ∅ sub
 .
 
 Lemma make_parallel_normal
     {Σ : BackgroundModel}
-    (sub : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     :
     subp_is_normal (make_parallel sub)
 .
@@ -2386,9 +2386,9 @@ Qed.
 
 Lemma map_img_subp_compose
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
-    map_img (subp_compose a b) ⊆ @map_img _ _ _ _ (listset (TermOver BuiltinOrVar)) _ _ _  a ∪ (map_img (subp_app a <$> b))
+    map_img (subp_compose a b) ⊆ @map_img _ _ _ _ (listset (@TermOver' TermSymbol BuiltinOrVar)) _ _ _  a ∪ (map_img (subp_app a <$> b))
 .
 Proof.
     unfold subp_compose.
@@ -2417,7 +2417,7 @@ Qed.
 (* Lemma subp_codom_make_parallel0
     {Σ : BackgroundModel}
     init
-    (s : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
 :
     subp_codom (make_parallel0 init s) = subp_codom init ∪ union_list (vars_of <$> s.*2)
 .
@@ -2441,7 +2441,7 @@ Qed.
 
 Lemma subp_codom_make_parallel
     {Σ : BackgroundModel}
-    (s : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
 :
     subp_codom (make_parallel s) = union_list (vars_of <$> s.*2)
 .
@@ -2451,7 +2451,7 @@ Qed. *)
 
 Lemma make_parallel_app
     {Σ : BackgroundModel}
-    (s1 s2 : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (s1 s2 : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     :
     subs_is_normal s1 ->
     make_parallel (s1 ++ s2) = subp_compose (make_parallel s1) (make_parallel s2)
@@ -2479,7 +2479,7 @@ Qed.
 
 Lemma make_parallel_perm
     {Σ : BackgroundModel}
-    (a b : list (Variabl*(TermOver BuiltinOrVar))%type)
+    (a b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     init
     :
     subs_is_normal a ->
@@ -2766,7 +2766,7 @@ Qed.
 
 Lemma subp_codom_subp_compose
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     dom a ## dom b ->
     dom a ## subp_codom b ->
@@ -2908,8 +2908,8 @@ Qed.
 
 Lemma vars_of_subp_app
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
-    (q : TermOver BuiltinOrVar)
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (q : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of (subp_app a q) ⊆ subp_codom a ∪ vars_of q
 .
@@ -2984,7 +2984,7 @@ Qed.
 
 Lemma subp_codom_subp_compose_2
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_codom (subp_compose a b) ⊆ subp_codom a ∪ subp_codom b
 .
@@ -3145,14 +3145,14 @@ Proof.
                 reflexivity.
             }
             assert (H3: 
-                (fmap (@vars_of (TermOver BuiltinOrVar) Variabl _ _ _) (elements (@map_img _ _ _ _ (listset _) _ _ _ m)))
+                (fmap (@vars_of (@TermOver' TermSymbol BuiltinOrVar) Variabl _ _ _) (elements (@map_img _ _ _ _ (listset _) _ _ _ m)))
                  ≡ₚ
-                 (fmap (@vars_of (TermOver BuiltinOrVar) Variabl _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m))))).
+                 (fmap (@vars_of (@TermOver' TermSymbol BuiltinOrVar) Variabl _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m))))).
             {
                 rewrite H2 at 1.
                 reflexivity.
             }
-            assert (H4: vars_of x ⊆ ⋃ ((fmap (@vars_of (TermOver BuiltinOrVar) Variabl _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m)))))).
+            assert (H4: vars_of x ⊆ ⋃ ((fmap (@vars_of (@TermOver' TermSymbol BuiltinOrVar) Variabl _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m)))))).
             {
                 rewrite elem_of_subseteq.
                 intros x0 Hx0.
@@ -3215,7 +3215,7 @@ Qed.
 Lemma make_parallel_correct
     {Σ : BackgroundModel}
     (sub : SubS)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     subp_app (make_parallel sub) φ = subs_app (reverse sub) φ
 .
@@ -3286,7 +3286,7 @@ Qed.
 
 Lemma make_parallel0_map_to_list
     {Σ : BackgroundModel}
-    (init s : gmap Variabl (TermOver BuiltinOrVar))
+    (init s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     l
     :
     subp_is_normal s ->
@@ -3384,7 +3384,7 @@ Proof.
                                                     {
                                                         ltac1:(
                                                             replace
-                                                                ((λ x0 : TermOver BuiltinOrVar, TermOverBoV_subst x0 i x) <$>
+                                                                ((λ x0 : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst x0 i x) <$>
                                                                     filter (λ '(i0, x0), t_over (bov_Variabl i0) ≠ TermOverBoV_subst x0 i x)
                                                                 (subp_compose init m))
                                                             with (
@@ -4332,7 +4332,7 @@ Qed.
 
 Lemma make_parallel_map_to_list
     {Σ : BackgroundModel}
-    (s : gmap Variabl (TermOver BuiltinOrVar))
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     l
     :
     subp_is_normal s ->
@@ -4870,7 +4870,7 @@ Qed.
 Lemma to_serial_then_to_parallel
     {Σ : BackgroundModel}
     (avoid0 : gset Variabl)
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     dom m ## subp_codom m ->
     subp_is_normal m ->
@@ -5177,8 +5177,8 @@ Lemma subp_app_insert
     {Σ : BackgroundModel}
     (sub_mm : SubP)
     (x : Variabl)
-    (v : TermOver BuiltinOrVar)
-    (φ : TermOver BuiltinOrVar)
+    (v : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     subtmm_closed sub_mm  ->
     x ∉ dom sub_mm ->
@@ -5270,7 +5270,7 @@ Qed.
 (* 
 Lemma NoDup_1_renaming_for
     {Σ : BackgroundModel}
-    (sub_mm : gmap Variabl (TermOver BuiltinOrVar))
+    (sub_mm : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     NoDup (fst <$> (renaming_for sub_mm))
 .
@@ -5416,7 +5416,7 @@ Qed.
 Check subp_app_restrict.
 Lemma subp_app_restrict
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
     :
     subp_app (subp_restrict vars a) = subp_app a
@@ -5424,7 +5424,7 @@ Lemma subp_app_restrict
 
 (* Lemma subt_closed_make_serial
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subt_closed (make_serial a)
 .
@@ -5448,7 +5448,7 @@ Qed. *)
 Lemma renaming_for_avoid
     {Σ : BackgroundModel}
     (avoid0 : gset Variabl)
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     avoid0 ## map_img (renaming_for avoid0 a)
 .
@@ -5499,10 +5499,10 @@ Qed.
 (* 
 Lemma make_serial_lookup
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (vars : gset Variabl)
     (x : Variabl)
-    (p : TermOver BuiltinOrVar)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     subp_is_normal a ->
     a !! x = Some p ->
@@ -5649,23 +5649,23 @@ Qed. *)
 
 (* Definition subs_precompose
   {Σ : BackgroundModel}
-  (a b : list (Variabl*(TermOver BuiltinOrVar)))
+  (a b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :=
-      fmap (fun (x:(Variabl*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
+      fmap (fun (x:(Variabl*(@TermOver' TermSymbol BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
 . *)
 
 Definition subs_precomposep
   {Σ : BackgroundModel}
-  (a : gmap Variabl (TermOver BuiltinOrVar))
-  (b : list (Variabl*(TermOver BuiltinOrVar)))
+  (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+  (b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :=
-      fmap (fun (x:(Variabl*(TermOver BuiltinOrVar))) => (x.1, (subp_app a x.2))) b
+      fmap (fun (x:(Variabl*(@TermOver' TermSymbol BuiltinOrVar))) => (x.1, (subp_app a x.2))) b
 .
 
 Definition subp_precomposes
   {Σ : BackgroundModel}
-  (a : list (Variabl*(TermOver BuiltinOrVar)))
-  (b : gmap Variabl (TermOver BuiltinOrVar))
+  (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
+  (b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
       (fmap (subs_app a) b) 
 .
@@ -5673,16 +5673,16 @@ Definition subp_precomposes
 
 Definition subs_precomposes
   {Σ : BackgroundModel}
-  (a : list (Variabl*(TermOver BuiltinOrVar)))
-  (b : list (Variabl*(TermOver BuiltinOrVar)))
+  (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
+  (b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :=
-      fmap (fun (x:(Variabl*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
+      fmap (fun (x:(Variabl*(@TermOver' TermSymbol BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
 .
 
 
 Lemma map_to_list_precompose
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     map_to_list (subp_precompose a b) ≡ₚ subs_precomposep a (map_to_list b)
 .
@@ -5716,8 +5716,8 @@ Qed.
 (* 
 Lemma subs_app_subs_precomposep
     {Σ : BackgroundModel}
-    (a : gmap Variabl (TermOver BuiltinOrVar))
-    (b : list (Variabl*(TermOver BuiltinOrVar)))
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :
     subs_app (subs_precomposep a b) = compose (subp_app a) (subs_app b)
 .  
@@ -5758,7 +5758,7 @@ Definition srlift
     {Σ : BackgroundModel}
     (r : (list (Variabl*Variabl)))
     :
-    list (Variabl*(TermOver BuiltinOrVar))
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))
 :=
    (fun x => (x.1, t_over (bov_Variabl x.2))) <$> r
 .
@@ -6028,8 +6028,8 @@ Qed.
 Lemma subs_app_nodup_3
     {Σ : BackgroundModel}
     (x : Variabl)
-    (s : list (Variabl*(TermOver BuiltinOrVar)))
-    (p : TermOver BuiltinOrVar)
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     NoDup (s.*1) ->
     vars_of p ## list_to_set (s.*1) ->
@@ -6098,9 +6098,9 @@ Qed.
 (* Lemma subs_app_precomposes_Variabl
     {Σ : BackgroundModel}
     (x : Variabl)
-    (p : TermOver BuiltinOrVar)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     (r : list (Variabl * Variabl))
-    (s : list (Variabl*(TermOver BuiltinOrVar)))
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     (x, p) ∈ s ->
     subs_app (subs_precomposes (srlift r) s) (t_over (bov_Variabl x)) = subs_app (srlift r) p
@@ -6135,10 +6135,10 @@ Qed. *)
 
 Definition make_serial1
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (avoid : gset Variabl)
     :
-    list (Variabl*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     let r := map_to_list (renaming_for avoid m) in
     let rinv := sr_inverse r in
@@ -6223,9 +6223,9 @@ Qed.
 
 Lemma make_serial1_correct
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (avoid : gset Variabl)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     dom m ## subp_codom m ->
     vars_of φ ⊆ avoid ->
@@ -6439,7 +6439,7 @@ Qed.
 (* 
 Lemma make_parallel_eq
     {Σ : BackgroundModel}
-    (a b : list (Variabl*(TermOver BuiltinOrVar)))
+    (a b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     (
         forall φ, subs_app a φ = subs_app b φ
@@ -6479,7 +6479,7 @@ Qed. *)
 (* 
 Lemma make_parallel_serial1
     {Σ : BackgroundModel}
-    (m : gmap Variabl (TermOver BuiltinOrVar))
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (avoid : gset Variabl)
     :
     dom m ## subp_codom m ->
@@ -6502,7 +6502,7 @@ Qed. *)
 
 Lemma subp_app_compose_precompose
     {Σ : BackgroundModel}
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     (x : Variabl)
     :
     x ∈ dom b ->
@@ -6564,7 +6564,7 @@ Qed.
 Lemma subp_app_restrict_eq
     {Σ : BackgroundModel}
     (d : gset Variabl)
-    (a b : gmap Variabl (TermOver BuiltinOrVar))
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal a ->
     subp_is_normal b ->
@@ -6800,8 +6800,8 @@ Qed.
 
 Lemma dom_make_parallel0
     {Σ : BackgroundModel}
-    (init : gmap Variabl (TermOver BuiltinOrVar))
-    (a : list (Variabl*(TermOver BuiltinOrVar)))
+    (init : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     dom (make_parallel0 init a) ⊆ dom init ∪ list_to_set (a.*1)
 .
@@ -6826,7 +6826,7 @@ Qed.
 
 Lemma dom_make_parallel
     {Σ : BackgroundModel}
-    (a : list (Variabl*(TermOver BuiltinOrVar)))
+    (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     dom (make_parallel a) ⊆ list_to_set (a.*1)
 .

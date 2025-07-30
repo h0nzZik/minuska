@@ -17,30 +17,30 @@ Ltac resymde S Name HName :=
 .
 
 
-Definition term_is_var {Σ : BackgroundModel} (t : TermOver BuiltinOrVar) : bool :=
+Definition term_is_var {Σ : BackgroundModel} (t : @TermOver' TermSymbol BuiltinOrVar) : bool :=
   match t with
     | t_over (bov_Variabl _) => true
     | _ => false
   end
 .
 
-Definition term_is_nonvar {Σ : BackgroundModel} (t : TermOver BuiltinOrVar) : bool := ~~ (term_is_var t).
+Definition term_is_nonvar {Σ : BackgroundModel} (t : @TermOver' TermSymbol BuiltinOrVar) : bool := ~~ (term_is_var t).
 
-Definition term_is_constant {Σ : BackgroundModel} (t : TermOver BuiltinOrVar) : bool :=
+Definition term_is_constant {Σ : BackgroundModel} (t : @TermOver' TermSymbol BuiltinOrVar) : bool :=
   match t with
     | t_over _ => true
     | _ => false
   end
 .
 
-Definition term_params {Σ : BackgroundModel} (t : TermOver BuiltinOrVar) : option (list (TermOver BuiltinOrVar)) :=
+Definition term_params {Σ : BackgroundModel} (t : @TermOver' TermSymbol BuiltinOrVar) : option (list (@TermOver' TermSymbol BuiltinOrVar)) :=
   match t with
     | t_term _ l => Some l
     | _ => None
   end
 .
 
-Definition term_has_same_TermSymbol {Σ : BackgroundModel} (orig : TermOver BuiltinOrVar) (t : TermOver BuiltinOrVar) : bool :=
+Definition term_has_same_TermSymbol {Σ : BackgroundModel} (orig : @TermOver' TermSymbol BuiltinOrVar) (t : @TermOver' TermSymbol BuiltinOrVar) : bool :=
   match orig, t with
     | t_over (bov_builtin a), t_over (bov_builtin b) => bool_decide (a = b)
     | t_term a _, t_term b _ => bool_decide (a = b)
@@ -57,10 +57,10 @@ Definition equiv_UP {Σ : BackgroundModel} (up up' : UP) : Prop :=
 Notation "x ~up y" := (equiv_UP x y) (at level 70).
 
 Definition Meqn {Σ : BackgroundModel} : Type :=
-  (gset (Variabl) * list (TermOver BuiltinOrVar))%type
+  (gset (Variabl) * list (@TermOver' TermSymbol BuiltinOrVar))%type
 .
 
-Definition init_meqn {Σ : BackgroundModel} (s : gset Variabl) (m : list (TermOver BuiltinOrVar)) : Meqn :=
+Definition init_meqn {Σ : BackgroundModel} (s : gset Variabl) (m : list (@TermOver' TermSymbol BuiltinOrVar)) : Meqn :=
   (s, m)
 .
 
@@ -74,7 +74,7 @@ Definition meqn_subst {Σ : BackgroundModel} (meqn : Meqn) (sub : SubP) : Meqn :
   let '(s, m) := meqn in (s, (subp_app sub) <$> m)
 .
 
-Instance ls_to_bor_dec {Σ : BackgroundModel} : EqDecision (listset (TermOver BuiltinOrVar)).
+Instance ls_to_bor_dec {Σ : BackgroundModel} : EqDecision (listset (@TermOver' TermSymbol BuiltinOrVar)).
 Proof.
 ltac1:(solve_decision).
 Defined.
@@ -89,11 +89,11 @@ Proof.
 ltac1:(solve_decision).
 Defined.
 
-Definition var_to_term {Σ : BackgroundModel} (v : Variabl) : TermOver BuiltinOrVar :=
+Definition var_to_term {Σ : BackgroundModel} (v : Variabl) : @TermOver' TermSymbol BuiltinOrVar :=
   t_over (bov_Variabl v)
 .
 
-Definition var_term_to_var {Σ : BackgroundModel} (tv : TermOver BuiltinOrVar) : option (Variabl) :=
+Definition var_term_to_var {Σ : BackgroundModel} (tv : @TermOver' TermSymbol BuiltinOrVar) : option (Variabl) :=
   match tv with
     | t_over (bov_Variabl v) => Some v
     | _ => None
@@ -101,7 +101,7 @@ Definition var_term_to_var {Σ : BackgroundModel} (tv : TermOver BuiltinOrVar) :
 .
 
 Lemma var_term_to_var_some {Σ : BackgroundModel} :
-  ∀ (t : TermOver BuiltinOrVar) (v : Variabl), var_term_to_var t = Some v <-> t = t_over (bov_Variabl v)
+  ∀ (t : @TermOver' TermSymbol BuiltinOrVar) (v : Variabl), var_term_to_var t = Some v <-> t = t_over (bov_Variabl v)
 .
 Proof.
 split.
@@ -122,7 +122,7 @@ Definition get_var_part {Σ : BackgroundModel} (meqn : Meqn) : gset Variabl :=
   fst meqn
 .
 
-Definition get_nonvar_part {Σ : BackgroundModel} (meqn : Meqn) : list (TermOver BuiltinOrVar) :=
+Definition get_nonvar_part {Σ : BackgroundModel} (meqn : Meqn) : list (@TermOver' TermSymbol BuiltinOrVar) :=
   snd meqn
 .
 
@@ -137,7 +137,7 @@ Global Instance meqn_empty {Σ : BackgroundModel} : Empty Meqn :=
   (empty, [])
 .
 
-Global Instance meqn_elem_of {Σ : BackgroundModel} : ElemOf (TermOver BuiltinOrVar) Meqn :=
+Global Instance meqn_elem_of {Σ : BackgroundModel} : ElemOf (@TermOver' TermSymbol BuiltinOrVar) Meqn :=
   λ t meqn,
     match t with
       | t_over (bov_Variabl v) => v ∈ get_var_part meqn
@@ -148,7 +148,7 @@ Global Instance meqn_elem_of {Σ : BackgroundModel} : ElemOf (TermOver BuiltinOr
 (* This definition, as is, is needed for set_equiv_instance - used in during union_list lemmas.
    The default resolution of Equiv for Meqn defaults to Prod Equiv, which is unwanted. *)
 Global Instance meqn_equiv {Σ : BackgroundModel} : Equiv Meqn :=
-  λ (meqn meqn' : Meqn), ∀ (t : TermOver BuiltinOrVar), t ∈ meqn <-> t ∈ meqn'
+  λ (meqn meqn' : Meqn), ∀ (t : @TermOver' TermSymbol BuiltinOrVar), t ∈ meqn <-> t ∈ meqn'
 .
 
 Lemma meqn_equivalent_refl {Σ : BackgroundModel} : Reflexive meqn_equiv.
@@ -187,7 +187,7 @@ Global Instance meqn_union {Σ : BackgroundModel} : Union Meqn :=
   λ meqn meqn', (meqn.1 ∪ meqn'.1, meqn.2 ++ meqn'.2)
 .
 
-Global Instance meqn_singleton {Σ : BackgroundModel} : Singleton (TermOver BuiltinOrVar) Meqn :=
+Global Instance meqn_singleton {Σ : BackgroundModel} : Singleton (@TermOver' TermSymbol BuiltinOrVar) Meqn :=
   λ t, match t with
       | t_over (bov_Variabl v) => ({[v]}, [])
       | _ => (∅, [t])
@@ -195,7 +195,7 @@ Global Instance meqn_singleton {Σ : BackgroundModel} : Singleton (TermOver Buil
 .
 
 Lemma not_elem_of_empty_meqn {Σ : BackgroundModel} :
-  ∀ (t : TermOver BuiltinOrVar), t ∉ (∅ : Meqn)
+  ∀ (t : @TermOver' TermSymbol BuiltinOrVar), t ∉ (∅ : Meqn)
 .
 Proof.
 intros.
@@ -210,7 +210,7 @@ ltac1:(repeat case_match; simplify_eq; try (apply not_elem_of_empty in H; destru
 Qed.
 
 Lemma elem_of_singleton_meqn {Σ : BackgroundModel} :
-  ∀ (x y : TermOver BuiltinOrVar), x ∈ ({[y]} : Meqn) ↔ x = y
+  ∀ (x y : @TermOver' TermSymbol BuiltinOrVar), x ∈ ({[y]} : Meqn) ↔ x = y
 .
 Proof.
 split.
@@ -240,7 +240,7 @@ split.
 Qed.
 
 Lemma elem_of_union_meqn {Σ : BackgroundModel}:
-  ∀ (X Y : Meqn) (x : TermOver BuiltinOrVar), x ∈ X ∪ Y ↔ x ∈ X ∨ x ∈ Y
+  ∀ (X Y : Meqn) (x : @TermOver' TermSymbol BuiltinOrVar), x ∈ X ∪ Y ↔ x ∈ X ∨ x ∈ Y
 .
 Proof.
 split.
@@ -266,7 +266,7 @@ split.
 }
 Qed.
 
-Global Instance meqn_semiset {Σ : BackgroundModel} : SemiSet (TermOver BuiltinOrVar) Meqn := {|
+Global Instance meqn_semiset {Σ : BackgroundModel} : SemiSet (@TermOver' TermSymbol BuiltinOrVar) Meqn := {|
   not_elem_of_empty := not_elem_of_empty_meqn;
   elem_of_singleton := elem_of_singleton_meqn;
   elem_of_union := elem_of_union_meqn;
@@ -295,7 +295,7 @@ split.
 Qed.
 
 Definition meqn_right_valid {Σ : BackgroundModel} (meqn : Meqn) : Prop :=
-  ∀ t : TermOver BuiltinOrVar, t ∈ get_nonvar_part meqn -> term_is_nonvar t
+  ∀ t : @TermOver' TermSymbol BuiltinOrVar, t ∈ get_nonvar_part meqn -> term_is_nonvar t
 .
 
 Definition meqn_left_valid {Σ : BackgroundModel} (meqn : Meqn) : Prop :=
@@ -306,7 +306,7 @@ Definition meqn_valid {Σ : BackgroundModel} (meqn : Meqn) : Prop :=
   meqn_left_valid meqn ∧ meqn_right_valid meqn
 .
 
-Definition create_eqn {Σ : BackgroundModel} (t t' : TermOver BuiltinOrVar) : eqn := 
+Definition create_eqn {Σ : BackgroundModel} (t t' : @TermOver' TermSymbol BuiltinOrVar) : eqn := 
   (t, t')
 .
 
@@ -397,7 +397,7 @@ Qed.
 
 Lemma meqn_valid_elem_of_in {Σ : BackgroundModel} :
   ∀ (meqn : Meqn), meqn_valid meqn ->
-    ∀ (t : TermOver BuiltinOrVar), t ∈ meqn <-> (∃ (v : Variabl), var_term_to_var t = Some v ∧ v ∈ get_var_part meqn) ∨ (t ∈ get_nonvar_part meqn)
+    ∀ (t : @TermOver' TermSymbol BuiltinOrVar), t ∈ meqn <-> (∃ (v : Variabl), var_term_to_var t = Some v ∧ v ∈ get_var_part meqn) ∨ (t ∈ get_nonvar_part meqn)
 .
 Proof.
 intros meqn HI1.
@@ -463,7 +463,7 @@ split.
 }
 Qed.
 
-Definition up_of_terms {Σ : BackgroundModel} (lt : list (TermOver BuiltinOrVar)) : UP :=
+Definition up_of_terms {Σ : BackgroundModel} (lt : list (@TermOver' TermSymbol BuiltinOrVar)) : UP :=
   list_to_set (RST_list_closure lt lt)
 .
 
@@ -473,7 +473,7 @@ Definition up_of_meqn {Σ : BackgroundModel} (meqn : Meqn) : UP :=
 .
 
 Lemma up_of_meqn_elem_of {Σ : BackgroundModel} :
-  ∀ (meqn : Meqn), meqn_valid meqn -> ∀ (t t' : TermOver BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn <-> (t, t') ∈ up_of_meqn meqn
+  ∀ (meqn : Meqn), meqn_valid meqn -> ∀ (t t' : @TermOver' TermSymbol BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn <-> (t, t') ∈ up_of_meqn meqn
 .
 Proof.
 intros.
@@ -702,8 +702,8 @@ split.
 Qed.
 
 Definition get_vars_of_M_meqns {Σ : BackgroundModel} (car : list Meqn) : gset Variabl :=
-  let terms_sets : list (list (TermOver BuiltinOrVar)) := get_nonvar_part <$> car in
-  let terms : list (TermOver BuiltinOrVar) := concat terms_sets in
+  let terms_sets : list (list (@TermOver' TermSymbol BuiltinOrVar)) := get_nonvar_part <$> car in
+  let terms : list (@TermOver' TermSymbol BuiltinOrVar) := concat terms_sets in
   let vars : list (gset Variabl) := vars_of <$> terms in
     ⋃ vars
 .
@@ -812,7 +812,7 @@ Definition up_of_meqns {Σ : BackgroundModel} (lm : list Meqn) : UP :=
 
 Lemma up_of_meqns_all_terms_in_UP {Σ : BackgroundModel} :
   ∀ (lm : list Meqn), Forall (fun meqn => meqn_valid meqn) lm ->
-  Forall (fun meqn => ∀ (t t' : TermOver BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn -> (t, t') ∈ up_of_meqns lm) lm
+  Forall (fun meqn => ∀ (t t' : @TermOver' TermSymbol BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn -> (t, t') ∈ up_of_meqns lm) lm
 .
 Proof.
 intros.
@@ -835,7 +835,7 @@ split.
 Qed.
 
 Lemma up_of_meqns_elem_of {Σ : BackgroundModel} :
-  ∀ (lm : list Meqn) (t t' : TermOver BuiltinOrVar), Forall (fun meqn => meqn_valid meqn) lm -> 
+  ∀ (lm : list Meqn) (t t' : @TermOver' TermSymbol BuiltinOrVar), Forall (fun meqn => meqn_valid meqn) lm -> 
     (t, t') ∈ up_of_meqns lm <-> Exists (fun meqn => t ∈ meqn ∧ t' ∈ meqn) lm
 .
 Proof.
@@ -890,7 +890,7 @@ Definition up_of_u {Σ : BackgroundModel} {u_ops : U_ops} (u : U) : UP :=
 
 Lemma up_of_valid_u_meqn_all_terms_in_UP {Σ : BackgroundModel} {u_ops : U_ops} :
   ∀ (u : U), u_valid u ->
-    Forall (fun meqn => ∀ (t t' : TermOver BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn -> (t, t') ∈ up_of_u u) (elements u)
+    Forall (fun meqn => ∀ (t t' : @TermOver' TermSymbol BuiltinOrVar), t ∈ meqn ∧ t' ∈ meqn -> (t, t') ∈ up_of_u u) (elements u)
 .
 Proof.
 intros.
@@ -899,7 +899,7 @@ apply (up_of_meqns_all_terms_in_UP _ H).
 Qed.
 
 Lemma up_of_valid_u_elem_of {Σ : BackgroundModel} {u_ops : U_ops} :
-  ∀ (u : U) (t t' : TermOver BuiltinOrVar), u_valid u -> 
+  ∀ (u : U) (t t' : @TermOver' TermSymbol BuiltinOrVar), u_valid u -> 
     (t, t') ∈ up_of_u u <-> Exists (fun meqn => t ∈ meqn ∧ t' ∈ meqn) (elements u)
 .
 Proof.
@@ -2093,7 +2093,7 @@ Definition compactify {Σ : BackgroundModel} {u_ops : U_ops} (u : U) : U :=
 .
 
 Lemma meqn_get_nonvar_part_mjoin_union_list {Σ : BackgroundModel} :
-  ∀ (lm : list Meqn) (gv : gset Variabl) (lt : list (TermOver BuiltinOrVar)),
+  ∀ (lm : list Meqn) (gv : gset Variabl) (lt : list (@TermOver' TermSymbol BuiltinOrVar)),
     ⋃ lm = (gv, lt) -> lt = mjoin (get_nonvar_part <$> lm)
 .
 Proof.
@@ -2125,7 +2125,7 @@ induction lm.
 Qed.
 
 Lemma meqn_union_list_elem_of_get_nonvar_part {Σ : BackgroundModel} :
-  ∀ (lm : list Meqn) (t : TermOver BuiltinOrVar), t ∈ get_nonvar_part (⋃ lm) -> Exists (fun meqn => t ∈ get_nonvar_part meqn) lm
+  ∀ (lm : list Meqn) (t : @TermOver' TermSymbol BuiltinOrVar), t ∈ get_nonvar_part (⋃ lm) -> Exists (fun meqn => t ∈ get_nonvar_part meqn) lm
 .
 Proof.
 setoid_rewrite Exists_exists.
@@ -2451,7 +2451,7 @@ Lemma compactify_by_var_v_in_meqn {Σ : BackgroundModel} :
   ∀ (u_ops : U_ops) (u u' : U) (v : Variabl),
       compactify_by_var u_ops u v = u' ->
       ∀ (meqn : Meqn), v ∈ get_var_part meqn ->
-      meqn ∈ elements u -> Exists (fun meqn' => ∀ t : TermOver BuiltinOrVar, t ∈ meqn -> t ∈ meqn') (elements u')
+      meqn ∈ elements u -> Exists (fun meqn' => ∀ t : @TermOver' TermSymbol BuiltinOrVar, t ∈ meqn -> t ∈ meqn') (elements u')
 .
 Proof.
 intros.
@@ -3056,7 +3056,7 @@ destruct (decide (x ∈ elements u)) as [H2 | H2].
       }
     }
     {
-      assert (∀ (t' : TermOver BuiltinOrVar), t' ∈ x <-> Exists (fun meqn => t' ∈ meqn) (m::lm)).
+      assert (∀ (t' : @TermOver' TermSymbol BuiltinOrVar), t' ∈ x <-> Exists (fun meqn => t' ∈ meqn) (m::lm)).
       {
         split.
         {
@@ -3164,7 +3164,7 @@ split.
       clear H3.
       ltac1:(pose proof (compactify_by_var_meqn_only_in_u' _ _ _ H _ H5 H2)).
       destruct H3 as [lm [H3 [H3' H3'']]].
-      assert (∀ (meqn' : Meqn) (t : TermOver BuiltinOrVar), meqn' ∈ lm -> t ∈ meqn' -> subp_app s t = subp_app s (var_to_term v)).
+      assert (∀ (meqn' : Meqn) (t : @TermOver' TermSymbol BuiltinOrVar), meqn' ∈ lm -> t ∈ meqn' -> subp_app s t = subp_app s (var_to_term v)).
       {
         intros.
         rewrite H3'' in H6.
@@ -3589,7 +3589,7 @@ Abort.
 Lemma u_subst_keeps_equiv_UP {Σ : BackgroundModel} {u_ops : U_ops} :
   ∀ (u : U) (sub : SubP),
     u_valid u ->
-    (∀ (v : Variabl) (t : TermOver BuiltinOrVar), 
+    (∀ (v : Variabl) (t : @TermOver' TermSymbol BuiltinOrVar), 
       lookup v sub = Some t -> (var_to_term v, t) ∈ up_of_u u) ->
     up_of_u u ~up up_of_u (u_subst u sub)
 .
@@ -3612,11 +3612,11 @@ Fixpoint transpose {X : Type} (len : nat) (tapes : list (list X)) : list (list X
   end
 .
 
-Definition dec_make_multeq {Σ : BackgroundModel} (lv : list (TermOver BuiltinOrVar)) (ln : list (TermOver BuiltinOrVar)) : option Meqn :=
+Definition dec_make_multeq {Σ : BackgroundModel} (lv : list (@TermOver' TermSymbol BuiltinOrVar)) (ln : list (@TermOver' TermSymbol BuiltinOrVar)) : option Meqn :=
   list_collect (var_term_to_var <$> lv) ≫= fun lv' => Some (list_to_set lv', ln)
 .
 
-Fixpoint dec_aux {Σ : BackgroundModel} (m : list (TermOver BuiltinOrVar)) (n : nat) : option (TermOver BuiltinOrVar * listset Meqn)%type :=
+Fixpoint dec_aux {Σ : BackgroundModel} (m : list (@TermOver' TermSymbol BuiltinOrVar)) (n : nat) : option (@TermOver' TermSymbol BuiltinOrVar * listset Meqn)%type :=
   match n with
     | O => None
     | S n => 
@@ -3644,31 +3644,31 @@ Fixpoint dec_aux {Σ : BackgroundModel} (m : list (TermOver BuiltinOrVar)) (n : 
 .
 
 Lemma dec_aux_TermOver_size_enough {Σ : BackgroundModel} :
-  ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)) (c : @TermOver' TermSymbol BuiltinOrVar) (f : listset Meqn),
     dec_aux lt (sum_list_with TermOver_size lt) = Some (c, f) <-> ∃ (sub : SubP),
       Forall
-      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), subp_app sub t = subp_app sub t')
+      (λ t : @TermOver' TermSymbol BuiltinOrVar, ∀ (t' : @TermOver' TermSymbol BuiltinOrVar), subp_app sub t = subp_app sub t')
       ((λ x, subp_app sub x) <$> lt)
 .
 Proof.
 Abort.
 
-Definition dec {Σ : BackgroundModel} (m : list (TermOver BuiltinOrVar)) : option (TermOver BuiltinOrVar * listset Meqn)%type :=
+Definition dec {Σ : BackgroundModel} (m : list (@TermOver' TermSymbol BuiltinOrVar)) : option (@TermOver' TermSymbol BuiltinOrVar * listset Meqn)%type :=
   dec_aux m (sum_list_with TermOver_size m)
 .
 
 Lemma dec_exists {Σ : BackgroundModel} :
-  ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)) (c : @TermOver' TermSymbol BuiltinOrVar) (f : listset Meqn),
     dec lt = Some (c, f) <-> ∃ (sub : SubP),
       Forall
-      (λ t : TermOver BuiltinOrVar, ∀ (t' : TermOver BuiltinOrVar), subp_app sub t = subp_app sub t')
+      (λ t : @TermOver' TermSymbol BuiltinOrVar, ∀ (t' : @TermOver' TermSymbol BuiltinOrVar), subp_app sub t = subp_app sub t')
       ((λ x, subp_app sub x) <$> lt)
 .
 Proof.
 Abort.
 
 Lemma dec_keeps_equiv_UP {Σ : BackgroundModel} {u_ops : U_ops} :
-  ∀ (lt : list (TermOver BuiltinOrVar)) (c : TermOver BuiltinOrVar) (f : listset Meqn),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)) (c : @TermOver' TermSymbol BuiltinOrVar) (f : listset Meqn),
     dec lt = Some (c, f) -> ∃ (v : Variabl),
       up_of_terms lt ~up up_of_meqns ((elements f) ++ [ init_meqn {[ v ]} [c] ])
 .
@@ -3732,7 +3732,7 @@ Definition r_valid {Σ : BackgroundModel} {u_ops : U_ops} (r : R) : Prop :=
     t_valid t ∧ u_valid u ∧ r_vars_disjoint r ∧ r_has_all_vars r
 .
 
-Definition init_r' {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (TermOver BuiltinOrVar)) : (R * Variabl)%type :=
+Definition init_r' {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (@TermOver' TermSymbol BuiltinOrVar)) : (R * Variabl)%type :=
   let vars : gset Variabl := ⋃ (vars_of <$> lt) in
   let meqns : list Meqn := (λ v, init_meqn (singleton v) []) <$> (elements vars) in
   let u_empty : U := empty in
@@ -3742,12 +3742,12 @@ Definition init_r' {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (TermOver B
     (([], u_insert u_missing_up up_meqn), fresh_var)
 .
 
-Definition init_r {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (TermOver BuiltinOrVar)) : R :=
+Definition init_r {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (@TermOver' TermSymbol BuiltinOrVar)) : R :=
   (init_r' lt).1
 .
 
 Lemma init_r_valid {Σ : BackgroundModel} {u_ops : U_ops} :
-  ∀ (lt : list (TermOver BuiltinOrVar)) (r : R),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)) (r : R),
     forallb term_is_nonvar lt = true ->
     r_valid (init_r lt)
 .
@@ -3755,7 +3755,7 @@ Proof.
 Abort.
 
 Lemma init_r_keeps_UP {Σ : BackgroundModel} {u_ops : U_ops} :
-  ∀ (lt : list (TermOver BuiltinOrVar)),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)),
     forallb term_is_nonvar lt = true ->
     ∀ (r : R) (v : Variabl), init_r' lt = (r, v) ->
     up_of_terms ((var_to_term v)::lt) ~up up_of_r r
@@ -3825,7 +3825,7 @@ Definition unify_r {Σ : BackgroundModel} {u_ops : U_ops} (r : R) : option (list
     unify_r_aux r (u_len + 1)
 .
 
-Definition unify_terms {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (TermOver BuiltinOrVar)) : option (list Meqn) :=
+Definition unify_terms {Σ : BackgroundModel} {u_ops : U_ops} (lt : list (@TermOver' TermSymbol BuiltinOrVar)) : option (list Meqn) :=
   unify_r (init_r lt)
 .
 
@@ -3858,7 +3858,7 @@ Definition extract_mgu {Σ : BackgroundModel} (t : T) : SubP :=
 Lemma extract_mgu_contains_var {Σ : BackgroundModel} :
   ∀ (t : T) (sub : SubP), t_valid t ->
     extract_mgu t = sub ->
-    ∀ (v : Variabl) (t : TermOver BuiltinOrVar), lookup v sub = Some t ->
+    ∀ (v : Variabl) (t : @TermOver' TermSymbol BuiltinOrVar), lookup v sub = Some t ->
     ∀ (v' : Variabl), v' ∈ vars_of t ->
     lookup v' sub = None
 .
@@ -3866,20 +3866,20 @@ Proof.
 Abort.
 
 Lemma sub_is_unifier {Σ : BackgroundModel} {u_ops : U_ops} :
-  ∀ (lt : list (TermOver BuiltinOrVar)) (r_t : T),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)) (r_t : T),
     unify_terms lt = Some r_t ->
-    ∀ (t : TermOver BuiltinOrVar), t ∈ lt ->
-    ∀ (t' : TermOver BuiltinOrVar), t' ∈ lt ->
+    ∀ (t : @TermOver' TermSymbol BuiltinOrVar), t ∈ lt ->
+    ∀ (t' : @TermOver' TermSymbol BuiltinOrVar), t' ∈ lt ->
     subp_app (extract_mgu r_t) t = subp_app (extract_mgu r_t) t'
 .
 Proof.
 Abort.
 
 Lemma sub_no_unifier {Σ : BackgroundModel} {u_ops : U_ops} :
-  ∀ (lt : list (TermOver BuiltinOrVar)),
+  ∀ (lt : list (@TermOver' TermSymbol BuiltinOrVar)),
     unify_terms lt = None ->
-    ∃ (t : TermOver BuiltinOrVar), t ∈ lt ->
-    ∃ (t' : TermOver BuiltinOrVar), t' ∈ lt ->
+    ∃ (t : @TermOver' TermSymbol BuiltinOrVar), t ∈ lt ->
+    ∃ (t' : @TermOver' TermSymbol BuiltinOrVar), t' ∈ lt ->
     ∀ (sub : SubP), subp_app sub t ≠ subp_app sub t'
 .
 Proof.

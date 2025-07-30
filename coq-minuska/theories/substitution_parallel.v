@@ -8,7 +8,7 @@ From Minuska Require Import
 (* 'parallel' substitution *)
 Definition SubP {Σ : BackgroundModel} : Type
 :=
-    gmap Variabl (TermOver BuiltinOrVar)
+    gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)
 .
 
 (* 
@@ -20,14 +20,14 @@ Proof.
 Defined. *)
 
 
-Fixpoint subp_app {Σ : BackgroundModel} (s : SubP) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
+Fixpoint subp_app {Σ : BackgroundModel} (s : SubP) (t : @TermOver' TermSymbol BuiltinOrVar) : @TermOver' TermSymbol BuiltinOrVar :=
 match t with
   | t_over (bov_Variabl v) => let t'_opt := s !! v in
     match t'_opt with
       | None => t
       | Some t' => t'
     end
-  | t_term sm l => t_term sm (map (λ t' : TermOver BuiltinOrVar, subp_app s t') l)
+  | t_term sm l => t_term sm (map (λ t' : @TermOver' TermSymbol BuiltinOrVar, subp_app s t') l)
   | _ => t
 end
 .
@@ -46,16 +46,16 @@ Definition subp_codom
   (s : SubP)
 : gset Variabl
 :=
-  let img' : listset (TermOver BuiltinOrVar) := map_img s in
-  let img : list (TermOver BuiltinOrVar) := elements img' in
+  let img' : listset (@TermOver' TermSymbol BuiltinOrVar) := map_img s in
+  let img : list (@TermOver' TermSymbol BuiltinOrVar) := elements img' in
   let vs : list (gset Variabl) := vars_of <$> img in
   ⋃ (vs)
 .
 
 Definition subp_normalize
   {Σ : BackgroundModel}
-  (a : gmap Variabl (TermOver BuiltinOrVar))
-  : gmap Variabl (TermOver BuiltinOrVar)
+  (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+  : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)
 :=
   filter
     (fun kv => t_over (bov_Variabl kv.1) <> kv.2)
@@ -64,7 +64,7 @@ Definition subp_normalize
 
 Definition subp_is_normal
   {Σ : BackgroundModel}
-  (a : gmap Variabl (TermOver BuiltinOrVar))
+  (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
   : Prop
 :=
   subp_normalize a = a
@@ -73,7 +73,7 @@ Definition subp_is_normal
 (* a after b *)
 Definition subp_compose
   {Σ : BackgroundModel}
-  (a b : gmap Variabl (TermOver BuiltinOrVar))
+  (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
   subp_normalize
     (union
@@ -85,12 +85,12 @@ Definition subp_compose
 Definition subp_id
   {Σ : BackgroundModel}
   :
-  gmap Variabl (TermOver BuiltinOrVar)
+  gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)
 :=
   empty
 .
 
-Definition RestrictP {Σ : BackgroundModel} (to : gset Variabl) : (prod (Variabl) (TermOver BuiltinOrVar)) -> Prop :=
+Definition RestrictP {Σ : BackgroundModel} (to : gset Variabl) : (prod (Variabl) (@TermOver' TermSymbol BuiltinOrVar)) -> Prop :=
   fun x => x.1 ∈ to
 .
 
@@ -112,7 +112,7 @@ Definition subp_restrict
 
 Definition subp_precompose
   {Σ : BackgroundModel}
-  (a b : gmap Variabl (TermOver BuiltinOrVar))
+  (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
       (fmap (subp_app a) b) 
 .

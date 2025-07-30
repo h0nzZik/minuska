@@ -11,8 +11,8 @@ Arguments e_fun {Σ} f l%_list_scope.
 
 Definition SymbolicTerm_to_ExprTerm
     {Σ : BackgroundModel}
-    (t : TermOver BuiltinOrVar)
-    : TermOver Expression2
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    : @TermOver' TermSymbol Expression2
 :=
     TermOver_map (fun x:BuiltinOrVar =>
         match x with
@@ -105,7 +105,7 @@ Class Realization (Bu Sy Va P HP F A Q M : Type) := {
 
 Fixpoint se_to_Expression
     {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (se : StringExpression)
     :
     Expression2+string
@@ -157,7 +157,7 @@ Inductive StringSideCondition
 
 Fixpoint ssc_to_sc
     {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (ssc : StringSideCondition)
     :
     SideCondition+string
@@ -214,10 +214,10 @@ Fixpoint ssc_to_sc
 
 Definition tosse_to_e_tose
     {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (t : @TermOver' string StringExpression)
     :
-    (TermOver Expression2)+string
+    (@TermOver' TermSymbol Expression2)+string
 :=
     match TermOver'_e_map (se_to_Expression) t with
     | inl t' => let t'' := to_transform_sym string2sym t' in
@@ -233,7 +233,7 @@ Variant StringBuiltinOrVar :=
 
 Definition sbov_to_e_bov
     {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (sbov : StringBuiltinOrVar)
     :
     BuiltinOrVar+string
@@ -261,10 +261,10 @@ Record StringRewritingRule
 Definition transl_string_pattern
     {Σ : BackgroundModel}
     (Label : Set)
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (p : @TermOver' string StringBuiltinOrVar)
     :
-    (TermOver BuiltinOrVar)+string
+    (@TermOver' TermSymbol BuiltinOrVar)+string
 :=
     match TermOver'_e_map (sbov_to_e_bov) p with
     | inr e => inr e
@@ -275,7 +275,7 @@ Definition transl_string_pattern
 Definition srr_to_rr
     {Σ : BackgroundModel}
     (Label : Set)
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (srr : StringRewritingRule Label)
     :
     (RewritingRule2 Label)+string
@@ -308,7 +308,7 @@ Definition srr_to_rr
 Definition realize_thy
     {Σ : BackgroundModel}
     (Label : Set)
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (srrl : list (StringRewritingRule Label))
     :
     (list (RewritingRule2 Label))+string

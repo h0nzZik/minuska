@@ -5,7 +5,7 @@ From Minuska Require Import
 .
 
 Definition eqn {Σ : BackgroundModel} : Type :=
-    ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type
+    ((@TermOver' TermSymbol BuiltinOrVar)*(@TermOver' TermSymbol BuiltinOrVar))%type
 .
 
 Definition is_unifier_of {Σ : BackgroundModel} (s : SubP) (l : list eqn) :=
@@ -24,17 +24,17 @@ Class UnificationAlgorithm
     
     ua_unify_sound :
         forall
-            (t1 t2 : TermOver BuiltinOrVar)
-            (u : gmap Variabl (TermOver BuiltinOrVar)),
+            (t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
+            (u : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)),
         ua_unify t1 t2 = Some u ->
         (subp_app u t1 = subp_app u t2) /\
         (
-            forall (u' : gmap Variabl (TermOver BuiltinOrVar)),
+            forall (u' : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)),
                 subp_is_normal u' ->
                 dom u' ∪ subp_codom u' ⊆ vars_of t1 ∪ vars_of t2 ->
                 dom u' ## subp_codom u' ->
                 subp_app u' t1 = subp_app u' t2 ->
-                exists (u'' : gmap Variabl (TermOver BuiltinOrVar)),
+                exists (u'' : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)),
                     (* u' = subp_precompose u'' u *)
                     u' = subp_restrict (vars_of t1 ∪ vars_of t2) (subp_compose u'' u)
                 (* I think that [u ⊆ u'] would be too strong.
@@ -47,7 +47,7 @@ Class UnificationAlgorithm
     ;
 
     ua_unify_complete :
-        forall (t1 t2 : TermOver BuiltinOrVar),
+        forall (t1 t2 : @TermOver' TermSymbol BuiltinOrVar),
             ua_unify t1 t2 = None ->
             forall (s : SubP),
                 dom s ## subp_codom s ->

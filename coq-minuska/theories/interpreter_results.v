@@ -9,9 +9,9 @@ From Minuska Require Import
 
 Lemma vars_of_sat_tobov
     {Σ : BackgroundModel}
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     (ρ : Valuation2)
-    (g : TermOver BasicValue)
+    (g : @TermOver' TermSymbol BasicValue)
     :
     sat2B ρ g φ ->
     vars_of φ ⊆ vars_of ρ

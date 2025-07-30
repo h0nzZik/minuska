@@ -9,10 +9,10 @@ Fixpoint interp_loop
     {Σ : BackgroundModel}
     (nvs : nat -> NondetValue)
     (idx : nat)
-    (interp : NondetValue -> TermOver BasicValue -> option (TermOver BasicValue))
+    (interp : NondetValue -> TermOver BasicValue -> option (@TermOver' TermSymbol BasicValue))
     (fuel : nat)
-    (g : TermOver BasicValue)
-    : (nat*(TermOver BasicValue))
+    (g : @TermOver' TermSymbol BasicValue)
+    : (nat*(@TermOver' TermSymbol BasicValue))
 :=
 match fuel with
 | 0 => (0,g)
@@ -28,11 +28,11 @@ Fixpoint interp_loop_ext
     {Σ : BackgroundModel}
     (nvs : nat -> NondetValue)
     (idx : nat)
-    (interp : NondetValue -> (TermOver BasicValue)*hidden_data -> option ((TermOver BasicValue)*hidden_data*nat))
+    (interp : NondetValue -> (@TermOver' TermSymbol BasicValue)*HiddenValue -> option ((@TermOver' TermSymbol BasicValue)*HiddenValue*nat))
     (fuel : nat)
-    (g : (TermOver BasicValue)*hidden_data)
+    (g : (@TermOver' TermSymbol BasicValue)*HiddenValue)
     (log : list nat)
-    : (nat*(TermOver BasicValue)*hidden_data*(list nat))
+    : (nat*(@TermOver' TermSymbol BasicValue)*HiddenValue*(list nat))
 :=
 match fuel with
 | 0 => (0,g.1,g.2,log)
@@ -51,8 +51,8 @@ Definition interp_in_from'
         (program : ProgramT)
         (nvs : nat -> NondetValue)
         (fuel : nat)
-        (from : (TermOver BasicValue)*hidden_data)
-        :  nat * (TermOver BasicValue) * hidden_data * list (option string)
+        (from : (@TermOver' TermSymbol BasicValue)*HiddenValue)
+        :  nat * (@TermOver' TermSymbol BasicValue) * HiddenValue * list (option string)
     :=
         let res := interp_loop_ext nvs 0 (naive_interpreter_ext Γ.1 program)
             fuel
@@ -82,8 +82,8 @@ Definition interp_in_from
         (Γ : (list (RewritingRule2 Label))*(list string))
         (nvs : nat -> NondetValue)
         (fuel : nat)
-        (from : (TermOver BasicValue)*hidden_data)
-        :  nat * (TermOver BasicValue)*hidden_data * string
+        (from : (@TermOver' TermSymbol BasicValue)*HiddenValue)
+        :  nat * (@TermOver' TermSymbol BasicValue)*HiddenValue * string
 :=
     let r := interp_in_from' Γ program nvs fuel from in
     (r.1, concat_list_option_str r.2)

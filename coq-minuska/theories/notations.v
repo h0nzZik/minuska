@@ -69,13 +69,13 @@ Instance Resolver_rhs {Σ : BackgroundModel} {_T2 : TagRHS} : Resolver := {
 Class ToAOO {Σ : BackgroundModel} {_basic_resolver : BasicResolver}
     (to_aoo_F : Type)
 := {
-    to_aoo_opt : to_aoo_F -> (TermOver operand_type) ;
+    to_aoo_opt : to_aoo_F -> (@TermOver' TermSymbol operand_type) ;
 }.
 
 #[export]
 Instance ToAOO_id {Σ : BackgroundModel} {_basic_resolver : BasicResolver}
     {T : Type}
-    {_eq: TCEq T (TermOver operand_type)}
+    {_eq: TCEq T (@TermOver' TermSymbol operand_type)}
     : ToAOO T
 .
 Proof. inversion _eq. subst. constructor. intros x. exact x. Defined.

@@ -39,7 +39,7 @@ Instance show_TermSymbol : Show TermSymbol := {|
     show := fun x => x;
 |}.
 
-Fixpoint show_to {T : Type} {_ST : Show T} (t : TermOver T) : string  :=
+Fixpoint show_to {T : Type} {_ST : Show T} (t : @TermOver' TermSymbol T) : string  :=
     match t with
     | t_over b => show b
     | t_term s l => show s +:+ "[" +:+ (concat "," (show_to <$> l ))  +:+ "]"
@@ -47,7 +47,7 @@ Fixpoint show_to {T : Type} {_ST : Show T} (t : TermOver T) : string  :=
 .
 
 #[export]
-Instance showTerm {T : Type} {_ST : Show T} : Show (TermOver T) := {|
+Instance showTerm {T : Type} {_ST : Show T} : Show (@TermOver' TermSymbol T) := {|
     show := show_to ;
 |}.
 
@@ -71,7 +71,7 @@ Definition genFunction : G FunSymbol :=
     elems [int_plus; int_minus; int_uminus; int_zero; int_one; int_eq; int_le; int_lt]
 .
 
-Fixpoint genTermSized' {T : Type} (sz : nat) (g : nat -> G T) : G (TermOver T) :=
+Fixpoint genTermSized' {T : Type} (sz : nat) (g : nat -> G T) : G (@TermOver' TermSymbol T) :=
   match sz with
     | O => bindGen (g sz) (fun x => returnGen (t_over x))
     | S sz' =>
@@ -156,7 +156,7 @@ Fixpoint genExprSized (sz : nat) : G (Expression2) :=
 
 Definition genTermOverExprSized sz := genTermSized' sz genExprSized.
 
-Definition genValuationSized (sz : nat) : G (gmap Variabl (TermOver BasicValue)) :=
+Definition genValuationSized (sz : nat) : G (gmap Variabl (@TermOver' TermSymbol BasicValue)) :=
     bindGen (
         listOf (
             bindGen genVariable (fun x =>
@@ -180,12 +180,12 @@ Instance showVal : Show Valuation2 := {|
 |}.
 
 
-Definition showSubP_ (s : gmap Variabl (TermOver BuiltinOrVar)) : string :=
+Definition showSubP_ (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)) : string :=
         let l := map_to_list s in
         show (l)
 .
 (* About map_to_list. *)
 #[export]
-Instance showSubP : Show (gmap Variabl (TermOver BuiltinOrVar)) := {|
+Instance showSubP : Show (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)) := {|
     show := showSubP_
 |}.

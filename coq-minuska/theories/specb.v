@@ -7,7 +7,7 @@ From Minuska Require Import
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
+    (t : @TermOver' TermSymbol BasicValue)
     (bv : BuiltinOrVar)
     : bool
 := match bv with
@@ -53,8 +53,8 @@ Fixpoint forallbin
 Equations? sat2Bb
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
-    (φ : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     : bool
     by wf (TermOver_size φ) lt
 :=
@@ -91,8 +91,8 @@ Defined.
 Lemma sat2B_refl
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
-    (φ : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     reflect (sat2B ρ t φ) (sat2Bb ρ t φ)
 .
@@ -238,10 +238,10 @@ Qed.
 Equations? sat2Eb
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
-    (φ : TermOver Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
     : bool
     by wf (TermOver_size φ) lt
@@ -285,10 +285,10 @@ Defined.
 Lemma sat2E_refl
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (t : TermOver BasicValue)
-    (φ : TermOver Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
     :
     reflect (sat2E program h ρ t φ nv) (sat2Eb program h ρ t φ nv)

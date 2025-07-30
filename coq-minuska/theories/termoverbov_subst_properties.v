@@ -9,7 +9,7 @@ From Minuska Require Import
 Lemma subst_notin
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : TermOver BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
     :
     h ∉ vars_of_to_l2r φ ->
     TermOverBoV_subst φ h ψ = φ
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 Lemma subst_notin2 {Σ : BackgroundModel}
-     : ∀ (h : Variabl) (φ ψ : TermOver BuiltinOrVar),
+     : ∀ (h : Variabl) (φ ψ : @TermOver' TermSymbol BuiltinOrVar),
          h ∉ vars_of φ → TermOverBoV_subst φ h ψ = φ
 .
 Proof.
@@ -110,7 +110,7 @@ Qed.
 Lemma size_subst_1
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : TermOver BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
     :
     TermOver_size φ <= TermOver_size (TermOverBoV_subst φ h ψ)
 .
@@ -145,7 +145,7 @@ Qed.
 Lemma size_subst_2
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : TermOver BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
     :
     h ∈ vars_of_to_l2r φ ->
     TermOver_size ψ <= TermOver_size (TermOverBoV_subst φ h ψ)
@@ -196,7 +196,7 @@ Qed.
 Lemma TermOverBoV_subst_once_size
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : TermOver BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
     :
     h ∉ vars_of ψ ->
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
@@ -392,7 +392,7 @@ Proof.
         }
 
         assert (HH1: (sum_list_with TermOver_size
-                (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ)
+                (map (λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ)
                 (take j l))  )
                 = sum_list_with TermOver_size (take j l) ).
         {
@@ -425,7 +425,7 @@ Proof.
         }
 
         assert (HH2: (sum_list_with TermOver_size
-                (map (λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ)
+                (map (λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ)
                 (drop (S j) l))  )
                 = sum_list_with TermOver_size (drop (S j) l) ).
         {
@@ -604,7 +604,7 @@ Qed.
 
 Lemma vars_of_TermOverBoV_subst
     {Σ : BackgroundModel}
-    (t t' : TermOver BuiltinOrVar)
+    (t t' : @TermOver' TermSymbol BuiltinOrVar)
     (x : Variabl)
 :
     x ∈ vars_of t ->
@@ -713,7 +713,7 @@ Qed.
 
 Lemma vars_of_to_l2r_subst
     {Σ : BackgroundModel}
-    (φ ψ : TermOver BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
     (h : Variabl)
     :
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
@@ -858,7 +858,7 @@ Proof.
         }
         rewrite IH2. clear IH2.
 
-        assert (Heq1: ((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> la1) = la1).
+        assert (Heq1: ((λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> la1) = la1).
         {
             clear -HH'3.
             induction la1.
@@ -875,7 +875,7 @@ Proof.
             }
         }
 
-        assert (Heq2: ((λ t'' : TermOver BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> lc1) = lc1).
+        assert (Heq2: ((λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> lc1) = lc1).
         {
             clear -HH'4.
             induction lc1.

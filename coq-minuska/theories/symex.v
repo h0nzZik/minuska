@@ -27,9 +27,9 @@ Definition ScList {Σ : BackgroundModel} := (list (Variabl*(AttrSymbol+QuerySymb
 Fixpoint replace_and_collect0
     {Σ : BackgroundModel}
     (* (F : FresherM ()) *)
-    (et : (TermOver Expression2))
+    (et : (@TermOver' TermSymbol Expression2))
     :
-    FresherM ((TermOver BuiltinOrVar)*ScList)
+    FresherM ((@TermOver' TermSymbol BuiltinOrVar)*ScList)
 :=
     match et with
     | t_over (e_ground g) => returnFresher (((TermOverBuiltin_to_TermOverBoV g)),[])
@@ -47,7 +47,7 @@ Fixpoint replace_and_collect0
             (t_over (bov_Variabl x),[(x,(inl (inl a)), l)])
         )
     | t_term s l => 
-        let a := (fix go (l : (list (TermOver Expression2))) : FresherM ((list (TermOver BuiltinOrVar))*ScList) :=
+        let a := (fix go (l : (list (@TermOver' TermSymbol Expression2))) : FresherM ((list (@TermOver' TermSymbol BuiltinOrVar))*ScList) :=
             match l with
             | nil => returnFresher (nil,nil)
             | x::xs => bindFresher (replace_and_collect0 x) (
@@ -69,9 +69,9 @@ Fixpoint replace_and_collect0
 Definition replace_and_collect1
     {Σ : BackgroundModel}
     (avoid : list Variabl)
-    (et : (TermOver Expression2))
+    (et : (@TermOver' TermSymbol Expression2))
     :
-    ((TermOver BuiltinOrVar)*ScList)
+    ((@TermOver' TermSymbol BuiltinOrVar)*ScList)
 :=
     (replace_and_collect0 et {|fresher_avoid := (elements (vars_of et) ++ avoid)|}).1
 .
@@ -79,9 +79,9 @@ Definition replace_and_collect1
 
 Definition replace_and_collect
     {Σ : BackgroundModel}
-    (et : (TermOver Expression2))
+    (et : (@TermOver' TermSymbol Expression2))
     :
-    ((TermOver BuiltinOrVar)*ScList)
+    ((@TermOver' TermSymbol BuiltinOrVar)*ScList)
 :=
     replace_and_collect1 [] et
 .
@@ -133,7 +133,7 @@ Instance  VarsOf_sce
 Definition SideConditionEq_evaluate
     {Σ : BackgroundModel}
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideConditionEq)
@@ -179,7 +179,7 @@ Lemma SideConditionEq_evaluate_asIfWithEq
     {Σ : BackgroundModel}
     (sc : SideCondition)
     (program : ProgramT)
-    (h : hidden_data)
+    (h : HiddenValue)
     (nv : NondetValue)
     (ρ : Valuation2)
     :
@@ -208,7 +208,7 @@ Qed.
 Record SimpleSymbolicState
     {Σ : BackgroundModel}
  := {
-    sss_term : TermOver BuiltinOrVar ;
+    sss_term : @TermOver' TermSymbol BuiltinOrVar ;
     sss_sc : SideConditionEq ;
     (* In general, we try to ensure that vars_of sss_sc ⊆ vars_of sss_term,
         but we do not want to encode as a proof object because of performance reasons
@@ -221,7 +221,7 @@ Definition SymbolicState {Σ : BackgroundModel } := list SimpleSymbolicState.
 Definition denot_sss
     {Σ : BackgroundModel}
     (sss : SimpleSymbolicState)
-    (g : TermOver BasicValue)
+    (g : @TermOver' TermSymbol BasicValue)
     : Type
 :=
     { ρ : Valuation2 & sat2B ρ g sss.(sss_term) }
@@ -232,7 +232,7 @@ Definition denot_sss
 Definition denot_ss
     {Σ : BackgroundModel}
     (ss : SymbolicState)
-    (g : TermOver BasicValue)
+    (g : @TermOver' TermSymbol BasicValue)
     : Type
 :=
     { sss : SimpleSymbolicState & ((sss ∈ ss) * (((denot_sss sss g))))%type }

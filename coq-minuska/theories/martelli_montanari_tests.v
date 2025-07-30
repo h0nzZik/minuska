@@ -27,7 +27,7 @@ during the proving of the rest of the implementation.
 
 Instance sm : BackgroundModel := @DSM mysignature (unit_hidden_signature mysignature) β (unit_hidden_model _ _ β) MyProgramInfo.
 
-Definition dec_paper_input1 : list (TermOver BuiltinOrVar) := [
+Definition dec_paper_input1 : list (@TermOver' TermSymbol BuiltinOrVar) := [
     t_term "f"
         [
             t_over (bov_Variabl "x1");
@@ -63,12 +63,12 @@ Definition dec_paper_input1 : list (TermOver BuiltinOrVar) := [
 
 Compute (@dec sm dec_paper_input1).
 
-Definition unify_paper1_input1 : TermOver BuiltinOrVar := (t_term "f" [
+Definition unify_paper1_input1 : @TermOver' TermSymbol BuiltinOrVar := (t_term "f" [
   t_over (bov_Variabl "x1");
   t_term "g" [t_over (bov_Variabl "x2"); t_over (bov_Variabl "x3")];
   t_over (bov_Variabl "x2");
   t_term "b" []]).
-Definition unify_paper1_input2 : TermOver BuiltinOrVar := (t_term "f" [
+Definition unify_paper1_input2 : @TermOver' TermSymbol BuiltinOrVar := (t_term "f" [
   t_term "g" [t_term "h" [t_term "a" []; t_over (bov_Variabl "x5")]; t_over (bov_Variabl "x2")];
   t_over (bov_Variabl "x1");
   t_term "h" [t_term "a" []; t_over (bov_Variabl "x4")];
