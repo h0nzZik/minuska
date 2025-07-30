@@ -6,7 +6,7 @@ From Minuska Require Import
 
 From Coq Require Import Logic.Eqdep_dec.
 From Coq Require Import Logic.PropExtensionality.
-
+(* 
 #[local]
 Arguments FunSymbol (Signature) : clear implicits.
 #[local]
@@ -18,23 +18,8 @@ Arguments builtin_function_interp {TermSymbol} {TermSymbols signature}
 #[local]
 Arguments builtin_predicate_interp {TermSymbol} {TermSymbols signature}
   {NondetValue Carrier} (ModelOver) _ _ _
-.
+. *)
 
-Class Injection (FromT ToT : Type) := {
-    inject : FromT -> ToT ;
-    inject_inj :: Inj (=) (=) inject ;
-}.
-
-Arguments inject (FromT ToT) {Injection} _.
-
-Definition inj_compose {A B C : Type} (g : Injection B C) (f : Injection A B) := {|
-    inject := compose (@inject _ _ g) (@inject _ _ f) ;
-|}. 
-
-Program Definition inj_id (A : Type) : Injection A A :=
-{| inject := fun x => x; |}
-.
-Fail Next Obligation.
 
 (* Of course not.
 Program Definition inj_fst (A B : Type) : Injection (prod A B) A :=
@@ -43,49 +28,6 @@ Program Definition inj_fst (A B : Type) : Injection (prod A B) A :=
 |}.
 Next Obligation.
 Fail Next Obligation. *)
-
-Class ReversibleInjection (FromT ToT : Type) := {
-    ri_injection :: Injection FromT ToT ;
-    ri_reverse : ToT -> option FromT ;
-    ri_reverse_pf : forall from,
-        ri_reverse (@inject FromT ToT ri_injection from) = Some from ;
-}.
-
-Program Definition rinj_compose
-    {A B C : Type}
-    (g : ReversibleInjection B C)
-    (f : ReversibleInjection A B)
-:= {|
-    ri_injection := inj_compose (@ri_injection _ _ g) (@ri_injection _ _ f) ;
-    ri_reverse := fun c =>
-        b ← (@ri_reverse _ _ g c);
-        (@ri_reverse _ _ f b)
-|}.
-Next Obligation.
-    rewrite ri_reverse_pf.
-    simpl.
-    rewrite ri_reverse_pf.
-    reflexivity.
-Qed.
-Fail Next Obligation.
-
-Program Definition rinj_id (A : Type) : ReversibleInjection A A := {|
-    ri_injection := {| inject := fun x => x; |};
-    ri_reverse := fun x => Some x;
-|}.
-Fail Next Obligation.
-
-Program Definition rinj_inl (A B : Type) : ReversibleInjection A (A+B) := {|
-    ri_injection := {| inject := inl; |} ;
-    ri_reverse := fun x => match x with inl x' => Some x' | _ => None end ;
-|}.
-Fail Next Obligation.
-
-Program Definition rinj_inr (A B : Type) : ReversibleInjection B (A+B) := {|
-    ri_injection := {| inject := inr; |} ;
-    ri_reverse := fun x => match x with inr x' => Some x' | _ => None end ;
-|}.
-Fail Next Obligation.
 
 Record RelaxedModel
     {TermSymbol : Type}

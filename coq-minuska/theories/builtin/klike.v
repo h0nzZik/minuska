@@ -5,7 +5,6 @@ From Minuska Require Import
     properties
     lowlang
     notations
-    default_static_model
     BuiltinValue
     ocaml_interface
 .

@@ -19,19 +19,19 @@ Variant BoolPredSymbol :=
 | bool_pred_is_true
 .
 
-#[local]
+#[export]
 Instance BoolFunSymbol_eqdec : EqDecision BoolFunSymbol.
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-#[local]
+#[export]
 Instance BoolPredSymbol_eqdec : EqDecision BoolPredSymbol.
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-#[local]
+#[export]
 Program Instance BoolFunSymbol_fin : Finite BoolFunSymbol := {|
     enum := [
         bool_fun_true;
@@ -52,7 +52,7 @@ Qed.
 Fail Next Obligation.
 
 
-#[local]
+#[export]
 Program Instance BoolPredSymbol_fin : Finite BoolPredSymbol := {|
     enum := [
         bool_pred_is;
@@ -67,8 +67,8 @@ Next Obligation.
     destruct x; ltac1:(set_solver).
 Qed.
 Fail Next Obligation.
-
+(* 
 Definition bool_signature : Signature := {|
     FunSymbol := BoolFunSymbol ;
     PredSymbol := BoolPredSymbol ;
-|}.
+|}. *)

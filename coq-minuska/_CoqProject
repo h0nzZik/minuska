@@ -13,14 +13,12 @@ theories/specb.v
 theories/quickchick_setup.v
 
 theories/minuska.v
-theories/string_variables.v
 theories/BuiltinValue.v
 theories/builtins.v
 theories/termoverbov_subst.v
 theories/termoverbov_subst_properties.v
 theories/naive_interpreter.v
 theories/interpreter_results.v
-theories/default_static_model.v
 theories/notations.v
 theories/frontend.v
 theories/dt.v

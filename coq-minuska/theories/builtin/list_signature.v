@@ -15,19 +15,19 @@ Variant ListPredSymbol :=
 | list_is
 .
 
-#[local]
+#[export]
 Instance ListFunSymbol_eqdec : EqDecision ListFunSymbol.
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-#[local]
+#[export]
 Instance ListPredSymbol_eqdec : EqDecision ListPredSymbol.
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-#[local]
+#[export]
 Program Instance ListFunSymbol_fin : Finite ListFunSymbol := {|
     enum := [
         list_nil;
@@ -45,7 +45,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-#[local]
+#[export]
 Program Instance ListPredSymbol_fin : Finite ListPredSymbol := {|
     enum := [
         list_is
@@ -58,8 +58,8 @@ Next Obligation.
     destruct x; ltac1:(set_solver).
 Qed.
 Fail Next Obligation.
-
+(* 
 Definition list_signature : Signature := {|
     FunSymbol := ListFunSymbol ;
     PredSymbol := ListPredSymbol ;
-|}.
+|}. *)

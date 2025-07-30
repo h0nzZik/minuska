@@ -98,7 +98,6 @@ Lemma sat2B_refl
 .
 Proof.
     revert φ.
-    unfold TermOver in *.
     ltac1:(induction t using TermOver_rect); intros φ; destruct φ;
         ltac1:(simp sat2B); ltac1:(simp sat2Bb).
     {
@@ -295,7 +294,6 @@ Lemma sat2E_refl
 .
 Proof.
     revert φ.
-    unfold TermOver in *.
     ltac1:(induction t using TermOver_rect); intros φ; destruct φ;
         ltac1:(simp sat2E); ltac1:(simp sat2Eb).
     {

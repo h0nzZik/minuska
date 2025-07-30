@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     notations
-    default_static_model
     builtins
     properties
 .

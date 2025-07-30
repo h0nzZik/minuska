@@ -15,7 +15,6 @@ Lemma vars_of_to_l2r_of_tob
 .
 Proof.
     unfold TermOverBuiltin_to_TermOverBoV.
-    unfold TermOver_map.
     induction r; simpl.
     { reflexivity. }
     {
@@ -508,7 +507,6 @@ Proof.
         subst s0.
         rewrite Forall_forall in H.
         unfold Valuation2 in *.
-        unfold TermOver in *.
         rewrite vars_of_t_term_e.
         rewrite elem_of_subseteq.
         intros x Hx.
@@ -533,7 +531,6 @@ Proof.
             symmetry in HeqHl0i.
             rewrite lookup_ge_None in HeqHl0i.
             apply lookup_lt_Some in Hi.
-            unfold TermOver in *.
             ltac1:(lia).
         }
     }
@@ -834,7 +831,6 @@ Lemma TermOverExpression2_satisfies_extensive
 .
 Proof.
     revert gt ρ1 ρ2.
-    unfold TermOver in *.
     unfold Valuation2 in *.
     ltac1:(induction t using TermOver_rect; intros gt ρ1 ρ2 Hρ1ρ2).
     {
@@ -1291,7 +1287,7 @@ Proof.
         intros.
         eapply TermOverExpression2_satisfies_extensive>[|eapply H].
         {
-            unfold TermOver, Valuation2 in *.
+            unfold Valuation2 in *.
             ltac1:(rewrite map_subseteq_spec).
             intros i0 x Hx.
             rewrite map_lookup_filter in Hx.
@@ -1334,7 +1330,6 @@ Lemma TermOverBoV_satisfies_extensive
 .
 Proof.
     revert gt ρ1 ρ2.
-    unfold TermOver in *.
     unfold Valuation2 in *.
     ltac1:(induction t using TermOver_rect; intros gt ρ1 ρ2 Hρ1ρ2).
     {
@@ -1344,7 +1339,6 @@ Proof.
         }
         {
             intros HH.
-            unfold TermOver in *.
             ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
             ltac1:(naive_solver).
         }
@@ -1414,7 +1408,7 @@ Proof.
         intros.
         eapply TermOverBoV_satisfies_extensive>[|eapply H].
         {
-            unfold TermOver, Valuation2 in *.
+            unfold Valuation2 in *.
             ltac1:(rewrite map_subseteq_spec).
             intros i0 x Hx.
             rewrite map_lookup_filter in Hx.
@@ -1951,11 +1945,10 @@ Proof.
         subst l0.
         do 2 (rewrite length_app in H2).
         simpl in H2.
-        unfold TermOver in *.
         assert (length l' = length l) by ltac1:(lia).
         clear H2.
         specialize (H3 (length l) x' x) as H3'.
-        unfold TermOver in *; simpl in *.
+        simpl in *.
         rewrite lookup_app_r in H3'>[|ltac1:(lia)].
         rewrite lookup_app_r in H3'>[|ltac1:(lia)].
         rewrite Nat.sub_diag in H3'.
@@ -2074,11 +2067,10 @@ Proof.
         subst l0.
         do 2 (rewrite length_app in H2).
         simpl in H2.
-        unfold TermOver in *.
         assert (length l' = length l) by ltac1:(lia).
         clear H2.
         specialize (H3 (length l) x' x) as H3'.
-        unfold TermOver in *; simpl in *.
+        simpl in *.
         rewrite lookup_app_r in H3'>[|ltac1:(lia)].
         rewrite lookup_app_r in H3'>[|ltac1:(lia)].
         rewrite Nat.sub_diag in H3'.
@@ -2145,7 +2137,7 @@ Lemma satisfies_TermOverBuiltin_to_TermOverBoV
     sat2B ρ γ (TermOverBuiltin_to_TermOverBoV γ)
 .
 Proof.
-    unfold TermOverBuiltin_to_TermOverBoV, TermOver_map.
+    unfold TermOverBuiltin_to_TermOverBoV.
     ltac1:(induction γ using TermOver_rect).
     {
         unfold TermOverBuiltin_to_TermOverBoV.
@@ -2377,10 +2369,8 @@ Proof.
             f_equal.
             eapply forall_satisfies_inv' with (l := lz)(sz := sz).
             ltac1:(lia).
-            unfold TermOver in *;
-                ltac1:(lia).
-            unfold TermOver in *;
-                ltac1:(lia).
+            ltac1:(lia).
+            ltac1:(lia).
             intros.
             eapply H5.
             apply H0.
@@ -2565,7 +2555,7 @@ Proof.
     {
         apply lookup_ge_None in Hlxi.
         apply lookup_lt_Some in Hi.
-        unfold Valuation2,TermOver in *.
+        unfold Valuation2 in *.
         ltac1:(lia).
     }
 Qed.
@@ -2619,7 +2609,7 @@ Proof.
             }
             {
                 unfold size_of_var_in_val; simpl.
-                unfold Valuation2,TermOver in *.
+                unfold Valuation2 in *.
                 rewrite H1.
                 simpl. reflexivity.
             }
@@ -2642,9 +2632,8 @@ Proof.
                 simpl.
                 unfold delta_in_val. simpl.
                 unfold size_of_var_in_val.
-                unfold Valuation2,TermOver in *.
+                unfold Valuation2 in *.
                 rewrite H1. simpl.
-                unfold TermOver in *.
                 apply f_equal.            
                 simpl. ltac1:(lia).
             }
@@ -2914,7 +2903,7 @@ Lemma satisfies_TermOverBoV_to_TermOverExpr
     sat2B ρ γ φ
 .
 Proof.
-    unfold TermOverBoV_to_TermOverExpr2, TermOver_map.
+    unfold TermOverBoV_to_TermOverExpr2.
     revert γ.
     ltac1:(induction φ using TermOver_rect); intros γ.
     {
@@ -2946,7 +2935,7 @@ Proof.
                     subst; simpl in *;
                     ltac1:(simplify_eq/=).
                 inversion H; subst; clear H.
-                reflexivity.
+                assumption.
             }
         }
     }
@@ -2960,7 +2949,6 @@ Proof.
             ltac1:(simp sat2B).
             split>[reflexivity|].
             rewrite length_map in H2.
-            unfold TermOver in *.
             split>[ltac1:(lia)|].
             intros.
             apply H.
@@ -3025,7 +3013,6 @@ Proof.
         ).
     }
     {
-        unfold TermOver in *.
         intros. subst.
         apply elem_of_list_split in pf'.
         destruct pf' as [l1 [l2 Hl1l2]].
@@ -3083,7 +3070,6 @@ Proof.
         destruct c; ltac1:(simp sat2B in HH).
         { destruct HH. }
         destruct HH as [HH1 [HH2 HH3]].
-        unfold TermOver in *.
         rewrite vars_of_t_term.
         rewrite elem_of_subseteq.
         intros x Hx.
@@ -3103,7 +3089,7 @@ Proof.
         destruct (l0 !! length l1) eqn:Heq.
         {
             specialize (HH3 (length l1) t y).
-            rewrite lookup_app_r in HH3>[|unfold TermOver in *; ltac1:(lia)].
+            rewrite lookup_app_r in HH3>[|ltac1:(lia)].
             rewrite Nat.sub_diag in HH3. simpl in HH3.
             specialize (HH3 erefl Heq).
             specialize (H2 _ _ HH3).
@@ -3113,7 +3099,6 @@ Proof.
         {
             apply lookup_ge_None in Heq.
             rewrite length_app in HH2. simpl in HH2.
-            unfold TermOver in *.
             ltac1:(lia).
         }
     }
@@ -3918,9 +3903,9 @@ Lemma helper_filter
     bf f (ρ : gmap Variabl (@TermOver' TermSymbol BasicValue))
     :
     remembered_vars_of_effect [bf] ## vars_of ρ ->
-    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' (bf :: f)) ρ =
-    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' (f)) ρ ∪
-    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' [bf]) ρ 
+    filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' (bf :: f)) ρ =
+    filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' (f)) ρ ∪
+    filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' [bf]) ρ 
 .
 Proof.
     intros HH.
@@ -3969,9 +3954,9 @@ Lemma helper_filter_2
     {Σ : BackgroundModel}
     x e f (ρ : gmap Variabl (@TermOver' TermSymbol BasicValue))
     :
-    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' ((be_remember x e) :: f)) ρ =
-    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' (f)) (delete x ρ) ∪
-    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of e)  ρ
+    filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' ((be_remember x e) :: f)) ρ =
+    filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' (f)) (delete x ρ) ∪
+    filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of e)  ρ
 .
 Proof.
     (* intros HH. *)

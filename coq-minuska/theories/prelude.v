@@ -1580,3 +1580,81 @@ Proof.
     { ltac1:(contradiction). }
     { assumption. }
 Qed.
+
+
+Class Injection (FromT ToT : Type) := {
+    inject : FromT -> ToT ;
+    inject_inj :: Inj (=) (=) inject ;
+}.
+
+Arguments inject (FromT ToT) {Injection} _.
+
+Definition inj_compose {A B C : Type} (g : Injection B C) (f : Injection A B) := {|
+    inject := compose (@inject _ _ g) (@inject _ _ f) ;
+|}. 
+
+Program Definition inj_id (A : Type) : Injection A A :=
+{| inject := fun x => x; |}
+.
+Fail Next Obligation.
+
+
+Class ReversibleInjection (FromT ToT : Type) := {
+    ri_injection :: Injection FromT ToT ;
+    ri_reverse : ToT -> option FromT ;
+    ri_reverse_pf : forall from,
+        ri_reverse (@inject FromT ToT ri_injection from) = Some from ;
+}.
+
+Program Definition rinj_compose
+    {A B C : Type}
+    (g : ReversibleInjection B C)
+    (f : ReversibleInjection A B)
+:= {|
+    ri_injection := inj_compose (@ri_injection _ _ g) (@ri_injection _ _ f) ;
+    ri_reverse := fun c =>
+        b ← (@ri_reverse _ _ g c);
+        (@ri_reverse _ _ f b)
+|}.
+Next Obligation.
+    intros. simpl.
+    rewrite ri_reverse_pf.
+    simpl.
+    rewrite ri_reverse_pf.
+    reflexivity.
+Qed.
+Fail Next Obligation.
+
+Program Definition rinj_id (A : Type) : ReversibleInjection A A := {|
+    ri_injection := {| inject := fun x => x; |};
+    ri_reverse := fun x => Some x;
+|}.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed.
+Fail Next Obligation.
+
+Program Definition rinj_inl (A B : Type) : ReversibleInjection A (A+B) := {|
+    ri_injection := {| inject := inl; |} ;
+    ri_reverse := fun x => match x with inl x' => Some x' | _ => None end ;
+|}.
+Next Obligation.
+    simpl. intros. ltac1:(discriminate).
+Qed.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed.
+Fail Next Obligation.
+
+Program Definition rinj_inr (A B : Type) : ReversibleInjection B (A+B) := {|
+    ri_injection := {| inject := inr; |} ;
+    ri_reverse := fun x => match x with inr x' => Some x' | _ => None end ;
+|}.
+Next Obligation.
+    simpl. intros. ltac1:(discriminate).
+Qed.
+Next Obligation.
+    intros. simpl. reflexivity.
+Qed.
+Fail Next Obligation.
+

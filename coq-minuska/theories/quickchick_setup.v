@@ -3,7 +3,6 @@ From Minuska Require Import
     prelude
     spec
     specb
-    default_static_model
     builtin.int_signature
     builtin.int_model
     pi.trivial
