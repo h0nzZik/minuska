@@ -49,6 +49,10 @@ Program Definition small_model_of_relaxed
 .
 Fail Next Obligation.
 
+Arguments small_model_of_relaxed
+  {Vdeps Vours NV Sy Fs Ps} rva
+.
+
 (* TODO generalize such that we can rename term symbols also *)
 Definition va_reduction
     {BV Ts : Type}
@@ -85,6 +89,22 @@ Definition va_reduction
 |}.
 
 Section sum.
+(* 
+
+
+    Definition valuealgebra_sum
+        {Var HV As Ms Qs Hps  : Type}
+        {A_Ts A_Fs A_Ps A_BV A_NV : Type}
+        {B_Ts B_Fs B_Ps B_BV B_NV : Type}
+        (a : ValueAlgebra A_BV A_NV A_Ts A_Fs A_Ps)
+        (b : ValueAlgebra B_BV B_NV B_Ts B_Fs B_Ps)
+        : ValueAlgebra A_BV A_NV A_Ts A_Fs A_Ps
+    :
+        ModelOver (signature_sum s1 s2) NV Carrier
+    := {|
+        builtin_function_interp :=  function_interp_sum s1 s2 NV Carrier m1 m2;
+        builtin_predicate_interp :=  predicate_interp_sum s1 s2 NV Carrier m1 m2;
+    |}.
 
     Definition signature_sum (s1 s2 : Signature) : Signature := {|
         FunSymbol := sum (FunSymbol s1) (FunSymbol s2) ;
@@ -244,11 +264,11 @@ Section sum.
         unfold model_reduction.
         destruct m2; simpl in *.
         f_equal.
-    Qed.
+    Qed. *)
 
 
 End sum.
-
+(* 
 Definition modelover_nv_lift 
     {TermSymbol : Type}
     {TermSymbols : Symbols TermSymbol}
@@ -266,7 +286,7 @@ Definition modelover_nv_lift
     builtin_predicate_interp :=
         fun p nv args => @builtin_predicate_interp _ _ _ _ _ m p (nvf nv) args
     ;
-|}.
+|}. *)
 
 (* 
 Definition modelover_carrier_lift 

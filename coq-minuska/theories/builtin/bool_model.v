@@ -3,14 +3,12 @@ From Minuska Require Import
     spec
     bool_signature
     model_algebra
-    (* model_functor *)
 .
 
-Definition bool_carrier := bool.
+(* Definition bool_carrier := bool. *)
 
 Definition bool_function_interp
     {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     (Carrier : Type)
     {Cbool : Injection bool Carrier}
@@ -80,7 +78,6 @@ Definition bool_function_interp
 
 Definition bool_predicate_interp
     {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     (Carrier : Type)
     (asb : Carrier -> option bool)
@@ -124,41 +121,28 @@ Definition bool_predicate_interp
     end
 .
 
-Definition bool_model_over
+Definition bool_relaxed_va
     (TermSymbol : Type)
-    (TermSymbols : Symbols TermSymbol)
-    (NondetValue : Type)
-    (Carrier : Type)
-    (Cbool : Injection bool Carrier)
-    (asb : Carrier -> option bool)
-    :
-    @ModelOver TermSymbol TermSymbols bool_signature NondetValue Carrier
-:= {|
-    builtin_function_interp := fun (f : @FunSymbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
-    builtin_predicate_interp := fun (p : @PredSymbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
-|}.
-
-Definition bool_relaxed_model
-    (TermSymbol : Type)
-    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
     :
-    RelaxedModel bool_signature NondetValue void
+    RelaxedValueAlgebra void bool NondetValue TermSymbol bool_signature.BoolFunSymbol bool_signature.BoolPredSymbol
 := {|
-    rm_carrier := bool_carrier ;
-    rm_model_over :=
+    rva_over :=
         fun (Carrier : Type)
             (inja : Injection void Carrier)
-            (injb : ReversibleInjection bool_carrier Carrier)
-            => bool_model_over TermSymbol TermSymbols NondetValue Carrier
-                (@ri_injection _ _ injb)
-                (@ri_reverse _ _ injb)
+            (injb : ReversibleInjection bool Carrier)
+            => {|
+                builtin_function_interp := fun (f : BoolFunSymbol) =>
+                    bool_function_interp NondetValue Carrier (injb.(ri_reverse)) f; 
+                builtin_predicate_interp := fun (p : BoolPredSymbol) =>
+                    bool_predicate_interp NondetValue Carrier (injb.(ri_reverse)) p; 
+            |}
+    ;
 |}.
 
-Definition bool_model
+Definition bool_va
     (TermSymbol : Type)
-    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
 :=
-    model_of_relaxed (bool_relaxed_model TermSymbol TermSymbols NondetValue)
+    small_model_of_relaxed (bool_relaxed_va TermSymbol NondetValue)
 .
