@@ -5,7 +5,7 @@ open Util
 open Pluginbase
 
 
-type ('b, 'c, 'd, 'builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI =
+type ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI =
   {
     signature         : (Extracted.signature) ;
     hidden_signature  : (Extracted.hiddenSignature) ;
@@ -13,8 +13,8 @@ type ('b, 'c, 'd, 'builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSke
     hidden_algebra    : ((string, 'c) Extracted.hiddenModel) ;
     program_info      : ((string, 'd) Extracted.programInfo) ;
     static_model      : (Extracted.staticModel) ;
-    builtin_inject    : (builtin_repr -> 'builtin) ;
-    builtin_eject     : ('builtin -> builtin_repr ) ;
+    builtin_inject    : (builtin_repr -> 'builtin1) ;
+    builtin_eject     : ('builtin2 -> builtin_repr ) ;
     (* builtin_coq_quote : builtin_repr -> string ; *)
     bindings          : (string -> ('pred,'hpred,'func,'attr,'query,'meth) Extracted.symbolInfo) ;
   }
@@ -138,7 +138,7 @@ let empty_interface = (
 let rec convert_groundterm
   (builtin_inject : builtin_repr -> 'builtin)
   (g : Syntax.groundterm)
-  : ((string, 'builtin) Extracted.termOver') =
+  : ((string, 'builtin2) Extracted.termOver') =
   match g with
   | `GTb b ->
     Extracted.T_over (builtin_inject b)
@@ -153,7 +153,7 @@ let wrap_init0 : ((string, 'builtin) Extracted.termOver') =
   
 let rec show_groundterm
   (builtin_eject : 'builtin -> builtin_repr)
-  (g : (string, 'builtin) Extracted.termOver')
+  (g : (string, 'builtin2) Extracted.termOver')
   : string =
   match g with
   | Extracted.T_over b ->
@@ -208,7 +208,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (iface : ('b, 'c, 'd, 'builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
+  (iface : ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'programT)
   (step :
     'programT ->
@@ -262,8 +262,8 @@ let command_run
                   )
               )
             ) in
-            let actual_step : ((((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'b) option) = (fst my_step) in
-            let show_log : 'b list -> string = (fst (snd my_step)) in
+            let actual_step : ((((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'bb) option) = (fst my_step) in
+            let show_log : 'bb list -> string = (fst (snd my_step)) in
             let initial_log = (snd (snd my_step)) in
             let (initial_h : 'hidden_data) = iface.hidden_algebra.hidden_init in
             let res0 = run_n_steps actual_step show_log initial_log depth 0 wrap_init0 initial_h in
@@ -285,7 +285,7 @@ let command_run
     )
 
 let main0
-  (iface : ('b, 'c, 'd, 'builtin0,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
+  (iface : ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> (((string, 'a) Extracted.termOver')*'hidden_data) -> (((string, 'a) Extracted.termOver')*'hidden_data) option)
   (step_ext : 'programT -> (((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*int) option)
@@ -301,27 +301,8 @@ let main0
       )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
-(* let somethi : 'a = 5 *)
-(* 
-let wrap_interpreter builtin_inject interpreter :
-  'programT ->
-  ((string, 'builtin) Extracted.termOver') ->
-  ((string, 'builtin) Extracted.termOver') option
-  =
-  (fun (a : 'programT) (b : ((string, 'builtin) Extracted.termOver')) -> (*Stdlib.Obj.magic*) (interpreter ((*Stdlib.Obj.magic*) (convert_groundterm builtin_inject a)) ((*Stdlib.Obj.magic*) b)))
-
-let wrap_interpreter_ext builtin_inject interpreter_ext =
-  (fun a b -> 
-    let r = Stdlib.Obj.magic (interpreter_ext (Stdlib.Obj.magic (convert_groundterm builtin_inject a)) (Stdlib.Obj.magic b)) in
-    match r with
-    | Some v ->
-      Some ((fst v), (Z.to_int (snd v)))
-    | None -> None
-  ) *)
-
-
 let main
-      (iface : ('b, 'c, 'd, 'builtin,'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
+      (iface : ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
@@ -329,7 +310,7 @@ let main
   let r : Extracted.realization = {
     realize_br = (fun (br : Extracted.builtinRepr) : 'builtin option ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
-      Some (iface.builtin_inject br')
+      Some (Obj.magic (iface.builtin_inject br'))
     );
     string2sym = (fun (x : string) -> Obj.magic x);
     string2var = (fun (x : string) -> Obj.magic x);
