@@ -46,108 +46,17 @@ Section custom_induction_principle.
 
 End custom_induction_principle.
 
-Class MVariables (variable : Type) := {
+(* Class MVariables (variable : Type) := {
     variable_eqdec :: EqDecision variable ;
     variable_countable :: Countable variable ;
     variable_infinite :: Infinite variable ;
+}. *)
+
+Class EDC (T : Type) := {
+    edc_eqdec :: EqDecision T;
+    edc_count :: Countable T;
 }.
 
-Class Symbols (symbol : Type) := {
-    symbol_eqdec :: EqDecision symbol ;
-    symbol_countable :: Countable symbol ;
-}.
-
-(* TODO FunctionSymbol and PredicateSymbol *)
-Class Signature := {
-    FunctionSymbol
-        : Type ;
-    FunctionSymbol_eqdec
-        :: EqDecision FunctionSymbol ;
-    FunctionSymbol_countable
-        :: Countable FunctionSymbol ;
-
-    PredicateSymbol
-        : Type ;
-    PredicateSymbol_eqdec
-        :: EqDecision PredicateSymbol ;
-    PredicateSymbol_countable
-        :: Countable PredicateSymbol ;
-}.
-
-Class HiddenSignature := {
-    AttributeSymbol : Type;
-    AttributeSymbol_eqdec :: EqDecision AttributeSymbol ;
-    AttributeSymbol_countable :: Countable AttributeSymbol ;
-
-    MethodSymbol : Type ;
-    MethodSymbol_eqdec :: EqDecision MethodSymbol ;
-    MethodSymbol_countable :: Countable MethodSymbol ;
-
-    HiddenPredicateSymbol : Type ;
-    HiddenPredicateSymbol_eqdec :: EqDecision HiddenPredicateSymbol;
-    HiddenPredicateSymbol_countable :: Countable HiddenPredicateSymbol;
-}.
-
-Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
-    builtin_function_interp
-        : FunctionSymbol
-        -> NondetValue
-        -> list (@TermOver' symbol Carrier)
-        -> option (@TermOver' symbol Carrier) ;
-        
-    builtin_predicate_interp
-        : PredicateSymbol
-        -> NondetValue
-        -> list (@TermOver' symbol Carrier)
-        -> option bool ;    
-}.
-
-Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
-    builtin_value
-        : Type ;
-
-    builtin_value_eqdec
-        :: EqDecision builtin_value ;
-
-    builtin_value_countable
-        :: Countable builtin_value ;
-
-    builtin_model_over :: ModelOver signature NondetValue builtin_value ;
-}.
-
-
-Class HiddenModel
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    (signature : Signature)
-    (hidden_signature : HiddenSignature)
-    {NondetValue : Type}
-    (M : Model signature NondetValue)
-    :=
-{
-    hidden_data : Type ;
-    
-    attribute_interpretation :
-        AttributeSymbol ->
-        hidden_data ->
-        list (@TermOver' symbol builtin_value) ->
-        option builtin_value ;
-    
-
-    method_interpretation:
-        MethodSymbol ->
-        hidden_data ->
-        list (@TermOver' symbol builtin_value) ->
-        option hidden_data ;
-
-    hidden_predicate_interpretation :
-        HiddenPredicateSymbol ->
-        hidden_data ->
-        list (@TermOver' symbol builtin_value) ->
-        option bool ;
-
-    hidden_init : hidden_data ;
-}.
 
 
 Set Primitive Projections.
@@ -156,40 +65,121 @@ CoInductive Stream (A : Type) : Type := Seq {
     tl : Stream A ;
 }.
 
-Class ProgramInfo
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    {NondetValue : Type}
-    {signature : Signature}
-    {builtin : Model signature NondetValue}
-    : Type
-    := {
+
+Class BasicTypes := {
+    Variabl     : Type ; (* Would be [Variable] but that is a keyword in Rocq. *)
+    TermSymbol  : Type ;
+    FunSymbol   : Type ;
+    PredSymbol  : Type ;
+    HPredSymbol : Type ;
+    AttrSymbol  : Type ;
+    MethSymbol  : Type ;
     QuerySymbol : Type ;
-    QuerySymbol_eqdec :: EqDecision QuerySymbol ;
-    QuerySymbol_countable :: Countable QuerySymbol ;
-
-    ProgramT : Type ;
-    pi_symbol_interp :
-        ProgramT -> 
-        QuerySymbol -> 
-        list (@TermOver' symbol builtin_value) ->
-        option (@TermOver' symbol builtin_value) ;
-}.
-
-Class StaticModel := mkStaticModel {
-    symbol : Type ;
-    variable : Type ;
-    symbols :: Symbols symbol ;
+    BasicValue  : Type ;
+    HiddenValue : Type ;
     NondetValue : Type ;
-    signature :: Signature ;
-    hidden_signature :: HiddenSignature ;
-    builtin :: Model signature NondetValue;
-    hidden :: HiddenModel signature hidden_signature builtin ;
-    variables :: MVariables variable ;
-    program_info :: ProgramInfo ;
-    nondet_gen : nat -> NondetValue ;
-    (* nondet_stream : Stream NondetValue ; *)
+    ProgramType : Type ;
 }.
+
+Class BasicTypesEDC (basic_types : BasicTypes) := {
+    Variabl_edc :: EDC basic_types.(Variabl) ;
+    FunSymbol_edc :: EDC basic_types.(FunSymbol) ;
+    PredSymbol_edc :: EDC basic_types.(PredSymbol) ;
+    HPredSymbol_edc :: EDC basic_types.(HPredSymbol) ;
+    AttrSymbol_edc :: EDC basic_types.(AttrSymbol) ;
+    MethSymbol_edc :: EDC basic_types.(MethSymbol) ;
+    QuerySymbol_edc :: EDC basic_types.(QuerySymbol) ;
+    BasicValue_edc :: EDC basic_types.(BasicValue) ;
+    HiddenValue_edc :: EDC basic_types.(HiddenValue) ;
+    NondetValue_edc :: EDC basic_types.(NondetValue) ;
+}.
+
+Class ValueAlgebra
+    (V NV : Type)
+    (Sy Fs Ps : Type)
+     := {        
+    builtin_function_interp
+        : Fs
+        -> NV
+        -> list (@TermOver' Sy V)
+        -> option (@TermOver' Sy V) ;
+        
+    builtin_predicate_interp
+        : Ps
+        -> NV
+        -> list (@TermOver' Sy V)
+        -> option bool ;    
+}.
+
+Class HiddenAlgebra
+    (HD V NV : Type)
+    (Sy As Ms HPs : Type)
+:= {
+    attribute_interpretation :
+        As ->
+        HD ->
+        list (@TermOver' Sy V) ->
+        option V ;
+    
+
+    method_interpretation:
+        Ms ->
+        HD ->
+        list (@TermOver' Sy V) ->
+        option HD ;
+
+    hidden_predicate_interpretation :
+        HPs ->
+        HD ->
+        list (@TermOver' Sy V) ->
+        option bool ;
+
+    hidden_init : HD ;
+}.
+
+
+Class ProgramInfo
+    (PT BVal : Type)
+    (Sy Qs : Type )
+    : Type
+:= {
+    pi_symbol_interp :
+        PT -> 
+        Qs -> 
+        list (@TermOver' Sy BVal) ->
+        option (@TermOver' Sy BVal) ;
+}.
+
+Class BackgroundModelOver
+    (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
+:= {
+    value_algebra :: ValueAlgebra BVal NdVal Sy Fs Ps;
+    hidden_algebra :: HiddenAlgebra HVal BVal NdVal Sy As Ms HPs ;
+    program_info :: ProgramInfo PT BVal Sy Qs;
+}.
+
+Class BackgroundModel := {
+    basic_types :: BasicTypes ;
+    basic_types_edc :: BasicTypesEDC basic_types ;
+  
+    background_model_over :: BackgroundModelOver 
+        basic_types.(BasicValue)
+        basic_types.(HiddenValue)
+        basic_types.(NondetValue)
+        basic_types.(Variabl)
+        basic_types.(TermSymbol)
+        basic_types.(FunSymbol)
+        basic_types.(PredSymbol)
+        basic_types.(AttrSymbol)
+        basic_types.(MethSymbol)
+        basic_types.(QuerySymbol)
+        basic_types.(HPredSymbol)
+        basic_types.(ProgramType)
+    ;
+
+    nondet_gen : nat -> basic_types.(NondetValue) ;
+}.
+
 
 (* A class for querying variables of syntactic constructs. *)
 Class VarsOf
@@ -206,8 +196,8 @@ Arguments vars_of : simpl never.
 
 #[export]
 Instance VarsOf_symbol
-    {Σ : StaticModel}
-    : VarsOf symbol variable
+    {Σ : BackgroundModel}
+    : VarsOf TermSymbol Variabl
 := {|
     vars_of := fun _ => ∅ ; 
 |}.

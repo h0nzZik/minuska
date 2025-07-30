@@ -169,3 +169,18 @@ Definition global_naive_interpreter_sound
     :=
     @naive_interpreter_sound (DSM mysignature hiddensignature β hiddenβ program_info) Label
 .
+(* 
+Definition poly_naive_interpreter_ext
+    (Bu Hd Ps HPs Fs As Qs Ms : Type)
+    (e : (@TermOver' string Bu)*(Hd))
+    : option (((@TermOver' string Bu)*(Hd))*nat)
+:=
+    let Sy : Type := string in
+    let Va : Type := string in
+    let mysignature := {|
+        FunctionSymbol := Fs;    
+    |} in
+    mysignature
+    (* let SM := 0 in
+    0 *)
+. *)

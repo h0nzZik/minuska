@@ -5,16 +5,16 @@ open Util
 open Pluginbase
 
 
-type ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI =
+type ('b, 'builtin, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI =
   {
     signature         : (Extracted.signature) ;
     hidden_signature  : (Extracted.hiddenSignature) ;
     value_algebra     : ((string, 'b) Extracted.model) ;
-    hidden_algebra    : ((string, 'c) Extracted.hiddenModel) ;
-    program_info      : ((string, 'd) Extracted.programInfo) ;
+    hidden_algebra    : ((string, 'b) Extracted.hiddenModel) ;
+    program_info      : ((string, 'b) Extracted.programInfo) ;
     static_model      : (Extracted.staticModel) ;
-    builtin_inject    : (builtin_repr -> 'builtin1) ;
-    builtin_eject     : ('builtin2 -> builtin_repr ) ;
+    builtin_inject    : (builtin_repr -> 'builtin) ;
+    builtin_eject     : ('builtin -> builtin_repr ) ;
     (* builtin_coq_quote : builtin_repr -> string ; *)
     bindings          : (string -> ('pred,'hpred,'func,'attr,'query,'meth) Extracted.symbolInfo) ;
   }
@@ -34,7 +34,7 @@ let klike_builtin_inject (b : builtin_repr) : 'string Extracted.builtinValue0 =
 
 let klike_builtin_eject (b : string Extracted.builtinValue0) : builtin_repr =
   match b with
-  | Extracted.Bv_Z z -> (({br_kind="int"; br_value=(Z.to_string z);}))
+  | Extracted.Bv_Z z -> (({br_kind="int"; br_value="???"; (*br_value=(Z.to_string z);*)}))
   | Extracted.Bv_bool b' -> (({br_kind="bool"; br_value=(if b' then "true" else "false");}))
   | Extracted.Bv_str s -> ((({br_kind="string"; br_value=s};)))
   | Extracted.Bv_list _ -> ({br_kind="list"; br_value="_"})
@@ -208,7 +208,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (iface : ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
+  (iface : ('b, 'builtin, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'programT)
   (step :
     'programT ->
@@ -285,7 +285,7 @@ let command_run
     )
 
 let main0
-  (iface : ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
+  (iface : ('b, 'builtin, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'programT)
   (step : 'programT -> (((string, 'a) Extracted.termOver')*'hidden_data) -> (((string, 'a) Extracted.termOver')*'hidden_data) option)
   (step_ext : 'programT -> (((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*int) option)
@@ -302,35 +302,35 @@ let main0
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 let main
-      (iface : ('b, 'c, 'd, 'builtin1, 'builtin2, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
+      (iface : ('b, 'builtin, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
       =
-  let r : Extracted.realization = {
+  let r : ('builtin, string, string, 'pred, 'hpred, 'func, 'attr, 'query, 'meth) Extracted.realization = {
     realize_br = (fun (br : Extracted.builtinRepr) : 'builtin option ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
       Some (Obj.magic (iface.builtin_inject br'))
     );
-    string2sym = (fun (x : string) -> Obj.magic x);
-    string2var = (fun (x : string) -> Obj.magic x);
+    string2sym = (fun (x : string) -> x);
+    string2var = (fun (x : string) -> x);
     string2m = (fun (x : string) (*: 'meth option*) ->
       match iface.bindings x with
-      | Extracted.Si_method m -> Some (Obj.magic m)
+      | Extracted.Si_method m -> Some (m)
       | _ -> None
     );
     string2p = (fun (x : string) (*('pred, 'hpred) Extracted.sum option*)  ->
       match iface.bindings x with
-      | Extracted.Si_predicate p -> Some (Extracted.Inl (Obj.magic p))
-      | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr (Obj.magic p))
+      | Extracted.Si_predicate p -> Some (Extracted.Inl (p))
+      | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr (p))
       | _ -> None
     );
 
     string2qfa = (fun (x : string) (*(('query,'func) Extracted.sum, 'attr) Extracted.sum option*) ->
       match iface.bindings x with
-      | Si_attribute a -> Some (Extracted.Inr (Obj.magic a))
-      | Si_query q -> Some (Extracted.Inl (Extracted.Inl (Obj.magic q)))
-      | Si_function f -> Some (Extracted.Inl (Extracted.Inr (Obj.magic f)))
+      | Si_attribute a -> Some (Extracted.Inr (a))
+      | Si_query q -> Some (Extracted.Inl (Extracted.Inl (q)))
+      | Si_function f -> Some (Extracted.Inl (Extracted.Inr (f)))
       | _ -> None
     );
   } in
@@ -339,7 +339,7 @@ let main
   | Extracted.Inl(st) -> (
     match (Extracted.top_frontend_to_thy st) with
     | (thy, dbg) -> (
-      match (Extracted.top_frontend_realize_thy iface.static_model r thy) with
+      match (Extracted.top_frontend_realize_thy iface.static_model (Obj.magic r) thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
       | Extracted.Inl thy2 -> (
         let is_valid_dec = Extracted.top_thy_wf iface.static_model thy2 in
@@ -359,7 +359,7 @@ let main
           )
         ) in
         let ext_interpreter : 'programT -> (((string, 'blt) Extracted.termOver')*'hidden_data) -> ((((string, 'blt) Extracted.termOver')*'hidden_data)*int) option = (
-          Obj.magic (Extracted.top_naive_interpreter_ext 
+          (*Obj.magic*) (Extracted.top_naive_interpreter_ext 
             iface.signature 
             iface.hidden_signature
             iface.value_algebra
