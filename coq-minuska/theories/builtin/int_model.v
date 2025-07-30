@@ -130,8 +130,8 @@ Program Definition int_model_over
     :
     @ModelOver symbol symbols int_signature NondetValue Carrier
 := {|
-    builtin_function_interp := fun (f : @builtin_function_symbol int_signature) => int_function_interp NondetValue Carrier asi f;
-    builtin_predicate_interp := fun (p : @builtin_predicate_symbol int_signature) => int_predicate_interp NondetValue Carrier asi p;
+    builtin_function_interp := fun (f : @FunctionSymbol int_signature) => int_function_interp NondetValue Carrier asi f;
+    builtin_predicate_interp := fun (p : @PredicateSymbol int_signature) => int_predicate_interp NondetValue Carrier asi p;
 |}.
 
 Definition int_relaxed_model

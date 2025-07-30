@@ -134,8 +134,8 @@ Definition bool_model_over
     :
     @ModelOver symbol symbols bool_signature NondetValue Carrier
 := {|
-    builtin_function_interp := fun (f : @builtin_function_symbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
-    builtin_predicate_interp := fun (p : @builtin_predicate_symbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
+    builtin_function_interp := fun (f : @FunctionSymbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
+    builtin_predicate_interp := fun (p : @PredicateSymbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
 |}.
 
 Definition bool_relaxed_model
