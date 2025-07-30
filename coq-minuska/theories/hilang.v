@@ -58,20 +58,9 @@ Proof.
     abstract(intros x; cases (); ltac1:(simplify_eq/=); reflexivity).
 Defined.
 
-#[local]
-Instance ExtendedSymbols_Symbols
-    (TermSymbol : Type)
-    {_Sym : Symbols TermSymbol}
-:
-    Symbols (@ExtendedSymbols TermSymbol)
-:= {|
-    TermSymbol_eqdec := _ ;
-    TermSymbol_countable := _ ;
-|}.
-
 Fixpoint extend_term
     (Σ : BackgroundModel)
-    (t : @TermOver Σ BasicValue)
+    (t : @TermOver' TermSymbol BasicValue)
     :
     @TermOver' (@ExtendedSymbols TermSymbol) BasicValue
 :=
@@ -85,7 +74,7 @@ Fixpoint contract_term
     (Σ : BackgroundModel)
     (t : @TermOver' (@ExtendedSymbols TermSymbol) BasicValue)
 :
-    option (@TermOver Σ BasicValue)
+    option (@TermOver' TermSymbol BasicValue)
 :=
     match t with
     | t_over bv => Some (t_over bv)
@@ -98,7 +87,7 @@ Fixpoint contract_term
 
 Lemma contract_extend_term
     (Σ : BackgroundModel)
-    (t : @TermOver Σ BasicValue)
+    (t : @TermOver' TermSymbol BasicValue)
     :
     contract_term Σ (extend_term Σ t) = Some t
 .
@@ -131,60 +120,80 @@ Proof.
     }
 Qed.
 
-Definition ExtendedModel (Σ : BackgroundModel)
-: @Model (@ExtendedSymbols (Σ.(TermSymbol))) _ (Σ.(signature)) (Σ.(NondetValue))
-:= {|
-    BasicValue := Σ.(builtin).(BasicValue) ;
-    builtin_model_over := {|
-        builtin_function_interp := fun f nd args =>
-            let args' : (option (list (@TermOver Σ BasicValue))) := list_collect (contract_term Σ <$> args) in
-            args'' ← args';
-            r ← Σ.(builtin).(builtin_model_over).(builtin_function_interp) f nd args'';
-            Some (extend_term Σ r)
+Definition ExtendedBM (Σ : BackgroundModel) : BackgroundModel :=
+let bt := {|
+        TermSymbol := @ExtendedSymbols (Σ.(basic_types).(TermSymbol)) ;
+        NondetValue := Σ.(basic_types).(NondetValue) ;
+        Variabl := Σ.(basic_types).(Variabl) ;
+        FunSymbol := Σ.(basic_types).(FunSymbol) ;
+        PredSymbol := Σ.(basic_types).(PredSymbol) ;
+        HiddenValue := Σ.(basic_types).(HiddenValue) ;
+        QuerySymbol := Σ.(basic_types).(QuerySymbol) ;
+        ProgramT := Σ.(basic_types).(ProgramT) ;
+    |}
+in
+{|
+    basic_types := bt;
+    basic_types_properties := Build_BasicTypesProperties
+        bt
+        (Σ.(basic_types_properties).(Variabl_edc))
+        ({|
+            edc_eqdec := ExtendedSymbols_eqdec _ ;
+            edc_count := ExtendedSymbols_countable _ ;
+        |})
+        (Σ.(basic_types_properties).(FunSymbol_edc))
+        (Σ.(basic_types_properties).(PredSymbol_edc))
+        (Σ.(basic_types_properties).(HPredSymbol_edc))
+        (Σ.(basic_types_properties).(AttrSymbol_edc))
+        (Σ.(basic_types_properties).(MethSymbol_edc))
+        (Σ.(basic_types_properties).(QuerySymbol_edc))
+        (Σ.(basic_types_properties).(BasicValue_edc))
+        (Σ.(basic_types_properties).(HiddenValue_edc))
+        (Σ.(basic_types_properties).(NondetValue_edc))
+        (Σ.(basic_types_properties).(Variable_inf))
         ;
-        builtin_predicate_interp := fun p nd args =>
-        args' ← list_collect (contract_term Σ <$> args);
-            Σ.(builtin).(builtin_model_over).(builtin_predicate_interp) p nd args'
-        ;
-    |};
-|}.
-
-Definition ExtendedSM (Σ : BackgroundModel) : BackgroundModel := {|
-    TermSymbol := @ExtendedSymbols (Σ.(TermSymbol)) ;
-    TermSymbols := ExtendedSymbols_Symbols (Σ.(TermSymbol)) ;
-    NondetValue := Σ.(NondetValue) ;
-    signature := Σ.(signature) ;
-    builtin := ExtendedModel Σ ;
-    program_info := {|
-        QuerySymbol := Σ.(program_info).(QuerySymbol) ;
-        ProgramT := Σ.(program_info).(ProgramT) ;
-        pi_TermSymbol_interp := fun program q args =>
-            args'' ← list_collect (contract_term Σ <$> args);
-            r ← Σ.(program_info).(pi_TermSymbol_interp) program q args'';
-            (* None *)
-            Some (extend_term Σ r)
+    background_model_over := {|
+        program_info := {|
+            pi_TermSymbol_interp := fun program q args =>
+                args'' ← list_collect (contract_term Σ <$> args);
+                r ← Σ.(background_model_over).(program_info).(pi_TermSymbol_interp) program q args'';
+                (* None *)
+                Some (extend_term Σ r)
+                ;
+        |} ;
+        value_algebra := {|
+            builtin_function_interp := fun f nd args =>
+                let args' : (option (list (@TermOver' TermSymbol BasicValue))) := list_collect (contract_term Σ <$> args) in
+                args'' ← args';
+                r ← Σ.(background_model_over).(value_algebra).(builtin_function_interp) f nd args'';
+                Some (extend_term Σ r)
             ;
-    |} ;
-    hidden := {|
-        HiddenValue := Σ.(hidden).(HiddenValue) ;
-        attribute_interpretation := fun a h args =>
-            args'' ← list_collect (contract_term Σ <$> args);
-            r ← Σ.(hidden).(attribute_interpretation) a h args'';
-            Some (r)
-        ;
-        method_interpretation := fun m h args =>
-            args'' ← list_collect (contract_term Σ <$> args);
-            r ← Σ.(hidden).(method_interpretation) m h args'';
-            Some (r)
-        ;
-        hidden_predicate_interpretation := fun p h args =>
-            args'' ← list_collect (contract_term Σ <$> args);
-            r ← Σ.(hidden).(hidden_predicate_interpretation) p h args'';
-            Some (r)
-        ;
-        hidden_init := Σ.(hidden).(hidden_init) ;
+            builtin_predicate_interp := fun p nd args =>
+            args' ← list_collect (contract_term Σ <$> args);
+                Σ.(background_model_over).(value_algebra).(builtin_predicate_interp) p nd args'
+            ;
+        |};
+        hidden_algebra := {|
+            
+            attribute_interpretation := fun a h args =>
+                args'' ← list_collect (contract_term Σ <$> args);
+                r ← Σ.(background_model_over).(hidden_algebra).(attribute_interpretation) a h args'';
+                Some (r)
+            ;
+            method_interpretation := fun m h args =>
+                args'' ← list_collect (contract_term Σ <$> args);
+                r ← Σ.(background_model_over).(hidden_algebra).(method_interpretation) m h args'';
+                Some (r)
+            ;
+            hidden_predicate_interpretation := fun p h args =>
+                args'' ← list_collect (contract_term Σ <$> args);
+                r ← Σ.(background_model_over).(hidden_algebra).(hidden_predicate_interpretation) p h args'';
+                Some (r)
+            ;
+            hidden_init := Σ.(background_model_over).(hidden_algebra).(hidden_init) ;
+        |};
+        nondet_gen := Σ.(background_model_over).(nondet_gen) ;
     |};
-    nondet_gen := Σ.(nondet_gen) ;
 |}.
 
 
@@ -201,7 +210,7 @@ Fixpoint ctx_subst
     (c : Context_)
     (p : @TermOver' TermSymbol BuiltinOrVar)
     :
-    TermOver BuiltinOrVar
+    @TermOver' TermSymbol BuiltinOrVar
 :=
     match c with
     | ctx_hole => p
@@ -212,8 +221,8 @@ Fixpoint ctx_subst
 Inductive collapses_to
     (Σ : BackgroundModel)
     :
-    (@TermOver (ExtendedSM Σ) BasicValue) ->
-    (@TermOver Σ BasicValue) ->
+    (@TermOver' (ExtendedBM Σ).(basic_types).(TermSymbol) BasicValue) ->
+    (@TermOver' Σ.(basic_types).(TermSymbol) BasicValue) ->
     Type
 :=
 | cto_base:
