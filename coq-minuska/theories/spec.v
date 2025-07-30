@@ -81,8 +81,8 @@ Class BasicTypes := Build_BasicTypes {
     ProgramT    : Type ;
 }.
 
-Class BasicTypesEDC (basic_types : BasicTypes)
-:= Build_BasicTypesEDC {
+Class BasicTypesProperties (basic_types : BasicTypes)
+:= Build_BasicTypesProperties {
     Variabl_edc :: EDC basic_types.(Variabl) ;
     TermSymbol_edc :: EDC basic_types.(TermSymbol) ;
     FunSymbol_edc :: EDC basic_types.(FunSymbol) ;
@@ -94,6 +94,8 @@ Class BasicTypesEDC (basic_types : BasicTypes)
     BasicValue_edc :: EDC basic_types.(BasicValue) ;
     HiddenValue_edc :: EDC basic_types.(HiddenValue) ;
     NondetValue_edc :: EDC basic_types.(NondetValue) ;
+
+    Variable_inf :: Infinite basic_types.(Variabl) ;
 }.
 
 Class ValueAlgebra
@@ -163,7 +165,7 @@ Class BackgroundModelOver
 
 Class BackgroundModel := Build_BackgroundModel {
     basic_types :: BasicTypes ;
-    basic_types_edc :: BasicTypesEDC basic_types ;
+    basic_types_properties :: BasicTypesProperties basic_types ;
   
     background_model_over :: BackgroundModelOver 
         basic_types.(BasicValue)

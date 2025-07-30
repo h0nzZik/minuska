@@ -13,7 +13,7 @@ Definition Σ1 : BackgroundModel := {|
         TermSymbol := string ;
         FunSymbol := _ ;
     |};
-    basic_types_edc := {|
+    basic_types_properties := {|
         Variabl_edc := {|
             edc_eqdec := _ ;
             edc_count := _ ;

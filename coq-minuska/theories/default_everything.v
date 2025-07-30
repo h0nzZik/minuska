@@ -140,12 +140,13 @@ Definition framed_rule
         cond default_label)))
 .
 
-Definition poly_naive_interpreter
+Definition BasicTypesProperties
     (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
     (_EBBVal : EDC BVal)
     (_EBHVal : EDC HVal)
     (_EBNdVal : EDC NdVal)
     (_EBVar : EDC Var)
+    (_IFVar : Infinite Var)
     (_EBSy : EDC Sy)
     (_EBFs : EDC Fs)
     (_EBPs : EDC Ps)
@@ -161,17 +162,18 @@ Definition poly_naive_interpreter
     : option ((@TermOver' Sy BVal)*HVal)
 :=
     let basic_types := Build_BasicTypes Var Sy Fs Ps HPs As Ms Qs BVal HVal NdVal PT in
-    let basic_types_edc := Build_BasicTypesEDC _ _ _ _ _ _ _ _ _ _ _ _ in
+    let basic_types_edc := Build_BasicTypesProperties _ _ _ _ _ _ _ _ _ _ _ _ _ in
     let bgm : BackgroundModel := Build_BackgroundModel basic_types basic_types_edc bgm in
     (@naive_interpreter bgm Label Γ program nv x)
 .
 
-Definition poly_naive_interpreter_ext
+Definition BasicTypesProperties_ext
     (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
     (_EBBVal : EDC BVal)
     (_EBHVal : EDC HVal)
     (_EBNdVal : EDC NdVal)
     (_EBVar : EDC Var)
+    (_IFVar : Infinite Var)
     (_EBSy : EDC Sy)
     (_EBFs : EDC Fs)
     (_EBPs : EDC Ps)
@@ -187,7 +189,8 @@ Definition poly_naive_interpreter_ext
     : option ((@TermOver' Sy BVal)*HVal*nat)
 :=
     let basic_types := Build_BasicTypes Var Sy Fs Ps HPs As Ms Qs BVal HVal NdVal PT in
-    let basic_types_edc := Build_BasicTypesEDC _ _ _ _ _ _ _ _ _ _ _ _ in
+    let basic_types_edc := Build_BasicTypesProperties _ _ _ _ _ _ _ _ _ _ _ _ _ in
     let bgm : BackgroundModel := Build_BackgroundModel basic_types basic_types_edc bgm in
     (@naive_interpreter_ext bgm Label Γ program nv x)
 .
+

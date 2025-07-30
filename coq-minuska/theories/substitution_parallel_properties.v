@@ -1494,8 +1494,8 @@ Proof.
                          *)
                         clear H.
                         
-                        destruct (decide (i ∈ dom (filter (λ kv : Variabl * TermOver' BuiltinOrVar, t_over (bov_Variabl kv.1) ≠ kv.2)
-                   (filter (λ kv : Variabl * TermOver BuiltinOrVar, kv.1 ∉ dom c) b ∪ (subp_app b <$> c))))) as [Hin|Hnotin].
+                        destruct (decide (i ∈ dom (filter (λ kv : (Variabl * (@TermOver' TermSymbol BuiltinOrVar)), t_over (bov_Variabl kv.1) ≠ kv.2)
+                   (filter (λ kv : Variabl * (@TermOver' TermSymbol BuiltinOrVar), kv.1 ∉ dom c) b ∪ (subp_app b <$> c))))) as [Hin|Hnotin].
                         {
                           rewrite elem_of_dom in Hin.
                           destruct Hin as [p Hp].

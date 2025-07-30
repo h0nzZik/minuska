@@ -204,19 +204,19 @@ induction t; intros ll s1 HNice.
     rewrite list_lookup_fmap.
     destruct (l !! i) eqn:Hli.
     {
-    ltac1:(rewrite Hli).
-    simpl.
-    apply f_equal.
-    erewrite H.
-    reflexivity.
-    rewrite elem_of_list_lookup.
-    exists i. exact Hli.
-    apply HNice.
+    (* ltac1:(rewrite Hli). *)
+        simpl.
+        apply f_equal.
+        erewrite H.
+        reflexivity.
+        rewrite elem_of_list_lookup.
+        exists i. exact Hli.
+        apply HNice.
     }
     {
-    ltac1:(rewrite Hli).
-    simpl.
-    reflexivity.
+    (* ltac1:(rewrite Hli). *)
+        simpl.
+        reflexivity.
     }
 }
 Qed.
