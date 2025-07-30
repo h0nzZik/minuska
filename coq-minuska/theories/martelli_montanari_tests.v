@@ -8,6 +8,7 @@ From Minuska Require Import
     basic_properties
     substitution_parallel
     substitution_parallel_properties
+    example_models
 .
 
 (*
@@ -25,7 +26,7 @@ because, any mistakes will inherently be found out
 during the proving of the rest of the implementation.
 *)
 
-Instance sm : BackgroundModel := @DSM mysignature (unit_hidden_signature mysignature) β (unit_hidden_model _ _ β) MyProgramInfo.
+Instance sm : BackgroundModel := example_models.Σ1.
 
 Definition dec_paper_input1 : list (@TermOver' TermSymbol BuiltinOrVar) := [
     t_term "f"
