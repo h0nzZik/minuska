@@ -7,22 +7,16 @@ From Minuska Require Import
     builtin.int_model
     pi.trivial
     hidden.hidden_unit
+    example_models
 .
 About stdpp.strings.String.
 Locate String.
 From QuickChick Require Export QuickChick.
 Export QcDefaultNotation.
 
+(* Set Typeclasses Debug. *)
 #[export]
-Instance Σ : BackgroundModel
-:=
-    @default_model
-        int_signature
-        (unit_hidden_signature int_signature)
-        (int_model _ _ _)
-        (unit_hidden_model _ _ _)
-        MyProgramInfo
-.
+Instance Σ : BackgroundModel := example_models.Σ1.
 
 #[export]
 Instance show_builtin : Show BasicValue := {|

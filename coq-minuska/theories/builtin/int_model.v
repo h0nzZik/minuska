@@ -7,16 +7,15 @@ From Minuska Require Import
     (* model_functor *)
 .
 
-Definition int_carrier := Z.
+(* Definition int_carrier := Z. *)
 
 Definition int_function_interp
     {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     (Carrier : Type)
     {_WB : Injection bool Carrier}
     {_WI : Injection Z Carrier}
-    (asi : Carrier -> option int_carrier)
+    (asi : Carrier -> option Z)
 :
     IntFunSymbol ->
     NondetValue ->
@@ -95,10 +94,9 @@ Definition int_function_interp
 
 Definition int_predicate_interp
     {TermSymbol : Type}
-    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     (Carrier : Type)
-    (asi : Carrier -> option int_carrier)
+    (asi : Carrier -> option Z)
 :
     IntPredSymbol ->
     NondetValue ->
@@ -119,45 +117,30 @@ Definition int_predicate_interp
     end
 .
 
-Program Definition int_model_over
+Definition int_relaxed_va
     (TermSymbol : Type)
-    (TermSymbols : Symbols TermSymbol)
-    (NondetValue : Type)
-    (Carrier : Type)
-    (_WB : Injection bool Carrier)
-    (_WI : Injection Z Carrier)
-    (asi : Carrier -> option int_carrier)
-    :
-    @ModelOver TermSymbol TermSymbols int_signature NondetValue Carrier
-:= {|
-    builtin_function_interp := fun (f : @FunSymbol int_signature) => int_function_interp NondetValue Carrier asi f;
-    builtin_predicate_interp := fun (p : @PredSymbol int_signature) => int_predicate_interp NondetValue Carrier asi p;
-|}.
-
-Definition int_relaxed_model
-    (TermSymbol : Type)
-    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
     :
-    RelaxedModel int_signature NondetValue (bool)
+    RelaxedValueAlgebra bool Z NondetValue TermSymbol int_signature.IntFunSymbol int_signature.IntPredSymbol
 := {|
-    rm_carrier := int_carrier ;
-    rm_model_over :=
+    rva_over :=
         fun (Carrier : Type)
-            (inja : Injection (bool) Carrier)
-            (injb : ReversibleInjection int_carrier Carrier)
-            => int_model_over TermSymbol TermSymbols NondetValue Carrier
-                {| inject := fun (b:bool) => @inject _ _ inja b |}
-                (@ri_injection _ _ injb)
-                (@ri_reverse _ _ injb)
+            (inja : Injection bool Carrier)
+            (injb : ReversibleInjection Z Carrier)
+            => {|
+                builtin_function_interp := fun (f : IntFunSymbol) =>
+                    int_function_interp NondetValue Carrier (injb.(ri_reverse)) f; 
+                builtin_predicate_interp := fun (p : IntPredSymbol) =>
+                    int_predicate_interp NondetValue Carrier (injb.(ri_reverse)) p; 
+            |}
+    ;
 |}.
 
-Definition int_model
+
+Definition int_va
     (TermSymbol : Type)
-    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
-    : Model int_signature NondetValue
 :=
-    model_of_relaxed (int_relaxed_model TermSymbol TermSymbols NondetValue)
+    small_model_of_relaxed (int_relaxed_va TermSymbol NondetValue)
 .
 

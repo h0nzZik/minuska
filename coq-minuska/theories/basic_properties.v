@@ -832,6 +832,16 @@ Proof.
     }
 Qed.
 
+(* 
+#[local]
+Instance EDC_instance
+    (T : Type)
+    {_ET : EqDecision T}
+    {_CT : Countable T}
+    : EDC T.
+Proof.
+    exact (Build_EDC T _ET _CT).
+Defined. *)
 
 (* 
 Definition BoV_to_Expr2

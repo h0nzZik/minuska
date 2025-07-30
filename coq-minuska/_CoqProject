@@ -13,6 +13,7 @@ theories/specb.v
 theories/quickchick_setup.v
 
 theories/minuska.v
+theories/example_models.v
 theories/BuiltinValue.v
 theories/builtins.v
 theories/termoverbov_subst.v
