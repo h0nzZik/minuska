@@ -36,9 +36,9 @@ Section sec.
 
     #[local]
     Program Instance mysignature : Signature := {|
-        builtin_function_symbol
+        FunctionSymbol
             := Emptyset ;
-        builtin_predicate_symbol
+        PredicateSymbol
             := Emptyset ;
     |}.
     Fail Next Obligation.

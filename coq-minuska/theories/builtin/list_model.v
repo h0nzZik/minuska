@@ -193,8 +193,8 @@ Program Definition list_relaxed_functor :
                     inject := fun b => @inject _ _ inja (b)                
                 |} in
                 {|
-                    builtin_function_interp := fun (f : @builtin_function_symbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl f;
-                    builtin_predicate_interp := fun (p : @builtin_predicate_symbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl p;
+                    builtin_function_interp := fun (f : @FunctionSymbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl f;
+                    builtin_predicate_interp := fun (p : @PredicateSymbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl p;
                 |}
         |}  ;
 |}.

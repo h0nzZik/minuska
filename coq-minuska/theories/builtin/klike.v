@@ -1972,10 +1972,10 @@ Section sec2.
 
     #[local]
     Instance mysignature : Signature := {|
-        builtin_function_symbol
+        spec.FunctionSymbol
             := FunctionSymbol ;
 
-        builtin_predicate_symbol
+        spec.PredicateSymbol
             := PredicateSymbol ;
     |}.
     

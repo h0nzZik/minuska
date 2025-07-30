@@ -120,7 +120,7 @@ Program Definition information_flow_functor
                 {|
                     builtin_function_interp :=
                         fun
-                            (f : @builtin_function_symbol signature)
+                            (f : @FunctionSymbol signature)
                             (nv : NondetValue)
                             l
                         =>  @spec.builtin_function_interp _ _ _ _ _
@@ -134,7 +134,7 @@ Program Definition information_flow_functor
 
                     builtin_predicate_interp :=
                         fun
-                            (p : @builtin_predicate_symbol signature)
+                            (p : @PredicateSymbol signature)
                             (nv : NondetValue)
                             l
                         =>  @spec.builtin_predicate_interp _ _ _ _ _
@@ -257,7 +257,7 @@ Definition eval_predicate_in_orig
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
-    (p : builtin_predicate_symbol)
+    (p : PredicateSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
 :=
@@ -282,7 +282,7 @@ Definition eval_predicate_in_iflow
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier)
-    (p : builtin_predicate_symbol)
+    (p : PredicateSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
@@ -309,7 +309,7 @@ Definition eval_function_in_orig
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
-    (f : builtin_function_symbol)
+    (f : FunctionSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
@@ -336,7 +336,7 @@ Definition eval_function_in_iflow
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier)
-    (f : builtin_function_symbol)
+    (f : FunctionSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
@@ -461,7 +461,7 @@ Class IFCRelaxedModelTrait1
             (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
             (injb' : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier'),
         forall
-            (p : builtin_predicate_symbol)
+            (p : PredicateSymbol)
             (nv : NondetValue)
             args,
         eval_predicate_in_iflow ifc_0 Carrier' inja' injb' p nv args
@@ -477,7 +477,7 @@ Class IFCRelaxedModelTrait1
             (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
             (injb' : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier'),
         forall
-            (f : builtin_function_symbol)
+            (f : FunctionSymbol)
             (nv : NondetValue)
             args,
         let r1 : option (TermOver' Carrier') := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
