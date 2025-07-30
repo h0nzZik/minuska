@@ -5,45 +5,45 @@ From Minuska Require Import
 
 
 Definition not_stuck
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (e : (TermOver builtin_value)*(hidden_data)) : Type
+    (e : (TermOver BasicValue)*(hidden_data)) : Type
 :=
     { e' : _ & { nv : NondetValue & rewriting_relation Γ program nv e e' } }
 .
 
 Definition stuck
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (e : (TermOver builtin_value)*(hidden_data)) : Type
+    (e : (TermOver BasicValue)*(hidden_data)) : Type
 :=
     notT (not_stuck Γ program e)
 .
 
 
 Definition Interpreter
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     : Type
-    := ProgramT -> NondetValue -> (TermOver builtin_value)*(hidden_data) -> option ((TermOver builtin_value)*(hidden_data))
+    := ProgramT -> NondetValue -> (TermOver BasicValue)*(hidden_data) -> option ((TermOver BasicValue)*(hidden_data))
 .
 
 Definition Interpreter_ext
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     : Type
-    := ProgramT -> NondetValue -> (TermOver builtin_value)*(hidden_data) -> option (((TermOver builtin_value)*(hidden_data))*nat)
+    := ProgramT -> NondetValue -> (TermOver BasicValue)*(hidden_data) -> option (((TermOver BasicValue)*(hidden_data))*nat)
 .
 
 
 Definition Interpreter_sound'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (interpreter : Interpreter Γ)
@@ -63,7 +63,7 @@ Definition Interpreter_sound'
 .
 
 Definition RewritingRule2_wf
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (r : RewritingRule2 Label)
     : Prop
@@ -76,7 +76,7 @@ Definition RewritingRule2_wf
 .
 
 Definition RewritingTheory2_wf
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     : Prop
@@ -85,7 +85,7 @@ Definition RewritingTheory2_wf
 .
 
 Definition Interpreter_sound
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (interpreter : Interpreter Γ)

@@ -5,19 +5,19 @@ From Minuska Require Import
 .
 
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
     (bv : BuiltinOrVar)
     : bool
 := match bv with
     | bov_builtin b => bool_decide (t = t_over b)
-    | bov_variable x => bool_decide (ρ !! x = Some t)
+    | bov_Variabl x => bool_decide (ρ !! x = Some t)
     end
 .
 
 Lemma Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_reflect
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     : forall ρ t bv,
         reflect
             (Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ t bv)
@@ -51,9 +51,9 @@ Fixpoint forallbin
 .
 
 Equations? sat2Bb
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     : bool
     by wf (TermOver_size φ) lt
@@ -89,9 +89,9 @@ Proof.
 Defined.
 
 Lemma sat2B_refl
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     :
     reflect (sat2B ρ t φ) (sat2Bb ρ t φ)
@@ -236,11 +236,11 @@ Proof.
 Qed.
 
 Equations? sat2Eb
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
     (φ : TermOver Expression2)
     (nv : NondetValue)
     : bool
@@ -283,11 +283,11 @@ Defined.
 
 
 Lemma sat2E_refl
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
     (φ : TermOver Expression2)
     (nv : NondetValue)
     :

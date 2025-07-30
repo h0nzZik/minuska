@@ -9,8 +9,8 @@ From Minuska Require Import
 
 Definition list_function_interp
     (InnerT : Type)
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
+    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
     (Carrier : Type)
     (_WB : Injection bool Carrier)
@@ -21,8 +21,8 @@ Definition list_function_interp
 :
     ListFunSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
-    option (@TermOver' symbol  Carrier)
+    list (@TermOver' TermSymbol Carrier) ->
+    option (@TermOver' TermSymbol  Carrier)
 :=
     fun f nd args =>
     match f with
@@ -74,8 +74,8 @@ Definition list_function_interp
 
 Definition list_predicate_interp
     (InnerT : Type)
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
+    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
     (Carrier : Type)
     (_WB : Injection bool Carrier)
@@ -86,7 +86,7 @@ Definition list_predicate_interp
 :
     ListPredSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
+    list (@TermOver' TermSymbol Carrier) ->
     option bool
 :=
     fun p nd args =>
@@ -155,8 +155,8 @@ Program Definition list_relaxed_functor :
     rmf_model :=
         fun (signature : Signature)
             (NondetValue : Type)
-            (symbol : Type)
-            (symbols : Symbols symbol)
+            (TermSymbol : Type)
+            (TermSymbols : Symbols TermSymbol)
             M
         => 
         {|
@@ -193,8 +193,8 @@ Program Definition list_relaxed_functor :
                     inject := fun b => @inject _ _ inja (b)                
                 |} in
                 {|
-                    builtin_function_interp := fun (f : @FunctionSymbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl f;
-                    builtin_predicate_interp := fun (p : @PredicateSymbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl p;
+                    builtin_function_interp := fun (f : @FunSymbol list_signature) => list_function_interp (rm_carrier _ _ _ M) TermSymbol TermSymbols NondetValue Carrier WB WI WL asi asl f;
+                    builtin_predicate_interp := fun (p : @PredSymbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) TermSymbol TermSymbols NondetValue Carrier WB WI WL asi asl p;
                 |}
         |}  ;
 |}.

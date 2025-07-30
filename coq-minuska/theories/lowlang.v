@@ -40,10 +40,10 @@ Arguments pt_app_ao {operator operand}%_type_scope aps x.
 
 
 Definition to_Term'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
-    (x : ((T)+(PreTerm' symbol T)))
-    : Term' symbol T
+    (x : ((T)+(PreTerm' TermSymbol T)))
+    : Term' TermSymbol T
 :=
 match x with
 | inl x' => term_operand x'
@@ -51,18 +51,18 @@ match x with
 end
 .
 
-Definition helper {Σ : StaticModel} {T : Type} a b : PreTerm' symbol T
+Definition helper {Σ : BackgroundModel} {T : Type} a b : PreTerm' TermSymbol T
     :=match b with
             | term_operand b' => pt_app_operand a b'
             | term_preterm b' => pt_app_ao a b'
             end.
 
 Definition to_PreTerm'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
-    (s : symbol)
-    (l : list ((Term' symbol T)))
-    : PreTerm' symbol T
+    (s : TermSymbol)
+    (l : list ((Term' TermSymbol T)))
+    : PreTerm' TermSymbol T
 :=
     fold_left
         helper
@@ -71,10 +71,10 @@ Definition to_PreTerm'
 .
 
 Lemma to_PreTerm'_app
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
-    (s : symbol)
-    (l1 l2 : list ((Term' symbol T)))
+    (s : TermSymbol)
+    (l1 l2 : list ((Term' TermSymbol T)))
     : to_PreTerm' s (l1 ++ l2) = fold_left helper l2 (to_PreTerm' s l1)
 .
 Proof.
@@ -83,16 +83,16 @@ Proof.
     reflexivity.
 Qed.
 
-Definition apply_symbol'
-    {Σ : StaticModel}
+Definition apply_TermSymbol'
+    {Σ : BackgroundModel}
     {T : Type}
-    (s : symbol)
+    (s : TermSymbol)
 : 
-    list ((Term' symbol T)) ->
-    Term' symbol T
+    list ((Term' TermSymbol T)) ->
+    Term' TermSymbol T
 :=
     fun l =>
-    (to_Term' (inr (to_PreTerm' ((s):symbol) l)))
+    (to_Term' (inr (to_PreTerm' ((s):TermSymbol) l)))
 .
 
 Definition to_Term''
@@ -128,7 +128,7 @@ Definition to_PreTerm''
 .
 
 
-Definition apply_symbol''
+Definition apply_TermSymbol''
     {T0 : Type}
     {T : Type}
     (s : T0)
@@ -151,11 +151,11 @@ Fixpoint uglify'
 :=
     match t with
     | t_over a => term_operand a
-    | t_term s l => apply_symbol'' s (map uglify' l)
+    | t_term s l => apply_TermSymbol'' s (map uglify' l)
     end
 .
 
-Fixpoint PreTerm'_get_symbol
+Fixpoint PreTerm'_get_TermSymbol
     {T : Type}
     {A : Type}
     (pt : PreTerm' T A)
@@ -163,8 +163,8 @@ Fixpoint PreTerm'_get_symbol
 :=
     match pt with
     | pt_operator s => s
-    | pt_app_operand x y => PreTerm'_get_symbol x
-    | pt_app_ao x y => PreTerm'_get_symbol x
+    | pt_app_operand x y => PreTerm'_get_TermSymbol x
+    | pt_app_ao x y => PreTerm'_get_TermSymbol x
     end
 .
 
@@ -175,7 +175,7 @@ Fixpoint prettify'
     : @TermOver' T A
 :=
     t_term
-        (PreTerm'_get_symbol pt) (
+        (PreTerm'_get_TermSymbol pt) (
         ((fix go (pt : PreTerm' T A) : list (@TermOver' T A) :=
             match pt with
             | pt_operator _ => []
@@ -232,7 +232,7 @@ Proof.
             reflexivity.
         }
         {
-            assert (Hs: (PreTerm'_get_symbol (to_PreTerm'' s (map uglify' l))) = s).
+            assert (Hs: (PreTerm'_get_TermSymbol (to_PreTerm'' s (map uglify' l))) = s).
             {
                 clear.
                 induction l using rev_ind; simpl.
@@ -361,7 +361,7 @@ Proof.
             reflexivity.
         }
         {
-            unfold apply_symbol''. simpl. f_equal.
+            unfold apply_TermSymbol''. simpl. f_equal.
             unfold to_PreTerm''.
             rewrite map_app.
             rewrite fold_left_app.
@@ -374,7 +374,7 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol'' in *. simpl in *.
+                unfold apply_TermSymbol'' in *. simpl in *.
                 inversion IHao'; subst; clear IHao'.
                 unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
@@ -387,7 +387,7 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol'' in *. simpl in *.
+                unfold apply_TermSymbol'' in *. simpl in *.
                 inversion IHao'; subst; clear IHao'.
                 unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
@@ -399,7 +399,7 @@ Proof.
             }
         }
         {
-            unfold apply_symbol''. simpl. f_equal.
+            unfold apply_TermSymbol''. simpl. f_equal.
             unfold to_PreTerm''.
             rewrite map_app.
             rewrite fold_left_app.
@@ -416,7 +416,7 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol'' in *. simpl in *.
+                unfold apply_TermSymbol'' in *. simpl in *.
                 inversion IHao1'; subst; clear IHao1'.
                 unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
@@ -429,7 +429,7 @@ Proof.
             }
             {
                 simpl in *.
-                unfold apply_symbol'' in *. simpl in *.
+                unfold apply_TermSymbol'' in *. simpl in *.
                 inversion IHao1'; subst; clear IHao1'.
                 unfold to_PreTerm'' in *.
                 rewrite map_app in H0.
@@ -448,9 +448,9 @@ Qed.
 
 
 Lemma uglify'_prettify'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
-    (t : PreTerm' symbol T)
+    (t : PreTerm' TermSymbol T)
     :
     uglify' (prettify' t) = term_preterm t
 .
@@ -462,7 +462,7 @@ Qed.
 
 #[export]
 Instance cancel_TermOver_map
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (A B : Type)
     (f : A -> B)
     (g : B -> A)
@@ -491,7 +491,7 @@ Proof.
 Qed.
 
 Lemma map_uglify'_inj
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
     (l1 l2 : list (TermOver T))
     :
@@ -539,20 +539,20 @@ End eqdec.
 Section countable.
     Check @encode.
     Fixpoint PreTerm'_to_gen_tree
-        (symbol : Type)
-        {symbol_eqdec : EqDecision symbol}
-        {symbol_countable : Countable symbol}
+        (TermSymbol : Type)
+        {TermSymbol_eqdec : EqDecision TermSymbol}
+        {TermSymbol_countable : Countable TermSymbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (a : PreTerm' symbol builtin)
-        : gen_tree (positive+symbol)
+        (a : PreTerm' TermSymbol builtin)
+        : gen_tree (positive+TermSymbol)
     :=
     match a with
     | (pt_operator s) => GenLeaf (inr s)
     | (pt_app_operand aps b) =>
         (
-            GenNode 0 ([GenLeaf (inl (@encode builtin T_eqdec T_countable b)); (PreTerm'_to_gen_tree symbol builtin aps)])
+            GenNode 0 ([GenLeaf (inl (@encode builtin T_eqdec T_countable b)); (PreTerm'_to_gen_tree TermSymbol builtin aps)])
         )
     | (pt_app_ao aps1 aps2)
         => (
@@ -561,39 +561,39 @@ Section countable.
     end.
 
     Fixpoint PreTerm'_of_gen_tree
-        (symbol : Type)
-        {symbol_eqdec : EqDecision symbol}
-        {symbol_countable : Countable symbol}
+        (TermSymbol : Type)
+        {TermSymbol_eqdec : EqDecision TermSymbol}
+        {TermSymbol_countable : Countable TermSymbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (t : gen_tree (positive+symbol))
-        : option (PreTerm' symbol builtin)
+        (t : gen_tree (positive+TermSymbol))
+        : option (PreTerm' TermSymbol builtin)
     :=
     match t with
     | (GenLeaf (inr s))
         => Some (pt_operator s)
     | (GenNode 0 [(GenLeaf (inl xb));gt]) =>
         b ← @decode builtin T_eqdec T_countable xb;
-        aps ← PreTerm'_of_gen_tree symbol builtin gt;
+        aps ← PreTerm'_of_gen_tree TermSymbol builtin gt;
         Some (pt_app_operand aps b)
     | (GenNode 1 [gt1;gt2]) =>
-        aps1 ← PreTerm'_of_gen_tree symbol builtin gt1;
-        aps2 ← PreTerm'_of_gen_tree symbol builtin gt2;
+        aps1 ← PreTerm'_of_gen_tree TermSymbol builtin gt1;
+        aps2 ← PreTerm'_of_gen_tree TermSymbol builtin gt2;
         Some (pt_app_ao aps1 aps2)
     | _ => None
     end
     .
 
     Lemma PreTerm'_of_to_gen_tree
-        (symbol : Type)
-        {symbol_eqdec : EqDecision symbol}
-        {symbol_countable : Countable symbol}
+        (TermSymbol : Type)
+        {TermSymbol_eqdec : EqDecision TermSymbol}
+        {TermSymbol_countable : Countable TermSymbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (a : PreTerm' symbol builtin)
-        : PreTerm'_of_gen_tree symbol builtin (PreTerm'_to_gen_tree symbol builtin a) = Some a
+        (a : PreTerm' TermSymbol builtin)
+        : PreTerm'_of_gen_tree TermSymbol builtin (PreTerm'_to_gen_tree TermSymbol builtin a) = Some a
     .
     Proof.
         induction a; simpl.
@@ -612,33 +612,33 @@ Section countable.
 
     #[export]
     Instance PreTerm'_countable
-        (symbol_set : Type)
-        {symbols_eqdec : EqDecision symbol_set}
-        {symbols_countable : Countable symbol_set}
+        (TermSymbol_set : Type)
+        {TermSymbols_eqdec : EqDecision TermSymbol_set}
+        {TermSymbols_countable : Countable TermSymbol_set}
         (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
-        : Countable (PreTerm' symbol_set builtin_set)
+        : Countable (PreTerm' TermSymbol_set builtin_set)
     .
     Proof.
         apply inj_countable
         with
-            (f := PreTerm'_to_gen_tree symbol_set builtin_set)
-            (g := PreTerm'_of_gen_tree symbol_set builtin_set)
+            (f := PreTerm'_to_gen_tree TermSymbol_set builtin_set)
+            (g := PreTerm'_of_gen_tree TermSymbol_set builtin_set)
         .
         intros x.
         apply PreTerm'_of_to_gen_tree.
     Defined.
 
     Definition Term'_to_gen_tree
-        (symbol : Type)
-        {symbol_eqd : EqDecision symbol}
-        {symbol_cnt : Countable symbol}
+        (TermSymbol : Type)
+        {TermSymbol_eqd : EqDecision TermSymbol}
+        {TermSymbol_cnt : Countable TermSymbol}
         (builtin : Type)
         {T_eqdec : EqDecision builtin}
         {T_countable : Countable builtin}
-        (e : Term' symbol builtin)
-        : gen_tree (builtin + (PreTerm' symbol builtin))%type
+        (e : Term' TermSymbol builtin)
+        : gen_tree (builtin + (PreTerm' TermSymbol builtin))%type
     :=
     match e with
     | (term_operand b) => GenLeaf (inl _ b)
@@ -647,14 +647,14 @@ Section countable.
     .
 
     Definition Term'_from_gen_tree
-        (symbol : Type)
-        {symbol_eqd : EqDecision symbol}
-        {symbol_cnt : Countable symbol}
+        (TermSymbol : Type)
+        {TermSymbol_eqd : EqDecision TermSymbol}
+        {TermSymbol_cnt : Countable TermSymbol}
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
-        (t : gen_tree (builtin+(PreTerm' symbol builtin))%type)
-        :  option (Term' symbol builtin)
+        (t : gen_tree (builtin+(PreTerm' TermSymbol builtin))%type)
+        :  option (Term' TermSymbol builtin)
     :=
     match t with
     | (GenLeaf (inl _ b)) => Some (term_operand b)
@@ -664,14 +664,14 @@ Section countable.
     .
 
     Lemma Term'_to_from_gen_tree
-        (symbol : Type)
-        {symbol_eqd : EqDecision symbol}
-        {symbol_cnt : Countable symbol}
+        (TermSymbol : Type)
+        {TermSymbol_eqd : EqDecision TermSymbol}
+        {TermSymbol_cnt : Countable TermSymbol}
         (builtin : Type)
         {builtin_eqdec : EqDecision builtin}
         {builtin_countable : Countable builtin}
-        (e : Term' symbol builtin)
-        : Term'_from_gen_tree symbol builtin (Term'_to_gen_tree symbol builtin e) = Some e
+        (e : Term' TermSymbol builtin)
+        : Term'_from_gen_tree TermSymbol builtin (Term'_to_gen_tree TermSymbol builtin e) = Some e
     .
     Proof.
         destruct e; reflexivity.
@@ -679,19 +679,19 @@ Section countable.
 
     #[export]
     Instance Term'_countable
-        (symbol_set : Type)
-        {symbol_eqd : EqDecision symbol_set}
-        {symbol_cnt : Countable symbol_set}
+        (TermSymbol_set : Type)
+        {TermSymbol_eqd : EqDecision TermSymbol_set}
+        {TermSymbol_cnt : Countable TermSymbol_set}
         (builtin_set : Type)
         {builtin_eqdec : EqDecision builtin_set}
         {builtin_countable : Countable builtin_set}
-        : Countable (Term' symbol_set builtin_set)
+        : Countable (Term' TermSymbol_set builtin_set)
     .
     Proof.
         apply inj_countable
         with
-            (f := Term'_to_gen_tree symbol_set builtin_set)
-            (g := Term'_from_gen_tree symbol_set builtin_set)
+            (f := Term'_to_gen_tree TermSymbol_set builtin_set)
+            (g := Term'_from_gen_tree TermSymbol_set builtin_set)
         .
         intros x.
         apply Term'_to_from_gen_tree.
@@ -738,9 +738,9 @@ Instance Term'_A_B_fmap (A : Type)
 .
 
 #[export]
-Instance Term_symbol_fmap
-    {Σ : StaticModel}
-    : FMap (Term' symbol)
+Instance Term_TermSymbol_fmap
+    {Σ : BackgroundModel}
+    : FMap (Term' TermSymbol)
 .
 Proof.
     apply Term'_A_B_fmap.
@@ -859,7 +859,7 @@ Qed.
 
 
 Lemma fmap_prettify_uglify_list
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
     (l : list (TermOver T))
     :
@@ -873,9 +873,9 @@ Proof.
 Qed.
 
 Lemma fmap_uglify_prettify_list
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
-    (l : list (Term' symbol T))
+    (l : list (Term' TermSymbol T))
     :
     uglify' <$> (prettify <$> l) = l
 .
@@ -888,7 +888,7 @@ Qed.
 
 
 Lemma fmap_prettify_uglify_option
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
     (o : option (TermOver T))
     :
@@ -902,9 +902,9 @@ Proof.
 Qed.
 
 Lemma fmap_uglify_prettify_option
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T : Type}
-    (o : option (Term' symbol T))
+    (o : option (Term' TermSymbol T))
     :
     uglify' <$> (prettify <$> o) = o
 .
@@ -917,7 +917,7 @@ Qed.
 
 
 Fixpoint vars_of_aosB
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T0 B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -932,7 +932,7 @@ end.
 
 #[export]
 Instance VarsOf_aosB
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T0 B var : Type}
     {_varED : EqDecision var}
     {_varCnt : Countable var}
@@ -943,7 +943,7 @@ Instance VarsOf_aosB
 |}.
 
 Definition vars_of_Term'B
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T0 : Type}
     {B var : Type}
     {_EDv : EqDecision var}
@@ -958,7 +958,7 @@ end.
 
 #[export]
 Instance VarsOf_Term'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T0 B var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
@@ -969,7 +969,7 @@ Instance VarsOf_Term'
 |}.
 
 Lemma vars_of_uglify'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {T var : Type}
     {_EDv : EqDecision var}
     {_Cv : Countable var}
@@ -1027,8 +1027,8 @@ Qed.
 
 
 Lemma vars_of_uglify
-    {Σ : StaticModel}
-    (h : variable) a:
+    {Σ : BackgroundModel}
+    (h : Variabl) a:
     h ∈ vars_of_to_l2r a
     <->
     h ∈ (vars_of (uglify' a))

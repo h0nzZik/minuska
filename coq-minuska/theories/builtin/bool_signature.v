@@ -69,6 +69,6 @@ Qed.
 Fail Next Obligation.
 
 Definition bool_signature : Signature := {|
-    FunctionSymbol := BoolFunSymbol ;
-    PredicateSymbol := BoolPredSymbol ;
+    FunSymbol := BoolFunSymbol ;
+    PredSymbol := BoolPredSymbol ;
 |}.

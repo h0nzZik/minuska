@@ -10,15 +10,15 @@ From Minuska Require Import
 
 
 Example example_list_int_model_1
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     :
     Model list_signature NondetValue
 :=
     model_of_relaxed (
         rmf_apply list_relaxed_functor (
-            int_relaxed_model symbol symbols NondetValue
+            int_relaxed_model TermSymbol TermSymbols NondetValue
         )
     )
 .

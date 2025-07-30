@@ -66,6 +66,6 @@ Qed.
 Fail Next Obligation.
 
 Definition int_signature : Signature := {|
-    FunctionSymbol := IntFunSymbol ;
-    PredicateSymbol := IntPredSymbol ;
+    FunSymbol := IntFunSymbol ;
+    PredSymbol := IntPredSymbol ;
 |}.

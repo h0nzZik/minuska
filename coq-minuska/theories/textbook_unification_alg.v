@@ -9,19 +9,19 @@ From Minuska Require Import
 From Equations Require Export Equations.
 
 
-Definition eqn {Σ : StaticModel} : Type := ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type.
+Definition eqn {Σ : BackgroundModel} : Type := ((TermOver BuiltinOrVar)*(TermOver BuiltinOrVar))%type.
 
-Definition eqn_size {Σ : StaticModel} (e : eqn) : nat := TermOver_size (e.1) + TermOver_size (e.2).
+Definition eqn_size {Σ : BackgroundModel} (e : eqn) : nat := TermOver_size (e.1) + TermOver_size (e.2).
 
-Definition eqns_size {Σ : StaticModel} (es : list eqn) := sum_list_with eqn_size es.
+Definition eqns_size {Σ : BackgroundModel} (es : list eqn) := sum_list_with eqn_size es.
 
 
-Definition eqn_vars {Σ : StaticModel} (e : eqn) := ((vars_of (e.1)) ∪ (vars_of (e.2))).
-Definition eqns_vars {Σ : StaticModel} (es : list eqn) := union_list (eqn_vars <$> es)
+Definition eqn_vars {Σ : BackgroundModel} (e : eqn) := ((vars_of (e.1)) ∪ (vars_of (e.2))).
+Definition eqns_vars {Σ : BackgroundModel} (es : list eqn) := union_list (eqn_vars <$> es)
 .
 
 Lemma eqns_vars_cons
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (e : eqn)
 (es : list eqn)
 :
@@ -33,12 +33,12 @@ Proof.
 Qed.
 
 
-Definition deg {Σ : StaticModel} (es : list eqn) : (nat*nat)%type :=
+Definition deg {Σ : BackgroundModel} (es : list eqn) : (nat*nat)%type :=
 (size (eqns_vars es), eqns_size es)
 .
 
 Lemma deg_swap_head
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (es : list eqn)
     (t1 t2 : TermOver BuiltinOrVar)
 :
@@ -59,16 +59,16 @@ Proof.
 Qed.
 
 Definition sub
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (t' : TermOver BuiltinOrVar)
-    (x : variable)
+    (x : Variabl)
     (es : list eqn)
 :=
     (fun e => (TermOverBoV_subst e.1 x t', TermOverBoV_subst e.2 x t')) <$> es
 .
 
 Lemma sub_notin
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     t x es:
     x ∉ eqns_vars es ->
     (sub t x es) = es
@@ -92,7 +92,7 @@ Proof.
     }
 Qed.
 
-Lemma eqns_vars_sub {Σ : StaticModel} (t : TermOver BuiltinOrVar) (x : variable)
+Lemma eqns_vars_sub {Σ : BackgroundModel} (t : TermOver BuiltinOrVar) (x : Variabl)
     (es : list eqn):
     x ∈ eqns_vars es ->
     eqns_vars (sub t x es) = vars_of t ∪ (eqns_vars es ∖ {[x]})
@@ -208,11 +208,11 @@ Qed.
     
 
 Lemma sub_decreases_degree
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     x t es
 :
     x ∉ vars_of t ->
-    (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_variable x), t)::es))
+    (lexprod nat nat lt lt) (deg (sub t x es)) (deg ((t_over (bov_Variabl x), t)::es))
 .
 Proof.
     intros Hxt.
@@ -384,7 +384,7 @@ Proof.
 Qed.
 
 Lemma deg_cons_lt
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (e : eqn)
     (es : list eqn)
 :
@@ -417,7 +417,7 @@ Qed.
 
 
 Lemma eqns_vars_app
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (es1 es2 : list eqn)
 :
     eqns_vars (es1 ++ es2) = eqns_vars es1 ∪ eqns_vars es2
@@ -430,7 +430,7 @@ Proof.
 Qed.
 
 Lemma eqns_vars_zip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l1 l2 : list (TermOver BuiltinOrVar))
     :
     length l1 = length l2 ->
@@ -460,8 +460,8 @@ Qed.
     
 
 Lemma fewer_arrows_lower_degree
-    {Σ : StaticModel}
-    (s : symbol)
+    {Σ : BackgroundModel}
+    (s : TermSymbol)
     (l1 l2 : list (TermOver BuiltinOrVar))
     (es : list eqn)
 :
@@ -501,31 +501,31 @@ Proof.
 Qed.    
 
 Equations? unify
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l : list eqn)
 :
-    option (list (variable * (TermOver BuiltinOrVar)))
+    option (list (Variabl * (TermOver BuiltinOrVar)))
     by wf (deg l) (lexprod nat nat lt lt)
 :=
 
     unify []
     := Some [] ;
 
-    unify ((t_over (bov_variable x),t_over (bov_variable y))::es) with (decide (x = y)) => {
+    unify ((t_over (bov_Variabl x),t_over (bov_Variabl y))::es) with (decide (x = y)) => {
     | left _ := unify es ;
     | right _ := 
-        tmp ← unify (sub (t_over (bov_variable y)) x es);
-        Some ((x, (t_over (bov_variable y)))::tmp)
+        tmp ← unify (sub (t_over (bov_Variabl y)) x es);
+        Some ((x, (t_over (bov_Variabl y)))::tmp)
     };
 
-    unify ((t_over (bov_variable x), t)::es) with (decide (x ∈ vars_of t)) => {
+    unify ((t_over (bov_Variabl x), t)::es) with (decide (x ∈ vars_of t)) => {
     | left _ => None
     | right _ =>
         tmp ← unify (sub t x es);
         Some ((x,t)::tmp)
     };
 
-    unify ((t, t_over (bov_variable x))::es) with (decide (x ∈ vars_of t)) => {
+    unify ((t, t_over (bov_Variabl x))::es) with (decide (x ∈ vars_of t)) => {
     | left _ => None
     | right _ =>
         tmp ← unify (sub t x es);

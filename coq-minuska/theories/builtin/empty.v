@@ -30,15 +30,15 @@ Fail Next Obligation.
 Section sec.
 
     Context
-        {symbol : Set}
-        {symbols : Symbols symbol}
+        {TermSymbol : Set}
+        {TermSymbols : Symbols TermSymbol}
     .
 
     #[local]
     Program Instance mysignature : Signature := {|
-        FunctionSymbol
+        FunSymbol
             := Emptyset ;
-        PredicateSymbol
+        PredSymbol
             := Emptyset ;
     |}.
     Fail Next Obligation.
@@ -55,7 +55,7 @@ Section sec.
     #[local]
     Instance β
         : @Model _ _ mysignature MyUnit := {|
-        builtin_value
+        BasicValue
             := Emptyset ;
         builtin_model_over := βover ;
     |}.

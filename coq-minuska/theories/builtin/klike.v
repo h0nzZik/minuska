@@ -19,9 +19,9 @@ Obligation Tactic := idtac.
 Section sec.
 
     Context
-        {symbol : Type}
-        {_se : EqDecision symbol}
-        {_sc : Countable symbol}
+        {TermSymbol : Type}
+        {_se : EqDecision TermSymbol}
+        {_sc : Countable TermSymbol}
     .
 
     (* This is an attempt at an alternative definition that avoids lowlang.
@@ -34,10 +34,10 @@ Section sec.
     | bv_bool (b : bool)
     (* | bv_nat (n : nat) *)
     | bv_Z (z : Z)
-    | bv_sym (s : symbol)
+    | bv_sym (s : TermSymbol)
     | bv_str (s : string)
-    | bv_list (m : list (@TermOver' symbol BuiltinValue0))
-    | bv_pmap (m : Pmap (@TermOver' symbol BuiltinValue0))
+    | bv_list (m : list (@TermOver' TermSymbol BuiltinValue0))
+    | bv_pmap (m : Pmap (@TermOver' TermSymbol BuiltinValue0))
     .
 
     Fixpoint BVsize (r : BuiltinValue0) : nat :=
@@ -48,11 +48,11 @@ Section sec.
     | bv_sym _ => 1
     | bv_str _ => 1
     | bv_list l =>
-        let TermBVsize := (fix TermBVsize (t : @TermOver' symbol BuiltinValue0) : nat :=
+        let TermBVsize := (fix TermBVsize (t : @TermOver' TermSymbol BuiltinValue0) : nat :=
         match t with
         | t_over m => S (BVsize m)
         | t_term _ l => S (
-            (fix helper (l' : list (@TermOver' symbol BuiltinValue0)) : nat :=
+            (fix helper (l' : list (@TermOver' TermSymbol BuiltinValue0)) : nat :=
             match l' with
             | [] => 1
             | x::xs => S (TermBVsize x + helper xs)
@@ -62,18 +62,18 @@ Section sec.
         S (sum_list_with TermBVsize l)
     | bv_pmap PEmpty => 1
     | bv_pmap (PNodes m) =>
-        let TermBVsize := (fix TermBVsize (t : @TermOver' symbol BuiltinValue0) : nat :=
+        let TermBVsize := (fix TermBVsize (t : @TermOver' TermSymbol BuiltinValue0) : nat :=
         match t with
         | t_over m => S (BVsize m)
         | t_term _ l => S (
-            (fix helper (l' : list (@TermOver' symbol BuiltinValue0)) : nat :=
+            (fix helper (l' : list (@TermOver' TermSymbol BuiltinValue0)) : nat :=
             match l' with
             | [] => 1
             | x::xs => S (TermBVsize x + helper xs)
             end
             )l)
         end) in
-        S ((fix mypmsz (m' : Pmap_ne (@TermOver' symbol BuiltinValue0)) :=
+        S ((fix mypmsz (m' : Pmap_ne (@TermOver' TermSymbol BuiltinValue0)) :=
         match m' with
         | PNode001 m'' => S (mypmsz m'')
         | PNode010 m'' => S (TermBVsize m'')
@@ -95,21 +95,21 @@ Section sec.
     | bv_bool (b : bool)
     (* | bv_nat (n : nat) *)
     | bv_Z (z : Z)
-    | bv_sym (s : symbol)
+    | bv_sym (s : TermSymbol)
     | bv_str (s : string)
-    | bv_list (m : list (Term' symbol BuiltinValue0))
-    | bv_pmap (m : Pmap (Term' symbol BuiltinValue0))
+    | bv_list (m : list (Term' TermSymbol BuiltinValue0))
+    | bv_pmap (m : Pmap (Term' TermSymbol BuiltinValue0))
     .
 
     Fixpoint BVsize (r : BuiltinValue0) : nat :=
     match r with
     | bv_list m =>
-        let my_list_size := (fix my_list_size (l : list (Term' symbol BuiltinValue0)) : nat :=
+        let my_list_size := (fix my_list_size (l : list (Term' TermSymbol BuiltinValue0)) : nat :=
         match l with
         | nil => 1
         | (cons (term_operand o) xs) => S ((BVsize o) + (my_list_size xs))
         | (cons (term_preterm ao) xs) =>
-            let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+            let myaosize := (fix myaosize (ao : PreTerm' TermSymbol BuiltinValue0) : nat :=
             match ao with
             | (pt_operator _) => 1
             | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -119,12 +119,12 @@ Section sec.
         end) in
         S (my_list_size m)
     | bv_pmap (PNodes m) =>
-        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (Term' symbol BuiltinValue0)) : nat :=
+        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (Term' TermSymbol BuiltinValue0)) : nat :=
     match m with
     | (PNode001 n) => S (my_pmapne_size n)
     | (PNode010 (term_operand o)) => S (BVsize o)
     | (PNode010 (term_preterm a)) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol BuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -133,7 +133,7 @@ Section sec.
         S (myaosize a)
     | (PNode011 (term_operand o) n) => S ((BVsize o) + (my_pmapne_size n))
     | (PNode011 (term_preterm a) n) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol BuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -144,7 +144,7 @@ Section sec.
     | (PNode101 n1 n2) => S ((my_pmapne_size n1) + (my_pmapne_size n2))
     | (PNode110 n (term_operand o)) => S ((BVsize o) + (my_pmapne_size n))
     | (PNode110 n (term_preterm a)) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol BuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -152,7 +152,7 @@ Section sec.
         end) in
         S ((myaosize a) + (my_pmapne_size n))
     | (PNode111 n1 (term_preterm a) n2) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol BuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -938,7 +938,7 @@ Section sec.
     (* | bvl_nat (n : nat) *)
     | bvl_Z (z : Z)
     | bvl_str (s : string)
-    | bvl_sym (sym : symbol)
+    | bvl_sym (sym : TermSymbol)
     .
 
     #[export]
@@ -959,7 +959,7 @@ Section sec.
     | (GenLeaf (bvl_sym s))      => Some (bv_sym s) 
     | (GenNode 0 l)            => (
             let tree_to_mylist := fix tree_to_mylist (l' : list (gen_tree BVLeaf)) :
-                (option (list (Term' symbol BuiltinValue0))) := (
+                (option (list (Term' TermSymbol BuiltinValue0))) := (
                 match l' with
                 | nil                             => Some nil
                 | (cons (GenNode 1 [(o)]) (xs))   => (
@@ -968,7 +968,7 @@ Section sec.
                     Some (cons (term_operand o') xs')
                 )
                 | (cons (GenNode 0 [(ao)]) (xs)) => (
-                    let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                    let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol BuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -997,7 +997,7 @@ Section sec.
             Some (bv_list (l'))
         )
     | (GenNode 2 [(m)]) => (
-            let tree_to_mypm := fix tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (Term' symbol BuiltinValue0)) := (
+            let tree_to_mypm := fix tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (Term' TermSymbol BuiltinValue0)) := (
             match p with
             | (GenNode 1 [(n)]) => (
                 n' ← (tree_to_mypm n);
@@ -1008,7 +1008,7 @@ Section sec.
                 Some (PNode010 (term_operand o')) 
             )
             | (GenNode 2 [(GenNode 0 [(ao')])]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol BuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1036,7 +1036,7 @@ Section sec.
                 Some (PNode011 (term_operand o') y'')
             )
             | (GenNode 3 [(GenNode 0 [(ao')]);(y')]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol BuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1073,7 +1073,7 @@ Section sec.
                 Some (PNode110 x'' (term_operand o''))
                 )
             | (GenNode 6 [(x'); (GenNode 0 [(ao')])]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol BuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1102,7 +1102,7 @@ Section sec.
                 Some (PNode111 x'' (term_operand o') z'')
             )
             | (GenNode 7%nat  [(x'); (GenNode 0 [(ao')]); (z')]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol BuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1146,13 +1146,13 @@ Section sec.
     | (bv_list l)        =>
         let mylist_to_tree := (
             fix mylist_to_tree
-                (l' : list (Term' symbol BuiltinValue0)) : list (gen_tree BVLeaf) := (
+                (l' : list (Term' TermSymbol BuiltinValue0)) : list (gen_tree BVLeaf) := (
             match l' with
             | nil => nil
             | (cons (term_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
             | (cons (term_preterm ao) xs) => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1168,13 +1168,13 @@ Section sec.
         (GenNode 0 (mylist_to_tree l))       
     | (bv_pmap (PNodes m)) => (
         let mypm_to_tree := (
-            fix mypm_to_tree (p : Pmap_ne (Term' symbol BuiltinValue0)) : gen_tree BVLeaf := (
+            fix mypm_to_tree (p : Pmap_ne (Term' TermSymbol BuiltinValue0)) : gen_tree BVLeaf := (
             match p with
             | (PNode001 n)                     => GenNode 1 [(mypm_to_tree n)]
             | (PNode010 (term_operand o))       => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]
             | (PNode010 (term_preterm ao'))         => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1187,7 +1187,7 @@ Section sec.
             | (PNode011 (term_operand o) y')    => GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')]
             | (PNode011 (term_preterm ao') y')      => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1202,7 +1202,7 @@ Section sec.
             | (PNode110 x' (term_operand o'))   => GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])]
             | (PNode110 x' (term_preterm ao'))      => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1215,7 +1215,7 @@ Section sec.
             | (PNode111 x' (term_operand o) z') => GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')]
             | (PNode111 x' (term_preterm ao') z')   => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol BuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1572,7 +1572,7 @@ induction ao; try reflexivity.
     )).
     {
         ltac1:(unshelve(eapply gen_tree_countable)).
-        remember ((*unit+*)bool+(*nat+*)Z+string+symbol)%type as MyT.
+        remember ((*unit+*)bool+(*nat+*)Z+string+TermSymbol)%type as MyT.
         ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
         {
             subst MyT. apply _.
@@ -1646,7 +1646,7 @@ induction ao; try reflexivity.
 
 End sec.
 
-Inductive FunctionSymbol : Set :=
+Inductive FunSymbol : Set :=
 | b_zero              (* Z *)
 | b_list_empty        (* list *)
 | b_map_empty         (* map *)
@@ -1667,11 +1667,11 @@ Inductive FunctionSymbol : Set :=
 .
 
 #[export]
-Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
+Instance FunSymbol_eqDec : EqDecision FunSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 #[export]
-Program Instance FunctionSymbol_fin : Finite FunctionSymbol := {|
+Program Instance FunSymbol_fin : Finite FunSymbol := {|
     enum := [
         b_zero
         ; b_list_empty
@@ -1701,7 +1701,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Inductive PredicateSymbol : Set :=
+Inductive PredSymbol : Set :=
 | b_isBuiltin              (* 'a -> Prop *)
 | b_isNotBuiltin           (* 'a -> Prop *)
 (*| b_isError                (* 'a -> Prop *)*)
@@ -1722,19 +1722,19 @@ Inductive PredicateSymbol : Set :=
 | b_bool_is_false      (* bool -> Prop *)
 | b_term_eq                (* term -> term -> Prop *)
 | b_map_hasKey             (* map -> 'a -> Prop *)
-| b_is_applied_symbol      (* string -> 'a -> Prop *)
-| b_is_not_applied_symbol  (* string -> 'a -> Prop *)
-| b_have_same_symbol       (* term -> term -> Prop *)
-| b_have_different_symbols   (* term -> term -> Prop *)
+| b_is_applied_TermSymbol      (* string -> 'a -> Prop *)
+| b_is_not_applied_TermSymbol  (* string -> 'a -> Prop *)
+| b_have_same_TermSymbol       (* term -> term -> Prop *)
+| b_have_different_TermSymbols   (* term -> term -> Prop *)
 .
 
 #[export]
-Instance PredicateSymbol_eqDec : EqDecision PredicateSymbol.
+Instance PredSymbol_eqDec : EqDecision PredSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 
 #[export]
-Program Instance PredicateSymbol_fin : Finite PredicateSymbol := {|
+Program Instance PredSymbol_fin : Finite PredSymbol := {|
     enum := [
         b_isBuiltin              ;
         b_isNotBuiltin           ;
@@ -1756,10 +1756,10 @@ Program Instance PredicateSymbol_fin : Finite PredicateSymbol := {|
         b_bool_is_false          ;
         b_term_eq                ;
         b_map_hasKey             ;
-        b_is_applied_symbol      ;
-        b_is_not_applied_symbol  ;
-        b_have_same_symbol       ;
-        b_have_different_symbols
+        b_is_applied_TermSymbol      ;
+        b_is_not_applied_TermSymbol  ;
+        b_have_same_TermSymbol       ;
+        b_have_different_TermSymbols
     ]
 |}.
 Next Obligation.
@@ -1774,11 +1774,11 @@ Fail Next Obligation.
 Section sec2.
 
     Context
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {TermSymbol : Type}
+        {TermSymbols : Symbols TermSymbol}
     .
 
-    Definition BuiltinValue := @BuiltinValue0 symbol.
+    Definition BuiltinValue := @BuiltinValue0 TermSymbol.
 
     Definition impl_isZ (bv : BuiltinValue) : bool
     :=
@@ -1807,8 +1807,8 @@ Section sec2.
 
     Definition bfmap1
         (f : BuiltinValue -> option BuiltinValue)
-        (x : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (x : @TermOver' TermSymbol BuiltinValue)
+        : option (@TermOver' TermSymbol BuiltinValue)
     :=
     match x with
     | t_over x' => t_over <$> (f x')
@@ -1817,8 +1817,8 @@ Section sec2.
 
     Definition bfmap2
         (f : BuiltinValue -> BuiltinValue -> option BuiltinValue)
-        (x y : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol BuiltinValue)
+        : option (@TermOver' TermSymbol BuiltinValue)
     :=
     match x, y with
     | t_over x', t_over y' => (t_over <$> (f x' y'))
@@ -1827,7 +1827,7 @@ Section sec2.
 
     Definition bfmap2P
         (f : BuiltinValue -> BuiltinValue -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol BuiltinValue)
         : bool
     :=
     match x, y with
@@ -1837,8 +1837,8 @@ Section sec2.
 
     Definition bfmap_Z_Z__Z
         (f : Z -> Z -> Z)
-        (x y : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol BuiltinValue)
+        : option (@TermOver' TermSymbol BuiltinValue)
     :=
     bfmap2
         (fun x' y' =>
@@ -1852,7 +1852,7 @@ Section sec2.
 
     Definition bfmap_Z_Z__Prop
         (f : Z -> Z -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol BuiltinValue)
         : bool
     :=
     bfmap2P
@@ -1867,8 +1867,8 @@ Section sec2.
 
     Definition bfmap_Z_Z__bool
         (f : Z -> Z -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol BuiltinValue)
+        : option (@TermOver' TermSymbol BuiltinValue)
     :=
     bfmap2
         (fun x' y' =>
@@ -1880,13 +1880,13 @@ Section sec2.
         x y
     .
 
-    Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
-    Definition my_decode := ((@decode (@TermOver' (symbol) BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
+    Definition my_encode := ((@encode (@TermOver' (TermSymbol) BuiltinValue0)) _ (@TermOver_countable (TermSymbol) BuiltinValue0 (@TermSymbol_eqdec TermSymbol TermSymbols) _ (@TermSymbol_countable TermSymbol TermSymbols) (@BuiltinValue0_countable (TermSymbol) (@TermSymbol_eqdec TermSymbol TermSymbols) (@TermSymbol_countable TermSymbol TermSymbols)))).
+    Definition my_decode := ((@decode (@TermOver' (TermSymbol) BuiltinValue0)) _ (@TermOver_countable (TermSymbol) BuiltinValue0 (@TermSymbol_eqdec TermSymbol TermSymbols) _ (@TermSymbol_countable TermSymbol TermSymbols) (@BuiltinValue0_countable (TermSymbol) (@TermSymbol_eqdec TermSymbol TermSymbols) (@TermSymbol_countable TermSymbol TermSymbols)))).
 
 
     Definition liftNulary
-        (f : MyUnit -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : MyUnit -> option (@TermOver' (TermSymbol) BuiltinValue))
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1897,7 +1897,7 @@ Section sec2.
 
     Definition liftNularyP
         (f : MyUnit -> option bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
@@ -1907,8 +1907,8 @@ Section sec2.
     .
 
     Definition liftUnary
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : MyUnit -> (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1919,8 +1919,8 @@ Section sec2.
     .
 
     Definition liftUnaryP
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> option bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
+        (f : MyUnit -> (@TermOver' (TermSymbol) BuiltinValue) -> option bool)
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
@@ -1931,8 +1931,8 @@ Section sec2.
     .
 
     Definition liftBinary
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : MyUnit -> (@TermOver' (TermSymbol) BuiltinValue) -> (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1944,8 +1944,8 @@ Section sec2.
     .
 
     Definition liftBinaryP
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
+        (f : MyUnit -> (@TermOver' (TermSymbol) BuiltinValue) -> (@TermOver' (TermSymbol) BuiltinValue) -> option bool)
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
@@ -1957,8 +1957,8 @@ Section sec2.
     .
 
     Definition liftTernary
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : MyUnit -> (@TermOver' (TermSymbol) BuiltinValue) -> (@TermOver' (TermSymbol) BuiltinValue) -> (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
+        : (MyUnit -> list (@TermOver' (TermSymbol) BuiltinValue) -> option (@TermOver' (TermSymbol) BuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1972,11 +1972,11 @@ Section sec2.
 
     #[local]
     Instance mysignature : Signature := {|
-        spec.FunctionSymbol
-            := FunctionSymbol ;
+        spec.FunSymbol
+            := FunSymbol ;
 
-        spec.PredicateSymbol
-            := PredicateSymbol ;
+        spec.PredSymbol
+            := PredSymbol ;
     |}.
     
     (* #[local] *)
@@ -2237,7 +2237,7 @@ Section sec2.
                 end
             )
 
-            | b_have_same_symbol => liftBinaryP (
+            | b_have_same_TermSymbol => liftBinaryP (
                 fun _ v1 v2 =>
                 match v1 with
                 | t_term s1 _ =>
@@ -2249,7 +2249,7 @@ Section sec2.
                 end
             )
 
-            | b_have_different_symbols => liftBinaryP (
+            | b_have_different_TermSymbols => liftBinaryP (
                 fun _ v1 v2 =>
                 match v1 with
                 | t_term s1 _ =>
@@ -2261,7 +2261,7 @@ Section sec2.
                 end
             )
 
-            | b_is_applied_symbol => liftBinaryP (
+            | b_is_applied_TermSymbol => liftBinaryP (
                 fun _ v1 v2 =>
                 match v1 with
                 | t_over (bv_sym s) =>
@@ -2273,7 +2273,7 @@ Section sec2.
                 end
             )
 
-            | b_is_not_applied_symbol => liftBinaryP (
+            | b_is_not_applied_TermSymbol => liftBinaryP (
                 fun _ v1 v2 =>
                 match v1 with
                 | t_over (bv_sym s) =>
@@ -2291,7 +2291,7 @@ Section sec2.
     Instance β
         : Model mysignature MyUnit
     := {|
-        builtin_value
+        BasicValue
             := BuiltinValue ;
 
         builtin_model_over := βover ;
@@ -2301,7 +2301,7 @@ End sec2.
 
 
 
-Definition bindings (Q : Type) : string -> SymbolInfo PredicateSymbol void _ void Q void:=
+Definition bindings (Q : Type) : string -> SymbolInfo PredSymbol void _ void Q void:=
 fun s => match s with
 | "sym.is" => si_predicate _ _ _ _ _ _ (b_isSymbol)
 | "sym.isNot" => si_predicate _ _ _ _ _ _ b_isNotSymbol
@@ -2315,8 +2315,8 @@ fun s => match s with
 | "bool.is_true" => si_predicate _ _ _ _ _ _ b_bool_is_true
 | "bool.is_false" => si_predicate _ _ _ _ _ _ b_bool_is_false
 | "term.eq" => si_predicate _ _ _ _ _ _ b_term_eq
-| "term.same_symbol" =>  si_predicate _ _ _ _ _ _ b_have_same_symbol
-| "term.different_symbol" => si_predicate _ _ _ _ _ _ b_have_different_symbols
+| "term.same_TermSymbol" =>  si_predicate _ _ _ _ _ _ b_have_same_TermSymbol
+| "term.different_TermSymbol" => si_predicate _ _ _ _ _ _ b_have_different_TermSymbols
 | "z.plus" => si_function _ _ _ _ _ _ b_Z_plus
 | "z.minus" => si_function _ _ _ _ _ _ b_Z_minus
 | "z.eq" => si_function _ _ _ _ _ _ b_Z_eq

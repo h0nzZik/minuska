@@ -10,14 +10,14 @@ From Minuska Require Import
 Arguments e_fun {Σ} f l%_list_scope.
 
 Definition SymbolicTerm_to_ExprTerm
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (t : TermOver BuiltinOrVar)
     : TermOver Expression2
 :=
     TermOver_map (fun x:BuiltinOrVar =>
         match x with
         | bov_builtin b => e_ground (t_over b)
-        | bov_variable x => e_variable x
+        | bov_Variabl x => e_Variabl x
         end ) t
 .
 
@@ -45,7 +45,7 @@ Inductive StringExpression
 :=
 | se_ground
     (g : @TermOver' string BuiltinRepr)
-| se_variable
+| se_Variabl
     (x : string)
 | se_apply
     (s : string)
@@ -82,12 +82,12 @@ Fixpoint TermOver'_e_map
 
 (* TODO use an error monad *)
 Definition toss_to_e_tosb
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
-    (f : BuiltinRepr -> option builtin_value)
+    (f : BuiltinRepr -> option BasicValue)
     (t : @TermOver' A BuiltinRepr)
     :
-    (@TermOver' A builtin_value)+string
+    (@TermOver' A BasicValue)+string
 :=
     TermOver'_e_map (fun (x:BuiltinRepr) => match f x with Some y => inl y | None =>
     inr ("Can't convert (" +:+ x.(br_kind) +:+ ", " +:+ x.(br_value) +:+ ") to builtin")
@@ -104,8 +104,8 @@ Class Realization (Bu Sy Va P HP F A Q M : Type) := {
 }.
 
 Fixpoint se_to_Expression
-    {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {Σ : BackgroundModel}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (se : StringExpression)
     :
     Expression2+string
@@ -116,8 +116,8 @@ Fixpoint se_to_Expression
         | inl g' => inl (e_ground (to_transform_sym string2sym g'))
         | inr e => inr e
         end
-    | se_variable x =>
-        inl (e_variable (string2var x))
+    | se_Variabl x =>
+        inl (e_Variabl (string2var x))
     | se_apply s l =>
         match (string2qfa s) with
         | None => inr ("The string " +:+ s +:+ " does not represent a function or a query")
@@ -156,8 +156,8 @@ Inductive StringSideCondition
 .
 
 Fixpoint ssc_to_sc
-    {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {Σ : BackgroundModel}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (ssc : StringSideCondition)
     :
     SideCondition+string
@@ -176,7 +176,7 @@ Fixpoint ssc_to_sc
                 end
             | inr e => inr e
             end
-        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) symbol")
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) TermSymbol")
         end
     | ssc_npred p args =>
         match string2p p with
@@ -185,11 +185,11 @@ Fixpoint ssc_to_sc
             | inl args' => 
                 match p' with
                 | inl vp => inl (sc_npred vp args')
-                | inr hp => inr ("The hidden predicate symbol '" +:+ p +:+ "' can't be negated")
+                | inr hp => inr ("The hidden predicate TermSymbol '" +:+ p +:+ "' can't be negated")
                 end
             | inr e => inr e
             end
-        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) symbol")
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) TermSymbol")
         end
     | ssc_and l r =>
         match ssc_to_sc l with
@@ -213,8 +213,8 @@ Fixpoint ssc_to_sc
 .
 
 Definition tosse_to_e_tose
-    {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {Σ : BackgroundModel}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (t : @TermOver' string StringExpression)
     :
     (TermOver Expression2)+string
@@ -232,14 +232,14 @@ Variant StringBuiltinOrVar :=
 .
 
 Definition sbov_to_e_bov
-    {Σ : StaticModel}
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {Σ : BackgroundModel}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (sbov : StringBuiltinOrVar)
     :
     BuiltinOrVar+string
 :=
     match sbov with
-    | sbov_var x => inl (bov_variable (string2var x))
+    | sbov_var x => inl (bov_Variabl (string2var x))
     | sbov_builtin b =>
         match (realize_br b) with
         | Some b' => inl (bov_builtin b')
@@ -259,9 +259,9 @@ Record StringRewritingRule
 }.
 
 Definition transl_string_pattern
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (Label : Set)
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (p : @TermOver' string StringBuiltinOrVar)
     :
     (TermOver BuiltinOrVar)+string
@@ -273,9 +273,9 @@ Definition transl_string_pattern
 .
 
 Definition srr_to_rr
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (Label : Set)
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (srr : StringRewritingRule Label)
     :
     (RewritingRule2 Label)+string
@@ -306,9 +306,9 @@ Definition srr_to_rr
 .
 
 Definition realize_thy
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (Label : Set)
-    {R : Realization builtin_value symbol variable PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol}
+    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol}
     (srrl : list (StringRewritingRule Label))
     :
     (list (RewritingRule2 Label))+string
@@ -323,7 +323,7 @@ Definition sSymbolicTerm_to_ExprTerm
     TermOver'_map (fun x:StringBuiltinOrVar =>
         match x with
         | sbov_builtin b => se_ground (t_over b)
-        | sbov_var x => se_variable x
+        | sbov_var x => se_Variabl x
         end ) t
 .
 
@@ -484,17 +484,17 @@ Section wsm.
         let lhs_vars : list (@TermOver' string StringBuiltinOrVar)
             := (map t_over (map sbov_var vars)) in
         let rhs_vars : list (@TermOver' string StringExpression)
-            := (map t_over (map se_variable vars)) in
+            := (map t_over (map se_Variabl vars)) in
         let selected_var : string
             := (argument_name position) in
-        match try_neg_s (isValue (se_variable selected_var)) with
+        match try_neg_s (isValue (se_Variabl selected_var)) with
         | None => inr "Cannot negate given isValue condition"
         | Some is_value_neg => inl (
             let lhs_selected_var : (@TermOver' string StringBuiltinOrVar)
                 := t_over (sbov_var selected_var) in
             (* all operands on the left are already evaluated *)
             let side_condition : StringSideCondition
-                := foldr  ssc_and (ssc_true) (isValue <$> ((se_variable <$> ((argument_name <$> positions_to_wait_for))) )) in
+                := foldr  ssc_and (ssc_true) (isValue <$> ((se_Variabl <$> ((argument_name <$> positions_to_wait_for))) )) in
             (mkRuleDeclaration _ lbl {|
                 sr_from := (cseq_context (cseq ([
                     (t_term sym lhs_vars);
@@ -531,7 +531,7 @@ Section wsm.
         let lhs_vars : list (@TermOver' string StringBuiltinOrVar)
             := (map t_over (map sbov_var vars)) in
         let rhs_vars : list (@TermOver' string StringExpression)
-            := (map t_over (map se_variable vars)) in
+            := (map t_over (map se_Variabl vars)) in
         let selected_var : string
             := (argument_name position) in
         let lhs_selected_var : (@TermOver' string StringBuiltinOrVar)
@@ -551,7 +551,7 @@ Section wsm.
                 (t_over (sbov_var REST_SEQ))
             ])%list)));
             sr_label := default_label;
-            sr_scs := (isValue (se_variable selected_var));
+            sr_scs := (isValue (se_Variabl selected_var));
         |})
     .
 

@@ -7,7 +7,7 @@ From Minuska Require Import
     substitution_parallel
 .
 
-Definition genSubstitutionSized (sz : nat) : G (gmap variable (TermOver BuiltinOrVar)) :=
+Definition genSubstitutionSized (sz : nat) : G (gmap Variabl (TermOver BuiltinOrVar)) :=
     bindGen (
         listOf (
             bindGen genVariable (fun x =>
@@ -26,8 +26,8 @@ Proof.
 Defined.
 
 Sample (genSubstitutionSized 3).
-Compute builtin_value.
-Definition SA := {["y3" := t_over (bov_variable "y2")]}:SubP.
+Compute BasicValue.
+Definition SA := {["y3" := t_over (bov_Variabl "y2")]}:SubP.
 Definition SB := {["y2" := t_over (bov_builtin (inr 1%Z))]}:SubP.
 Definition SC := {["y1" := t_over (bov_builtin (inr 2%Z))]}:SubP.
 
@@ -49,7 +49,7 @@ QuickChick (forAll (genSubstitutionSized 3)(fun a =>
 (* Search bool. *)
 Definition replace_and_collect_property_1
     (program : ProgramT)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (et : TermOver Expression2)
     (ρ : Valuation2)
     (nv : NondetValue)
@@ -88,7 +88,7 @@ Compute (sat2Bb ∅ (t_over (inr 1%Z)) (replace_and_collect (t_over (e_fun int_o
 
 Definition replace_and_collect_property_2
     (program : ProgramT)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (et : TermOver Expression2)
     (ρ : Valuation2)
     (nv : NondetValue)

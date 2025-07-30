@@ -8,33 +8,33 @@ From Minuska Require Import
 Arguments inject (FromT ToT) {Injection} _.
 
 Class CarrierInjection
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {my_signature : Signature}
     {NondetValue : Type}
     (FromT : Type)
     (M : Model my_signature NondetValue)
 := {
-    carrier_inject : Injection FromT (@builtin_value _ _ _ _ M) ;
+    carrier_inject : Injection FromT (@BasicValue _ _ _ _ M) ;
 }.
      *)
 (* 
 Class CarrierInjection
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {my_signature : Signature}
     {NondetValue : Type}
     (FromT : Type)
     (M : Model my_signature NondetValue)
 := {
-    carinj_inject : FromT -> @builtin_value _ _ _ _ M ;
+    carinj_inject : FromT -> @BasicValue _ _ _ _ M ;
     carinj_inject__injective :: Inj (=) (=) carinj_inject ;
 }. *)
 (* 
 #[global]
 Arguments carinj_inject
-    {symbol}
-    {symbols my_signature}
+    {TermSymbol}
+    {TermSymbols my_signature}
     {NondetValue}
     {FromT} M {CarrierInjection} _
 .

@@ -58,17 +58,17 @@ Instance DSM
     (β : Model mysignature MyUnit)
     (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
-    : StaticModel :=
+    : BackgroundModel :=
     default_model mysignature hiddensignature β hiddenβ program_info
 .
 
-Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (builtin_value).
+Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (BasicValue).
 
 (* Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT. *)
 (* Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat). *)
 
-Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
-Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
+Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : BasicValue) : GT := @t_over string BasicValue b.
+Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string BasicValue s l.
 
 Definition basic_rule
     (* {mysignature : Signature} *)
@@ -87,7 +87,7 @@ Definition basic_rule
 Fixpoint sTermOverBoV_subst_gen
     {B : Type}
     (lift_builtin : BuiltinRepr -> B)
-    (lift_variable : string -> B)
+    (lift_Variabl : string -> B)
     (t : @TermOver' string StringBuiltinOrVar)
     (x : string)
     (t' : @TermOver' string B)
@@ -98,9 +98,9 @@ match t with
 | t_over (sbov_var y) =>
     match (decide (x = y)) with
     | left _ => t'
-    | right _ => t_over (lift_variable y)
+    | right _ => t_over (lift_Variabl y)
     end
-| t_term s l => t_term s (map (fun t'' => sTermOverBoV_subst_gen lift_builtin lift_variable t'' x t') l)
+| t_term s l => t_term s (map (fun t'' => sTermOverBoV_subst_gen lift_builtin lift_Variabl t'' x t') l)
 end.
 
 Definition sTermOverBoV_subst_expr2
@@ -109,7 +109,7 @@ Definition sTermOverBoV_subst_expr2
     (t' : @TermOver' string StringExpression)
     : @TermOver' string StringExpression
 :=
-    sTermOverBoV_subst_gen (fun b => se_ground (t_over b)) (fun x => se_variable x) t x t'
+    sTermOverBoV_subst_gen (fun b => se_ground (t_over b)) (fun x => se_Variabl x) t x t'
 .
 
 Fixpoint sTermOverBoV_subst
@@ -178,7 +178,7 @@ Definition poly_naive_interpreter_ext
     let Sy : Type := string in
     let Va : Type := string in
     let mysignature := {|
-        FunctionSymbol := Fs;    
+        FunSymbol := Fs;    
     |} in
     mysignature
     (* let SM := 0 in

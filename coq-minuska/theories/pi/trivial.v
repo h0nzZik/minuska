@@ -29,16 +29,16 @@ Fail Next Obligation.
 
 #[local]
 Instance MyProgramInfo
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {NondetValue : Type}
     {mysignature : Signature}
     {builtin : Model mysignature NondetValue}
-    : @ProgramInfo symbol symbols NondetValue mysignature builtin
+    : @ProgramInfo TermSymbol TermSymbols NondetValue mysignature builtin
 := {|
     QuerySymbol := MyQuerySymbol ;
-    ProgramT := @TermOver' symbol builtin_value ;
-    pi_symbol_interp := fun my_program q es =>
+    ProgramT := @TermOver' TermSymbol BasicValue ;
+    pi_TermSymbol_interp := fun my_program q es =>
         match q with
         | qs_program => Some my_program
         end ;

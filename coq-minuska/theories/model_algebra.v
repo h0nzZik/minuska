@@ -8,15 +8,15 @@ From Coq Require Import Logic.Eqdep_dec.
 From Coq Require Import Logic.PropExtensionality.
 
 #[local]
-Arguments FunctionSymbol (Signature) : clear implicits.
+Arguments FunSymbol (Signature) : clear implicits.
 #[local]
-Arguments PredicateSymbol (Signature) : clear implicits.
+Arguments PredSymbol (Signature) : clear implicits.
 #[local]
-Arguments builtin_function_interp {symbol} {symbols signature}
+Arguments builtin_function_interp {TermSymbol} {TermSymbols signature}
   {NondetValue Carrier} (ModelOver) _ _ _
 .
 #[local]
-Arguments builtin_predicate_interp {symbol} {symbols signature}
+Arguments builtin_predicate_interp {TermSymbol} {TermSymbols signature}
   {NondetValue Carrier} (ModelOver) _ _ _
 .
 
@@ -88,8 +88,8 @@ Program Definition rinj_inr (A B : Type) : ReversibleInjection B (A+B) := {|
 Fail Next Obligation.
 
 Record RelaxedModel
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     (signature : Signature)
     (NondetValue : Type)
     (FromT : Type)
@@ -112,8 +112,8 @@ Record RelaxedModel
 }.
 
 Program Definition model_of_relaxed
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -123,7 +123,7 @@ Program Definition model_of_relaxed
     :
     Model signature NondetValue
 := {|
-    builtin_value := sum FromT (rm_carrier _ _ _ RM) ;
+    BasicValue := sum FromT (rm_carrier _ _ _ RM) ;
     builtin_model_over :=
         rm_model_over signature NondetValue FromT RM
         (sum FromT (rm_carrier _ _ _ RM))
@@ -152,14 +152,14 @@ Record RelaxedModelFunctorT (FromT : Type) := {
         forall
             (signature : Signature)
             (NondetValue : Type)
-            {symbol : Type}
-            {symbols : Symbols symbol},
-            @RelaxedModel symbol symbols signature NondetValue FromT ->
+            {TermSymbol : Type}
+            {TermSymbols : Symbols TermSymbol},
+            @RelaxedModel TermSymbol TermSymbols signature NondetValue FromT ->
             (* (inja : Injection FromT Carrier) *)
             (* (injb : ReversibleInjection (rmf_carrier Carrier) Carrier), *)
             @RelaxedModel
-                symbol
-                symbols
+                TermSymbol
+                TermSymbols
                 (rmf_signature signature)
                 (rmf_nondet NondetValue)
                 FromT
@@ -170,13 +170,13 @@ Definition rmf_apply
     (f : RelaxedModelFunctorT FromT)
     {signature : Signature}
     {NondetValue : Type}
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    (M : @RelaxedModel symbol symbols signature NondetValue FromT)
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
+    (M : @RelaxedModel TermSymbol TermSymbols signature NondetValue FromT)
     :
     @RelaxedModel
-        symbol
-        symbols
+        TermSymbol
+        TermSymbols
         (rmf_signature _ f signature)
         (rmf_nondet _ f NondetValue)
         FromT
@@ -188,44 +188,44 @@ Definition model_reduction
     (s1 s2 : Signature)
     (μ : SignatureMorphism s1 s2)
     (NV Carrier : Type)
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     :
     ModelOver s2 NV Carrier ->
     ModelOver s1 NV Carrier
 := fun m2 =>
 {|
     builtin_function_interp :=
-        fun (f : FunctionSymbol s1)
+        fun (f : FunSymbol s1)
             (nv : NV)
-            (args : list (@TermOver' symbol Carrier))
-        => spec.builtin_function_interp m2 (function_symbol_morphism μ f) nv args;
+            (args : list (@TermOver' TermSymbol Carrier))
+        => spec.builtin_function_interp m2 (function_TermSymbol_morphism μ f) nv args;
 
     builtin_predicate_interp :=
-        fun (p : PredicateSymbol s1)
+        fun (p : PredSymbol s1)
             (nv : NV)
-            (args : list (@TermOver' symbol Carrier))
-        => spec.builtin_predicate_interp m2 (predicate_symbol_morphism μ p) nv args;
+            (args : list (@TermOver' TermSymbol Carrier))
+        => spec.builtin_predicate_interp m2 (predicate_TermSymbol_morphism μ p) nv args;
 |}
 .
 
 Section sum.
 
     Definition signature_sum (s1 s2 : Signature) : Signature := {|
-        FunctionSymbol := sum (FunctionSymbol s1) (FunctionSymbol s2) ;
-        PredicateSymbol := sum (PredicateSymbol s1) (PredicateSymbol s2) ;
+        FunSymbol := sum (FunSymbol s1) (FunSymbol s2) ;
+        PredSymbol := sum (PredSymbol s1) (PredSymbol s2) ;
     |}.
     
     Definition signature_sum_morphism_1_function
         (s1 s2 : Signature)
-        : (FunctionSymbol s1) -> (FunctionSymbol (signature_sum s1 s2))
+        : (FunSymbol s1) -> (FunSymbol (signature_sum s1 s2))
     :=
         fun f => inl f
     .
 
     Definition signature_sum_morphism_1_predicate
         (s1 s2 : Signature)
-        : (PredicateSymbol s1) -> (PredicateSymbol (signature_sum s1 s2))
+        : (PredSymbol s1) -> (PredSymbol (signature_sum s1 s2))
     :=
         fun f => inl f
     .
@@ -233,20 +233,20 @@ Section sum.
     Definition signature_sum_morphism_1 (s1 s2 : Signature)
         : SignatureMorphism s1 (signature_sum s1 s2)
     := {|
-        function_symbol_morphism := signature_sum_morphism_1_function s1 s2 ;
-        predicate_symbol_morphism := signature_sum_morphism_1_predicate s1 s2 ;
+        function_TermSymbol_morphism := signature_sum_morphism_1_function s1 s2 ;
+        predicate_TermSymbol_morphism := signature_sum_morphism_1_predicate s1 s2 ;
     |}.
     
     Definition signature_sum_morphism_2_function
         (s1 s2 : Signature)
-        : (FunctionSymbol s2) -> (FunctionSymbol (signature_sum s1 s2))
+        : (FunSymbol s2) -> (FunSymbol (signature_sum s1 s2))
     :=
         fun f => inr f
     .
 
     Definition signature_sum_morphism_2_predicate
         (s1 s2 : Signature)
-        : (PredicateSymbol s2) -> (PredicateSymbol (signature_sum s1 s2))
+        : (PredSymbol s2) -> (PredSymbol (signature_sum s1 s2))
     :=
         fun f => inr f
     .
@@ -254,8 +254,8 @@ Section sum.
     Definition signature_sum_morphism_2 (s1 s2 : Signature)
         : SignatureMorphism s2 (signature_sum s1 s2)
     := {|
-        function_symbol_morphism := signature_sum_morphism_2_function s1 s2 ;
-        predicate_symbol_morphism := signature_sum_morphism_2_predicate s1 s2 ;
+        function_TermSymbol_morphism := signature_sum_morphism_2_function s1 s2 ;
+        predicate_TermSymbol_morphism := signature_sum_morphism_2_predicate s1 s2 ;
     |}.
     
     #[export]
@@ -275,46 +275,46 @@ Section sum.
     Fail Next Obligation.
 
     Definition function_interp_sum
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {TermSymbol : Type}
+        {TermSymbols : Symbols TermSymbol}
         (s1 s2 : Signature)
         (NV Carrier : Type)
         (m1 : ModelOver s1 NV Carrier)
         (m2 : ModelOver s2 NV Carrier)
-        (f : @FunctionSymbol (signature_sum s1 s2))
+        (f : @FunSymbol (signature_sum s1 s2))
         (nv : NV)
-        (args : list (@TermOver' symbol Carrier))
+        (args : list (@TermOver' TermSymbol Carrier))
         :
-        option (@TermOver' symbol Carrier)
+        option (@TermOver' TermSymbol Carrier)
     :=
         match f with
-        | inl f' => @builtin_function_interp symbol symbols s1 NV Carrier m1 f' nv args
-        | inr f' => @builtin_function_interp symbol symbols s2 NV Carrier m2 f' nv args
+        | inl f' => @builtin_function_interp TermSymbol TermSymbols s1 NV Carrier m1 f' nv args
+        | inr f' => @builtin_function_interp TermSymbol TermSymbols s2 NV Carrier m2 f' nv args
         end
     .
 
     Definition predicate_interp_sum
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {TermSymbol : Type}
+        {TermSymbols : Symbols TermSymbol}
         (s1 s2 : Signature)
         (NV Carrier : Type)
         (m1 : ModelOver s1 NV Carrier)
         (m2 : ModelOver s2 NV Carrier)
-        (p : @PredicateSymbol (signature_sum s1 s2))
+        (p : @PredSymbol (signature_sum s1 s2))
         (nv : NV)
-        (args : list (@TermOver' symbol Carrier))
+        (args : list (@TermOver' TermSymbol Carrier))
         :
         option bool
     :=
         match p with
-        | inl p' => @builtin_predicate_interp symbol symbols s1 NV Carrier m1 p' nv args
-        | inr p' => @builtin_predicate_interp symbol symbols s2 NV Carrier m2 p' nv args
+        | inl p' => @builtin_predicate_interp TermSymbol TermSymbols s1 NV Carrier m1 p' nv args
+        | inr p' => @builtin_predicate_interp TermSymbol TermSymbols s2 NV Carrier m2 p' nv args
         end
     .
 
     Definition modelover_sum
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {TermSymbol : Type}
+        {TermSymbols : Symbols TermSymbol}
         (s1 s2 : Signature)
         (NV : Type)
         (Carrier : Type)
@@ -329,8 +329,8 @@ Section sum.
     .
 
     Lemma modelover_sum_reduce_1
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {TermSymbol : Type}
+        {TermSymbols : Symbols TermSymbol}
         (s1 s2 : Signature)
         (NV : Type)
         (Carrier : Type)
@@ -351,8 +351,8 @@ Section sum.
     Qed.
 
     Lemma modelover_sum_reduce_2
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {TermSymbol : Type}
+        {TermSymbols : Symbols TermSymbol}
         (s1 s2 : Signature)
         (NV : Type)
         (Carrier : Type)
@@ -375,8 +375,8 @@ Section sum.
 End sum.
 
 Definition modelover_nv_lift 
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature: Signature}
     {NV1 NV2 : Type}
     {Carrier : Type}
@@ -395,8 +395,8 @@ Definition modelover_nv_lift
 
 (* 
 Definition modelover_carrier_lift 
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature: Signature}
     {NV : Type}
     {Carrier1 Carrier2 : Type}

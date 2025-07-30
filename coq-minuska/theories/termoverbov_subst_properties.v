@@ -7,8 +7,8 @@ From Minuska Require Import
 
 
 Lemma subst_notin
-    {Σ : StaticModel}
-    (h : variable)
+    {Σ : BackgroundModel}
+    (h : Variabl)
     (φ ψ : TermOver BuiltinOrVar)
     :
     h ∉ vars_of_to_l2r φ ->
@@ -56,8 +56,8 @@ Proof.
     }
 Qed.
 
-Lemma subst_notin2 {Σ : StaticModel}
-     : ∀ (h : variable) (φ ψ : TermOver BuiltinOrVar),
+Lemma subst_notin2 {Σ : BackgroundModel}
+     : ∀ (h : Variabl) (φ ψ : TermOver BuiltinOrVar),
          h ∉ vars_of φ → TermOverBoV_subst φ h ψ = φ
 .
 Proof.
@@ -108,8 +108,8 @@ Qed.
 
 
 Lemma size_subst_1
-    {Σ : StaticModel}
-    (h : variable)
+    {Σ : BackgroundModel}
+    (h : Variabl)
     (φ ψ : TermOver BuiltinOrVar)
     :
     TermOver_size φ <= TermOver_size (TermOverBoV_subst φ h ψ)
@@ -143,8 +143,8 @@ Proof.
 Qed.
 
 Lemma size_subst_2
-    {Σ : StaticModel}
-    (h : variable)
+    {Σ : BackgroundModel}
+    (h : Variabl)
     (φ ψ : TermOver BuiltinOrVar)
     :
     h ∈ vars_of_to_l2r φ ->
@@ -194,8 +194,8 @@ Qed.
 
 
 Lemma TermOverBoV_subst_once_size
-    {Σ : StaticModel}
-    (h : variable)
+    {Σ : BackgroundModel}
+    (h : Variabl)
     (φ ψ : TermOver BuiltinOrVar)
     :
     h ∉ vars_of ψ ->
@@ -520,7 +520,7 @@ Qed.
 
 
 Lemma vars_of__TermOverBoV_subst__varless
-    {Σ : StaticModel} c x v
+    {Σ : BackgroundModel} c x v
     :
     vars_of v = ∅ ->
     vars_of (TermOverBoV_subst c x v) = vars_of c ∖ {[x]}
@@ -576,9 +576,9 @@ Qed.
 
 
 Lemma subst_id
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 a x:
-TermOverBoV_subst a x (t_over (bov_variable x)) = a
+TermOverBoV_subst a x (t_over (bov_Variabl x)) = a
 .
 Proof.
 induction a; simpl.
@@ -603,9 +603,9 @@ Qed.
 
 
 Lemma vars_of_TermOverBoV_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (t t' : TermOver BuiltinOrVar)
-    (x : variable)
+    (x : Variabl)
 :
     x ∈ vars_of t ->
     vars_of (TermOverBoV_subst t x t') =
@@ -712,9 +712,9 @@ Qed.
 
 
 Lemma vars_of_to_l2r_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (φ ψ : TermOver BuiltinOrVar)
-    (h : variable)
+    (h : Variabl)
     :
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
     h ∉ vars_of_to_l2r ψ ->
@@ -780,7 +780,7 @@ Proof.
         rewrite fmap_cons.
         rewrite concat_cons.
 
-        assert (HJ1: Forall (λ x : variable, h ≠ x) (concat (vars_of_to_l2r <$> la1))).
+        assert (HJ1: Forall (λ x : Variabl, h ≠ x) (concat (vars_of_to_l2r <$> la1))).
         {
             rewrite Forall_forall.
             rewrite Forall_forall in HH'3.
@@ -799,7 +799,7 @@ Proof.
             apply HH'3. apply H2.
         }
 
-        assert (HJ2 : Forall (λ x : variable, h ≠ x) (concat (vars_of_to_l2r <$> lc1))).
+        assert (HJ2 : Forall (λ x : Variabl, h ≠ x) (concat (vars_of_to_l2r <$> lc1))).
         {
             rewrite Forall_forall.
             rewrite Forall_forall in HH'4.
@@ -893,7 +893,7 @@ Proof.
         }
         rewrite Heq1. rewrite Heq2. clear Heq1 Heq2.
 
-        assert (HJ1': filter (λ x : variable, x ≠ h) (concat (vars_of_to_l2r <$> la1)) = concat (vars_of_to_l2r <$> la1)).
+        assert (HJ1': filter (λ x : Variabl, x ≠ h) (concat (vars_of_to_l2r <$> la1)) = concat (vars_of_to_l2r <$> la1)).
         {
             clear -HJ1.
             rewrite list_filter_Forall_all.
@@ -904,7 +904,7 @@ Proof.
             }
         }
 
-        assert (HJ2': filter (λ x : variable, x ≠ h) (concat (vars_of_to_l2r <$> lc1)) = concat (vars_of_to_l2r <$> lc1)).
+        assert (HJ2': filter (λ x : Variabl, x ≠ h) (concat (vars_of_to_l2r <$> lc1)) = concat (vars_of_to_l2r <$> lc1)).
         {
             clear -HJ2.
             rewrite list_filter_Forall_all.

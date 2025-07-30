@@ -15,13 +15,13 @@ Require Import Coq.Classes.Morphisms_Prop.
 Require Import Coq.Logic.FunctionalExtensionality.
 
 Fixpoint try_match_new
-    {Σ : StaticModel}
-    (g : TermOver builtin_value)
+    {Σ : BackgroundModel}
+    (g : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     : option Valuation2
 :=
     match φ with
-    | t_over (bov_variable x) => Some (<[x := g]>∅)
+    | t_over (bov_Variabl x) => Some (<[x := g]>∅)
     | t_over (bov_builtin b) =>
         match g with
         | t_over b' =>
@@ -51,7 +51,7 @@ Fixpoint try_match_new
 
 
 Definition Expression2_evaluate_nv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
@@ -63,13 +63,13 @@ Definition Expression2_evaluate_nv
 .
 
 Definition eval_et
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (et : TermOver Expression2)
-    : option (TermOver builtin_value)
+    : option (TermOver BasicValue)
 :=
     x ← TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et;
     Some (TermOver'_join x)
@@ -77,13 +77,13 @@ Definition eval_et
 
 (* TODO this should be more general lemma somewhere in [properties.v] *)
 Lemma eval_et_Some_val
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     (et : TermOver Expression2)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
 :
     eval_et program h ρ nv et = Some t ->
     vars_of et ⊆ vars_of ρ 
@@ -148,14 +148,14 @@ Proof.
 Qed.
 
 Definition try_match_lhs_with_sc
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (program : ProgramT)
     (h : hidden_data)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (nv : NondetValue)
     (r : RewritingRule2 Label)
-    : option (Valuation2*(TermOver builtin_value)*hidden_data)
+    : option (Valuation2*(TermOver BasicValue)*hidden_data)
 :=
     ρ ← try_match_new g (r_from r);
     b ← SideCondition_evaluate program h ρ nv (r_scs r);
@@ -174,28 +174,28 @@ Definition try_match_lhs_with_sc
 .
 
 Definition thy_lhs_match_one
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
-    (e : TermOver builtin_value)
+    (e : TermOver BasicValue)
     (h : hidden_data)
     (nv : NondetValue)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    : option (RewritingRule2 Label * Valuation2 * (TermOver builtin_value) * hidden_data * nat)%type
+    : option (RewritingRule2 Label * Valuation2 * (TermOver BasicValue) * hidden_data * nat)%type
 :=
     let froms : list (TermOver BuiltinOrVar)
         := r_from <$> Γ
     in
-    let vs : list (option (Valuation2 * (TermOver builtin_value) * hidden_data))
+    let vs : list (option (Valuation2 * (TermOver BasicValue) * hidden_data))
         := (try_match_lhs_with_sc program h e nv) <$> Γ
     in
-    let found : option (nat * option (Valuation2*(TermOver builtin_value) * hidden_data))
+    let found : option (nat * option (Valuation2*(TermOver BasicValue) * hidden_data))
         := list_find isSome vs
     in
-    flip mbind found (fun (nov : (nat * option (Valuation2*(TermOver builtin_value) * hidden_data))) => (
+    flip mbind found (fun (nov : (nat * option (Valuation2*(TermOver BasicValue) * hidden_data))) => (
         let idx : nat := nov.1 in
-        let ov : option (Valuation2 * (TermOver builtin_value) * hidden_data) := nov.2 in
-        flip mbind ov (fun (v : (Valuation2 * (TermOver builtin_value) * hidden_data)) =>
+        let ov : option (Valuation2 * (TermOver BasicValue) * hidden_data) := nov.2 in
+        flip mbind ov (fun (v : (Valuation2 * (TermOver BasicValue) * hidden_data)) =>
             flip mbind (Γ !! idx) (fun r =>
                 Some (r, v.1.1, v.1.2, v.2, idx)
             )
@@ -205,15 +205,15 @@ Definition thy_lhs_match_one
 
 
 Definition naive_interpreter_ext
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    (e : (TermOver builtin_value)*(hidden_data))
-    : option (((TermOver builtin_value)*(hidden_data))*nat)
+    (e : (TermOver BasicValue)*(hidden_data))
+    : option (((TermOver BasicValue)*(hidden_data))*nat)
 :=
-    let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver builtin_value)*hidden_data*nat)
+    let oρ : option ((RewritingRule2 Label)*Valuation2*(TermOver BasicValue)*hidden_data*nat)
         := thy_lhs_match_one e.1 e.2 nv Γ program in
     match oρ with
     | None => None
@@ -223,13 +223,13 @@ Definition naive_interpreter_ext
 .
 
 Definition naive_interpreter
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    (e : (TermOver builtin_value)*(hidden_data))
-    : option ((TermOver builtin_value)*hidden_data)
+    (e : (TermOver BasicValue)*(hidden_data))
+    : option ((TermOver BasicValue)*hidden_data)
 :=
     ei ← naive_interpreter_ext Γ program nv e;
     Some (ei.1)
@@ -238,9 +238,9 @@ Definition naive_interpreter
 
 
 Lemma try_match_new_complete
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
-    ∀ (a : (TermOver builtin_value)) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
+    ∀ (a : (TermOver BasicValue)) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
         sat2B ρ a b ->
         { ρ' : Valuation2 &
             vars_of ρ' = vars_of b /\
@@ -390,7 +390,7 @@ Proof.
                     ltac1:(rewrite dom_merge_use_left).
                     unfold vars_of in HH1; simpl in HH1.
                     rewrite HH1.
-                    (*fold ((@vars_of (@TermOver' (@symbol Σ) (@BuiltinOrVar Σ)) (@variable Σ) _ (@variable_countable variable variables )) <$> l0).*)                    Check vars_of_t_term.
+                    (*fold ((@vars_of (@TermOver' (@TermSymbol Σ) (@BuiltinOrVar Σ)) (@Variabl Σ) _ (@Variabl_countable Variabl Variabls )) <$> l0).*)                    Check vars_of_t_term.
                     (*ltac1:(rewrite vars_of_t_term).*)
                     unfold vars_of in H4; simpl in H4.
                     rewrite H4.
@@ -412,8 +412,8 @@ Proof.
     }
 Qed.
 
-Lemma try_match_new_correct {Σ : StaticModel} :
-    ∀ (a : TermOver builtin_value) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
+Lemma try_match_new_correct {Σ : BackgroundModel} :
+    ∀ (a : TermOver BasicValue) (b : TermOver BuiltinOrVar) (ρ : Valuation2),
         try_match_new a b = Some ρ ->
         sat2B ρ a b
 .
@@ -528,16 +528,16 @@ Qed.
 
 (* TODO this should also be moved somewhere *)
 Lemma eval_et_strip_helper
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
-    (gg : TermOver (TermOver builtin_value))
+    (gg : TermOver (TermOver BasicValue))
 :
     TermOver'_option_map (Expression2_evaluate_nv program h ρ nv) et = Some gg ->
-    TermOver'_option_map (Expression2_evaluate_nv program h (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of et) ρ) nv) et = Some gg
+    TermOver'_option_map (Expression2_evaluate_nv program h (filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of et) ρ) nv) et = Some gg
 .
 Proof.
     revert gg.
@@ -633,12 +633,12 @@ Proof.
                 (* unfold Valuation2 in *. *)
                 assert(Hfilter: 
                     (filter
-                        (λ kv : variable * TermOver builtin_value,
+                        (λ kv : Variabl * TermOver BasicValue,
                       kv.1 ∈ ⋃ (vars_of <$> l))
                     ρ)
                     ⊆
                     (filter
-                        (λ kv : variable * TermOver builtin_value,
+                        (λ kv : Variabl * TermOver BasicValue,
                         kv.1 ∈ (vars_of a ∪ (⋃ (vars_of <$> l))))
                     ρ)
                 ).
@@ -663,7 +663,7 @@ Proof.
                 | [|- (TermOver'_option_map ?f _ = _)] =>
                     remember $f as myf
                 end.
-                assert(Htmp := @TermOver'_option_map__Some_1 (symbol) _ _ _ _ myf).
+                assert(Htmp := @TermOver'_option_map__Some_1 (TermSymbol) _ _ _ _ myf).
                 apply take_drop_middle in Hix as Hix'.
                 rewrite <- Hix' in IHl'.
                 (* clear Hix'. *)
@@ -758,16 +758,16 @@ Qed.
 (* Check eval_et_strip_helper. *)
 (* Check Expression2_evalute_strip. *)
 Lemma eval_et_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
 :
     eval_et program h ρ nv et = Some g ->
-    eval_et program h (filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of et) ρ) nv et = Some g
+    eval_et program h (filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of et) ρ) nv et = Some g
 .
 Proof.
     unfold eval_et.
@@ -784,13 +784,13 @@ Proof.
 Qed.
 
 Lemma eval_et_correct
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     :
     eval_et program h ρ nv et = Some g ->
     sat2E program h ρ g et nv
@@ -900,13 +900,13 @@ Proof.
 Qed.
 
 Lemma eval_et_correct_2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     :
     sat2E program h ρ g et nv ->
     eval_et program h ρ nv et = Some g
@@ -1010,19 +1010,19 @@ Proof.
 Qed.
 
 Lemma TermOver'_option_map__Expression2_evaluate__extensive
-{Σ : StaticModel} a nv ρ1 ρ2 program h
+{Σ : BackgroundModel} a nv ρ1 ρ2 program h
 :
     ρ1 ⊆ ρ2 ->
-    ∀ t : TermOver' (TermOver builtin_value),
+    ∀ t : TermOver' (TermOver BasicValue),
     TermOver'_option_map
     (λ t0 : Expression2,
     Expression2_evaluate program h ρ1 t0 nv
-    ≫= λ gt : TermOver builtin_value, Some (gt))
+    ≫= λ gt : TermOver BasicValue, Some (gt))
     a = Some t
-    → @TermOver'_option_map symbol _ _
+    → @TermOver'_option_map TermSymbol _ _
     (λ t0 : Expression2,
     Expression2_evaluate program h ρ2 t0 nv
-    ≫= λ gt : TermOver builtin_value, Some (gt))
+    ≫= λ gt : TermOver BasicValue, Some (gt))
     a = Some t
 .
 Proof.
@@ -1094,7 +1094,7 @@ Proof.
 Qed.
 
 Lemma eval_et_evaluate_None_relative
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (et : TermOver Expression2)
@@ -1219,13 +1219,13 @@ Proof.
 Qed.
 
 Lemma eval_et_extensive_Some
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ1 ρ2 : Valuation2)
     (et : TermOver Expression2)
     (nv : NondetValue)
-    (t : TermOver builtin_value)
+    (t : TermOver BasicValue)
     :
     ρ1 ⊆ ρ2 ->
     eval_et program h ρ1 nv et = Some t ->
@@ -1315,11 +1315,11 @@ Proof.
 Qed.
 
 Lemma try_match_lhs_with_sc_complete
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (program : ProgramT)
     (h h' : hidden_data)
-    (g g' : TermOver builtin_value)
+    (g g' : TermOver BasicValue)
     (r : RewritingRule2 Label)
     (ρ : Valuation2)
     (nv : NondetValue)
@@ -1332,8 +1332,8 @@ Lemma try_match_lhs_with_sc_complete
     SideCondition_evaluate program h ρ nv (r_scs r) = Some true ->
     Effect0_evaluate program h ρ nv (r_eff r) = Some h' ->
     {
-        ρ' : (gmap variable (TermOver builtin_value)) &
-        { g'' : TermOver builtin_value &
+        ρ' : (gmap Variabl (TermOver BasicValue)) &
+        { g'' : TermOver BasicValue &
             { h'' : hidden_data &
                 vars_of ρ' = vars_of (r_from r) ∧
                 ρ' ⊆ ρ ∧
@@ -1459,7 +1459,7 @@ Proof.
 Qed.
 
 Lemma valuation_restrict_vars_of_self
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ' ρ : Valuation2)
     :
     ρ' ⊆ ρ  ->
@@ -1512,17 +1512,17 @@ Qed.
 
 
 Lemma thy_lhs_match_one_None
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (program : ProgramT)
     (h : hidden_data)
-    (e : TermOver builtin_value)
+    (e : TermOver BasicValue)
     (Γ : RewritingTheory2 Label)
     (wfΓ : RewritingTheory2_wf Γ)
     (nv : NondetValue)
     :
     thy_lhs_match_one e h nv Γ program = None ->
-    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver builtin_value & { h' : _ &
+    notT { r : RewritingRule2 Label & { ρ : Valuation2 & { e' : TermOver BasicValue & { h' : _ &
         ((r ∈ Γ) *
          (sat2B ρ e (r_from r)) *
          (SideCondition_evaluate program h ρ nv (r_scs r) = Some true) *
@@ -1596,7 +1596,7 @@ Proof.
             { apply HContra3''. }
             {
                 clear HContra3''.
-                assert (Hfs: filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_to r)) ρ ⊆ filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_from r)) ρ).
+                assert (Hfs: filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_to r)) ρ ⊆ filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_from r)) ρ).
                 {
                     unfold Valuation2 in *.
                     unfold Subseteq_Valuation2.
@@ -1610,7 +1610,7 @@ Proof.
                 }
                 unfold Valuation2 in *.
                 apply transitivity with (y := filter
-                    (λ kv : variable * TermOver builtin_value,
+                    (λ kv : Variabl * TermOver BasicValue,
                     kv.1 ∈ vars_of (r_from r))
                     ρ).
                 { apply Hfs. }
@@ -1662,7 +1662,7 @@ Proof.
             { apply HContra3''. }
             {
                 clear HContra3''.
-                assert (Hfs: filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_eff r)) ρ ⊆ filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of (r_from r)) ρ).
+                assert (Hfs: filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_eff r)) ρ ⊆ filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of (r_from r)) ρ).
                 {
                     unfold Valuation2 in *.
                     unfold Subseteq_Valuation2.
@@ -1676,7 +1676,7 @@ Proof.
                 }
                 unfold Valuation2 in *.
                 apply transitivity with (y := filter
-                    (λ kv : variable * TermOver builtin_value,
+                    (λ kv : Variabl * TermOver BasicValue,
                     kv.1 ∈ vars_of (r_from r))
                     ρ).
                 { apply Hfs. }
@@ -1756,9 +1756,9 @@ Qed.
 
 
 Lemma thy_lhs_match_one_Some
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
-    (e e' : TermOver builtin_value)
+    (e e' : TermOver BasicValue)
     (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (h h' : hidden_data)
@@ -1932,7 +1932,7 @@ Qed.
 
 
 Lemma naive_interpreter_sound
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     (Γ : RewritingTheory2 Label)
     : Interpreter_sound Γ (naive_interpreter Γ).

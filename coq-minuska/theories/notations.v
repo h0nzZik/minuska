@@ -11,7 +11,7 @@ Delimit Scope RuleScope with rs.
 Delimit Scope ConcreteScope with concrete.
 
 
-Record ExprAndBoV {Σ : StaticModel} : Type := mkExprAndBoV {
+Record ExprAndBoV {Σ : BackgroundModel} : Type := mkExprAndBoV {
     eab_expr : Expression2 ;
     eab_bov : BuiltinOrVar ;
 }.
@@ -22,16 +22,16 @@ Class TagLHS := mkTagLHS {}.
 Class TagRHS := mkTagRHS {}.
 Class TagGround := mkTagGround {}.
 
-Class BasicResolver {Σ : StaticModel} := {
+Class BasicResolver {Σ : BackgroundModel} := {
     operand_type : Type ;
 }.
 
-Class Resolver {Σ : StaticModel} {_BR : BasicResolver} := {
-    inject_variable : variable -> operand_type ;
+Class Resolver {Σ : BackgroundModel} {_BR : BasicResolver} := {
+    inject_Variabl : Variabl -> operand_type ;
 }.
 
 #[export]
-Instance BasicResolver_lhs {Σ : StaticModel}
+Instance BasicResolver_lhs {Σ : BackgroundModel}
     {_T1 : TagLHS}
     : BasicResolver
 := {    
@@ -39,7 +39,7 @@ Instance BasicResolver_lhs {Σ : StaticModel}
 }.
 
 #[export]
-Instance BasicResolver_rhs {Σ : StaticModel}
+Instance BasicResolver_rhs {Σ : BackgroundModel}
     {_T2 : TagRHS}
     : BasicResolver
 := {
@@ -47,33 +47,33 @@ Instance BasicResolver_rhs {Σ : StaticModel}
 }.
 
 #[export]
-Instance BasicResolver_ground {Σ : StaticModel}
+Instance BasicResolver_ground {Σ : BackgroundModel}
     {_T2 : TagGround}
     : BasicResolver
 := {
-    operand_type := builtin_value ;
+    operand_type := BasicValue ;
 }.
 
 #[export]
-Instance Resolver_lhs {Σ : StaticModel} {_T1 : TagLHS} : Resolver := {    
-    inject_variable := (*t_over ∘*) bov_variable;
+Instance Resolver_lhs {Σ : BackgroundModel} {_T1 : TagLHS} : Resolver := {    
+    inject_Variabl := (*t_over ∘*) bov_Variabl;
 }.
 
 #[export]
-Instance Resolver_rhs {Σ : StaticModel} {_T2 : TagRHS} : Resolver := {
-    inject_variable := (*t_over ∘ *) e_variable;
+Instance Resolver_rhs {Σ : BackgroundModel} {_T2 : TagRHS} : Resolver := {
+    inject_Variabl := (*t_over ∘ *) e_Variabl;
 }. *)
 
 (*
 
-Class ToAOO {Σ : StaticModel} {_basic_resolver : BasicResolver}
+Class ToAOO {Σ : BackgroundModel} {_basic_resolver : BasicResolver}
     (to_aoo_F : Type)
 := {
     to_aoo_opt : to_aoo_F -> (TermOver operand_type) ;
 }.
 
 #[export]
-Instance ToAOO_id {Σ : StaticModel} {_basic_resolver : BasicResolver}
+Instance ToAOO_id {Σ : BackgroundModel} {_basic_resolver : BasicResolver}
     {T : Type}
     {_eq: TCEq T (TermOver operand_type)}
     : ToAOO T
@@ -86,7 +86,7 @@ Proof. inversion _eq. subst. constructor. intros x. exact x. Defined.
 *)
 (* I have no idea why I need the indirection through T. *)
 #[export]
-Instance ToAOO_inj {Σ : StaticModel} {_basic_resolver : BasicResolver}
+Instance ToAOO_inj {Σ : BackgroundModel} {_basic_resolver : BasicResolver}
     {T : Type}
     {_eq: TCEq T operand_type}
     : ToAOO  (T)
@@ -103,7 +103,7 @@ Arguments to_aoo_opt {Σ _basic_resolver} {to_aoo_F}%_type_scope {ToAOO} _.
 *)
 (* 
 Notation "'$' x" :=
-    (inject_variable x)
+    (inject_Variabl x)
     (at level 40)
 . *)
 (* 

@@ -21,11 +21,11 @@ From Coq Require Import Logic.Eqdep_dec.
 From Equations Require Export Equations.
 
 
-Definition ScList {Σ : StaticModel} := (list (variable*(AttributeSymbol+QuerySymbol+FunctionSymbol)*(list (Expression2)))).
+Definition ScList {Σ : BackgroundModel} := (list (Variabl*(AttrSymbol+QuerySymbol+FunSymbol)*(list (Expression2)))).
 
 (* To make sense, vars of F and vars of et should not overlap *)
 Fixpoint replace_and_collect0
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (* (F : FresherM ()) *)
     (et : (TermOver Expression2))
     :
@@ -33,18 +33,18 @@ Fixpoint replace_and_collect0
 :=
     match et with
     | t_over (e_ground g) => returnFresher (((TermOverBuiltin_to_TermOverBoV g)),[])
-    | t_over (e_variable x) => returnFresher ((t_over (bov_variable x)),[])
+    | t_over (e_Variabl x) => returnFresher ((t_over (bov_Variabl x)),[])
     | t_over (e_fun f l) => 
         freshFresher (fun x =>
-            (t_over (bov_variable x),[(x,(inr f), l)])
+            (t_over (bov_Variabl x),[(x,(inr f), l)])
         )
     | t_over (e_query q l) => 
         freshFresher (fun x =>
-            (t_over (bov_variable x),[(x,(inl (inr q)), l)])
+            (t_over (bov_Variabl x),[(x,(inl (inr q)), l)])
         )
     | t_over (e_attr a l) => 
         freshFresher (fun x =>
-            (t_over (bov_variable x),[(x,(inl (inl a)), l)])
+            (t_over (bov_Variabl x),[(x,(inl (inl a)), l)])
         )
     | t_term s l => 
         let a := (fix go (l : (list (TermOver Expression2))) : FresherM ((list (TermOver BuiltinOrVar))*ScList) :=
@@ -67,8 +67,8 @@ Fixpoint replace_and_collect0
 .
 
 Definition replace_and_collect1
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (et : (TermOver Expression2))
     :
     ((TermOver BuiltinOrVar)*ScList)
@@ -78,7 +78,7 @@ Definition replace_and_collect1
 
 
 Definition replace_and_collect
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (et : (TermOver Expression2))
     :
     ((TermOver BuiltinOrVar)*ScList)
@@ -86,18 +86,18 @@ Definition replace_and_collect
     replace_and_collect1 [] et
 .
 
-Inductive SideConditionEq {Σ : StaticModel} :=
+Inductive SideConditionEq {Σ : BackgroundModel} :=
 | sce_true
 | sce_false
 | sce_eq (l r : Expression2)
-| sce_atom (pred : PredicateSymbol) (args : list Expression2)
-| sce_natom (pred : PredicateSymbol) (args : list Expression2)
-| sce_hatom (pred : HiddenPredicateSymbol) (args : list Expression2)
+| sce_atom (pred : PredSymbol) (args : list Expression2)
+| sce_natom (pred : PredSymbol) (args : list Expression2)
+| sce_hatom (pred : HPredSymbol) (args : list Expression2)
 | sce_and (left : SideConditionEq) (right : SideConditionEq)
 | sce_or (left : SideConditionEq) (right : SideConditionEq)
 .
 
-Fixpoint asIfWithEq {Σ : StaticModel} (sc : SideCondition) : SideConditionEq :=
+Fixpoint asIfWithEq {Σ : BackgroundModel} (sc : SideCondition) : SideConditionEq :=
     match sc with
     | sc_true => sce_true
     | sc_false => sce_false
@@ -109,7 +109,7 @@ Fixpoint asIfWithEq {Σ : StaticModel} (sc : SideCondition) : SideConditionEq :=
     end
 .
 
-Fixpoint vars_of_sce {Σ : StaticModel} (sc : SideConditionEq) : gset variable :=
+Fixpoint vars_of_sce {Σ : BackgroundModel} (sc : SideConditionEq) : gset Variabl :=
 match sc with
 | sce_true => ∅
 | sce_false => ∅
@@ -124,14 +124,14 @@ end
 
 #[export]
 Instance  VarsOf_sce
-    {Σ : StaticModel}
-    : VarsOf SideConditionEq variable
+    {Σ : BackgroundModel}
+    : VarsOf SideConditionEq Variabl
 := {|
     vars_of := vars_of_sce ;
 |}.
 
 Definition SideConditionEq_evaluate
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
@@ -176,7 +176,7 @@ Definition SideConditionEq_evaluate
 .
 
 Lemma SideConditionEq_evaluate_asIfWithEq
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sc : SideCondition)
     (program : ProgramT)
     (h : hidden_data)
@@ -206,7 +206,7 @@ Proof.
 Qed.
 
 Record SimpleSymbolicState
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
  := {
     sss_term : TermOver BuiltinOrVar ;
     sss_sc : SideConditionEq ;
@@ -215,13 +215,13 @@ Record SimpleSymbolicState
      *)
 }.
 
-Definition SymbolicState {Σ : StaticModel } := list SimpleSymbolicState.
+Definition SymbolicState {Σ : BackgroundModel } := list SimpleSymbolicState.
 
 
 Definition denot_sss
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sss : SimpleSymbolicState)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     : Type
 :=
     { ρ : Valuation2 & sat2B ρ g sss.(sss_term) }
@@ -230,22 +230,22 @@ Definition denot_sss
 (* Search sigT. *)
 
 Definition denot_ss
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ss : SymbolicState)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     : Type
 :=
     { sss : SimpleSymbolicState & ((sss ∈ ss) * (((denot_sss sss g))))%type }
 
 .
 
-Definition FalseState {Σ : StaticModel} : SymbolicState := [].
+Definition FalseState {Σ : BackgroundModel} : SymbolicState := [].
 
-Fixpoint sclist_to_sceq {Σ : StaticModel} (l : ScList) : SideConditionEq :=
+Fixpoint sclist_to_sceq {Σ : BackgroundModel} (l : ScList) : SideConditionEq :=
     match l with
     | [] => sce_true
     | xfl::xs =>
-        let part_1 := sce_eq (e_variable xfl.1.1) (
+        let part_1 := sce_eq (e_Variabl xfl.1.1) (
         match xfl.1.2 with
         | inl (inl a) => e_attr a xfl.2
         | inl (inr q) => e_query q xfl.2
@@ -257,7 +257,7 @@ Fixpoint sclist_to_sceq {Σ : StaticModel} (l : ScList) : SideConditionEq :=
 .
 
 Definition simpleStepByRule
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (UA : UnificationAlgorithm)
     (sss : SimpleSymbolicState)
     (Label : Set)

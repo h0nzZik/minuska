@@ -9,20 +9,20 @@ Definition unit_hidden_signature
 :
     HiddenSignature
 := {|
-    AttributeSymbol := void ;
+    AttrSymbol := void ;
     MethodSymbol := void ;
-    HiddenPredicateSymbol := void ;
+    HPredSymbol := void ;
 |}.
 
 
 Definition unit_hidden_model
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     (signature : Signature)
     (NondetValue : Type)
     (model : Model signature NondetValue)
 :
-    @HiddenModel symbol symbols signature (unit_hidden_signature signature) NondetValue model
+    @HiddenModel TermSymbol TermSymbols signature (unit_hidden_signature signature) NondetValue model
 := {|
     hidden_data := unit ;
     hidden_init := tt;

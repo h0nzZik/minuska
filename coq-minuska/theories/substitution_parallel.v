@@ -6,23 +6,23 @@ From Minuska Require Import
 
 
 (* 'parallel' substitution *)
-Definition SubP {Σ : StaticModel} : Type
+Definition SubP {Σ : BackgroundModel} : Type
 :=
-    gmap variable (TermOver BuiltinOrVar)
+    gmap Variabl (TermOver BuiltinOrVar)
 .
 
 (* 
 #[export]
-Instance union_subp {Σ : StaticModel} : Union SubP.
+Instance union_subp {Σ : BackgroundModel} : Union SubP.
 Proof.
     unfold SubP.
     apply _.
 Defined. *)
 
 
-Fixpoint subp_app {Σ : StaticModel} (s : SubP) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
+Fixpoint subp_app {Σ : BackgroundModel} (s : SubP) (t : TermOver BuiltinOrVar) : TermOver BuiltinOrVar :=
 match t with
-  | t_over (bov_variable v) => let t'_opt := s !! v in
+  | t_over (bov_Variabl v) => let t'_opt := s !! v in
     match t'_opt with
       | None => t
       | Some t' => t'
@@ -33,38 +33,38 @@ end
 .
 
 Definition subp_dom
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   (s : SubP)
-: gset variable
+: gset Variabl
 :=
   dom s
 .
 
 (* Check @map_img. *)
 Definition subp_codom
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   (s : SubP)
-: gset variable
+: gset Variabl
 :=
   let img' : listset (TermOver BuiltinOrVar) := map_img s in
   let img : list (TermOver BuiltinOrVar) := elements img' in
-  let vs : list (gset variable) := vars_of <$> img in
+  let vs : list (gset Variabl) := vars_of <$> img in
   ⋃ (vs)
 .
 
 Definition subp_normalize
-  {Σ : StaticModel}
-  (a : gmap variable (TermOver BuiltinOrVar))
-  : gmap variable (TermOver BuiltinOrVar)
+  {Σ : BackgroundModel}
+  (a : gmap Variabl (TermOver BuiltinOrVar))
+  : gmap Variabl (TermOver BuiltinOrVar)
 :=
   filter
-    (fun kv => t_over (bov_variable kv.1) <> kv.2)
+    (fun kv => t_over (bov_Variabl kv.1) <> kv.2)
     a
 .
 
 Definition subp_is_normal
-  {Σ : StaticModel}
-  (a : gmap variable (TermOver BuiltinOrVar))
+  {Σ : BackgroundModel}
+  (a : gmap Variabl (TermOver BuiltinOrVar))
   : Prop
 :=
   subp_normalize a = a
@@ -72,8 +72,8 @@ Definition subp_is_normal
 
 (* a after b *)
 Definition subp_compose
-  {Σ : StaticModel}
-  (a b : gmap variable (TermOver BuiltinOrVar))
+  {Σ : BackgroundModel}
+  (a b : gmap Variabl (TermOver BuiltinOrVar))
 :=
   subp_normalize
     (union
@@ -83,19 +83,19 @@ Definition subp_compose
 .
 
 Definition subp_id
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   :
-  gmap variable (TermOver BuiltinOrVar)
+  gmap Variabl (TermOver BuiltinOrVar)
 :=
   empty
 .
 
-Definition RestrictP {Σ : StaticModel} (to : gset variable) : (prod (variable) (TermOver BuiltinOrVar)) -> Prop :=
+Definition RestrictP {Σ : BackgroundModel} (to : gset Variabl) : (prod (Variabl) (TermOver BuiltinOrVar)) -> Prop :=
   fun x => x.1 ∈ to
 .
 
 #[export]
-Instance restrictp_decision {Σ : StaticModel} (to : gset variable) : forall x, Decision (RestrictP to x).
+Instance restrictp_decision {Σ : BackgroundModel} (to : gset Variabl) : forall x, Decision (RestrictP to x).
 Proof.
   intros x.
   unfold RestrictP.
@@ -103,16 +103,16 @@ Proof.
 Defined.
 
 Definition subp_restrict
-  {Σ : StaticModel}
-  (to : gset variable)
+  {Σ : BackgroundModel}
+  (to : gset Variabl)
   : SubP -> SubP
 :=
   filter (RestrictP to)
 .
 
 Definition subp_precompose
-  {Σ : StaticModel}
-  (a b : gmap variable (TermOver BuiltinOrVar))
+  {Σ : BackgroundModel}
+  (a b : gmap Variabl (TermOver BuiltinOrVar))
 :=
       (fmap (subp_app a) b) 
 .

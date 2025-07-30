@@ -8,8 +8,8 @@ From Minuska Require Import
 From Coq Require Import Logic.PropExtensionality.
 
 Lemma vars_of_to_l2r_of_tob
-    {Σ : StaticModel}
-    (r : TermOver builtin_value)
+    {Σ : BackgroundModel}
+    (r : TermOver BasicValue)
     :
     vars_of_to_l2r (TermOverBuiltin_to_TermOverBoV r) = []
 .
@@ -36,13 +36,13 @@ Qed.
 
 
 Lemma Expression2_evaluate_extensive_Some
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ1 ρ2 : Valuation2)
     (t : Expression2)
     (nv : NondetValue)
-    (t' : TermOver builtin_value)
+    (t' : TermOver BasicValue)
     :
     ρ1 ⊆ ρ2 ->
     Expression2_evaluate program h ρ1 t nv = Some t' ->
@@ -341,13 +341,13 @@ Proof.
 Qed.
 
 Lemma Expression2_evaluate_total_1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (e : Expression2)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
 :
     Expression2_evaluate program h ρ e nv = Some g ->
     ( vars_of e ⊆ vars_of ρ )
@@ -473,12 +473,12 @@ Proof.
 Qed.
 
 Lemma Expression2Term_matches_enough
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (t : TermOver Expression2)
     (ρ : Valuation2)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (nv : NondetValue)
 :
     sat2E program h ρ g t nv ->
@@ -541,13 +541,13 @@ Qed.
 
 
 Lemma list_collect_Expression2_evaluate_extensive_Some
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ1 ρ2 : Valuation2)
     (l : list Expression2)
     (nv : NondetValue)
-    (l' : list (TermOver builtin_value))
+    (l' : list (TermOver BasicValue))
     :
     ρ1 ⊆ ρ2 ->
     list_collect ((fun t => Expression2_evaluate program h ρ1 t nv) <$> l) = Some l' ->
@@ -583,7 +583,7 @@ Proof.
 Qed.
 
 Lemma Expression2_evaluate_None_relative
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (e : Expression2)
@@ -820,12 +820,12 @@ Qed.
 
 
 Lemma TermOverExpression2_satisfies_extensive
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ1 ρ2 : Valuation2)
     (t : TermOver Expression2)
-    (gt : TermOver builtin_value)
+    (gt : TermOver BasicValue)
     (nv : NondetValue)
     :
     ρ1 ⊆ ρ2 ->
@@ -872,13 +872,13 @@ Proof.
 Qed.
 
 Lemma TermOverExpression2_satisfies_injective
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (t : TermOver Expression2)
     (nv : NondetValue)
-    (g1 g2 : TermOver builtin_value)
+    (g1 g2 : TermOver BasicValue)
 :
     sat2E program h ρ g1 t nv ->
     sat2E program h ρ g2 t nv ->
@@ -956,12 +956,12 @@ Proof.
 Qed.
 
 Lemma Expression2_evalute_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (e : Expression2)
     (nv : NondetValue)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (ρ : Valuation2)
 :
     Expression2_evaluate program h ρ e nv = Some g ->
@@ -1173,13 +1173,13 @@ Qed.
 
 
 Lemma list_collect_Expression2_evaluate_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (l : list Expression2)
     (nv : NondetValue)
-    (l' : list (TermOver builtin_value))
+    (l' : list (TermOver BasicValue))
     :
     list_collect ((fun t => Expression2_evaluate program h ρ t nv) <$> l) = Some l' ->
     list_collect ((fun t => Expression2_evaluate program h (filter (fun kv => kv.1 ∈ vars_of l) ρ) t nv) <$> l) = Some l'.
@@ -1242,7 +1242,7 @@ Proof.
 Qed.
 
 Lemma vars_of_t_over_expr
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (e : Expression2)
     :
     (vars_of ((t_over e):(TermOver Expression2))) = vars_of e
@@ -1252,11 +1252,11 @@ Proof.
 Qed.
 
 Lemma TermOverExpression2_satisfies_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (t : TermOver Expression2)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (ρ : Valuation2)
     (nv : NondetValue)
 :
@@ -1323,10 +1323,10 @@ Proof.
 Qed.
 
 Lemma TermOverBoV_satisfies_extensive
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ1 ρ2 : Valuation2)
     (t : TermOver BuiltinOrVar)
-    (gt : TermOver builtin_value)
+    (gt : TermOver BasicValue)
     :
     ρ1 ⊆ ρ2 ->
     sat2B ρ1 gt t ->
@@ -1376,9 +1376,9 @@ Qed.
 
 
 Lemma TermOverBoV_satisfies_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (t : TermOver BuiltinOrVar)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     (ρ : Valuation2)
 :
     sat2B ρ g t ->
@@ -1446,7 +1446,7 @@ Proof.
 Qed.
 
 Lemma SideCondition_satisfies_extensive
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ1 ρ2 : Valuation2)
@@ -1549,7 +1549,7 @@ Proof.
 Qed.
 
 Lemma SideCondition_satisfies_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (c : SideCondition)
@@ -1894,14 +1894,14 @@ Proof.
 Qed.
 
 Lemma satisfies_term_bov_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (γ : TermOver builtin_value)
-    (s : symbol)
+    (γ : TermOver BasicValue)
+    (s : TermSymbol)
     (l : list (TermOver BuiltinOrVar))
     :
     sat2B ρ γ (t_term s l) ->
-    { lγ : list (TermOver builtin_value) &
+    { lγ : list (TermOver BasicValue) &
         ((γ = (t_term s lγ)) *
         (length l = length lγ) *
         ( forall (i : nat) γ e,
@@ -2014,17 +2014,17 @@ Qed.
 
 
 Lemma satisfies_term_expr_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
-    (γ : TermOver builtin_value)
-    (s : symbol)
+    (γ : TermOver BasicValue)
+    (s : TermSymbol)
     (l : list (TermOver Expression2))
     :
     sat2E program h ρ γ (t_term s l) nv ->
-    { lγ : list (TermOver builtin_value) &
+    { lγ : list (TermOver BasicValue) &
         ((γ = (t_term s lγ)) *
         (length l = length lγ) *
         ( forall (i : nat) γ e,
@@ -2138,9 +2138,9 @@ Qed.
 
 
 Lemma satisfies_TermOverBuiltin_to_TermOverBoV
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (γ : TermOver builtin_value)
+    (γ : TermOver BasicValue)
     :
     sat2B ρ γ (TermOverBuiltin_to_TermOverBoV γ)
 .
@@ -2176,11 +2176,11 @@ Proof.
 Qed.
 
 Lemma satisfies_var
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
     x γ:
     ρ !! x = Some (γ) ->
-    sat2B ρ γ (t_over (bov_variable x))
+    sat2B ρ γ (t_over (bov_Variabl x))
 .
 Proof.
     intros H.
@@ -2188,14 +2188,14 @@ Proof.
 Qed.
 
 Lemma satisfies_var_expr
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     x γ:
     ρ !! x = Some (γ) ->
-    sat2E program h ρ γ (t_over (e_variable x)) nv
+    sat2E program h ρ γ (t_over (e_Variabl x)) nv
 .
 Proof.
     intros H.
@@ -2204,10 +2204,10 @@ Proof.
 Qed.
 
 Lemma satisfies_var_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
     x γ:
-    sat2B ρ γ (t_over (bov_variable x)) ->
+    sat2B ρ γ (t_over (bov_Variabl x)) ->
     ρ !! x = Some (γ)
 .
 Proof.
@@ -2216,19 +2216,19 @@ Proof.
 Qed.
 
 Lemma satisfies_var_expr_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
     (nv : NondetValue)
     x γ:
-    sat2E program h ρ γ (t_over (e_variable x)) nv ->
+    sat2E program h ρ γ (t_over (e_Variabl x)) nv ->
     ρ !! x = Some (γ)
 .
 Proof.
     ltac1:(simp sat2E).
     intros H.
-        destruct (Expression2_evaluate program h ρ (e_variable x)) eqn:Heq>[|ltac1:(contradiction)].
+        destruct (Expression2_evaluate program h ρ (e_Variabl x)) eqn:Heq>[|ltac1:(contradiction)].
     simpl in Heq.
     destruct (ρ !! x) eqn:Heq2.
     {
@@ -2239,10 +2239,10 @@ Proof.
 Qed.
 
 Lemma forall_satisfies_inv'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sz : nat)
     (ρ : Valuation2)
-    (γ1 γ2 : list (TermOver builtin_value))
+    (γ1 γ2 : list (TermOver BasicValue))
     (l : list (TermOver BuiltinOrVar))
     :
     sum_list_with (S ∘ TermOver_size) l < sz ->
@@ -2252,10 +2252,10 @@ Lemma forall_satisfies_inv'
     (forall idx a b, γ2 !! idx = Some a -> l !! idx = Some b -> sat2B ρ a b) ->
     γ1 = γ2
 with satisfies_inv'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sz : nat)
     (ρ : Valuation2)
-    (x y : TermOver builtin_value)
+    (x y : TermOver BasicValue)
     (z : TermOver BuiltinOrVar)
     :
     TermOver_size z < sz ->
@@ -2394,9 +2394,9 @@ Proof.
 Qed.
 
 Lemma forall_satisfies_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (γ1 γ2 : list (TermOver builtin_value))
+    (γ1 γ2 : list (TermOver BasicValue))
     (l : list (TermOver BuiltinOrVar))
     :
     length γ1 = length l ->
@@ -2413,9 +2413,9 @@ Proof.
 Qed.
 
 Lemma satisfies_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (x y : TermOver builtin_value)
+    (x y : TermOver BasicValue)
     (z : TermOver BuiltinOrVar)
     :
     sat2B ρ x z ->
@@ -2432,10 +2432,10 @@ Qed.
 
 
 Lemma satisfies_in_size
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (x : variable)
-    (t t' : TermOver builtin_value)
+    (x : Variabl)
+    (t t' : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     :
     x ∈ vars_of (φ) ->
@@ -2516,11 +2516,11 @@ Qed.
 
 
 Lemma double_satisfies_contradiction
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
     (ay : BuiltinOrVar)
-    (cz cx : symbol)
-    (lx : list (TermOver builtin_value))
+    (cz cx : TermSymbol)
+    (lx : list (TermOver BasicValue))
     (lz : list (TermOver BuiltinOrVar))
     :
     vars_of ((t_over ay)) = vars_of ((t_term cz lz)) ->
@@ -2572,9 +2572,9 @@ Qed.
 
 
 Definition size_of_var_in_val
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (x : variable)
+    (x : Variabl)
     : nat
 :=
     match ρ!!x with
@@ -2584,7 +2584,7 @@ Definition size_of_var_in_val
 .
 
 Definition delta_in_val
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
     (ψ : TermOver BuiltinOrVar)
     : nat
@@ -2594,10 +2594,10 @@ Definition delta_in_val
 
 
 
-Lemma concrete_is_larger_than_symbolic
-    {Σ : StaticModel}
+Lemma concrete_is_larger_than_TermSymbolic
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (γ : TermOver builtin_value)
+    (γ : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     :
     sat2B ρ γ φ ->
@@ -2699,11 +2699,11 @@ Proof.
 Qed.
 
 Lemma enveloping_preserves_or_increases_delta
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (γ1 γ2 : TermOver builtin_value)
+    (γ1 γ2 : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
-    (s : symbol)
+    (s : TermSymbol)
     (l1 l2 : list (TermOver BuiltinOrVar))
     (d : nat)
     :
@@ -2782,7 +2782,7 @@ Proof.
                     }
                     {
                         assert (Hsat := H6 0 t a eq_refl eq_refl).
-                        apply concrete_is_larger_than_symbolic in Hsat.
+                        apply concrete_is_larger_than_TermSymbolic in Hsat.
                         specialize (IHl1 lγ).
                         ltac1:(ospecialize (IHl1 _)).
                         {
@@ -2880,7 +2880,7 @@ Proof.
                     {
                         simpl in *.
                         assert (H1 := H8 (0) a t eq_refl eq_refl). simpl in H1.
-                        apply concrete_is_larger_than_symbolic in H1.
+                        apply concrete_is_larger_than_TermSymbolic in H1.
                         specialize (IHlγ' l2 ltac:(lia)).
                         ltac1:(ospecialize (IHlγ' _)).
                         {
@@ -2902,11 +2902,11 @@ Proof.
 Qed.
 
 Lemma satisfies_TermOverBoV_to_TermOverExpr
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (ρ : Valuation2)
-    (γ : TermOver builtin_value)
+    (γ : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     (nv : NondetValue)
     :
@@ -2984,18 +2984,18 @@ Qed.
 
 
 Equations? TermOverBoV_eval
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
     (φ : TermOver BuiltinOrVar)
     (pf : vars_of φ ⊆ vars_of ρ)
-    : TermOver builtin_value
+    : TermOver BasicValue
     by wf (TermOver_size φ) lt
 :=
 
     TermOverBoV_eval ρ (t_over (bov_builtin b)) pf := t_over b
     ;
 
-    TermOverBoV_eval ρ (t_over (bov_variable x)) pf with (inspect (ρ !! x)) => {
+    TermOverBoV_eval ρ (t_over (bov_Variabl x)) pf with (inspect (ρ !! x)) => {
         | (@exist _ _ (Some t) pf') := t;
         | (@exist _ _ None pf') := _ ;
     }
@@ -3049,9 +3049,9 @@ Defined.
 
 
 Lemma satisfies_TermOverBoV__impl__vars_subseteq
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (c : TermOver builtin_value)
+    (c : TermOver BasicValue)
     (φ : TermOver BuiltinOrVar)
     :
     sat2B ρ c φ ->
@@ -3346,7 +3346,7 @@ Proof.
 Qed.
 
 Lemma vars_of_builtin
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     b
 :
     vars_of (t_over (bov_builtin b)) = ∅
@@ -3359,11 +3359,11 @@ Qed.
 
 
 
-Lemma vars_of_variable
-    {Σ : StaticModel}
+Lemma vars_of_Variabl
+    {Σ : BackgroundModel}
     x
 :
-    vars_of (t_over (bov_variable x)) = {[x]}
+    vars_of (t_over (bov_Variabl x)) = {[x]}
 .
 Proof.
     unfold vars_of; simpl.
@@ -3372,7 +3372,7 @@ Proof.
 Qed.
 
 Fixpoint TermOver_collect
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
     (t : TermOver (option A))
     : option (TermOver A)
@@ -3399,21 +3399,21 @@ Fixpoint TermOver'_join
 .
 
 Definition Valuation2_restrict
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (r : gset variable)
+    (r : gset Variabl)
     : Valuation2
 :=
     filter
-        (λ x : variable * (TermOver builtin_value), x.1 ∈ r)
+        (λ x : Variabl * (TermOver BasicValue), x.1 ∈ r)
         ρ
 .
 
 
 Lemma Valuation2_restrict_eq_subseteq
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ1 ρ2 : Valuation2)
-    (r r' : gset variable)
+    (r r' : gset Variabl)
 :
     r ⊆ r' ->
     Valuation2_restrict ρ1 r' = Valuation2_restrict ρ2 r' ->
@@ -3445,7 +3445,7 @@ Proof.
 Qed.
 
 Lemma sc_satisfies_insensitive
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (nv : NondetValue)
@@ -3467,9 +3467,9 @@ Proof.
 Qed.
 
 Definition remembered_vars_of_effect
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (f : Effect0)
-    : gset variable
+    : gset Variabl
 :=
     fold_right
         (fun b vs => vs ∪ (match b with be_remember x _ => {[x]} | _ => empty end))
@@ -3479,11 +3479,11 @@ Definition remembered_vars_of_effect
 
 
 Lemma BasicEffect0_evaluate'_extensive
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : BasicEffect0)
-    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (ρ1 ρ2 ρ'1 : gmap Variabl (TermOver BasicValue))
     (nv : NondetValue)
     (h' : hidden_data)
 :
@@ -3537,11 +3537,11 @@ Proof.
 Qed.
 
 Lemma BasicEffect0_evaluate'_frame
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : BasicEffect0)
-    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (ρ1 ρ2 ρ'1 : gmap Variabl (TermOver BasicValue))
     (nv : NondetValue)
     (h' : hidden_data)
 :
@@ -3591,7 +3591,7 @@ Proof.
 Qed.
 
 Lemma fold_left_BasicEffect0_evaluate_None
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (nv : NondetValue)
     (f : Effect0)
@@ -3616,11 +3616,11 @@ Proof.
 Qed.
 
 Lemma Effect0_evaluate'_frame
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : Effect0)
-    (ρ1 ρ2 ρ'1 : gmap variable (TermOver builtin_value))
+    (ρ1 ρ2 ρ'1 : gmap Variabl (TermOver BasicValue))
     (nv : NondetValue)
     (h' : hidden_data)
 :
@@ -3655,13 +3655,13 @@ Proof.
 Qed.
 
 Lemma Effect0_evaluate'_notin_remembered_1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h h' : hidden_data)
     (nv : NondetValue)
     (f : Effect0)
-    (x : variable)
-    (t : TermOver builtin_value)
+    (x : Variabl)
+    (t : TermOver BasicValue)
     (ρ ρ' : Valuation2)
     :
     x ∉ remembered_vars_of_effect f ->
@@ -3740,13 +3740,13 @@ Qed.
 
 
 Lemma Effect0_evaluate'_notin_remembered_2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h h' : hidden_data)
     (nv : NondetValue)
     (f : Effect0)
-    (x : variable)
-    (t : TermOver builtin_value)
+    (x : Variabl)
+    (t : TermOver BasicValue)
     (ρ ρ' : Valuation2)
     :
     x ∉ remembered_vars_of_effect f ->
@@ -3824,13 +3824,13 @@ Proof.
 Qed.
 
 Lemma Effect0_evaluate'_notin_remembered_2'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h h' : hidden_data)
     (nv : NondetValue)
     (f : Effect0)
-    (x : variable)
-    (t : TermOver builtin_value)
+    (x : Variabl)
+    (t : TermOver BasicValue)
     (ρ ρ' : Valuation2)
     :
     Effect0_evaluate' program h ρ nv f = Some (h', ρ') ->
@@ -3914,13 +3914,13 @@ Proof.
 Qed.
 
 Lemma helper_filter
-    {Σ : StaticModel}
-    bf f (ρ : gmap variable (TermOver builtin_value))
+    {Σ : BackgroundModel}
+    bf f (ρ : gmap Variabl (TermOver BasicValue))
     :
     remembered_vars_of_effect [bf] ## vars_of ρ ->
-    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect0' (bf :: f)) ρ =
-    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect0' (f)) ρ ∪
-    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect0' [bf]) ρ 
+    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' (bf :: f)) ρ =
+    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' (f)) ρ ∪
+    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' [bf]) ρ 
 .
 Proof.
     intros HH.
@@ -3966,12 +3966,12 @@ Qed.
 
 
 Lemma helper_filter_2
-    {Σ : StaticModel}
-    x e f (ρ : gmap variable (TermOver builtin_value))
+    {Σ : BackgroundModel}
+    x e f (ρ : gmap Variabl (TermOver BasicValue))
     :
-    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect0' ((be_remember x e) :: f)) ρ =
-    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of_Effect0' (f)) (delete x ρ) ∪
-    filter (λ kv : variable * TermOver builtin_value, kv.1 ∈ vars_of e)  ρ
+    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' ((be_remember x e) :: f)) ρ =
+    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of_Effect0' (f)) (delete x ρ) ∪
+    filter (λ kv : Variabl * TermOver BasicValue, kv.1 ∈ vars_of e)  ρ
 .
 Proof.
     (* intros HH. *)
@@ -4067,10 +4067,10 @@ Proof.
 Qed.
 
 Lemma valuation_delete_union
-    {Σ : StaticModel}
-    (ρ : gmap variable (TermOver builtin_value))
-    (x : variable)
-    (t : TermOver builtin_value)
+    {Σ : BackgroundModel}
+    (ρ : gmap Variabl (TermOver BasicValue))
+    (x : Variabl)
+    (t : TermOver BasicValue)
     :
     <[x:=t]>ρ = delete x ρ ∪ {[x:=t]}
 .
@@ -4100,7 +4100,7 @@ Qed.
 
 
 Lemma Effect0_evaluate'_vars_of
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : Effect0)
@@ -4157,7 +4157,7 @@ Proof.
 Qed.
 
 Lemma Effect0_evaluate'_strip_1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : Effect0)
@@ -4696,7 +4696,7 @@ Qed.
 
 
 Lemma Effect0_evaluate_strip
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : Effect0)
@@ -4727,11 +4727,11 @@ Proof.
 Qed.
 
 Lemma Effect0_evaluate_extensive
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
     (h : hidden_data)
     (f : Effect0)
-    (ρ1 ρ2 : gmap variable (TermOver builtin_value))
+    (ρ1 ρ2 : gmap Variabl (TermOver BasicValue))
     (nv : NondetValue)
     (h' : hidden_data)
 :

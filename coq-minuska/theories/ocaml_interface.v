@@ -14,7 +14,7 @@ Variant SymbolInfo (P HP F A Q M : Type)
 | si_method (m : M)
 .
 
-Definition combine_symbol_classifiers
+Definition combine_TermSymbol_classifiers
     {P HP F A Q M : Type}
     (from_pi from_value_algebra from_hidden_algebra : string -> SymbolInfo P HP F A Q M)
     :
@@ -33,10 +33,10 @@ Definition combine_symbol_classifiers
 .
 
 Definition si2qfa
-    {Σ : StaticModel}
-    (si : SymbolInfo PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol)
+    {Σ : BackgroundModel}
+    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol)
     :
-    option (QuerySymbol+FunctionSymbol+AttributeSymbol)
+    option (QuerySymbol+FunSymbol+AttrSymbol)
 :=
     match si with
     | si_query _ _ _ _ _ _ q => Some (inl (inl q))
@@ -51,8 +51,8 @@ Definition si2qfa
 .
 
 Definition si2m
-    {Σ : StaticModel}
-    (si : SymbolInfo PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol)
+    {Σ : BackgroundModel}
+    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol)
     :
     option (MethodSymbol)
 :=
@@ -68,10 +68,10 @@ Definition si2m
 .
 
 Definition si2p
-    {Σ : StaticModel}
-    (si : SymbolInfo PredicateSymbol HiddenPredicateSymbol FunctionSymbol AttributeSymbol QuerySymbol MethodSymbol)
+    {Σ : BackgroundModel}
+    (si : SymbolInfo PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethodSymbol)
     :
-    option (PredicateSymbol+HiddenPredicateSymbol)
+    option (PredSymbol+HPredSymbol)
 :=
     match si with
     | si_query _ _ _ _ _ _ q => None

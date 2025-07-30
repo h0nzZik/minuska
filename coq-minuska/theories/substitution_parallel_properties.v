@@ -9,12 +9,12 @@ From Minuska Require Import
 
 From Coq Require Import Logic.Classical_Prop.
 
-Definition subtmm_closed {Σ : StaticModel} (s : SubP) :=
+Definition subtmm_closed {Σ : BackgroundModel} (s : SubP) :=
     forall k v, s !! k = Some v -> vars_of v = ∅
 .
 
 Lemma subp_app_empty
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (φ : TermOver BuiltinOrVar)
     :
     subp_app ∅ φ = φ
@@ -53,7 +53,7 @@ Qed.
 
 
 Lemma subp_app_closed
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub_mm : SubP)
     (φ : TermOver BuiltinOrVar)
     :
@@ -92,7 +92,7 @@ Proof.
 Qed.
 
 Lemma subp_app_almost_closed
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (s : SubP)
     (φ : TermOver BuiltinOrVar)
     :
@@ -144,7 +144,7 @@ Proof.
 Qed.
 
 Lemma subp_app_empty'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     subp_app ∅ = id
 .
@@ -154,9 +154,9 @@ Proof.
 Qed.
 
 Lemma subp_app_insert0
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (s : SubP)
-    (x : variable)
+    (x : Variabl)
     (v : TermOver BuiltinOrVar)
     :
     vars_of v ## subp_dom s ->
@@ -226,7 +226,7 @@ Proof.
 Qed.
 
 Lemma subp_normalize_normalize
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   :
   subp_normalize ∘ subp_normalize
   = subp_normalize
@@ -253,7 +253,7 @@ Proof.
 Qed.
 
 Lemma subp_normalize_normal
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   (s : SubP)
   :
   subp_is_normal s ->
@@ -266,7 +266,7 @@ Proof.
 Qed.
 
 Lemma subp_id_compose
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   (s : SubP)
   :
   subp_is_normal s ->
@@ -285,7 +285,7 @@ Proof.
 Qed.
 
 Lemma subp_compose_id
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   (s : SubP)
   :
   subp_is_normal s ->
@@ -314,7 +314,7 @@ Qed.
 
 
 Lemma subp_app_singleton
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     x p
     :
     subp_app {[x:=p]} = (fun q => TermOverBoV_subst q x p)
@@ -333,8 +333,8 @@ Proof.
 Qed.
 
 Lemma subp_app_union_comm
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (TermOver BuiltinOrVar))
     :
     subp_dom a ## subp_dom b ->
     subp_app (a ∪ b) = subp_app (b ∪ a)
@@ -441,7 +441,7 @@ Proof.
 Qed.
 
 Lemma subp_compose_helper_1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (b c : SubP)
     :
     subp_codom b ## subp_dom c ->
@@ -485,8 +485,8 @@ Proof.
 Qed.
 
 Lemma subp_app_union
-    {Σ : StaticModel}
-    (b c : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (b c : gmap Variabl (TermOver BuiltinOrVar))
     :
     subp_codom b ## subp_dom c ->
     subp_app (b ∪ c) = (subp_app c) ∘ (subp_app b)
@@ -571,8 +571,8 @@ Proof.
 Qed.
 
 Lemma subp_union_is_compose__sometimes_1
-  {Σ : StaticModel}
-  (a b : gmap variable (TermOver BuiltinOrVar))
+  {Σ : BackgroundModel}
+  (a b : gmap Variabl (TermOver BuiltinOrVar))
   :
   (subp_app a <$> b) = b ->
   subp_is_normal a ->
@@ -693,7 +693,7 @@ Proof.
 Qed.
 
 Lemma subp_compose_correct
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (a b : SubP)
     :
     subp_app (subp_compose a b) = (subp_app a) ∘ (subp_app b)
@@ -726,7 +726,7 @@ Proof.
                   simpl.
                   rewrite option_guard_False.
                   { simpl.
-                    destruct (decide (t_over (bov_variable x) = subp_app aa t)).
+                    destruct (decide (t_over (bov_Variabl x) = subp_app aa t)).
                     {
                       rewrite option_guard_False.
                       { simpl. ltac1:(congruence). }
@@ -749,7 +749,7 @@ Proof.
               }
               {
                 simpl.
-                destruct (decide (t_over (bov_variable x) = subp_app aa t)).
+                destruct (decide (t_over (bov_Variabl x) = subp_app aa t)).
                 {
                   rewrite option_guard_False.
                   { simpl. ltac1:(congruence). }
@@ -771,7 +771,7 @@ Proof.
                   rewrite option_guard_True.
                   {
                     simpl.
-                    destruct (decide (t = t_over (bov_variable x))).
+                    destruct (decide (t = t_over (bov_Variabl x))).
                     {
                       subst.
                       rewrite option_guard_False.
@@ -854,8 +854,8 @@ Proof.
 Qed.
 
 
-Lemma helper_lemma {Σ : StaticModel}:
-  forall x m t, t_over (bov_variable x) = subp_app m t -> exists y, t = t_over (bov_variable y)
+Lemma helper_lemma {Σ : BackgroundModel}:
+  forall x m t, t_over (bov_Variabl x) = subp_app m t -> exists y, t = t_over (bov_Variabl y)
 .
 Proof.
         {
@@ -870,7 +870,7 @@ Proof.
 Qed.
 
 Lemma subp_compose_assoc
-  {Σ : StaticModel}
+  {Σ : BackgroundModel}
   (a b c : SubP)
 :
 (*
@@ -1356,7 +1356,7 @@ Proof.
                       {
                         destruct H1p as [_ H1p].
                         ltac1:(simplify_eq/=).
-                        destruct (decide (subp_app b t2 = t_over (bov_variable i))).
+                        destruct (decide (subp_app b t2 = t_over (bov_Variabl i))).
                         {
                           left.
                           exists t0.
@@ -1494,8 +1494,8 @@ Proof.
                          *)
                         clear H.
                         
-                        destruct (decide (i ∈ dom (filter (λ kv : variable * TermOver' BuiltinOrVar, t_over (bov_variable kv.1) ≠ kv.2)
-                   (filter (λ kv : variable * TermOver BuiltinOrVar, kv.1 ∉ dom c) b ∪ (subp_app b <$> c))))) as [Hin|Hnotin].
+                        destruct (decide (i ∈ dom (filter (λ kv : Variabl * TermOver' BuiltinOrVar, t_over (bov_Variabl kv.1) ≠ kv.2)
+                   (filter (λ kv : Variabl * TermOver BuiltinOrVar, kv.1 ∉ dom c) b ∪ (subp_app b <$> c))))) as [Hin|Hnotin].
                         {
                           rewrite elem_of_dom in Hin.
                           destruct Hin as [p Hp].
@@ -1585,7 +1585,7 @@ Proof.
                           }
                         }
                         {
-                          destruct (decide (t_over (bov_variable i) = subp_app b t2)).
+                          destruct (decide (t_over (bov_Variabl i) = subp_app b t2)).
                           {
                             left.
                             exists t0.
@@ -1659,7 +1659,7 @@ Proof.
                 {
                   simpl in H2t.
                   ltac1:(simplify_eq/=).
-                  destruct (decide (subp_app b t1 = t_over (bov_variable i))) as [Hiyes|Hino].
+                  destruct (decide (subp_app b t1 = t_over (bov_Variabl i))) as [Hiyes|Hino].
                   {
                     left.
                     exists t0.
@@ -1755,7 +1755,7 @@ Proof.
               {
                 simpl in H2t.
                 ltac1:(simplify_eq/=).
-                destruct (decide (t_over (bov_variable i) = subp_app b t1)).
+                destruct (decide (t_over (bov_Variabl i) = subp_app b t1)).
                 {
                   right.
                   split.
@@ -1861,7 +1861,7 @@ Proof.
               {
                 simpl in *.
                 ltac1:(simplify_eq/=).
-                destruct (decide (t_over (bov_variable i) = subp_app b t0)).
+                destruct (decide (t_over (bov_Variabl i) = subp_app b t0)).
                 {
                   remember (subp_app (subp_compose a b) t0) as nice.
                   assert (Hnice := Heqnice).
@@ -1972,7 +1972,7 @@ Proof.
         end.
 
         Ltac2 mytac () := ((*try (just_specialize ());*) try (match! goal with
-        | [x : (TermOver BuiltinOrVar), h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_variable $y)) as $my;
+        | [x : (TermOver BuiltinOrVar), h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in  let my := (Fresh.in_goal ident:(y)) in remember (t_over (bov_Variabl $y)) as $my;
            apply $h2 in $h as $my
         | [h: _ ∉ (dom _) |- _] => apply not_elem_of_dom_1 in $h
         | [h: context [guard _] |- _] => rewrite option_guard_decide in $h
@@ -1990,9 +1990,9 @@ Proof.
         | [h: _ <$> _ = None |- _] => apply fmap_None in $h
         | [h: (ex _) |- _] => Std.destruct false [({Std.indcl_arg:=Std.ElimOnIdent(h); Std.indcl_eqn:=None; Std.indcl_as:=None; Std.indcl_in:=None})] None
         | [h: (right _ = right _) |- _] => ltac1:(simplify_eq/=); clear $h
-        | [x : variable, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
+        | [x : Variabl, h : (forall (_ : TermOver BuiltinOrVar), _) |- _] => let y := Control.hyp x in let h2 := Control.hyp h in 
             let myf := (Fresh.in_goal ident:(h)) in
-            let n := constr:($h2 (t_over (bov_variable $y))) in
+            let n := constr:($h2 (t_over (bov_Variabl $y))) in
             let f1 := ltac1:(t |- learn_hyp (t)) in
             f1 (Ltac1.of_constr n)
         | [h: (forall _, _), a:_ |- _] => let f := ltac1:(ra rb|- learn_hyp (ra rb)) in f (Ltac1.of_constr (Control.hyp h)) (Ltac1.of_constr (Control.hyp a))
@@ -2002,7 +2002,7 @@ Proof.
       (* This loses information *)
       Ltac2 apply_helper_lemma () :=
         match! goal with
-        | [h: (t_over (bov_variable _) = subp_app _ _) |- _] => apply helper_lemma in $h
+        | [h: (t_over (bov_Variabl _) = subp_app _ _) |- _] => apply helper_lemma in $h
         end
       .
       
@@ -2106,7 +2106,7 @@ Proof.
         setoid_rewrite <- Hbc in n0.
         rewrite Heqbc in n0.
         apply not_elem_of_dom_1 in n0.
-        remember (subp_app (subp_compose b c) (t_over (bov_variable i))).
+        remember (subp_app (subp_compose b c) (t_over (bov_Variabl i))).
         assert(Htmp := Heqt1).
         rewrite subp_compose_correct in Heqt1.
         unfold compose in Heqt1.
@@ -2175,7 +2175,7 @@ Proof.
               ltac1:(rewrite Hbx in n1).
               ltac1:(rewrite Hbx in n0).
               ltac1:(destruct_or!)>[repeat (mytac ())|].
-              specialize (n0 (t_over (bov_variable x)) ltac:(tauto)).
+              specialize (n0 (t_over (bov_Variabl x)) ltac:(tauto)).
               ltac1:(contradiction).
             }
           }

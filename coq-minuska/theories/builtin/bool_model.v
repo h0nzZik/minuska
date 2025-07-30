@@ -9,8 +9,8 @@ From Minuska Require Import
 Definition bool_carrier := bool.
 
 Definition bool_function_interp
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     (Carrier : Type)
     {Cbool : Injection bool Carrier}
@@ -18,8 +18,8 @@ Definition bool_function_interp
 :
     BoolFunSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
-    option (@TermOver' symbol Carrier)
+    list (@TermOver' TermSymbol Carrier) ->
+    option (@TermOver' TermSymbol Carrier)
 :=
     fun f nd args =>
     match f with
@@ -79,15 +79,15 @@ Definition bool_function_interp
 .
 
 Definition bool_predicate_interp
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     (NondetValue : Type)
     (Carrier : Type)
     (asb : Carrier -> option bool)
 :
     BoolPredSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
+    list (@TermOver' TermSymbol Carrier) ->
     option bool
 :=
     fun p nv args =>
@@ -125,22 +125,22 @@ Definition bool_predicate_interp
 .
 
 Definition bool_model_over
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
+    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
     (Carrier : Type)
     (Cbool : Injection bool Carrier)
     (asb : Carrier -> option bool)
     :
-    @ModelOver symbol symbols bool_signature NondetValue Carrier
+    @ModelOver TermSymbol TermSymbols bool_signature NondetValue Carrier
 := {|
-    builtin_function_interp := fun (f : @FunctionSymbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
-    builtin_predicate_interp := fun (p : @PredicateSymbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
+    builtin_function_interp := fun (f : @FunSymbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
+    builtin_predicate_interp := fun (p : @PredSymbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
 |}.
 
 Definition bool_relaxed_model
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
+    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
     :
     RelaxedModel bool_signature NondetValue void
@@ -150,15 +150,15 @@ Definition bool_relaxed_model
         fun (Carrier : Type)
             (inja : Injection void Carrier)
             (injb : ReversibleInjection bool_carrier Carrier)
-            => bool_model_over symbol symbols NondetValue Carrier
+            => bool_model_over TermSymbol TermSymbols NondetValue Carrier
                 (@ri_injection _ _ injb)
                 (@ri_reverse _ _ injb)
 |}.
 
 Definition bool_model
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
+    (TermSymbols : Symbols TermSymbol)
     (NondetValue : Type)
 :=
-    model_of_relaxed (bool_relaxed_model symbol symbols NondetValue)
+    model_of_relaxed (bool_relaxed_model TermSymbol TermSymbols NondetValue)
 .

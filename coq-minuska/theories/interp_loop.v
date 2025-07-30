@@ -6,13 +6,13 @@ From Minuska Require Import
 .
 
 Fixpoint interp_loop
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (nvs : nat -> NondetValue)
     (idx : nat)
-    (interp : NondetValue -> TermOver builtin_value -> option (TermOver builtin_value))
+    (interp : NondetValue -> TermOver BasicValue -> option (TermOver BasicValue))
     (fuel : nat)
-    (g : TermOver builtin_value)
-    : (nat*(TermOver builtin_value))
+    (g : TermOver BasicValue)
+    : (nat*(TermOver BasicValue))
 :=
 match fuel with
 | 0 => (0,g)
@@ -25,14 +25,14 @@ end
 .
 
 Fixpoint interp_loop_ext
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (nvs : nat -> NondetValue)
     (idx : nat)
-    (interp : NondetValue -> (TermOver builtin_value)*hidden_data -> option ((TermOver builtin_value)*hidden_data*nat))
+    (interp : NondetValue -> (TermOver BasicValue)*hidden_data -> option ((TermOver BasicValue)*hidden_data*nat))
     (fuel : nat)
-    (g : (TermOver builtin_value)*hidden_data)
+    (g : (TermOver BasicValue)*hidden_data)
     (log : list nat)
-    : (nat*(TermOver builtin_value)*hidden_data*(list nat))
+    : (nat*(TermOver BasicValue)*hidden_data*(list nat))
 :=
 match fuel with
 | 0 => (0,g.1,g.2,log)
@@ -45,14 +45,14 @@ end
 .
 
 Definition interp_in_from'
-        {Σ : StaticModel}
+        {Σ : BackgroundModel}
         {Label : Set}
         (Γ : (list (RewritingRule2 Label))*(list string))
         (program : ProgramT)
         (nvs : nat -> NondetValue)
         (fuel : nat)
-        (from : (TermOver builtin_value)*hidden_data)
-        :  nat * (TermOver builtin_value) * hidden_data * list (option string)
+        (from : (TermOver BasicValue)*hidden_data)
+        :  nat * (TermOver BasicValue) * hidden_data * list (option string)
     :=
         let res := interp_loop_ext nvs 0 (naive_interpreter_ext Γ.1 program)
             fuel
@@ -76,14 +76,14 @@ Definition concat_list_option_str
 .
 
 Definition interp_in_from
-        {Σ : StaticModel}
+        {Σ : BackgroundModel}
         {Label : Set}
         (program : ProgramT)
         (Γ : (list (RewritingRule2 Label))*(list string))
         (nvs : nat -> NondetValue)
         (fuel : nat)
-        (from : (TermOver builtin_value)*hidden_data)
-        :  nat * (TermOver builtin_value)*hidden_data * string
+        (from : (TermOver BasicValue)*hidden_data)
+        :  nat * (TermOver BasicValue)*hidden_data * string
 :=
     let r := interp_in_from' Γ program nvs fuel from in
     (r.1, concat_list_option_str r.2)

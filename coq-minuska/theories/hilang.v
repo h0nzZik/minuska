@@ -60,32 +60,32 @@ Defined.
 
 #[local]
 Instance ExtendedSymbols_Symbols
-    (symbol : Type)
-    {_Sym : Symbols symbol}
+    (TermSymbol : Type)
+    {_Sym : Symbols TermSymbol}
 :
-    Symbols (@ExtendedSymbols symbol)
+    Symbols (@ExtendedSymbols TermSymbol)
 := {|
-    symbol_eqdec := _ ;
-    symbol_countable := _ ;
+    TermSymbol_eqdec := _ ;
+    TermSymbol_countable := _ ;
 |}.
 
 Fixpoint extend_term
-    (Σ : StaticModel)
-    (t : @TermOver Σ builtin_value)
+    (Σ : BackgroundModel)
+    (t : @TermOver Σ BasicValue)
     :
-    @TermOver' (@ExtendedSymbols symbol) builtin_value
+    @TermOver' (@ExtendedSymbols TermSymbol) BasicValue
 :=
     match t with
     | t_over bv => t_over bv
-    | t_term s args => @t_term (@ExtendedSymbols symbol) builtin_value (sym_original s) (extend_term Σ <$> args)
+    | t_term s args => @t_term (@ExtendedSymbols TermSymbol) BasicValue (sym_original s) (extend_term Σ <$> args)
     end
 .
 
 Fixpoint contract_term
-    (Σ : StaticModel)
-    (t : @TermOver' (@ExtendedSymbols symbol) builtin_value)
+    (Σ : BackgroundModel)
+    (t : @TermOver' (@ExtendedSymbols TermSymbol) BasicValue)
 :
-    option (@TermOver Σ builtin_value)
+    option (@TermOver Σ BasicValue)
 :=
     match t with
     | t_over bv => Some (t_over bv)
@@ -97,8 +97,8 @@ Fixpoint contract_term
 .
 
 Lemma contract_extend_term
-    (Σ : StaticModel)
-    (t : @TermOver Σ builtin_value)
+    (Σ : BackgroundModel)
+    (t : @TermOver Σ BasicValue)
     :
     contract_term Σ (extend_term Σ t) = Some t
 .
@@ -131,13 +131,13 @@ Proof.
     }
 Qed.
 
-Definition ExtendedModel (Σ : StaticModel)
-: @Model (@ExtendedSymbols (Σ.(symbol))) _ (Σ.(signature)) (Σ.(NondetValue))
+Definition ExtendedModel (Σ : BackgroundModel)
+: @Model (@ExtendedSymbols (Σ.(TermSymbol))) _ (Σ.(signature)) (Σ.(NondetValue))
 := {|
-    builtin_value := Σ.(builtin).(builtin_value) ;
+    BasicValue := Σ.(builtin).(BasicValue) ;
     builtin_model_over := {|
         builtin_function_interp := fun f nd args =>
-            let args' : (option (list (@TermOver Σ builtin_value))) := list_collect (contract_term Σ <$> args) in
+            let args' : (option (list (@TermOver Σ BasicValue))) := list_collect (contract_term Σ <$> args) in
             args'' ← args';
             r ← Σ.(builtin).(builtin_model_over).(builtin_function_interp) f nd args'';
             Some (extend_term Σ r)
@@ -149,18 +149,18 @@ Definition ExtendedModel (Σ : StaticModel)
     |};
 |}.
 
-Definition ExtendedSM (Σ : StaticModel) : StaticModel := {|
-    symbol := @ExtendedSymbols (Σ.(symbol)) ;
-    symbols := ExtendedSymbols_Symbols (Σ.(symbol)) ;
+Definition ExtendedSM (Σ : BackgroundModel) : BackgroundModel := {|
+    TermSymbol := @ExtendedSymbols (Σ.(TermSymbol)) ;
+    TermSymbols := ExtendedSymbols_Symbols (Σ.(TermSymbol)) ;
     NondetValue := Σ.(NondetValue) ;
     signature := Σ.(signature) ;
     builtin := ExtendedModel Σ ;
     program_info := {|
         QuerySymbol := Σ.(program_info).(QuerySymbol) ;
         ProgramT := Σ.(program_info).(ProgramT) ;
-        pi_symbol_interp := fun program q args =>
+        pi_TermSymbol_interp := fun program q args =>
             args'' ← list_collect (contract_term Σ <$> args);
-            r ← Σ.(program_info).(pi_symbol_interp) program q args'';
+            r ← Σ.(program_info).(pi_TermSymbol_interp) program q args'';
             (* None *)
             Some (extend_term Σ r)
             ;
@@ -188,16 +188,16 @@ Definition ExtendedSM (Σ : StaticModel) : StaticModel := {|
 |}.
 
 
-Inductive Context_ {Σ : StaticModel} :=
+Inductive Context_ {Σ : BackgroundModel} :=
 | ctx_hole
-| ctx_term (s : symbol)
+| ctx_term (s : TermSymbol)
            (l : list (TermOver BuiltinOrVar)) 
            (m : Context_)
            (r : list (TermOver BuiltinOrVar))
 .
 
 Fixpoint ctx_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (c : Context_)
     (p : TermOver BuiltinOrVar)
     :
@@ -210,10 +210,10 @@ Fixpoint ctx_subst
 .
 
 Inductive collapses_to
-    (Σ : StaticModel)
+    (Σ : BackgroundModel)
     :
-    (@TermOver (ExtendedSM Σ) builtin_value) ->
-    (@TermOver Σ builtin_value) ->
+    (@TermOver (ExtendedSM Σ) BasicValue) ->
+    (@TermOver Σ BasicValue) ->
     Type
 :=
 | cto_base:

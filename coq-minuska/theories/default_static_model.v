@@ -19,11 +19,11 @@ Section default_model.
     CoFixpoint trivial_stream : Stream MyUnit
     := Seq MyUnit mytt trivial_stream.
     
-    Definition default_model : StaticModel := {|
-        symbol := string ;
-        variable := string ;
-        symbols :=  MySymbols;
-        variables := StringVariables ;
+    Definition default_model : BackgroundModel := {|
+        TermSymbol := string ;
+        Variabl := string ;
+        TermSymbols :=  MySymbols;
+        Variabls := StringVariables ;
         builtin := β ;
         hidden := Hβ ;
         program_info := my_program_info ;

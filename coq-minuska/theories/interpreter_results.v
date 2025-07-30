@@ -8,10 +8,10 @@ From Minuska Require Import
 
 
 Lemma vars_of_sat_tobov
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (φ : TermOver BuiltinOrVar)
     (ρ : Valuation2)
-    (g : TermOver builtin_value)
+    (g : TermOver BasicValue)
     :
     sat2B ρ g φ ->
     vars_of φ ⊆ vars_of ρ
@@ -78,7 +78,7 @@ Qed.
 
 #[export]
 Instance RewritingTheory2_wf_dec
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (Label : Set)
     (Γ : list (RewritingRule2 Label))
     :

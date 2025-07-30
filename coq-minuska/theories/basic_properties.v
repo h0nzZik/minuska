@@ -8,7 +8,7 @@ From Minuska Require Import
 Section custom_induction_principle_2.
 
     Context
-        {Σ : StaticModel}
+        {Σ : BackgroundModel}
         {B : Type}
         {_edB : EqDecision B}
         {A : Type}
@@ -106,9 +106,9 @@ Existing Instance TermOver_eqdec.
 
 
 Fixpoint TermOverBuiltin_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
-    : TermOver builtin_value
+    {Σ : BackgroundModel}
+    (t m v : TermOver BasicValue)
+    : TermOver BasicValue
 :=
     if (decide (t = m)) then v else
     match t with
@@ -118,7 +118,7 @@ Fixpoint TermOverBuiltin_subst
 .
 
 Fixpoint is_subterm_b
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
     {_edA : EqDecision A}
     (m t : TermOver A)
@@ -132,8 +132,8 @@ Fixpoint is_subterm_b
 .
 
 Lemma not_subterm_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
+    {Σ : BackgroundModel}
+    (t m v : TermOver BasicValue)
     :
     is_subterm_b m t = false ->
     TermOverBuiltin_subst t m v = t
@@ -153,7 +153,7 @@ Proof.
 Qed.
 
 Lemma is_subterm_sizes
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
     {_edA : EqDecision A}
     (p q : TermOver A)
@@ -192,7 +192,7 @@ Qed.
 
 
 #[export]
-Instance BuiltinOrVar_eqdec {Σ : StaticModel}
+Instance BuiltinOrVar_eqdec {Σ : BackgroundModel}
     : EqDecision BuiltinOrVar
 .
 Proof.
@@ -204,7 +204,7 @@ Defined.
 Section custom_induction_principle_2.
 
     Context
-        {Σ : StaticModel}
+        {Σ : BackgroundModel}
     .
 
     Lemma Expression2_eqdec : EqDecision Expression2.
@@ -220,9 +220,9 @@ Section custom_induction_principle_2.
                     end
                 | _ => right _
                 end
-            | e_variable x1 =>
+            | e_Variabl x1 =>
                 match e2 with
-                | e_variable x2 =>
+                | e_Variabl x2 =>
                     match (decide (x1 = x2)) with
                     | left _ => left _
                     | right _ => right _
@@ -353,10 +353,10 @@ Section custom_induction_principle_2.
     Fixpoint Expression2_rect
         (P : Expression2 -> Type)
         (true_for_ground : forall e, P (e_ground e))
-        (true_for_var : forall x, P (e_variable x))
+        (true_for_var : forall x, P (e_Variabl x))
         (preserved_by_fun :
             forall
-                (f : FunctionSymbol)
+                (f : FunSymbol)
                 (l : list Expression2),
                 (forall x, x ∈ l -> P x) ->
                 P (e_fun f l)
@@ -370,7 +370,7 @@ Section custom_induction_principle_2.
         )
         (preserved_by_attribute :
             forall
-                (q : AttributeSymbol)
+                (q : AttrSymbol)
                 (l : list Expression2),
                 (forall x, x ∈ l -> P x) ->
                 P (e_attr q l)
@@ -380,7 +380,7 @@ Section custom_induction_principle_2.
         P e :=
     match e with
     | e_ground g => true_for_ground g
-    | e_variable x => true_for_var x
+    | e_Variabl x => true_for_var x
     | e_fun f l =>  preserved_by_fun f l
         (fun x pf => 
             (fix go (l' : list Expression2) : x ∈ l' -> P x :=
@@ -435,14 +435,14 @@ Existing Instance Expression2_eqdec.
 
 #[export]
 Instance SideCondition_eqdec
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     : EqDecision (SideCondition)
 .
 Proof. ltac1:(solve_decision). Defined.
 
 #[export]
 Instance BasicEffect0_eqdec
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     EqDecision BasicEffect0
 .
@@ -453,7 +453,7 @@ Defined.
 
 #[export]
 Instance RewritingRule2_eqdec
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {Label : Set}
     {_EA : EqDecision Label}
     : EqDecision (RewritingRule2 Label)
@@ -462,16 +462,16 @@ Proof. ltac1:(solve_decision). Defined.
 
 
 Fixpoint Expression2_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (e : Expression2)
-    (x : variable)
+    (x : Variabl)
     (e' : Expression2)
     : Expression2
 :=    
 match e with
 | e_ground g => e_ground g
-| e_variable y =>
-    if (decide (y = x)) then e' else (e_variable y)
+| e_Variabl y =>
+    if (decide (y = x)) then e' else (e_Variabl y)
 | e_fun f l => e_fun f ((fun e1 => Expression2_subst e1 x e') <$> l)
 | e_query q l => e_query q ((fun e1 => Expression2_subst e1 x e') <$> l)
 | e_attr a l => e_attr a ((fun e1 => Expression2_subst e1 x e') <$> l)
@@ -479,9 +479,9 @@ end
 .
 
 Fixpoint SideCondition_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (c : SideCondition)
-    (x : variable)
+    (x : Variabl)
     (e' : Expression2)
     : SideCondition
 :=
@@ -497,21 +497,21 @@ Fixpoint SideCondition_subst
 .
 
 Fixpoint vars_of_to_l2r
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (t : TermOver BuiltinOrVar)
-    : list variable
+    : list Variabl
 := 
     match t with
     | t_over (bov_builtin _) => []
-    | t_over (bov_variable x) => [x]
+    | t_over (bov_Variabl x) => [x]
     | t_term s l => concat (map vars_of_to_l2r l)
     end
 .
 
 
 Lemma vars_of_t_term
-    {Σ : StaticModel}
-    (s : symbol)
+    {Σ : BackgroundModel}
+    (s : TermSymbol)
     (l : list (TermOver BuiltinOrVar))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
@@ -519,8 +519,8 @@ Lemma vars_of_t_term
 Proof. reflexivity. Qed.
 
 Lemma vars_of_t_term_e
-    {Σ : StaticModel}
-    (s : symbol)
+    {Σ : BackgroundModel}
+    (s : TermSymbol)
     (l : list (TermOver Expression2))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
@@ -634,18 +634,18 @@ Proof.
 Defined.
 
 Definition BoV_to_Expr2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (bov : BuiltinOrVar)
     : Expression2
 :=
     match bov with
     | bov_builtin b => (e_ground ((t_over b)))
-    | bov_variable x => e_variable x
+    | bov_Variabl x => e_Variabl x
     end
 .
 
 Definition TermOverBoV_to_TermOverExpr2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (t : TermOver BuiltinOrVar)
     : TermOver Expression2
 :=
@@ -657,7 +657,7 @@ Definition TermOverBoV_to_TermOverExpr2
 
 
 Lemma TermOver_size_not_zero
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
     (t : TermOver A)
     : TermOver_size t <> 0
@@ -669,14 +669,14 @@ Qed.
 
 
 Fixpoint E_to_tree
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (e : Expression2)
     :
-    (gen_tree ((TermOver' builtin_value)+(variable)+(FunctionSymbol)+(QuerySymbol)+(AttributeSymbol))%type)
+    (gen_tree ((TermOver' BasicValue)+(Variabl)+(FunSymbol)+(QuerySymbol)+(AttrSymbol))%type)
 :=
     match e with
     | e_ground a => GenLeaf (inl (inl (inl (inl a))))
-    | e_variable x => GenLeaf (inl (inl (inl (inr x))))
+    | e_Variabl x => GenLeaf (inl (inl (inl (inr x))))
     | e_fun f l =>
         let l' := E_to_tree <$> l in
         GenNode 0 ((GenLeaf (inl (inl (inr f))))::l')
@@ -690,13 +690,13 @@ Fixpoint E_to_tree
 .
 
 Fixpoint E_of_tree
-    {Σ : StaticModel}
-    (t : gen_tree ((TermOver' builtin_value)+(variable)+(FunctionSymbol)+(QuerySymbol)+(AttributeSymbol))%type)
+    {Σ : BackgroundModel}
+    (t : gen_tree ((TermOver' BasicValue)+(Variabl)+(FunSymbol)+(QuerySymbol)+(AttrSymbol))%type)
     : option Expression2
 :=
     match t with
     | GenLeaf (inl (inl (inl (inl a)))) => Some (e_ground a)
-    | GenLeaf (inl (inl (inl (inr x)))) => Some (e_variable x)
+    | GenLeaf (inl (inl (inl (inr x)))) => Some (e_Variabl x)
     | GenNode 0 ((GenLeaf (inl (inl (inr f))))::l') =>
         l ← list_collect (E_of_tree <$> l');
         Some (e_fun f l)
@@ -712,7 +712,7 @@ Fixpoint E_of_tree
 
 
 Lemma E_from_to_tree
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     forall e,
         E_of_tree (E_to_tree e) = Some e
@@ -788,7 +788,7 @@ Qed.
 
 #[export]
 Instance Expression2_countable
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     Countable Expression2
 .
@@ -805,12 +805,12 @@ Defined.
 
 (* 
 Definition BoV_to_Expr2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (bov : BuiltinOrVar)
     : Expression2
 :=
     match bov with
     | bov_builtin b => (e_ground (t_over b))
-    | bov_variable x => e_variable x
+    | bov_Variabl x => e_Variabl x
     end
 . *)

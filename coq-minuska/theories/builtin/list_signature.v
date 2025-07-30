@@ -60,6 +60,6 @@ Qed.
 Fail Next Obligation.
 
 Definition list_signature : Signature := {|
-    FunctionSymbol := ListFunSymbol ;
-    PredicateSymbol := ListPredSymbol ;
+    FunSymbol := ListFunSymbol ;
+    PredSymbol := ListPredSymbol ;
 |}.
