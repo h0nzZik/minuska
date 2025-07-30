@@ -1047,29 +1047,29 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             ltac1:(destruct (l0 !! i) eqn:Hl0i).
             {
-            ltac1:(rewrite Hl0i).
-            simpl.
-            apply f_equal.
-            rewrite subst_notin2.
-            { reflexivity. }
-            {
-                intros HContra.
-                apply n. clear n.
-                apply take_drop_middle in Hl0i.            
-                rewrite <- Hl0i.
-                rewrite vars_of_t_term.
-                rewrite fmap_app.
-                rewrite union_list_app_L.
+            (* ltac1:(rewrite Hl0i). *)
                 simpl.
-                rewrite elem_of_union.
-                clear -HContra.
-                ltac1:(set_solver).
-            }
+                apply f_equal.
+                rewrite subst_notin2.
+                { reflexivity. }
+                {
+                    intros HContra.
+                    apply n. clear n.
+                    apply take_drop_middle in Hl0i.            
+                    rewrite <- Hl0i.
+                    rewrite vars_of_t_term.
+                    rewrite fmap_app.
+                    rewrite union_list_app_L.
+                    simpl.
+                    rewrite elem_of_union.
+                    clear -HContra.
+                    ltac1:(set_solver).
+                }
             }
             {
-            ltac1:(rewrite Hl0i).
-            simpl.
-            reflexivity.
+                (* ltac1:(rewrite Hl0i). *)
+                simpl.
+                reflexivity.
             }
         }
         {
@@ -1215,7 +1215,7 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             destruct (l0 !! i) eqn:Heqt.
             {
-                ltac1:(rewrite Heqt).
+                (* ltac1:(rewrite Heqt). *)
                 simpl.
                 apply f_equal.
                 rewrite subst_notin2.
@@ -1232,7 +1232,7 @@ ltac1:(funelim(unify es)).
                 ltac1:(set_solver).
             }
             {
-                ltac1:(rewrite Heqt).
+                (* ltac1:(rewrite Heqt). *)
                 reflexivity.
             }
         }
@@ -1323,10 +1323,10 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             destruct (l1!!i) eqn:Hl1i.
             {
-                ltac1:(rewrite Hl1i).
+                (* ltac1:(rewrite Hl1i). *)
                 destruct (l2!!i) eqn:Hl2i.
                 {
-                    ltac1:(rewrite Hl2i).
+                    (* ltac1:(rewrite Hl2i). *)
                     simpl.
                     f_equal.
                     remember (zip l1 l2) as z.
@@ -1369,7 +1369,7 @@ ltac1:(funelim(unify es)).
                 }
             }
             {
-                ltac1:(rewrite Hl1i).
+                (* ltac1:(rewrite Hl1i). *)
                 simpl.
                 destruct (l2 !! i) eqn:Hl2i.
                 {
@@ -1378,7 +1378,7 @@ ltac1:(funelim(unify es)).
                     ltac1:(lia).
                 }
                 {
-                    ltac1:(rewrite Hl2i).
+                    (* ltac1:(rewrite Hl2i). *)
                     reflexivity.
                 }
             }
@@ -1631,28 +1631,28 @@ forall rest,
     is_unifier_of (u++rest) es
 .
 Proof.
-intros.
-induction es.
-{
-    simpl. exact I.
-}
-{
-    simpl. destruct a as [t1 t2].
-    simpl in *.
-    destruct H as [HH1 HH2].
-    specialize (IHes HH2).
-    split>[|apply IHes].
-    clear -HH1 HH2.
-    induction rest.
-    { rewrite app_nil_r. apply HH1.  }
-    rewrite subs_app_app in IHrest.
-    rewrite subs_app_app in IHrest.
-    rewrite subs_app_app.
-    rewrite subs_app_app.
-    simpl.
-    destruct a as [x t].
-    ltac1:(congruence).
-}
+    intros.
+    induction es.
+    {
+        simpl. exact I.
+    }
+    {
+        simpl. destruct a as [t1 t2].
+        simpl in *.
+        destruct H as [HH1 HH2].
+        specialize (IHes HH2).
+        split>[|apply IHes].
+        clear -HH1 HH2.
+        induction rest.
+        { rewrite app_nil_r. apply HH1.  }
+        rewrite subs_app_app in IHrest.
+        rewrite subs_app_app in IHrest.
+        rewrite subs_app_app.
+        rewrite subs_app_app.
+        simpl.
+        destruct a as [x t].
+        ltac1:(congruence).
+    }
 Qed.
 
 Lemma unify_failure_is_severe
@@ -1664,207 +1664,207 @@ unify_failure es ->
     is_unifier_of s es
 .
 Proof.
-intros Hfail.
-induction Hfail.
-{
-    intros HContra.
-    destruct HContra as [s Hs].
-    simpl in Hs.
-    destruct t; simpl in *.
+    intros Hfail.
+    induction Hfail.
     {
-    destruct a; simpl in *.
-    {
-        rewrite vars_of_builtin in H.
-        ltac1:(set_solver).
-    }
-    {
-        rewrite vars_of_Variabl in H.
-        rewrite elem_of_singleton in H.
-        subst x0.
-        apply H0.
-        reflexivity.
-    }
-    }
-    {
-    clear H0.
-    destruct Hs as [H1s H2s].
-    (*
-        From H1s it follows that (x,t') ∈ s (for some t')
-    *)
-    rewrite vars_of_t_term in H.
-    rewrite elem_of_union_list in H.
-    destruct H as [X [H1X H2X]].
-    rewrite elem_of_list_fmap in H1X.
-    destruct H1X as [t [H1t H2t]].
-    subst.
+        intros HContra.
+        destruct HContra as [s Hs].
+        simpl in Hs.
+        destruct t; simpl in *.
+        {
+        destruct a; simpl in *.
+        {
+            rewrite vars_of_builtin in H.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite vars_of_Variabl in H.
+            rewrite elem_of_singleton in H.
+            subst x0.
+            apply H0.
+            reflexivity.
+        }
+        }
+        {
+        clear H0.
+        destruct Hs as [H1s H2s].
+        (*
+            From H1s it follows that (x,t') ∈ s (for some t')
+        *)
+        rewrite vars_of_t_term in H.
+        rewrite elem_of_union_list in H.
+        destruct H as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [t [H1t H2t]].
+        subst.
 
-    apply var_is_subterm in H2X as H2X'.
-    apply subs_app_preserves_subterm with (s := s) in H2X'.
-    apply is_subterm_size in H2X'.
-    rewrite H1s in H2X'.
-    clear H1s H2s.
-    rewrite subs_app_term in H2X'.
-    simpl in H2X'.
+        apply var_is_subterm in H2X as H2X'.
+        apply subs_app_preserves_subterm with (s := s) in H2X'.
+        apply is_subterm_size in H2X'.
+        rewrite H1s in H2X'.
+        clear H1s H2s.
+        rewrite subs_app_term in H2X'.
+        simpl in H2X'.
 
-    rewrite elem_of_list_lookup in H2t.
-    destruct H2t as [it Hit].
-    apply take_drop_middle in Hit.
-    rewrite <- Hit in H2X'.
-    rewrite fmap_app in H2X'.
-    rewrite fmap_cons in H2X'.
-    rewrite sum_list_with_app in H2X'.
-    simpl in H2X'.
-    ltac1:(lia).
-    }
-}
-{
-    intros HContra.
-    destruct HContra as [s Hs].
-    simpl in Hs.
-    destruct t; simpl in *.
-    {
-    destruct a; simpl in *.
-    {
-        rewrite vars_of_builtin in H.
-        ltac1:(set_solver).
+        rewrite elem_of_list_lookup in H2t.
+        destruct H2t as [it Hit].
+        apply take_drop_middle in Hit.
+        rewrite <- Hit in H2X'.
+        rewrite fmap_app in H2X'.
+        rewrite fmap_cons in H2X'.
+        rewrite sum_list_with_app in H2X'.
+        simpl in H2X'.
+        ltac1:(lia).
+        }
     }
     {
-        rewrite vars_of_Variabl in H.
-        rewrite elem_of_singleton in H.
-        subst x0.
-        apply H0.
-        reflexivity.
-    }
-    }
-    {
-    clear H0.
-    destruct Hs as [H1s H2s].
-    (*
-        From H1s it follows that (x,t') ∈ s (for some t')
-    *)
-    rewrite vars_of_t_term in H.
-    rewrite elem_of_union_list in H.
-    destruct H as [X [H1X H2X]].
-    rewrite elem_of_list_fmap in H1X.
-    destruct H1X as [t [H1t H2t]].
-    subst.
+        intros HContra.
+        destruct HContra as [s Hs].
+        simpl in Hs.
+        destruct t; simpl in *.
+        {
+        destruct a; simpl in *.
+        {
+            rewrite vars_of_builtin in H.
+            ltac1:(set_solver).
+        }
+        {
+            rewrite vars_of_Variabl in H.
+            rewrite elem_of_singleton in H.
+            subst x0.
+            apply H0.
+            reflexivity.
+        }
+        }
+        {
+        clear H0.
+        destruct Hs as [H1s H2s].
+        (*
+            From H1s it follows that (x,t') ∈ s (for some t')
+        *)
+        rewrite vars_of_t_term in H.
+        rewrite elem_of_union_list in H.
+        destruct H as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [t [H1t H2t]].
+        subst.
 
-    apply var_is_subterm in H2X as H2X'.
-    apply subs_app_preserves_subterm with (s := s) in H2X'.
-    apply is_subterm_size in H2X'.
-    rewrite <- H1s in H2X'.
-    clear H1s H2s.
-    rewrite subs_app_term in H2X'.
-    simpl in H2X'.
+        apply var_is_subterm in H2X as H2X'.
+        apply subs_app_preserves_subterm with (s := s) in H2X'.
+        apply is_subterm_size in H2X'.
+        rewrite <- H1s in H2X'.
+        clear H1s H2s.
+        rewrite subs_app_term in H2X'.
+        simpl in H2X'.
 
-    rewrite elem_of_list_lookup in H2t.
-    destruct H2t as [it Hit].
-    apply take_drop_middle in Hit.
-    rewrite <- Hit in H2X'.
-    rewrite fmap_app in H2X'.
-    rewrite fmap_cons in H2X'.
-    rewrite sum_list_with_app in H2X'.
-    simpl in H2X'.
-    ltac1:(lia).
-    }
-}
-{
-    intros [s Hs].
-    simpl in Hs.
-    destruct Hs as [Hs1 Hs2].
-    rewrite subs_app_builtin in Hs1.
-    rewrite subs_app_builtin in Hs1.
-    ltac1:(simplify_eq/=).
-}
-{
-    intros HContra.
-    destruct HContra as [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_builtin in H1s0.
-    inversion H1s0.
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_builtin in H1s0.
-    inversion H1s0.
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_term in H1s0.
-    ltac1:(simplify_eq/=).
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_term in H1s0.
-    ltac1:(simplify_eq/=).
-    apply (f_equal length) in H0.
-    rewrite length_fmap in H0.
-    rewrite length_fmap in H0.
-    ltac1:(simplify_eq/=).
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_term in H1s0.
-    ltac1:(simplify_eq/=).
-    apply (f_equal length) in H1s0 as H1s0'.
-    rewrite length_fmap in H1s0'.
-    rewrite length_fmap in H1s0'.
-    apply IHHfail.
-    exists s0.
-    rewrite is_unifier_of_app.
-    split>[|apply H2s0].
-    ltac1:(cut(is_unifier_of s0 (zip l1 l2))).
-    {
-    intros HHH.
-    rewrite <- (take_drop idx (zip l1 l2)) in HHH.
-    rewrite is_unifier_of_app in HHH.
-    apply HHH.
-    }
-    clear - H1s0.
-    revert l2 H1s0.
-    induction l1; intros l2 H1s0.
-    {
-    simpl. exact I.
+        rewrite elem_of_list_lookup in H2t.
+        destruct H2t as [it Hit].
+        apply take_drop_middle in Hit.
+        rewrite <- Hit in H2X'.
+        rewrite fmap_app in H2X'.
+        rewrite fmap_cons in H2X'.
+        rewrite sum_list_with_app in H2X'.
+        simpl in H2X'.
+        ltac1:(lia).
+        }
     }
     {
-    simpl.
-    destruct l2; simpl in *.
+        intros [s Hs].
+        simpl in Hs.
+        destruct Hs as [Hs1 Hs2].
+        rewrite subs_app_builtin in Hs1.
+        rewrite subs_app_builtin in Hs1.
+        ltac1:(simplify_eq/=).
+    }
     {
+        intros HContra.
+        destruct HContra as [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_builtin in H1s0.
         inversion H1s0.
     }
-    inversion H1s0; subst; clear H1s0.
-    split>[reflexivity|].
-    apply IHl1.
-    apply H1.
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_builtin in H1s0.
+        inversion H1s0.
     }
-}
-{
-    intros [s [H1s H2s]].
-    apply IHHfail. clear IHHfail.
-    exists s.
-    exact H2s.
-}
-{
-    intros [s [H1s H2s]].
-    apply IHHfail. clear IHHfail.
-    apply helper_lemma_2 with (es := es) in H1s.
-    exists s.
-    exact H1s.
-    exact H2s.
-}
-{
-    intros [s [H1s H2s]].
-    apply IHHfail. clear IHHfail.
-    symmetry in H1s.
-    apply helper_lemma_2 with (es := es) in H1s.
-    exists s.
-    exact H1s.
-    exact H2s.
-}
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_term in H1s0.
+        ltac1:(simplify_eq/=).
+    }
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_term in H1s0.
+        ltac1:(simplify_eq/=).
+        apply (f_equal length) in H0.
+        rewrite length_fmap in H0.
+        rewrite length_fmap in H0.
+        ltac1:(simplify_eq/=).
+    }
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_term in H1s0.
+        ltac1:(simplify_eq/=).
+        apply (f_equal length) in H1s0 as H1s0'.
+        rewrite length_fmap in H1s0'.
+        rewrite length_fmap in H1s0'.
+        apply IHHfail.
+        exists s0.
+        rewrite is_unifier_of_app.
+        split>[|apply H2s0].
+        ltac1:(cut(is_unifier_of s0 (zip l1 l2))).
+        {
+        intros HHH.
+        rewrite <- (take_drop idx (zip l1 l2)) in HHH.
+        rewrite is_unifier_of_app in HHH.
+        apply HHH.
+        }
+        clear - H1s0.
+        revert l2 H1s0.
+        induction l1; intros l2 H1s0.
+        {
+        simpl. exact I.
+        }
+        {
+        simpl.
+        destruct l2; simpl in *.
+        {
+            inversion H1s0.
+        }
+        inversion H1s0; subst; clear H1s0.
+        split>[reflexivity|].
+        apply IHl1.
+        apply H1.
+        }
+    }
+    {
+        intros [s [H1s H2s]].
+        apply IHHfail. clear IHHfail.
+        exists s.
+        exact H2s.
+    }
+    {
+        intros [s [H1s H2s]].
+        apply IHHfail. clear IHHfail.
+        apply helper_lemma_2 with (es := es) in H1s.
+        exists s.
+        exact H1s.
+        exact H2s.
+    }
+    {
+        intros [s [H1s H2s]].
+        apply IHHfail. clear IHHfail.
+        symmetry in H1s.
+        apply helper_lemma_2 with (es := es) in H1s.
+        exists s.
+        exact H1s.
+        exact H2s.
+    }
 Qed.
 
 Hint Constructors unify_failure : core.
@@ -2008,36 +2008,6 @@ Proof.
         destruct (decide (s1 = s2)); auto.
     }
 Qed.
-(* 
-Lemma another_helper
-    {Σ : BackgroundModel}
-    s s' u'
-:
-    NoDup s'.*1 ->
-    (forall x, subs_app s' (t_over (bov_Variabl x)) = subs_app (u' ++ s) (t_over (bov_Variabl x))) ->
-    s'.*1 ⊆ u'.*1
-.
-Proof.
-    intros Hnd HH.
-    unfold SubS in *.
-    ltac1:(rewrite elem_of_subseteq).
-    intros x Hx.
-    rewrite elem_of_list_fmap.
-    rewrite elem_of_list_fmap in Hx.
-    destruct Hx as [[y p][H1 H2]].
-    ltac1:(simplify_eq/=).
-    setoid_rewrite subs_app_app in HH.
-    assert (Hy := HH y).
-    simpl in Hy.
-    rewrite subs_app_nodup_3 with (p := p) in Hy.
-    {
-
-    }
-    {
-        exact Hnd.
-    }
-    Search subs_app bov_Variabl.
-Qed. *)
 
 Program Definition
     textbook_unification_algorithm
