@@ -14,7 +14,7 @@ Variant SymbolInfo (P HP F A Q M : Type)
 | si_method (m : M)
 .
 
-Definition combine_TermSymbol_classifiers
+Definition combine_symbol_classifiers
     {P HP F A Q M : Type}
     (from_pi from_value_algebra from_hidden_algebra : string -> SymbolInfo P HP F A Q M)
     :

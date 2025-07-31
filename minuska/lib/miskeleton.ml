@@ -12,11 +12,11 @@ type ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkelet
     program_info      : (('prg,'v,'ts,'qs) Extracted.programInfo) ;
     builtin_inject    : (builtin_repr -> 'v) ;
     builtin_eject     : ('v -> builtin_repr ) ;
-    bindings          : (string -> ('p, 'hp,'fs,'as,'qs,'ms) Extracted.symbolInfo) ;
+    bindings          : (string -> ('ps, 'hps,'fs,'ats,'qs,'ms) Extracted.symbolInfo) ;
   }
 
 
-let klike_builtin_inject (b : builtin_repr) : 'string Extracted.builtinValue0 =
+let klike_builtin_inject (b : builtin_repr)  =
   match b.br_kind with
   | "int" -> ((Extracted.Bv_Z (Z.of_string (b.br_value))))
   | "bool" -> (
@@ -28,7 +28,7 @@ let klike_builtin_inject (b : builtin_repr) : 'string Extracted.builtinValue0 =
   | "string" -> ((Extracted.Bv_str (b.br_value)))
   | _ -> failwith (sprintf "Unknown kind of builtins '%s' for module 'klike'" b.br_kind)
 
-let klike_builtin_eject (b : string Extracted.builtinValue0) : builtin_repr =
+let klike_builtin_eject b : builtin_repr =
   match b with
   | Extracted.Bv_Z z -> (({br_kind="int"; br_value="???"; (*br_value=(Z.to_string z);*)}))
   | Extracted.Bv_bool b' -> (({br_kind="bool"; br_value=(if b' then "true" else "false");}))
@@ -36,21 +36,21 @@ let klike_builtin_eject (b : string Extracted.builtinValue0) : builtin_repr =
   | Extracted.Bv_list _ -> ({br_kind="list"; br_value="_"})
   | Extracted.Bv_pmap _ -> ({br_kind="map"; br_value="_"})
 
-let empty_builtin_inject (b : builtin_repr) : Extracted.emptyset =
+let empty_builtin_inject (b : builtin_repr) =
   match b with
   | _ -> failwith (sprintf "Cannot represent given builtin using module 'empty'")
 
-let empty_builtin_eject (b : Extracted.emptyset) : builtin_repr =
+let empty_builtin_eject b : builtin_repr =
   match b with
   | _ -> failwith "This should be unreachable"
 
 
 let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*) = (
 
-  let sym_edc := (Extracted.top_symbols_strings_edc) in
+  let sym_edc = (Extracted.top_string_symbols_edc) in
   let m  = (Extracted.top_builtin_klike_model sym_edc) in
-  let hm = (Extracted.top_hidden_unit_model sym_edc s m) in
-  let pi = (Extracted.top_pi_trivial_pi sym_edc s m) in
+  let hm = (Extracted.top_hidden_unit_model) in
+  let pi = (Extracted.top_pi_trivial_pi) in
   let bs = (Extracted.combine_symbol_classifiers
     (Extracted.top_builtin_klike_bindings)
     (Extracted.top_pi_trivial_bindings)

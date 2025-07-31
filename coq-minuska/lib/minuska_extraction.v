@@ -9,10 +9,12 @@ From Minuska Require
     hidden.hidden_unit
     ocaml_interface
 .
-
-Definition top_string_symbols_edc : spec.EDC string := _.
+Definition top_string_symbols_edc : spec.EDC Coq.Strings.String.string := {|
+    spec.edc_eqdec := prelude.string_eq_dec;
+    spec.edc_count := prelude.string_countable;
+|}.
 (* Definition top_TermSymbols_strings := @default_static_model.MySymbols. *)
-Definition top_combine_TermSymbol_classifiers := @ocaml_interface.combine_TermSymbol_classifiers.
+Definition top_combine_symbol_classifiers := @ocaml_interface.combine_symbol_classifiers.
 (* Definition top_builtin_empty_signature := @builtin.empty.mysignature. *)
 Definition top_builtin_empty_model := @builtin.empty.void_value_algebra.
 Definition top_builtin_empty_bindings := @builtin.empty.bindings.
