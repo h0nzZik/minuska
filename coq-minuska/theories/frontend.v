@@ -6,7 +6,7 @@ From Minuska Require Import
     properties
 .
 
-Arguments e_fun {Σ} f l%_list_scope.
+(* Arguments e_fun {Σ} f l%_list_scope. *)
 
 Definition SymbolicTerm_to_ExprTerm
     {Σ : BackgroundModel}
@@ -81,12 +81,12 @@ Fixpoint TermOver'_e_map
 
 (* TODO use an error monad *)
 Definition toss_to_e_tosb
-    {Σ : BackgroundModel}
+    {V : Type}
     {A : Type}
-    (f : BuiltinRepr -> option BasicValue)
+    (f : BuiltinRepr -> option V)
     (t : @TermOver' A BuiltinRepr)
     :
-    (@TermOver' A BasicValue)+string
+    (@TermOver' A V)+string
 :=
     TermOver'_e_map (fun (x:BuiltinRepr) => match f x with Some y => inl y | None =>
     inr ("Can't convert (" +:+ x.(br_kind) +:+ ", " +:+ x.(br_value) +:+ ") to builtin")
@@ -103,11 +103,11 @@ Class Realization (Bu Sy Va P HP F A Q M : Type) := {
 }.
 
 Fixpoint se_to_Expression
-    {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (se : StringExpression)
     :
-    Expression2+string
+    (Expression2')+string
 :=
     match se with
     | se_ground g =>
@@ -121,7 +121,7 @@ Fixpoint se_to_Expression
         match (string2qfa s) with
         | None => inr ("The string " +:+ s +:+ " does not represent a function or a query")
         | Some (s') => 
-            let l' := (se_to_Expression) <$> l in
+            let l' := (se_to_Expression R) <$> l in
             match list_collect_e l' with
             | inl l'' => 
                 match s' with
@@ -155,8 +155,8 @@ Inductive StringSideCondition
 .
 
 Fixpoint ssc_to_sc
-    {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (ssc : StringSideCondition)
     :
     SideCondition+string
@@ -167,7 +167,7 @@ Fixpoint ssc_to_sc
     | ssc_pred p args =>
         match string2p p with
         | Some p' =>
-            match list_collect_e ((se_to_Expression) <$> args) with
+            match list_collect_e ((se_to_Expression R) <$> args) with
             | inl args' => 
                 match p' with
                 | inl vp => inl (sc_pred vp args')
@@ -180,7 +180,7 @@ Fixpoint ssc_to_sc
     | ssc_npred p args =>
         match string2p p with
         | Some p' =>
-            match list_collect_e ((se_to_Expression) <$> args) with
+            match list_collect_e ((se_to_Expression R) <$> args) with
             | inl args' => 
                 match p' with
                 | inl vp => inl (sc_npred vp args')

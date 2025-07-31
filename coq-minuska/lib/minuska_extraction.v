@@ -43,7 +43,7 @@ Definition top_poly_interpreter_ext := @default_everything.poly_interpreter_ext.
 Extraction
     "Dsm.ml"
     top_string_symbols_edc
-    top_combine_TermSymbol_classifiers
+    top_combine_symbol_classifiers
     top_builtin_empty_model
     top_builtin_empty_bindings
     top_builtin_klike_model

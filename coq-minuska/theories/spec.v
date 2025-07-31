@@ -234,58 +234,62 @@ Instance VarsOf_TermOver
 |}.
 
 Unset Elimination Schemes.
-Inductive Expression2
-    {Σ : BackgroundModel}
+Inductive Expression2'
+    {Bv Va Ts Fs Qs As : Type}
     :=
-| e_ground (e : @TermOver' (TermSymbol) BasicValue)
-| e_Variabl (x : Variabl)
-| e_fun (f : FunSymbol) (l : list Expression2)
-| e_query (q : QuerySymbol) (l : list Expression2)
-| e_attr (a : AttrSymbol) (l : list Expression2)
+| e_ground (e : @TermOver' (Ts) Bv)
+| e_Variabl (x : Va)
+| e_fun (f : Fs) (l : list Expression2')
+| e_query (q : Qs) (l : list Expression2')
+| e_attr (a : As) (l : list Expression2')
 .
 Set Elimination Schemes.
 
 Section custom_induction_principle.
 
     Context
-        {Σ : BackgroundModel}
-        (P : Expression2 -> Prop)
+        {Bv Va Ts Fs Qs As : Type}
+        (P : Expression2' -> Prop)
         (true_for_ground : forall e, P (e_ground e))
         (true_for_var : forall x, P (e_Variabl x))
         (preserved_by_fun :
             forall
-                (f : FunSymbol)
-                (l : list Expression2),
+                (f : Fs)
+                (l : list Expression2'),
                 Forall P l ->
                 P (e_fun f l)
         )
         (preserved_by_query :
             forall
-                (q : QuerySymbol)
-                (l : list Expression2),
+                (q : Qs)
+                (l : list Expression2'),
                 Forall P l ->
                 P (e_query q l)
         )
         (preserved_by_attribute :
             forall
-                (q : AttrSymbol)
-                (l : list Expression2),
+                (q : As)
+                (l : list Expression2'),
                 Forall P l ->
-                P (e_attr q l)
+                P (@e_attr Bv Va Ts Fs Qs As q l)
         )
     .
 
-    Fixpoint Expression2_ind (e : Expression2) : P e :=
+    Fixpoint Expression2'_ind (e : Expression2') : P e :=
     match e with
     | e_ground g => true_for_ground g
     | e_Variabl x => true_for_var x
-    | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2_ind)
-    | e_query q l => preserved_by_query q l (Forall_true P l Expression2_ind)
-    | e_attr q l => preserved_by_attribute q l (Forall_true P l Expression2_ind)
+    | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2'_ind)
+    | e_query q l => preserved_by_query q l (Forall_true P l Expression2'_ind)
+    | e_attr q l => preserved_by_attribute q l (Forall_true P l Expression2'_ind)
     end.
 
 End custom_induction_principle.
 
+Definition Expression2 {Σ : BackgroundModel} : Type
+:=
+    @Expression2' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol
+.
 
 Fixpoint vars_of_Expression2
     {Σ : BackgroundModel}
@@ -347,17 +351,22 @@ Definition TermOverBuiltin_to_TermOverBoV
 .
 
 
-Inductive SideCondition {Σ : BackgroundModel} :=
+Inductive SideCondition' {Bv Va Ts Fs Qs As Ps Hps : Type} :=
 | sc_true
 | sc_false
 (* positive literal *)
-| sc_pred (pred : PredSymbol) (args : list Expression2)
+| sc_pred (pred : Ps) (args : list (@Expression2' Bv Va Ts Fs Qs As))
 (* negative literal *)
-| sc_npred (pred : PredSymbol) (args : list Expression2)
+| sc_npred (pred : Ps) (args : list (@Expression2' Bv Va Ts Fs Qs As))
 (* Positive literal over hidden data. NOTE: we do not have negatives over hiden data *)
-| sc_hpred (pred : HPredSymbol) (args : list Expression2)
-| sc_and (left : SideCondition) (right : SideCondition)
-| sc_or (left : SideCondition) (right : SideCondition)
+| sc_hpred (pred : Hps) (args : list (@Expression2' Bv Va Ts Fs Qs As))
+| sc_and (left : SideCondition') (right : SideCondition')
+| sc_or (left : SideCondition') (right : SideCondition')
+.
+
+Definition SideCondition {Σ : BackgroundModel} : Type
+:=
+    @SideCondition' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol PredSymbol HPredSymbol
 .
 
 #[export]
