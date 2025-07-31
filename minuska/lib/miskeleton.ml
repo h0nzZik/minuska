@@ -5,18 +5,14 @@ open Util
 open Pluginbase
 
 
-type ('b, 'builtin, 'pred,'hpred,'func,'attr,'query,'meth) interpreterSkeletonI =
+type ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI =
   {
-    signature         : (Extracted.signature) ;
-    hidden_signature  : (Extracted.hiddenSignature) ;
-    value_algebra     : ((string, 'b) Extracted.model) ;
-    hidden_algebra    : ((string, 'b) Extracted.hiddenModel) ;
-    program_info      : ((string, 'b) Extracted.programInfo) ;
-    static_model      : (Extracted.staticModel) ;
-    builtin_inject    : (builtin_repr -> 'builtin) ;
-    builtin_eject     : ('builtin -> builtin_repr ) ;
-    (* builtin_coq_quote : builtin_repr -> string ; *)
-    bindings          : (string -> ('pred,'hpred,'func,'attr,'query,'meth) Extracted.symbolInfo) ;
+    value_algebra     : (('v,'nv,'ts,'fs,'ps) Extracted.valueAlgebra) ;
+    hidden_algebra    : (('hv, 'v, 'nv, 'ts, 'ats, 'ms, 'hps) Extracted.hiddenAlgebra) ;
+    program_info      : (('prg,'v,'ts,'qs) Extracted.programInfo) ;
+    builtin_inject    : (builtin_repr -> 'v) ;
+    builtin_eject     : ('v -> builtin_repr ) ;
+    bindings          : (string -> ('p, 'hp,'fs,'as,'qs,'ms) Extracted.symbolInfo) ;
   }
 
 
@@ -40,31 +36,6 @@ let klike_builtin_eject (b : string Extracted.builtinValue0) : builtin_repr =
   | Extracted.Bv_list _ -> ({br_kind="list"; br_value="_"})
   | Extracted.Bv_pmap _ -> ({br_kind="map"; br_value="_"})
 
-(* 
-let klike_builtin_coq_quote (b : builtin_repr) : string = 
-  match b.br_kind with
-  | "int" -> (sprintf "(bv_Z (%s)%%Z)" (b.br_value))
-  | "bool" -> (
-    match b.br_value with
-    | "true" -> ("(bv_bool true)")
-    | "false" -> ("(bv_bool false)")
-    | _ -> failwith (sprintf "Unknown boolean value '%s': only 'true' and 'false' are allowed" b.br_value)
-  )
-  | "string" -> (sprintf "(bv_str \"%s\")" b.br_value) *)
-
-(* let klike_static_model : Extracted.staticModel =  (
-  let s  = (Extracted.top_builtin_klike_signature) in
-  let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_klike_signature) in
-  let m  = (Extracted.top_builtin_klike_model Extracted.top_symbols_strings) in
-  let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
-  let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
-  (Extracted.top_build_static_model s hs m hm pi)
-) *)
-
-(* 
-let empty_builtin_coq_quote (b : builtin_repr) : string =
-  failwith (sprintf "Cannot represent given builtin using module 'empty'") *)
-
 let empty_builtin_inject (b : builtin_repr) : Extracted.emptyset =
   match b with
   | _ -> failwith (sprintf "Cannot represent given builtin using module 'empty'")
@@ -75,27 +46,22 @@ let empty_builtin_eject (b : Extracted.emptyset) : builtin_repr =
 
 
 let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*) = (
-  let s  = (Extracted.top_builtin_klike_signature) in
-  let hs = (Extracted.top_hidden_unit_signature Extracted.top_builtin_klike_signature) in
-  let m  = (Extracted.top_builtin_klike_model Extracted.top_symbols_strings) in
-  let hm = (Extracted.top_hidden_unit_model Extracted.top_symbols_strings s m) in
-  let pi = (Extracted.top_pi_trivial_pi Extracted.top_symbols_strings s m) in
-  let sm = (Extracted.top_build_static_model s hs m hm pi) in
+
+  let sym_edc := (Extracted.top_symbols_strings_edc) in
+  let m  = (Extracted.top_builtin_klike_model sym_edc) in
+  let hm = (Extracted.top_hidden_unit_model sym_edc s m) in
+  let pi = (Extracted.top_pi_trivial_pi sym_edc s m) in
   let bs = (Extracted.combine_symbol_classifiers
     (Extracted.top_builtin_klike_bindings)
     (Extracted.top_pi_trivial_bindings)
     (Extracted.top_hidden_unit_bindings)
   ) in
   {
-    signature = s ;
-    hidden_signature = hs;
     value_algebra = m;
     hidden_algebra = hm;
     program_info = pi;
-    static_model = sm;
     builtin_inject = klike_builtin_inject;
     builtin_eject = klike_builtin_eject;
-    (* builtin_coq_quote = klike_builtin_coq_quote; *)
     bindings = bs;
   }
 )

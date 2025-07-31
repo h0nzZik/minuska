@@ -140,7 +140,7 @@ Definition framed_rule
         cond default_label)))
 .
 
-Definition BasicTypesProperties
+Definition poly_interpreter
     (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
     (_EBBVal : EDC BVal)
     (_EBHVal : EDC HVal)
@@ -167,7 +167,7 @@ Definition BasicTypesProperties
     (@naive_interpreter bgm Label Γ program nv x)
 .
 
-Definition BasicTypesProperties_ext
+Definition poly_interpreter_ext
     (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
     (_EBBVal : EDC BVal)
     (_EBHVal : EDC HVal)
