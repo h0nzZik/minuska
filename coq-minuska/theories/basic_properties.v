@@ -508,15 +508,21 @@ Fixpoint vars_of_to_l2r
 .
 
 
+Check @VarsOf_TermOver.
+(* Set Typeclasses Debug. *)
 Lemma vars_of_t_term
-    {Σ : BackgroundModel}
-    (s : TermSymbol)
-    (l : list (@TermOver' TermSymbol BuiltinOrVar))
+    {T0 : Type}
+    {T var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VT : VarsOf T var}
+    (s : T0)
+    (l : list (@TermOver' T0 T))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
 Proof. reflexivity. Qed.
-
+(* 
 Lemma vars_of_t_term_e
     {Σ : BackgroundModel}
     (s : TermSymbol)
@@ -524,7 +530,7 @@ Lemma vars_of_t_term_e
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
-Proof. reflexivity. Qed.
+Proof. reflexivity. Qed. *)
 
 
 Fixpoint TermOver_size_with

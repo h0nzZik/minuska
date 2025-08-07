@@ -507,7 +507,7 @@ Proof.
         subst s0.
         rewrite Forall_forall in H.
         unfold Valuation2 in *.
-        rewrite vars_of_t_term_e.
+        rewrite vars_of_t_term.
         rewrite elem_of_subseteq.
         intros x Hx.
         rewrite elem_of_union_list in Hx.
@@ -1295,7 +1295,7 @@ Proof.
             ltac1:(simplify_option_eq).
             reflexivity.
             ltac1:(exfalso).
-            rewrite vars_of_t_term_e in H4.
+            rewrite vars_of_t_term in H4.
             rewrite elem_of_union_list in H4.
             apply H4. clear H4.
             exists (vars_of φ').
@@ -2513,7 +2513,7 @@ Lemma double_satisfies_contradiction
     (lx : list (@TermOver' TermSymbol BasicValue))
     (lz : list (@TermOver' TermSymbol BuiltinOrVar))
     :
-    vars_of ((t_over ay)) = vars_of ((t_term cz lz)) ->
+    vars_of ((@t_over TermSymbol _ ay)) = vars_of ((t_term cz lz)) ->
     sat2B ρ (t_term cx lx) (t_over ay) ->
     sat2B ρ (t_term cx lx) (t_term cz lz) ->
     False
@@ -3334,7 +3334,7 @@ Lemma vars_of_builtin
     {Σ : BackgroundModel}
     b
 :
-    vars_of (t_over (bov_builtin b)) = ∅
+    vars_of (@t_over TermSymbol _  (bov_builtin b)) = ∅
 .
 Proof.
     unfold vars_of; simpl.
@@ -3348,7 +3348,7 @@ Lemma vars_of_Variabl
     {Σ : BackgroundModel}
     x
 :
-    vars_of (t_over (bov_Variabl x)) = {[x]}
+    vars_of (@t_over TermSymbol _ (bov_Variabl x)) = {[x]}
 .
 Proof.
     unfold vars_of; simpl.

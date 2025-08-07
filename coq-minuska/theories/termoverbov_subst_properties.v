@@ -162,6 +162,7 @@ Proof.
             inversion Hin; subst; clear Hin.
             {
                 destruct (decide (x = x))>[|ltac1:(contradiction)].
+                unfold BuiltinOrVar in *.
                 ltac1:(lia).
             }
             {
@@ -221,6 +222,7 @@ Proof.
         }
     }
     {
+        unfold BuiltinOrVar in *.
         simpl in *.
         rewrite sum_list_with_compose.
         unfold compose.
@@ -345,6 +347,7 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
+            unfold BuiltinOrVar in *.
             ltac1:(lia).
         }
 
@@ -386,6 +389,7 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
+            unfold BuiltinOrVar in *.
             ltac1:(lia).
         }
 
@@ -401,6 +405,7 @@ Proof.
             }
             {
                 intros i0 x1 x2 Hx1 Hx2.
+                unfold BuiltinOrVar in *.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
@@ -433,6 +438,7 @@ Proof.
             }
             {
                 intros i0 x1 x2 Hx1 Hx2.
+                unfold BuiltinOrVar in *.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
@@ -453,6 +459,7 @@ Proof.
                 }
             }
         }
+        unfold BuiltinOrVar in *.
         rewrite HH1. clear HH1.
         rewrite HH2. clear HH2.
         remember (sum_list_with TermOver_size (take j l) ) as N1.
@@ -500,6 +507,7 @@ Proof.
             specialize (Hnotindrop _ H2x1).
             apply Hnotindrop. apply H2x.
         }
+        unfold BuiltinOrVar in *.
         specialize (H ltac:(lia)).
         rewrite H.
         assert (Htmp1 := TermOver_size_not_zero x0).

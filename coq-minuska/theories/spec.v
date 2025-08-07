@@ -313,9 +313,13 @@ Instance VarsOf_Expression2
 |}.
 
 
-Inductive BuiltinOrVar {Σ : BackgroundModel} :=
-| bov_builtin (b : BasicValue)
-| bov_Variabl (x : Variabl)
+Inductive BuiltinOrVar' {Bv Va : Type} :=
+| bov_builtin (b : Bv)
+| bov_Variabl (x : Va)
+.
+
+Definition BuiltinOrVar {Σ : BackgroundModel} :=
+    @BuiltinOrVar' BasicValue Variabl
 .
 
 Fixpoint TermOver_size
@@ -399,14 +403,22 @@ Instance  VarsOf_sc
     vars_of := vars_of_sc ;
 |}.
 
-Variant BasicEffect0 {Σ : BackgroundModel} := 
-| be_method (s : MethSymbol) (args : list Expression2)
+Variant BasicEffect0' {Bv Va Ts Fs Qs As Ms : Type} :=
+| be_method (s : Ms) (args : list (@Expression2' Bv Va Ts Fs Qs As))
 (* This is like a binder *)
-| be_remember (x : Variabl) (e : Expression2)
+| be_remember (x : Va) (e : (@Expression2' Bv Va Ts Fs Qs As))
+.
+
+Definition Effect0' {Bv Va Ts Fs Qs As Ms : Type} : Type :=
+    list (@BasicEffect0' Bv Va Ts Fs Qs As Ms)
+.
+
+Definition BasicEffect0 {Σ : BackgroundModel} : Type :=
+  @BasicEffect0' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol
 .
 
 Definition Effect0 {Σ : BackgroundModel} : Type :=
-    list BasicEffect0
+  @Effect0' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol
 .
 
 Definition vars_of_Effect0'
@@ -433,24 +445,27 @@ Instance VarsOf_Effect0
 |}.
 
 
-Record RewritingRule2
-    {Σ : BackgroundModel}
+Record RewritingRule2'
+    {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
     (Label : Set)
 := mkRewritingRule2
 {
-    r_from : @TermOver' TermSymbol BuiltinOrVar ;
-    r_to : @TermOver' TermSymbol Expression2 ;
-    r_scs : SideCondition ;
-    r_eff : Effect0 ;
+    r_from : @TermOver' Ts (@BuiltinOrVar' Bv Va) ;
+    r_to : @TermOver' Ts (@Expression2' Bv Va Ts Fs Qs As) ;
+    r_scs : (@SideCondition' Bv Va Ts Fs Qs As Ps Hps) ;
+    r_eff : (@Effect0' Bv Va Ts Fs Qs As Ms) ;
     r_label : Label ;
 }.
 
-Arguments r_from {Σ} {Label%_type_scope} r.
-Arguments r_to {Σ} {Label%_type_scope} r.
-Arguments r_scs {Σ} {Label%_type_scope} r.
-Arguments r_eff {Σ} {Label%_type_scope} r.
-Arguments r_label {Σ} {Label%_type_scope} r.
+Arguments r_from {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_to {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_scs {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_eff {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_label {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
 
+Definition RewritingRule2 {Σ : BackgroundModel} (Label : Set) : Type :=
+  @RewritingRule2' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol PredSymbol HPredSymbol Label
+.
 
 Definition vars_of_BoV
     {Σ : BackgroundModel}
@@ -470,26 +485,6 @@ Instance VarsOf_BoV
     vars_of := vars_of_BoV ; 
 |}.
 
-
-#[export]
-Instance VarsOf_TermOver_BuiltinOrVar
-    {Σ : BackgroundModel}
-    :
-    VarsOf (@TermOver' TermSymbol BuiltinOrVar) Variabl
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
-
-#[export]
-Instance VarsOf_TermOver_Expression2
-    {Σ : BackgroundModel}
-    :
-    VarsOf (@TermOver' TermSymbol Expression2) Variabl
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
 
 (* A rewriting theory is a list of rewriting rules. *)
 Definition RewritingTheory2

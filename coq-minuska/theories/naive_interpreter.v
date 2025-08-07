@@ -115,7 +115,7 @@ Proof.
         rewrite fmap_Some in H1x.
         destruct H1x as [y [H1y H2y]].
         subst x.
-        rewrite vars_of_t_term_e.
+        rewrite vars_of_t_term.
         clear s.
         revert y H1y H.
         induction l; intros y H1y H.
@@ -566,7 +566,7 @@ Proof.
         subst gg.
         rewrite fmap_Some.
         
-        rewrite vars_of_t_term_e.
+        rewrite vars_of_t_term.
         (* apply list_collect_inv in H1x as H1x'. *)
         exists x.
         split>[|reflexivity].

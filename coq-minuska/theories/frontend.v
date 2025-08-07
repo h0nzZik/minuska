@@ -159,7 +159,7 @@ Fixpoint ssc_to_sc
     (R : Realization Bu Sy Va P HP F A Q M)
     (ssc : StringSideCondition)
     :
-    SideCondition+string
+    (@SideCondition' _ _ _ _ _ _ _ _ )+string
 :=
     match ssc with
     | ssc_true => inl sc_true
@@ -191,18 +191,18 @@ Fixpoint ssc_to_sc
         | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) TermSymbol")
         end
     | ssc_and l r =>
-        match ssc_to_sc l with
+        match ssc_to_sc R l with
         | inl left' =>
-            match ssc_to_sc r with
+            match ssc_to_sc R r with
             | inl right' => inl (sc_and left' right')
             | inr e => inr e
             end
         | inr e => inr e
         end
     | ssc_or l r =>
-        match ssc_to_sc l with
+        match ssc_to_sc R l with
         | inl left' =>
-            match ssc_to_sc r with
+            match ssc_to_sc R r with
             | inl right' => inl (sc_or left' right')
             | inr e => inr e
             end
@@ -210,15 +210,16 @@ Fixpoint ssc_to_sc
         end
     end
 .
-
+(* Set Printing Implicit. *)
+(* About se_to_Expression. *)
 Definition tosse_to_e_tose
-    {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (t : @TermOver' string StringExpression)
     :
-    (@TermOver' TermSymbol Expression2)+string
+    (@TermOver' Sy (@Expression2' Bu Va Sy F Q A))+string
 :=
-    match TermOver'_e_map (se_to_Expression) t with
+    match TermOver'_e_map (se_to_Expression R) t with
     | inl t' => let t'' := to_transform_sym string2sym t' in
         inl t''
     | inr e => inr e
@@ -231,11 +232,11 @@ Variant StringBuiltinOrVar :=
 .
 
 Definition sbov_to_e_bov
-    {Σ : BackgroundModel}
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (sbov : StringBuiltinOrVar)
     :
-    BuiltinOrVar+string
+    (@BuiltinOrVar' Bu Va)+string
 :=
     match sbov with
     | sbov_var x => inl (bov_Variabl (string2var x))
@@ -258,34 +259,33 @@ Record StringRewritingRule
 }.
 
 Definition transl_string_pattern
-    {Σ : BackgroundModel}
-    (Label : Set)
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (p : @TermOver' string StringBuiltinOrVar)
     :
-    (@TermOver' TermSymbol BuiltinOrVar)+string
+    (@TermOver' Sy (@BuiltinOrVar' Bu Va))+string
 :=
-    match TermOver'_e_map (sbov_to_e_bov) p with
+    match TermOver'_e_map (sbov_to_e_bov R) p with
     | inr e => inr e
-    | inl p'' => inl (to_transform_sym string2sym p'')
+    | inl p'' => inl (to_transform_sym R.(string2sym) p'')
     end
 .
 
 Definition srr_to_rr
-    {Σ : BackgroundModel}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (Label : Set)
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (srr : StringRewritingRule Label)
     :
     (RewritingRule2 Label)+string
 :=
     match srr with
     | mkStringRewritingRule _ from to scs act =>
-        match transl_string_pattern Label from with
+        match transl_string_pattern R from with
         | inl from' =>
-            match tosse_to_e_tose to with
+            match tosse_to_e_tose R to with
             | inl to' =>
-                match ssc_to_sc scs with
+                match ssc_to_sc R scs with
                 | inl scs' =>
                     inl {|
                         r_from := from';
