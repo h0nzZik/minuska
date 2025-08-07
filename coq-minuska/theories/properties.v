@@ -61,14 +61,15 @@ Proof.
             ltac1:(simplify_eq/=).
             f_equal.
             apply (lookup_weaken ρ1 ρ2 x) in Heq1.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
+            rewrite Heq1 in Heq2.
             ltac1:(simplify_eq/=; congruence).
             { assumption. }
         }
         {
             ltac1:(exfalso).
             apply (lookup_weaken ρ1 ρ2 x) in Heq1.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             ltac1:(simplify_eq/=; congruence).
             { assumption. }
         }

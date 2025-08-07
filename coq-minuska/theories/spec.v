@@ -291,10 +291,25 @@ Definition Expression2 {Σ : BackgroundModel} : Type
     @Expression2' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol
 .
 
+
+#[export]
+Instance VarsOf_list_something
+    {Va : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    {A : Type}
+    {_VA: VarsOf A Va}
+    : VarsOf (list A) Va
+:= {|
+    vars_of := fun scs => ⋃ (vars_of <$> scs)
+|}.
+
 Fixpoint vars_of_Expression2
-    {Σ : BackgroundModel}
-    (t : Expression2)
-    : gset Variabl :=
+    {Bv Va Ts Fs Qs As : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    (t : @Expression2' Bv Va Ts Fs Qs As)
+    : gset Va :=
 match t with
 | e_ground _ => ∅
 | e_Variabl x => {[x]}
@@ -306,8 +321,10 @@ end.
 
 #[export]
 Instance VarsOf_Expression2
-    {Σ : BackgroundModel}
-    : VarsOf Expression2 Variabl
+    {Bv Va Ts Fs Qs As : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@Expression2' Bv Va Ts Fs Qs As) Va
 := {|
     vars_of := vars_of_Expression2 ; 
 |}.
@@ -373,17 +390,11 @@ Definition SideCondition {Σ : BackgroundModel} : Type
     @SideCondition' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol PredSymbol HPredSymbol
 .
 
-#[export]
-Instance VarsOf_list_something
-    {Σ : BackgroundModel}
-    {A : Type}
-    {_VA: VarsOf A Variabl}
-    : VarsOf (list A) Variabl
-:= {|
-    vars_of := fun scs => ⋃ (vars_of <$> scs)
-|}.
-
-Fixpoint vars_of_sc {Σ : BackgroundModel} (sc : SideCondition) : gset Variabl :=
+Fixpoint vars_of_sc
+  {Bv Va Ts Fs Qs As Ps Hps : Type}
+  {_EDVa : EqDecision Va}
+  {_CNVa : Countable Va}
+  (sc : @SideCondition' Bv Va Ts Fs Qs As Ps Hps) : gset Va :=
 match sc with
 | sc_true => ∅
 | sc_false => ∅
@@ -397,8 +408,10 @@ end
 
 #[export]
 Instance  VarsOf_sc
-    {Σ : BackgroundModel}
-    : VarsOf SideCondition Variabl
+  {Bv Va Ts Fs Qs As Ps Hps : Type}
+  {_EDVa : EqDecision Va}
+  {_CNVa : Countable Va}
+    : VarsOf (@SideCondition' Bv Va Ts Fs Qs As Ps Hps) Va
 := {|
     vars_of := vars_of_sc ;
 |}.
@@ -422,9 +435,11 @@ Definition Effect0 {Σ : BackgroundModel} : Type :=
 .
 
 Definition vars_of_Effect0'
-    {Σ : BackgroundModel}
-    (f : Effect0)
-    : gset Variabl
+    {Bv Va Ts Fs Qs As Ms : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    (f : (@Effect0' Bv Va Ts Fs Qs As Ms))
+    : gset Va
 :=
     fold_right (fun be vs =>
         match be with
@@ -438,8 +453,10 @@ Definition vars_of_Effect0'
 
 #[export]
 Instance VarsOf_Effect0
-    {Σ : BackgroundModel}
-    : VarsOf Effect0 Variabl
+    {Bv Va Ts Fs Qs As Ms : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@Effect0' Bv Va Ts Fs Qs As Ms) Va
 := {|
     vars_of := vars_of_Effect0' ; 
 |}.
@@ -468,9 +485,11 @@ Definition RewritingRule2 {Σ : BackgroundModel} (Label : Set) : Type :=
 .
 
 Definition vars_of_BoV
-    {Σ : BackgroundModel}
-    (bov : BuiltinOrVar)
-    : gset Variabl
+    {Bv Va : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    (bov : (@BuiltinOrVar' Bv Va))
+    : gset Va
 :=
 match bov with
 | bov_Variabl x => {[x]}
@@ -479,8 +498,10 @@ end.
 
 #[export]
 Instance VarsOf_BoV
-    {Σ : BackgroundModel}
-    : VarsOf BuiltinOrVar Variabl
+    {Bv Va : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@BuiltinOrVar' Bv Va) Va
 := {|
     vars_of := vars_of_BoV ; 
 |}.
@@ -495,10 +516,18 @@ Definition RewritingTheory2
 
 
 (* A valuation is a mapping from Variabls to groun terms. *)
+Definition Valuation'
+    {Bv Va Ts : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+:=
+    gmap Va (@TermOver' Ts Bv)
+.
+
 Definition Valuation2
     {Σ : BackgroundModel}
 :=
-    gmap Variabl (@TermOver' TermSymbol BasicValue)
+    @Valuation' BasicValue Variabl TermSymbol _ _
 .
 
 (* TODO Do we even need this?*)
@@ -508,20 +537,21 @@ Instance Subseteq_Valuation2 {Σ : BackgroundModel}
 .
 Proof.
     unfold Valuation2.
+    unfold Valuation'.
     apply _.
 Defined.
 
 #[export]
 Instance VarsOf_Valuation2_
-    {Σ : BackgroundModel}
-    {var : Type}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    : VarsOf (gmap var (@TermOver' TermSymbol BuiltinOrVar)) var
+    {Bv Va Whatever : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (gmap Va Whatever) Va
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
 
+(*
 #[export]
 Instance VarsOf_Valuation2
     {Σ : BackgroundModel}
@@ -529,6 +559,7 @@ Instance VarsOf_Valuation2
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
+*)
 
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     {Σ : BackgroundModel}
