@@ -30,7 +30,7 @@ Proof.
         {
             unfold vars_of; simpl.
             unfold vars_of; simpl.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite elem_of_subseteq.
             intros x0 Hx0.
             rewrite elem_of_singleton in Hx0.
@@ -41,7 +41,7 @@ Proof.
         }
     }
     {
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         ltac1:(rewrite vars_of_t_term).
         rewrite elem_of_subseteq.
         intros x Hx.

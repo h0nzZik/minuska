@@ -507,7 +507,7 @@ Proof.
         destruct HH as [Hs0s [Hl0l HH]].
         subst s0.
         rewrite Forall_forall in H.
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         rewrite vars_of_t_term.
         rewrite elem_of_subseteq.
         intros x Hx.
@@ -613,7 +613,7 @@ Proof.
             ltac1:(exfalso).
             unfold vars_of in H1; simpl in H1.
             rewrite singleton_subseteq_l in H1.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite <- not_elem_of_dom in Heq1.
             apply Heq1. apply H1.
         }
@@ -832,7 +832,7 @@ Lemma TermOverExpression2_satisfies_extensive
 .
 Proof.
     revert gt ρ1 ρ2.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     ltac1:(induction t using TermOver_rect; intros gt ρ1 ρ2 Hρ1ρ2).
     {
         destruct gt; ltac1:(simp sat2E).
@@ -969,7 +969,7 @@ Proof.
     induction e; intros g H1; simpl in *.
     { assumption. }
     {
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         ltac1:(repeat case_match).
         rewrite map_lookup_filter_Some in H0.
         {
@@ -1032,7 +1032,7 @@ Proof.
             {
                 unfold vars_of; simpl.
                 eapply Expression2_evaluate_extensive_Some>[|apply H1].
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply map_filter_subseteq_ext.
                 intros i x Hix.
                 simpl.
@@ -1048,7 +1048,7 @@ Proof.
                 unfold vars_of; simpl.
                 specialize (IHl _ H1l'').
                 eapply list_collect_Expression2_evaluate_extensive_Some>[|apply IHl].
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply map_filter_subseteq_ext.
                 intros i x Hix.
                 simpl.
@@ -1087,7 +1087,7 @@ Proof.
             {
                 unfold vars_of; simpl.
                 eapply Expression2_evaluate_extensive_Some>[|apply H1].
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply map_filter_subseteq_ext.
                 intros i x Hix.
                 simpl.
@@ -1103,7 +1103,7 @@ Proof.
                 unfold vars_of; simpl.
                 specialize (IHl _ H1l'').
                 eapply list_collect_Expression2_evaluate_extensive_Some>[|apply IHl].
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply map_filter_subseteq_ext.
                 intros i x Hix.
                 simpl.
@@ -1141,7 +1141,7 @@ Proof.
             {
                 unfold vars_of; simpl.
                 eapply Expression2_evaluate_extensive_Some>[|apply H1].
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply map_filter_subseteq_ext.
                 intros i x Hix.
                 simpl.
@@ -1157,7 +1157,7 @@ Proof.
                 unfold vars_of; simpl.
                 specialize (IHl _ H1l'').
                 eapply list_collect_Expression2_evaluate_extensive_Some>[|apply IHl].
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply map_filter_subseteq_ext.
                 intros i x Hix.
                 simpl.
@@ -1288,7 +1288,7 @@ Proof.
         intros.
         eapply TermOverExpression2_satisfies_extensive>[|eapply H].
         {
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             ltac1:(rewrite map_subseteq_spec).
             intros i0 x Hx.
             rewrite map_lookup_filter in Hx.
@@ -1331,7 +1331,7 @@ Lemma TermOverBoV_satisfies_extensive
 .
 Proof.
     revert gt ρ1 ρ2.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     ltac1:(induction t using TermOver_rect; intros gt ρ1 ρ2 Hρ1ρ2).
     {
         destruct gt,a ; ltac1:(simp sat2B); simpl.
@@ -1387,7 +1387,7 @@ Proof.
         ltac1:(simp sat2B).
         unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar in *.
         ltac1:(repeat case_match; try congruence).
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         rewrite map_lookup_filter.
         rewrite HH.
         simpl.
@@ -1409,7 +1409,7 @@ Proof.
         intros.
         eapply TermOverBoV_satisfies_extensive>[|eapply H].
         {
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             ltac1:(rewrite map_subseteq_spec).
             intros i0 x Hx.
             rewrite map_lookup_filter in Hx.
@@ -1601,7 +1601,7 @@ Proof.
                 {
                     apply map_subseteq_spec.
                     intros i x Hix.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite map_lookup_filter_Some in Hix.
                     rewrite map_lookup_filter_Some.
                     destruct Hix as [H1ix H2ix].
@@ -1623,7 +1623,7 @@ Proof.
                 ].
                 apply map_subseteq_spec.
                 intros i x Hix.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite map_lookup_filter_Some in Hix.
                 rewrite map_lookup_filter_Some.
                 destruct Hix as [H1ix H2ix].
@@ -1670,7 +1670,7 @@ Proof.
                 {
                     apply map_subseteq_spec.
                     intros i x Hix.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite map_lookup_filter_Some in Hix.
                     rewrite map_lookup_filter_Some.
                     destruct Hix as [H1ix H2ix].
@@ -1692,7 +1692,7 @@ Proof.
                 ].
                 apply map_subseteq_spec.
                 intros i x Hix.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite map_lookup_filter_Some in Hix.
                 rewrite map_lookup_filter_Some.
                 destruct Hix as [H1ix H2ix].
@@ -1739,7 +1739,7 @@ Proof.
                 {
                     apply map_subseteq_spec.
                     intros i x Hix.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite map_lookup_filter_Some in Hix.
                     rewrite map_lookup_filter_Some.
                     destruct Hix as [H1ix H2ix].
@@ -1761,7 +1761,7 @@ Proof.
                 ].
                 apply map_subseteq_spec.
                 intros i x Hix.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite map_lookup_filter_Some in Hix.
                 rewrite map_lookup_filter_Some.
                 destruct Hix as [H1ix H2ix].
@@ -1790,7 +1790,7 @@ Proof.
             eapply SideCondition_satisfies_extensive>[|apply IHc1].
             apply map_subseteq_spec.
             intros i x Hix.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite map_lookup_filter in Hix.
             rewrite map_lookup_filter.
             rewrite bind_Some in Hix.
@@ -1811,7 +1811,7 @@ Proof.
             eapply SideCondition_satisfies_extensive>[|apply IHc2].
             apply map_subseteq_spec.
             intros i x Hix.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite map_lookup_filter in Hix.
             rewrite map_lookup_filter.
             rewrite bind_Some in Hix.
@@ -1846,7 +1846,7 @@ Proof.
             eapply SideCondition_satisfies_extensive>[|apply IHc1].
             apply map_subseteq_spec.
             intros i x Hix.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite map_lookup_filter in Hix.
             rewrite map_lookup_filter.
             rewrite bind_Some in Hix.
@@ -1867,7 +1867,7 @@ Proof.
             eapply SideCondition_satisfies_extensive>[|apply IHc2].
             apply map_subseteq_spec.
             intros i x Hix.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite map_lookup_filter in Hix.
             rewrite map_lookup_filter.
             rewrite bind_Some in Hix.
@@ -2323,7 +2323,8 @@ Proof.
             ltac1:(simp sat2B in H1).
             ltac1:(simp sat2B in H2).
             simpl in *.
-            destruct az; simpl in *; ltac1:(simplify_eq/=); reflexivity.
+            destruct az; simpl in *; ltac1:(simplify_eq/=); try reflexivity.
+            ltac1:(congruence).
         }
         {
             ltac1:(simp sat2B in H1).
@@ -2556,7 +2557,7 @@ Proof.
     {
         apply lookup_ge_None in Hlxi.
         apply lookup_lt_Some in Hi.
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         ltac1:(lia).
     }
 Qed.
@@ -2610,7 +2611,7 @@ Proof.
             }
             {
                 unfold size_of_var_in_val; simpl.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite H1.
                 simpl. reflexivity.
             }
@@ -2633,7 +2634,7 @@ Proof.
                 simpl.
                 unfold delta_in_val. simpl.
                 unfold size_of_var_in_val.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite H1. simpl.
                 apply f_equal.            
                 simpl. ltac1:(lia).
@@ -3006,7 +3007,7 @@ Proof.
             unfold vars_of in pf; simpl in pf;
             rewrite elem_of_singleton in pf;
             specialize (pf eq_refl);
-            unfold Valuation2 in *;
+            unfold Valuation2,Valuation' in *;
             rewrite elem_of_dom in pf;
             ltac1:(rewrite pf' in pf);
             eapply is_Some_None;
@@ -3062,7 +3063,7 @@ Proof.
         intros x' Hx'.
         rewrite elem_of_singleton in Hx'.
         subst x'.
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         rewrite elem_of_dom.
         exists (c).
         exact HH.
@@ -3333,9 +3334,9 @@ Qed.
 
 Lemma vars_of_builtin
     {Σ : BackgroundModel}
-    b
+    (b : BasicValue)
 :
-    vars_of (@t_over TermSymbol _  (bov_builtin b)) = ∅
+    vars_of (@t_over TermSymbol BuiltinOrVar (bov_builtin b)) = ∅
 .
 Proof.
     unfold vars_of; simpl.
@@ -3349,7 +3350,7 @@ Lemma vars_of_Variabl
     {Σ : BackgroundModel}
     x
 :
-    vars_of (@t_over TermSymbol _ (bov_Variabl x)) = {[x]}
+    vars_of (@t_over TermSymbol BuiltinOrVar (bov_Variabl x)) = {[x]}
 .
 Proof.
     unfold vars_of; simpl.
@@ -3407,7 +3408,7 @@ Lemma Valuation2_restrict_eq_subseteq
 .
 Proof.
     intros H1 H2.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     unfold Valuation2_restrict in *.
     rewrite map_eq_iff.
     rewrite map_eq_iff in H2.
@@ -3448,7 +3449,7 @@ Proof.
     eapply SideCondition_satisfies_strip in X.
     rewrite H in X.
     eapply SideCondition_satisfies_extensive>[|apply X].
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     apply map_filter_subseteq.
 Qed.
 
@@ -3712,7 +3713,7 @@ Proof.
                 ltac1:(simplify_eq/=).
                 specialize (IHf (<[x0 := x1]>ρ) ρ' c1 h' HH0 HH2).
                 specialize (IHf HH3).
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite lookup_insert_ne in IHf>[|ltac1:(congruence)].
                 exact IHf.
             }
@@ -3796,7 +3797,7 @@ Proof.
                 destruct Heqc as [x1 [H1x1 H2x1]].
                 ltac1:(simplify_eq/=).
                 specialize (IHf (<[x0 := x1]>ρ) ρ' c1 h' HH0 HH2).
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite lookup_insert_ne in IHf>[|ltac1:(congruence)].
                 specialize (IHf HH3).
                 exact IHf.
@@ -3885,7 +3886,7 @@ Proof.
                 }
                 {
                     specialize (IHf (<[x0 := x1]>ρ) ρ' c1 h' t HH2).
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite lookup_insert_ne in IHf>[|ltac1:(congruence)].
                     specialize (IHf HH3).
                     exact IHf.
@@ -3950,10 +3951,9 @@ Proof.
     }
 Qed.
 
-
 Lemma helper_filter_2
     {Σ : BackgroundModel}
-    x e f (ρ : gmap Variabl (@TermOver' TermSymbol BasicValue))
+    (x : Variabl) (e : Expression2) (f : Effect0) (ρ : gmap Variabl (@TermOver' TermSymbol BasicValue))
     :
     filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' ((be_remember x e) :: f)) ρ =
     filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of_Effect0' (f)) (delete x ρ) ∪
@@ -4130,7 +4130,7 @@ Proof.
                 destruct Hbeval as [y [H1y H2y]].
                 ltac1:(simplify_eq/=).
                 unfold vars_of; simpl.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite dom_insert.
                 ltac1:(set_solver).
             }
@@ -4200,7 +4200,7 @@ Proof.
 
                         apply map_eq.
                         intros i.
-                        unfold Valuation2 in *.
+                        unfold Valuation2,Valuation' in *.
                         rewrite map_lookup_filter.
                         rewrite lookup_union.
                         rewrite map_lookup_filter.
@@ -4219,7 +4219,7 @@ Proof.
                             ltac1:(rename e into H2).
                             rewrite (left_id empty union) in H2.
                             assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
-                            unfold Valuation2 in *.
+                            unfold Valuation2,Valuation' in *.
                             rewrite Hx2i in Htmp.
                             inversion Htmp; subst; clear Htmp.
                             reflexivity.
@@ -4249,7 +4249,7 @@ Proof.
                     intros i x Hix.
                     ltac1:(rewrite map_lookup_filter).
                     ltac1:(rewrite map_lookup_filter in Hix).
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     destruct (x2 !! i) eqn:H2i.
                     {
                         simpl in *.
@@ -4273,7 +4273,7 @@ Proof.
                 { 
                     rewrite H1x0'.
                     simpl.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     (* assert (IH1f' := IHf (delete x ρ) (ρ') x1 h'). *)
                     assert (IH1f := IHf _ _ _ _ HH).
                     unfold vars_of; simpl.
@@ -4293,7 +4293,7 @@ Proof.
 
                             apply map_eq.
                             intros i.
-                            unfold Valuation2 in *.
+                            unfold Valuation2,Valuation' in *.
                             rewrite map_lookup_filter.
                             rewrite lookup_union.
                             rewrite map_lookup_filter.
@@ -4322,13 +4322,13 @@ Proof.
                                 destruct (decide (x = i)).
                                 {
                                     subst.
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     ltac1:(simplify_eq/=).
                                     ltac1:(set_solver).
                                 }
                                 {
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
                                     rewrite Hρi in Htmp.
                                     inversion Htmp; subst; clear Htmp.
@@ -4359,13 +4359,13 @@ Proof.
                                 destruct (decide (x = i)).
                                 {
                                     subst.
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     ltac1:(simplify_eq/=).
                                     ltac1:(set_solver).
                                 }
                                 {
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
                                     rewrite Hρi in Htmp.
                                     inversion Htmp.
@@ -4377,14 +4377,14 @@ Proof.
                                 {
                                     subst.
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_2' program x1 h' nv f i x0 _ _ HH).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     specialize (Htmp eq_refl Hρ'i).
                                     destruct Htmp.
                                 }
                                 {
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_2' program x1 h' nv f i t _ _ HH).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
                                     specialize (Htmp Hρi Hρ'i).
                                     destruct Htmp.
@@ -4410,13 +4410,13 @@ Proof.
                         
                         apply Effect0_evaluate'_vars_of in HH as HH'.
                         unfold vars_of in HH'; simpl in HH'.
-                        unfold Valuation2 in *.
+                        unfold Valuation2,Valuation' in *.
                         rewrite dom_insert in HH'.
                         assert (Htmp1: x ∈ dom ρ') by ltac1:(clear - HH'; set_solver).
                         
                         apply map_eq.
                         intros i.
-                        unfold Valuation2 in *.
+                        unfold Valuation2,Valuation' in *.
                         rewrite map_lookup_filter.
                         rewrite lookup_union.
                         rewrite map_lookup_filter.
@@ -4449,7 +4449,7 @@ Proof.
                                     apply Decidable.not_or in n.
                                     destruct n as [H1 H2].
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     ltac1:(simplify_eq/=).
                                     reflexivity.
@@ -4466,7 +4466,7 @@ Proof.
                                     apply Decidable.not_or in n.
                                     destruct n as [H3 H4].
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H4 HH Hρ'i).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     ltac1:(simplify_eq/=).
                                     reflexivity.
@@ -4493,7 +4493,7 @@ Proof.
                                     apply Decidable.not_or in n.
                                     destruct n as [H1 H2].
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     ltac1:(simplify_eq/=).
                                     reflexivity.
@@ -4512,20 +4512,20 @@ Proof.
                                     try reflexivity.
                                 {
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_2' program x1 h' nv _ i x0 _ _ HH).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     specialize (Htmp eq_refl).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite Hρ'i in Htmp.
                                     ltac1:(contradiction Htmp).
                                     reflexivity.
                                 }
                                 {
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_2' program x1 h' nv _ i x0 _ _ HH).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert in Htmp.
                                     specialize (Htmp eq_refl).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite Hρ'i in Htmp.
                                     ltac1:(contradiction Htmp).
                                     reflexivity.
@@ -4535,7 +4535,7 @@ Proof.
                                 cases ();
                                     try reflexivity.
                                 {
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     apply not_elem_of_dom_2 in Hρ'i.
                                     ltac1:(contradiction Hρ'i).
                                 }
@@ -4569,7 +4569,7 @@ Proof.
                                     }
                                     {
                                         assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
-                                        unfold Valuation2 in *.
+                                        unfold Valuation2,Valuation' in *.
                                         rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
                                         rewrite Hρi in Htmp.
                                         ltac1:(simplify_eq/=).
@@ -4594,7 +4594,7 @@ Proof.
                                     }
                                     {
                                         assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
-                                        unfold Valuation2 in *.
+                                        unfold Valuation2,Valuation' in *.
                                         rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
                                         rewrite Hρi in Htmp.
                                         ltac1:(simplify_eq/=).
@@ -4614,7 +4614,7 @@ Proof.
                                     apply Decidable.not_or in n0.
                                     destruct n0 as [H1 H2].
                                     assert (Htmp := Effect0_evaluate'_notin_remembered_1 program x1 h' nv _ _ t _ _ H2 HH Hρ'i).
-                                    unfold Valuation2 in *.
+                                    unfold Valuation2,Valuation' in *.
                                     rewrite lookup_insert_ne in Htmp>[|ltac1:(set_solver)].
                                     rewrite Hρi in Htmp.
                                     inversion Htmp.
@@ -4628,18 +4628,18 @@ Proof.
                                     destruct (decide (i = x)).
                                     {
                                         assert (Htmp := Effect0_evaluate'_notin_remembered_2' program x1 h' nv _ i x0 _ _ HH).
-                                        unfold Valuation2 in *.
+                                        unfold Valuation2,Valuation' in *.
                                         subst.
                                         rewrite lookup_insert in Htmp.
                                         specialize (Htmp eq_refl).
-                                        unfold Valuation2 in *.
+                                        unfold Valuation2,Valuation' in *.
                                         rewrite Hρ'i in Htmp.
                                         ltac1:(contradiction Htmp).
                                         reflexivity.
                                     }
                                     {
                                         assert (Htmp := Effect0_evaluate'_notin_remembered_2' program x1 h' nv _ i t _ _ HH).
-                                        unfold Valuation2 in *.
+                                        unfold Valuation2,Valuation' in *.
                                         rewrite lookup_insert_ne in Htmp>[|ltac1:(congruence)].
                                         specialize (Htmp Hρi Hρ'i).
                                         destruct Htmp.
@@ -4657,7 +4657,7 @@ Proof.
                     intros i x' Hix'.
                     ltac1:(rewrite map_lookup_filter).
                     ltac1:(rewrite map_lookup_filter in Hix').
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     destruct (ρ !! i) eqn:H2i.
                     {
                         simpl in *.

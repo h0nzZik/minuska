@@ -38,7 +38,7 @@ Proof.
     rewrite elem_of_elements in Hx.
     rewrite elem_of_intersection in Hx.
     destruct Hx as [H1x H2x].
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     rewrite elem_of_dom in H1x.
     rewrite elem_of_dom in H2x.
     destruct H1x as [y1 Hy1].
@@ -90,7 +90,7 @@ Definition Valuation2_merge_olist
       ρ2 ⊆ ρ
   .
   Proof.
-      unfold Valuation2 in *.
+      unfold Valuation2,Valuation' in *.
       unfold Valuation2_merge_with.
       unfold is_left.
       destruct ((Valuation2_compatible_with ρ1 ρ2)) eqn:Hcompat; intros H.
@@ -130,7 +130,7 @@ Definition Valuation2_merge_olist
               }
           }
           apply bool_decide_eq_true_1 in Hcompat.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           rewrite Hcompat in Hρ1i.
           rewrite Hρ1i in Hρ2i.
           ltac1:(congruence).
@@ -168,7 +168,7 @@ Definition Valuation2_merge_olist
       }
       {
           unfold is_left in H.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           unfold Valuation2_compatible_with in H.
           rewrite <- not_true_iff_false in H.
           ltac1:(exfalso). apply H. clear H.
@@ -213,7 +213,7 @@ Definition Valuation2_merge_olist
       }
       {
           unfold is_left in H.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           unfold Valuation2_compatible_with in H.
           rewrite <- not_true_iff_false in H.
           ltac1:(exfalso). apply H. clear H.
@@ -240,7 +240,7 @@ Definition Valuation2_merge_olist
   Proof.
       unfold subseteq. simpl.
       unfold Subseteq_Valuation2.
-      unfold Valuation2 in *. simpl.
+      unfold Valuation2,Valuation' in *. simpl.
       unfold map_subseteq.
       unfold map_included.
       unfold map_relation.
@@ -303,7 +303,7 @@ Definition Valuation2_merge_olist
           clear Hm.
           rewrite elem_of_subseteq.
           intros x Hx.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           rewrite elem_of_dom in Hx.
           rewrite elem_of_union.
           rewrite elem_of_dom.
@@ -329,7 +329,7 @@ Definition Valuation2_merge_olist
           rewrite union_subseteq.
           rewrite elem_of_subseteq.
           rewrite elem_of_subseteq.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           split; intros x Hx; rewrite elem_of_dom in Hx;
               destruct Hx as [y Hy]; rewrite elem_of_dom;
               exists y; eapply lookup_weaken>[apply Hy|];
@@ -397,6 +397,7 @@ Proof.
         subst.
         specialize (IHl _ HH2).
         apply merge_valuations_dom in HH3.
+        unfold Valuation2,Valuation' in *.
         rewrite HH3. clear HH3.
         ltac1:(set_solver).
     }
@@ -412,7 +413,7 @@ Lemma dom_merge_use_left
     dom (merge Valuation2_use_left ρ' ρ'') = dom ρ'' ∪ dom ρ'
 .
 Proof.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     apply set_eq.
     intros x.
     rewrite elem_of_dom.
@@ -490,7 +491,7 @@ Lemma merge_use_left_below {Σ : BackgroundModel} (ρ ρ' ρ'': Valuation2) :
 .
 Proof.
     intros H1 H2.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     apply map_subseteq_spec.
     intros i x Hix.
     rewrite lookup_merge in Hix.
@@ -523,7 +524,7 @@ Lemma Valuation2_merge_olist_inv
 Proof.
     intros HH.
     unfold Valuation2_merge_olist in HH.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     revert ρ HH.
     induction l; intros ρ HH; simpl in *.
     {
@@ -581,7 +582,7 @@ Proof.
         {
             specialize (IHl _ H1y i _ H1).
             apply Valuation2_merge_with_correct in H2y.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             eapply transitivity.
             { apply IHl. }
             { apply (proj2 H2y). }

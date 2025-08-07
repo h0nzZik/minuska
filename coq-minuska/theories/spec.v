@@ -551,15 +551,15 @@ Instance VarsOf_Valuation2_
     vars_of := fun ρ => dom ρ ; 
 |}.
 
-(*
 #[export]
 Instance VarsOf_Valuation2
-    {Σ : BackgroundModel}
-    : VarsOf (Valuation2) Variabl
+    {Bv Va Ts : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@Valuation' Bv Va Ts _ _) Va
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
-*)
 
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
     {Σ : BackgroundModel}

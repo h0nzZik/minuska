@@ -256,7 +256,7 @@ Proof.
         ltac1:(simp sat2B in Hb').
         destruct a0; simpl in *.
         {
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             inversion Hb'; subst; clear Hb'.
             exists ∅.
             (repeat split).
@@ -271,12 +271,12 @@ Proof.
             {
                 unfold vars_of; simpl.
                 unfold vars_of; simpl.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite dom_insert_L.
                 ltac1:(set_solver).
             }
             {
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply insert_subseteq_l.
                 { assumption. }
                 { apply map_empty_subseteq. }
@@ -303,12 +303,12 @@ Proof.
             {
                 unfold vars_of; simpl.
                 unfold vars_of; simpl.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite dom_insert_L.
                 ltac1:(clear; set_solver).
             }
             {
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply insert_subseteq_l.
                 { assumption. }
                 { apply map_empty_subseteq. }
@@ -328,7 +328,7 @@ Proof.
             {
                 simpl in *.
                 exists ∅.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 (repeat split).
                 { apply map_empty_subseteq. }
                 {
@@ -381,11 +381,11 @@ Proof.
                 exists ((merge Valuation2_use_left ρ' ρ'1)).
                 (repeat split).
                 {
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     ltac1:(rewrite vars_of_t_term).
                     rewrite fmap_cons.
                     rewrite union_list_cons.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     unfold vars_of; simpl.
                     ltac1:(rewrite dom_merge_use_left).
                     unfold vars_of in HH1; simpl in HH1.
@@ -429,7 +429,7 @@ Proof.
         {
             ltac1:(simp sat2B).
             simpl.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             apply lookup_insert.
         }
     }
@@ -441,7 +441,7 @@ Proof.
             ltac1:(simplify_eq/=).
             ltac1:(simp sat2B).
             simpl.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             apply lookup_insert.
         }
     }
@@ -480,9 +480,9 @@ Proof.
                 rewrite lookup_app_r in HHρ'.
                 rewrite length_take in HHρ'.
                 rewrite length_zip_with in HHρ'.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite e0 in HHρ'.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite Nat.min_id in HHρ'.
                 assert (Hm : i `min` length l0 = i).
                 {
@@ -506,12 +506,12 @@ Proof.
                 rewrite length_zip_with.
                 rewrite length_drop.
                 rewrite length_drop.
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply lookup_lt_Some in HHφ'.
                 ltac1:(lia).
             }
             {
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite length_take.
                 rewrite length_take.
                 ltac1:(lia).
@@ -611,7 +611,7 @@ Proof.
                     exists x0.
                     split>[|reflexivity].
                     eapply Expression2_evaluate_extensive_Some>[|apply H1x0].
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     ltac1:(rewrite map_filter_subseteq_ext).
                     intros i x1 H1ix1 H2ix2.
                     simpl in *.
@@ -630,7 +630,7 @@ Proof.
                 specialize (IHl z H1z H2).
                 clear H1z H2.
                 fold (@fmap _ list_fmap).
-                (* unfold Valuation2 in *. *)
+                (* unfold Valuation2,Valuation' in *. *)
                 assert(Hfilter: 
                     (filter
                         (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
@@ -643,7 +643,7 @@ Proof.
                     ρ)
                 ).
                 {
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     apply map_filter_strong_subseteq_ext.
                     intros i x.
                     simpl.
@@ -1378,14 +1378,14 @@ Proof.
                 {
                     apply map_subseteq_spec.
                     intros i x Hfil.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite map_lookup_filter_Some in Hfil.
                     destruct Hfil as [H1fil H2fil].
                     simpl in H2fil.
                     eapply elem_of_weaken in H2fil>[|apply Hn''].
                     rewrite <- H1ρ1 in H2fil.
                     unfold vars_of in H2fil; simpl in H2fil.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite elem_of_dom in H2fil.
                     destruct H2fil as [x' Hx'].
                     eapply lookup_weaken in Hx' as H'x'>[|apply H2ρ1].
@@ -1396,14 +1396,14 @@ Proof.
         {
             apply map_subseteq_spec.
             intros i x Hfil.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite map_lookup_filter_Some in Hfil.
             destruct Hfil as [H1fil H2fil].
             simpl in H2fil.
             eapply elem_of_weaken in H2fil>[|apply Hn'].
             rewrite <- H1ρ1 in H2fil.
             unfold vars_of in H2fil; simpl in H2fil.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite elem_of_dom in H2fil.
             destruct H2fil as [x' Hx'].
             eapply lookup_weaken in Hx' as H'x'>[|apply H2ρ1].
@@ -1412,7 +1412,7 @@ Proof.
     }
     {
         unfold Valuation2_restrict.
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         apply map_eq.
         intros i.
         rewrite map_lookup_filter.
@@ -1437,7 +1437,7 @@ Proof.
                     destruct HContra as [zz Hzz].
                     ltac1:(simplify_eq/=).
                 }
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 rewrite H1ρ1 in Htmp.
                 clear - Htmp Hn Hx H.
                 unfold vars_of in Hn; simpl in Hn.
@@ -1467,11 +1467,11 @@ Lemma valuation_restrict_vars_of_self
 .
 Proof.
     intros H.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     rewrite map_eq_iff.
     unfold Valuation2_restrict.
     intros i.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     rewrite map_lookup_filter.
     rewrite map_lookup_filter.
     destruct (ρ' !! i) eqn:Hρ'i.
@@ -1498,7 +1498,7 @@ Proof.
         {
             ltac1:(repeat case_guard; simpl in *; simplify_eq/=; try reflexivity; exfalso).
             unfold vars_of in *; simpl in *.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite elem_of_dom in H0.
             destruct H0 as [g' Hg'].
             rewrite Hρ'i in Hg'.
@@ -1598,7 +1598,7 @@ Proof.
                 clear HContra3''.
                 assert (Hfs: filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_to r)) ρ ⊆ filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_from r)) ρ).
                 {
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     unfold Subseteq_Valuation2.
                     rewrite map_filter_subseteq_ext.
                     intros i x Hix.
@@ -1608,7 +1608,7 @@ Proof.
                     { apply HH. }
                     { apply HContra4. }
                 }
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply transitivity with (y := filter
                     (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
                     kv.1 ∈ vars_of (r_from r))
@@ -1617,7 +1617,7 @@ Proof.
                 {
                     clear Hfs.
                     rewrite <- H1.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     apply map_subseteq_spec.
                     intros i x Hfltr.
                     rewrite map_lookup_filter in Hfltr.
@@ -1630,7 +1630,7 @@ Proof.
                     subst x0.
                     clear H1x1.
                     unfold vars_of in HHH; simpl in HHH.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite elem_of_dom in HHH.
                     destruct HHH as [y Hy].
                     eapply lookup_weaken in Hy as Hy'>[|apply H2].
@@ -1664,7 +1664,7 @@ Proof.
                 clear HContra3''.
                 assert (Hfs: filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_eff r)) ρ ⊆ filter (λ kv : Variabl * (@TermOver' TermSymbol BasicValue), kv.1 ∈ vars_of (r_from r)) ρ).
                 {
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     unfold Subseteq_Valuation2.
                     rewrite map_filter_subseteq_ext.
                     intros i x Hix.
@@ -1674,7 +1674,7 @@ Proof.
                     { apply HH. }
                     { apply HContra5. }
                 }
-                unfold Valuation2 in *.
+                unfold Valuation2,Valuation' in *.
                 apply transitivity with (y := filter
                     (λ kv : Variabl * (@TermOver' TermSymbol BasicValue),
                     kv.1 ∈ vars_of (r_from r))
@@ -1683,7 +1683,7 @@ Proof.
                 {
                     clear Hfs.
                     rewrite <- H1.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     apply map_subseteq_spec.
                     intros i x Hfltr.
                     rewrite map_lookup_filter in Hfltr.
@@ -1696,7 +1696,7 @@ Proof.
                     subst x0.
                     clear H1x1.
                     unfold vars_of in HHH; simpl in HHH.
-                    unfold Valuation2 in *.
+                    unfold Valuation2,Valuation' in *.
                     rewrite elem_of_dom in HHH.
                     destruct HHH as [y Hy].
                     eapply lookup_weaken in Hy as Hy'>[|apply H2].
