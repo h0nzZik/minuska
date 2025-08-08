@@ -389,10 +389,12 @@ Proof.
                     unfold vars_of; simpl.
                     ltac1:(rewrite dom_merge_use_left).
                     unfold vars_of in HH1; simpl in HH1.
+                    unfold Valuation2,Valuation' in *.
                     rewrite HH1.
                     (*fold ((@vars_of (@TermOver' (@TermSymbol Σ) (@BuiltinOrVar Σ)) (@Variabl Σ) _ (@Variabl_countable Variabl Variabls )) <$> l0).*)                    Check vars_of_t_term.
                     (*ltac1:(rewrite vars_of_t_term).*)
                     unfold vars_of in H4; simpl in H4.
+                    unfold Valuation2,Valuation' in *.
                     rewrite H4.
                     clear.
                     ltac1:(set_solver).
@@ -1383,6 +1385,8 @@ Proof.
                     destruct Hfil as [H1fil H2fil].
                     simpl in H2fil.
                     eapply elem_of_weaken in H2fil>[|apply Hn''].
+                    unfold Valuation2,Valuation',BuiltinOrVar in *.
+                    simpl in *.
                     rewrite <- H1ρ1 in H2fil.
                     unfold vars_of in H2fil; simpl in H2fil.
                     unfold Valuation2,Valuation' in *.
@@ -1401,6 +1405,7 @@ Proof.
             destruct Hfil as [H1fil H2fil].
             simpl in H2fil.
             eapply elem_of_weaken in H2fil>[|apply Hn'].
+            unfold BuiltinOrVar in *.
             rewrite <- H1ρ1 in H2fil.
             unfold vars_of in H2fil; simpl in H2fil.
             unfold Valuation2,Valuation' in *.
@@ -1616,6 +1621,7 @@ Proof.
                 { apply Hfs. }
                 {
                     clear Hfs.
+                    unfold BuiltinOrVar in *.
                     rewrite <- H1.
                     unfold Valuation2,Valuation' in *.
                     apply map_subseteq_spec.
@@ -1682,6 +1688,7 @@ Proof.
                 { apply Hfs. }
                 {
                     clear Hfs.
+                    unfold BuiltinOrVar in *.
                     rewrite <- H1.
                     unfold Valuation2,Valuation' in *.
                     apply map_subseteq_spec.
