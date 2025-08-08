@@ -145,8 +145,8 @@ Proof.
             ltac1:(repeat rewrite eqns_vars_cons). simpl.
             destruct (decide (x ∈ vars_of a.1)).
             {
-            ltac1:(rewrite -> vars_of_TermOverBoV_subst)>[|assumption].
-            ltac1:(rewrite -> vars_of_TermOverBoV_subst)>[|assumption].
+            ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
+            ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
             destruct (decide (x ∈ eqns_vars es)).
             {
                 specialize(IHes ltac:(assumption)).
@@ -160,7 +160,7 @@ Proof.
             }
             {
             rewrite subst_notin2>[|assumption].
-            ltac1:(rewrite -> vars_of_TermOverBoV_subst)>[|assumption].
+            ltac1:(rewrite vars_of_TermOverBoV_subst)>[assumption|].
             destruct (decide (x ∈ eqns_vars es)).
             {
                 specialize(IHes ltac:(assumption)).

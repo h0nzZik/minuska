@@ -814,11 +814,13 @@ ltac1:(funelim(unify es)).
                 rewrite subs_app_app.
                 destruct (decide (x = x0))>[|auto].
                 subst.
-                rewrite subs_app_builtin.
-                rewrite subs_app_builtin in Hsss1.
+                setoid_rewrite subs_app_builtin.
+                setoid_rewrite subs_app_builtin in Hsss1.
                 rewrite subs_app_builtin.
                 destruct Hsss1 as [? ?].
-                ltac1:(congruence).
+                simpl in *.
+                setoid_rewrite H.
+                reflexivity.
             }
         }
         {
@@ -892,9 +894,9 @@ ltac1:(funelim(unify es)).
                     assert (Hs1x0 := Hs1 x0).
                     (rewrite subs_app_app in Hs1x0).
                     rewrite <- Hs1x0.
+                    setoid_rewrite subs_app_builtin.
                     rewrite subs_app_builtin.
-                    rewrite subs_app_builtin.
-                    rewrite subs_app_builtin in Hss1.
+                    setoid_rewrite subs_app_builtin in Hss1.
                     apply Hss1.
                 }
             }
@@ -1034,7 +1036,7 @@ ltac1:(funelim(unify es)).
         clear e H1.
         destruct H as [HH1 [HH2 Hnorm]].
         rewrite subs_app_term.
-        rewrite subs_app_term.
+        setoid_rewrite subs_app_term.
         simpl.
         (repeat split).
         {
@@ -1215,7 +1217,7 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             destruct (l0 !! i) eqn:Heqt.
             {
-                (* ltac1:(rewrite Heqt). *)
+                ltac1:(rewrite Heqt).
                 simpl.
                 apply f_equal.
                 rewrite subst_notin2.
@@ -1232,7 +1234,7 @@ ltac1:(funelim(unify es)).
                 ltac1:(set_solver).
             }
             {
-                (* ltac1:(rewrite Heqt). *)
+                ltac1:(rewrite Heqt).
                 reflexivity.
             }
         }
@@ -1674,11 +1676,11 @@ Proof.
         {
         destruct a; simpl in *.
         {
-            rewrite vars_of_builtin in H.
+            setoid_rewrite vars_of_builtin in H.
             ltac1:(set_solver).
         }
         {
-            rewrite vars_of_Variabl in H.
+            setoid_rewrite vars_of_Variabl in H.
             rewrite elem_of_singleton in H.
             subst x0.
             apply H0.
@@ -1703,7 +1705,7 @@ Proof.
         apply is_subterm_size in H2X'.
         rewrite H1s in H2X'.
         clear H1s H2s.
-        rewrite subs_app_term in H2X'.
+        setoid_rewrite subs_app_term in H2X'.
         simpl in H2X'.
 
         rewrite elem_of_list_lookup in H2t.
@@ -1725,11 +1727,11 @@ Proof.
         {
         destruct a; simpl in *.
         {
-            rewrite vars_of_builtin in H.
+            setoid_rewrite vars_of_builtin in H.
             ltac1:(set_solver).
         }
         {
-            rewrite vars_of_Variabl in H.
+            setoid_rewrite vars_of_Variabl in H.
             rewrite elem_of_singleton in H.
             subst x0.
             apply H0.
@@ -1754,7 +1756,7 @@ Proof.
         apply is_subterm_size in H2X'.
         rewrite <- H1s in H2X'.
         clear H1s H2s.
-        rewrite subs_app_term in H2X'.
+        setoid_rewrite subs_app_term in H2X'.
         simpl in H2X'.
 
         rewrite elem_of_list_lookup in H2t.
