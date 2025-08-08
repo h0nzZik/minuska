@@ -272,12 +272,12 @@ Definition transl_string_pattern
 .
 
 Definition srr_to_rr
-    {Bu Sy Va P HP F A Q M : Type}
-    (R : Realization Bu Sy Va P HP F A Q M)
+    {Bu Va Ts Fs Qs As Ms Ps Hps : Type}
+    (R : Realization Bu Ts Va Ps Hps Fs As Qs Ms)
     (Label : Set)
     (srr : StringRewritingRule Label)
     :
-    (RewritingRule2 Label)+string
+    (@RewritingRule2' Bu Va Ts Fs Qs As Ms Ps Hps Label)+string
 :=
     match srr with
     | mkStringRewritingRule _ from to scs act =>
@@ -305,14 +305,14 @@ Definition srr_to_rr
 .
 
 Definition realize_thy
-    {Σ : BackgroundModel}
+    {Bu Va Ts Fs Qs As Ms Ps Hps : Type}
+    (R : Realization Bu Ts Va Ps Hps Fs As Qs Ms)
     (Label : Set)
-    {R : Realization BasicValue TermSymbol Variabl PredSymbol HPredSymbol FunSymbol AttrSymbol QuerySymbol MethSymbol}
     (srrl : list (StringRewritingRule Label))
     :
-    (list (RewritingRule2 Label))+string
+    (list (@RewritingRule2' Bu Va Ts Fs Qs As Ms Ps Hps Label))+string
 :=
-    list_collect_e (map (srr_to_rr Label) srrl)
+    list_collect_e (map (srr_to_rr R Label) srrl)
 .
 
 Definition sSymbolicTerm_to_ExprTerm
