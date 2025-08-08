@@ -3795,7 +3795,8 @@ Proof.
                                         {
                                             unfold subp_codom,SubP.
                                             rewrite elem_of_union_list.
-                                            exists (vars_of (t_over (bov_Variabl i))).
+                                            exists (vars_of (@t_over TermSymbol _ (@bov_Variabl BasicValue _ i))).
+
                                             unfold vars_of; simpl.
                                             unfold vars_of; simpl.
                                             split>[|clear; ltac1:(set_solver)].
@@ -4153,8 +4154,12 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (i ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (i ∈ ⋃ vs).
                         {
+                            subst vs.
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
@@ -4162,7 +4167,7 @@ Proof.
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4193,8 +4198,12 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (y ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (y ∈ ⋃ vs).
                         {
+                            subst vs.
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
@@ -4202,7 +4211,7 @@ Proof.
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4268,16 +4277,20 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (i ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (i ∈ ⋃ vs).
                         {
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
-                            rewrite elem_of_list_fmap.
+                            subst vs.
+                            ltac1:(rewrite elem_of_list_fmap).
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4308,8 +4321,12 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (y ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (y ∈ ⋃ vs).
                         {
+                            subst vs.
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
@@ -4317,7 +4334,7 @@ Proof.
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4499,7 +4516,7 @@ Proof.
             simpl in H2X.
             destruct (decide (a.1 ∈ vars_of z)).
             {
-                rewrite vars_of_TermOverBoV_subst in H2X.
+                ltac1:(rewrite vars_of_TermOverBoV_subst in H2X)>[assumption|].
                 {
                     rewrite elem_of_union in H2X.
                     destruct H2X as [H2X|H2X].
@@ -4527,9 +4544,6 @@ Proof.
                         unfold subt_codom in IHs.
                         ltac1:(set_solver).
                     }
-                }
-                {
-                    assumption.
                 }
             }
             {
@@ -6248,8 +6262,8 @@ Proof.
         simpl.
         destruct a; simpl in *.
         {
-            rewrite subs_app_builtin.
-            rewrite subs_app_builtin.
+            ltac1:(rewrite subs_app_builtin).
+            ltac1:(rewrite subs_app_builtin).
             reflexivity.
         }
         {
@@ -6344,7 +6358,7 @@ Proof.
                 }
             }
             {    
-                rewrite subs_app_nodup_1.
+                setoid_rewrite subs_app_nodup_1.
                 {
                     rewrite subs_app_untouched.
                     { reflexivity. }
