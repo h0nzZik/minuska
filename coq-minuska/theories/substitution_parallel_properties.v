@@ -729,7 +729,7 @@ Proof.
                     destruct (decide (t_over (bov_Variabl x) = subp_app aa t)).
                     {
                       rewrite option_guard_False.
-                      { simpl. ltac1:(congruence). }
+                      { simpl. unfold BuiltinOrVar in *. ltac1:(congruence). }
                       { simpl. ltac1:(congruence). }
                     }
                     { rewrite option_guard_True.
@@ -752,7 +752,7 @@ Proof.
                 destruct (decide (t_over (bov_Variabl x) = subp_app aa t)).
                 {
                   rewrite option_guard_False.
-                  { simpl. ltac1:(congruence). }
+                  { simpl. unfold BuiltinOrVar in *. ltac1:(congruence). }
                   { simpl. ltac1:(congruence). }
                 }
                 {

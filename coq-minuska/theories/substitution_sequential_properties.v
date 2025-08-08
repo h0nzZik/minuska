@@ -142,9 +142,9 @@ induction t; simpl; intros ss HH.
     }
 }
 {
-
     rewrite subs_app_term.
-    rewrite subs_app_term.
+    unfold BuiltinOrVar in *.
+    ltac1:(rewrite subs_app_term).
     apply f_equal.
     revert ss HH H.
     induction l; intros ss HH1 HH2.
@@ -184,13 +184,13 @@ induction t; intros ll s1 HNice.
 {
     destruct a.
     {
-    rewrite subs_app_builtin.
-    rewrite subs_app_builtin.
-    reflexivity.
+
+      ltac1:(do 2 rewrite subs_app_builtin).
+      reflexivity.
     }
     {
-    rewrite HNice.
-    reflexivity.
+      rewrite HNice.
+      reflexivity.
     }
 }
 {
@@ -424,7 +424,7 @@ Proof.
         destruct (decide (v ∈ vars_of q)) as [Hin|Hnotin].
         {
             assert (Htmp := vars_of_TermOverBoV_subst q t v Hin).
-            rewrite Htmp.
+            ltac1:(rewrite Htmp).
             ltac1:(set_solver).
         }
         {
