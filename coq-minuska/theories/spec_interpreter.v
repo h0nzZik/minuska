@@ -62,10 +62,12 @@ Definition Interpreter_sound'
     )%type
 .
 
-Definition RewritingRule2_wf
-    {Σ : BackgroundModel}
+Definition RewritingRule2'_wf
+    {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+    {_Ev : EqDecision Va}
+    {_Cv : Countable Va}
     {Label : Set}
-    (r : RewritingRule2 Label)
+    (r : @RewritingRule2' Bv Va Ts Fs Qs As Ms Ps Hps Label)
     : Prop
 :=
     vars_of (r_scs r) ⊆ vars_of (r_from r)
@@ -75,13 +77,34 @@ Definition RewritingRule2_wf
     vars_of (r_eff r) ⊆ vars_of (r_from r)
 .
 
+Definition RewritingRule2_wf
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (r : RewritingRule2 Label)
+    : Prop
+:=
+  RewritingRule2'_wf r
+.
+
+Definition RewritingTheory2'_wf
+    {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+    {_Ev : EqDecision Va}
+    {_Cv : Countable Va}
+    {Label : Set}
+    (Γ : list (@RewritingRule2' Bv Va Ts Fs Qs As Ms Ps Hps Label))
+    : Prop
+:=
+    Forall RewritingRule2'_wf Γ
+.
+
+
 Definition RewritingTheory2_wf
     {Σ : BackgroundModel}
     {Label : Set}
     (Γ : list (RewritingRule2 Label))
     : Prop
 :=
-    Forall RewritingRule2_wf Γ
+    RewritingTheory2'_wf Γ
 .
 
 Definition Interpreter_sound

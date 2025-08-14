@@ -1577,7 +1577,7 @@ Proof.
         specialize (Hc ρ' nv).
         ltac1:(ospecialize (Hc _ _ _)).
         {
-            unfold RewritingTheory2_wf in wfΓ.
+            unfold RewritingTheory2_wf,RewritingTheory2'_wf in wfΓ.
             rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             specialize (wfΓ Hin).
@@ -1651,7 +1651,7 @@ Proof.
             eapply Valuation2_restrict_eq_subseteq in Htmp.
             symmetry. apply Htmp.
             rewrite H1.   
-            unfold RewritingTheory2_wf in wfΓ.
+            unfold RewritingTheory2_wf, RewritingTheory2'_wf in wfΓ.
             rewrite Forall_forall in wfΓ.
             specialize (wfΓ r).
             specialize (wfΓ Hin).
@@ -2077,13 +2077,13 @@ Proof.
                 apply H3ρ'.
             }
             {
-                unfold RewritingTheory2_wf in wfΓ.
+                unfold RewritingTheory2_wf, RewritingTheory2'_wf in wfΓ.
                 rewrite Forall_forall in wfΓ.
                 apply wfΓ.
                 apply H1r'.
             }
             {
-                unfold RewritingTheory2_wf in wfΓ.
+                unfold RewritingTheory2_wf, RewritingTheory2'_wf in wfΓ.
                 rewrite Forall_forall in wfΓ.
                 apply wfΓ.
                 apply H1r'.

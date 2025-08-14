@@ -10,7 +10,7 @@ type ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkelet
     value_algebra     : (('v,'nv,'ts,'fs,'ps) Extracted.valueAlgebra) ;
     hidden_algebra    : (('hv, 'v, 'nv, 'ts, 'ats, 'ms, 'hps) Extracted.hiddenAlgebra) ;
     program_info      : (('prg,'v,'ts,'qs) Extracted.programInfo) ;
-    background_model  : (Extracted.backgroundModel) ;
+    (**background_model  : (Extracted.backgroundModel) ;*)
     builtin_inject    : (builtin_repr -> 'v) ;
     builtin_eject     : ('v -> builtin_repr ) ;
     bindings          : (string -> ('ps, 'hps,'fs,'ats,'qs,'ms) Extracted.symbolInfo) ;
@@ -291,7 +291,7 @@ let main
   | Extracted.Inl(st) -> (
     match (Extracted.top_frontend_to_thy st) with
     | (thy, dbg) -> (
-      match (Extracted.top_frontend_realize_thy iface.value_algebra r thy) with
+      match (Extracted.top_frontend_realize_thy (*iface.value_algebra*) r thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
       | Extracted.Inl thy2 -> (
         let is_valid_dec = Extracted.top_thy_wf iface.static_model thy2 in
