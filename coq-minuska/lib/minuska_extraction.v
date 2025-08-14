@@ -57,6 +57,10 @@ Extraction
     top_string_symbols_edc
     top_combine_symbol_classifiers
     top_builtin_empty_model
+    top_builtin_empty_bv_edc
+    top_builtin_empty_fs_edc
+    top_builtin_empty_ps_edc
+
     top_builtin_empty_bindings
     top_builtin_klike_model
     top_builtin_klike_bv_edc
