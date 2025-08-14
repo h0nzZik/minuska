@@ -75,6 +75,22 @@ Proof.
     }
 Qed.    
 
+Print RewritingRule2'.
+
+#[export]
+Instance RewritingTheory2'_wf_dec
+  {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+  {_Ev : EqDecision Va}
+  {_Cv : Countable Va}
+  (Label : Set)
+  (Γ : list (@RewritingRule2' Bv Va Ts Fs Qs As Ms Ps Hps Label))
+  :
+  Decision (RewritingTheory2'_wf Γ)
+.
+Proof.
+  apply _.
+Defined.
+(*
 #[export]
 Instance RewritingTheory2_wf_dec
     {Σ : BackgroundModel}
@@ -86,3 +102,4 @@ Instance RewritingTheory2_wf_dec
 Proof.
     apply _.
 Defined.
+*)

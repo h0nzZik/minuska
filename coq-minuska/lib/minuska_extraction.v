@@ -33,7 +33,7 @@ Definition top_frontend_process_declarations := @frontend.process_declarations.
 Definition top_Label := @default_everything.Label.
 Definition top_default_label := @default_everything.default_label.
 Definition top_invisible_label := @default_everything.invisible_label.
-Definition top_thy_wf := @interpreter_results.RewritingTheory2_wf_dec.
+Definition top_thy_wf := @interpreter_results.RewritingTheory2'_wf_dec.
 Definition top_poly_interpreter := @default_everything.poly_interpreter.
 Definition top_poly_interpreter_ext := @default_everything.poly_interpreter_ext.
 (* We extract only definitions from this module,

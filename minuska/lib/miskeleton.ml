@@ -5,12 +5,9 @@ open Util
 open Pluginbase
 
 
-type ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI =
+type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI =
   {
-    value_algebra     : (('v,'nv,'ts,'fs,'ps) Extracted.valueAlgebra) ;
-    hidden_algebra    : (('hv, 'v, 'nv, 'ts, 'ats, 'ms, 'hps) Extracted.hiddenAlgebra) ;
-    program_info      : (('prg,'v,'ts,'qs) Extracted.programInfo) ;
-    (**background_model  : (Extracted.backgroundModel) ;*)
+    background_model  : (('v, 'hv, 'nv, 'vr, 'ts, 'fs, 'ps, 'ats, 'ms, 'qs, 'hps, 'prg) Extracted.backgroundModelOver) ;
     builtin_inject    : (builtin_repr -> 'v) ;
     builtin_eject     : ('v -> builtin_repr ) ;
     bindings          : (string -> ('ps, 'hps,'fs,'ats,'qs,'ms) Extracted.symbolInfo) ;
@@ -78,9 +75,12 @@ let empty_interface = (
     (Extracted.top_hidden_unit_bindings)
   ) in
   {
-    value_algebra = m;
-    hidden_algebra = hm;
-    program_info = pi;
+    background_model = {
+        value_algebra = m;
+        hidden_algebra = hm;
+        program_info = pi;
+        nondet_gen = (fun _ -> ());
+    };
     builtin_inject = empty_builtin_inject;
     builtin_eject = empty_builtin_eject;
     bindings = bs;
@@ -294,14 +294,14 @@ let main
       match (Extracted.top_frontend_realize_thy (*iface.value_algebra*) r thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
       | Extracted.Inl thy2 -> (
-        let is_valid_dec = Extracted.top_thy_wf iface.static_model thy2 in
+        let is_valid_dec = Extracted.top_thy_wf Extracted.string_eq_dec Extracted.string_countable thy2 in
         let _ = (match is_valid_dec with
          | true -> () (* OK *)
          | false -> printf "Warning: the given theory is not well-formed\n"; ()
         ) in
         let basic_interpreter : 'programT -> (((string, 'blt) Extracted.termOver')*'hidden_data) -> (((string, 'blt) Extracted.termOver')*'hidden_data) option = (
           Obj.magic (
-            Extracted.top_naive_interpreter 
+            Extracted.top_poly_interpreter
               iface.signature 
               iface.hidden_signature
               iface.value_algebra
