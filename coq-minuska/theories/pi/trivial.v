@@ -53,3 +53,9 @@ Definition bindings (P HP F A M : Type)
         | _ => si_none _ _ _ _ _ _
         end
 .
+
+Definition qs_edc : EDC MyQuerySymbol.
+Proof.
+  econstructor.
+  apply _.
+Defined.

@@ -30,3 +30,23 @@ Proof.
   econstructor.
   apply _.
 Defined.
+
+
+Definition ats_edc : EDC void.
+Proof.
+  econstructor.
+  apply _.
+Defined.
+
+Definition ms_edc : EDC void.
+Proof.
+  econstructor.
+  apply _.
+Defined.
+
+
+Definition hps_edc : EDC void.
+Proof.
+  econstructor.
+  apply _.
+Defined.

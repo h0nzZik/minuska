@@ -36,9 +36,13 @@ Definition top_builtin_klike_ps_edc := @builtin.klike.PS_EDC.
 Definition top_builtin_klike_bindings := @builtin.klike.bindings.
 Definition top_pi_trivial_pi := @pi.trivial.MyProgramInfo.
 Definition top_pi_trivial_bindings := @pi.trivial.bindings.
+Definition top_pi_trivial_qs_edc := @pi_trivial.qs_edc.
 (* Definition top_hidden_unit_signature := @hidden.hidden_unit.unit_hidden_signature. *)
 Definition top_hidden_unit_model := @hidden.hidden_unit.unit_hidden_model.
 Definition top_hidden_unit_edc := @hidden.hidden_unit.hv_edc.
+Definition top_hidden_unit_ats_edc := @hidden.hidden_unit.ats_edc.
+Definition top_hidden_unit_ms_edc := @hidden.hidden_unit.ms_edc.
+Definition top_hidden_unit_hps_edc := @hidden.hidden_unit.hps_edc.
 Definition top_hidden_unit_bindings := @hidden.hidden_unit.bindings.
 Definition top_frontend_realize_thy := @frontend.realize_thy.
 Definition top_frontend_to_thy := @frontend.to_theory.
@@ -73,9 +77,13 @@ Extraction
     top_builtin_klike_bindings
     top_nv_edc
     top_pi_trivial_pi
+    top_pi_trivial_qs_edc
     top_pi_trivial_bindings
     top_hidden_unit_model
     top_hidden_unit_edc
+    top_hidden_unit_ats_edc
+    top_hidden_unit_ms_edc
+    top_hidden_unit_hps_edc
     top_hidden_unit_bindings
     top_thy_wf
     top_frontend_srr_to_rr
