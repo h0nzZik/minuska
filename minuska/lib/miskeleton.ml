@@ -55,9 +55,12 @@ let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*)
     (Extracted.top_hidden_unit_bindings)
   ) in
   {
-    value_algebra = m;
-    hidden_algebra = hm;
-    program_info = pi;
+    background_model = {
+        value_algebra = m;
+        hidden_algebra = hm;
+        program_info = pi;
+        nondet_gen = (fun _ -> ());
+    };
     builtin_inject = klike_builtin_inject;
     builtin_eject = klike_builtin_eject;
     bindings = bs;
@@ -160,7 +163,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (iface : ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'prg)
   (step :
     'programT ->
@@ -217,7 +220,7 @@ let command_run
             let actual_step : ((((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'bb) option) = (fst my_step) in
             let show_log : 'bb list -> string = (fst (snd my_step)) in
             let initial_log = (snd (snd my_step)) in
-            let (initial_h : 'hidden_data) = iface.hidden_algebra.hidden_init in
+            let (initial_h : 'hidden_data) = iface.background_model.hidden_algebra.hidden_init in
             let res0 = run_n_steps actual_step show_log initial_log depth 0 wrap_init0 initial_h in
             res0
           )) in
@@ -237,7 +240,7 @@ let command_run
     )
 
 let main0
-  (iface : ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'prg)
   (step : 'programT -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
   (step_ext : 'programT -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*int) option)
@@ -254,7 +257,7 @@ let main0
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 let main
-      (iface : ('v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+      (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls

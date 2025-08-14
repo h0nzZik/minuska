@@ -2227,6 +2227,29 @@ Section sec2.
         builtin_predicate_interp := klike_predicate_interp ;
     |}.
 
+    Definition BV_EDC : EDC KlikeBuiltinValue.
+    Proof.
+      econstructor.
+      apply _.
+    Defined.
+
+    Definition TS_EDC : EDC TermSymbol.
+    Proof.
+      apply _.
+    Defined.
+
+    Definition FS_EDC: EDC KlikeFunSymbol.
+    Proof.
+      econstructor.
+      apply _.
+    Defined.
+
+    Definition PS_EDC : EDC KlikePredSymbol.
+    Proof.
+      econstructor.
+      apply _.
+    Defined.
+
 End sec2.
 
 

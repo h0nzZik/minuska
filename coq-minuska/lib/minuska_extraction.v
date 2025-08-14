@@ -20,6 +20,10 @@ Definition top_builtin_empty_model := @builtin.empty.void_value_algebra.
 Definition top_builtin_empty_bindings := @builtin.empty.bindings.
 (* Definition top_builtin_klike_signature := @builtin.klike.mysignature. *)
 Definition top_builtin_klike_model := @builtin.klike.β.
+Definition top_builtin_klike_bv_edc := @builtin.klike.BV_EDC.
+Definition top_builtin_klike_ts_edc := @builtin.klike.TS_EDC.
+Definition top_builtin_klike_fs_edc := @builtin.klike.FS_EDC.
+Definition top_builtin_klike_ps_edc := @builtin.klike.PS_EDC.
 Definition top_builtin_klike_bindings := @builtin.klike.bindings.
 Definition top_pi_trivial_pi := @pi.trivial.MyProgramInfo.
 Definition top_pi_trivial_bindings := @pi.trivial.bindings.
@@ -47,6 +51,10 @@ Extraction
     top_builtin_empty_model
     top_builtin_empty_bindings
     top_builtin_klike_model
+    top_builtin_klike_bv_edc
+    top_builtin_klike_ts_edc
+    top_builtin_klike_fs_edc
+    top_builtin_klike_ps_edc
     top_builtin_klike_bindings
     top_pi_trivial_pi
     top_pi_trivial_bindings
