@@ -326,11 +326,19 @@ let main
         let basic_interpreter : 'programT -> (((string, 'blt) Extracted.termOver')*'hidden_data) -> (((string, 'blt) Extracted.termOver')*'hidden_data) option = (
           Obj.magic (
             Extracted.top_poly_interpreter
-              iface.signature 
-              iface.hidden_signature
-              iface.value_algebra
-              iface.hidden_algebra
-              iface.program_info
+              iface.v_edc
+              iface.hv_edc
+              iface.nv_edc
+              0
+              0
+              0
+              0
+              0
+              0
+              0
+              0
+              0
+              iface.background_model
               thy2 
           )
         ) in
