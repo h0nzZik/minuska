@@ -66,6 +66,9 @@ let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*)
     ts_edc = Extracted.top_string_symbols_edc;
     fs_edc = Extracted.top_builtin_klike_fs_edc;
     ps_edc = Extracted.top_builtin_klike_ps_edc;
+    hv_edc = Extracted.top_hidden_unit_edc;
+    nv_edc = Extracted.top_nv_edc;
+    vr_edc = Extracted.top_string_symbols_edc;
     background_model = {
         value_algebra = m;
         hidden_algebra = hm;
@@ -89,6 +92,13 @@ let empty_interface = (
     (Extracted.top_hidden_unit_bindings)
   ) in
   {
+    v_edc = Extracted.top_builtin_empty_bv_edc;
+    ts_edc = Extracted.top_string_symbols_edc;
+    fs_edc = Extracted.top_builtin_empty_fs_edc;
+    ps_edc = Extracted.top_builtin_empty_ps_edc;
+    hv_edc = Extracted.top_hidden_unit_edc;
+    nv_edc = Extracted.top_nv_edc;
+    vr_edc = Extracted.top_string_symbols_edc;
     background_model = {
         value_algebra = m;
         hidden_algebra = hm;
