@@ -11,9 +11,14 @@ type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterS
     hv_edc            : 'hv Extracted.eDC ;
     nv_edc            : 'nv Extracted.eDC ;
     vr_edc            : 'vr Extracted.eDC ;
+    vr_inf            : 'vr Extracted.infinite ;
     ts_edc            : 'ts Extracted.eDC ;
     fs_edc            : 'fs Extracted.eDC ;
     ps_edc            : 'ps Extracted.eDC ;
+    ats_edc           : 'ats Extracted.eDC ;
+    ms_edc            : 'ms Extracted.eDC ;
+    qs_edc            : 'qs Extracted.eDC ;
+    hps_edc           : 'hps Extracted.eDC ;
     background_model  : (('v, 'hv, 'nv, 'vr, 'ts, 'fs, 'ps, 'ats, 'ms, 'qs, 'hps, 'prg) Extracted.backgroundModelOver) ;
     builtin_inject    : (builtin_repr -> 'v) ;
     builtin_eject     : ('v -> builtin_repr ) ;
@@ -69,6 +74,7 @@ let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*)
     hv_edc = Extracted.top_hidden_unit_edc;
     nv_edc = Extracted.top_nv_edc;
     vr_edc = Extracted.top_string_symbols_edc;
+    vr_inf = Extracted.top_string_infinite;
     background_model = {
         value_algebra = m;
         hidden_algebra = hm;
@@ -99,6 +105,7 @@ let empty_interface = (
     hv_edc = Extracted.top_hidden_unit_edc;
     nv_edc = Extracted.top_nv_edc;
     vr_edc = Extracted.top_string_symbols_edc;
+    vr_inf = Extracted.top_string_infinite;
     background_model = {
         value_algebra = m;
         hidden_algebra = hm;
@@ -329,15 +336,15 @@ let main
               iface.v_edc
               iface.hv_edc
               iface.nv_edc
-              0
-              0
-              0
-              0
-              0
-              0
-              0
-              0
-              0
+              iface.vr_edc
+              iface.vr_inf
+              iface.ts_edc
+              iface.fs_edc
+              iface.ps_edc
+              iface.ats_edc
+              iface.ms_edc
+              iface.qs_edc
+              iface.hps_edc
               iface.background_model
               thy2 
           )

@@ -14,7 +14,7 @@ Definition top_string_symbols_edc : spec.EDC Coq.Strings.String.string := {|
     spec.edc_eqdec := prelude.string_eq_dec;
     spec.edc_count := prelude.string_countable;
 |}.
-Definition top_string_infinite : stdpp.base.Infinite Coq.Strings.String.string := _.
+Definition top_string_infinite : stdpp.base.Infinite Coq.Strings.String.string := prelude.string_infinite.
 Definition top_nv_edc : spec.EDC unit := {|
     spec.edc_eqdec := _ ;
     spec.edc_count := _;
