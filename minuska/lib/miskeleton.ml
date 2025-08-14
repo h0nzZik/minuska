@@ -7,6 +7,13 @@ open Pluginbase
 
 type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI =
   {
+    v_edc             : 'v Extracted.eDC ;
+    hv_edc            : 'hv Extracted.eDC ;
+    nv_edc            : 'nv Extracted.eDC ;
+    vr_edc            : 'vr Extracted.eDC ;
+    ts_edc            : 'ts Extracted.eDC ;
+    fs_edc            : 'fs Extracted.eDC ;
+    ps_edc            : 'ps Extracted.eDC ;
     background_model  : (('v, 'hv, 'nv, 'vr, 'ts, 'fs, 'ps, 'ats, 'ms, 'qs, 'hps, 'prg) Extracted.backgroundModelOver) ;
     builtin_inject    : (builtin_repr -> 'v) ;
     builtin_eject     : ('v -> builtin_repr ) ;
@@ -55,6 +62,10 @@ let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*)
     (Extracted.top_hidden_unit_bindings)
   ) in
   {
+    v_edc = Extracted.top_builtin_klike_bv_edc Extracted.top_string_symbols_edc;
+    ts_edc = Extracted.top_string_symbols_edc;
+    fs_edc = Extracted.top_builtin_klike_fs_edc;
+    ps_edc = Extracted.top_builtin_klike_ps_edc;
     background_model = {
         value_algebra = m;
         hidden_algebra = hm;

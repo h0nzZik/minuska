@@ -25,3 +25,8 @@ match s with
 | _ => si_none _ _ _ _ _ _
 end.
 
+Definition hv_edc : EDC unit.
+Proof.
+  econstructor.
+  apply _.
+Defined.
