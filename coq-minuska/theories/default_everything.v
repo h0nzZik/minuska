@@ -155,7 +155,7 @@ Definition poly_interpreter
     (_EBQs : EDC Qs)
     (_EBHPs : EDC HPs)
     (bgm : BackgroundModelOver BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT)
-    (Γ : list (RewritingRule2 Label))
+    (Γ : list (@RewritingRule2' BVal Var Sy Fs Qs As Ms Ps HPs Label))
     (program : PT)
     (nv : NdVal)
     (x : (@TermOver' Sy BVal)*(HVal))
