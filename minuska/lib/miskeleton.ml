@@ -72,6 +72,7 @@ let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*)
     fs_edc = Extracted.top_builtin_klike_fs_edc;
     ps_edc = Extracted.top_builtin_klike_ps_edc;
     hv_edc = Extracted.top_hidden_unit_edc;
+    qs_edc = Extracted.top_hidden_unit_qs_edc;
     nv_edc = Extracted.top_nv_edc;
     vr_edc = Extracted.top_string_symbols_edc;
     vr_inf = Extracted.top_string_infinite;
