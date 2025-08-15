@@ -18,17 +18,10 @@
  (name run)
  (libraries
     minuska
-    imp
  )
- (modules run)
+ (modules syntax run internal parser lexer transform)
 )
 
-(library
-  (name imp)
-  (public_name minuska_imp)
-  (libraries minuska)
-  (modules internal transform syntax parser lexer)
-)
 
 (rule
  (targets internal.ml internal.mli)
