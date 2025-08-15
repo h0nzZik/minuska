@@ -11,10 +11,10 @@ let parse_with_error lexbuf =
   | Parser.Error ->
       raise (Invalid_argument ("Parsing problem at " ^ (print_position lexbuf) ^ "."))
 
-let convert_int (n : int) : Libminuska.Syntax.groundterm =
-  `GTb ({br_kind="int"; br_value=(sprintf "%d" n)})
+let convert_int (n : int) =
+  Libminuska.Extracted.T_over (Libminuska.Extracted.Bv_Z (Z.of_int n))
       
-let parse (lexbuf : Lexing.lexbuf) : Libminuska.Syntax.groundterm =
+let parse (lexbuf : Lexing.lexbuf) =
   match parse_with_error lexbuf with
   | Some value -> convert_int value
   | None -> raise (Invalid_argument "Empty file?")
