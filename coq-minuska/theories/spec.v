@@ -6,7 +6,7 @@ From Equations Require Export Equations.
 
 (*
     TermOver' is the main structure for representing
-    both concrete and symbolic configurations,
+    both concrete and TermSymbolic configurations,
     as well as expression terms.
     Since Coq will not generate strong enough induction principle.
     we need to define our own.
@@ -46,76 +46,18 @@ Section custom_induction_principle.
 
 End custom_induction_principle.
 
-Class MVariables (variable : Type) := {
-    variable_eqdec :: EqDecision variable ;
-    variable_countable :: Countable variable ;
-    variable_infinite :: Infinite variable ;
+(* Class MVariables (Variabl : Type) := {
+    Variabl_eqdec :: EqDecision Variabl ;
+    Variabl_countable :: Countable Variabl ;
+    Variabl_infinite :: Infinite Variabl ;
+}. *)
+
+Class EDC (T : Type) := {
+    edc_eqdec :: EqDecision T;
+    edc_count :: Countable T;
 }.
 
-Class Symbols (symbol : Type) := {
-    symbol_eqdec :: EqDecision symbol ;
-    symbol_countable :: Countable symbol ;
-}.
 
-Class Signature := {
-    builtin_function_symbol
-        : Type ;
-    builtin_function_symbol_eqdec
-        :: EqDecision builtin_function_symbol ;
-    builtin_function_symbol_countable
-        :: Countable builtin_function_symbol ;
-
-    builtin_predicate_symbol
-        : Type ;
-    builtin_predicate_symbol_eqdec
-        :: EqDecision builtin_predicate_symbol ;
-    builtin_predicate_symbol_countable
-        :: Countable builtin_predicate_symbol ;
-    
-    (* TODO get rid of these with the help of hidden algebra *)
-    bps_ar : builtin_predicate_symbol -> nat ;
-    bps_neg : builtin_predicate_symbol -> option builtin_predicate_symbol ;
-    bps_neg_ar : forall p p', bps_neg p = Some p' -> bps_ar p = bps_ar p' ;
-    bps_neg__sym : forall p p', bps_neg p = Some p' -> bps_neg p' = Some p ;
-}.
-
-Class ModelOver {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) (Carrier : Type) := {        
-    (* builtin_value_eqdec
-        :: EqDecision Carrier ; *)
-
-    builtin_function_interp
-        : builtin_function_symbol
-        -> NondetValue
-        -> list (@TermOver' symbol Carrier)
-        -> option (@TermOver' symbol Carrier) ;
-        
-    builtin_predicate_interp
-        : builtin_predicate_symbol
-        -> NondetValue
-        -> list (@TermOver' symbol Carrier)
-        -> option bool ;
-    
-    bps_neg_correct : forall p p' nv l b b',
-        bps_neg p = Some p' ->
-        length l = bps_ar p ->
-        builtin_predicate_interp p' nv l = Some b ->
-        builtin_predicate_interp p nv l = Some b' ->
-        b = ~~ b' ;
-}.
-
-(* This should be called [Carrier] instead*)
-Class Model {symbol : Type} {symbols : Symbols symbol} (signature : Signature) (NondetValue : Type) := {
-    builtin_value
-        : Type ;
-
-    builtin_value_eqdec
-        :: EqDecision builtin_value ;
-
-    builtin_value_countable
-        :: Countable builtin_value ;
-
-    builtin_model_over :: ModelOver signature NondetValue builtin_value ;
-}.
 
 Set Primitive Projections.
 CoInductive Stream (A : Type) : Type := Seq {
@@ -123,40 +65,126 @@ CoInductive Stream (A : Type) : Type := Seq {
     tl : Stream A ;
 }.
 
-Class ProgramInfo
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    {NondetValue : Type}
-    {signature : Signature}
-    {builtin : Model signature NondetValue}
-    : Type
-    := {
+
+Class BasicTypes := Build_BasicTypes {
+    Variabl     : Type ; (* Would be [Variable] but that is a keyword in Rocq. *)
+    TermSymbol  : Type ;
+    FunSymbol   : Type ;
+    PredSymbol  : Type ;
+    HPredSymbol : Type ;
+    AttrSymbol  : Type ;
+    MethSymbol  : Type ;
     QuerySymbol : Type ;
-    QuerySymbol_eqdec :: EqDecision QuerySymbol ;
-    QuerySymbol_countable :: Countable QuerySymbol ;
-
-    ProgramT : Type ;
-    pi_symbol_interp :
-        ProgramT -> 
-        QuerySymbol -> 
-        list (@TermOver' symbol builtin_value) ->
-        option (@TermOver' symbol builtin_value) ;
-}.
-
-Class StaticModel := mkStaticModel {
-    symbol : Type ;
-    variable : Type ;
-    symbols :: Symbols symbol ;
+    BasicValue  : Type ;
+    HiddenValue : Type ;
     NondetValue : Type ;
-    signature :: Signature ;
-    builtin :: Model signature NondetValue;
-    variables :: MVariables variable ;
-    program_info :: ProgramInfo ;
-    nondet_gen : nat -> NondetValue ;
-    (* nondet_stream : Stream NondetValue ; *)
+    ProgramT    : Type ;
 }.
 
-(* A class for querying variables of syntactic constructs. *)
+Class BasicTypesProperties (basic_types : BasicTypes)
+:= Build_BasicTypesProperties {
+    Variabl_edc :: EDC basic_types.(Variabl) ;
+    TermSymbol_edc :: EDC basic_types.(TermSymbol) ;
+    FunSymbol_edc :: EDC basic_types.(FunSymbol) ;
+    PredSymbol_edc :: EDC basic_types.(PredSymbol) ;
+    HPredSymbol_edc :: EDC basic_types.(HPredSymbol) ;
+    AttrSymbol_edc :: EDC basic_types.(AttrSymbol) ;
+    MethSymbol_edc :: EDC basic_types.(MethSymbol) ;
+    QuerySymbol_edc :: EDC basic_types.(QuerySymbol) ;
+    BasicValue_edc :: EDC basic_types.(BasicValue) ;
+    HiddenValue_edc :: EDC basic_types.(HiddenValue) ;
+    NondetValue_edc :: EDC basic_types.(NondetValue) ;
+
+    Variable_inf :: Infinite basic_types.(Variabl) ;
+}.
+
+Class ValueAlgebra
+    (V NV : Type)
+    (Sy Fs Ps : Type)
+     := {        
+    builtin_function_interp
+        : Fs
+        -> NV
+        -> list (@TermOver' Sy V)
+        -> option (@TermOver' Sy V) ;
+        
+    builtin_predicate_interp
+        : Ps
+        -> NV
+        -> list (@TermOver' Sy V)
+        -> option bool ;    
+}.
+
+Class HiddenAlgebra
+    (HD V NV : Type)
+    (Sy As Ms HPs : Type)
+:= {
+    attribute_interpretation :
+        As ->
+        HD ->
+        list (@TermOver' Sy V) ->
+        option V ;
+    
+
+    method_interpretation:
+        Ms ->
+        HD ->
+        list (@TermOver' Sy V) ->
+        option HD ;
+
+    hidden_predicate_interpretation :
+        HPs ->
+        HD ->
+        list (@TermOver' Sy V) ->
+        option bool ;
+
+    hidden_init : HD ;
+}.
+
+
+Class ProgramInfo
+    (PT BVal : Type)
+    (Sy Qs : Type )
+    : Type
+:= {
+    pi_TermSymbol_interp :
+        PT -> 
+        Qs -> 
+        list (@TermOver' Sy BVal) ->
+        option (@TermOver' Sy BVal) ;
+}.
+
+Class BackgroundModelOver
+    (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
+:= Build_BackgroundModelOver {
+    value_algebra :: ValueAlgebra BVal NdVal Sy Fs Ps;
+    hidden_algebra :: HiddenAlgebra HVal BVal NdVal Sy As Ms HPs ;
+    program_info :: ProgramInfo PT BVal Sy Qs;
+    nondet_gen : nat -> NdVal ;
+}.
+
+Class BackgroundModel := Build_BackgroundModel {
+    basic_types :: BasicTypes ;
+    basic_types_properties :: BasicTypesProperties basic_types ;
+  
+    background_model_over :: BackgroundModelOver 
+        basic_types.(BasicValue)
+        basic_types.(HiddenValue)
+        basic_types.(NondetValue)
+        basic_types.(Variabl)
+        basic_types.(TermSymbol)
+        basic_types.(FunSymbol)
+        basic_types.(PredSymbol)
+        basic_types.(AttrSymbol)
+        basic_types.(MethSymbol)
+        basic_types.(QuerySymbol)
+        basic_types.(HPredSymbol)
+        basic_types.(ProgramT)
+    ;
+}.
+
+
+(* A class for querying Variabls of syntactic constructs. *)
 Class VarsOf
     (A : Type)
     (var: Type)
@@ -170,17 +198,17 @@ Class VarsOf
 Arguments vars_of : simpl never.
 
 #[export]
-Instance VarsOf_symbol
-    {Σ : StaticModel}
-    : VarsOf symbol variable
+Instance VarsOf_TermSymbol
+    {Σ : BackgroundModel}
+    : VarsOf TermSymbol Variabl
 := {|
     vars_of := fun _ => ∅ ; 
 |}.
 
 #[export]
 Instance VarsOf_builtin
-    {Σ : StaticModel}
-    : VarsOf builtin_value variable
+    {Σ : BackgroundModel}
+    : VarsOf BasicValue Variabl
 := {|
     vars_of := fun _ => ∅ ; 
 |}.
@@ -206,77 +234,110 @@ Instance VarsOf_TermOver
 |}.
 
 Unset Elimination Schemes.
-Inductive Expression2
-    {Σ : StaticModel}
+Inductive Expression2'
+    {Bv Va Ts Fs Qs As : Type}
     :=
-| e_ground (e : @TermOver' (symbol) builtin_value)
-| e_variable (x : variable)
-| e_fun (f : builtin_function_symbol) (l : list Expression2)
-| e_query (q : QuerySymbol) (l : list Expression2)
+| e_ground (e : @TermOver' (Ts) Bv)
+| e_Variabl (x : Va)
+| e_fun (f : Fs) (l : list Expression2')
+| e_query (q : Qs) (l : list Expression2')
+| e_attr (a : As) (l : list Expression2')
 .
 Set Elimination Schemes.
 
 Section custom_induction_principle.
 
     Context
-        {Σ : StaticModel}
-        (P : Expression2 -> Prop)
+        {Bv Va Ts Fs Qs As : Type}
+        (P : Expression2' -> Prop)
         (true_for_ground : forall e, P (e_ground e))
-        (true_for_var : forall x, P (e_variable x))
+        (true_for_var : forall x, P (e_Variabl x))
         (preserved_by_fun :
             forall
-                (f : builtin_function_symbol)
-                (l : list Expression2),
+                (f : Fs)
+                (l : list Expression2'),
                 Forall P l ->
                 P (e_fun f l)
         )
         (preserved_by_query :
             forall
-                (q : QuerySymbol)
-                (l : list Expression2),
+                (q : Qs)
+                (l : list Expression2'),
                 Forall P l ->
                 P (e_query q l)
         )
+        (preserved_by_attribute :
+            forall
+                (q : As)
+                (l : list Expression2'),
+                Forall P l ->
+                P (@e_attr Bv Va Ts Fs Qs As q l)
+        )
     .
 
-    Fixpoint Expression2_ind (e : Expression2) : P e :=
+    Fixpoint Expression2'_ind (e : Expression2') : P e :=
     match e with
     | e_ground g => true_for_ground g
-    | e_variable x => true_for_var x
-    | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2_ind)
-    | e_query q l => preserved_by_query q l (Forall_true P l Expression2_ind)
+    | e_Variabl x => true_for_var x
+    | e_fun f l => preserved_by_fun f l  (Forall_true P l Expression2'_ind)
+    | e_query q l => preserved_by_query q l (Forall_true P l Expression2'_ind)
+    | e_attr q l => preserved_by_attribute q l (Forall_true P l Expression2'_ind)
     end.
 
 End custom_induction_principle.
 
+Definition Expression2 {Σ : BackgroundModel} : Type
+:=
+    @Expression2' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol
+.
+
+
+#[export]
+Instance VarsOf_list_something
+    {Va : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    {A : Type}
+    {_VA: VarsOf A Va}
+    : VarsOf (list A) Va
+:= {|
+    vars_of := fun scs => ⋃ (vars_of <$> scs)
+|}.
 
 Fixpoint vars_of_Expression2
-    {Σ : StaticModel}
-    (t : Expression2)
-    : gset variable :=
+    {Bv Va Ts Fs Qs As : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    (t : @Expression2' Bv Va Ts Fs Qs As)
+    : gset Va :=
 match t with
 | e_ground _ => ∅
-| e_variable x => {[x]}
+| e_Variabl x => {[x]}
 | e_fun _ l => ⋃ (fmap vars_of_Expression2 l)
 | e_query _ l => ⋃ (fmap vars_of_Expression2 l)
+| e_attr _ l => ⋃ (fmap vars_of_Expression2 l)
 end.
 
 
 #[export]
 Instance VarsOf_Expression2
-    {Σ : StaticModel}
-    : VarsOf Expression2 variable
+    {Bv Va Ts Fs Qs As : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@Expression2' Bv Va Ts Fs Qs As) Va
 := {|
     vars_of := vars_of_Expression2 ; 
 |}.
 
 
-Inductive BuiltinOrVar {Σ : StaticModel} :=
-| bov_builtin (b : builtin_value)
-| bov_variable (x : variable)
+Inductive BuiltinOrVar' {Bv Va : Type} :=
+| bov_builtin (b : Bv)
+| bov_Variabl (x : Va)
 .
 
-Definition TermOver {Σ : StaticModel} (A : Type) : Type := @TermOver' symbol A.
+Definition BuiltinOrVar {Σ : BackgroundModel} :=
+    @BuiltinOrVar' BasicValue Variabl
+.
 
 Fixpoint TermOver_size
     {T : Type}
@@ -301,47 +362,45 @@ Fixpoint TermOver'_map
     end
 .
 
-Definition TermOver_map
-    {Σ : StaticModel}
-    {A B : Type}
-    (f : A -> B)
-    (t : TermOver A)
-:=
-    TermOver'_map f t
-.
-
 Definition TermOverBuiltin_to_TermOverBoV
-    {Σ : StaticModel}
-    (t : TermOver builtin_value)
-    : TermOver BuiltinOrVar
+    {Σ : BackgroundModel}
+    {A : Type}
+    (t : @TermOver' A BasicValue)
+    : @TermOver' A BuiltinOrVar
 :=
-    TermOver_map bov_builtin t
+    TermOver'_map bov_builtin t
 .
 
 
-Inductive SideCondition {Σ : StaticModel} :=
+Inductive SideCondition' {Bv Va Ts Fs Qs As Ps Hps : Type} :=
 | sc_true
 | sc_false
-| sc_atom (pred : builtin_predicate_symbol) (args : list Expression2)
-| sc_and (left : SideCondition) (right : SideCondition)
-| sc_or (left : SideCondition) (right : SideCondition)
+(* positive literal *)
+| sc_pred (pred : Ps) (args : list (@Expression2' Bv Va Ts Fs Qs As))
+(* negative literal *)
+| sc_npred (pred : Ps) (args : list (@Expression2' Bv Va Ts Fs Qs As))
+(* Positive literal over hidden data. NOTE: we do not have negatives over hiden data *)
+| sc_hpred (pred : Hps) (args : list (@Expression2' Bv Va Ts Fs Qs As))
+| sc_and (left : SideCondition') (right : SideCondition')
+| sc_or (left : SideCondition') (right : SideCondition')
 .
 
-#[export]
-Instance VarsOf_list_something
-    {Σ : StaticModel}
-    {A : Type}
-    {_VA: VarsOf A variable}
-    : VarsOf (list A) variable
-:= {|
-    vars_of := fun scs => ⋃ (vars_of <$> scs)
-|}.
+Definition SideCondition {Σ : BackgroundModel} : Type
+:=
+    @SideCondition' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol PredSymbol HPredSymbol
+.
 
-Fixpoint vars_of_sc {Σ : StaticModel} (sc : SideCondition) : gset variable :=
+Fixpoint vars_of_sc
+  {Bv Va Ts Fs Qs As Ps Hps : Type}
+  {_EDVa : EqDecision Va}
+  {_CNVa : Countable Va}
+  (sc : @SideCondition' Bv Va Ts Fs Qs As Ps Hps) : gset Va :=
 match sc with
 | sc_true => ∅
 | sc_false => ∅
-| sc_atom _ args => vars_of args
+| sc_pred _ args => vars_of args
+| sc_npred _ args => vars_of args
+| sc_hpred _ args => vars_of args
 | sc_and l r => vars_of_sc l ∪ vars_of_sc r
 | sc_or l r => vars_of_sc l ∪ vars_of_sc r
 end
@@ -349,166 +408,176 @@ end
 
 #[export]
 Instance  VarsOf_sc
-    {Σ : StaticModel}
-    : VarsOf SideCondition variable
+  {Bv Va Ts Fs Qs As Ps Hps : Type}
+  {_EDVa : EqDecision Va}
+  {_CNVa : Countable Va}
+    : VarsOf (@SideCondition' Bv Va Ts Fs Qs As Ps Hps) Va
 := {|
     vars_of := vars_of_sc ;
 |}.
 
-Record RewritingRule2
-    {Σ : StaticModel}
-    (Act : Set)
+Variant BasicEffect0' {Bv Va Ts Fs Qs As Ms : Type} :=
+| be_method (s : Ms) (args : list (@Expression2' Bv Va Ts Fs Qs As))
+(* This is like a binder *)
+| be_remember (x : Va) (e : (@Expression2' Bv Va Ts Fs Qs As))
+.
+
+Definition Effect0' {Bv Va Ts Fs Qs As Ms : Type} : Type :=
+    list (@BasicEffect0' Bv Va Ts Fs Qs As Ms)
+.
+
+Definition BasicEffect0 {Σ : BackgroundModel} : Type :=
+  @BasicEffect0' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol
+.
+
+Definition Effect0 {Σ : BackgroundModel} : Type :=
+  @Effect0' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol
+.
+
+Definition vars_of_Effect0'
+    {Bv Va Ts Fs Qs As Ms : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    (f : (@Effect0' Bv Va Ts Fs Qs As Ms))
+    : gset Va
+:=
+    fold_right (fun be vs =>
+        match be with
+        | be_method s args =>
+            vs ∪ (union_list (fmap vars_of args))
+        | be_remember x e =>
+            (vs ∖ {[x]}) ∪ (vars_of e)
+        end
+    ) empty f
+.
+
+#[export]
+Instance VarsOf_Effect0
+    {Bv Va Ts Fs Qs As Ms : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@Effect0' Bv Va Ts Fs Qs As Ms) Va
+:= {|
+    vars_of := vars_of_Effect0' ; 
+|}.
+
+
+Record RewritingRule2'
+    {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+    (Label : Set)
 := mkRewritingRule2
 {
-    r_from : TermOver BuiltinOrVar ;
-    r_to : TermOver Expression2 ;
-    r_scs : SideCondition ;
-    r_act : Act ;
+    r_from : @TermOver' Ts (@BuiltinOrVar' Bv Va) ;
+    r_to : @TermOver' Ts (@Expression2' Bv Va Ts Fs Qs As) ;
+    r_scs : (@SideCondition' Bv Va Ts Fs Qs As Ps Hps) ;
+    r_eff : (@Effect0' Bv Va Ts Fs Qs As Ms) ;
+    r_label : Label ;
 }.
 
-Arguments r_from {Σ} {Act%_type_scope} r.
-Arguments r_to {Σ} {Act%_type_scope} r.
-Arguments r_scs {Σ} {Act%_type_scope} r.
-Arguments r_act {Σ} {Act%_type_scope} r.
+Arguments r_from {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_to {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_scs {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_eff {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
+Arguments r_label {Bv Va Ts Fs Qs As Ms Ps Hps} {Label%_type_scope} r.
 
+Definition RewritingRule2 {Σ : BackgroundModel} (Label : Set) : Type :=
+  @RewritingRule2' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol PredSymbol HPredSymbol Label
+.
 
 Definition vars_of_BoV
-    {Σ : StaticModel}
-    (bov : BuiltinOrVar)
-    : gset variable
+    {Bv Va : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    (bov : (@BuiltinOrVar' Bv Va))
+    : gset Va
 :=
 match bov with
-| bov_variable x => {[x]}
+| bov_Variabl x => {[x]}
 | bov_builtin _ => ∅
 end.
 
 #[export]
 Instance VarsOf_BoV
-    {Σ : StaticModel}
-    : VarsOf BuiltinOrVar variable
+    {Bv Va : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@BuiltinOrVar' Bv Va) Va
 := {|
     vars_of := vars_of_BoV ; 
 |}.
 
 
-#[export]
-Instance VarsOf_TermOver_BuiltinOrVar
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver BuiltinOrVar) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
-
-#[export]
-Instance VarsOf_TermOver_Expression2
-    {Σ : StaticModel}
-    :
-    VarsOf (TermOver Expression2) variable
-.
-Proof.
-    apply VarsOf_TermOver.
-Defined.
-
 (* A rewriting theory is a list of rewriting rules. *)
 Definition RewritingTheory2
-    {Σ : StaticModel}
-    (Act : Set)
-    := list (RewritingRule2 Act)
+    {Σ : BackgroundModel}
+    (Label : Set)
+    := list (RewritingRule2 Label)
 .
 
-(*
-    Interface representing the satisfaction relation (⊨)
-    between various things.
-*)
-Class Satisfies
-    {Σ : StaticModel}
-    (V A B var : Type)
-    {_SV : SubsetEq V}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    {_VV: VarsOf V var}
-    :=
-mkSatisfies {
-    (*
-        `satisfies` lives in `Type`, because (1) the lowlevel language
-         uses `Inductive`s to give meaning to `satisfies`,
-         and in the translation from MinusL we need to do case analysis on these
-         whose result is not in Prop.
-    *)
-    satisfies :
-        V -> A -> B -> Type ;
-}.
 
-Arguments satisfies : simpl never.
-
-(* A valuation is a mapping from variables to groun terms. *)
-(* TODO why not making this a notation? *)
-Definition Valuation2
-    {Σ : StaticModel}
+(* A valuation is a mapping from Variabls to groun terms. *)
+Definition Valuation'
+    {Bv Va Ts : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
 :=
-    gmap variable (TermOver builtin_value)
+    gmap Va (@TermOver' Ts Bv)
+.
+
+Definition Valuation2
+    {Σ : BackgroundModel}
+:=
+    @Valuation' BasicValue Variabl TermSymbol _ _
 .
 
 (* TODO Do we even need this?*)
 #[export]
-Instance Subseteq_Valuation2 {Σ : StaticModel}
+Instance Subseteq_Valuation2 {Σ : BackgroundModel}
     : SubsetEq Valuation2
 .
 Proof.
     unfold Valuation2.
+    unfold Valuation'.
     apply _.
 Defined.
 
 #[export]
 Instance VarsOf_Valuation2_
-    {Σ : StaticModel}
-    {var : Type}
-    {_varED : EqDecision var}
-    {_varCnt : Countable var}
-    : VarsOf (gmap var (TermOver BuiltinOrVar)) var
+    {Bv Va Whatever : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (gmap Va Whatever) Va
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
 
 #[export]
 Instance VarsOf_Valuation2
-    {Σ : StaticModel}
-    : VarsOf (Valuation2) variable
+    {Bv Va Ts : Type}
+    {_EDVa : EqDecision Va}
+    {_CNVa : Countable Va}
+    : VarsOf (@Valuation' Bv Va Ts _ _) Va
 := {|
     vars_of := fun ρ => dom ρ ; 
 |}.
 
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : @TermOver' TermSymbol BasicValue)
     (bv : BuiltinOrVar)
     : Prop
 := match bv with
     | bov_builtin b => t = t_over b
-    | bov_variable x => ρ !! x = Some t
+    | bov_Variabl x => ρ !! x = Some t
     end
 .
 
-#[export]
-Instance Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_instnace
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (BuiltinOrVar)
-        variable
-:= {|
-    satisfies := fun ρ tg ts => Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ tg ts ;
-|}.
-
 Equations? sat2B
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     : Prop
     by wf (TermOver_size φ) lt
 :=
@@ -524,7 +593,7 @@ Equations? sat2B
 .
 Proof.
     abstract(
-    unfold satisfies in *; simpl in *;
+    simpl in *;
     simpl;
     apply take_drop_middle in pf1;
     rewrite <- pf1;
@@ -533,52 +602,59 @@ Proof.
 Defined.
 
 Fixpoint Expression2_evaluate
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (t : Expression2)
-    : NondetValue -> option (TermOver builtin_value) :=
+    : NondetValue -> option (@TermOver' TermSymbol BasicValue) :=
 match t with
 | e_ground e => fun _ =>  Some (e)
-| e_variable x =>
+| e_Variabl x =>
     match ρ !! x with
     | Some v => fun _ =>  Some (v)
     | None => fun _ => None
     end
 | e_query q l =>
     fun nv =>
-    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
+    let es' := (fun e => Expression2_evaluate program h ρ e nv) <$> l in
     es ← list_collect es';
-    pi_symbol_interp program q es
+    pi_TermSymbol_interp program q es
 | e_fun f l =>
     fun nv =>
-    let es' := (fun e => Expression2_evaluate program ρ e nv) <$> l in
+    let es' := (fun e => Expression2_evaluate program h ρ e nv) <$> l in
     es ← list_collect es';
     builtin_function_interp f nv es
+| e_attr a l =>
+    fun nv =>
+    let es' := (fun e => Expression2_evaluate program h ρ e nv) <$> l in
+    es ← list_collect es';
+    t_over <$> attribute_interpretation a h es
 end.
 
 
 Equations? sat2E
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
     : Prop
     by wf (TermOver_size φ) lt
 :=
-    sat2E program ρ t (t_over e) nv :=
-        match Expression2_evaluate program ρ e nv with 
+    sat2E program h ρ t (t_over e) nv :=
+        match Expression2_evaluate program h ρ e nv with 
         | Some t' => t' = t
         | None => False
         end ;
-    sat2E program ρ (t_over a) (t_term s l) _ := False ;
-    sat2E program ρ (t_term s' l') (t_term s l) nv := 
+    sat2E program h ρ (t_over a) (t_term s l) _ := False ;
+    sat2E program h ρ (t_term s' l') (t_term s l) nv := 
         s' = s /\
         length l' = length l /\
         forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
-            sat2E program ρ t' φ' nv
+            sat2E program h ρ t' φ' nv
     ;
 .
 Proof.
@@ -591,22 +667,10 @@ Proof.
     ).
 Defined.
 
-
-#[export]
-Instance Satisfies_TermOverBuiltin_TermOverExpression2
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (ProgramT*(NondetValue*(TermOver builtin_value)))
-        (TermOver Expression2)
-        variable
-:= {|
-    satisfies := fun ρ tgnv ts => sat2E tgnv.1 ρ (tgnv.2.2) ts (tgnv.2.1) ;
-|}.
-
 Definition SideCondition_evaluate
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
+    (h : HiddenValue)
     (ρ : Valuation2)
     (nv : NondetValue)
     (sc : SideCondition)
@@ -617,10 +681,20 @@ Definition SideCondition_evaluate
         match sc with
         | sc_true => Some true
         | sc_false => Some false
-        | sc_atom pred args => (
-            let ts' := (fun e => Expression2_evaluate program ρ e nv) <$> args in
+        | sc_pred pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
             ts ← list_collect ts';
             builtin_predicate_interp pred nv ts
+        )
+        | sc_npred pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            negb <$> builtin_predicate_interp pred nv ts
+        )
+        | sc_hpred pred args => (
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            hidden_predicate_interpretation pred h ts
         )
         | sc_and l r => 
             l' ← (go l);
@@ -634,58 +708,85 @@ Definition SideCondition_evaluate
     ) sc
 .
 
-#[export]
-Instance Satisfies_SideCondition
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (ProgramT*NondetValue)
-        SideCondition
-        variable
-:= {|
-    satisfies := fun ρ pgnv sc =>
-        SideCondition_evaluate pgnv.1 ρ pgnv.2 sc = Some true
-|}.
+Definition BasicEffect0_evaluate
+    {Σ : BackgroundModel}
+    (program : ProgramT)
+    (h : HiddenValue)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (f : BasicEffect0)
+    : option (HiddenValue*Valuation2)
+:=
+    match f with
+    | be_method m args =>
+            let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
+            ts ← list_collect ts';
+            h' ← method_interpretation m h ts;
+            Some (h', ρ)
+    | be_remember x e => 
+        v ← Expression2_evaluate program h ρ e nv;
+        Some (h, <[x := v]>ρ)
+    end
+.
 
-#[export]
-Instance Satisfies_Valuation2_TermOverBuiltin_TermOverBoV
-    {Σ : StaticModel}
-    : Satisfies
-        Valuation2
-        (TermOver builtin_value)
-        (TermOver BuiltinOrVar)
-        variable
-:= {|
-    satisfies := fun ρ tg ts => sat2B ρ tg ts
-|}.
+(* Print fold_left. *)
+Definition Effect0_evaluate'
+    {Σ : BackgroundModel}
+    (program : ProgramT)
+    (h : HiddenValue)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (f : Effect0)
+    : option (HiddenValue*Valuation2)
+:=
+    fold_left
+        (fun (p' : option (HiddenValue*Valuation2)) (bf : BasicEffect0) => p ← p'; BasicEffect0_evaluate program p.1 p.2 nv bf)
+        f
+        (Some (h,ρ))
+    
+.
+
+
+Definition Effect0_evaluate
+    {Σ : BackgroundModel}
+    (program : ProgramT)
+    (h : HiddenValue)
+    (ρ : Valuation2)
+    (nv : NondetValue)
+    (f : Effect0)
+    : option HiddenValue
+:=
+    fmap fst (Effect0_evaluate' program h ρ nv f)
+.
 
 Definition rewrites_in_valuation_under_to
-    {Σ : StaticModel}
-    {Act : Set}
+    {Σ : BackgroundModel}
+    {Label : Set}
     (program : ProgramT)
     (ρ : Valuation2)
-    (r : RewritingRule2 Act)
-    (from : TermOver builtin_value)
-    (under : Act)
+    (r : RewritingRule2 Label)
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    (under : Label)
     (nv : NondetValue)
-    (to : TermOver builtin_value)
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
-:= ((satisfies ρ from (r_from r))
-* (satisfies ρ (program,(nv,to)) (r_to r))
-* (satisfies ρ (program,nv) (r_scs r))
-* (under = r_act r)
+:= ((sat2B ρ from.1 (r_from r))
+* (sat2E program from.2 ρ to.1 (r_to r) nv)
+* (SideCondition_evaluate program from.2 ρ nv (r_scs r) = Some true)
+* (Some to.2 = Effect0_evaluate program from.2 ρ nv (r_eff r))
+* (under = r_label r)
 )%type
 .
 
 Definition rewrites_to
-    {Σ : StaticModel}
-    {Act : Set}
+    {Σ : BackgroundModel}
+    {Label : Set}
     (program : ProgramT)
-    (r : RewritingRule2 Act)
-    (from : TermOver builtin_value)
-    (under : Act)
+    (r : RewritingRule2 Label)
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    (under : Label)
     (nv : NondetValue)
-    (to : TermOver builtin_value)
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := { ρ : Valuation2 &
         rewrites_in_valuation_under_to program ρ r from under nv to
@@ -693,24 +794,24 @@ Definition rewrites_to
 .
 
 Definition rewriting_relation
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
-    : TermOver builtin_value -> TermOver builtin_value -> Type
+    : (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> Type
     := fun from to =>
         { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program r from a nv to)%type}}
 .
 
 Definition rewrites_to_nondet
-    {Σ : StaticModel}
-    {Act : Set}
+    {Σ : BackgroundModel}
+    {Label : Set}
     (program : ProgramT)
-    (r : RewritingRule2 Act)
-    (from : TermOver builtin_value)
-    (under : Act)
-    (to : TermOver builtin_value)
+    (r : RewritingRule2 Label)
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    (under : Label)
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := { nv : NondetValue &
         rewrites_to program r from under nv to
@@ -718,14 +819,14 @@ Definition rewrites_to_nondet
 .
 
 Definition rewrites_to_thy
-    {Σ : StaticModel}
-    {Act : Set}
+    {Σ : BackgroundModel}
+    {Label : Set}
     (program : ProgramT)
-    (Γ : RewritingTheory2 Act)
-    (from : TermOver builtin_value)
-    (under : Act)
-    (to : TermOver builtin_value)
-:= { r : RewritingRule2 Act &
+    (Γ : RewritingTheory2 Label)
+    (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    (under : Label)
+    (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+:= { r : RewritingRule2 Label &
     ((r ∈ Γ)*(rewrites_to_nondet program r from under to))%type
 
 }
@@ -735,9 +836,3 @@ Record BuiltinsBinding := {
     bb_function_names : list (string * string) ;
 }.
 
-
-Variant SymbolInfo {Σ0 : Signature} :=
-| si_none
-| si_predicate (p : builtin_predicate_symbol) (ar : nat) (np : option string)
-| si_function (f : builtin_function_symbol)
-.

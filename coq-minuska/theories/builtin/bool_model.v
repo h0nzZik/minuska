@@ -2,16 +2,13 @@ From Minuska Require Import
     prelude
     spec
     bool_signature
-    model_traits
     model_algebra
-    (* model_functor *)
 .
 
-Definition bool_carrier := bool.
+(* Definition bool_carrier := bool. *)
 
 Definition bool_function_interp
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
     (NondetValue : Type)
     (Carrier : Type)
     {Cbool : Injection bool Carrier}
@@ -19,8 +16,8 @@ Definition bool_function_interp
 :
     BoolFunSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
-    option (@TermOver' symbol Carrier)
+    list (@TermOver' TermSymbol Carrier) ->
+    option (@TermOver' TermSymbol Carrier)
 :=
     fun f nd args =>
     match f with
@@ -80,15 +77,14 @@ Definition bool_function_interp
 .
 
 Definition bool_predicate_interp
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
     (NondetValue : Type)
     (Carrier : Type)
     (asb : Carrier -> option bool)
 :
     BoolPredSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
+    list (@TermOver' TermSymbol Carrier) ->
     option bool
 :=
     fun p nv args =>
@@ -125,53 +121,28 @@ Definition bool_predicate_interp
     end
 .
 
-Program Definition bool_model_over
-    (symbol : Type)
-    (symbols : Symbols symbol)
-    (NondetValue : Type)
-    (Carrier : Type)
-    (Cbool : Injection bool Carrier)
-    (asb : Carrier -> option bool)
-    :
-    @ModelOver symbol symbols bool_signature NondetValue Carrier
-:= {|
-    builtin_function_interp := fun (f : @builtin_function_symbol bool_signature) => bool_function_interp NondetValue Carrier asb f;
-    builtin_predicate_interp := fun (p : @builtin_predicate_symbol bool_signature) => bool_predicate_interp NondetValue Carrier asb p;
-    bps_neg_correct := _;
-|}.
-Next Obligation.
-    destruct p,p'; simpl in *; case_on_length (); simpl in *;
-        ltac1:(simplify_eq/=).
-    {
-        ltac1:(repeat case_match; simplify_eq/=); reflexivity.
-    }
-    {
-        ltac1:(repeat case_match; simplify_eq/=); reflexivity.
-    }
-Qed.
-Fail Next Obligation.
-
-Definition bool_relaxed_model
-    (symbol : Type)
-    (symbols : Symbols symbol)
+Definition bool_relaxed_va
+    (TermSymbol : Type)
     (NondetValue : Type)
     :
-    RelaxedModel bool_signature NondetValue void
+    RelaxedValueAlgebra void bool NondetValue TermSymbol bool_signature.BoolFunSymbol bool_signature.BoolPredSymbol
 := {|
-    rm_carrier := bool_carrier ;
-    rm_model_over :=
+    rva_over :=
         fun (Carrier : Type)
             (inja : Injection void Carrier)
-            (injb : ReversibleInjection bool_carrier Carrier)
-            => bool_model_over symbol symbols NondetValue Carrier
-                (@ri_injection _ _ injb)
-                (@ri_reverse _ _ injb)
+            (injb : ReversibleInjection bool Carrier)
+            => {|
+                builtin_function_interp := fun (f : BoolFunSymbol) =>
+                    bool_function_interp NondetValue Carrier (injb.(ri_reverse)) f; 
+                builtin_predicate_interp := fun (p : BoolPredSymbol) =>
+                    bool_predicate_interp NondetValue Carrier (injb.(ri_reverse)) p; 
+            |}
+    ;
 |}.
 
-Definition bool_model
-    (symbol : Type)
-    (symbols : Symbols symbol)
+Definition bool_va
+    (TermSymbol : Type)
     (NondetValue : Type)
 :=
-    model_of_relaxed (bool_relaxed_model symbol symbols NondetValue)
+    small_model_of_relaxed (bool_relaxed_va TermSymbol NondetValue)
 .

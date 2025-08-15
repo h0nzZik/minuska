@@ -4,25 +4,11 @@ From Minuska Require Import
 .
 
 
-Lemma elem_of_next
-    {A : Type}
-    (x y : A)
-    (l : list A)
-    :
-    x <> y ->
-    x ∈ (y::l) ->
-    x ∈ l
-.
-Proof.
-    intros. inversion H0; subst; clear H0.
-    { ltac1:(contradiction). }
-    { assumption. }
-Qed.
 
 Section custom_induction_principle_2.
 
     Context
-        {Σ : StaticModel}
+        {Σ : BackgroundModel}
         {B : Type}
         {_edB : EqDecision B}
         {A : Type}
@@ -118,13 +104,12 @@ End custom_induction_principle_2.
 #[export]
 Existing Instance TermOver_eqdec.
 
-
 Fixpoint TermOverBuiltin_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
-    : TermOver builtin_value
+    {Σ : BackgroundModel}
+    (t m v : @TermOver' TermSymbol BasicValue)
+    : @TermOver' TermSymbol BasicValue
 :=
-    if (decide (t = m)) then v else
+    if (@decide (t = m) (_)) then v else
     match t with
     | t_over o => t_over o
     | t_term s l => t_term s (map (fun t'' => TermOverBuiltin_subst t'' m v) l)
@@ -132,10 +117,10 @@ Fixpoint TermOverBuiltin_subst
 .
 
 Fixpoint is_subterm_b
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
     {_edA : EqDecision A}
-    (m t : TermOver A)
+    (m t : @TermOver' TermSymbol A)
     : bool
 :=
     if (decide (t = m)) then true else
@@ -146,8 +131,8 @@ Fixpoint is_subterm_b
 .
 
 Lemma not_subterm_subst
-    {Σ : StaticModel}
-    (t m v : TermOver builtin_value)
+    {Σ : BackgroundModel}
+    (t m v : @TermOver' TermSymbol BasicValue)
     :
     is_subterm_b m t = false ->
     TermOverBuiltin_subst t m v = t
@@ -167,10 +152,10 @@ Proof.
 Qed.
 
 Lemma is_subterm_sizes
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
     {_edA : EqDecision A}
-    (p q : TermOver A)
+    (p q : @TermOver' TermSymbol A)
     :
     is_subterm_b p q = true ->
     TermOver_size p <= TermOver_size q
@@ -206,7 +191,7 @@ Qed.
 
 
 #[export]
-Instance BuiltinOrVar_eqdec {Σ : StaticModel}
+Instance BuiltinOrVar_eqdec {Σ : BackgroundModel}
     : EqDecision BuiltinOrVar
 .
 Proof.
@@ -218,7 +203,7 @@ Defined.
 Section custom_induction_principle_2.
 
     Context
-        {Σ : StaticModel}
+        {Σ : BackgroundModel}
     .
 
     Lemma Expression2_eqdec : EqDecision Expression2.
@@ -234,9 +219,9 @@ Section custom_induction_principle_2.
                     end
                 | _ => right _
                 end
-            | e_variable x1 =>
+            | e_Variabl x1 =>
                 match e2 with
-                | e_variable x2 =>
+                | e_Variabl x2 =>
                     match (decide (x1 = x2)) with
                     | left _ => left _
                     | right _ => right _
@@ -321,6 +306,45 @@ Section custom_induction_principle_2.
                 | _ => right _
                 end
                 )
+            | e_attr a1 l1 => (
+                match e2 with
+                | e_attr a2 l2 => (
+                    match (decide (a1 = a2)) with
+                    | left _ => (
+                        let tmp := (
+                            fix go' (l1' l2' : list Expression2) : {l1' = l2'} + {l1' <> l2'} :=
+                            match l1' with
+                            | [] =>
+                                match l2' with
+                                | [] => left _
+                                | _::_ => right _
+                                end
+                            | x1::xs1 =>
+                                match l2' with
+                                | [] => right _
+                                | x2::xs2 =>
+                                    match (go x1 x2) with
+                                    | left _ =>
+                                        match (go' xs1 xs2) with
+                                        | left _ => left _
+                                        | right _ => right _
+                                        end
+                                    | right _ => right _
+                                    end
+                                end
+                            end
+                            ) l1 l2 in
+                        match tmp with
+                        | left _ => left _
+                        | right _ => right _
+                        end
+                    )
+                    | right _ => right _
+                    end
+                )
+                | _ => right _
+                end
+            )
             end
         )); abstract(congruence)).
     Defined.
@@ -328,10 +352,10 @@ Section custom_induction_principle_2.
     Fixpoint Expression2_rect
         (P : Expression2 -> Type)
         (true_for_ground : forall e, P (e_ground e))
-        (true_for_var : forall x, P (e_variable x))
+        (true_for_var : forall x, P (e_Variabl x))
         (preserved_by_fun :
             forall
-                (f : builtin_function_symbol)
+                (f : FunSymbol)
                 (l : list Expression2),
                 (forall x, x ∈ l -> P x) ->
                 P (e_fun f l)
@@ -343,12 +367,19 @@ Section custom_induction_principle_2.
                 (forall x, x ∈ l -> P x) ->
                 P (e_query q l)
         )
+        (preserved_by_attribute :
+            forall
+                (q : AttrSymbol)
+                (l : list Expression2),
+                (forall x, x ∈ l -> P x) ->
+                P (e_attr q l)
+        )
         (e : Expression2)
     :
         P e :=
     match e with
     | e_ground g => true_for_ground g
-    | e_variable x => true_for_var x
+    | e_Variabl x => true_for_var x
     | e_fun f l =>  preserved_by_fun f l
         (fun x pf => 
             (fix go (l' : list Expression2) : x ∈ l' -> P x :=
@@ -356,7 +387,7 @@ Section custom_induction_principle_2.
             | nil => fun pf' => match not_elem_of_nil _ pf' with end
             | y::ys => 
                 match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query y) x (eq_sym e)) 
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query preserved_by_attribute y) x (eq_sym e)) 
                 | right n => fun pf' =>
                     let H := @elem_of_next _ _ _ _ n pf' in
                     go ys H
@@ -371,7 +402,22 @@ Section custom_induction_principle_2.
             | nil => fun pf' => match not_elem_of_nil _ pf' with end
             | y::ys => 
                 match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
-                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query y) x (eq_sym e)) 
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query preserved_by_attribute y) x (eq_sym e)) 
+                | right n => fun pf' =>
+                    let H := @elem_of_next _ _ _ _ n pf' in
+                    go ys H
+                end
+            end
+            ) l pf
+        )
+    | e_attr a l => preserved_by_attribute a l
+        (fun x pf => 
+            (fix go (l' : list Expression2) : x ∈ l' -> P x :=
+            match l' as l'0 return x ∈ l'0 -> P x with
+            | nil => fun pf' => match not_elem_of_nil _ pf' with end
+            | y::ys => 
+                match (Expression2_eqdec x y) return x ∈ (y::ys) -> P x with
+                | left e => fun pf' => (@eq_rect Expression2 y P (Expression2_rect P true_for_ground true_for_var preserved_by_fun preserved_by_query preserved_by_attribute y) x (eq_sym e)) 
                 | right n => fun pf' =>
                     let H := @elem_of_next _ _ _ _ n pf' in
                     go ys H
@@ -388,84 +434,103 @@ Existing Instance Expression2_eqdec.
 
 #[export]
 Instance SideCondition_eqdec
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     : EqDecision (SideCondition)
 .
 Proof. ltac1:(solve_decision). Defined.
 
 #[export]
-Instance RewritingRule2_eqdec
-    {Σ : StaticModel}
-    {Act : Set}
-    {_EA : EqDecision Act}
-    : EqDecision (RewritingRule2 Act)
+Instance BasicEffect0_eqdec
+    {Σ : BackgroundModel}
+    :
+    EqDecision BasicEffect0
 .
-Print RewritingRule2.
+Proof.
+    ltac1:(solve_decision).
+Defined.
+
+
+#[export]
+Instance RewritingRule2_eqdec
+    {Σ : BackgroundModel}
+    {Label : Set}
+    {_EA : EqDecision Label}
+    : EqDecision (RewritingRule2 Label)
+.
 Proof. ltac1:(solve_decision). Defined.
 
 
 Fixpoint Expression2_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (e : Expression2)
-    (x : variable)
+    (x : Variabl)
     (e' : Expression2)
     : Expression2
 :=    
 match e with
 | e_ground g => e_ground g
-| e_variable y =>
-    if (decide (y = x)) then e' else (e_variable y)
+| e_Variabl y =>
+    if (decide (y = x)) then e' else (e_Variabl y)
 | e_fun f l => e_fun f ((fun e1 => Expression2_subst e1 x e') <$> l)
 | e_query q l => e_query q ((fun e1 => Expression2_subst e1 x e') <$> l)
+| e_attr a l => e_attr a ((fun e1 => Expression2_subst e1 x e') <$> l)
 end
 .
 
 Fixpoint SideCondition_subst
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (c : SideCondition)
-    (x : variable)
+    (x : Variabl)
     (e' : Expression2)
     : SideCondition
 :=
     match c with
     | sc_true => sc_true
     | sc_false => sc_false
-    | sc_atom p es => sc_atom p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_pred p es => sc_pred p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_npred p es => sc_npred p ((fun e1 => Expression2_subst e1 x e') <$> es)
+    | sc_hpred p es => sc_hpred p ((fun e1 => Expression2_subst e1 x e') <$> es)
     | sc_and l r => sc_and (SideCondition_subst l x e') (SideCondition_subst r x e')
     | sc_or l r => sc_or (SideCondition_subst l x e') (SideCondition_subst r x e')
     end
 .
 
 Fixpoint vars_of_to_l2r
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    : list variable
+    {Σ : BackgroundModel}
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    : list Variabl
 := 
     match t with
     | t_over (bov_builtin _) => []
-    | t_over (bov_variable x) => [x]
+    | t_over (bov_Variabl x) => [x]
     | t_term s l => concat (map vars_of_to_l2r l)
     end
 .
 
 
+Check @VarsOf_TermOver.
+(* Set Typeclasses Debug. *)
 Lemma vars_of_t_term
-    {Σ : StaticModel}
-    (s : symbol)
-    (l : list (TermOver BuiltinOrVar))
+    {T0 : Type}
+    {T var : Type}
+    {_EDv : EqDecision var}
+    {_Cv : Countable var}
+    {_VT : VarsOf T var}
+    (s : T0)
+    (l : list (@TermOver' T0 T))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
 Proof. reflexivity. Qed.
-
+(* 
 Lemma vars_of_t_term_e
-    {Σ : StaticModel}
-    (s : symbol)
-    (l : list (TermOver Expression2))
+    {Σ : BackgroundModel}
+    (s : TermSymbol)
+    (l : list (@TermOver' TermSymbol Expression2))
     :
     vars_of (t_term s l) = union_list ( vars_of <$> l)
 .
-Proof. reflexivity. Qed.
+Proof. reflexivity. Qed. *)
 
 
 Fixpoint TermOver_size_with
@@ -574,22 +639,22 @@ Proof.
 Defined.
 
 Definition BoV_to_Expr2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (bov : BuiltinOrVar)
     : Expression2
 :=
     match bov with
     | bov_builtin b => (e_ground ((t_over b)))
-    | bov_variable x => e_variable x
+    | bov_Variabl x => e_Variabl x
     end
 .
 
 Definition TermOverBoV_to_TermOverExpr2
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    : TermOver Expression2
+    {Σ : BackgroundModel}
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    : @TermOver' TermSymbol Expression2
 :=
-    TermOver_map BoV_to_Expr2 t
+    TermOver'_map BoV_to_Expr2 t
 .
 
 
@@ -597,9 +662,9 @@ Definition TermOverBoV_to_TermOverExpr2
 
 
 Lemma TermOver_size_not_zero
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
-    (t : TermOver A)
+    (t : @TermOver' TermSymbol A)
     : TermOver_size t <> 0
 .
 Proof.
@@ -609,44 +674,50 @@ Qed.
 
 
 Fixpoint E_to_tree
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (e : Expression2)
     :
-    (gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol))%type)
+    (gen_tree ((TermOver' BasicValue)+(Variabl)+(FunSymbol)+(QuerySymbol)+(AttrSymbol))%type)
 :=
     match e with
-    | e_ground a => GenLeaf (inl (inl (inl a)))
-    | e_variable x => GenLeaf (inl (inl (inr x)))
+    | e_ground a => GenLeaf (inl (inl (inl (inl a))))
+    | e_Variabl x => GenLeaf (inl (inl (inl (inr x))))
     | e_fun f l =>
         let l' := E_to_tree <$> l in
-        GenNode 0 ((GenLeaf (inl (inr f)))::l')
+        GenNode 0 ((GenLeaf (inl (inl (inr f))))::l')
     | e_query q l =>
         let l' := E_to_tree <$> l in
-        GenNode 1 ((GenLeaf (inr q))::l')
+        GenNode 1 ((GenLeaf (inl (inr q)))::l')
+    | e_attr a l =>
+        let l' := E_to_tree <$> l in
+        GenNode 2 ((GenLeaf (inr a))::l')
     end
 .
 
 Fixpoint E_of_tree
-    {Σ : StaticModel}
-    (t : gen_tree ((TermOver' builtin_value)+(variable)+(builtin_function_symbol)+(QuerySymbol))%type)
+    {Σ : BackgroundModel}
+    (t : gen_tree ((TermOver' BasicValue)+(Variabl)+(FunSymbol)+(QuerySymbol)+(AttrSymbol))%type)
     : option Expression2
 :=
     match t with
-    | GenLeaf (inl (inl (inl a))) => Some (e_ground a)
-    | GenLeaf (inl (inl (inr x))) => Some (e_variable x)
-    | GenNode 0 ((GenLeaf (inl (inr f)))::l') =>
+    | GenLeaf (inl (inl (inl (inl a)))) => Some (e_ground a)
+    | GenLeaf (inl (inl (inl (inr x)))) => Some (e_Variabl x)
+    | GenNode 0 ((GenLeaf (inl (inl (inr f))))::l') =>
         l ← list_collect (E_of_tree <$> l');
         Some (e_fun f l)
-    | GenNode 1 ((GenLeaf (inr q))::l') =>
+    | GenNode 1 ((GenLeaf (inl (inr q)))::l') =>
         l ← list_collect (E_of_tree <$> l');
         Some (e_query q l)
+    | GenNode 2 ((GenLeaf (inr a))::l') =>
+        l ← list_collect (E_of_tree <$> l');
+        Some (e_attr a l)
     | _ => None
     end
 .
 
 
 Lemma E_from_to_tree
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     forall e,
         E_of_tree (E_to_tree e) = Some e
@@ -697,11 +768,32 @@ Proof.
             reflexivity.
         }
     }
+    {
+        simpl.
+        rewrite bind_Some.
+        exists l.
+        (repeat split).
+        induction l.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [IH1 IH2].
+            specialize (IHl IH2).
+            clear IH2.
+            rewrite fmap_cons.
+            rewrite fmap_cons.
+            rewrite IH1. clear IH1.
+            simpl.
+            rewrite IHl.
+            simpl.
+            reflexivity.
+        }
+    }
 Qed.
 
 #[export]
 Instance Expression2_countable
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     Countable Expression2
 .
@@ -715,3 +807,56 @@ Proof.
         intros. apply E_from_to_tree.
     }
 Defined.
+
+
+#[export]
+Instance cancel_TermOver_map
+    {Σ : BackgroundModel}
+    (T A B : Type)
+    (f : A -> B)
+    (g : B -> A)
+    :
+    Cancel eq f g ->
+    Cancel eq (@TermOver'_map T _ _ f) (TermOver'_map g)
+.
+Proof.
+    intros Hcancel.
+    intros t.
+    induction t; simpl.
+    { rewrite (cancel f g). reflexivity. }
+    {
+        f_equal.
+        induction l; simpl.
+        { reflexivity. }
+        {
+            rewrite Forall_cons in H.
+            destruct H as [H1 H2].
+            specialize (IHl H2).
+            rewrite H1. rewrite IHl.
+            reflexivity.
+        }
+    }
+Qed.
+
+(* 
+#[local]
+Instance EDC_instance
+    (T : Type)
+    {_ET : EqDecision T}
+    {_CT : Countable T}
+    : EDC T.
+Proof.
+    exact (Build_EDC T _ET _CT).
+Defined. *)
+
+(* 
+Definition BoV_to_Expr2
+    {Σ : BackgroundModel}
+    (bov : BuiltinOrVar)
+    : Expression2
+:=
+    match bov with
+    | bov_builtin b => (e_ground (t_over b))
+    | bov_Variabl x => e_Variabl x
+    end
+. *)

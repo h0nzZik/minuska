@@ -32,11 +32,12 @@ rule read =
   | "@rule"       { KEYWORD_RULE }
   | "@context"       { KEYWORD_CONTEXT }
   | "@builtin"       { KEYWORD_BUILTIN }
-  | "@query"       { KEYWORD_QUERY }
+  (* | "@query"       { KEYWORD_QUERY } *)
   | "@true"       { KEYWORD_TRUE }
   | "@false"       { KEYWORD_FALSE }
   | "@and"       { KEYWORD_AND }
   | "@or"        { KEYWORD_OR }
+  | "@not"        { KEYWORD_NOT }
   | "of_arity"         { KEYWORD_OF_ARITY }
   | "in"         { KEYWORD_IN }
   | "where"      { KEYWORD_WHERE }

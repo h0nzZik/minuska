@@ -16,6 +16,7 @@ type token =
   | KEYWORD_FALSE
   | KEYWORD_AND
   | KEYWORD_OR
+  | KEYWORD_NOT
   | KEYWORD_WHERE
   | BRACKET_ROUND_LEFT
   | BRACKET_ROUND_RIGHT
@@ -46,12 +47,13 @@ type groundterm = Pluginbase.groundterm
 type expr =
   [ `EVar of vari
   | `EGround of groundterm
-  | `ECallF of (id*(expr list)) 
-  | `ECallQ of (id*(expr list))
+  | `ECall of (id*(expr list)) 
+  (* | `ECallQ of (id*(expr list)) *)
   ]
 
 type condition =
-  [ `CondAtomic of (id*(expr list)) 
+  [ `CondAtomicPred of (id*(expr list)) 
+  | `CondAtomicNPred of (id*(expr list)) 
   | `CondAnd of (condition*condition)
   | `CondOr of (condition*condition)
   | `CondTrue

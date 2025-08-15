@@ -3,21 +3,21 @@ From Minuska Require Import
     spec
 .
 
-Record FresherR {Σ : StaticModel} := {
-    fresher_avoid : list variable ;
+Record FresherR {Σ : BackgroundModel} := {
+    fresher_avoid : list Variabl ;
 }.
 
-Definition FresherM {Σ : StaticModel} (A : Type) : Type :=
+Definition FresherM {Σ : BackgroundModel} (A : Type) : Type :=
     FresherR -> (A*FresherR)%type
 .
 
-(* Definition fresherOf {Σ : StaticModel} (avoid : list variable)
+(* Definition fresherOf {Σ : BackgroundModel} (avoid : list Variabl)
     : FresherM ()
 :=
     fun _ => ((), {|fresher_avoid := avoid|})
 . *)
 
-Definition returnFresher {Σ : StaticModel}
+Definition returnFresher {Σ : BackgroundModel}
     {A : Type}
     (a : A)
     :
@@ -28,7 +28,7 @@ Definition returnFresher {Σ : StaticModel}
 
 
 Definition fmapFresher
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A B : Type}
     (f : A -> B)
     (v : FresherM A)
@@ -40,7 +40,7 @@ Definition fmapFresher
 
 
 Definition bindFresher
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A B : Type}
     (v : FresherM A)
     (f : A -> FresherM B)
@@ -52,9 +52,9 @@ Definition bindFresher
 
 
 Definition freshFresher
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {A : Type}
-    (f : variable -> A)
+    (f : Variabl -> A)
     : FresherM A
 :=
     fun F =>

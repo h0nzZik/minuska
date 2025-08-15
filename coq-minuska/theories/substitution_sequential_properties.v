@@ -8,9 +8,9 @@ From Minuska Require Import
 .
 
 Lemma subs_app_app
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (s1 s2 : SubS)
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
 :
     subs_app (s1 ++ s2) t = subs_app s2 (subs_app s1 t)
 .
@@ -25,10 +25,10 @@ Proof.
 Qed.
 
 Lemma subs_app_cons
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     x p
     (s2 : SubS)
-    (t : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
 :
     subs_app ((x,p)::s2) t = subs_app s2 (subs_app [(x,p)] t)
 .
@@ -38,9 +38,9 @@ Proof.
 Qed.
 
 Lemma subs_app_builtin
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ss : SubS)
-    (b : builtin_value)
+    (b : BasicValue)
 :
     subs_app ss (t_over (bov_builtin b)) = t_over (bov_builtin b)
 .
@@ -56,10 +56,10 @@ Qed.
 
 
 Lemma subs_app_term
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (ss : SubS)
-(sym : symbol)
-(l : list (TermOver BuiltinOrVar))
+(sym : TermSymbol)
+(l : list (@TermOver' TermSymbol BuiltinOrVar))
 :
 subs_app ss (t_term sym l) = t_term sym ((subs_app ss) <$> l)
 .
@@ -80,12 +80,12 @@ Qed.
 
 
 Lemma helper_lemma_1
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (s : SubS)
-(x : variable)
-(t t' : TermOver BuiltinOrVar)
+(x : Variabl)
+(t t' : @TermOver' TermSymbol BuiltinOrVar)
 :
-subs_app s (t_over (bov_variable x)) = subs_app s t' ->
+subs_app s (t_over (bov_Variabl x)) = subs_app s t' ->
 subs_app s t = subs_app s  (TermOverBoV_subst t x t')
 .
 Proof.
@@ -142,9 +142,9 @@ induction t; simpl; intros ss HH.
     }
 }
 {
-
     rewrite subs_app_term.
-    rewrite subs_app_term.
+    unfold BuiltinOrVar in *.
+    ltac1:(rewrite subs_app_term).
     apply f_equal.
     revert ss HH H.
     induction l; intros ss HH1 HH2.
@@ -167,12 +167,12 @@ Qed.
 
 
 
-Lemma helper_lemma_3 {Σ : StaticModel}:
+Lemma helper_lemma_3 {Σ : BackgroundModel}:
 ∀ l s1,
 (
-    ∀ x : variable,
-    subs_app l (t_over (bov_variable x)) =
-    subs_app (s1) (t_over (bov_variable x))
+    ∀ x : Variabl,
+    subs_app l (t_over (bov_Variabl x)) =
+    subs_app (s1) (t_over (bov_Variabl x))
 ) ->
 ∀ t,
     subs_app l t = subs_app (s1) t
@@ -184,13 +184,13 @@ induction t; intros ll s1 HNice.
 {
     destruct a.
     {
-    rewrite subs_app_builtin.
-    rewrite subs_app_builtin.
-    reflexivity.
+
+      ltac1:(do 2 rewrite subs_app_builtin).
+      reflexivity.
     }
     {
-    rewrite HNice.
-    reflexivity.
+      rewrite HNice.
+      reflexivity.
     }
 }
 {
@@ -204,25 +204,25 @@ induction t; intros ll s1 HNice.
     rewrite list_lookup_fmap.
     destruct (l !! i) eqn:Hli.
     {
-    ltac1:(rewrite Hli).
-    simpl.
-    apply f_equal.
-    erewrite H.
-    reflexivity.
-    rewrite elem_of_list_lookup.
-    exists i. exact Hli.
-    apply HNice.
+    (* ltac1:(rewrite Hli). *)
+        simpl.
+        apply f_equal.
+        erewrite H.
+        reflexivity.
+        rewrite elem_of_list_lookup.
+        exists i. exact Hli.
+        apply HNice.
     }
     {
-    ltac1:(rewrite Hli).
-    simpl.
-    reflexivity.
+    (* ltac1:(rewrite Hli). *)
+        simpl.
+        reflexivity.
     }
 }
 Qed.
 
 Definition subs_no_twice_approx
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (subs : SubS)
     : Prop
     :=
@@ -233,13 +233,13 @@ Definition subs_no_twice_approx
 
 
 Lemma subs_app_nodup_1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub : SubS)
-    (x : variable)
+    (x : Variabl)
     :
     NoDup (fst <$> sub) ->
     x ∉ sub.*1 ->
-    subs_app sub (t_over (bov_variable x)) = t_over (bov_variable x)
+    subs_app sub (t_over (bov_Variabl x)) = t_over (bov_Variabl x)
 .
 Proof.
     induction sub; intros H1 H2; simpl in *.
@@ -266,19 +266,19 @@ Proof.
 Qed.
 
 Lemma subs_app_nodup_2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub : SubS)
-    (x y : variable)
+    (x y : Variabl)
     :
     NoDup (fst <$> sub) ->
     subs_no_twice_approx sub ->
-    (x, t_over (bov_variable y)) ∈ sub ->
-    (forall x' p', (x', p') ∈ sub -> ∃ y', p' = t_over (bov_variable y')) ->
-    subs_app sub (t_over (bov_variable x)) = t_over (bov_variable y)
+    (x, t_over (bov_Variabl y)) ∈ sub ->
+    (forall x' p', (x', p') ∈ sub -> ∃ y', p' = t_over (bov_Variabl y')) ->
+    subs_app sub (t_over (bov_Variabl x)) = t_over (bov_Variabl y)
 .
 Proof.
     intros H1 H2 H3 H4.
-    specialize (H4 x (t_over (bov_variable y)) H3).
+    specialize (H4 x (t_over (bov_Variabl y)) H3).
     destruct H4 as [y' Hy'].
     inversion Hy'; subst; clear Hy'.
     rewrite elem_of_list_lookup in H3.
@@ -316,7 +316,7 @@ Proof.
                     rewrite elem_of_list_fmap.
                     split.
                     {
-                        exists (t_over (bov_variable y')).
+                        exists (t_over (bov_Variabl y')).
                         split.
                         {
                             unfold vars_of; simpl.
@@ -325,7 +325,7 @@ Proof.
                         }
                         {
                             rewrite elem_of_list_fmap.
-                            exists (x, (t_over (bov_variable y'))).
+                            exists (x, (t_over (bov_Variabl y'))).
                             rewrite elem_of_app.
                             split>[reflexivity|].
                             right.
@@ -361,9 +361,9 @@ Qed.
 
 
 Lemma subs_app_untouched
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (s : SubS)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of φ ## (list_to_set s.*1) ->
     subs_app s φ = φ
@@ -390,19 +390,19 @@ Qed.
 
 
 (* Compute SubS. *)
-Definition subt_dom {Σ : StaticModel} (s : list (variable * @TermOver' symbol BuiltinOrVar)) : gset variable :=
+Definition subt_dom {Σ : BackgroundModel} (s : list (Variabl * @TermOver' TermSymbol BuiltinOrVar)) : gset Variabl :=
     list_to_set (s.*1)
 .
 
-Definition subt_codom {Σ : StaticModel} (s : list (variable * @TermOver' symbol BuiltinOrVar)) : gset variable :=
+Definition subt_codom {Σ : BackgroundModel} (s : list (Variabl * @TermOver' TermSymbol BuiltinOrVar)) : gset Variabl :=
     union_list (vars_of <$> s.*2)
 .
 
 
 Lemma vars_of_subs_app
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     a
-    (q : TermOver BuiltinOrVar)
+    (q : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of (subs_app a q) ⊆ subt_codom a ∪ vars_of q
 .
@@ -424,7 +424,7 @@ Proof.
         destruct (decide (v ∈ vars_of q)) as [Hin|Hnotin].
         {
             assert (Htmp := vars_of_TermOverBoV_subst q t v Hin).
-            rewrite Htmp.
+            ltac1:(rewrite Htmp).
             ltac1:(set_solver).
         }
         {

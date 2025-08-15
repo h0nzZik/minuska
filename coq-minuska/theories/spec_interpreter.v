@@ -5,47 +5,47 @@ From Minuska Require Import
 
 
 Definition not_stuck
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (e : TermOver builtin_value) : Type
+    (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue)) : Type
 :=
     { e' : _ & { nv : NondetValue & rewriting_relation Γ program nv e e' } }
 .
 
 Definition stuck
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (program : ProgramT)
-    (e : TermOver builtin_value) : Type
+    (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue)) : Type
 :=
     notT (not_stuck Γ program e)
 .
 
 
 Definition Interpreter
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     : Type
-    := ProgramT -> NondetValue -> TermOver builtin_value -> option (TermOver builtin_value)
+    := ProgramT -> NondetValue -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> option ((@TermOver' TermSymbol BasicValue)*(HiddenValue))
 .
 
 Definition Interpreter_ext
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     : Type
-    := ProgramT -> NondetValue -> TermOver builtin_value -> option ((TermOver builtin_value)*nat)
+    := ProgramT -> NondetValue -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> option (((@TermOver' TermSymbol BasicValue)*(HiddenValue))*nat)
 .
 
 
 Definition Interpreter_sound'
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (interpreter : Interpreter Γ)
     : Type
     := ((
@@ -62,30 +62,55 @@ Definition Interpreter_sound'
     )%type
 .
 
-Definition RewritingRule2_wf
-    {Σ : StaticModel}
-    {Act : Set}
-    (r : RewritingRule2 Act)
+Definition RewritingRule2'_wf
+    {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+    {_Ev : EqDecision Va}
+    {_Cv : Countable Va}
+    {Label : Set}
+    (r : @RewritingRule2' Bv Va Ts Fs Qs As Ms Ps Hps Label)
     : Prop
 :=
     vars_of (r_scs r) ⊆ vars_of (r_from r)
     /\
     vars_of (r_to r) ⊆ vars_of (r_from r)
+    /\
+    vars_of (r_eff r) ⊆ vars_of (r_from r)
 .
 
-Definition RewritingTheory2_wf
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+Definition RewritingRule2_wf
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (r : RewritingRule2 Label)
     : Prop
 :=
-    Forall RewritingRule2_wf Γ
+  RewritingRule2'_wf r
+.
+
+Definition RewritingTheory2'_wf
+    {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+    {_Ev : EqDecision Va}
+    {_Cv : Countable Va}
+    {Label : Set}
+    (Γ : list (@RewritingRule2' Bv Va Ts Fs Qs As Ms Ps Hps Label))
+    : Prop
+:=
+    Forall RewritingRule2'_wf Γ
+.
+
+
+Definition RewritingTheory2_wf
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
+    : Prop
+:=
+    RewritingTheory2'_wf Γ
 .
 
 Definition Interpreter_sound
-    {Σ : StaticModel}
-    {Act : Set}
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    {Label : Set}
+    (Γ : list (RewritingRule2 Label))
     (interpreter : Interpreter Γ)
     : Type
 := 

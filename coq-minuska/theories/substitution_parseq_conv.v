@@ -19,10 +19,10 @@ From Coq Require Import
 
 
 Fixpoint fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (n : nat)
-    : list variable
+    : list Variabl
 :=
     match n with
     | 0 => []
@@ -31,10 +31,10 @@ Fixpoint fresh_var_seq
 .
 
 Fixpoint fresh_nth
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (n : nat)
-    : variable
+    : Variabl
 :=
     match n with
     | 0 => fresh avoid
@@ -42,12 +42,12 @@ Fixpoint fresh_nth
     end
 .
 
-Definition renaming_ok {Σ : StaticModel} (r : (gmap variable variable)) : Prop :=
+Definition renaming_ok {Σ : BackgroundModel} (r : (gmap Variabl Variabl)) : Prop :=
     forall k1 k2 v, r !! k1 = Some v -> r !! k2 = Some v -> k1 = k2
 .
 
 Lemma renaming_ok_empty
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
     renaming_ok ∅
 .
@@ -58,9 +58,9 @@ Proof.
         inversion HH1.
 Qed.
 
-Lemma renaming_ok_insert_inv {Σ : StaticModel}
-    (r : (gmap variable variable))
-    (x y : variable)
+Lemma renaming_ok_insert_inv {Σ : BackgroundModel}
+    (r : (gmap Variabl Variabl))
+    (x y : Variabl)
 :
     x ∉ dom r ->
     renaming_ok (<[x:=y]>r) ->
@@ -110,13 +110,13 @@ Definition pair_swap {A B : Type} (x : (A*B)) : B*A :=
     (snd x, fst x)
 .
 
-Definition r_inverse {Σ : StaticModel} (r : (gmap variable variable)) : (gmap variable variable) :=
+Definition r_inverse {Σ : BackgroundModel} (r : (gmap Variabl Variabl)) : (gmap Variabl Variabl) :=
     list_to_map (pair_swap <$> (map_to_list r))
 .
 
 Lemma renaming_ok_nodup
-    {Σ : StaticModel}
-    (r : (gmap variable variable))
+    {Σ : BackgroundModel}
+    (r : (gmap Variabl Variabl))
     :
     renaming_ok r ->
     NoDup ([eta snd] <$> map_to_list r)
@@ -139,13 +139,13 @@ Proof.
 Qed.
 
 Lemma r_inverse_insert
-    {Σ : StaticModel}
-    (r : (gmap variable variable))
-    (x y : variable)
+    {Σ : BackgroundModel}
+    (r : (gmap Variabl Variabl))
+    (x y : Variabl)
     :
     renaming_ok r ->
     x ∉ dom r ->
-    y ∉ (@map_img variable variable (gmap variable variable) _ (gset variable) _ _ _ r) ->
+    y ∉ (@map_img Variabl Variabl (gmap Variabl Variabl) _ (gset Variabl) _ _ _ r) ->
     r_inverse (<[x:=y]>r) = <[y:=x]>(r_inverse r)
 .
 Proof.
@@ -159,7 +159,7 @@ Proof.
         exact HH2.
     }
     assert(Htmp1 : NoDup
-        ((λ kv : variable * variable, (kv.2, kv.1)) <$> map_to_list (<[x:=y]> r)).*1).
+        ((λ kv : Variabl * Variabl, (kv.2, kv.1)) <$> map_to_list (<[x:=y]> r)).*1).
     {
         ltac1:(rewrite <- list_fmap_compose).
         unfold compose.
@@ -295,7 +295,7 @@ Proof.
     }
 Qed.
 
-Lemma r_inverse_ok {Σ : StaticModel} (r : (gmap variable variable)) :
+Lemma r_inverse_ok {Σ : BackgroundModel} (r : (gmap Variabl Variabl)) :
     renaming_ok r ->
     renaming_ok (r_inverse r)
 .
@@ -332,7 +332,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma r_inverse_inverse {Σ : StaticModel} (r : (gmap variable variable)) :
+Lemma r_inverse_inverse {Σ : BackgroundModel} (r : (gmap Variabl Variabl)) :
     renaming_ok r ->
     r_inverse (r_inverse r) = r
 .
@@ -405,15 +405,15 @@ Proof.
 Qed.
 
 Definition renaming_for
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
     (sub_mm : SubP)
     :
-    (gmap variable variable)
+    (gmap Variabl Variabl)
 :=
-    let rhss : list (TermOver BuiltinOrVar) := snd <$> map_to_list sub_mm in
-    let avoid : list variable := elements (avoid0 ∪ (union_list (vars_of <$> rhss))) in
-    let to_be_renamed : list variable := elements (dom sub_mm) in
+    let rhss : list (@TermOver' TermSymbol BuiltinOrVar) := snd <$> map_to_list sub_mm in
+    let avoid : list Variabl := elements (avoid0 ∪ (union_list (vars_of <$> rhss))) in
+    let to_be_renamed : list Variabl := elements (dom sub_mm) in
     let r' := zip to_be_renamed (fresh_var_seq (to_be_renamed ++ avoid) (length to_be_renamed)) in
     list_to_map r'
 .
@@ -421,8 +421,8 @@ Definition renaming_for
 
 
 Lemma length_fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (n : nat)
     :
     length (fresh_var_seq avoid n) = n
@@ -438,10 +438,10 @@ Qed.
 
 
 Lemma elem_of_fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (n : nat)
-    (x : variable)
+    (x : Variabl)
     :
     x ∈ fresh_var_seq avoid n ->
     x ∉ avoid
@@ -468,8 +468,8 @@ Proof.
 Qed.
 
 Lemma NoDup_fresh_var_seq
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (n : nat)
     :
     NoDup (fresh_var_seq avoid n)
@@ -491,8 +491,8 @@ Qed.
 
 
 Lemma renaming_for_ok
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
     (s : SubP)
     :
     renaming_ok (renaming_for avoid0 s)
@@ -534,17 +534,17 @@ Proof.
 Qed.
 
 Definition rlift
-    {Σ : StaticModel}
-    (r : (gmap variable variable))
+    {Σ : BackgroundModel}
+    (r : (gmap Variabl Variabl))
     :
     SubP
 :=
-   (fun x => t_over (bov_variable x)) <$> r
+   (fun x => t_over (bov_Variabl x)) <$> r
 .
 
 (* Definition make_serial
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     SubS
 :=
@@ -556,11 +556,11 @@ Definition rlift
 . *)
 
 (* Definition make_serial0
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
-    (avoid : gset variable)
+    {Σ : BackgroundModel}
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (avoid : gset Variabl)
     :
-    list (variable*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     let r := renaming_for avoid s in
     let rinv := r_inverse r in
@@ -571,11 +571,11 @@ Definition rlift
 
 
 Definition make_serial0
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
-    (avoid : gset variable)
+    {Σ : BackgroundModel}
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (avoid : gset Variabl)
     :
-    list (variable*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     let r := renaming_for avoid s in
     let rinv := r_inverse r in
@@ -588,27 +588,27 @@ Definition make_serial0
 
 
 Definition make_serial
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
-    list (variable*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     make_serial0 s ∅
 .
 
 
 Definition idren
-    {Σ : StaticModel}
-    (vs : gset variable)
-    : (gmap variable variable)
+    {Σ : BackgroundModel}
+    (vs : gset Variabl)
+    : (gmap Variabl Variabl)
 :=
     set_to_map (fun x => (x,x)) vs
 .
 
 Lemma compose_renaming_inverse_restrict
-    {Σ : StaticModel}
-    (r : (gmap variable variable))
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (r : (gmap Variabl Variabl))
+    (vars : gset Variabl)
     :
     renaming_ok r ->
     map_img r ∩ vars ⊆ dom r  ->
@@ -834,7 +834,7 @@ Proof.
                     symmetry in H1z.
                     ltac1:(simplify_eq/=).
                     rewrite elem_of_map_to_list in H2z.
-                    assert (i ∈ ((@map_img variable variable (gmap variable variable) _ (gset variable) _ _ _ r))).
+                    assert (i ∈ ((@map_img Variabl Variabl (gmap Variabl Variabl) _ (gset Variabl) _ _ _ r))).
                     {
                         apply elem_of_map_img.
                         exists q.
@@ -865,9 +865,9 @@ Proof.
 Qed.
 
 Lemma subp_restrict_compose
-  {Σ : StaticModel}
-  (a b : gmap variable (TermOver BuiltinOrVar))
-  (vars : gset variable)
+  {Σ : BackgroundModel}
+  (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+  (vars : gset Variabl)
 :
   dom a ⊆ vars ->
   subp_restrict vars (subp_compose a b) = subp_compose (subp_restrict vars a) (subp_restrict vars b)
@@ -1024,9 +1024,9 @@ Proof.
 Qed.
 
 Lemma subp_is_normal_restrict
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
     :
     subp_is_normal m ->
     subp_is_normal (subp_restrict vars m)
@@ -1041,7 +1041,7 @@ Proof.
 Qed.
 (* 
 #[export]
-Instance subp_is_normal_proper {Σ : StaticModel}: Proper ((≡) ==> flip impl) subp_is_normal.
+Instance subp_is_normal_proper {Σ : BackgroundModel}: Proper ((≡) ==> flip impl) subp_is_normal.
 Proof.
     intros a.
 Qed. *)
@@ -1087,12 +1087,12 @@ Proof.
 Qed.
 
 Lemma subp_is_normal_spec
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal m <->
     (
-        forall (k : variable) (v : TermOver BuiltinOrVar), m !! k = Some v -> t_over (bov_variable k) <> v
+        forall (k : Variabl) (v : @TermOver' TermSymbol BuiltinOrVar), m !! k = Some v -> t_over (bov_Variabl k) <> v
     )
 .
 Proof.
@@ -1121,7 +1121,7 @@ Proof.
 Qed.
 
 Lemma dom_subp_compose_subseteq
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (a b : SubP)
     :
     dom (subp_compose a b) ⊆ dom a ∪ dom b
@@ -1144,9 +1144,9 @@ Proof.
 Qed.
 
 Lemma restrict_more
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
-    (vars vars' : gset variable)
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars vars' : gset Variabl)
 :
     vars' ⊆ vars ->
     subp_restrict vars a = subp_restrict vars b ->
@@ -1200,10 +1200,10 @@ Proof.
 Qed.
 
 Lemma restrict_filter
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
-    (P : prod variable (TermOver BuiltinOrVar) -> Prop)
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
+    (P : prod Variabl (@TermOver' TermSymbol BuiltinOrVar) -> Prop)
     {EP : forall x, Decision (P x)}
     :
     subp_restrict vars a = subp_restrict vars b ->
@@ -1288,9 +1288,9 @@ Proof.
 Qed.
 
 Lemma restrict_equiv_2
-    {Σ : StaticModel}
-    (a b d : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (a b d : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
     :
     subp_restrict vars b = subp_restrict vars d ->
     subp_restrict vars (subp_compose a b) = subp_restrict vars (subp_compose a d)
@@ -1449,9 +1449,9 @@ Proof.
 Qed.
 
 Lemma restrict_id
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
     :
     (dom m) ⊆ vars ->
     subp_restrict vars m = m
@@ -1468,10 +1468,10 @@ Proof.
 Qed.
 
 Lemma subp_app_restrict
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
-    (p : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of p ⊆ vars ->
     subp_app (subp_restrict vars a) p = subp_app a p
@@ -1526,9 +1526,9 @@ Proof.
 Qed.
 
 Lemma restrict_equiv_1
-    {Σ : StaticModel}
-    (a b c : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (a b c : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
     :
     subp_codom b ⊆ vars ->
     subp_restrict vars a = subp_restrict vars c ->
@@ -1633,7 +1633,6 @@ Proof.
                     {
                         unfold subp_codom in H1.
                         unfold SubP in *.
-                        unfold TermOver in *.
                         assert (Ht: t ∈ ((map_img b):(listset _))).
                         {
                             eapply elem_of_map_img_2.
@@ -1714,9 +1713,9 @@ Proof.
 Qed.
 
 Lemma dom_renaming_for
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (a : SubP)
-    (avoid0 : gset variable)
+    (avoid0 : gset Variabl)
     :
     dom (renaming_for avoid0 a) = subp_dom a
 .
@@ -1733,8 +1732,8 @@ Proof.
 Qed.
 
 Lemma subp_restrict_id_2
-    {Σ : StaticModel}
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (vars : gset Variabl)
     :
     subp_restrict vars subp_id = subp_id
 .
@@ -1746,9 +1745,9 @@ Proof.
 Qed.
 
 Lemma renaming_is_normal
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (m : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal (rlift (renaming_for avoid0 m))
 .
@@ -1774,6 +1773,7 @@ Proof.
         apply elem_of_zip_r in Hrmk as H2.
         clear Hrmk.
         apply elem_of_fresh_var_seq in H2.
+        inversion Hkv; subst; clear Hkv.
         ltac1:(set_solver).
     }
     {
@@ -1783,9 +1783,9 @@ Qed.
 
 
 Lemma inverse_of_renaming_is_normal
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (m : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal (rlift (r_inverse (renaming_for avoid0 m)))
 .
@@ -1828,7 +1828,14 @@ Proof.
             apply elem_of_zip_r in H2 as H4.
             clear H2.
             apply elem_of_fresh_var_seq in H4.
-            ltac1:(set_solver).
+            apply H4.
+            rewrite elem_of_app.
+            left.
+            inversion Hkv; subst; clear Hkv.
+            clear - H3.
+            rewrite elem_of_elements in H3.
+            rewrite elem_of_elements.
+            apply H3.
         }
         {
             rewrite fst_zip.
@@ -1843,9 +1850,9 @@ Proof.
 Qed.
 
 Lemma map_img_renaming_for_dom
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
-    (avoid0 : gset variable)
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (avoid0 : gset Variabl)
     :
     map_img (renaming_for avoid0 m) ## dom m
 .
@@ -1870,9 +1877,9 @@ Proof.
 Qed.
 
 Lemma map_img_renaming_for_codom
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (m : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     map_img (renaming_for avoid0 m) ## subp_codom m
 .
@@ -1919,8 +1926,8 @@ Proof.
 Qed.
 
 Lemma dom_rlift_inverse
-    {Σ : StaticModel}
-    (r : gmap variable variable)
+    {Σ : BackgroundModel}
+    (r : gmap Variabl Variabl)
     :
     dom (rlift (r_inverse r)) = map_img r
 .
@@ -1939,8 +1946,8 @@ Proof.
 Qed.
 
 Lemma dom_rinverse
-    {Σ : StaticModel}
-    (r : gmap variable variable)
+    {Σ : BackgroundModel}
+    (r : gmap Variabl Variabl)
     :
     dom ((r_inverse r)) = map_img r
 .
@@ -1960,9 +1967,9 @@ Qed.
 
 
 Lemma map_disjoint_compose_inverse
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (m : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     subp_compose (rlift (renaming_for avoid0 m)) m
     ##ₘ rlift (r_inverse (renaming_for avoid0 m))
@@ -2076,11 +2083,11 @@ Proof.
 Qed.
 
 Lemma subp_app_insert_2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub_mm : SubP)
-    (x : variable)
-    (v : TermOver BuiltinOrVar)
-    (φ : TermOver BuiltinOrVar)
+    (x : Variabl)
+    (v : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of v ## subp_dom sub_mm ->
     subp_app (<[x:=v]>sub_mm) φ
@@ -2139,17 +2146,17 @@ Proof.
 Qed.
 
 Definition make_parallel0
-    {Σ : StaticModel}
-    (init : gmap variable (TermOver BuiltinOrVar))
-    (sub : list (variable*(TermOver BuiltinOrVar))%type)
-    : (gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (init : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
+    : (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
     foldr (fun a b => subp_compose ({[a.1 := a.2]}) b) init sub
 .
 
 Lemma subp_compose_empty_r
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     subp_is_normal a ->
     subp_compose a ∅ = a
@@ -2175,16 +2182,16 @@ Proof.
 Qed.
 
 Definition subs_is_normal
-    {Σ : StaticModel}
-    (a : list (variable*(TermOver BuiltinOrVar))%type)
+    {Σ : BackgroundModel}
+    (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     : Prop
 :=
-    Forall (fun x => t_over (bov_variable x.1) <> x.2) a
+    Forall (fun x => t_over (bov_Variabl x.1) <> x.2) a
 .
 
 Lemma subp_compose_com
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     a ##ₘ b ->
     subp_codom b ## subp_dom a ->
@@ -2234,8 +2241,8 @@ Qed.
 
 
 Lemma subp_compose_empty_l
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     subp_is_normal a ->
     subp_compose ∅ a = a
@@ -2252,7 +2259,7 @@ Qed.
 
 
 Lemma subp_is_normal_normalize
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     a
     :
     subp_is_normal (subp_normalize a).
@@ -2275,9 +2282,9 @@ Qed.
 
 
 Lemma make_parallel0_normal
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     init
-    (sub : list (variable*(TermOver BuiltinOrVar))%type)
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     :
     subp_is_normal init ->
     subp_is_normal (make_parallel0 init sub)
@@ -2297,9 +2304,9 @@ Qed.
 
 (* Sadly, its precondition is too strong *)
 Lemma make_parallel0_compose
-    {Σ : StaticModel}
-    (init : gmap variable (TermOver BuiltinOrVar))
-    (sub : list (variable*(TermOver BuiltinOrVar))%type)
+    {Σ : BackgroundModel}
+    (init : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
 :
     subp_is_normal init ->
     subs_is_normal sub ->
@@ -2363,16 +2370,16 @@ Proof.
 Qed.
 
 Definition make_parallel
-    {Σ : StaticModel}
-    (sub : list (variable*(TermOver BuiltinOrVar))%type)
-    : (gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
+    : (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
     make_parallel0 ∅ sub
 .
 
 Lemma make_parallel_normal
-    {Σ : StaticModel}
-    (sub : list (variable*(TermOver BuiltinOrVar))%type)
+    {Σ : BackgroundModel}
+    (sub : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     :
     subp_is_normal (make_parallel sub)
 .
@@ -2385,10 +2392,10 @@ Proof.
 Qed.
 
 Lemma map_img_subp_compose
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
-    map_img (subp_compose a b) ⊆ @map_img _ _ _ _ (listset (TermOver BuiltinOrVar)) _ _ _  a ∪ (map_img (subp_app a <$> b))
+    map_img (subp_compose a b) ⊆ @map_img _ _ _ _ (listset (@TermOver' TermSymbol BuiltinOrVar)) _ _ _  a ∪ (map_img (subp_app a <$> b))
 .
 Proof.
     unfold subp_compose.
@@ -2415,9 +2422,9 @@ Proof.
 Qed.
 
 (* Lemma subp_codom_make_parallel0
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     init
-    (s : list (variable*(TermOver BuiltinOrVar))%type)
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
 :
     subp_codom (make_parallel0 init s) = subp_codom init ∪ union_list (vars_of <$> s.*2)
 .
@@ -2440,8 +2447,8 @@ Qed.
 
 
 Lemma subp_codom_make_parallel
-    {Σ : StaticModel}
-    (s : list (variable*(TermOver BuiltinOrVar))%type)
+    {Σ : BackgroundModel}
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
 :
     subp_codom (make_parallel s) = union_list (vars_of <$> s.*2)
 .
@@ -2450,8 +2457,8 @@ Proof.
 Qed. *)
 
 Lemma make_parallel_app
-    {Σ : StaticModel}
-    (s1 s2 : list (variable*(TermOver BuiltinOrVar))%type)
+    {Σ : BackgroundModel}
+    (s1 s2 : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     :
     subs_is_normal s1 ->
     make_parallel (s1 ++ s2) = subp_compose (make_parallel s1) (make_parallel s2)
@@ -2478,8 +2485,8 @@ Proof.
 Qed.
 
 Lemma make_parallel_perm
-    {Σ : StaticModel}
-    (a b : list (variable*(TermOver BuiltinOrVar))%type)
+    {Σ : BackgroundModel}
+    (a b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type)
     init
     :
     subs_is_normal a ->
@@ -2765,8 +2772,8 @@ Proof.
 Qed.
 
 Lemma subp_codom_subp_compose
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     dom a ## dom b ->
     dom a ## subp_codom b ->
@@ -2907,9 +2914,9 @@ Proof.
 Qed.
 
 Lemma vars_of_subp_app
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
-    (q : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (q : @TermOver' TermSymbol BuiltinOrVar)
     :
     vars_of (subp_app a q) ⊆ subp_codom a ∪ vars_of q
 .
@@ -2983,8 +2990,8 @@ Proof.
 Qed.
 
 Lemma subp_codom_subp_compose_2
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_codom (subp_compose a b) ⊆ subp_codom a ∪ subp_codom b
 .
@@ -3095,7 +3102,7 @@ Proof.
     }
 Qed.
 (* 
-Lemma subp_codom_insert_notin {Σ : StaticModel} i x m:
+Lemma subp_codom_insert_notin {Σ : BackgroundModel} i x m:
     i ∉ dom m ->
     x ∉ @map_img _ _ _ _ (listset _) _ _ _ m ->
     subp_codom (<[i:=x]> m) = vars_of x ∪ subp_codom m
@@ -3123,7 +3130,7 @@ Proof.
 Qed. *)
 
 
-Lemma subp_codom_insert {Σ : StaticModel} i x m:
+Lemma subp_codom_insert {Σ : BackgroundModel} i x m:
     i ∉ dom m ->
     (* x ∉ @map_img _ _ _ _ (listset _) _ _ _ m -> *)
     subp_codom (<[i:=x]> m) = vars_of x ∪ subp_codom m
@@ -3145,14 +3152,14 @@ Proof.
                 reflexivity.
             }
             assert (H3: 
-                (fmap (@vars_of (TermOver BuiltinOrVar) variable _ _ _) (elements (@map_img _ _ _ _ (listset _) _ _ _ m)))
+                (fmap (@vars_of (@TermOver' TermSymbol BuiltinOrVar) Variabl _ _ _) (elements (@map_img _ _ _ _ (listset _) _ _ _ m)))
                  ≡ₚ
-                 (fmap (@vars_of (TermOver BuiltinOrVar) variable _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m))))).
+                 (fmap (@vars_of (@TermOver' TermSymbol BuiltinOrVar) Variabl _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m))))).
             {
                 rewrite H2 at 1.
                 reflexivity.
             }
-            assert (H4: vars_of x ⊆ ⋃ ((fmap (@vars_of (TermOver BuiltinOrVar) variable _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m)))))).
+            assert (H4: vars_of x ⊆ ⋃ ((fmap (@vars_of (@TermOver' TermSymbol BuiltinOrVar) Variabl _ _ _) (elements ({[x]} ∪ (@map_img _ _ _ _ (listset _) _ _ _ m)))))).
             {
                 rewrite elem_of_subseteq.
                 intros x0 Hx0.
@@ -3213,9 +3220,9 @@ Qed.
 
 
 Lemma make_parallel_correct
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub : SubS)
-    (φ : TermOver BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     subp_app (make_parallel sub) φ = subs_app (reverse sub) φ
 .
@@ -3250,9 +3257,9 @@ Proof.
     }
 Qed.
 
-Lemma helper_lemma' {Σ : StaticModel}:
-  forall x m t, t_over (bov_variable x) = subp_app m t ->
-  exists y, t = t_over (bov_variable y) /\ (m !! y = Some (t_over (bov_variable x)) \/ y = x)
+Lemma helper_lemma' {Σ : BackgroundModel}:
+  forall x m t, t_over (bov_Variabl x) = subp_app m t ->
+  exists y, t = t_over (bov_Variabl y) /\ (m !! y = Some (t_over (bov_Variabl x)) \/ y = x)
 .
 Proof.
     intros x' m' t' HH.
@@ -3285,8 +3292,8 @@ Qed.
 
 
 Lemma make_parallel0_map_to_list
-    {Σ : StaticModel}
-    (init s : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (init s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     l
     :
     subp_is_normal s ->
@@ -3380,15 +3387,15 @@ Proof.
                                                 unfold subp_normalize.
                                                 rewrite <- map_filter_union.
                                                 {
-                                                    ltac1:(replace (init) with ((filter (λ kv : variable * TermOver BuiltinOrVar, kv.1 ∉ subp_dom m) init)) at 2).
+                                                    ltac1:(replace (init) with ((filter (λ kv : Variabl * (@TermOver' TermSymbol BuiltinOrVar), kv.1 ∉ subp_dom m) init)) at 2).
                                                     {
                                                         ltac1:(
                                                             replace
-                                                                ((λ x0 : TermOver BuiltinOrVar, TermOverBoV_subst x0 i x) <$>
-                                                                    filter (λ '(i0, x0), t_over (bov_variable i0) ≠ TermOverBoV_subst x0 i x)
+                                                                ((λ x0 : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst x0 i x) <$>
+                                                                    filter (λ '(i0, x0), t_over (bov_Variabl i0) ≠ TermOverBoV_subst x0 i x)
                                                                 (subp_compose init m))
                                                             with (
-                                                                filter (fun a => t_over (bov_variable a.1) <> a.2)
+                                                                filter (fun a => t_over (bov_Variabl a.1) <> a.2)
                                                                     ((fun a => TermOverBoV_subst a i x) <$> (subp_compose init m))
                                                             )
                                                         ).
@@ -3788,12 +3795,13 @@ Proof.
                                         {
                                             unfold subp_codom,SubP.
                                             rewrite elem_of_union_list.
-                                            exists (vars_of (t_over (bov_variable i))).
+                                            exists (vars_of (@t_over TermSymbol _ (@bov_Variabl BasicValue _ i))).
+
                                             unfold vars_of; simpl.
                                             unfold vars_of; simpl.
                                             split>[|clear; ltac1:(set_solver)].
                                             rewrite elem_of_list_fmap.
-                                            exists (t_over (bov_variable i)).
+                                            exists (t_over (bov_Variabl i)).
                                             split>[reflexivity|].
                                             rewrite elem_of_elements.
                                             rewrite elem_of_map_img.
@@ -4146,8 +4154,12 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (i ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (i ∈ ⋃ vs).
                         {
+                            subst vs.
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
@@ -4155,7 +4167,7 @@ Proof.
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4186,8 +4198,12 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (y ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (y ∈ ⋃ vs).
                         {
+                            subst vs.
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
@@ -4195,7 +4211,7 @@ Proof.
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4261,16 +4277,20 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (i ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (i ∈ ⋃ vs).
                         {
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
-                            rewrite elem_of_list_fmap.
+                            subst vs.
+                            ltac1:(rewrite elem_of_list_fmap).
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4301,8 +4321,12 @@ Proof.
                         destruct z as [z1 z2].
                         simpl in *.
                         rewrite elem_of_map_to_list in H2z.
-                        assert (y ∈ ⋃ (vars_of <$> elements (@map_img _ _ _ _ (listset _) _ _ _ m))).
+                        lazy_match! Constr.type (Control.hyp @Hinit4) with
+                        | (_ ∪ ⋃ ?vs ## _) => remember $vs as vs
+                        end.
+                        assert (y ∈ ⋃ vs).
                         {
+                            subst vs.
                             rewrite elem_of_union_list.
                             exists (vars_of z2).
                             split>[|exact H2X].
@@ -4310,7 +4334,7 @@ Proof.
                             exists z2.
                             split>[reflexivity|].
                             rewrite elem_of_elements.
-                            rewrite elem_of_map_img.
+                            ltac1:(rewrite elem_of_map_img).
                             exists z1.
                             exact H2z.
                         }
@@ -4331,8 +4355,8 @@ Proof.
 Qed.
 
 Lemma make_parallel_map_to_list
-    {Σ : StaticModel}
-    (s : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     l
     :
     subp_is_normal s ->
@@ -4387,7 +4411,7 @@ Proof.
 Qed.
 
 Lemma subp_codom_renaming_for_disjoint_dom_m
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     avoid0 m
 :
     subp_codom (rlift (renaming_for avoid0 m)) ## dom m
@@ -4431,7 +4455,7 @@ Proof.
 Qed.
 
 Lemma subp_codom_make_parallel0
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     m s
     :
     subp_codom (make_parallel0 m s) ⊆ subp_codom m ∪ subt_codom s
@@ -4492,7 +4516,7 @@ Proof.
             simpl in H2X.
             destruct (decide (a.1 ∈ vars_of z)).
             {
-                rewrite vars_of_TermOverBoV_subst in H2X.
+                ltac1:(rewrite vars_of_TermOverBoV_subst in H2X)>[assumption|].
                 {
                     rewrite elem_of_union in H2X.
                     destruct H2X as [H2X|H2X].
@@ -4521,9 +4545,6 @@ Proof.
                         ltac1:(set_solver).
                     }
                 }
-                {
-                    assumption.
-                }
             }
             {
                 rewrite subst_notin2 in H2X>[|ltac1:(congruence)].
@@ -4549,7 +4570,7 @@ Proof.
 Qed.
 
 
-Lemma subp_dom_inverse {Σ : StaticModel} r:
+Lemma subp_dom_inverse {Σ : BackgroundModel} r:
     renaming_ok r ->
     subp_dom (rlift (r_inverse r)) = subp_codom (rlift r)
 .
@@ -4575,7 +4596,7 @@ Proof.
             exists ({[z2]}).
             split>[|ltac1:(set_solver)].
             rewrite elem_of_list_fmap.
-            exists (t_over (bov_variable z2)).
+            exists (t_over (bov_Variabl z2)).
             split.
             {
                 reflexivity.
@@ -4633,7 +4654,7 @@ Proof.
     }
 Qed.
 
-Lemma subp_codom_inverse {Σ : StaticModel} r:
+Lemma subp_codom_inverse {Σ : BackgroundModel} r:
     renaming_ok r ->
     subp_codom (rlift (r_inverse r)) = subp_dom (rlift r)
 .
@@ -4649,7 +4670,7 @@ Proof.
 Qed.
 
 Lemma subt_codom_map_to_list
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     m
     :
     subt_codom (map_to_list m) = subp_codom m
@@ -4704,7 +4725,7 @@ Proof.
 Qed.
 
 Lemma another_helper_lemma
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     avoid0 m
 :
     dom m ## subp_codom m ->
@@ -4847,7 +4868,7 @@ Proof.
 Qed.
 
 Lemma another_helper_lemma'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     avoid0 m
 :
     dom m ## subp_codom m ->
@@ -4868,9 +4889,9 @@ Qed.
 
 (* 
 Lemma to_serial_then_to_parallel
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (m : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     dom m ## subp_codom m ->
     subp_is_normal m ->
@@ -4953,7 +4974,7 @@ Proof.
             simpl in *.
             subst p.
             ltac1:(rewrite elem_of_map_to_list in H1x).
-            apply (H x (t_over (bov_variable x)) H1x eq_refl).
+            apply (H x (t_over (bov_Variabl x)) H1x eq_refl).
         }
     }
     {
@@ -4968,7 +4989,7 @@ Proof.
         simpl in *.
         subst p.
         ltac1:(rewrite elem_of_map_to_list in H1x).
-        apply (H x (t_over (bov_variable x)) H1x eq_refl).
+        apply (H x (t_over (bov_Variabl x)) H1x eq_refl).
     }
     {
         (* rewrite make_parallel_map_to_list.
@@ -5099,7 +5120,7 @@ Proof.
         simpl in *.
         subst p.
         rewrite elem_of_map_to_list in H1x.
-        apply (H x (t_over (bov_variable x)) H1x eq_refl).
+        apply (H x (t_over (bov_Variabl x)) H1x eq_refl).
     }
     {
         rewrite <- dom_alt.
@@ -5174,11 +5195,11 @@ Qed. *)
 
 
 Lemma subp_app_insert
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub_mm : SubP)
-    (x : variable)
-    (v : TermOver BuiltinOrVar)
-    (φ : TermOver BuiltinOrVar)
+    (x : Variabl)
+    (v : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     subtmm_closed sub_mm  ->
     x ∉ dom sub_mm ->
@@ -5269,8 +5290,8 @@ Qed.
 
 (* 
 Lemma NoDup_1_renaming_for
-    {Σ : StaticModel}
-    (sub_mm : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (sub_mm : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     NoDup (fst <$> (renaming_for sub_mm))
 .
@@ -5287,7 +5308,7 @@ Proof.
 Qed.
 
 Lemma NoDup_2_renaming_for
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub_mm : SubP)
     :
     NoDup (snd <$> renaming_for sub_mm)
@@ -5305,10 +5326,10 @@ Proof.
 Qed.
 
 Lemma NoTwice_renaming_for
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub_mm : SubP)
     :
-    forall (x : variable),
+    forall (x : Variabl),
         x ∈ (snd <$> renaming_for sub_mm) ->
         x ∉ (fst <$> renaming_for sub_mm)
 .
@@ -5336,7 +5357,7 @@ Proof.
 Qed.
 
 Lemma renaming_for_all
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (sub_mm : SubP)
     :
     elements (dom sub_mm) ⊆ (fst <$> (renaming_for sub_mm))
@@ -5356,7 +5377,7 @@ Proof.
 Qed. *)
 
 Lemma fresh_var_seq_mono
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     avoid n
     :
     fresh_var_seq avoid n ⊆ fresh_var_seq avoid (S n)
@@ -5379,10 +5400,10 @@ Qed.
 
 
 Lemma fresh_nth_iff
-    {Σ : StaticModel}
-    (avoid : list variable)
+    {Σ : BackgroundModel}
+    (avoid : list Variabl)
     (n m : nat)
-    (x : variable)
+    (x : Variabl)
     :
     n < m ->
     fresh_nth avoid n = x <-> ((fresh_var_seq avoid m) !! n = Some x)
@@ -5415,16 +5436,16 @@ Qed.
 (* 
 Check subp_app_restrict.
 Lemma subp_app_restrict
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
     :
     subp_app (subp_restrict vars a) = subp_app a
 . *)
 
 (* Lemma subt_closed_make_serial
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subt_closed (make_serial a)
 .
@@ -5446,9 +5467,9 @@ Qed. *)
 
 
 Lemma renaming_for_avoid
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
-    (a : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     avoid0 ## map_img (renaming_for avoid0 a)
 .
@@ -5475,8 +5496,8 @@ Proof.
 Qed.
 
 (* Lemma to_parallel_then_to_serial
-    {Σ : StaticModel}
-    (avoid0 : gset variable)
+    {Σ : BackgroundModel}
+    (avoid0 : gset Variabl)
     s
     :
     (make_serial0 (make_parallel s) avoid0) ≡ₚ s
@@ -5486,7 +5507,7 @@ Proof.
     unfold make_serial0.
 Qed. *)
 
-Lemma in_sub_impl_not_in_dom_rlift_inverse_renaming {Σ : StaticModel} a avoid x:
+Lemma in_sub_impl_not_in_dom_rlift_inverse_renaming {Σ : BackgroundModel} a avoid x:
     x ∈ dom a ->
     x ∉ dom (rlift (r_inverse (renaming_for avoid a)))
 .
@@ -5498,11 +5519,11 @@ Proof.
 Qed.
 (* 
 Lemma make_serial_lookup
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
-    (vars : gset variable)
-    (x : variable)
-    (p : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (vars : gset Variabl)
+    (x : Variabl)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     subp_is_normal a ->
     a !! x = Some p ->
@@ -5517,7 +5538,7 @@ Proof.
     rewrite map_lookup_filter.
     rewrite bind_Some.
     simpl.
-    assert (p <> t_over (bov_variable x)).
+    assert (p <> t_over (bov_Variabl x)).
     {
         intros ?.
         subst p.
@@ -5648,41 +5669,41 @@ Qed. *)
 (* Print subp_compose. *)
 
 (* Definition subs_precompose
-  {Σ : StaticModel}
-  (a b : list (variable*(TermOver BuiltinOrVar)))
+  {Σ : BackgroundModel}
+  (a b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :=
-      fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
+      fmap (fun (x:(Variabl*(@TermOver' TermSymbol BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
 . *)
 
 Definition subs_precomposep
-  {Σ : StaticModel}
-  (a : gmap variable (TermOver BuiltinOrVar))
-  (b : list (variable*(TermOver BuiltinOrVar)))
+  {Σ : BackgroundModel}
+  (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+  (b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :=
-      fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subp_app a x.2))) b
+      fmap (fun (x:(Variabl*(@TermOver' TermSymbol BuiltinOrVar))) => (x.1, (subp_app a x.2))) b
 .
 
 Definition subp_precomposes
-  {Σ : StaticModel}
-  (a : list (variable*(TermOver BuiltinOrVar)))
-  (b : gmap variable (TermOver BuiltinOrVar))
+  {Σ : BackgroundModel}
+  (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
+  (b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :=
       (fmap (subs_app a) b) 
 .
 
 
 Definition subs_precomposes
-  {Σ : StaticModel}
-  (a : list (variable*(TermOver BuiltinOrVar)))
-  (b : list (variable*(TermOver BuiltinOrVar)))
+  {Σ : BackgroundModel}
+  (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
+  (b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :=
-      fmap (fun (x:(variable*(TermOver BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
+      fmap (fun (x:(Variabl*(@TermOver' TermSymbol BuiltinOrVar))) => (x.1, (subs_app a x.2))) b
 .
 
 
 Lemma map_to_list_precompose
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
 :
     map_to_list (subp_precompose a b) ≡ₚ subs_precomposep a (map_to_list b)
 .
@@ -5715,9 +5736,9 @@ Proof.
 Qed.
 (* 
 Lemma subs_app_subs_precomposep
-    {Σ : StaticModel}
-    (a : gmap variable (TermOver BuiltinOrVar))
-    (b : list (variable*(TermOver BuiltinOrVar)))
+    {Σ : BackgroundModel}
+    (a : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
 :
     subs_app (subs_precomposep a b) = compose (subp_app a) (subs_app b)
 .  
@@ -5734,7 +5755,7 @@ Qed. *)
 
 
 Lemma subs_app_app'
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (s1 s2 : SubS)
 :
     subs_app (s1 ++ s2) = (subs_app s2) ∘ (subs_app s1)
@@ -5747,24 +5768,24 @@ Qed.
 
 
 Definition srenaming_ok
-    {Σ : StaticModel}
-    (r : (list (variable*variable)))
+    {Σ : BackgroundModel}
+    (r : (list (Variabl*Variabl)))
     :
     Prop :=
     forall k1 k2 v, (k1,v) ∈ r -> (k2,v) ∈ r -> k1 = k2
 .
 
 Definition srlift
-    {Σ : StaticModel}
-    (r : (list (variable*variable)))
+    {Σ : BackgroundModel}
+    (r : (list (Variabl*Variabl)))
     :
-    list (variable*(TermOver BuiltinOrVar))
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))
 :=
-   (fun x => (x.1, t_over (bov_variable x.2))) <$> r
+   (fun x => (x.1, t_over (bov_Variabl x.2))) <$> r
 .
 
 Lemma srlift_map_to_list
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     m
 :
     srlift (map_to_list m) = map_to_list (rlift m)
@@ -5778,22 +5799,22 @@ Proof.
 Qed.
 
 Definition sr_inverse
-    {Σ : StaticModel}
-    (r : (list (variable*variable)))
+    {Σ : BackgroundModel}
+    (r : (list (Variabl*Variabl)))
     :
-    (list (variable*variable))
+    (list (Variabl*Variabl))
 :=
     reverse (pair_swap <$> r)
 .
 
 
 Lemma TermOverBoV_subst_cancel
-    {Σ : StaticModel}
-    (x1 x2 : variable)
+    {Σ : BackgroundModel}
+    (x1 x2 : Variabl)
     p
     :
     x2 ∉ vars_of p ->
-    TermOverBoV_subst (TermOverBoV_subst p x1 (t_over (bov_variable x2))) x2 (t_over (bov_variable x1)) = p
+    TermOverBoV_subst (TermOverBoV_subst p x1 (t_over (bov_Variabl x2))) x2 (t_over (bov_Variabl x1)) = p
 .
 Proof.
     induction p; intros Hvars.
@@ -5831,11 +5852,11 @@ Proof.
 Qed.
 
 Lemma subt_codom_renaming
-    {Σ : StaticModel}
-    (r : list (variable * variable))
+    {Σ : BackgroundModel}
+    (r : list (Variabl * Variabl))
     :
  subt_codom
-  ((λ x1 : variable * variable, (x1.1, t_over (bov_variable x1.2))) <$>r)
+  ((λ x1 : Variabl * Variabl, (x1.1, t_over (bov_Variabl x1.2))) <$>r)
   = list_to_set (r.*2)
 .
 Proof.
@@ -5868,7 +5889,7 @@ Proof.
         subst.
         exists {[z2]}.
         split>[|ltac1:(set_solver)].
-        exists (t_over (bov_variable z2)).
+        exists (t_over (bov_Variabl z2)).
         split.
         {
             unfold vars_of; simpl.
@@ -5876,7 +5897,7 @@ Proof.
             reflexivity.
         }
         {
-            exists (z1, t_over (bov_variable z2)).
+            exists (z1, t_over (bov_Variabl z2)).
             split>[reflexivity|].
             exists (z1, z2).
             simpl.
@@ -5887,8 +5908,8 @@ Qed.
 
 
 Lemma subs_app_renaming_inverse_0
-    {Σ : StaticModel}
-    (r : list (variable*variable))
+    {Σ : BackgroundModel}
+    (r : list (Variabl*Variabl))
     p
     :
     NoDup (r.*1) ->
@@ -6026,15 +6047,15 @@ Proof.
 Qed.
 
 Lemma subs_app_nodup_3
-    {Σ : StaticModel}
-    (x : variable)
-    (s : list (variable*(TermOver BuiltinOrVar)))
-    (p : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (x : Variabl)
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
+    (p : @TermOver' TermSymbol BuiltinOrVar)
     :
     NoDup (s.*1) ->
     vars_of p ## list_to_set (s.*1) ->
     (x, p) ∈ s ->
-    subs_app s (t_over (bov_variable x)) = p
+    subs_app s (t_over (bov_Variabl x)) = p
 .
 Proof.
     revert x p.
@@ -6095,15 +6116,15 @@ Proof.
     }
 Qed.
 
-(* Lemma subs_app_precomposes_variable
-    {Σ : StaticModel}
-    (x : variable)
-    (p : TermOver BuiltinOrVar)
-    (r : list (variable * variable))
-    (s : list (variable*(TermOver BuiltinOrVar)))
+(* Lemma subs_app_precomposes_Variabl
+    {Σ : BackgroundModel}
+    (x : Variabl)
+    (p : @TermOver' TermSymbol BuiltinOrVar)
+    (r : list (Variabl * Variabl))
+    (s : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     (x, p) ∈ s ->
-    subs_app (subs_precomposes (srlift r) s) (t_over (bov_variable x)) = subs_app (srlift r) p
+    subs_app (subs_precomposes (srlift r) s) (t_over (bov_Variabl x)) = subs_app (srlift r) p
 .
 Proof.
     revert x p r.
@@ -6134,11 +6155,11 @@ Proof.
 Qed. *)
 
 Definition make_serial1
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
-    (avoid : gset variable)
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (avoid : gset Variabl)
     :
-    list (variable*(TermOver BuiltinOrVar))%type
+    list (Variabl*(@TermOver' TermSymbol BuiltinOrVar))%type
 :=
     let r := map_to_list (renaming_for avoid m) in
     let rinv := sr_inverse r in
@@ -6149,7 +6170,7 @@ Definition make_serial1
 .
 
 Lemma renaming_for_contra
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     avoid m v v1 v2
     :
     renaming_for avoid m !! v = Some v1  ->
@@ -6222,10 +6243,10 @@ Proof.
 Qed.
 
 Lemma make_serial1_correct
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
-    (avoid : gset variable)
-    (φ : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (avoid : gset Variabl)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     dom m ## subp_codom m ->
     vars_of φ ⊆ avoid ->
@@ -6241,8 +6262,8 @@ Proof.
         simpl.
         destruct a; simpl in *.
         {
-            rewrite subs_app_builtin.
-            rewrite subs_app_builtin.
+            ltac1:(rewrite subs_app_builtin).
+            ltac1:(rewrite subs_app_builtin).
             reflexivity.
         }
         {
@@ -6337,7 +6358,7 @@ Proof.
                 }
             }
             {    
-                rewrite subs_app_nodup_1.
+                setoid_rewrite subs_app_nodup_1.
                 {
                     rewrite subs_app_untouched.
                     { reflexivity. }
@@ -6438,8 +6459,8 @@ Proof.
 Qed.
 (* 
 Lemma make_parallel_eq
-    {Σ : StaticModel}
-    (a b : list (variable*(TermOver BuiltinOrVar)))
+    {Σ : BackgroundModel}
+    (a b : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     (
         forall φ, subs_app a φ = subs_app b φ
@@ -6459,7 +6480,7 @@ Proof.
             destruct p as [x p].
             simpl in Hab.
             (* simpl. *)
-            specialize (Hab (t_term inhabitant [(t_over (bov_variable x))])).
+            specialize (Hab (t_term inhabitant [(t_over (bov_Variabl x))])).
             simpl in Hab.
             rewrite decide_True in Hab.
             {
@@ -6478,9 +6499,9 @@ Proof.
 Qed. *)
 (* 
 Lemma make_parallel_serial1
-    {Σ : StaticModel}
-    (m : gmap variable (TermOver BuiltinOrVar))
-    (avoid : gset variable)
+    {Σ : BackgroundModel}
+    (m : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (avoid : gset Variabl)
     :
     dom m ## subp_codom m ->
     make_parallel (make_serial1 m avoid) = m
@@ -6501,14 +6522,14 @@ Proof.
 Qed. *)
 
 Lemma subp_app_compose_precompose
-    {Σ : StaticModel}
-    (a b : gmap variable (TermOver BuiltinOrVar))
-    (x : variable)
+    {Σ : BackgroundModel}
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (x : Variabl)
     :
     x ∈ dom b ->
-    subp_app (subp_compose a b) (t_over (bov_variable x))
+    subp_app (subp_compose a b) (t_over (bov_Variabl x))
     =
-    subp_app (subp_precompose a b) (t_over (bov_variable x))
+    subp_app (subp_precompose a b) (t_over (bov_Variabl x))
 .
 Proof.
     intros Hxb.
@@ -6562,18 +6583,18 @@ Qed.
 
 
 Lemma subp_app_restrict_eq
-    {Σ : StaticModel}
-    (d : gset variable)
-    (a b : gmap variable (TermOver BuiltinOrVar))
+    {Σ : BackgroundModel}
+    (d : gset Variabl)
+    (a b : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
     :
     subp_is_normal a ->
     subp_is_normal b ->
     (
-        forall (x : variable),
+        forall (x : Variabl),
             x ∈ d ->
-            subp_app a (t_over (bov_variable x))
+            subp_app a (t_over (bov_Variabl x))
             =
-            subp_app b (t_over (bov_variable x))
+            subp_app b (t_over (bov_Variabl x))
     ) ->
     subp_restrict d a = subp_restrict d b
 .
@@ -6636,8 +6657,8 @@ Proof.
 Qed.
 
 Lemma list_to_set_reverse_var
-    {Σ : StaticModel}
-    (l : list variable)
+    {Σ : BackgroundModel}
+    (l : list Variabl)
     :
     @list_to_set _ (gset _) _ _ _ (reverse l) = list_to_set l
 .
@@ -6657,7 +6678,7 @@ Proof.
 Qed.
 
 Lemma fst_make_serial1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     m avoid
     :
     list_to_set (fst <$> make_serial1 m avoid) ≡ dom m ∪ (map_img (renaming_for avoid m))
@@ -6687,7 +6708,7 @@ Qed.
 
 
 Lemma snd_make_serial1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     m avoid
     :
     ⋃ (vars_of <$> (snd <$> make_serial1 m avoid)) ⊆ map_img (renaming_for avoid m) ∪ subp_codom m ∪ dom (renaming_for avoid m)
@@ -6799,9 +6820,9 @@ Qed.
 
 
 Lemma dom_make_parallel0
-    {Σ : StaticModel}
-    (init : gmap variable (TermOver BuiltinOrVar))
-    (a : list (variable*(TermOver BuiltinOrVar)))
+    {Σ : BackgroundModel}
+    (init : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar))
+    (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     dom (make_parallel0 init a) ⊆ dom init ∪ list_to_set (a.*1)
 .
@@ -6825,8 +6846,8 @@ Proof.
 Qed.
 
 Lemma dom_make_parallel
-    {Σ : StaticModel}
-    (a : list (variable*(TermOver BuiltinOrVar)))
+    {Σ : BackgroundModel}
+    (a : list (Variabl*(@TermOver' TermSymbol BuiltinOrVar)))
     :
     dom (make_parallel a) ⊆ list_to_set (a.*1)
 .
@@ -6838,7 +6859,7 @@ Proof.
 Qed.
 
 Lemma subs_is_normal_make_serial1
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     m avoid
     :
     subp_is_normal m ->
@@ -6902,7 +6923,7 @@ Proof.
                         exists ({[y]}).
                         split>[|ltac1:(set_solver)].
                         rewrite elem_of_list_fmap.
-                        exists (t_over (bov_variable y)).
+                        exists (t_over (bov_Variabl y)).
                         split.
                         {
                             unfold vars_of; simpl.

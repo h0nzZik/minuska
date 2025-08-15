@@ -2,8 +2,6 @@ From Minuska Require Export
     prelude
     spec
     basic_properties
-    string_variables
-    default_static_model
     frontend
     properties
     naive_interpreter
@@ -21,7 +19,7 @@ Require Export
   Coq.extraction.ExtrOcamlZBigInt
   Coq.extraction.ExtrOcamlNatBigInt
 .
-
+(*
 (* Adapted from [Coq.extraction.ExtrOcamlNativeString], using [Stdlib.String] instead of [String]*)
 Extract Inductive string => "string"
 [
@@ -37,36 +35,39 @@ Extract Inductive string => "string"
     let l = Stdlib.String.length s in
     if l = 0 then f0 () else f1 (Stdlib.String.get s 0) (Stdlib.String.sub s 1 (l-1)))
 ".
-
+*)
 From Coq Require Import String Bool Arith ZArith List.
 
 Require Minuska.BuiltinValue Minuska.builtins.
 
-Variant Act := default_act | invisible_act.
+Variant Label := default_label | invisible_label.
 
 
 #[export]
-Instance Act_eqDec : EqDecision Act.
+Instance Label_eqDec : EqDecision Label.
 Proof.
     ltac1:(solve_decision).
 Defined.
-
+(* 
+Print BackgroundModel.
 #[export]
 Instance DSM
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
+    (* (mysignature : Signature) *)
+    (* (hiddensignature : HiddenSignature) *)
+    (β : Model mysignature MyUnit)
+    (hiddenβ : HiddenModel mysignature hiddensignature β)
     (program_info : ProgramInfo)
-    : StaticModel :=
-    default_model mysignature β program_info
-.
+    : BackgroundModel :=
+    default_model mysignature hiddensignature β hiddenβ program_info
+. *)
 
-Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (builtin_value).
+(* Definition GT {mysignature : Signature} {β : Model mysignature MyUnit} := @TermOver' string (BasicValue).
 
-Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT.
-Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat).
+(* Definition StepT {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option GT. *)
+(* Definition StepT_ext {mysignature : Signature} {β : Model mysignature MyUnit} (program_info : ProgramInfo) := ProgramT -> NondetValue -> GT -> option (GT*nat). *)
 
-Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : builtin_value) : GT := @t_over string builtin_value b.
-Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string builtin_value s l.
+Definition gt_over {mysignature : Signature} {β : Model mysignature MyUnit} (b : BasicValue) : GT := @t_over string BasicValue b.
+Definition gt_term {mysignature : Signature} {β : Model mysignature MyUnit} (s : string) (l : list GT) : GT := @t_term string BasicValue s l. *)
 
 Definition basic_rule
     (* {mysignature : Signature} *)
@@ -75,27 +76,17 @@ Definition basic_rule
     (name : string)
     (l : @TermOver' string StringBuiltinOrVar)
     (r : @TermOver' string StringExpression)
-    (cond : StringSideCondition) : Declaration Act
+    (cond : StringSideCondition) : Declaration Label
 :=
-    (decl_rule _ (@mkRuleDeclaration Act name (@mkStringRewritingRule Act l r cond default_act)))
+    (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label l r cond default_label)))
 .
 
 
-Definition BoV_to_Expr2
-    {Σ : StaticModel}
-    (bov : BuiltinOrVar)
-    : Expression2
-:=
-    match bov with
-    | bov_builtin b => (e_ground (t_over b))
-    | bov_variable x => e_variable x
-    end
-.
 
 Fixpoint sTermOverBoV_subst_gen
     {B : Type}
     (lift_builtin : BuiltinRepr -> B)
-    (lift_variable : string -> B)
+    (lift_Variabl : string -> B)
     (t : @TermOver' string StringBuiltinOrVar)
     (x : string)
     (t' : @TermOver' string B)
@@ -106,9 +97,9 @@ match t with
 | t_over (sbov_var y) =>
     match (decide (x = y)) with
     | left _ => t'
-    | right _ => t_over (lift_variable y)
+    | right _ => t_over (lift_Variabl y)
     end
-| t_term s l => t_term s (map (fun t'' => sTermOverBoV_subst_gen lift_builtin lift_variable t'' x t') l)
+| t_term s l => t_term s (map (fun t'' => sTermOverBoV_subst_gen lift_builtin lift_Variabl t'' x t') l)
 end.
 
 Definition sTermOverBoV_subst_expr2
@@ -135,39 +126,71 @@ match t with
 | t_term s l => t_term s (map (fun t'' => sTermOverBoV_subst t'' x t') l)
 end.
 
+(* TODO move this to frontend? *)
 Definition framed_rule
     (frame : (string*(@TermOver' string StringBuiltinOrVar)))
     (name : string)
     (l : @TermOver' string StringBuiltinOrVar)
     (r : @TermOver' string StringExpression)
-    (cond : StringSideCondition) : Declaration Act
+    (cond : StringSideCondition) : Declaration Label
 :=
-    (decl_rule _ (@mkRuleDeclaration Act name (@mkStringRewritingRule Act
+    (decl_rule _ (@mkRuleDeclaration Label name (@mkStringRewritingRule Label
         (sTermOverBoV_subst frame.2 frame.1 l)
         (sTermOverBoV_subst_expr2 frame.2 frame.1 r)
-        cond default_act)))
+        cond default_label)))
 .
 
-Definition global_naive_interpreter
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
-    (program_info : ProgramInfo)
-    :=
-    @naive_interpreter (DSM program_info) Act
+Definition poly_interpreter
+    (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
+    (_EBBVal : EDC BVal)
+    (_EBHVal : EDC HVal)
+    (_EBNdVal : EDC NdVal)
+    (_EBVar : EDC Var)
+    (_IFVar : Infinite Var)
+    (_EBSy : EDC Sy)
+    (_EBFs : EDC Fs)
+    (_EBPs : EDC Ps)
+    (_EBAs : EDC As)
+    (_EBMs : EDC Ms)
+    (_EBQs : EDC Qs)
+    (_EBHPs : EDC HPs)
+    (bgm : BackgroundModelOver BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT)
+    (Γ : list (@RewritingRule2' BVal Var Sy Fs Qs As Ms Ps HPs Label))
+    (program : PT)
+    (nv : NdVal)
+    (x : (@TermOver' Sy BVal)*(HVal))
+    : option ((@TermOver' Sy BVal)*HVal)
+:=
+    let basic_types := Build_BasicTypes Var Sy Fs Ps HPs As Ms Qs BVal HVal NdVal PT in
+    let basic_types_edc := Build_BasicTypesProperties _ _ _ _ _ _ _ _ _ _ _ _ _ in
+    let bgm : BackgroundModel := Build_BackgroundModel basic_types basic_types_edc bgm in
+    (@naive_interpreter bgm Label Γ program nv x)
 .
 
-Definition global_naive_interpreter_ext
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
-    (program_info : ProgramInfo)
-    :=
-    @naive_interpreter_ext (DSM program_info) Act
+Definition poly_interpreter_ext
+    (BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT : Type)
+    (_EBBVal : EDC BVal)
+    (_EBHVal : EDC HVal)
+    (_EBNdVal : EDC NdVal)
+    (_EBVar : EDC Var)
+    (_IFVar : Infinite Var)
+    (_EBSy : EDC Sy)
+    (_EBFs : EDC Fs)
+    (_EBPs : EDC Ps)
+    (_EBAs : EDC As)
+    (_EBMs : EDC Ms)
+    (_EBQs : EDC Qs)
+    (_EBHPs : EDC HPs)
+    (bgm : BackgroundModelOver BVal HVal NdVal Var Sy Fs Ps As Ms Qs HPs PT)
+    (Γ : list (@RewritingRule2' BVal Var Sy Fs Qs As Ms Ps HPs Label))
+    (program : PT)
+    (nv : NdVal)
+    (x : (@TermOver' Sy BVal)*(HVal))
+    : option ((@TermOver' Sy BVal)*HVal*nat)
+:=
+    let basic_types := Build_BasicTypes Var Sy Fs Ps HPs As Ms Qs BVal HVal NdVal PT in
+    let basic_types_edc := Build_BasicTypesProperties _ _ _ _ _ _ _ _ _ _ _ _ _ in
+    let bgm : BackgroundModel := Build_BackgroundModel basic_types basic_types_edc bgm in
+    (@naive_interpreter_ext bgm Label Γ program nv x)
 .
 
-Definition global_naive_interpreter_sound
-    {mysignature : Signature}
-    {β : Model mysignature MyUnit}
-    (program_info : ProgramInfo)
-    :=
-    @naive_interpreter_sound (DSM program_info) Act
-.

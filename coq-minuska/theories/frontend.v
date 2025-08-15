@@ -2,22 +2,21 @@ From Minuska Require Import
     prelude
     spec
     notations
-    default_static_model
     builtins
     properties
 .
 
-Arguments e_fun {Σ} f l%_list_scope.
+(* Arguments e_fun {Σ} f l%_list_scope. *)
 
 Definition SymbolicTerm_to_ExprTerm
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    : TermOver Expression2
+    {Σ : BackgroundModel}
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    : @TermOver' TermSymbol Expression2
 :=
-    TermOver_map (fun x:BuiltinOrVar =>
+    TermOver'_map (fun x:BuiltinOrVar =>
         match x with
         | bov_builtin b => e_ground (t_over b)
-        | bov_variable x => e_variable x
+        | bov_Variabl x => e_Variabl x
         end ) t
 .
 
@@ -47,10 +46,7 @@ Inductive StringExpression
     (g : @TermOver' string BuiltinRepr)
 | se_variable
     (x : string)
-| se_applyf
-    (s : string)
-    (l : list StringExpression)
-| se_applyq
+| se_apply
     (s : string)
     (l : list StringExpression)
 .
@@ -85,33 +81,33 @@ Fixpoint TermOver'_e_map
 
 (* TODO use an error monad *)
 Definition toss_to_e_tosb
-    {Σ : StaticModel}
+    {V : Type}
     {A : Type}
-    (f : BuiltinRepr -> option builtin_value)
+    (f : BuiltinRepr -> option V)
     (t : @TermOver' A BuiltinRepr)
     :
-    (@TermOver' A builtin_value)+string
+    (@TermOver' A V)+string
 :=
     TermOver'_e_map (fun (x:BuiltinRepr) => match f x with Some y => inl y | None =>
     inr ("Can't convert (" +:+ x.(br_kind) +:+ ", " +:+ x.(br_value) +:+ ") to builtin")
     end) t
 .
 
-Class Realization {Σ : StaticModel} := {
-    realize_br : BuiltinRepr -> option builtin_value ;
-    string2sym : string -> symbol ;
-    string2var : string -> variable ;
-    string2q : string -> option QuerySymbol ;
-    string2f : string -> option builtin_function_symbol ;
-    string2p : string -> option builtin_predicate_symbol;
+Class Realization (Bu Sy Va P HP F A Q M : Type) := {
+    realize_br : BuiltinRepr -> option Bu ;
+    string2sym : string -> Sy ;
+    string2var : string -> Va ;
+    string2m : string -> option M ;
+    string2qfa : string -> option (Q+F+A) ;
+    string2p : string -> option (P+HP)
 }.
 
 Fixpoint se_to_Expression
-    {Σ : StaticModel}
-    {R : Realization}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (se : StringExpression)
     :
-    Expression2+string
+    (Expression2')+string
 :=
     match se with
     | se_ground g =>
@@ -120,28 +116,22 @@ Fixpoint se_to_Expression
         | inr e => inr e
         end
     | se_variable x =>
-        inl (e_variable (string2var x))
-    | se_applyf s l =>
-        match (string2f s) with
-        | None => inr ("Can't convert " +:+ s +:+ " to function symbol")
-        | Some (f) => 
-            let l' := (se_to_Expression) <$> l in
+        inl (e_Variabl (string2var x))
+    | se_apply s l =>
+        match (string2qfa s) with
+        | None => inr ("The string " +:+ s +:+ " does not represent a function or a query")
+        | Some (s') => 
+            let l' := (se_to_Expression R) <$> l in
             match list_collect_e l' with
-            | inl l'' => inl (e_fun f l'')
+            | inl l'' => 
+                match s' with
+                | inl (inl q) => inl (e_query q l'')
+                | inl (inr f) => inl (e_fun f l'')
+                | inr a => inl (e_attr a l'')
+                end
             | inr e => inr e
             end
         end
-    | se_applyq s l =>
-        match (string2q s) with
-        | None => inr ("Can't convert " +:+ s +:+ " to query symbol")
-        | Some (q) => 
-            let l' := (se_to_Expression) <$> l in
-            match list_collect_e l' with
-            | inl l'' => inl (e_query q l'')
-            | inr e => inr e
-            end
-        end
-
     end
 .
 
@@ -150,7 +140,10 @@ Inductive StringSideCondition
 :=
 | ssc_true
 | ssc_false
-| ssc_atom
+| ssc_pred
+    (pred : string)
+    (args : list (StringExpression))
+| ssc_npred
     (pred : string)
     (args : list (StringExpression))
 | ssc_and
@@ -162,37 +155,54 @@ Inductive StringSideCondition
 .
 
 Fixpoint ssc_to_sc
-    {Σ : StaticModel}
-    {R : Realization}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (ssc : StringSideCondition)
     :
-    SideCondition+string
+    (@SideCondition' _ _ _ _ _ _ _ _ )+string
 :=
     match ssc with
     | ssc_true => inl sc_true
     | ssc_false => inl sc_false
-    | ssc_atom p args =>
+    | ssc_pred p args =>
         match string2p p with
         | Some p' =>
-            match list_collect_e ((se_to_Expression) <$> args) with
-            | inl args' => inl (sc_atom p' args')
+            match list_collect_e ((se_to_Expression R) <$> args) with
+            | inl args' => 
+                match p' with
+                | inl vp => inl (sc_pred vp args')
+                | inr hp => inl (sc_hpred hp args')
+                end
             | inr e => inr e
             end
-        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate symbol")
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) TermSymbol")
+        end
+    | ssc_npred p args =>
+        match string2p p with
+        | Some p' =>
+            match list_collect_e ((se_to_Expression R) <$> args) with
+            | inl args' => 
+                match p' with
+                | inl vp => inl (sc_npred vp args')
+                | inr hp => inr ("The hidden predicate TermSymbol '" +:+ p +:+ "' can't be negated")
+                end
+            | inr e => inr e
+            end
+        | None => inr ("Can't convert string '" +:+ p +:+ "' to predicate (or hidden predicate) TermSymbol")
         end
     | ssc_and l r =>
-        match ssc_to_sc l with
+        match ssc_to_sc R l with
         | inl left' =>
-            match ssc_to_sc r with
+            match ssc_to_sc R r with
             | inl right' => inl (sc_and left' right')
             | inr e => inr e
             end
         | inr e => inr e
         end
     | ssc_or l r =>
-        match ssc_to_sc l with
+        match ssc_to_sc R l with
         | inl left' =>
-            match ssc_to_sc r with
+            match ssc_to_sc R r with
             | inl right' => inl (sc_or left' right')
             | inr e => inr e
             end
@@ -200,15 +210,16 @@ Fixpoint ssc_to_sc
         end
     end
 .
-
+(* Set Printing Implicit. *)
+(* About se_to_Expression. *)
 Definition tosse_to_e_tose
-    {Σ : StaticModel}
-    {R : Realization}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (t : @TermOver' string StringExpression)
     :
-    (TermOver Expression2)+string
+    (@TermOver' Sy (@Expression2' Bu Va Sy F Q A))+string
 :=
-    match TermOver'_e_map (se_to_Expression) t with
+    match TermOver'_e_map (se_to_Expression R) t with
     | inl t' => let t'' := to_transform_sym string2sym t' in
         inl t''
     | inr e => inr e
@@ -221,14 +232,14 @@ Variant StringBuiltinOrVar :=
 .
 
 Definition sbov_to_e_bov
-    {Σ : StaticModel}
-    {R : Realization}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (sbov : StringBuiltinOrVar)
     :
-    BuiltinOrVar+string
+    (@BuiltinOrVar' Bu Va)+string
 :=
     match sbov with
-    | sbov_var x => inl (bov_variable (string2var x))
+    | sbov_var x => inl (bov_Variabl (string2var x))
     | sbov_builtin b =>
         match (realize_br b) with
         | Some b' => inl (bov_builtin b')
@@ -238,50 +249,51 @@ Definition sbov_to_e_bov
 .
 
 Record StringRewritingRule
-    (Act : Set)
+    (Label : Set)
 := mkStringRewritingRule
 {
     sr_from : @TermOver' string StringBuiltinOrVar ;
     sr_to : @TermOver' string StringExpression ;
     sr_scs : StringSideCondition ;
-    sr_act : Act ;
+    sr_label : Label ;
 }.
 
 Definition transl_string_pattern
-    {Σ : StaticModel}
-    (Act : Set)
-    {R : Realization}
+    {Bu Sy Va P HP F A Q M : Type}
+    (R : Realization Bu Sy Va P HP F A Q M)
     (p : @TermOver' string StringBuiltinOrVar)
     :
-    (TermOver BuiltinOrVar)+string
+    (@TermOver' Sy (@BuiltinOrVar' Bu Va))+string
 :=
-    match TermOver'_e_map (sbov_to_e_bov) p with
+    match TermOver'_e_map (sbov_to_e_bov R) p with
     | inr e => inr e
-    | inl p'' => inl (to_transform_sym string2sym p'')
+    | inl p'' => inl (to_transform_sym R.(string2sym) p'')
     end
 .
 
 Definition srr_to_rr
-    {Σ : StaticModel}
-    (Act : Set)
-    {R : Realization}
-    (srr : StringRewritingRule Act)
+    {Bu Va Ts Fs Qs As Ms Ps Hps : Type}
+    (R : Realization Bu Ts Va Ps Hps Fs As Qs Ms)
+    (Label : Set)
+    (srr : StringRewritingRule Label)
     :
-    (RewritingRule2 Act)+string
+    (@RewritingRule2' Bu Va Ts Fs Qs As Ms Ps Hps Label)+string
 :=
     match srr with
     | mkStringRewritingRule _ from to scs act =>
-        match transl_string_pattern Act from with
+        match transl_string_pattern R from with
         | inl from' =>
-            match tosse_to_e_tose to with
+            match tosse_to_e_tose R to with
             | inl to' =>
-                match ssc_to_sc scs with
+                match ssc_to_sc R scs with
                 | inl scs' =>
                     inl {|
                         r_from := from';
                         r_to := to';
                         r_scs := scs';
-                        r_act := act;
+                        (* TODO we do not support effects in the frontend yet *)
+                        r_eff := [];
+                        r_label := act;
                     |}
                 | inr e => inr e
                 end
@@ -293,14 +305,14 @@ Definition srr_to_rr
 .
 
 Definition realize_thy
-    {Σ : StaticModel}
-    (Act : Set)
-    {R : Realization}
-    (srrl : list (StringRewritingRule Act))
+    {Bu Va Ts Fs Qs As Ms Ps Hps : Type}
+    (R : Realization Bu Ts Va Ps Hps Fs As Qs Ms)
+    (Label : Set)
+    (srrl : list (StringRewritingRule Label))
     :
-    (list (RewritingRule2 Act))+string
+    (list (@RewritingRule2' Bu Va Ts Fs Qs As Ms Ps Hps Label))+string
 :=
-    list_collect_e (map (srr_to_rr Act) srrl)
+    list_collect_e (map (srr_to_rr R Label) srrl)
 .
 
 Definition sSymbolicTerm_to_ExprTerm
@@ -360,14 +372,14 @@ Definition strictness_to_contexts
         (sd_positions sd)
 .
 
-Record RuleDeclaration (Act : Set)
+Record RuleDeclaration (Label : Set)
 := mkRuleDeclaration {
     rd_label : string ;
-    rd_rule : StringRewritingRule Act ;
+    rd_rule : StringRewritingRule Label ;
 }.
 
-Inductive Declaration (Act : Set) :=
-| decl_rule (r : RuleDeclaration Act)
+Inductive Declaration (Label : Set) :=
+| decl_rule (r : RuleDeclaration Label)
 | decl_ctx (c : ContextDeclaration)
 | decl_strict (s : StrictnessDeclaration)
 .
@@ -386,31 +398,29 @@ Definition argument_sequence
     (argument_name <$> (seq 0 arity))
 .
 
-Record State (Act : Set)
+Record State (Label : Set)
 := mkState {
-    st_rules : (gmap string (StringRewritingRule Act)) ;
+    st_rules : (gmap string (StringRewritingRule Label)) ;
 }.
 
 Definition process_rule_declaration
-    {Act : Set}
-    (s : State Act)
-    (r : RuleDeclaration Act)
-    : (State Act)+string
+    {Label : Set}
+    (s : State Label)
+    (r : RuleDeclaration Label)
+    : (State Label)+string
 :=
 match (st_rules _ s) !! (rd_label _ r) with
 | Some _
     => inr
         ("Rule with name '" +:+ (rd_label _ r) ++ "' already present")%string
 | None
-    => inl (mkState Act
+    => inl (mkState Label
         (<[(rd_label _ r) := (rd_rule _ r)]>(st_rules _ s))
     )
 end
 .
 
 Fixpoint try_neg_s
-    (sbps_ar : string -> nat)
-    (sbps_neg : string -> option string)
     (sc : StringSideCondition)
     : option StringSideCondition
 := 
@@ -418,35 +428,24 @@ Fixpoint try_neg_s
     | ssc_true => Some ssc_false
     | ssc_false => Some ssc_true
     | ssc_and sc1 sc2 =>
-        sc1' ← try_neg_s sbps_ar sbps_neg sc1;
-        sc2' ← try_neg_s sbps_ar sbps_neg sc2;
+        sc1' ← try_neg_s  sc1;
+        sc2' ← try_neg_s  sc2;
         Some (ssc_or sc1' sc2')
     | ssc_or sc1 sc2 =>
-        sc1' ← try_neg_s sbps_ar sbps_neg sc1;
-        sc2' ← try_neg_s sbps_ar sbps_neg sc2;
+        sc1' ← try_neg_s  sc1;
+        sc2' ← try_neg_s  sc2;
         Some (ssc_and sc1' sc2')
-    | ssc_atom p l =>
-        if decide (length l = sbps_ar p) then 
-            p' ← sbps_neg p;
-            Some (ssc_atom p' l)
-        else None
+    | ssc_pred p l => Some (ssc_npred p l)
+    | ssc_npred p l => Some (ssc_pred p l)
     end
 .
 
 
 Section wsm.
     Context
-        (Act : Set)
-        (default_act : Act)
+        (Label : Set)
+        (default_label : Label)
     .
-    Context
-        (* (signature : Signature) *)
-        (* (β : Model signature MyUnit) *)
-        (* (my_program_info : ProgramInfo) *)
-        (sbps_ar : string -> nat)
-        (sbps_neg : string -> option string)
-    .
-
     Definition REST_SEQ : string := "$REST_SEQ".
 
     Definition cseq {defaults : Defaults} {T : Type}
@@ -477,7 +476,7 @@ Section wsm.
         (position : nat)
         (isValue : StringExpression -> StringSideCondition)
         (cseq_context : ContextTemplate)
-        : (RuleDeclaration Act)+string
+        : (RuleDeclaration Label)+string
     :=
         let vars : list string
             := argument_sequence arity in
@@ -487,7 +486,7 @@ Section wsm.
             := (map t_over (map se_variable vars)) in
         let selected_var : string
             := (argument_name position) in
-        match try_neg_s sbps_ar sbps_neg (isValue (se_variable selected_var)) with
+        match try_neg_s (isValue (se_variable selected_var)) with
         | None => inr "Cannot negate given isValue condition"
         | Some is_value_neg => inl (
             let lhs_selected_var : (@TermOver' string StringBuiltinOrVar)
@@ -508,7 +507,7 @@ Section wsm.
                     ])%list
                 ]))));
                 sr_scs := (ssc_and (is_value_neg) side_condition) ;
-                sr_act := default_act ;
+                sr_label := default_label ;
             |})
             )
         end
@@ -524,7 +523,7 @@ Section wsm.
         (position : nat)
         (isValue : StringExpression -> StringSideCondition)
         (cseq_context : ContextTemplate)
-        : RuleDeclaration Act
+        : RuleDeclaration Label
     :=
         let vars : list string
             := argument_sequence arity in
@@ -550,18 +549,18 @@ Section wsm.
                 (t_term sym lhs_vars);
                 (t_over (sbov_var REST_SEQ))
             ])%list)));
-            sr_act := default_act;
+            sr_label := default_label;
             sr_scs := (isValue (se_variable selected_var));
         |})
     .
 
     Definition process_context_declaration
         {defaults : Defaults}
-        (s : State Act)
+        (s : State Label)
         (c : ContextDeclaration)
-        : (State Act)+string
+        : (State Label)+string
     := 
-        let hr' : (RuleDeclaration Act)+string
+        let hr' : (RuleDeclaration Label)+string
             := heating_rule_seq
                     ((cd_label c) +:+ "-heat")
                     (cd_label c)
@@ -574,7 +573,7 @@ Section wsm.
             in
         match hr' with
         | inl hr => (
-            let cr : RuleDeclaration Act
+            let cr : RuleDeclaration Label
                 := cooling_rule
                         ((cd_label c) +:+ "-cool")
                         (cd_label c)
@@ -601,9 +600,9 @@ Section wsm.
 
     Definition process_strictness_declaration
         {defaults : Defaults}
-        (s : State Act)
+        (s : State Label)
         (c : StrictnessDeclaration)
-        : (State Act)+string
+        : (State Label)+string
     :=
         foldr
             (fun a b' => match b' with inr s => inr s | inl b => process_context_declaration b a end)
@@ -612,7 +611,7 @@ Section wsm.
     .
 
     Definition initialState
-        : State Act
+        : State Label
     := {|
         st_rules := ∅ ;
     |}.
@@ -621,9 +620,9 @@ Section wsm.
 
     Definition process_declaration
         {defaults : Defaults}
-        (s : State Act)
-        (d : Declaration Act)
-        : (State Act)+string
+        (s : State Label)
+        (d : Declaration Label)
+        : (State Label)+string
     :=
     match d with
     | decl_rule _ rd => process_rule_declaration s rd
@@ -633,15 +632,15 @@ Section wsm.
 
     Definition process_declarations
         {defaults : Defaults}
-        (ld : list (Declaration Act))
-        : (State Act)+string
+        (ld : list (Declaration Label))
+        : (State Label)+string
     :=
         fold_left (fun s' d => match s' with inl s => process_declaration s d | inr s => inr s end) ld (inl initialState)
     .
 
     Definition to_theory
-        (s : State Act)
-        : (list (StringRewritingRule Act))*(list string)
+        (s : State Label)
+        : (list (StringRewritingRule Label))*(list string)
     :=
         let l := (map_to_list (st_rules _ s)) in
         (l.*2,l.*1)

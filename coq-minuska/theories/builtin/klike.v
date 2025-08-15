@@ -5,11 +5,12 @@ From Minuska Require Import
     properties
     lowlang
     notations
-    default_static_model
     BuiltinValue
+    ocaml_interface
 .
 
 From Coq Require Import ZArith Ring.
+
 
 (* TODO eventually, move this into prelude *)
 #[local]
@@ -18,97 +19,32 @@ Obligation Tactic := idtac.
 Section sec.
 
     Context
-        {symbol : Type}
-        {_se : EqDecision symbol}
-        {_sc : Countable symbol}
+        {TermSymbol : Type}
+        {_se : EqDecision TermSymbol}
+        {_sc : Countable TermSymbol}
     .
 
-    (* This is an attempt at an alternative definition that avoids lowlang.
-        I could not figure out how to implement decision procedure for equality,
-        so it is left for future work.
-    
-    (* TODO make parametric in a user type *)
-    Inductive BuiltinValue0 :=
-    | bv_error
-    | bv_bool (b : bool)
-    (* | bv_nat (n : nat) *)
-    | bv_Z (z : Z)
-    | bv_sym (s : symbol)
-    | bv_str (s : string)
-    | bv_list (m : list (@TermOver' symbol BuiltinValue0))
-    | bv_pmap (m : Pmap (@TermOver' symbol BuiltinValue0))
-    .
-
-    Fixpoint BVsize (r : BuiltinValue0) : nat :=
-    match r with
-    | bv_error => 1
-    | bv_bool _ => 1
-    | bv_Z _ => 1
-    | bv_sym _ => 1
-    | bv_str _ => 1
-    | bv_list l =>
-        let TermBVsize := (fix TermBVsize (t : @TermOver' symbol BuiltinValue0) : nat :=
-        match t with
-        | t_over m => S (BVsize m)
-        | t_term _ l => S (
-            (fix helper (l' : list (@TermOver' symbol BuiltinValue0)) : nat :=
-            match l' with
-            | [] => 1
-            | x::xs => S (TermBVsize x + helper xs)
-            end
-            )l)
-        end) in
-        S (sum_list_with TermBVsize l)
-    | bv_pmap PEmpty => 1
-    | bv_pmap (PNodes m) =>
-        let TermBVsize := (fix TermBVsize (t : @TermOver' symbol BuiltinValue0) : nat :=
-        match t with
-        | t_over m => S (BVsize m)
-        | t_term _ l => S (
-            (fix helper (l' : list (@TermOver' symbol BuiltinValue0)) : nat :=
-            match l' with
-            | [] => 1
-            | x::xs => S (TermBVsize x + helper xs)
-            end
-            )l)
-        end) in
-        S ((fix mypmsz (m' : Pmap_ne (@TermOver' symbol BuiltinValue0)) :=
-        match m' with
-        | PNode001 m'' => S (mypmsz m'')
-        | PNode010 m'' => S (TermBVsize m'')
-        | PNode011 m1 m2 => S (TermBVsize m1 + mypmsz m2)
-        | PNode100 m'' => mypmsz m''
-        | PNode101 m1 m2 => S (mypmsz m1 + mypmsz m2)
-        | PNode110 m1 m2 => S (mypmsz m1 + TermBVsize m2)
-        | PNode111 m1 m2 m3 => S (mypmsz m1 + TermBVsize m2 + mypmsz m3)
-        end
-        ) m)
-    end
-    .
-    
-    *)
-
-    (* TODO make parametric in a user type *)
-    Inductive BuiltinValue0 :=
+    (* TODO this whole thing is deprecated; we should use composable modules *)
+    Inductive KlikeBuiltinValue0 :=
     (* | bv_error *)
     | bv_bool (b : bool)
     (* | bv_nat (n : nat) *)
     | bv_Z (z : Z)
-    | bv_sym (s : symbol)
+    | bv_sym (s : TermSymbol)
     | bv_str (s : string)
-    | bv_list (m : list (Term' symbol BuiltinValue0))
-    | bv_pmap (m : Pmap (Term' symbol BuiltinValue0))
+    | bv_list (m : list (Term' TermSymbol KlikeBuiltinValue0))
+    | bv_pmap (m : Pmap (Term' TermSymbol KlikeBuiltinValue0))
     .
 
-    Fixpoint BVsize (r : BuiltinValue0) : nat :=
+    Fixpoint BVsize (r : KlikeBuiltinValue0) : nat :=
     match r with
     | bv_list m =>
-        let my_list_size := (fix my_list_size (l : list (Term' symbol BuiltinValue0)) : nat :=
+        let my_list_size := (fix my_list_size (l : list (Term' TermSymbol KlikeBuiltinValue0)) : nat :=
         match l with
         | nil => 1
         | (cons (term_operand o) xs) => S ((BVsize o) + (my_list_size xs))
         | (cons (term_preterm ao) xs) =>
-            let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+            let myaosize := (fix myaosize (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : nat :=
             match ao with
             | (pt_operator _) => 1
             | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -118,12 +54,12 @@ Section sec.
         end) in
         S (my_list_size m)
     | bv_pmap (PNodes m) =>
-        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (Term' symbol BuiltinValue0)) : nat :=
+        let my_pmapne_size := (fix my_pmapne_size (m : Pmap_ne (Term' TermSymbol KlikeBuiltinValue0)) : nat :=
     match m with
     | (PNode001 n) => S (my_pmapne_size n)
     | (PNode010 (term_operand o)) => S (BVsize o)
     | (PNode010 (term_preterm a)) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -132,7 +68,7 @@ Section sec.
         S (myaosize a)
     | (PNode011 (term_operand o) n) => S ((BVsize o) + (my_pmapne_size n))
     | (PNode011 (term_preterm a) n) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -143,7 +79,7 @@ Section sec.
     | (PNode101 n1 n2) => S ((my_pmapne_size n1) + (my_pmapne_size n2))
     | (PNode110 n (term_operand o)) => S ((BVsize o) + (my_pmapne_size n))
     | (PNode110 n (term_preterm a)) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -151,7 +87,7 @@ Section sec.
         end) in
         S ((myaosize a) + (my_pmapne_size n))
     | (PNode111 n1 (term_preterm a) n2) =>
-        let myaosize := (fix myaosize (ao : PreTerm' symbol BuiltinValue0) : nat :=
+        let myaosize := (fix myaosize (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : nat :=
         match ao with
         | (pt_operator _) => 1
         | (pt_app_operand ao' t) => S ((BVsize t) + (myaosize ao'))
@@ -172,7 +108,7 @@ Section sec.
     .
 
     Lemma BuiltinValue0_eqdec_helper_0 (sz : nat):
-        ∀ x y : BuiltinValue0, BVsize x <= sz ->
+        ∀ x y : KlikeBuiltinValue0, BVsize x <= sz ->
             {x = y} + {x ≠ y}
     .
     Proof.
@@ -923,7 +859,7 @@ Section sec.
     (* Print BuiltinValue0_eqdec_helper_0. *)
 
     #[export]
-    Instance BuiltinValue0_eqdec : EqDecision BuiltinValue0.
+    Instance BuiltinValue0_eqdec : EqDecision KlikeBuiltinValue0.
     Proof.
         intros x y.
         unfold Decision.
@@ -937,7 +873,7 @@ Section sec.
     (* | bvl_nat (n : nat) *)
     | bvl_Z (z : Z)
     | bvl_str (s : string)
-    | bvl_sym (sym : symbol)
+    | bvl_sym (sym : TermSymbol)
     .
 
     #[export]
@@ -947,7 +883,7 @@ Section sec.
     Defined.
 
     Fixpoint tree_to_bv
-        (t : gen_tree BVLeaf) : (option BuiltinValue0)  :=
+        (t : gen_tree BVLeaf) : (option KlikeBuiltinValue0)  :=
     match t with
     | ((GenNode 1 nil)) => Some (bv_pmap (PEmpty))
     (* | (GenLeaf bvl_error)      => Some (bv_error)   *)
@@ -958,7 +894,7 @@ Section sec.
     | (GenLeaf (bvl_sym s))      => Some (bv_sym s) 
     | (GenNode 0 l)            => (
             let tree_to_mylist := fix tree_to_mylist (l' : list (gen_tree BVLeaf)) :
-                (option (list (Term' symbol BuiltinValue0))) := (
+                (option (list (Term' TermSymbol KlikeBuiltinValue0))) := (
                 match l' with
                 | nil                             => Some nil
                 | (cons (GenNode 1 [(o)]) (xs))   => (
@@ -967,7 +903,7 @@ Section sec.
                     Some (cons (term_operand o') xs')
                 )
                 | (cons (GenNode 0 [(ao)]) (xs)) => (
-                    let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                    let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol KlikeBuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -996,7 +932,7 @@ Section sec.
             Some (bv_list (l'))
         )
     | (GenNode 2 [(m)]) => (
-            let tree_to_mypm := fix tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (Term' symbol BuiltinValue0)) := (
+            let tree_to_mypm := fix tree_to_mypm (p : (gen_tree BVLeaf)) : option (Pmap_ne (Term' TermSymbol KlikeBuiltinValue0)) := (
             match p with
             | (GenNode 1 [(n)]) => (
                 n' ← (tree_to_mypm n);
@@ -1007,7 +943,7 @@ Section sec.
                 Some (PNode010 (term_operand o')) 
             )
             | (GenNode 2 [(GenNode 0 [(ao')])]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol KlikeBuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1035,7 +971,7 @@ Section sec.
                 Some (PNode011 (term_operand o') y'')
             )
             | (GenNode 3 [(GenNode 0 [(ao')]);(y')]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol KlikeBuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1072,7 +1008,7 @@ Section sec.
                 Some (PNode110 x'' (term_operand o''))
                 )
             | (GenNode 6 [(x'); (GenNode 0 [(ao')])]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol KlikeBuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1101,7 +1037,7 @@ Section sec.
                 Some (PNode111 x'' (term_operand o') z'')
             )
             | (GenNode 7%nat  [(x'); (GenNode 0 [(ao')]); (z')]) => (
-                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' symbol BuiltinValue0) := (
+                let tree_to_myao := fix tree_to_myao (t : gen_tree BVLeaf) : option (PreTerm' TermSymbol KlikeBuiltinValue0) := (
                     match t with
                     | (GenLeaf (bvl_sym o)) => Some (pt_operator o)
                     |  (GenNode 0 [(x);(y)]) =>
@@ -1133,7 +1069,7 @@ Section sec.
     end.
         
     Fixpoint bv_to_tree
-        (r : BuiltinValue0) : (gen_tree BVLeaf) :=
+        (r : KlikeBuiltinValue0) : (gen_tree BVLeaf) :=
     match r with
     | (bv_pmap (PEmpty)) => (GenNode 1 nil)
     (* | (bv_error)         => (GenLeaf bvl_error) *)
@@ -1145,13 +1081,13 @@ Section sec.
     | (bv_list l)        =>
         let mylist_to_tree := (
             fix mylist_to_tree
-                (l' : list (Term' symbol BuiltinValue0)) : list (gen_tree BVLeaf) := (
+                (l' : list (Term' TermSymbol KlikeBuiltinValue0)) : list (gen_tree BVLeaf) := (
             match l' with
             | nil => nil
             | (cons (term_operand o) xs) => cons (GenNode 1 [(bv_to_tree o)]) (mylist_to_tree xs)
             | (cons (term_preterm ao) xs) => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1167,13 +1103,13 @@ Section sec.
         (GenNode 0 (mylist_to_tree l))       
     | (bv_pmap (PNodes m)) => (
         let mypm_to_tree := (
-            fix mypm_to_tree (p : Pmap_ne (Term' symbol BuiltinValue0)) : gen_tree BVLeaf := (
+            fix mypm_to_tree (p : Pmap_ne (Term' TermSymbol KlikeBuiltinValue0)) : gen_tree BVLeaf := (
             match p with
             | (PNode001 n)                     => GenNode 1 [(mypm_to_tree n)]
             | (PNode010 (term_operand o))       => GenNode 2 [(GenNode 1 [(bv_to_tree o)])]
             | (PNode010 (term_preterm ao'))         => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1186,7 +1122,7 @@ Section sec.
             | (PNode011 (term_operand o) y')    => GenNode 3 [(GenNode 1 [(bv_to_tree o)]);(mypm_to_tree y')]
             | (PNode011 (term_preterm ao') y')      => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1201,7 +1137,7 @@ Section sec.
             | (PNode110 x' (term_operand o'))   => GenNode 6 [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o')])]
             | (PNode110 x' (term_preterm ao'))      => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1214,7 +1150,7 @@ Section sec.
             | (PNode111 x' (term_operand o) z') => GenNode 7%nat  [(mypm_to_tree x'); (GenNode 1 [(bv_to_tree o)]); (mypm_to_tree z')]
             | (PNode111 x' (term_preterm ao') z')   => (
                 let myao_to_tree := (
-                    fix myao_to_tree (ao : PreTerm' symbol BuiltinValue0) : gen_tree BVLeaf := (
+                    fix myao_to_tree (ao : PreTerm' TermSymbol KlikeBuiltinValue0) : gen_tree BVLeaf := (
                     match ao with
                     | (pt_operator o) => GenLeaf (bvl_sym o)
                     | (pt_app_operand x y) => GenNode 0 [(myao_to_tree x);(bv_to_tree y)]
@@ -1561,7 +1497,7 @@ induction ao; try reflexivity.
 
     #[export]
     Instance BuiltinValue0_countable
-        : Countable (BuiltinValue0)
+        : Countable (KlikeBuiltinValue0)
     .
     Proof.
     ltac1:(unshelve(eapply inj_countable
@@ -1571,7 +1507,7 @@ induction ao; try reflexivity.
     )).
     {
         ltac1:(unshelve(eapply gen_tree_countable)).
-        remember ((*unit+*)bool+(*nat+*)Z+string+symbol)%type as MyT.
+        remember ((*unit+*)bool+(*nat+*)Z+string+TermSymbol)%type as MyT.
         ltac1:(unshelve(eapply @inj_countable with (A := MyT))).
         {
             subst MyT. apply _.
@@ -1645,7 +1581,7 @@ induction ao; try reflexivity.
 
 End sec.
 
-Inductive FunctionSymbol : Set :=
+Inductive KlikeFunSymbol : Set :=
 | b_zero              (* Z *)
 | b_list_empty        (* list *)
 | b_map_empty         (* map *)
@@ -1666,11 +1602,11 @@ Inductive FunctionSymbol : Set :=
 .
 
 #[export]
-Instance FunctionSymbol_eqDec : EqDecision FunctionSymbol.
+Instance FunSymbol_eqDec : EqDecision KlikeFunSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 #[export]
-Program Instance FunctionSymbol_fin : Finite FunctionSymbol := {|
+Program Instance FunSymbol_fin : Finite KlikeFunSymbol := {|
     enum := [
         b_zero
         ; b_list_empty
@@ -1700,7 +1636,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Inductive PredicateSymbol : Set :=
+Inductive KlikePredSymbol : Set :=
 | b_isBuiltin              (* 'a -> Prop *)
 | b_isNotBuiltin           (* 'a -> Prop *)
 (*| b_isError                (* 'a -> Prop *)*)
@@ -1721,19 +1657,19 @@ Inductive PredicateSymbol : Set :=
 | b_bool_is_false      (* bool -> Prop *)
 | b_term_eq                (* term -> term -> Prop *)
 | b_map_hasKey             (* map -> 'a -> Prop *)
-| b_is_applied_symbol      (* string -> 'a -> Prop *)
-| b_is_not_applied_symbol  (* string -> 'a -> Prop *)
-| b_have_same_symbol       (* term -> term -> Prop *)
-| b_have_different_symbols   (* term -> term -> Prop *)
+| b_is_applied_TermSymbol      (* string -> 'a -> Prop *)
+| b_is_not_applied_TermSymbol  (* string -> 'a -> Prop *)
+| b_have_same_TermSymbol       (* term -> term -> Prop *)
+| b_have_different_TermSymbols   (* term -> term -> Prop *)
 .
 
 #[export]
-Instance PredicateSymbol_eqDec : EqDecision PredicateSymbol.
+Instance PredSymbol_eqDec : EqDecision KlikePredSymbol.
 Proof. ltac1:(solve_decision). Defined.
 
 
 #[export]
-Program Instance PredicateSymbol_fin : Finite PredicateSymbol := {|
+Program Instance PredSymbol_fin : Finite KlikePredSymbol := {|
     enum := [
         b_isBuiltin              ;
         b_isNotBuiltin           ;
@@ -1755,10 +1691,10 @@ Program Instance PredicateSymbol_fin : Finite PredicateSymbol := {|
         b_bool_is_false          ;
         b_term_eq                ;
         b_map_hasKey             ;
-        b_is_applied_symbol      ;
-        b_is_not_applied_symbol  ;
-        b_have_same_symbol       ;
-        b_have_different_symbols
+        b_is_applied_TermSymbol      ;
+        b_is_not_applied_TermSymbol  ;
+        b_have_same_TermSymbol       ;
+        b_have_different_TermSymbols
     ]
 |}.
 Next Obligation.
@@ -1773,41 +1709,43 @@ Fail Next Obligation.
 Section sec2.
 
     Context
-        {symbol : Type}
-        {symbols : Symbols symbol}
+        {NondetValue : Type}
+        {TermSymbol : Type}
+        {_ET : EDC TermSymbol}
+        (* {TermSymbols : Symbols TermSymbol} *)
     .
 
-    Definition BuiltinValue := @BuiltinValue0 symbol.
+    Definition KlikeBuiltinValue := @KlikeBuiltinValue0 TermSymbol.
 
-    Definition impl_isZ (bv : BuiltinValue) : bool
+    Definition impl_isZ (bv : KlikeBuiltinValue) : bool
     :=
         match bv with bv_Z _ => true | _ => false end
     .
 
-    Definition impl_isString (bv : BuiltinValue) : bool
+    Definition impl_isString (bv : KlikeBuiltinValue) : bool
     :=
         match bv with bv_str _ => true | _ => false end
     .
 
-    Definition impl_isBool (bv : BuiltinValue) : bool
+    Definition impl_isBool (bv : KlikeBuiltinValue) : bool
     :=
         match bv with bv_bool _ => true | _ => false end
     .
 
-    Definition impl_isList (bv : BuiltinValue) : bool
+    Definition impl_isList (bv : KlikeBuiltinValue) : bool
     :=
         match bv with bv_list _ => true | _ => false end
     .
 
-    Definition impl_isMap (bv : BuiltinValue) : bool
+    Definition impl_isMap (bv : KlikeBuiltinValue) : bool
     :=
         match bv with bv_pmap _ => true | _ => false end
     .
 
     Definition bfmap1
-        (f : BuiltinValue -> option BuiltinValue)
-        (x : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (f : KlikeBuiltinValue -> option KlikeBuiltinValue)
+        (x : @TermOver' TermSymbol KlikeBuiltinValue)
+        : option (@TermOver' TermSymbol KlikeBuiltinValue)
     :=
     match x with
     | t_over x' => t_over <$> (f x')
@@ -1815,9 +1753,9 @@ Section sec2.
     end.
 
     Definition bfmap2
-        (f : BuiltinValue -> BuiltinValue -> option BuiltinValue)
-        (x y : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (f : KlikeBuiltinValue -> KlikeBuiltinValue -> option KlikeBuiltinValue)
+        (x y : @TermOver' TermSymbol KlikeBuiltinValue)
+        : option (@TermOver' TermSymbol KlikeBuiltinValue)
     :=
     match x, y with
     | t_over x', t_over y' => (t_over <$> (f x' y'))
@@ -1825,8 +1763,8 @@ Section sec2.
     end.
 
     Definition bfmap2P
-        (f : BuiltinValue -> BuiltinValue -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
+        (f : KlikeBuiltinValue -> KlikeBuiltinValue -> bool)
+        (x y : @TermOver' TermSymbol KlikeBuiltinValue)
         : bool
     :=
     match x, y with
@@ -1836,8 +1774,8 @@ Section sec2.
 
     Definition bfmap_Z_Z__Z
         (f : Z -> Z -> Z)
-        (x y : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol KlikeBuiltinValue)
+        : option (@TermOver' TermSymbol KlikeBuiltinValue)
     :=
     bfmap2
         (fun x' y' =>
@@ -1851,7 +1789,7 @@ Section sec2.
 
     Definition bfmap_Z_Z__Prop
         (f : Z -> Z -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol KlikeBuiltinValue)
         : bool
     :=
     bfmap2P
@@ -1866,8 +1804,8 @@ Section sec2.
 
     Definition bfmap_Z_Z__bool
         (f : Z -> Z -> bool)
-        (x y : @TermOver' symbol BuiltinValue)
-        : option (@TermOver' symbol BuiltinValue)
+        (x y : @TermOver' TermSymbol KlikeBuiltinValue)
+        : option (@TermOver' TermSymbol KlikeBuiltinValue)
     :=
     bfmap2
         (fun x' y' =>
@@ -1879,13 +1817,13 @@ Section sec2.
         x y
     .
 
-    Definition my_encode := ((@encode (@TermOver' (symbol) BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
-    Definition my_decode := ((@decode (@TermOver' (symbol) BuiltinValue0)) _ (@TermOver_countable (symbol) BuiltinValue0 (@symbol_eqdec symbol symbols) _ (@symbol_countable symbol symbols) (@BuiltinValue0_countable (symbol) (@symbol_eqdec symbol symbols) (@symbol_countable symbol symbols)))).
+    Definition my_encode := ((@encode (@TermOver' (TermSymbol) KlikeBuiltinValue0)) _ (@TermOver_countable (TermSymbol) KlikeBuiltinValue0 (_) _ (_) (@BuiltinValue0_countable (TermSymbol) (_) (_)))).
+    Definition my_decode := ((@decode (@TermOver' (TermSymbol) KlikeBuiltinValue0)) _ (@TermOver_countable (TermSymbol) KlikeBuiltinValue0 (_) _ (_) (@BuiltinValue0_countable (TermSymbol) (_) (_)))).
 
 
     Definition liftNulary
-        (f : MyUnit -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : NondetValue -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1895,8 +1833,8 @@ Section sec2.
     .
 
     Definition liftNularyP
-        (f : MyUnit -> option bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
+        (f : NondetValue -> option bool)
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
@@ -1906,8 +1844,8 @@ Section sec2.
     .
 
     Definition liftUnary
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : NondetValue -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1918,8 +1856,8 @@ Section sec2.
     .
 
     Definition liftUnaryP
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> option bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
+        (f : NondetValue -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option bool)
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
@@ -1930,8 +1868,8 @@ Section sec2.
     .
 
     Definition liftBinary
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : NondetValue -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1943,8 +1881,8 @@ Section sec2.
     .
 
     Definition liftBinaryP
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option bool)
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option bool)
+        (f : NondetValue -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option bool)
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option bool)
     :=
         fun nv l =>
         match l with
@@ -1956,8 +1894,8 @@ Section sec2.
     .
 
     Definition liftTernary
-        (f : MyUnit -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
-        : (MyUnit -> list (@TermOver' (symbol) BuiltinValue) -> option (@TermOver' (symbol) BuiltinValue))
+        (f : NondetValue -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
+        : (NondetValue -> list (@TermOver' (TermSymbol) KlikeBuiltinValue) -> option (@TermOver' (TermSymbol) KlikeBuiltinValue))
     :=
         fun nv l =>
         match l with
@@ -1968,530 +1906,379 @@ Section sec2.
         | _::_::_::_::_ => None
         end
     .
-
+(* 
     #[local]
-    Program Instance mysignature : Signature := {|
-        builtin_function_symbol
-            := FunctionSymbol ;
+    Instance mysignature : Signature := {|
+        spec.KlikeFunSymbol
+            := KlikeFunSymbol ;
 
-        builtin_predicate_symbol
-            := PredicateSymbol ;
+        spec.KlikePredSymbol
+            := KlikePredSymbol ;
+    |}. *)
     
-        bps_ar := fun p =>
-            match p with
-            | b_isBuiltin => 1
-            | b_isNotBuiltin => 1
-            | b_isSymbol => 1
-            | b_isNotSymbol => 1
-            | b_isZ => 1
-            | b_isNotZ => 1
-            | b_isBool => 1
-            | b_isNotBool => 1
-            | b_isString => 1
-            | b_isNotString => 1
-            | b_isList => 1
-            | b_isNotList => 1
-            | b_isMap => 1
-            | b_isNotMap => 1
-            | b_bool_is_true => 1
-            | b_bool_is_false => 1
-            | b_term_eq => 2
-            | b_map_hasKey => 2
-            | b_is_applied_symbol => 2
-            | b_is_not_applied_symbol => 2
-            | b_have_same_symbol => 2
-            | b_have_different_symbols => 2
-            end ;
-        bps_neg := fun p =>
-            match p with
-            | b_isBuiltin => Some b_isNotBuiltin
-            | b_isNotBuiltin => Some b_isBuiltin
-            | b_isSymbol => Some b_isNotSymbol
-            | b_isNotSymbol => Some b_isSymbol
-            | b_isZ => Some b_isNotZ
-            | b_isNotZ => Some b_isZ
-            | b_isBool => Some b_isNotBool
-            | b_isNotBool => Some b_isBool
-            | b_isString => Some b_isNotString
-            | b_isNotString => Some b_isString
-            | b_isList => Some b_isNotList
-            | b_isNotList => Some b_isList
-            | b_isMap => Some b_isNotMap
-            | b_isNotMap => Some b_isMap
-            | b_bool_is_true => Some b_bool_is_false
-            | b_bool_is_false => Some b_bool_is_true
-            | b_term_eq => None
-            | b_map_hasKey => None
-            | b_is_applied_symbol => Some b_is_not_applied_symbol
-            | b_is_not_applied_symbol => Some b_is_applied_symbol
-            | b_have_same_symbol => Some b_have_different_symbols
-            | b_have_different_symbols => Some b_have_same_symbol
-            end ;
+    (* #[local] *)
+    (* Obligation Tactic := Program.Tactics.program_simpl. *)
+    
+    Definition klike_function_interp
+        := fun p =>
+        match p with
+        (* nulary *)
+        | b_zero => liftNulary (
+                fun _ => Some (t_over (bv_Z 0))
+            )
+        | b_list_empty =>  liftNulary (
+                fun _ => Some ((t_over (bv_list nil)))
+            )
+        | b_map_empty =>  liftNulary (
+                fun _ => Some (t_over (bv_pmap ∅))
+            )
+        (* unary *)            
+        | b_bool_neg => liftUnary (
+            fun _ v =>
+            match v with
+            | t_over (bv_bool b) => Some (t_over (bv_bool (negb b)))
+            | _ => None
+            end
+        )
+        | b_map_size => liftUnary (
+            fun _ v =>
+            match v with
+            | t_over (bv_pmap m) => Some (t_over (bv_Z (Z.of_nat (size m))))
+            | _ => None
+            end
+        )
+        | b_Z_plus => liftBinary (
+            fun _ v1 v2 =>
+            bfmap_Z_Z__Z Z.add v1 v2
+        )
+        | b_Z_minus => liftBinary (
+            fun _ v1 v2 =>
+            bfmap_Z_Z__Z Z.sub v1 v2
+        )
+        | b_Z_times => liftBinary (
+            fun _ v1 v2 =>
+            bfmap_Z_Z__Z Z.mul v1 v2
+        )
+        | b_Z_div => liftBinary (
+            fun _ v1 v2 =>
+            match v2 with
+            | t_over (bv_Z (0)) => None
+            | _ => bfmap_Z_Z__Z Z.div v1 v2
+            end
+        )
 
-    |}.
-    Next Obligation.
-        intros p p' H; destruct p, p'; ltac1:(simplify_eq/=); reflexivity.
-    Qed.
-    Next Obligation.
-        intros p p' H; destruct p; simpl; ltac1:(simplify_eq/=); try reflexivity.
-    Qed.
-    Fail Next Obligation.
+        | b_Z_eq => liftBinary (
+            fun _ v1 v2 =>
+            Some (t_over (bv_bool (bool_decide (v1 = v2))))
+        )
 
-    #[local]
-    Obligation Tactic := Program.Tactics.program_simpl.
-    Program
-    Definition βover
-        : ModelOver mysignature MyUnit BuiltinValue0
-    := {|
+        | b_Z_neq => liftBinary (
+            fun _ v1 v2 =>
+            Some (t_over (bv_bool (negb (bool_decide (v1 = v2)))))
+        )
 
-        builtin_function_interp
-            := fun p =>
-            match p with
-            (* nulary *)
-            | b_zero => liftNulary (
-                    fun _ => Some (t_over (bv_Z 0))
-                )
-            | b_list_empty =>  liftNulary (
-                    fun _ => Some ((t_over (bv_list nil)))
-                )
-            | b_map_empty =>  liftNulary (
-                    fun _ => Some (t_over (bv_pmap ∅))
-                )
-            (* unary *)            
-            | b_bool_neg => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over (bv_bool b) => Some (t_over (bv_bool (negb b)))
-                | _ => None
+        | b_Z_isLe => liftBinary (
+            fun _ v1 v2 =>
+            ((bfmap_Z_Z__bool Z.leb v1 v2))
+        )
+
+        | b_Z_isLt => liftBinary (
+            fun _ v1 v2 =>
+            ((bfmap_Z_Z__bool Z.ltb v1 v2))
+        )
+
+        | b_Z_isGe => liftBinary (
+            fun _ v1 v2 =>
+            ((bfmap_Z_Z__bool Z.geb v1 v2))
+        )
+
+        | b_Z_isGt => liftBinary (
+            fun _ v1 v2 =>
+            ((bfmap_Z_Z__bool Z.gtb v1 v2))
+        )
+
+        | b_map_lookup => liftBinary (
+            fun _ v1 v2 =>
+            match v1 with
+            | t_over (bv_pmap m) =>
+                let p := my_encode (v2) in
+                match m !! p with
+                | Some v => Some (prettify v)
+                | None => None
                 end
-            )
-            | b_map_size => liftUnary (
-                fun _ v =>
-                match v with
-                | t_over (bv_pmap m) => Some (t_over (bv_Z (Z.of_nat (size m))))
-                | _ => None
+            | _ => None
+            end
+        )
+
+        (* ternary *)
+        | b_map_update => liftTernary (
+            fun _ v1 v2 v3 =>
+            match v1 with
+            | t_over (bv_pmap m) =>
+                let p := my_encode (v2) in
+                let m' := <[ p := (uglify' v3) ]>m in
+                Some (t_over (bv_pmap m'))
+            | _ => None
+            end
+        )
+        end.
+
+    Definition klike_predicate_interp
+        := fun p =>
+        match p with
+        | b_term_eq => liftBinaryP (
+            fun _ v1 v2 =>
+            Some (bool_decide (v1 = v2))
+        )
+
+        | b_bool_is_true => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over (bv_bool b) => Some (eqb b true)
+            | _ => None
+            end
+        )
+
+        | b_bool_is_false => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over (bv_bool b) => Some (eqb b false)
+            | _ => None
+            end
+        )
+
+        | b_isBuiltin => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over b => Some true
+            | t_term _ _ => Some false
+            end
+        )
+        | b_isNotBuiltin => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over b => Some false
+            | t_term _ _ => Some true
+            end
+        )
+        | b_isSymbol => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_term _ _ => Some true
+            | _ => Some false
+            end
+        )
+
+        | b_isNotSymbol => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_term _ _ => Some false
+            | _ => Some true
+            end
+        )
+
+        | b_isString => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (impl_isString x)
+            | _ => Some false
+            end
+        )
+
+        | b_isNotString => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (negb (impl_isString x))
+            | _ => Some true
+            end
+        )
+            
+        | b_isList => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (impl_isList x)
+            | _ => Some false
+            end
+        )
+
+        | b_isNotList => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (negb (impl_isList x))
+            | _ => Some true
+            end
+        )
+
+        | b_isBool => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (impl_isBool x)
+            | _ => Some false
+            end
+        )
+
+        | b_isNotBool => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (negb (impl_isBool x))
+            | _ => Some true
+            end
+        )
+            
+        | b_isMap => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (impl_isMap x)
+            | _ => Some false
+            end
+        )
+
+        | b_isNotMap => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (negb (impl_isMap x))
+            | _ => Some true
+            end
+        )
+
+        | b_isZ => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (impl_isZ x)
+            | _ => Some false
+            end
+        )
+
+        | b_isNotZ => liftUnaryP (
+            fun _ v =>
+            match v with
+            | t_over x => Some (negb (impl_isZ x))
+            | _ => Some true
+            end
+        )    
+
+        | b_map_hasKey => liftBinaryP (
+            fun _ v1 v2 =>
+            match v1 with
+            | t_over (bv_pmap m) =>
+                let p := my_encode (v2) in
+                match m !! p with
+                | Some _ => Some true
+                | None => Some false
                 end
-            )
-            | b_Z_plus => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_Z_Z__Z Z.add v1 v2
-            )
-            | b_Z_minus => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_Z_Z__Z Z.sub v1 v2
-            )
-            | b_Z_times => liftBinary (
-                fun _ v1 v2 =>
-                bfmap_Z_Z__Z Z.mul v1 v2
-            )
-            | b_Z_div => liftBinary (
-                fun _ v1 v2 =>
+            | _ => None
+            end
+        )
+
+        | b_have_same_TermSymbol => liftBinaryP (
+            fun _ v1 v2 =>
+            match v1 with
+            | t_term s1 _ =>
                 match v2 with
-                | t_over (bv_Z (0)) => None
-                | _ => bfmap_Z_Z__Z Z.div v1 v2
-                end
-            )
-
-            | b_Z_eq => liftBinary (
-                fun _ v1 v2 =>
-                Some (t_over (bv_bool (bool_decide (v1 = v2))))
-            )
-
-            | b_Z_neq => liftBinary (
-                fun _ v1 v2 =>
-                Some (t_over (bv_bool (negb (bool_decide (v1 = v2)))))
-            )
-
-            | b_Z_isLe => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.leb v1 v2))
-            )
-
-            | b_Z_isLt => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.ltb v1 v2))
-            )
-
-            | b_Z_isGe => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.geb v1 v2))
-            )
-
-            | b_Z_isGt => liftBinary (
-                fun _ v1 v2 =>
-                ((bfmap_Z_Z__bool Z.gtb v1 v2))
-            )
-
-            | b_map_lookup => liftBinary (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_pmap m) =>
-                    let p := my_encode (v2) in
-                    match m !! p with
-                    | Some v => Some (prettify v)
-                    | None => None
-                    end
-                | _ => None
-                end
-            )
-
-            (* ternary *)
-            | b_map_update => liftTernary (
-                fun _ v1 v2 v3 =>
-                match v1 with
-                | t_over (bv_pmap m) =>
-                    let p := my_encode (v2) in
-                    let m' := <[ p := (uglify' v3) ]>m in
-                    Some (t_over (bv_pmap m'))
-                | _ => None
-                end
-            )
-            end ;
-
-            builtin_predicate_interp
-            := fun p =>
-            match p with
-            | b_term_eq => liftBinaryP (
-                fun _ v1 v2 =>
-                Some (bool_decide (v1 = v2))
-            )
-
-            | b_bool_is_true => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over (bv_bool b) => Some (eqb b true)
-                | _ => None
-                end
-            )
-
-            | b_bool_is_false => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over (bv_bool b) => Some (eqb b false)
-                | _ => None
-                end
-            )
-
-            | b_isBuiltin => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over b => Some true
-                | t_term _ _ => Some false
-                end
-            )
-            | b_isNotBuiltin => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over b => Some false
-                | t_term _ _ => Some true
-                end
-            )
-            | b_isSymbol => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_term _ _ => Some true
+                | t_term s2 _ => Some (bool_decide (s1 = s2))
                 | _ => Some false
                 end
-            )
+            | _ => Some false
+            end
+        )
 
-            | b_isNotSymbol => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_term _ _ => Some false
+        | b_have_different_TermSymbols => liftBinaryP (
+            fun _ v1 v2 =>
+            match v1 with
+            | t_term s1 _ =>
+                match v2 with
+                | t_term s2 _ => Some (negb (bool_decide (s1 = s2)))
                 | _ => Some true
                 end
-            )
-   
-            | b_isString => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (impl_isString x)
-                | _ => Some false
-                end
-            )
+            | _ => Some true
+            end
+        )
 
-            | b_isNotString => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (negb (impl_isString x))
-                | _ => Some true
-                end
-            )
-                
-            | b_isList => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (impl_isList x)
-                | _ => Some false
-                end
-            )
-
-            | b_isNotList => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (negb (impl_isList x))
-                | _ => Some true
-                end
-            )
-
-            | b_isBool => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (impl_isBool x)
-                | _ => Some false
-                end
-            )
-
-            | b_isNotBool => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (negb (impl_isBool x))
-                | _ => Some true
-                end
-            )
-                
-            | b_isMap => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (impl_isMap x)
-                | _ => Some false
-                end
-            )
-
-            | b_isNotMap => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (negb (impl_isMap x))
-                | _ => Some true
-                end
-            )
-
-            | b_isZ => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (impl_isZ x)
-                | _ => Some false
-                end
-            )
-
-            | b_isNotZ => liftUnaryP (
-                fun _ v =>
-                match v with
-                | t_over x => Some (negb (impl_isZ x))
-                | _ => Some true
-                end
-            )    
-
-            | b_map_hasKey => liftBinaryP (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_pmap m) =>
-                    let p := my_encode (v2) in
-                    match m !! p with
-                    | Some _ => Some true
-                    | None => Some false
-                    end
+        | b_is_applied_TermSymbol => liftBinaryP (
+            fun _ v1 v2 =>
+            match v1 with
+            | t_over (bv_sym s) =>
+                match v2 with
+                | t_term s' _ => Some (bool_decide (s' = s))
                 | _ => None
                 end
-            )
+            | _ => None
+            end
+        )
 
-            | b_have_same_symbol => liftBinaryP (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_term s1 _ =>
-                    match v2 with
-                    | t_term s2 _ => Some (bool_decide (s1 = s2))
-                    | _ => Some false
-                    end
-                | _ => Some false
-                end
-            )
-
-            | b_have_different_symbols => liftBinaryP (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_term s1 _ =>
-                    match v2 with
-                    | t_term s2 _ => Some (negb (bool_decide (s1 = s2)))
-                    | _ => Some true
-                    end
-                | _ => Some true
-                end
-            )
-
-            | b_is_applied_symbol => liftBinaryP (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_sym s) =>
-                    match v2 with
-                    | t_term s' _ => Some (bool_decide (s' = s))
-                    | _ => None
-                    end
+        | b_is_not_applied_TermSymbol => liftBinaryP (
+            fun _ v1 v2 =>
+            match v1 with
+            | t_over (bv_sym s) =>
+                match v2 with
+                | t_term s' _ => Some ( negb (bool_decide (s' = s)))
                 | _ => None
                 end
-            )
+            | _ => None
+            end
+        )
+        end.
 
-            | b_is_not_applied_symbol => liftBinaryP (
-                fun _ v1 v2 =>
-                match v1 with
-                | t_over (bv_sym s) =>
-                    match v2 with
-                    | t_term s' _ => Some ( negb (bool_decide (s' = s)))
-                    | _ => None
-                    end
-                | _ => None
-                end
-            )
-            end ;
-            bps_neg_correct := _;
-    |}.
-    (* Solve All Obligations with (simpl; intros; try discriminate). *)
-    (* Fail Next Obligation. *)
-    Next Obligation.
-        intros.
-        destruct p,p'; simpl in *; case_on_length (); ltac1:(repeat case_match; simplify_eq/=); try reflexivity.
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          destruct b0; reflexivity.
-        }
-        {
-          destruct b0; reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-        {
-          rewrite negb_involutive. reflexivity.
-        }
-    Qed.
-    Fail Next Obligation.
 
-    #[local]
-    Instance β
-        : Model mysignature MyUnit
+    Definition β
+        : ValueAlgebra (KlikeBuiltinValue) NondetValue TermSymbol KlikeFunSymbol KlikePredSymbol
     := {|
-        builtin_value
-            := BuiltinValue ;
-
-        builtin_model_over := βover ;
+        builtin_function_interp := klike_function_interp ;
+        builtin_predicate_interp := klike_predicate_interp ;
     |}.
 
+    Definition BV_EDC : EDC KlikeBuiltinValue.
+    Proof.
+      econstructor.
+      apply _.
+    Defined.
 
-    Definition sym_info : string -> SymbolInfo :=
-    fun s => match s with
-    | "sym.is" => si_predicate b_isSymbol 1 (Some "sym.isNot")
-    | "sym.isNot" => si_predicate b_isNotSymbol 1 (Some "sym.is")
-    | "bool.is" => si_predicate b_isBool 1 (Some "bool.isNot")
-    | "bool.isNot" => si_predicate b_isNotBool 1 (Some "bool.is")
-    | "string.is" => si_predicate b_isString 1 (Some "string.isNot")
-    | "string.isNot" => si_predicate b_isNotString 1 (Some "string.is")
-    | "z.is" => si_predicate b_isZ 1 (Some "z.isNot")
-    | "z.isNot" => si_predicate b_isNotZ 1 (Some "z.is")
-    | "bool.neg" => si_function b_bool_neg
-    | "bool.is_true" => si_predicate b_bool_is_true 1 (Some "bool.is_false")
-    | "bool.is_false" => si_predicate b_bool_is_false 1 (Some "bool.is_true")
-    | "term.eq" => si_predicate b_term_eq 2 None
-    | "term.same_symbol" => si_predicate b_have_same_symbol 2 (Some "term.different_symbol")
-    | "term.different_symbol" => si_predicate b_have_different_symbols 2 (Some "term.same_symbol")
-    | "z.plus" => si_function b_Z_plus
-    | "z.minus" => si_function b_Z_minus
-    | "z.eq" => si_function b_Z_eq
-    | "z.le" => si_function b_Z_isLe
-    | "z.lt" => si_function b_Z_isLt
-    | "map.hasKey" => si_predicate b_map_hasKey 2 None
-    | "map.lookup" => si_function b_map_lookup
-    | "map.size" => si_function b_map_size
-    | "map.empty" => si_function b_map_empty
-    | "map.update" => si_function b_map_update
-    | _ => si_none
-    end.
+    Definition TS_EDC : EDC TermSymbol.
+    Proof.
+      apply _.
+    Defined.
+
+    Definition FS_EDC: EDC KlikeFunSymbol.
+    Proof.
+      econstructor.
+      apply _.
+    Defined.
+
+    Definition PS_EDC : EDC KlikePredSymbol.
+    Proof.
+      econstructor.
+      apply _.
+    Defined.
 
 End sec2.
-(* 
-Definition builtins_binding : BuiltinsBinding := {|
-    bb_function_names := [
-        (* Sort predicates *)
-        ("sym.is", "b_isSymbol");
-        ("sym.isNot", "b_isNotSymbol");
-        ("bool.is", "b_isBool");
-        ("bool.isNot", "b_isNotBool");
-        ("string.is", "b_isString");
-        ("string.isNot", "b_isNotString");
-        ("z.is", "b_isZ");
-        ("z.isNot", "b_isZNot");
-
-        ("bool.neg", "b_bool_neg");
-        ("bool.is_true", "b_bool_is_true");
-        ("bool.is_false", "b_bool_is_false");
-        
-        ("term.eq", "b_term_eq");
-        ("term.same_symbol", "b_have_same_symbol");
-        ("term.different_symbol", "b_have_different_symbols");        ("z.minus", "b_Z_minus");
-        ("z.plus", "b_Z_plus");
-        ("z.eq", "b_Z_eq");
-        ("z.le", "b_Z_isLe");
-        ("z.lt", "b_Z_isLt");
-        ("map.hasKey", "b_map_hasKey");
-        ("map.lookup", "b_map_lookup");
-        ("map.size", "b_map_size");
-        ("map.empty", "b_map_empty");
-        ("map.update", "b_map_update")
-    ];
-|}. *)
-(* 
-Definition eject
-    {symbol : Type}
-    (v : @BuiltinValue0 symbol)
-    :
-    option (bool+(Z+(string)))%type
-    :=
-    match v with
-    | bv_bool b => Some (inl b)
-    | bv_Z z => Some (inr(inl z))
-    | bv_str s => Some (inr(inr (s)))
-    | _ => None
-    end 
-. *)
 
 
-(* Print bv_list. *)
-(* 
-Section sb.
-    Context
-        {symbol : Type}
-        (show_symbol : symbol -> string)
-    .
 
-    (* Doing recursion of BuiltinValue0 is really hard. I gave up, as we need to deprecate klike anyway. *)
-    Definition show_builtin
-        (v : @BuiltinValue symbol)
-        : string
-    :=
-        match v with
-        | bv_bool true => "true"
-        | bv_bool false => "false"
-        | bv_Z z => pretty_Z z
-        | bv_sym s => (show_symbol s) +:+ "@sym"
-        | bv_str s => (s) +:+ "@str"
-        | bv_list l =>
-            "<unsupported (list of stuff)>"
-        | bv_pmap p =>
-            "<unsupported (map of stuff)>"
-        end
-.
-
-End sb. *)
+Definition bindings (Q : Type) : string -> SymbolInfo KlikePredSymbol void _ void Q void:=
+fun s => match s with
+| "sym.is" => si_predicate _ _ _ _ _ _ (b_isSymbol)
+| "sym.isNot" => si_predicate _ _ _ _ _ _ b_isNotSymbol
+| "bool.is" => si_predicate _ _ _ _ _ _ b_isBool
+| "bool.isNot" => si_predicate _ _ _ _ _ _ b_isNotBool
+| "string.is" => si_predicate _ _ _ _ _ _ b_isString
+| "string.isNot" => si_predicate _ _ _ _ _ _ b_isNotString
+| "z.is" => si_predicate _ _ _ _ _ _ b_isZ
+| "z.isNot" => si_predicate _ _ _ _ _ _ b_isNotZ
+| "bool.neg" => si_function _ _ _ _ _ _ b_bool_neg
+| "bool.is_true" => si_predicate _ _ _ _ _ _ b_bool_is_true
+| "bool.is_false" => si_predicate _ _ _ _ _ _ b_bool_is_false
+| "term.eq" => si_predicate _ _ _ _ _ _ b_term_eq
+| "term.same_symbol" =>  si_predicate _ _ _ _ _ _ b_have_same_TermSymbol
+| "term.different_symbol" => si_predicate _ _ _ _ _ _ b_have_different_TermSymbols
+| "z.plus" => si_function _ _ _ _ _ _ b_Z_plus
+| "z.minus" => si_function _ _ _ _ _ _ b_Z_minus
+| "z.eq" => si_function _ _ _ _ _ _ b_Z_eq
+| "z.le" => si_function _ _ _ _ _ _ b_Z_isLe
+| "z.lt" => si_function _ _ _ _ _ _ b_Z_isLt
+| "map.hasKey" => si_predicate _ _ _ _ _ _ b_map_hasKey
+| "map.lookup" => si_function _ _ _ _ _ _ b_map_lookup
+| "map.size" => si_function _ _ _ _ _ _ b_map_size
+| "map.empty" => si_function _ _ _ _ _ _ b_map_empty
+| "map.update" => si_function _ _ _ _ _ _ b_map_update
+| _ => si_none _ _ _ _ _ _
+end.

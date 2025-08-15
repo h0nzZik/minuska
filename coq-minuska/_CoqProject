@@ -13,20 +13,15 @@ theories/specb.v
 theories/quickchick_setup.v
 
 theories/minuska.v
-theories/string_variables.v
+theories/example_models.v
 theories/BuiltinValue.v
 theories/builtins.v
 theories/termoverbov_subst.v
 theories/termoverbov_subst_properties.v
 theories/naive_interpreter.v
 theories/interpreter_results.v
-theories/default_static_model.v
 theories/notations.v
 theories/frontend.v
-theories/minusl_syntax.v
-theories/minusl_semantics.v
-theories/minusl_compile.v
-theories/minusl_compile_properties.v
 theories/dt.v
 theories/interp_loop.v
 theories/default_everything.v
@@ -42,9 +37,7 @@ theories/martelli_montanari.v
 theories/martelli_montanari_tests.v
 theories/symex_spec.v
 theories/symex.v
-theories/pval_ocaml_binding.v
 theories/model_algebra.v
-theories/model_traits.v
 theories/signature_morphism.v
 theories/model_functor.v
 theories/conservative_merge.v
@@ -58,10 +51,12 @@ theories/builtin/list_model.v
 theories/builtin/example_list_int_model.v
 theories/builtin/information_flow_functor.v
 theories/fresher.v
+theories/ocaml_interface.v
 
 theories/builtin/empty.v
 theories/builtin/klike.v
 theories/pi/trivial.v
+theories/hidden/hidden_unit.v
 
 theories/playground.v
 theories/hilang.v

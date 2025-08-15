@@ -18,19 +18,19 @@ Variant IntPredSymbol :=
 | int_is
 .
 
-#[local]
+#[export]
 Instance IntFunSymbol_eqdec : EqDecision IntFunSymbol.
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-#[local]
+#[export]
 Instance IntPredSymbol_eqdec : EqDecision IntPredSymbol.
 Proof.
     ltac1:(solve_decision).
 Defined.
 
-#[local]
+#[export]
 Program Instance IntFunSymbol_fin : Finite IntFunSymbol := {|
     enum := [
         int_plus;
@@ -51,7 +51,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-#[local]
+#[export]
 Program Instance IntPredSymbol_fin : Finite IntPredSymbol := {|
     enum := [
         int_is
@@ -65,24 +65,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Program Definition int_signature : Signature := {|
-    builtin_function_symbol := IntFunSymbol ;
-    builtin_predicate_symbol := IntPredSymbol ;
-    bps_ar := fun p =>
-        match p with
-        | int_is => 1
-        end ;
-    bps_neg := fun p =>
-        match p with
-        | int_is => None
-        end ;
-    bps_neg_ar := _;
-    bps_neg__sym := _;
-|}.
-Next Obligation.
-    destruct p,p'; simpl in *; ltac1:(lia).
-Qed.
-Next Obligation.
-    destruct p,p'; simpl in *; ltac1:(simplify_eq/=).
-Qed.
-Fail Next Obligation.
+(* Definition int_signature : Signature := {|
+    FunSymbol := IntFunSymbol ;
+    PredSymbol := IntPredSymbol ;
+|}. *)

@@ -2,11 +2,13 @@ From Minuska Require Import
     spec
     builtin.empty
     pi.trivial
+    hidden.hidden_unit
     default_everything
     martelli_montanari
     basic_properties
     substitution_parallel
     substitution_parallel_properties
+    example_models
 .
 
 (*
@@ -24,16 +26,16 @@ because, any mistakes will inherently be found out
 during the proving of the rest of the implementation.
 *)
 
-Instance sm : StaticModel := @DSM mysignature β MyProgramInfo.
+Instance sm : BackgroundModel := example_models.Σ1.
 
-Definition dec_paper_input1 : list (TermOver BuiltinOrVar) := [
+Definition dec_paper_input1 : list (@TermOver' TermSymbol BuiltinOrVar) := [
     t_term "f"
         [
-            t_over (bov_variable "x1");
+            t_over (bov_Variabl "x1");
             t_term "g"
                 [t_term "a" [];
                     t_term "f"
-                        [ t_over (bov_variable "x5"); t_term "b" [] ]
+                        [ t_over (bov_Variabl "x5"); t_term "b" [] ]
                 ]
         ];
     t_term "f"
@@ -41,18 +43,18 @@ Definition dec_paper_input1 : list (TermOver BuiltinOrVar) := [
             t_term "h"
                 [ t_term "c" [] ];
             t_term "g"
-                [t_over (bov_variable "x2");
+                [t_over (bov_Variabl "x2");
                     t_term "f"
-                        [ t_term "b" []; t_over (bov_variable "x5") ]
+                        [ t_term "b" []; t_over (bov_Variabl "x5") ]
                 ]
         ];
     t_term "f"
         [
             t_term "h"
-                [ t_over (bov_variable "x4") ];
+                [ t_over (bov_Variabl "x4") ];
             t_term "g"
-                [t_over (bov_variable "x6");
-                 t_over (bov_variable "x3")
+                [t_over (bov_Variabl "x6");
+                 t_over (bov_Variabl "x3")
                 ]
         ]
     ]
@@ -62,26 +64,26 @@ Definition dec_paper_input1 : list (TermOver BuiltinOrVar) := [
 
 Compute (@dec sm dec_paper_input1).
 
-Definition unify_paper1_input1 : TermOver BuiltinOrVar := (t_term "f" [
-  t_over (bov_variable "x1");
-  t_term "g" [t_over (bov_variable "x2"); t_over (bov_variable "x3")];
-  t_over (bov_variable "x2");
+Definition unify_paper1_input1 : @TermOver' TermSymbol BuiltinOrVar := (t_term "f" [
+  t_over (bov_Variabl "x1");
+  t_term "g" [t_over (bov_Variabl "x2"); t_over (bov_Variabl "x3")];
+  t_over (bov_Variabl "x2");
   t_term "b" []]).
-Definition unify_paper1_input2 : TermOver BuiltinOrVar := (t_term "f" [
-  t_term "g" [t_term "h" [t_term "a" []; t_over (bov_variable "x5")]; t_over (bov_variable "x2")];
-  t_over (bov_variable "x1");
-  t_term "h" [t_term "a" []; t_over (bov_variable "x4")];
-  t_over (bov_variable "x4")]).
+Definition unify_paper1_input2 : @TermOver' TermSymbol BuiltinOrVar := (t_term "f" [
+  t_term "g" [t_term "h" [t_term "a" []; t_over (bov_Variabl "x5")]; t_over (bov_Variabl "x2")];
+  t_over (bov_Variabl "x1");
+  t_term "h" [t_term "a" []; t_over (bov_Variabl "x4")];
+  t_over (bov_Variabl "x4")]).
 
 (*
 Expected result for the last example is:
 
 "0" -> [t_term "f"
               [
-                t_over (bov_variable "x1");
-                t_over (bov_variable "x1");
-                t_over (bov_variable "x2");
-                t_over (bov_variable "x4")
+                t_over (bov_Variabl "x1");
+                t_over (bov_Variabl "x1");
+                t_over (bov_Variabl "x2");
+                t_over (bov_Variabl "x4")
               ]
       ]
 "x4" -> [t_term "b" []]
@@ -89,9 +91,9 @@ Expected result for the last example is:
 "x1" -> [t_term "g"
               [t_term "h" [
                             t_term "a" []; 
-                            t_over (bov_variable "x5")
+                            t_over (bov_Variabl "x5")
                           ];
-               t_over (bov_variable "x3")
+               t_over (bov_Variabl "x3")
               ]
         ]
 "x5" -> [t_term "b" []]

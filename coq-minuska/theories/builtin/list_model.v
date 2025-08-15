@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     model_functor
-    model_traits
     list_signature
     model_algebra
     (* model_functor *)
@@ -10,8 +9,7 @@ From Minuska Require Import
 
 Definition list_function_interp
     (InnerT : Type)
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
     (NondetValue : Type)
     (Carrier : Type)
     (_WB : Injection bool Carrier)
@@ -22,8 +20,8 @@ Definition list_function_interp
 :
     ListFunSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
-    option (@TermOver' symbol  Carrier)
+    list (@TermOver' TermSymbol Carrier) ->
+    option (@TermOver' TermSymbol  Carrier)
 :=
     fun f nd args =>
     match f with
@@ -75,8 +73,7 @@ Definition list_function_interp
 
 Definition list_predicate_interp
     (InnerT : Type)
-    (symbol : Type)
-    (symbols : Symbols symbol)
+    (TermSymbol : Type)
     (NondetValue : Type)
     (Carrier : Type)
     (_WB : Injection bool Carrier)
@@ -87,7 +84,7 @@ Definition list_predicate_interp
 :
     ListPredSymbol ->
     NondetValue ->
-    list (@TermOver' symbol Carrier) ->
+    list (@TermOver' TermSymbol Carrier) ->
     option bool
 :=
     fun p nd args =>
@@ -147,67 +144,59 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Program Definition list_relaxed_functor :
-    RelaxedModelFunctorT (bool)
+(* 
+    TODO: So far, the output algebra has only predicates and functions of list.
+    We need to find a way to add there the original [Fs] and [Ps] back.
+ *)
+Program Definition list_wrapper
+        (Vdeps Vours : Type)
+        (NV Sy Fs Ps : Type)
+        (M : RelaxedValueAlgebra Vdeps Vours NV Sy Fs Ps)
+        :
+        RelaxedValueAlgebra bool (simple_list_carrier Vours) NV Sy ListFunSymbol ListPredSymbol
 := {|
-    rmf_signature := fun _ => list_signature ;
-    rmf_nondet := fun ND => ND ;
-
-    rmf_model :=
-        fun (signature : Signature)
-            (NondetValue : Type)
-            (symbol : Type)
-            (symbols : Symbols symbol)
-            M
+    rva_over :=
+        fun
+            (Carrier : Type)
+            (inja : Injection (bool) Carrier)
+            (injb : ReversibleInjection
+                (simple_list_carrier Vours)
+                Carrier
+            )
         => 
+        let asi := (fun c =>
+            match (@ri_reverse _ _ injb) c with Some d => (
+                match d with
+                | slc_inner _ d' => Some d'
+                | _ => None
+                end
+            )
+            | None => None end
+        ) in
+        let asl := (fun c =>
+            match (@ri_reverse _ _ injb) c with Some d => (
+                match d with
+                | slc_list _ d' => Some d'
+                | _ => None
+                end
+            )
+            | None => None end
+        ) in
+        let WL : Injection (list (Vours)) Carrier := {|
+            inject := fun l => @inject _ _ (@ri_injection _ _ injb) (slc_list _ l)
+        |} in
+        let WI := {|
+            inject := fun i => @inject _ _ (@ri_injection _ _ injb) (slc_inner _ i)
+        |} in
+        let WB := {|
+            inject := fun b => @inject _ _ inja (b)                
+        |} in
         {|
-            rm_carrier := (simple_list_carrier (rm_carrier _ _ _ M)) ;
-            rm_model_over :=
-                fun
-                    (Carrier : Type)
-                    (inja : Injection (bool) Carrier)
-                    (injb : ReversibleInjection (simple_list_carrier (rm_carrier _ _ _ M)) Carrier)
-                => 
-                    let asi := (fun c =>
-                        match (@ri_reverse _ _ injb) c with Some d => (
-                            match d with
-                            | slc_inner _ d' => Some d'
-                            | _ => None
-                            end
-                        )
-                        | None => None end) in
-                    let asl := (fun c =>
-                        match (@ri_reverse _ _ injb) c with Some d => (
-                            match d with
-                            | slc_list _ d' => Some d'
-                            | _ => None
-                            end
-                        )
-                        | None => None end) in
-                let WL : Injection (list (rm_carrier signature NondetValue (bool) M)) Carrier := {|
-                    inject := fun l => @inject _ _ (@ri_injection _ _ injb) (slc_list _ l)
-                |} in
-                let WI := {|
-                    inject := fun i => @inject _ _ (@ri_injection _ _ injb) (slc_inner _ i)
-                |} in
-                let WB := {|
-                    inject := fun b => @inject _ _ inja (b)                
-                |} in
-                {|
-                    builtin_function_interp := fun (f : @builtin_function_symbol list_signature) => list_function_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl f;
-                    builtin_predicate_interp := fun (p : @builtin_predicate_symbol list_signature) => list_predicate_interp (rm_carrier _ _ _ M) symbol symbols NondetValue Carrier WB WI WL asi asl p;
-                |}
-        |}  ;
-|}.
-Next Obligation.
-    apply simple_list_carrier__eqdec.
-    apply rm_carrier_eqdec.
-Defined.
-Next Obligation.
-    (* Countable *)
-    destruct M.
-    apply _.
-Defined.
+            builtin_function_interp := fun (f : list_signature.ListFunSymbol) => list_function_interp Vours Sy NV Carrier WB WI WL asi asl f;
+            builtin_predicate_interp := fun (p :list_signature.ListPredSymbol) => list_predicate_interp Vours Sy NV Carrier WB WI WL asi asl p;
+        |}
+|}
+.
 Next Obligation.
     apply inject_inj in H.
     ltac1:(injection H as H).
@@ -222,10 +211,9 @@ Next Obligation.
     apply (inj (inject bool Carrier)) in H.
     exact H.
 Qed.
-Next Obligation.
-    destruct p; simpl in *;
-        ltac1:(simplify_eq/=).
-Qed.
 Fail Next Obligation.
 
 
+
+
+About list_wrapper.

@@ -13,37 +13,37 @@ let parse_with_error lexbuf =
       raise (Invalid_argument ("Parsing problem at " ^ (print_position lexbuf) ^ "."))
 
 
-let rec convert_commands (cs : Syntax.command list) : Libminuska.Syntax.groundterm =
+let rec convert_commands (cs : Syntax.command list)  =
   match cs with
   | [] -> raise (Invalid_argument ("Empty command sequence"))
   | c::[] -> (convert_command c)
-  | c1::c2::cs2 -> `GTerm(`Id "seq", [(convert_command c1);(convert_commands (c2::cs2))])
-and convert_command (ast : Syntax.command) : Libminuska.Syntax.groundterm =
+  | c1::c2::cs2 -> Libminuska.Extracted.T_term( "seq", [(convert_command c1);(convert_commands (c2::cs2))])
+and convert_command (ast : Syntax.command)  =
   match ast with
-  | `CmdAssign (x,e) -> `GTerm (`Id "assign", [(convert_id x); (convert_aexp e)])
-  | `CmdIf (b, cs1, cs2) -> `GTerm (`Id "ite", [(convert_bexp b); (convert_commands cs1); (convert_commands cs2)])
-  | `CmdWhile (b, cs) -> `GTerm (`Id "while", [(convert_bexp b); (convert_commands cs)])
+  | `CmdAssign (x,e) -> Libminuska.Extracted.T_term ( "assign", [(convert_id x); (convert_aexp e)])
+  | `CmdIf (b, cs1, cs2) -> Libminuska.Extracted.T_term ( "ite", [(convert_bexp b); (convert_commands cs1); (convert_commands cs2)])
+  | `CmdWhile (b, cs) -> Libminuska.Extracted.T_term ( "while", [(convert_bexp b); (convert_commands cs)])
   | `CmdExpr e -> convert_aexp e
-and convert_id (x : Syntax.id) : Libminuska.Syntax.groundterm =
+and convert_id (x : Syntax.id)  =
   match x with
-  | `Id s -> `GTerm (`Id "var", [(`GTb {br_kind="string"; br_value=s;})])
-and convert_aexp (e : Syntax.aexpr) : Libminuska.Syntax.groundterm =
+  |  `Id s -> Libminuska.Extracted.T_term ( "var", [(Libminuska.Extracted.T_over (Libminuska.Extracted.Bv_str s))])
+and convert_aexp (e : Syntax.aexpr)  =
   match e with
-  | `AExprInt n -> (`GTb {br_kind="int"; br_value=(sprintf "%d" n);})
+  | `AExprInt n -> (Libminuska.Extracted.T_over (Libminuska.Extracted.Bv_Z (Z.of_int n)))
   | `AExprVar x -> (convert_id x)
-  | `AExprPlus (a, b) -> `GTerm(`Id "plus", [(convert_aexp a);(convert_aexp b)])
-  | `AExprMinus (a, b) -> `GTerm(`Id "minus", [(convert_aexp a);(convert_aexp b)])
-and convert_bexp (e : Syntax.bexpr) : Libminuska.Syntax.groundterm =
+  | `AExprPlus (a, b) -> Libminuska.Extracted.T_term( "plus", [(convert_aexp a);(convert_aexp b)])
+  | `AExprMinus (a, b) -> Libminuska.Extracted.T_term( "minus", [(convert_aexp a);(convert_aexp b)])
+and convert_bexp (e : Syntax.bexpr)  =
   match e with
-  | `BExprBool b -> `GTb {br_kind="bool"; br_value=(if b then "true" else "false");}
-  | `BExprNeg e2 -> `GTerm(`Id "neg", [(convert_bexp e2)])
-  | `BExprAnd (e1,e2) -> `GTerm(`Id "and", [(convert_bexp e1); (convert_bexp e2)])
-  | `BExprOr (e1,e2) -> `GTerm(`Id "or", [(convert_bexp e1); (convert_bexp e2)])
-  | `BExprEq (e1,e2) -> `GTerm(`Id "eq", [(convert_aexp e1); (convert_aexp e2)])
-  | `BExprLe (e1,e2) -> `GTerm(`Id "le", [(convert_aexp e1); (convert_aexp e2)])
-  | `BExprLt (e1,e2) -> `GTerm(`Id "lt", [(convert_aexp e1); (convert_aexp e2)])
+  | `BExprBool b -> Libminuska.Extracted.T_over (Libminuska.Extracted.Bv_bool b)
+  | `BExprNeg e2 -> Libminuska.Extracted.T_term( "neg", [(convert_bexp e2)])
+  | `BExprAnd (e1,e2) -> Libminuska.Extracted.T_term( "and", [(convert_bexp e1); (convert_bexp e2)])
+  | `BExprOr (e1,e2) -> Libminuska.Extracted.T_term( "or", [(convert_bexp e1); (convert_bexp e2)])
+  | `BExprEq (e1,e2) -> Libminuska.Extracted.T_term( "eq", [(convert_aexp e1); (convert_aexp e2)])
+  | `BExprLe (e1,e2) -> Libminuska.Extracted.T_term( "le", [(convert_aexp e1); (convert_aexp e2)])
+  | `BExprLt (e1,e2) -> Libminuska.Extracted.T_term( "lt", [(convert_aexp e1); (convert_aexp e2)])
 
-let parse (lexbuf : Lexing.lexbuf) : Libminuska.Syntax.groundterm =
+let parse (lexbuf : Lexing.lexbuf)  =
   match parse_with_error lexbuf with
   | Some value -> convert_commands value
   | None -> raise (Invalid_argument "Empty file?")

@@ -55,7 +55,7 @@
             #installFlags = [ "COQLIB=$(out)/lib/coq/${coqPackages.coq.coq-version}/" ];
 
           } ) { };  in
-          wrapped
+          (pkgs.enableDebugging wrapped)
        );
 
       # OCaml sources
@@ -118,6 +118,7 @@
           src = minuskaSrc;
           #duneVersion = "3";
 
+          dontStrip = true;
           propagatedBuildInputs = ocamlLibraries;
 
           nativeBuildInputs = [

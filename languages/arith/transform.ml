@@ -1,8 +1,7 @@
-open Core
 
 let print_position lexbuf =
   let pos = lexbuf.Lexing.lex_curr_p in
-  sprintf "%s:%d:%d" pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+  Core.sprintf "%s:%d:%d" pos.pos_fname pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
 let parse_with_error lexbuf =
   try Parser.option_aexpr Lexer.read lexbuf with
@@ -11,13 +10,13 @@ let parse_with_error lexbuf =
   | Parser.Error ->
       raise (Invalid_argument ("Parsing problem at " ^ (print_position lexbuf) ^ "."))
 
-let rec convert_aexp (e : Syntax.aexpr) : Libminuska.Syntax.groundterm =
+let rec convert_aexp (e : Syntax.aexpr) : (string, string Libminuska.Extracted.klikeBuiltinValue0) Libminuska.Extracted.termOver' =
   match e with
-  | `AExprInt n -> (`GTb ({br_kind="int"; br_value=(sprintf "%d" n)}))
-  | `AExprPlus (a, b) -> `GTerm(`Id "plus", [(convert_aexp a);(convert_aexp b)])
-  | `AExprMinus (a, b) -> `GTerm(`Id "minus", [(convert_aexp a);(convert_aexp b)])
+  | `AExprInt n -> Libminuska.Extracted.T_over (Libminuska.Extracted.Bv_Z (Z.of_int n))
+  | `AExprPlus (a, b) -> Libminuska.Extracted.T_term ("plus", [(convert_aexp a);(convert_aexp b)])
+  | `AExprMinus (a, b) -> Libminuska.Extracted.T_term ("minus", [(convert_aexp a);(convert_aexp b)])
       
-let parse (lexbuf : Lexing.lexbuf) : Libminuska.Syntax.groundterm =
+let parse (lexbuf : Lexing.lexbuf) : (string, string Libminuska.Extracted.klikeBuiltinValue0) Libminuska.Extracted.termOver' =
   match parse_with_error lexbuf with
   | Some value -> convert_aexp value
   | None -> raise (Invalid_argument "Empty file?")

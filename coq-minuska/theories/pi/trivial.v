@@ -1,6 +1,7 @@
 From Minuska Require Import
     prelude
     spec
+    ocaml_interface
 .
 
 Inductive MyQuerySymbol : Set :=
@@ -28,24 +29,33 @@ Fail Next Obligation.
 
 #[local]
 Instance MyProgramInfo
-    {symbol : Type}
-    {symbols : Symbols symbol}
-    {NondetValue : Type}
-    {mysignature : Signature}
-    {builtin : Model mysignature NondetValue}
-    : @ProgramInfo symbol symbols NondetValue mysignature builtin
+    {TermSymbol : Type}
+    {BasicValue NondetValue : Type}
+    (* {mysignature : Signature} *)
+    (* {builtin : Model mysignature NondetValue} *)
+    : ProgramInfo (@TermOver' TermSymbol BasicValue) BasicValue TermSymbol MyQuerySymbol
 := {|
-    QuerySymbol := MyQuerySymbol ;
-    ProgramT := @TermOver' symbol builtin_value ;
-    pi_symbol_interp := fun my_program q es =>
-        match q with
-        | qs_program => Some my_program
-        end ;
+    pi_TermSymbol_interp :=
+        fun my_program q es =>
+            match q with
+            | qs_program => Some my_program
+            end
+    ;
 |}.
 
-Definition my_binding : string -> option MyQuerySymbol :=
-fun s =>
-match s with
-| "program.ast" => Some qs_program
-| _ => None
-end.
+Definition bindings (P HP F A M : Type)
+    :
+    string -> SymbolInfo P HP F A _ M
+:=
+    fun s =>
+        match s with
+        | "program.ast" => si_query _ _ _ _ _ _ qs_program
+        | _ => si_none _ _ _ _ _ _
+        end
+.
+
+Definition qs_edc : EDC MyQuerySymbol.
+Proof.
+  econstructor.
+  apply _.
+Defined.

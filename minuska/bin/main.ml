@@ -89,6 +89,7 @@ let generate_interpreter_ml_internal (user_dir : string) input_filename (output_
   Out_channel.with_file coqfile ~append:(true) ~f:(fun oux_coqfile ->
     fprintf oux_coqfile "%s" {|
       Require Import Ascii Coq.extraction.ExtrOcamlNativeString.
+(*
 Extract Inductive string => "string"
 [
 "
@@ -102,33 +103,29 @@ Extract Inductive string => "string"
  (fun f0 f1 s ->
     let l = Stdlib.String.length s in
     if l = 0 then f0 () else f1 (Stdlib.String.get s 0) (Stdlib.String.sub s 1 (l-1)))
-".
+".*)
       (*Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].*)
       (*Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].*)
       Extract Inductive stdpp.countable.Countable => "Libminuska.Extracted.countable" [ "(fun (e,d) -> {Libminuska.Extracted.encode = e; Libminuska.Extracted.decode = d;})" ].
-      Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_act = d; })" ].
-      Extract Inductive Act => "Libminuska.Extracted.act" [ "Libminuska.Extracted.Default_act" "Libminuska.Extracted.Invisible_act" ].
+      Extract Inductive RewritingRule2' => "Libminuska.Extracted.rewritingRule2'" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_label = d; })" ].
+      Extract Inductive Label => "Libminuska.Extracted.label" [ "Libminuska.Extracted.Default_label" "Libminuska.Extracted.Invisible_label" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
-      Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
-      Extract Inductive BuiltinInterface => "Libminuska.Extracted.builtinInterface" [ "(fun (a0, a, b, c) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_show_builtin = c; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b; Libminuska.Extracted.bi_show_builtin = c} -> (myf a0 a b c))" .
+      (* Extract Inductive ValueAlgebraInterface => "Libminuska.Extracted.valueAlgebraInterface" [ "(fun (a0, a, b, c) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_show_builtin = c; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b; Libminuska.Extracted.bi_show_builtin = c} -> (myf a0 a b c))" . *)
 
-      Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)".
-      Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].
-      Extract Inductive Model => "Libminuska.Extracted.model" [  "(fun (x1,x2,x3) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_interp = x2; Libminuska.Extracted.builtin_predicate_interp = x3;})" ].
-      Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty".
-      Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike".
-      Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial".
-      Extract Constant DSM => "Libminuska.Extracted.dSM".
-      Extract Constant GT => "Libminuska.Extracted.gT".
-      Extract Constant gt_term => "Libminuska.Extracted.gt_term".
-      Extract Constant gt_over => "Libminuska.Extracted.gt_over".
+      (* Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)". *)
+      (* Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty". *)
+      (* Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike". *)
+      (* Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial". *)
+      (* Extract Constant GT => "Libminuska.Extracted.gT". *)
+      (* Extract Constant gt_term => "Libminuska.Extracted.gt_term". *)
+      (* Extract Constant gt_over => "Libminuska.Extracted.gt_over". *)
 
       Extract Inductive BuiltinRepr => "Libminuska.Extracted.builtinRepr" [ "(fun (a,b) -> { Libminuska.Extracted.br_kind=a; Libminuska.Extracted.br_value=b; } )" ].
       Extract Inductive StringBuiltinOrVar => "Libminuska.Extracted.stringBuiltinOrVar" [ "Libminuska.Extracted.Sbov_builtin" "Libminuska.Extracted.Sbov_var" ] .
       Extract Inductive ProgramInfo => "Libminuska.Extracted.programInfo" [ "(fun (b, c, d) -> { Libminuska.Extracted.querySymbol_eqdec = b; Libminuska.Extracted.querySymbol_countable = c; Libminuska.Extracted.pi_symbol_interp = d; })" ].
       Extract Inductive Declaration => "Libminuska.Extracted.declaration" [ "Libminuska.Extracted.Decl_rule" "Libminuska.Extracted.Decl_ctx" "Libminuska.Extracted.Decl_strict" ] .
-      Extract Inductive StringSideCondition => "Libminuska.Extracted.stringSideCondition" [ "Libminuska.Extracted.Ssc_true" "Libminuska.Extracted.Ssc_false" "Libminuska.Extracted.Ssc_atom" "Libminuska.Extracted.Ssc_and" "Libminuska.Extracted.Ssc_or" ].
-      Extract Inductive StringExpression => "Libminuska.Extracted.stringExpression" [ "Libminuska.Extracted.Se_ground" "Libminuska.Extracted.Se_variable" "Libminuska.Extracted.Se_applyf" "Libminuska.Extracted.Se_applyq" ].
+      Extract Inductive StringSideCondition => "Libminuska.Extracted.stringSideCondition" [ "Libminuska.Extracted.Ssc_true" "Libminuska.Extracted.Ssc_false" "Libminuska.Extracted.Ssc_pred" "Libminuska.Extracted.Ssc_npred" "Libminuska.Extracted.Ssc_and" "Libminuska.Extracted.Ssc_or" ].
+      Extract Inductive StringExpression => "Libminuska.Extracted.stringExpression" [ "Libminuska.Extracted.Se_ground" "Libminuska.Extracted.Se_variable" "Libminuska.Extracted.Se_apply" ].
       Extract Inductive Defaults => "Libminuska.Extracted.defaults" [ "(fun (a,b,c,d) -> {Libminuska.Extracted.default_cseq_name = a; Libminuska.Extracted.default_empty_cseq_name = b; Libminuska.Extracted.default_context_template = c; Libminuska.Extracted.default_isValue = d;})" ].
       (* Extract Constant global_naive_interpreter => "Libminuska.Extracted.global_naive_interpreter". *)
       (* Extract Constant global_naive_interpreter_ext => "Libminuska.Extracted.global_naive_interpreter_ext". *)
@@ -249,7 +246,7 @@ let _ = main ()
 
 let command_init =
   Command.basic
-    ~summary:"Generate a Minuska project (`lang.scm`, `lang.m`, `run.ml`, `dune-project`, `dune`) in the current directory."
+    ~summary:"Generate a Minuska project (`lang.scm`, `lang.m`, `run.ml`, `dune-project`, `dune`) in the current directory. NOT MAINTAINED/TESTED, FIXME"
     ~readme:(fun () -> "TODO")
     (
       let%map_open.Command

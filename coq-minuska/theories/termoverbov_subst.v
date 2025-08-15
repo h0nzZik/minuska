@@ -5,47 +5,47 @@ From Minuska Require Import
 
 
 Fixpoint TermOverBoV_subst_gen
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     {B : Type}
-    (lift_builtin : builtin_value -> B)
-    (lift_variable : variable -> B)
-    (t : TermOver BuiltinOrVar)
-    (x : variable)
-    (t' : TermOver B)
-    : TermOver B
+    (lift_builtin : BasicValue -> B)
+    (lift_Variabl : Variabl -> B)
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (x : Variabl)
+    (t' : @TermOver' TermSymbol B)
+    : @TermOver' TermSymbol B
 :=
 match t with
 | t_over (bov_builtin b) => t_over (lift_builtin b)
-| t_over (bov_variable y) =>
+| t_over (bov_Variabl y) =>
     match (decide (x = y)) with
     | left _ => t'
-    | right _ => t_over (lift_variable y)
+    | right _ => t_over (lift_Variabl y)
     end
-| t_term s l => t_term s (map (fun t'' => TermOverBoV_subst_gen lift_builtin lift_variable t'' x t') l)
+| t_term s l => t_term s (map (fun t'' => TermOverBoV_subst_gen lift_builtin lift_Variabl t'' x t') l)
 end.
 
 Definition TermOverBoV_subst_expr2
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    (x : variable)
-    (t' : TermOver Expression2)
-    : TermOver Expression2
+    {Σ : BackgroundModel}
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (x : Variabl)
+    (t' : @TermOver' TermSymbol Expression2)
+    : @TermOver' TermSymbol Expression2
 :=
-    TermOverBoV_subst_gen (fun b => e_ground (t_over b)) (fun x => e_variable x) t x t'
+    TermOverBoV_subst_gen (fun b => e_ground (t_over b)) (fun x => e_Variabl x) t x t'
 .
 
 Fixpoint TermOverBoV_subst
-    {Σ : StaticModel}
-    (t : TermOver BuiltinOrVar)
-    (x : variable)
-    (t' : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (x : Variabl)
+    (t' : @TermOver' TermSymbol BuiltinOrVar)
 :=
 match t with
 | t_over (bov_builtin b) => t_over (bov_builtin b)
-| t_over (bov_variable y) =>
+| t_over (bov_Variabl y) =>
     match (decide (x = y)) with
     | left _ => t'
-    | right _ => t_over (bov_variable y)
+    | right _ => t_over (bov_Variabl y)
     end
 | t_term s l => t_term s (map (fun t'' => TermOverBoV_subst t'' x t') l)
 end.

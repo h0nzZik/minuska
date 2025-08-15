@@ -8,16 +8,15 @@ From Minuska Require Import
 
 
 Lemma vars_of_sat_tobov
-    {Σ : StaticModel}
-    (φ : TermOver BuiltinOrVar)
+    {Σ : BackgroundModel}
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     (ρ : Valuation2)
-    (g : TermOver builtin_value)
+    (g : @TermOver' TermSymbol BasicValue)
     :
-    satisfies ρ g φ ->
+    sat2B ρ g φ ->
     vars_of φ ⊆ vars_of ρ
 .
 Proof.
-    unfold satisfies; simpl.
     revert g.
     induction φ; intros g HH; simpl in *.
     {
@@ -31,7 +30,7 @@ Proof.
         {
             unfold vars_of; simpl.
             unfold vars_of; simpl.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             rewrite elem_of_subseteq.
             intros x0 Hx0.
             rewrite elem_of_singleton in Hx0.
@@ -42,7 +41,7 @@ Proof.
         }
     }
     {
-        unfold Valuation2 in *.
+        unfold Valuation2,Valuation' in *.
         ltac1:(rewrite vars_of_t_term).
         rewrite elem_of_subseteq.
         intros x Hx.
@@ -71,20 +70,36 @@ Proof.
             apply lookup_ge_None in Heq.
             apply lookup_lt_Some in Hi.
             ltac1:(exfalso).
-            unfold TermOver in *.
             ltac1:(lia).
         }
     }
 Qed.    
 
+Print RewritingRule2'.
+
+#[export]
+Instance RewritingTheory2'_wf_dec
+  {Bv Va Ts Fs Qs As Ms Ps Hps : Type}
+  {_Ev : EqDecision Va}
+  {_Cv : Countable Va}
+  (Label : Set)
+  (Γ : list (@RewritingRule2' Bv Va Ts Fs Qs As Ms Ps Hps Label))
+  :
+  Decision (RewritingTheory2'_wf Γ)
+.
+Proof.
+  apply _.
+Defined.
+(*
 #[export]
 Instance RewritingTheory2_wf_dec
-    {Σ : StaticModel}
-    (Act : Set)
-    (Γ : list (RewritingRule2 Act))
+    {Σ : BackgroundModel}
+    (Label : Set)
+    (Γ : list (RewritingRule2 Label))
     :
     Decision (RewritingTheory2_wf Γ)
 .
 Proof.
     apply _.
 Defined.
+*)

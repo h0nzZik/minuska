@@ -5,19 +5,19 @@ From Minuska Require Import
 .
 
 Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
+    (t : @TermOver' TermSymbol BasicValue)
     (bv : BuiltinOrVar)
     : bool
 := match bv with
     | bov_builtin b => bool_decide (t = t_over b)
-    | bov_variable x => bool_decide (ρ !! x = Some t)
+    | bov_Variabl x => bool_decide (ρ !! x = Some t)
     end
 .
 
 Lemma Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_reflect
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     : forall ρ t bv,
         reflect
             (Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ t bv)
@@ -51,10 +51,10 @@ Fixpoint forallbin
 .
 
 Equations? sat2Bb
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     : bool
     by wf (TermOver_size φ) lt
 :=
@@ -89,16 +89,15 @@ Proof.
 Defined.
 
 Lemma sat2B_refl
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver BuiltinOrVar)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol BuiltinOrVar)
     :
     reflect (sat2B ρ t φ) (sat2Bb ρ t φ)
 .
 Proof.
     revert φ.
-    unfold TermOver in *.
     ltac1:(induction t using TermOver_rect); intros φ; destruct φ;
         ltac1:(simp sat2B); ltac1:(simp sat2Bb).
     {
@@ -236,28 +235,29 @@ Proof.
 Qed.
 
 Equations? sat2Eb
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
     : bool
     by wf (TermOver_size φ) lt
 :=
-    sat2Eb program ρ t (t_over e) nv :=
-        match Expression2_evaluate program ρ e nv with 
+    sat2Eb program h ρ t (t_over e) nv :=
+        match Expression2_evaluate program h ρ e nv with 
         | Some t' => bool_decide (t' = t)
         | None => false
         end ;
-    sat2Eb program ρ (t_over a) (t_term s l) _ := false ;
-    sat2Eb program ρ (t_term s' l') (t_term s l) nv := 
+    sat2Eb program h ρ (t_over a) (t_term s l) _ := false ;
+    sat2Eb program h ρ (t_term s' l') (t_term s l) nv := 
         bool_decide (s' = s) &&
         match (decide (length l' = length l)) with
         | right _ => false
         | left _ => 
             forallbin (zip l l') (fun i xx' pf => let x := xx'.1 in let x' := xx'.2 in
-            sat2Eb program ρ x' x nv
+            sat2Eb program h ρ x' x nv
         )
         end
     ;
@@ -282,18 +282,18 @@ Defined.
 
 
 Lemma sat2E_refl
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (program : ProgramT)
+    (h : HiddenValue)
     (ρ : Valuation2)
-    (t : TermOver builtin_value)
-    (φ : TermOver Expression2)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol Expression2)
     (nv : NondetValue)
     :
-    reflect (sat2E program ρ t φ nv) (sat2Eb program ρ t φ nv)
+    reflect (sat2E program h ρ t φ nv) (sat2Eb program h ρ t φ nv)
 .
 Proof.
     revert φ.
-    unfold TermOver in *.
     ltac1:(induction t using TermOver_rect); intros φ; destruct φ;
         ltac1:(simp sat2E); ltac1:(simp sat2Eb).
     {

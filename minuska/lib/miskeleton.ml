@@ -4,57 +4,186 @@ open Libminuskapluginbase
 open Util
 open Pluginbase
 
-let convert_builtin (pvae : primitiveValueAlgebraEntry) (b : builtin_repr)  : ((string, 'a) Extracted.builtin_value)  =
-  match (pvae.pvae_builtin_inject b) with
-  | None -> failwith "Cannot represent primitive value in chosen builtin model"
-  | Some v -> v
 
-let rec convert_groundterm (pvae : primitiveValueAlgebraEntry) (iface : 'a Extracted.builtinInterface) (g : Syntax.groundterm): Extracted.gT =
+type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI =
+  {
+    v_edc             : 'v Extracted.eDC ;
+    hv_edc            : 'hv Extracted.eDC ;
+    nv_edc            : 'nv Extracted.eDC ;
+    vr_edc            : 'vr Extracted.eDC ;
+    vr_inf            : 'vr Extracted.infinite ;
+    ts_edc            : 'ts Extracted.eDC ;
+    fs_edc            : 'fs Extracted.eDC ;
+    ps_edc            : 'ps Extracted.eDC ;
+    ats_edc           : 'ats Extracted.eDC ;
+    ms_edc            : 'ms Extracted.eDC ;
+    qs_edc            : 'qs Extracted.eDC ;
+    hps_edc           : 'hps Extracted.eDC ;
+    background_model  : (('v, 'hv, 'nv, 'vr, 'ts, 'fs, 'ps, 'ats, 'ms, 'qs, 'hps, 'prg) Extracted.backgroundModelOver) ;
+    builtin_inject    : (builtin_repr -> 'v) ;
+    builtin_eject     : ('v -> builtin_repr ) ;
+    bindings          : (string -> ('ps, 'hps,'fs,'ats,'qs,'ms) Extracted.symbolInfo) ;
+  }
+
+
+let klike_builtin_inject (b : builtin_repr)  =
+  match b.br_kind with
+  | "int" -> ((Extracted.Bv_Z (Z.of_string (b.br_value))))
+  | "bool" -> (
+    match b.br_value with
+    | "true" -> ((Extracted.Bv_bool true))
+    | "false" -> ((Extracted.Bv_bool false))
+    | _ -> failwith (sprintf "Unknown boolean value '%s': only 'true' and 'false' are allowed" b.br_value)
+  )
+  | "string" -> ((Extracted.Bv_str (b.br_value)))
+  | _ -> failwith (sprintf "Unknown kind of builtins '%s' for module 'klike'" b.br_kind)
+
+let klike_builtin_eject b : builtin_repr =
+  match b with
+  | Extracted.Bv_Z z -> (({br_kind="int"; br_value=(Z.to_string z);}))
+  | Extracted.Bv_bool b' -> (({br_kind="bool"; br_value=(if b' then "true" else "false");}))
+  | Extracted.Bv_str s -> ((({br_kind="string"; br_value=s};)))
+  | Extracted.Bv_list _ -> ({br_kind="list"; br_value="_"})
+  | Extracted.Bv_pmap _ -> ({br_kind="map"; br_value="_"})
+
+let empty_builtin_inject (b : builtin_repr) =
+  match b with
+  | _ -> failwith (sprintf "Cannot represent given builtin using module 'empty'")
+
+let empty_builtin_eject b : builtin_repr =
+  match b with
+  | _ -> failwith "This should be unreachable"
+
+
+let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*) = (
+
+  let sym_edc = (Extracted.top_string_symbols_edc) in
+  let m  = (Extracted.top_builtin_klike_model sym_edc) in
+  let hm = (Extracted.top_hidden_unit_model) in
+  let pi = (Extracted.top_pi_trivial_pi) in
+  let bs = (Extracted.combine_symbol_classifiers
+    (Extracted.top_builtin_klike_bindings)
+    (Extracted.top_pi_trivial_bindings)
+    (Extracted.top_hidden_unit_bindings)
+  ) in
+  {
+    v_edc = Extracted.top_builtin_klike_bv_edc Extracted.top_string_symbols_edc;
+    ts_edc = Extracted.top_string_symbols_edc;
+    fs_edc = Extracted.top_builtin_klike_fs_edc;
+    ps_edc = Extracted.top_builtin_klike_ps_edc;
+    qs_edc = Extracted.top_pi_trivial_qs_edc;
+    hv_edc = Extracted.top_hidden_unit_edc;
+    ats_edc = Extracted.top_hidden_unit_ats_edc;
+    ms_edc = Extracted.top_hidden_unit_ms_edc;
+    hps_edc = Extracted.top_hidden_unit_hps_edc;
+    nv_edc = Extracted.top_nv_edc;
+    vr_edc = Extracted.top_string_symbols_edc;
+    vr_inf = Extracted.top_string_infinite;
+    background_model = {
+        value_algebra = m;
+        hidden_algebra = hm;
+        program_info = pi;
+        nondet_gen = (fun _ -> ());
+    };
+    builtin_inject = klike_builtin_inject;
+    builtin_eject = klike_builtin_eject;
+    bindings = bs;
+  }
+)
+
+let empty_interface = (
+  let sym_edc = (Extracted.top_string_symbols_edc) in		       
+  let m  = (Extracted.top_builtin_empty_model) in
+  let hm = (Extracted.top_hidden_unit_model) in
+  let pi = (Extracted.top_pi_trivial_pi) in
+  let bs = (Extracted.combine_symbol_classifiers
+    (Extracted.top_builtin_empty_bindings)
+    (Extracted.top_pi_trivial_bindings)
+    (Extracted.top_hidden_unit_bindings)
+  ) in
+  {
+    v_edc = Extracted.top_builtin_empty_bv_edc;
+    ts_edc = Extracted.top_string_symbols_edc;
+    fs_edc = Extracted.top_builtin_empty_fs_edc;
+    ps_edc = Extracted.top_builtin_empty_ps_edc;
+    qs_edc = Extracted.top_pi_trivial_qs_edc;
+    hv_edc = Extracted.top_hidden_unit_edc;
+    ats_edc = Extracted.top_hidden_unit_ats_edc;
+    ms_edc = Extracted.top_hidden_unit_ms_edc;
+    hps_edc = Extracted.top_hidden_unit_hps_edc;
+    nv_edc = Extracted.top_nv_edc;
+    vr_edc = Extracted.top_string_symbols_edc;
+    vr_inf = Extracted.top_string_infinite;
+    background_model = {
+        value_algebra = m;
+        hidden_algebra = hm;
+        program_info = pi;
+        nondet_gen = (fun _ -> ());
+    };
+    builtin_inject = empty_builtin_inject;
+    builtin_eject = empty_builtin_eject;
+    bindings = bs;
+  }
+)
+
+let rec convert_groundterm
+  (builtin_inject : builtin_repr -> 'builtin)
+  (g : Syntax.groundterm)
+  : ((string, 'builtin2) Extracted.termOver') =
   match g with
   | `GTb b ->
-    Extracted.gt_over iface.bi_signature iface.bi_beta (convert_builtin pvae b)
+    Extracted.T_over (builtin_inject b)
   | `GTerm (`Id s, gs) ->
-    Extracted.T_term (((*Stringutils.explode*) s),(List.map ~f:(convert_groundterm pvae iface) gs))
+    Extracted.T_term (s,(List.map ~f:(convert_groundterm builtin_inject) gs))
 
-let wrap_init (g : Extracted.gT) : Extracted.gT =
-  Extracted.T_term (((*Stringutils.explode*) "builtin.init"), [g])
+let wrap_init (g : ((string, 'builtin) Extracted.termOver')) : ((string, 'builtin) Extracted.termOver') =
+  Extracted.T_term (("builtin.init"), [g])
 
-let wrap_init0 : Extracted.gT =
-  Extracted.T_term (((*Stringutils.explode*) "builtin.init"), [])
+let wrap_init0 : ((string, 'builtin) Extracted.termOver') =
+  Extracted.T_term (("builtin.init"), [])
   
-
-let rec groundterm_coq_quote (pvae : primitiveValueAlgebraEntry) (g : Extracted.gT) : string =
+let rec show_groundterm
+  (builtin_eject : 'builtin -> builtin_repr)
+  (g : (string, 'builtin2) Extracted.termOver')
+  : string =
   match g with
   | Extracted.T_over b ->
-    let b'' = (Option.value_exn (pvae.pvae_builtin_eject b)) in
+    let b'' = ((builtin_eject b)) in
     (sprintf "(@builtin:%s(\"%s\"))" b''.br_kind b''.br_value)
-    (* (pvae.pvae_builtin_coq_quote b'') *)
   | Extracted.T_term (s, gs) ->
-    let ss = List.map ~f:(groundterm_coq_quote pvae) gs in
+    let ss = List.map ~f:(show_groundterm builtin_eject) gs in
     sprintf "%s %s" s (format_string_list ss)
 
-
 let rec run_n_steps
-  (step : Extracted.gT -> (Extracted.gT*'a) option)
+  (nvgen : Z.t -> 'nv)
+  (step :
+    'nv ->
+    (((string, 'builtin) Extracted.termOver')*'hidden_data) ->
+    (((((string, 'builtin) Extracted.termOver')*'hidden_data)*'a) option)
+  )
   (generate_debug : 'a list -> string)
   (rev_trace : 'a list)
-  (max_depth : int)
-  (curr_depth : int)
-  gterm
+  (max_depth : Z.t)
+  (curr_depth : Z.t)
+  (gterm : (string, 'builtin) Extracted.termOver')
+  (h : 'hidden_data)
+  : (Z.t*((string, 'builtin) Extracted.termOver')*(string))
   =
-  if curr_depth >= max_depth then (curr_depth, gterm, generate_debug (List.rev rev_trace))
+  if Z.geq curr_depth max_depth then (curr_depth, gterm, generate_debug (List.rev rev_trace))
   else (
-    let ogterm2 = step gterm in
+    let ogterm2 = step (nvgen (curr_depth)) (gterm,h) in
     match ogterm2 with
     | None -> (curr_depth, gterm, generate_debug (List.rev rev_trace))
-    | Some (gterm2,info) ->
+    | Some ((gterm2,h'),info) ->
         run_n_steps
+          nvgen
           step
           generate_debug
           (info::rev_trace)
           max_depth
-          (curr_depth + 1)
+          (Z.add curr_depth (Z.of_int 1))
           gterm2
+          h'
   )
 
 let with_bench (f : unit -> 'a) =
@@ -73,10 +202,20 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (parser : Lexing.lexbuf -> 'programT)
-  (pvae : primitiveValueAlgebraEntry)
-  (step : 'programT -> Extracted.gT -> Extracted.gT option)
-  (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+  (parser : Lexing.lexbuf -> 'prg)
+  (step :
+    'programT ->
+    'nv ->
+    (((string, 'v) Extracted.termOver')*'hv) ->
+    (((string, 'v) Extracted.termOver')*'hv) option
+  )
+  (step_ext :
+    'programT ->
+    'nv ->
+    (((string, 'v) Extracted.termOver')*'hv) ->
+    ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option
+  )
   (lang_debug_info : string list)
   =
   Command.basic
@@ -100,7 +239,7 @@ let command_run
               match with_trace with
               | false -> (
                   (
-                    (fun g -> (match step program g with None -> None | Some g' -> Some (g', -1))), (
+                    (fun (nv : 'nv) (g : (((string, 'a) Extracted.termOver')*'hidden_data)) -> (match step program nv g with None -> None | Some g' -> Some (g', (Z.of_int ( -1))  ))), (
                     (fun _ -> "No debug info."),
                     []
                     )
@@ -108,10 +247,15 @@ let command_run
               )
               | true -> (
                   (
-                    (step_ext program), (
-                    (fun indices ->
-                      let names = List.mapi ~f:(fun step_number rule_idx -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
-                      let log = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
+                    ((step_ext program)), (
+                    (fun (indices : 'myint list) : string ->
+                      let names : string list = List.mapi ~f:(
+                        fun (step_number : int) (rule_idx : 'myint) -> (
+                          (string_of_int (step_number + 1 ))
+                          ^ ": "
+                          ^ (List.nth_exn lang_debug_info (Z.to_int rule_idx))
+                      )) indices in
+                      let log : string = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
                       log
                     ),
                     []
@@ -119,17 +263,21 @@ let command_run
                   )
               )
             ) in
-            let res0 = run_n_steps (fst my_step) (fst (snd my_step)) (snd (snd my_step)) depth 0 wrap_init0 in
+            let actual_step : ('nv -> (((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'bb) option) = (fst my_step) in
+            let show_log : 'bb list -> string = (fst (snd my_step)) in
+            let initial_log = (snd (snd my_step)) in
+            let (initial_h : 'hidden_data) = iface.background_model.hidden_algebra.hidden_init in
+            let res0 = run_n_steps iface.background_model.nondet_gen actual_step show_log initial_log (Z.of_int depth) (Z.of_int 0) wrap_init0 initial_h in
             res0
           )) in
           let res = fst res0 in
           let bench_result = snd res0 in
           if bench then (fprintf stderr "Execution wall clock time: %.02f\n" (bench_result.wall); ());
           let (actual_depth,result, info) = res in
-          fprintf stdout "Taken %d steps\n" actual_depth;
+          fprintf stdout "Taken %s steps\n" (Z.to_string actual_depth);
           (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
           with_output_file_or_stdout output_file (fun f_out -> 
-            fprintf f_out "%s\n" (groundterm_coq_quote pvae result);
+            fprintf f_out "%s\n" (show_groundterm iface.builtin_eject result);
             ()
           );
           ()
@@ -138,106 +286,111 @@ let command_run
     )
 
 let main0
-  (pvae : primitiveValueAlgebraEntry) 
-  (iface : 'a Extracted.builtinInterface)
-  (parser : Lexing.lexbuf -> 'programT)
-  (step : 'programT -> Extracted.gT -> Extracted.gT option)
-  (step_ext : 'programT -> Extracted.gT -> (Extracted.gT*int) option)
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+  (parser : Lexing.lexbuf -> 'prg)
+  (step : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
+  (step_ext : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option)
   (lang_debug_info : string list)
   =
   Printexc.record_backtrace true;
     try (Command_unix.run ~version:"0.6" (command_run
+      iface
       parser
-      pvae
       step
       step_ext
-      lang_debug_info (*(List.map lang_debug_info ~f:Stringutils.implode)*)
+      lang_debug_info
       )) with
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
-
-let wrap_interpreter pvae iface interpreter : 'programT -> Extracted.gT -> Extracted.gT option =
-  (fun a b -> Stdlib.Obj.magic (interpreter (Stdlib.Obj.magic (convert_groundterm pvae iface a)) (Stdlib.Obj.magic b)))
-
-let wrap_interpreter_ext pvae iface interpreter_ext =
-  (fun a b -> 
-    let r = Stdlib.Obj.magic (interpreter_ext (Stdlib.Obj.magic (convert_groundterm pvae iface a)) (Stdlib.Obj.magic b)) in
-    match r with
-    | Some v ->
-      Some ((fst v), (Z.to_int (snd v)))
-    | None -> None
-  )
-
-
 let main
-      (pvae : primitiveValueAlgebraEntry)
-      (pie : programInfoEntry)
-      (* (iface : 'a Extracted.builtinInterface) *)
+      (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
       =
-  let mysignature = pvae.pvae_builtin_interface.bi_signature in
-  let mybeta = pvae.pvae_builtin_interface.bi_beta in
-  let my_program_info = (pie.pie_constructor) in
-  let mysigma = Extracted.dSM mysignature mybeta my_program_info in
-  let name2ar = (fun name ->
-    match (pvae.pvae_builtin_interface.bi_sym_info name) with
-    | Extracted.Si_predicate(_,n,_) -> n
-    | _ -> failwith (sprintf "Given string predicate '%s' does not represent a predicate" name)  
-  ) in
-  let nameneg = ( fun name ->
-    match (pvae.pvae_builtin_interface.bi_sym_info name) with
-      | Extracted.Si_predicate(_,_,nname) -> nname
-      | _ -> failwith (sprintf "Given string predicate '%s' does not represent a predicate" name)
-  ) in
-  let r : Extracted.realization = {
-    realize_br = (fun br ->
+  let r (*: ('builtin, string, string, 'pred, 'hpred, 'func, 'attr, 'query, 'meth) Extracted.realization *) = {
+    Extracted.realize_br = (fun (br : Extracted.builtinRepr) : 'v option ->
       let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
-      match (pvae.pvae_builtin_inject br') with
-      | None -> failwith "Cannot realize builtin"
-      | Some b -> Some b
+      Some ((iface.builtin_inject br'))
     );
-    string2sym = (fun x -> Obj.magic x);
-    string2var = (fun x -> Obj.magic x);
-    string2q = (fun s ->
-      match (pie.pie_inject s) with
-        | Some a -> Some a
-        | None -> failwith (sprintf "Can't realize query: %s" s)
+    Extracted.string2sym = (fun (x : string) -> x);
+    Extracted.string2var = (fun (x : string) -> x);
+    Extracted.string2m = (fun (x : string) (*: 'meth option*) ->
+      match iface.bindings x with
+      | Extracted.Si_method m -> Some (m)
+      | _ -> None
     );
-    string2f = (fun s ->
-      match (pvae.pvae_builtin_interface.bi_sym_info s) with
-      | Extracted.Si_function f -> Some f
-      | Extracted.Si_none -> failwith (sprintf "Can't realize function: %s" s)  
+    Extracted.string2p = (fun (x : string) (*('pred, 'hpred) Extracted.sum option*)  ->
+      match iface.bindings x with
+      | Extracted.Si_predicate p -> Some (Extracted.Inl (p))
+      | Extracted.Si_hidden_predicate p -> Some (Extracted.Inr (p))
+      | _ -> None
     );
-    string2p = (fun s ->
-      match (pvae.pvae_builtin_interface.bi_sym_info s) with
-      | Extracted.Si_predicate(p,_,_) -> Some p
-      | Extracted.Si_none -> failwith (sprintf "Can't realize predicate: %s" s)  
+
+    Extracted.string2qfa = (fun (x : string) (*(('query,'func) Extracted.sum, 'attr) Extracted.sum option*) ->
+      match iface.bindings x with
+      | Si_attribute a -> Some (Extracted.Inr (a))
+      | Si_query q -> Some (Extracted.Inl (Extracted.Inl (q)))
+      | Si_function f -> Some (Extracted.Inl (Extracted.Inr (f)))
+      | _ -> None
     );
   } in
-  let pre1T = Extracted.process_declarations Extracted.Default_act name2ar nameneg langDefaults lang_Decls in
+  let pre1T = Extracted.top_frontend_process_declarations Extracted.Default_label langDefaults lang_Decls in
   match pre1T with
   | Extracted.Inl(st) -> (
-    match (Extracted.to_theory st) with
+    match (Extracted.top_frontend_to_thy st) with
     | (thy, dbg) -> (
-      match (Extracted.realize_thy mysigma r thy) with
+      match (Extracted.top_frontend_realize_thy (*iface.value_algebra*) r thy) with
       | Extracted.Inr e -> failwith (sprintf "Failed to realize the given theory: %s" e)
       | Extracted.Inl thy2 -> (
-        let is_valid_dec = Extracted.rewritingTheory2_wf_dec (Extracted.dSM mysignature mybeta my_program_info) thy2 in
+        let is_valid_dec = Extracted.top_thy_wf Extracted.string_eq_dec Extracted.string_countable thy2 in
         let _ = (match is_valid_dec with
          | true -> () (* OK *)
          | false -> printf "Warning: the given theory is not well-formed\n"; ()
         ) in
-        let basic_interpreter = Extracted.global_naive_interpreter mysignature mybeta my_program_info thy2 in
-        let ext_interpreter = Extracted.global_naive_interpreter_ext mysignature mybeta my_program_info thy2 in
-        main0
-        pvae
-        (pvae.pvae_builtin_interface)
-        parser
-        (wrap_interpreter pvae (pvae.pvae_builtin_interface) basic_interpreter)
-        (wrap_interpreter_ext pvae (pvae.pvae_builtin_interface) ext_interpreter)
-        (dbg)  
+        let basic_interpreter = (
+            Extracted.top_poly_interpreter
+              iface.v_edc
+              iface.hv_edc
+              iface.nv_edc
+              iface.vr_edc
+              iface.vr_inf
+              iface.ts_edc
+              iface.fs_edc
+              iface.ps_edc
+              iface.ats_edc
+              iface.ms_edc
+              iface.qs_edc
+              iface.hps_edc
+              iface.background_model
+              thy2
+        ) in
+        let ext_interpreter = (
+          Extracted.top_poly_interpreter_ext
+              iface.v_edc
+              iface.hv_edc
+              iface.nv_edc
+              iface.vr_edc
+              iface.vr_inf
+              iface.ts_edc
+              iface.fs_edc
+              iface.ps_edc
+              iface.ats_edc
+              iface.ms_edc
+              iface.qs_edc
+              iface.hps_edc
+              iface.background_model
+              thy2
+        ) in
+        (main0
+          iface
+          parser
+          basic_interpreter
+          (* (wrap_interpreter iface.builtin_inject basic_interpreter) *)
+          ext_interpreter
+          (* (wrap_interpreter_ext iface.builtin_inject ext_interpreter) *)
+          (dbg)  
+        )
       )
     )
   )

@@ -16,6 +16,7 @@
 %token KEYWORD_FALSE
 %token KEYWORD_AND
 %token KEYWORD_OR
+%token KEYWORD_NOT
 %token BRACKET_ROUND_LEFT
 %token BRACKET_ROUND_RIGHT
 %token BRACKET_SQUARE_LEFT
@@ -112,14 +113,14 @@ expr:
     BRACKET_ROUND_LEFT
     es = separated_list(COMMA, expr)
     BRACKET_ROUND_RIGHT
-    { `ECallF ((`Id s),es) }
-  | KEYWORD_QUERY
-    COLON
-    s = ID
-    BRACKET_ROUND_LEFT
-    es = separated_list(COMMA, expr)
-    BRACKET_ROUND_RIGHT
-    { `ECallQ ((`Id s),es) }
+    { `ECall ((`Id s),es) }
+  // | KEYWORD_QUERY
+  //   COLON
+  //   s = ID
+  //   BRACKET_ROUND_LEFT
+  //   es = separated_list(COMMA, expr)
+  //   BRACKET_ROUND_RIGHT
+  //   { `ECallQ ((`Id s),es) }
   ;
 
 condition:
@@ -131,7 +132,14 @@ condition:
     BRACKET_ROUND_LEFT
     es = separated_list(COMMA, expr)
     BRACKET_ROUND_RIGHT
-    { `CondAtomic ((`Id p), es) }
+    { `CondAtomicPred ((`Id p), es) }
+  | 
+    KEYWORD_NOT
+    p = ID
+    BRACKET_ROUND_LEFT
+    es = separated_list(COMMA, expr)
+    BRACKET_ROUND_RIGHT
+    { `CondAtomicNPred ((`Id p), es) }
   | KEYWORD_OR
     BRACKET_ROUND_LEFT
     c1 = condition

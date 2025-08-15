@@ -4,37 +4,6 @@ open Libminuskapluginbase
 open Syntax
 open Libminuskapluginbase.Pluginbase
 
-(*
-type builtins_map_t = (string, string, String.comparator_witness) Map.t ;;
-type query_map_t = (string, string, String.comparator_witness) Map.t ;;
-*)
-
-let myiter (f : 'a -> 'b) (g : unit -> unit) (l : 'a list)  : unit =
-    let ln = List.length l in
-    List.iteri ~f:(fun idx x -> if (idx + 1 = ln) then (f x) else (f x; g ())) l;
-    ()
-(*
-let translate_name
-  (my_builtins_map : builtins_map_t)
-  (my_query_map : query_map_t)
-  (name : string)
-  : (string*string)
-  =
-  let name0 = Map.find my_builtins_map name in
-    match name0 with
-    | None ->  (
-      let name1 = Map.find my_query_map name in
-      match name1 with
-      | None ->
-        failwith (String.append "Unknown builtin: " name)
-      | Some name2 ->
-        let name = (name2) in
-        ("e_query", name)
-    )
-    | Some name1 ->
-        let name = (name1) in
-        ("e_fun", name)
-*)
 let rec groundterm_to_string
     (g : Syntax.groundterm)
     : string =
@@ -94,14 +63,14 @@ let rec expr_w_hole_to_str
   | `EGround g -> (
     sprintf "(se_ground %s)" (groundterm_to_string g)
   )
-  | `ECallF (`Id s, es) -> (
+  | `ECall (`Id s, es) -> (
     let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
-    sprintf "(se_applyf \"%s\" %s)" s (Util.format_coq_string_list es_str)
+    sprintf "(se_apply \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
-  | `ECallQ (`Id s, es) -> (
+  (* | `ECallQ (`Id s, es) -> (
     let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
-    sprintf "(se_applyq \"%s\" %s)" s (Util.format_coq_string_list es_str)
-  )
+    sprintf "(. \"%s\" %s)" s (Util.format_coq_string_list es_str)
+  ) *)
 
   let expr_to_str (e : Syntax.expr) : string =
     (expr_w_hole_to_str e None)
@@ -123,9 +92,13 @@ let rec cond_w_hole_to_str
   (hole : string option)
   : string =
   match c with
-  | `CondAtomic (`Id s, es) -> (
+  | `CondAtomicPred (`Id s, es) -> (
     let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
-    sprintf "(ssc_atom \"%s\" %s)" s (Util.format_coq_string_list es_str)
+    sprintf "(ssc_pred \"%s\" %s)" s (Util.format_coq_string_list es_str)
+  )
+  | `CondAtomicNPred (`Id s, es) -> (
+    let es_str = List.map ~f:(fun a -> expr_w_hole_to_str a hole) es in
+    sprintf "(ssc_npred \"%s\" %s)" s (Util.format_coq_string_list es_str)
   )
   | `CondAnd (c1, c2) -> (
     sprintf "(ssc_and %s %s)" (cond_w_hole_to_str c1 hole) (cond_w_hole_to_str c2 hole)
@@ -163,7 +136,7 @@ let frame_definition_to_str fr : string =
   sprintf "Definition frame_%s : (string*(@TermOver' string StringBuiltinOrVar)) := %s.\n" (match fr.fd_name with `Id s -> s) (frame_to_str fr)
 
 let decl_strict_to_str strictness : string = (
-  sprintf "(decl_strict Act (mkStrictnessDeclaration \"%s\" %d %s isValue myContext))\n"
+  sprintf "(decl_strict Label (mkStrictnessDeclaration \"%s\" %d %s isValue myContext))\n"
     (match strictness.symbol with `Id s -> s)
     (strictness.arity)
     (Util.format_coq_string_list (List.map ~f:(fun a -> sprintf "%d" a) strictness.strict_places))
@@ -179,18 +152,18 @@ let isvalue_decl_to_str value : string = (
   sprintf "Definition isValue (%s : StringExpression) := %s.\n" varname (cond_w_hole_to_str (snd value) (Some varname))
 )
 
-
+(* This expects an instance of a StaticModel to be in context. *)
 let definition_to_str def : string = (
   sprintf
 {delimiter|
-Require Import Minuska.pval_ocaml_binding Minuska.default_everything.
+Require Import Minuska.default_everything.
   %s
   %s
 #[local]
 Instance LangDefaults : Defaults := mkDefaults "builtin.cseq" "builtin.empty_cseq" myContext isValue.
   
 %s
-Definition Lang_Decls : list (Declaration Act) :=
+Definition Lang_Decls : list (Declaration Label) :=
   (%s)
   ++
   (%s)

@@ -2,12 +2,16 @@ From Minuska Require Import
     prelude
     spec
     model_algebra
-    model_traits
     properties
 .
 
 From stdpp Require Import decidable.
 
+(* I commented this out because it was only a WIP
+   and I do not have time to refactor this now.
+   But see also https://h0nzzik.github.io/posts/019-language-parametric-information-flow-control/.
+ *)
+(* 
 Class IFLattice (TagType : Type) := {
     ifl_meet :
         TagType -> TagType -> TagType
@@ -57,8 +61,8 @@ Class IFCRelaxedModelTrait0
     (TagType : Type)
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -102,8 +106,8 @@ Program Definition information_flow_functor
     rmf_model :=
         fun (signature : Signature)
             (NondetValue : Type)
-            (symbol : Type)
-            (symbols : Symbols symbol)
+            (TermSymbol : Type)
+            (TermSymbols : Symbols TermSymbol)
             M
         => 
         {|
@@ -121,7 +125,7 @@ Program Definition information_flow_functor
                 {|
                     builtin_function_interp :=
                         fun
-                            (f : @builtin_function_symbol signature)
+                            (f : @FunSymbol signature)
                             (nv : NondetValue)
                             l
                         =>  @spec.builtin_function_interp _ _ _ _ _
@@ -135,7 +139,7 @@ Program Definition information_flow_functor
 
                     builtin_predicate_interp :=
                         fun
-                            (p : @builtin_predicate_symbol signature)
+                            (p : @PredSymbol signature)
                             (nv : NondetValue)
                             l
                         =>  @spec.builtin_predicate_interp _ _ _ _ _
@@ -162,25 +166,17 @@ Defined.
 Next Obligation.
     intros. simpl in *. ltac1:(simplify_eq/=). reflexivity.
 Qed.
-Next Obligation.
-    intros. simpl in *.
-    eapply bps_neg_correct.
-    { apply H. }
-    { apply H0. }
-    { apply H1. }
-    { apply H2. }
-Qed.
 Fail Next Obligation.
 
 Definition information_flow_functor_tagged
     (TagType : Type)
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
-    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (M : @RelaxedModel TermSymbol TermSymbols signature NondetValue void)
     (c : @rm_carrier _ _ _ _ _ M)
     (tags : gset TagType)
     :
@@ -193,11 +189,11 @@ Definition information_flow_functor_get_tags
     (TagType : Type)
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
-    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (M : @RelaxedModel TermSymbol TermSymbols signature NondetValue void)
     (c' : @rm_carrier _ _ _ _ _ (rmf_apply (information_flow_functor TagType) M))
     :
     gset TagType
@@ -209,11 +205,11 @@ Definition information_flow_functor_get_pure
     (TagType : Type)
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
-    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (M : @RelaxedModel TermSymbol TermSymbols signature NondetValue void)
     (c' : @rm_carrier _ _ _ _ _ (rmf_apply (information_flow_functor TagType) M))
     :
     @rm_carrier _ _ _ _ _ M
@@ -226,11 +222,11 @@ Program Instance information_flow_functor_trait
     (TagType : Type)
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
-    (M : @RelaxedModel symbol symbols signature NondetValue void)
+    (M : @RelaxedModel TermSymbol TermSymbols signature NondetValue void)
     :
     IFCRelaxedModelTrait0 TagType M (rmf_apply (information_flow_functor TagType) M)
 := {|
@@ -254,8 +250,8 @@ Definition eval_predicate_in_orig
     {TagType : Type}
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -266,7 +262,7 @@ Definition eval_predicate_in_orig
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
-    (p : builtin_predicate_symbol)
+    (p : PredSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
 :=
@@ -279,8 +275,8 @@ Definition eval_predicate_in_iflow
     {TagType : Type}
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -291,7 +287,7 @@ Definition eval_predicate_in_iflow
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier)
-    (p : builtin_predicate_symbol)
+    (p : PredSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
@@ -306,8 +302,8 @@ Definition eval_function_in_orig
     {TagType : Type}
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -318,7 +314,7 @@ Definition eval_function_in_orig
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
-    (f : builtin_function_symbol)
+    (f : FunSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
@@ -333,8 +329,8 @@ Definition eval_function_in_iflow
     {TagType : Type}
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -345,7 +341,7 @@ Definition eval_function_in_iflow
     (Carrier : Type)
     (inja : Injection FromT Carrier)
     (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier)
-    (f : builtin_function_symbol)
+    (f : FunSymbol)
     (nv : NondetValue)
     (args : list (TermOver' (@rm_carrier _ _ _ _ _ Miflow)))
     :
@@ -450,8 +446,8 @@ Class IFCRelaxedModelTrait1
     {_SL : IFLattice TagType}
     {_E : EqDecision TagType}
     {_C : Countable TagType}
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    {TermSymbol : Type}
+    {TermSymbols : Symbols TermSymbol}
     {signature : Signature}
     {NondetValue : Type}
     {FromT : Type}
@@ -470,7 +466,7 @@ Class IFCRelaxedModelTrait1
             (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
             (injb' : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier'),
         forall
-            (p : builtin_predicate_symbol)
+            (p : PredSymbol)
             (nv : NondetValue)
             args,
         eval_predicate_in_iflow ifc_0 Carrier' inja' injb' p nv args
@@ -486,7 +482,7 @@ Class IFCRelaxedModelTrait1
             (injb : ReversibleInjection (@rm_carrier _ _ _ _ _ Morig) Carrier)
             (injb' : ReversibleInjection (@rm_carrier _ _ _ _ _ Miflow) Carrier'),
         forall
-            (f : builtin_function_symbol)
+            (f : FunSymbol)
             (nv : NondetValue)
             args,
         let r1 : option (TermOver' Carrier') := eval_function_in_iflow ifc_0 Carrier' inja' injb' f nv args in
@@ -506,7 +502,7 @@ Class IFCRelaxedModelTrait1
             end
         end
     ;
-}.
+}. *)
 
 
 (* TODO need "the rest" of the natural transformation *)

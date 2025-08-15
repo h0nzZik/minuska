@@ -6,8 +6,8 @@ From Minuska Require Import
 
 
   Definition Valuation2_use_left
-  {Σ : StaticModel}
-  (og1 og2: option (TermOver builtin_value)): option (TermOver builtin_value) :=
+  {Σ : BackgroundModel}
+  (og1 og2: option (@TermOver' TermSymbol BasicValue)): option (@TermOver' TermSymbol BasicValue) :=
   match og1, og2 with
   | None, None => None
   | Some g1, None => Some g1
@@ -16,13 +16,13 @@ From Minuska Require Import
   end.
 
   Definition Valuation2_compatible_with
-      {Σ : StaticModel}
+      {Σ : BackgroundModel}
       (ρ1 ρ2 : Valuation2) : bool
       := forallb (fun k => bool_decide (ρ1 !! k = ρ2 !! k)) (elements (dom ρ1 ∩ dom ρ2))
   .
 
 Definition Valuation2_compatible_with_bound
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ1 ρ2 ρ : Valuation2)
     :
     ρ1 ⊆ ρ ->
@@ -38,7 +38,7 @@ Proof.
     rewrite elem_of_elements in Hx.
     rewrite elem_of_intersection in Hx.
     destruct Hx as [H1x H2x].
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     rewrite elem_of_dom in H1x.
     rewrite elem_of_dom in H2x.
     destruct H1x as [y1 Hy1].
@@ -50,7 +50,7 @@ Proof.
 Qed.
 
   Definition Valuation2_merge_with
-      {Σ : StaticModel}
+      {Σ : BackgroundModel}
       (ρ1 ρ2 : Valuation2)
       : option Valuation2 :=
   if (Valuation2_compatible_with ρ1 ρ2)
@@ -61,7 +61,7 @@ Qed.
   .
 
 Definition Valuation2_merge_list
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l : list Valuation2)
     : option Valuation2
 :=
@@ -71,7 +71,7 @@ Definition Valuation2_merge_list
 .
 
 Definition Valuation2_merge_olist
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l : list (option Valuation2))
     : option Valuation2
 :=
@@ -83,14 +83,14 @@ Definition Valuation2_merge_olist
 
 
   Lemma Valuation2_merge_with_correct
-      {Σ : StaticModel}
+      {Σ : BackgroundModel}
       (ρ1 ρ2 ρ : Valuation2):
       Valuation2_merge_with ρ1 ρ2 = Some ρ ->
       ρ1 ⊆ ρ /\
       ρ2 ⊆ ρ
   .
   Proof.
-      unfold Valuation2 in *.
+      unfold Valuation2,Valuation' in *.
       unfold Valuation2_merge_with.
       unfold is_left.
       destruct ((Valuation2_compatible_with ρ1 ρ2)) eqn:Hcompat; intros H.
@@ -130,7 +130,7 @@ Definition Valuation2_merge_olist
               }
           }
           apply bool_decide_eq_true_1 in Hcompat.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           rewrite Hcompat in Hρ1i.
           rewrite Hρ1i in Hρ2i.
           ltac1:(congruence).
@@ -142,7 +142,7 @@ Definition Valuation2_merge_olist
 
 
   Lemma merge_valuations_empty_r
-    {Σ : StaticModel} x
+    {Σ : BackgroundModel} x
   :
     Valuation2_merge_with x ∅ = Some x
   .
@@ -168,7 +168,7 @@ Definition Valuation2_merge_olist
       }
       {
           unfold is_left in H.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           unfold Valuation2_compatible_with in H.
           rewrite <- not_true_iff_false in H.
           ltac1:(exfalso). apply H. clear H.
@@ -187,7 +187,7 @@ Definition Valuation2_merge_olist
   Qed.
 
   Lemma merge_valuations_empty_l
-      {Σ : StaticModel} x:
+      {Σ : BackgroundModel} x:
       Valuation2_merge_with ∅ x = Some x
   .
   Proof.
@@ -213,7 +213,7 @@ Definition Valuation2_merge_olist
       }
       {
           unfold is_left in H.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           unfold Valuation2_compatible_with in H.
           rewrite <- not_true_iff_false in H.
           ltac1:(exfalso). apply H. clear H.
@@ -232,7 +232,7 @@ Definition Valuation2_merge_olist
   Qed.
 
   Lemma merge_use_left_subseteq
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ1 ρ2 : Valuation2):
     ρ1 ⊆ ρ2 ->
       merge Valuation2_use_left ρ1 ρ2 = ρ2
@@ -240,7 +240,7 @@ Definition Valuation2_merge_olist
   Proof.
       unfold subseteq. simpl.
       unfold Subseteq_Valuation2.
-      unfold Valuation2 in *. simpl.
+      unfold Valuation2,Valuation' in *. simpl.
       unfold map_subseteq.
       unfold map_included.
       unfold map_relation.
@@ -286,7 +286,7 @@ Definition Valuation2_merge_olist
   Qed.
 
   Lemma merge_valuations_dom
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ1 ρ2 ρ : Valuation2):
     Valuation2_merge_with ρ1 ρ2 = Some ρ ->
     dom ρ = dom ρ1 ∪ dom ρ2
@@ -303,7 +303,7 @@ Definition Valuation2_merge_olist
           clear Hm.
           rewrite elem_of_subseteq.
           intros x Hx.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           rewrite elem_of_dom in Hx.
           rewrite elem_of_union.
           rewrite elem_of_dom.
@@ -329,7 +329,7 @@ Definition Valuation2_merge_olist
           rewrite union_subseteq.
           rewrite elem_of_subseteq.
           rewrite elem_of_subseteq.
-          unfold Valuation2 in *.
+          unfold Valuation2,Valuation' in *.
           split; intros x Hx; rewrite elem_of_dom in Hx;
               destruct Hx as [y Hy]; rewrite elem_of_dom;
               exists y; eapply lookup_weaken>[apply Hy|];
@@ -338,7 +338,7 @@ Definition Valuation2_merge_olist
   Qed.
 
   Lemma Valuation2_merge_with_correct_2
-      {Σ : StaticModel}
+      {Σ : BackgroundModel}
       (ρ1 ρ2 ρ : Valuation2):
       Valuation2_merge_with ρ1 ρ2 = Some ρ ->
       ∀ x g, ρ !! x = Some g ->
@@ -365,15 +365,15 @@ Definition Valuation2_merge_olist
 
 #[global]
 Instance option_Valuation2_vars_of
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     :
-    VarsOf (option Valuation2) variable
+    VarsOf (option Valuation2) Variabl
 := {|
     vars_of := fun oρ => match oρ with None => ∅ | Some ρ => vars_of ρ end
 |}.
 
 Lemma Valuation2_merge_olist_vars_of
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l : list (option Valuation2))
     (ρ : Valuation2):
     Valuation2_merge_olist l = Some ρ ->
@@ -397,6 +397,7 @@ Proof.
         subst.
         specialize (IHl _ HH2).
         apply merge_valuations_dom in HH3.
+        unfold Valuation2,Valuation' in *.
         rewrite HH3. clear HH3.
         ltac1:(set_solver).
     }
@@ -406,13 +407,13 @@ Qed.
 
 
 Lemma dom_merge_use_left
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (ρ' ρ'' : Valuation2)
     :
     dom (merge Valuation2_use_left ρ' ρ'') = dom ρ'' ∪ dom ρ'
 .
 Proof.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     apply set_eq.
     intros x.
     rewrite elem_of_dom.
@@ -483,14 +484,14 @@ Proof.
     }
 Qed.
 
-Lemma merge_use_left_below {Σ : StaticModel} (ρ ρ' ρ'': Valuation2) :
+Lemma merge_use_left_below {Σ : BackgroundModel} (ρ ρ' ρ'': Valuation2) :
     ρ' ⊆ ρ ->
     ρ'' ⊆ ρ ->
     merge Valuation2_use_left ρ' ρ'' ⊆ ρ
 .
 Proof.
     intros H1 H2.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     apply map_subseteq_spec.
     intros i x Hix.
     rewrite lookup_merge in Hix.
@@ -514,7 +515,7 @@ Proof.
 Qed.
 
 Lemma Valuation2_merge_olist_inv
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l : list (option Valuation2))
     (ρ : Valuation2):
     Valuation2_merge_olist l = Some ρ ->
@@ -523,7 +524,7 @@ Lemma Valuation2_merge_olist_inv
 Proof.
     intros HH.
     unfold Valuation2_merge_olist in HH.
-    unfold Valuation2 in *.
+    unfold Valuation2,Valuation' in *.
     revert ρ HH.
     induction l; intros ρ HH; simpl in *.
     {
@@ -552,7 +553,7 @@ Qed.
 
 
 Lemma Valuation2_merge_olist_correct
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (l : list (option Valuation2))
     (ρ : Valuation2):
     Valuation2_merge_olist l = Some ρ ->
@@ -581,7 +582,7 @@ Proof.
         {
             specialize (IHl _ H1y i _ H1).
             apply Valuation2_merge_with_correct in H2y.
-            unfold Valuation2 in *.
+            unfold Valuation2,Valuation' in *.
             eapply transitivity.
             { apply IHl. }
             { apply (proj2 H2y). }

@@ -2,7 +2,6 @@ From Minuska Require Import
     prelude
     spec
     model_algebra
-    model_traits
     builtin.list_signature
     builtin.bool_model
     builtin.int_model
@@ -11,15 +10,14 @@ From Minuska Require Import
 
 
 Example example_list_int_model_1
-    {symbol : Type}
-    {symbols : Symbols symbol}
+    (TermSymbol : Type)
     (NondetValue : Type)
     :
-    Model list_signature NondetValue
+    ValueAlgebra (bool+(simple_list_carrier Z)) NondetValue TermSymbol ListFunSymbol ListPredSymbol
 :=
-    model_of_relaxed (
-        rmf_apply list_relaxed_functor (
-            int_relaxed_model symbol symbols NondetValue
-        )
+    small_model_of_relaxed (
+        list_wrapper _ _ _ _ _ _ (int_relaxed_va TermSymbol NondetValue)
     )
 .
+
+(* About example_list_int_model_1. *)

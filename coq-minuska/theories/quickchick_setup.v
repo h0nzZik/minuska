@@ -3,34 +3,36 @@ From Minuska Require Import
     prelude
     spec
     specb
-    default_static_model
     builtin.int_signature
     builtin.int_model
     pi.trivial
+    hidden.hidden_unit
+    example_models
 .
 About stdpp.strings.String.
 Locate String.
 From QuickChick Require Export QuickChick.
 Export QcDefaultNotation.
 
+(* Set Typeclasses Debug. *)
 #[export]
-Instance Σ : StaticModel := @default_model int_signature (int_model _ _ _) MyProgramInfo.
+Instance Σ : BackgroundModel := example_models.Σ1.
 
 #[export]
-Instance show_builtin : Show builtin_value := {|
+Instance show_builtin : Show BasicValue := {|
     show := fun x => match x with inl b => show b | inr z => show z end
 |}.
 
-Definition genBuiltin : G builtin_value :=
+Definition genBuiltin : G BasicValue :=
     oneOf_ (returnGen (inl true)) [(returnGen (inl true)); (returnGen (inl false)); (returnGen (inr 1%Z));(returnGen (inr 2%Z))]
 .
 
 #[export]
-Instance show_symbol : Show symbol := {|
+Instance show_TermSymbol : Show TermSymbol := {|
     show := fun x => x;
 |}.
 
-Fixpoint show_to {T : Type} {_ST : Show T} (t : TermOver T) : string  :=
+Fixpoint show_to {T : Type} {_ST : Show T} (t : @TermOver' TermSymbol T) : string  :=
     match t with
     | t_over b => show b
     | t_term s l => show s +:+ "[" +:+ (concat "," (show_to <$> l ))  +:+ "]"
@@ -38,31 +40,31 @@ Fixpoint show_to {T : Type} {_ST : Show T} (t : TermOver T) : string  :=
 .
 
 #[export]
-Instance showTerm {T : Type} {_ST : Show T} : Show (TermOver T) := {|
+Instance showTerm {T : Type} {_ST : Show T} : Show (@TermOver' TermSymbol T) := {|
     show := show_to ;
 |}.
 
 #[export]
 Instance showBuiltinOrVar {T : Type} {_ST : Show T} : Show (BuiltinOrVar) := {|
-    show := fun bov => match bov with bov_builtin b => show b | bov_variable x => show x end;
+    show := fun bov => match bov with bov_builtin b => show b | bov_Variabl x => show x end;
 |}.
 
-Definition genVariable : G variable :=
+Definition genVariable : G Variabl :=
     oneOf [ret "x"; ret "y"; ret "z"; ret "xx"; ret "yy"; ret "zz"]
 .
 
-Definition genSymbol : G symbol :=
+Definition genSymbol : G TermSymbol :=
     (oneOf [(returnGen "s");(returnGen "t");(returnGen "a");(returnGen "b");(returnGen "c")])
 .
 
 (* Print IntFunSymbol. *)
-(* Compute builtin_function_symbol. *)
+(* Compute FunSymbol. *)
 
-Definition genFunction : G builtin_function_symbol :=
+Definition genFunction : G FunSymbol :=
     elems [int_plus; int_minus; int_uminus; int_zero; int_one; int_eq; int_le; int_lt]
 .
 
-Fixpoint genTermSized' {T : Type} (sz : nat) (g : nat -> G T) : G (TermOver T) :=
+Fixpoint genTermSized' {T : Type} (sz : nat) (g : nat -> G T) : G (@TermOver' TermSymbol T) :=
   match sz with
     | O => bindGen (g sz) (fun x => returnGen (t_over x))
     | S sz' =>
@@ -74,7 +76,7 @@ end.
 
 Definition genTermSized sz := genTermSized' sz (fun _ => genBuiltin).
 
-Definition genBuiltinOrVar := oneOf [bindGen genBuiltin (fun x => ret (bov_builtin x)); bindGen genVariable (fun x => ret (bov_variable x))].
+Definition genBuiltinOrVar := oneOf [bindGen genBuiltin (fun x => ret (bov_builtin x)); bindGen genVariable (fun x => ret (bov_Variabl x))].
 
 
 Definition genPatternSized sz := genTermSized' sz (fun _ => 
@@ -84,8 +86,8 @@ Definition genPatternSized sz := genTermSized' sz (fun _ =>
 (* Print Expression2. *)
 
 #[export]
-Instance showFun : Show builtin_function_symbol := {|
-    show := fun f => match (f : builtin_function_symbol) with
+Instance showFun : Show FunSymbol := {|
+    show := fun f => match (f : FunSymbol) with
     | int_plus => "plus"
     | int_minus => "minus"
     | int_uminus => "uminus"
@@ -104,13 +106,19 @@ Instance showQery : Show QuerySymbol := {|
     end ;
 |}.
 
+#[export]
+Instance showAttribute : Show AttrSymbol := {|
+    show := fun a => "some-attribute-TermSymbol" ; 
+|}.
+
 
 Fixpoint show_e (e : Expression2) : string  :=
     match e with
     | e_ground g => show g
-    | e_variable x => show x
+    | e_Variabl x => show x
     | e_fun f l => show f +:+ "(" +:+ (concat "," (show_e <$> l ))  +:+ ")"
     | e_query q l => show q +:+ "(" +:+ (concat "," (show_e <$> l ))  +:+ ")"
+    | e_attr a l => show a +:+ "(" +:+ (concat "," (show_e <$> l ))  +:+ ")"
     end
 .
 
@@ -122,11 +130,11 @@ Instance showExpr : Show (Expression2) := {|
 
 Fixpoint genExprSized (sz : nat) : G (Expression2) :=
   match sz with
-    | O => oneOf [(bindGen genVariable (fun x => returnGen (e_variable x))); bindGen (genTermSized sz) (fun x => returnGen (e_ground x))]
+    | O => oneOf [(bindGen genVariable (fun x => returnGen (e_Variabl x))); bindGen (genTermSized sz) (fun x => returnGen (e_ground x))]
     | S sz' =>
         freq [
             (1,
-                oneOf [(bindGen genVariable (fun x => returnGen (e_variable x))); bindGen (genTermSized sz) (fun x => returnGen (e_ground x))]
+                oneOf [(bindGen genVariable (fun x => returnGen (e_Variabl x))); bindGen (genTermSized sz) (fun x => returnGen (e_ground x))]
             );
             (sz, 
                 bindGen (listOf (genExprSized sz')) (fun l =>
@@ -141,7 +149,7 @@ Fixpoint genExprSized (sz : nat) : G (Expression2) :=
 
 Definition genTermOverExprSized sz := genTermSized' sz genExprSized.
 
-Definition genValuationSized (sz : nat) : G (gmap variable (TermOver builtin_value)) :=
+Definition genValuationSized (sz : nat) : G (gmap Variabl (@TermOver' TermSymbol BasicValue)) :=
     bindGen (
         listOf (
             bindGen genVariable (fun x =>
@@ -165,12 +173,12 @@ Instance showVal : Show Valuation2 := {|
 |}.
 
 
-Definition showSubP_ (s : gmap variable (TermOver BuiltinOrVar)) : string :=
+Definition showSubP_ (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)) : string :=
         let l := map_to_list s in
         show (l)
 .
 (* About map_to_list. *)
 #[export]
-Instance showSubP : Show (gmap variable (TermOver BuiltinOrVar)) := {|
+Instance showSubP : Show (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)) := {|
     show := showSubP_
 |}.

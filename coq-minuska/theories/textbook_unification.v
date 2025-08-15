@@ -23,7 +23,7 @@ From Coq Require Import Logic.Eqdep_dec.
 From Equations Require Export Equations.
 
 Lemma eqns_vars_hd_comm
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (e1 e2 : eqn)
 (es : list eqn)
 : eqns_vars (e1::e2::es) = eqns_vars (e2::e1::es)
@@ -32,22 +32,22 @@ Proof.
 unfold eqns_vars. simpl. ltac1:(set_solver).
 Qed.
 
-Definition wft {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar)
+Definition wft {Σ : BackgroundModel} (V : gset Variabl) (t : @TermOver' TermSymbol BuiltinOrVar)
 : Prop
 := vars_of t ⊆ V
 .
 
-Definition wfeqn {Σ : StaticModel} (V : gset variable) (e : eqn)
+Definition wfeqn {Σ : BackgroundModel} (V : gset Variabl) (e : eqn)
 : Prop
 :=
 wft V (e.1) /\ wft V (e.2)
 .
 
-Definition wfeqns {Σ : StaticModel} (V : gset variable) (es : list eqn) : Prop :=
+Definition wfeqns {Σ : BackgroundModel} (V : gset Variabl) (es : list eqn) : Prop :=
 Forall (wfeqn V) es
 .
 
-Fixpoint wfsub {Σ : StaticModel} (V : gset variable) (s : SubS)
+Fixpoint wfsub {Σ : BackgroundModel} (V : gset Variabl) (s : SubS)
 : Prop
 :=
 match s with
@@ -57,7 +57,7 @@ match s with
 end
 .
 
-Fixpoint vars_of_sub {Σ : StaticModel} (s : SubS) : gset variable
+Fixpoint vars_of_sub {Σ : BackgroundModel} (s : SubS) : gset Variabl
 :=
 match s with
 | [] => ∅
@@ -65,7 +65,7 @@ match s with
 end
 .
 
-Lemma wf_concat {Σ : StaticModel} (V : gset variable) (s1 s2 : SubS)
+Lemma wf_concat {Σ : BackgroundModel} (V : gset Variabl) (s1 s2 : SubS)
 :
 wfsub V s1 ->
 wfsub (V ∖ (vars_of_sub s1)) s2 ->
@@ -98,11 +98,11 @@ induction s1; intros V HH1 HH2; simpl in *.
 }
 Qed.
 
-Definition sub_lt {Σ : StaticModel} (s1 s2 : SubS) :=
+Definition sub_lt {Σ : BackgroundModel} (s1 s2 : SubS) :=
 ∃ s3, s1 = s2 ++ s3
 .
 
-Lemma on_distinct_vars {Σ : StaticModel} (a1 a2 : variable) (V : gset variable):
+Lemma on_distinct_vars {Σ : BackgroundModel} (a1 a2 : Variabl) (V : gset Variabl):
 a1 ∈ V ->
 a1 <> a2 ->
 a1 ∈ (V ∖ {[a2]})
@@ -112,7 +112,7 @@ intros HH1 HH2.
 ltac1:(set_solver).
 Qed.
 
-Lemma wft_minus {Σ : StaticModel} (V : gset variable) (t : TermOver BuiltinOrVar) (a : variable) :
+Lemma wft_minus {Σ : BackgroundModel} (V : gset Variabl) (t : @TermOver' TermSymbol BuiltinOrVar) (a : Variabl) :
 wft V t ->
 a ∉ vars_of t ->
 wft (V ∖ {[a]}) t
@@ -160,7 +160,7 @@ ltac1:(induction t using TermOver_rect); intros HH1 HH2.
 Qed.
 
 Fixpoint is_unifier_of
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (s : SubS)
 (es : list eqn)
 :=
@@ -172,26 +172,26 @@ end
 
 (* Here I strengten the 'least_of' .... *)
 Definition least_of
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (s : SubS)
 (es : list eqn)
 :=
 ∀ s', is_unifier_of s' es /\ subs_is_normal s' ->
 ∃ s1, 
     subs_is_normal s1 /\
-    ∀ x, subs_app s' (t_over (bov_variable x)) = subs_app (s ++ s1) (t_over (bov_variable x))
+    ∀ x, subs_app s' (t_over (bov_Variabl x)) = subs_app (s ++ s1) (t_over (bov_Variabl x))
 .
 
 
 
 Lemma helper_lemma_2
-{Σ : StaticModel}
-(x : variable)
-(t : TermOver BuiltinOrVar)
+{Σ : BackgroundModel}
+(x : Variabl)
+(t : @TermOver' TermSymbol BuiltinOrVar)
 (es : list eqn)
 (s : SubS)
 :
-subs_app s (t_over (bov_variable x)) = subs_app s t ->
+subs_app s (t_over (bov_Variabl x)) = subs_app s t ->
 is_unifier_of s es ->
 is_unifier_of s (sub t x es)
 .
@@ -215,7 +215,7 @@ induction es; intros x t ss HH1 HH2; simpl in *.
 Qed.
 
 Definition sub_ext
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (ss : SubS)
 (es : list eqn)
 :=
@@ -224,7 +224,7 @@ Definition sub_ext
 
 
 Lemma sub_ext_nil
-{Σ : StaticModel }
+{Σ : BackgroundModel }
 (es : list eqn)
 :
 sub_ext nil es = es 
@@ -238,7 +238,7 @@ induction es; simpl.
 Qed.
 
 Lemma sub_ext_cons
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (ss : SubS)
 x t
 (es : list eqn)
@@ -256,7 +256,7 @@ Qed.
 
 
 Lemma least_of_nil_nil
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
 :
     least_of [] []
 .
@@ -270,10 +270,10 @@ Proof.
 Qed.
 
 (* Maybe I can make the relation is_unifier_of such that
-the unifier may map only variables that occur somewhere in the relation?
+the unifier may map only Variabls that occur somewhere in the relation?
 *)
 Lemma is_unifier_of_cons
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (ss : SubS)
 (es : list eqn)
 x t
@@ -295,8 +295,8 @@ induction es; simpl; intros ss HH.
 }
 Qed.
 
-Lemma unify_no_variable_out_of_thin_air
-{Σ : StaticModel}
+Lemma unify_no_Variabl_out_of_thin_air
+{Σ : BackgroundModel}
 (es : list eqn)
 (ss : SubS)
 :
@@ -340,7 +340,7 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(rewrite ![((_).1)]/=).
     ltac1:(rewrite ![((_).2)]/=).
     ltac1:(rewrite !vars_of_builtin).
-    ltac1:(rewrite !vars_of_variable).
+    ltac1:(rewrite !vars_of_Variabl).
     rewrite union_list_cons.
     unfold compose at 1.
     ltac1:(rewrite ![((_).2)]/=).
@@ -385,7 +385,7 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(rewrite ![((_).1)]/=).
     ltac1:(rewrite ![((_).2)]/=).
     ltac1:(rewrite !vars_of_builtin).
-    ltac1:(rewrite !vars_of_variable).
+    ltac1:(rewrite !vars_of_Variabl).
     specialize (H _ H1x0).
     destruct (decide (x ∈ eqns_vars es)).
     {
@@ -419,13 +419,13 @@ ltac1:(funelim (unify es)); intros ss HH.
     ltac1:(rewrite ![((_).*1)]/=).
     ltac1:(rewrite ![((_).1)]/=).
     ltac1:(rewrite ![((_).2)]/=).
-    ltac1:(rewrite !vars_of_variable).
+    ltac1:(rewrite !vars_of_Variabl).
     rewrite union_list_cons.
     specialize (H _ H1x0).
     destruct (decide (x ∈ eqns_vars es)).
     {
     rewrite eqns_vars_sub in H>[|assumption].
-    ltac1:(rewrite vars_of_variable in H).
+    ltac1:(rewrite vars_of_Variabl in H).
     ltac1:(set_solver).
     }
     {
@@ -445,7 +445,7 @@ ltac1:(funelim (unify es)); intros ss HH.
     rewrite list_to_set_cons.
     rewrite eqns_vars_cons.
     simpl.
-    ltac1:(rewrite vars_of_variable).
+    ltac1:(rewrite vars_of_Variabl).
     specialize (H _ H1x0).
 
     destruct (decide (x ∈ eqns_vars es)).
@@ -480,7 +480,7 @@ ltac1:(funelim (unify es)); intros ss HH.
     rewrite list_to_set_cons.
     rewrite eqns_vars_cons.
     simpl.
-    ltac1:(rewrite vars_of_variable).
+    ltac1:(rewrite vars_of_Variabl).
         destruct (decide (x ∈ eqns_vars es)).
     {
     rewrite eqns_vars_sub in H>[|assumption].
@@ -510,12 +510,12 @@ ltac1:(funelim (unify es)); intros ss HH.
 Qed.
 
 Lemma subs_app_unbound_var_1
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (ss : SubS)
-(x : variable)
+(x : Variabl)
 :
 x ∉ ss.*1 ->
-subs_app ss (t_over (bov_variable x)) = (t_over (bov_variable x))
+subs_app ss (t_over (bov_Variabl x)) = (t_over (bov_Variabl x))
 .
 Proof.
 induction ss; intros HH.
@@ -537,12 +537,12 @@ induction ss; intros HH.
 Qed.
 
 Lemma subs_app_unbound_var_2
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (ss : SubS)
-(x : variable)
+(x : Variabl)
 :
 x ∉ ⋃ (vars_of <$> ss.*2) ->
-forall (t : TermOver BuiltinOrVar),
+forall (t : @TermOver' TermSymbol BuiltinOrVar),
 x ∉ vars_of t ->
 x ∉ vars_of (subs_app ss t)
 .
@@ -574,7 +574,7 @@ induction ss; intros x HH1 t HH2.
 Qed.
 
 Lemma is_unifier_of_app
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 u es1 es2
 :
 is_unifier_of u (es1 ++ es2) <->
@@ -592,16 +592,16 @@ induction es1.
 Qed.
 
 
-Inductive unify_failure {Σ : StaticModel} : list eqn -> Prop :=
+Inductive unify_failure {Σ : BackgroundModel} : list eqn -> Prop :=
 | uf_varin_fail_1  : forall x t es,
 x ∈ vars_of t ->
-t <> (t_over (bov_variable x)) ->
-unify_failure (((t_over (bov_variable x)), t) :: es)
+t <> (t_over (bov_Variabl x)) ->
+unify_failure (((t_over (bov_Variabl x)), t) :: es)
 
 | uf_varin_fail_2  : forall x t es,
 x ∈ vars_of t ->
-t <> (t_over (bov_variable x)) ->
-unify_failure ((t, (t_over (bov_variable x))) :: es)
+t <> (t_over (bov_Variabl x)) ->
+unify_failure ((t, (t_over (bov_Variabl x))) :: es)
 
 | uf_diff_builtin : forall b1 b2 es,
 b1 <> b2 ->
@@ -622,14 +622,14 @@ length l1 <> length l2 ->
 unify_failure (((t_term s1 l1),(t_term s2 l2))::es)
 
 (*
-| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat) (t1 t2 : TermOver BuiltinOrVar),
+| uf_subterm : forall es (s : TermSymbol) (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar)) (idx : nat) (t1 t2 : @TermOver' TermSymbol BuiltinOrVar),
 l1 !! idx = Some t1 ->
 l2 !! idx = Some t2 ->
 unify_failure ((t1,t2)::(drop (S idx) (zip l1 l2))++es) ->
 unify_failure (((t_term s l1),(t_term s l2))::es)
 *)
 
-| uf_subterm : forall es (s : symbol) (l1 l2 : list (TermOver BuiltinOrVar)) (idx : nat),
+| uf_subterm : forall es (s : TermSymbol) (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar)) (idx : nat),
 unify_failure ((take idx (zip l1 l2))++es) ->
 unify_failure (((t_term s l1),(t_term s l2))::es)
 
@@ -639,11 +639,11 @@ unify_failure ((t1,t2)::es)
 
 | uf_rec_sub2_l : forall es x t,
 unify_failure (sub t x es) ->
-unify_failure ((t_over (bov_variable x),t)::es)
+unify_failure ((t_over (bov_Variabl x),t)::es)
 
 | uf_rec_sub2_r : forall es x t,
 unify_failure (sub t x es) ->
-unify_failure ((t, t_over (bov_variable x))::es)
+unify_failure ((t, t_over (bov_Variabl x))::es)
 (*
 | uf_rec_sub : forall es t1 t2 ss,
 unify_failure (sub_ext ss es) ->
@@ -653,7 +653,7 @@ unify_failure ((t1,t2)::es)
 
 (*
 Lemma unify_some_not_failure
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (es : list eqn)
 (u : SubS)
 :
@@ -687,7 +687,7 @@ Qed.*)
 
 
 Lemma unify_sound
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (es : list eqn)
 :
 match unify es with
@@ -814,11 +814,13 @@ ltac1:(funelim(unify es)).
                 rewrite subs_app_app.
                 destruct (decide (x = x0))>[|auto].
                 subst.
-                rewrite subs_app_builtin.
-                rewrite subs_app_builtin in Hsss1.
+                setoid_rewrite subs_app_builtin.
+                setoid_rewrite subs_app_builtin in Hsss1.
                 rewrite subs_app_builtin.
                 destruct Hsss1 as [? ?].
-                ltac1:(congruence).
+                simpl in *.
+                setoid_rewrite H.
+                reflexivity.
             }
         }
         {
@@ -892,9 +894,9 @@ ltac1:(funelim(unify es)).
                     assert (Hs1x0 := Hs1 x0).
                     (rewrite subs_app_app in Hs1x0).
                     rewrite <- Hs1x0.
+                    setoid_rewrite subs_app_builtin.
                     rewrite subs_app_builtin.
-                    rewrite subs_app_builtin.
-                    rewrite subs_app_builtin in Hss1.
+                    setoid_rewrite subs_app_builtin in Hss1.
                     apply Hss1.
                 }
             }
@@ -1034,7 +1036,7 @@ ltac1:(funelim(unify es)).
         clear e H1.
         destruct H as [HH1 [HH2 Hnorm]].
         rewrite subs_app_term.
-        rewrite subs_app_term.
+        setoid_rewrite subs_app_term.
         simpl.
         (repeat split).
         {
@@ -1047,29 +1049,29 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             ltac1:(destruct (l0 !! i) eqn:Hl0i).
             {
-            ltac1:(rewrite Hl0i).
-            simpl.
-            apply f_equal.
-            rewrite subst_notin2.
-            { reflexivity. }
-            {
-                intros HContra.
-                apply n. clear n.
-                apply take_drop_middle in Hl0i.            
-                rewrite <- Hl0i.
-                rewrite vars_of_t_term.
-                rewrite fmap_app.
-                rewrite union_list_app_L.
+            (* ltac1:(rewrite Hl0i). *)
                 simpl.
-                rewrite elem_of_union.
-                clear -HContra.
-                ltac1:(set_solver).
-            }
+                apply f_equal.
+                rewrite subst_notin2.
+                { reflexivity. }
+                {
+                    intros HContra.
+                    apply n. clear n.
+                    apply take_drop_middle in Hl0i.            
+                    rewrite <- Hl0i.
+                    rewrite vars_of_t_term.
+                    rewrite fmap_app.
+                    rewrite union_list_app_L.
+                    simpl.
+                    rewrite elem_of_union.
+                    clear -HContra.
+                    ltac1:(set_solver).
+                }
             }
             {
-            ltac1:(rewrite Hl0i).
-            simpl.
-            reflexivity.
+                (* ltac1:(rewrite Hl0i). *)
+                simpl.
+                reflexivity.
             }
         }
         {
@@ -1077,7 +1079,7 @@ ltac1:(funelim(unify es)).
             apply HH1.
         }
         {
-            assert (Hnoota := unify_no_variable_out_of_thin_air _ _ H0).
+            assert (Hnoota := unify_no_Variabl_out_of_thin_air _ _ H0).
             intros u Hu.
             unfold least_of in HH2.
 
@@ -1323,10 +1325,10 @@ ltac1:(funelim(unify es)).
             rewrite list_lookup_fmap.
             destruct (l1!!i) eqn:Hl1i.
             {
-                ltac1:(rewrite Hl1i).
+                (* ltac1:(rewrite Hl1i). *)
                 destruct (l2!!i) eqn:Hl2i.
                 {
-                    ltac1:(rewrite Hl2i).
+                    (* ltac1:(rewrite Hl2i). *)
                     simpl.
                     f_equal.
                     remember (zip l1 l2) as z.
@@ -1369,7 +1371,7 @@ ltac1:(funelim(unify es)).
                 }
             }
             {
-                ltac1:(rewrite Hl1i).
+                (* ltac1:(rewrite Hl1i). *)
                 simpl.
                 destruct (l2 !! i) eqn:Hl2i.
                 {
@@ -1378,7 +1380,7 @@ ltac1:(funelim(unify es)).
                     ltac1:(lia).
                 }
                 {
-                    ltac1:(rewrite Hl2i).
+                    (* ltac1:(rewrite Hl2i). *)
                     reflexivity.
                 }
             }
@@ -1451,7 +1453,7 @@ ltac1:(funelim(unify es)).
 Qed.
 
 Lemma subst_preserves_subterm
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 t1 t2 v:
 is_subterm_b t1 t2  ->
 forall t,
@@ -1498,8 +1500,8 @@ induction t2; intros t1 Hsub t; simpl in *.
 Qed.
 
 Lemma subs_app_preserves_subterm
-{Σ : StaticModel}
-(t1 t2 : TermOver BuiltinOrVar)
+{Σ : BackgroundModel}
+(t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 forall s,
@@ -1524,11 +1526,11 @@ Qed.
 (*Require Import Coq.Logic.Classical_Prop. *)
 
 Lemma var_is_subterm
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 x t
 :
 x ∈ vars_of t ->
-is_subterm_b (t_over (bov_variable x)) t = true
+is_subterm_b (t_over (bov_Variabl x)) t = true
 .
 Proof.
 intros H2X.
@@ -1543,7 +1545,7 @@ induction t; simpl in *.
     {
     unfold is_left in H.
     ltac1:((repeat case_match); try congruence).
-    ltac1:(rewrite vars_of_variable in H2X).
+    ltac1:(rewrite vars_of_Variabl in H2X).
     rewrite elem_of_singleton in H2X.
     subst.
     ltac1:(exfalso). apply n. reflexivity.
@@ -1566,8 +1568,8 @@ induction t; simpl in *.
 Qed.
 
 Lemma is_subterm_size
-{Σ : StaticModel}
-(t1 t2 : TermOver BuiltinOrVar)
+{Σ : BackgroundModel}
+(t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 TermOver_size t1 <= TermOver_size t2
@@ -1596,8 +1598,8 @@ induction t2; intros t1 HH; simpl in *;
 Qed.
 
 Lemma is_subterm_antisym
-{Σ : StaticModel}
-(t1 t2 : TermOver BuiltinOrVar)
+{Σ : BackgroundModel}
+(t1 t2 : @TermOver' TermSymbol BuiltinOrVar)
 :
 is_subterm_b t1 t2 ->
 is_subterm_b t2 t1 ->
@@ -1622,7 +1624,7 @@ ltac1:(lia).
 Qed.
 
 Lemma is_unifier_of_extensive
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (u : SubS)
 (es : list eqn)
 :
@@ -1631,32 +1633,32 @@ forall rest,
     is_unifier_of (u++rest) es
 .
 Proof.
-intros.
-induction es.
-{
-    simpl. exact I.
-}
-{
-    simpl. destruct a as [t1 t2].
-    simpl in *.
-    destruct H as [HH1 HH2].
-    specialize (IHes HH2).
-    split>[|apply IHes].
-    clear -HH1 HH2.
-    induction rest.
-    { rewrite app_nil_r. apply HH1.  }
-    rewrite subs_app_app in IHrest.
-    rewrite subs_app_app in IHrest.
-    rewrite subs_app_app.
-    rewrite subs_app_app.
-    simpl.
-    destruct a as [x t].
-    ltac1:(congruence).
-}
+    intros.
+    induction es.
+    {
+        simpl. exact I.
+    }
+    {
+        simpl. destruct a as [t1 t2].
+        simpl in *.
+        destruct H as [HH1 HH2].
+        specialize (IHes HH2).
+        split>[|apply IHes].
+        clear -HH1 HH2.
+        induction rest.
+        { rewrite app_nil_r. apply HH1.  }
+        rewrite subs_app_app in IHrest.
+        rewrite subs_app_app in IHrest.
+        rewrite subs_app_app.
+        rewrite subs_app_app.
+        simpl.
+        destruct a as [x t].
+        ltac1:(congruence).
+    }
 Qed.
 
 Lemma unify_failure_is_severe
-{Σ : StaticModel}
+{Σ : BackgroundModel}
 (es : list eqn)
 :
 unify_failure es ->
@@ -1664,212 +1666,212 @@ unify_failure es ->
     is_unifier_of s es
 .
 Proof.
-intros Hfail.
-induction Hfail.
-{
-    intros HContra.
-    destruct HContra as [s Hs].
-    simpl in Hs.
-    destruct t; simpl in *.
+    intros Hfail.
+    induction Hfail.
     {
-    destruct a; simpl in *.
-    {
-        rewrite vars_of_builtin in H.
-        ltac1:(set_solver).
-    }
-    {
-        rewrite vars_of_variable in H.
-        rewrite elem_of_singleton in H.
-        subst x0.
-        apply H0.
-        reflexivity.
-    }
-    }
-    {
-    clear H0.
-    destruct Hs as [H1s H2s].
-    (*
-        From H1s it follows that (x,t') ∈ s (for some t')
-    *)
-    rewrite vars_of_t_term in H.
-    rewrite elem_of_union_list in H.
-    destruct H as [X [H1X H2X]].
-    rewrite elem_of_list_fmap in H1X.
-    destruct H1X as [t [H1t H2t]].
-    subst.
+        intros HContra.
+        destruct HContra as [s Hs].
+        simpl in Hs.
+        destruct t; simpl in *.
+        {
+        destruct a; simpl in *.
+        {
+            setoid_rewrite vars_of_builtin in H.
+            ltac1:(set_solver).
+        }
+        {
+            setoid_rewrite vars_of_Variabl in H.
+            rewrite elem_of_singleton in H.
+            subst x0.
+            apply H0.
+            reflexivity.
+        }
+        }
+        {
+        clear H0.
+        destruct Hs as [H1s H2s].
+        (*
+            From H1s it follows that (x,t') ∈ s (for some t')
+        *)
+        rewrite vars_of_t_term in H.
+        rewrite elem_of_union_list in H.
+        destruct H as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [t [H1t H2t]].
+        subst.
 
-    apply var_is_subterm in H2X as H2X'.
-    apply subs_app_preserves_subterm with (s := s) in H2X'.
-    apply is_subterm_size in H2X'.
-    rewrite H1s in H2X'.
-    clear H1s H2s.
-    rewrite subs_app_term in H2X'.
-    simpl in H2X'.
+        apply var_is_subterm in H2X as H2X'.
+        apply subs_app_preserves_subterm with (s := s) in H2X'.
+        apply is_subterm_size in H2X'.
+        rewrite H1s in H2X'.
+        clear H1s H2s.
+        setoid_rewrite subs_app_term in H2X'.
+        simpl in H2X'.
 
-    rewrite elem_of_list_lookup in H2t.
-    destruct H2t as [it Hit].
-    apply take_drop_middle in Hit.
-    rewrite <- Hit in H2X'.
-    rewrite fmap_app in H2X'.
-    rewrite fmap_cons in H2X'.
-    rewrite sum_list_with_app in H2X'.
-    simpl in H2X'.
-    ltac1:(lia).
-    }
-}
-{
-    intros HContra.
-    destruct HContra as [s Hs].
-    simpl in Hs.
-    destruct t; simpl in *.
-    {
-    destruct a; simpl in *.
-    {
-        rewrite vars_of_builtin in H.
-        ltac1:(set_solver).
+        rewrite elem_of_list_lookup in H2t.
+        destruct H2t as [it Hit].
+        apply take_drop_middle in Hit.
+        rewrite <- Hit in H2X'.
+        rewrite fmap_app in H2X'.
+        rewrite fmap_cons in H2X'.
+        rewrite sum_list_with_app in H2X'.
+        simpl in H2X'.
+        ltac1:(lia).
+        }
     }
     {
-        rewrite vars_of_variable in H.
-        rewrite elem_of_singleton in H.
-        subst x0.
-        apply H0.
-        reflexivity.
-    }
-    }
-    {
-    clear H0.
-    destruct Hs as [H1s H2s].
-    (*
-        From H1s it follows that (x,t') ∈ s (for some t')
-    *)
-    rewrite vars_of_t_term in H.
-    rewrite elem_of_union_list in H.
-    destruct H as [X [H1X H2X]].
-    rewrite elem_of_list_fmap in H1X.
-    destruct H1X as [t [H1t H2t]].
-    subst.
+        intros HContra.
+        destruct HContra as [s Hs].
+        simpl in Hs.
+        destruct t; simpl in *.
+        {
+        destruct a; simpl in *.
+        {
+            setoid_rewrite vars_of_builtin in H.
+            ltac1:(set_solver).
+        }
+        {
+            setoid_rewrite vars_of_Variabl in H.
+            rewrite elem_of_singleton in H.
+            subst x0.
+            apply H0.
+            reflexivity.
+        }
+        }
+        {
+        clear H0.
+        destruct Hs as [H1s H2s].
+        (*
+            From H1s it follows that (x,t') ∈ s (for some t')
+        *)
+        rewrite vars_of_t_term in H.
+        rewrite elem_of_union_list in H.
+        destruct H as [X [H1X H2X]].
+        rewrite elem_of_list_fmap in H1X.
+        destruct H1X as [t [H1t H2t]].
+        subst.
 
-    apply var_is_subterm in H2X as H2X'.
-    apply subs_app_preserves_subterm with (s := s) in H2X'.
-    apply is_subterm_size in H2X'.
-    rewrite <- H1s in H2X'.
-    clear H1s H2s.
-    rewrite subs_app_term in H2X'.
-    simpl in H2X'.
+        apply var_is_subterm in H2X as H2X'.
+        apply subs_app_preserves_subterm with (s := s) in H2X'.
+        apply is_subterm_size in H2X'.
+        rewrite <- H1s in H2X'.
+        clear H1s H2s.
+        setoid_rewrite subs_app_term in H2X'.
+        simpl in H2X'.
 
-    rewrite elem_of_list_lookup in H2t.
-    destruct H2t as [it Hit].
-    apply take_drop_middle in Hit.
-    rewrite <- Hit in H2X'.
-    rewrite fmap_app in H2X'.
-    rewrite fmap_cons in H2X'.
-    rewrite sum_list_with_app in H2X'.
-    simpl in H2X'.
-    ltac1:(lia).
-    }
-}
-{
-    intros [s Hs].
-    simpl in Hs.
-    destruct Hs as [Hs1 Hs2].
-    rewrite subs_app_builtin in Hs1.
-    rewrite subs_app_builtin in Hs1.
-    ltac1:(simplify_eq/=).
-}
-{
-    intros HContra.
-    destruct HContra as [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_builtin in H1s0.
-    inversion H1s0.
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_builtin in H1s0.
-    inversion H1s0.
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_term in H1s0.
-    ltac1:(simplify_eq/=).
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_term in H1s0.
-    ltac1:(simplify_eq/=).
-    apply (f_equal length) in H0.
-    rewrite length_fmap in H0.
-    rewrite length_fmap in H0.
-    ltac1:(simplify_eq/=).
-}
-{
-    intros [s0 [H1s0 H2s0]].
-    rewrite subs_app_term in H1s0.
-    rewrite subs_app_term in H1s0.
-    ltac1:(simplify_eq/=).
-    apply (f_equal length) in H1s0 as H1s0'.
-    rewrite length_fmap in H1s0'.
-    rewrite length_fmap in H1s0'.
-    apply IHHfail.
-    exists s0.
-    rewrite is_unifier_of_app.
-    split>[|apply H2s0].
-    ltac1:(cut(is_unifier_of s0 (zip l1 l2))).
-    {
-    intros HHH.
-    rewrite <- (take_drop idx (zip l1 l2)) in HHH.
-    rewrite is_unifier_of_app in HHH.
-    apply HHH.
-    }
-    clear - H1s0.
-    revert l2 H1s0.
-    induction l1; intros l2 H1s0.
-    {
-    simpl. exact I.
+        rewrite elem_of_list_lookup in H2t.
+        destruct H2t as [it Hit].
+        apply take_drop_middle in Hit.
+        rewrite <- Hit in H2X'.
+        rewrite fmap_app in H2X'.
+        rewrite fmap_cons in H2X'.
+        rewrite sum_list_with_app in H2X'.
+        simpl in H2X'.
+        ltac1:(lia).
+        }
     }
     {
-    simpl.
-    destruct l2; simpl in *.
+        intros [s Hs].
+        simpl in Hs.
+        destruct Hs as [Hs1 Hs2].
+        rewrite subs_app_builtin in Hs1.
+        rewrite subs_app_builtin in Hs1.
+        ltac1:(simplify_eq/=).
+    }
     {
+        intros HContra.
+        destruct HContra as [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_builtin in H1s0.
         inversion H1s0.
     }
-    inversion H1s0; subst; clear H1s0.
-    split>[reflexivity|].
-    apply IHl1.
-    apply H1.
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_builtin in H1s0.
+        inversion H1s0.
     }
-}
-{
-    intros [s [H1s H2s]].
-    apply IHHfail. clear IHHfail.
-    exists s.
-    exact H2s.
-}
-{
-    intros [s [H1s H2s]].
-    apply IHHfail. clear IHHfail.
-    apply helper_lemma_2 with (es := es) in H1s.
-    exists s.
-    exact H1s.
-    exact H2s.
-}
-{
-    intros [s [H1s H2s]].
-    apply IHHfail. clear IHHfail.
-    symmetry in H1s.
-    apply helper_lemma_2 with (es := es) in H1s.
-    exists s.
-    exact H1s.
-    exact H2s.
-}
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_term in H1s0.
+        ltac1:(simplify_eq/=).
+    }
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_term in H1s0.
+        ltac1:(simplify_eq/=).
+        apply (f_equal length) in H0.
+        rewrite length_fmap in H0.
+        rewrite length_fmap in H0.
+        ltac1:(simplify_eq/=).
+    }
+    {
+        intros [s0 [H1s0 H2s0]].
+        rewrite subs_app_term in H1s0.
+        rewrite subs_app_term in H1s0.
+        ltac1:(simplify_eq/=).
+        apply (f_equal length) in H1s0 as H1s0'.
+        rewrite length_fmap in H1s0'.
+        rewrite length_fmap in H1s0'.
+        apply IHHfail.
+        exists s0.
+        rewrite is_unifier_of_app.
+        split>[|apply H2s0].
+        ltac1:(cut(is_unifier_of s0 (zip l1 l2))).
+        {
+        intros HHH.
+        rewrite <- (take_drop idx (zip l1 l2)) in HHH.
+        rewrite is_unifier_of_app in HHH.
+        apply HHH.
+        }
+        clear - H1s0.
+        revert l2 H1s0.
+        induction l1; intros l2 H1s0.
+        {
+        simpl. exact I.
+        }
+        {
+        simpl.
+        destruct l2; simpl in *.
+        {
+            inversion H1s0.
+        }
+        inversion H1s0; subst; clear H1s0.
+        split>[reflexivity|].
+        apply IHl1.
+        apply H1.
+        }
+    }
+    {
+        intros [s [H1s H2s]].
+        apply IHHfail. clear IHHfail.
+        exists s.
+        exact H2s.
+    }
+    {
+        intros [s [H1s H2s]].
+        apply IHHfail. clear IHHfail.
+        apply helper_lemma_2 with (es := es) in H1s.
+        exists s.
+        exact H1s.
+        exact H2s.
+    }
+    {
+        intros [s [H1s H2s]].
+        apply IHHfail. clear IHHfail.
+        symmetry in H1s.
+        apply helper_lemma_2 with (es := es) in H1s.
+        exists s.
+        exact H1s.
+        exact H2s.
+    }
 Qed.
 
 Hint Constructors unify_failure : core.
 Lemma unify_sound2
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
     (es : list eqn)
 :
     unify es = None ->
@@ -2008,40 +2010,10 @@ Proof.
         destruct (decide (s1 = s2)); auto.
     }
 Qed.
-(* 
-Lemma another_helper
-    {Σ : StaticModel}
-    s s' u'
-:
-    NoDup s'.*1 ->
-    (forall x, subs_app s' (t_over (bov_variable x)) = subs_app (u' ++ s) (t_over (bov_variable x))) ->
-    s'.*1 ⊆ u'.*1
-.
-Proof.
-    intros Hnd HH.
-    unfold SubS in *.
-    ltac1:(rewrite elem_of_subseteq).
-    intros x Hx.
-    rewrite elem_of_list_fmap.
-    rewrite elem_of_list_fmap in Hx.
-    destruct Hx as [[y p][H1 H2]].
-    ltac1:(simplify_eq/=).
-    setoid_rewrite subs_app_app in HH.
-    assert (Hy := HH y).
-    simpl in Hy.
-    rewrite subs_app_nodup_3 with (p := p) in Hy.
-    {
-
-    }
-    {
-        exact Hnd.
-    }
-    Search subs_app bov_variable.
-Qed. *)
 
 Program Definition
     textbook_unification_algorithm
-    {Σ : StaticModel}
+    {Σ : BackgroundModel}
 :
     UnificationAlgorithm
 := {|
@@ -2051,7 +2023,7 @@ Next Obligation.
     assert(Hsound := unify_sound [(t1,t2)]).
     destruct (unify [(t1, t2)]) eqn:Heq.
     {
-        apply unify_no_variable_out_of_thin_air in Heq as Hnoota.
+        apply unify_no_Variabl_out_of_thin_air in Heq as Hnoota.
         destruct Hsound as [Hsound1 [Hsound2 Hnorm]].
         simpl in Hsound1.
         destruct Hsound1 as [Hsound1 _].
@@ -2128,7 +2100,7 @@ Next Obligation.
         remember (map_img (renaming_for (vars_of t1 ∪ vars_of t2) s)) as X1.
         remember (⋃ (vars_of <$> (make_serial1 s (vars_of t1 ∪ vars_of t2)).*2)) as X2.
         (* When I obtain [s'] and [Hs'], I do not  *)
-        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2))) (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
+        assert(H2: forall x, subs_app ((make_serial1 s (vars_of t1 ∪ vars_of t2))) (t_over (bov_Variabl x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_Variabl x))).
         {
             intros x.
             specialize (Hs' x).
@@ -2139,7 +2111,7 @@ Next Obligation.
         clear Hs'.
         remember (vars_of t1 ∪ vars_of t2 ∪ dom (make_parallel (reverse (u' ++ s')))) as d.
         (* the guard is unfortunate, but in principle I could choose arbitrarily big guard that would make it always true *)
-        assert(H3: forall x, x ∈ vars_of t1 ∪ vars_of t2 -> subp_app s (t_over (bov_variable x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_variable x))).
+        assert(H3: forall x, x ∈ vars_of t1 ∪ vars_of t2 -> subp_app s (t_over (bov_Variabl x)) = subp_app (make_parallel (reverse (u' ++ s'))) (t_over (bov_Variabl x))).
         {
             intros x Hx.
             specialize (H2 x).
