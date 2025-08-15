@@ -12,12 +12,12 @@ let parse_with_error lexbuf =
       raise (Invalid_argument ("Parsing problem at " ^ (print_position lexbuf) ^ "."))
 
 
-let rec convert_term (e : Syntax.term) : Libminuska.Syntax.groundterm =
+let rec convert_term (e : Syntax.term) : (string, string Libminuska.Extracted.klikeBuiltinValue0) Libminuska.Extracted.termOver' =
   match e with
-  | `Zero () -> `GTerm (`Id "zero", [])
-  | `Succ x -> `GTerm (`Id "succ", [(convert_term x)])
+  | `Zero () -> Libminuska.Extracted.T_term ("zero", [])
+  | `Succ x -> Libminuska.Extracted.T_term ("succ", [(convert_term x)])
 
-let parse (lexbuf : Lexing.lexbuf) : Libminuska.Syntax.groundterm =
+let parse (lexbuf : Lexing.lexbuf) : (string, string Libminuska.Extracted.klikeBuiltinValue0) Libminuska.Extracted.termOver' =
   match parse_with_error lexbuf with
   | Some value -> convert_term value
   | None -> raise (Invalid_argument "Empty file?")

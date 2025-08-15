@@ -40,7 +40,7 @@ let klike_builtin_inject (b : builtin_repr)  =
 
 let klike_builtin_eject b : builtin_repr =
   match b with
-  | Extracted.Bv_Z z -> (({br_kind="int"; br_value="???"; (*br_value=(Z.to_string z);*)}))
+  | Extracted.Bv_Z z -> (({br_kind="int"; br_value=(Z.to_string z);}))
   | Extracted.Bv_bool b' -> (({br_kind="bool"; br_value=(if b' then "true" else "false");}))
   | Extracted.Bv_str s -> ((({br_kind="string"; br_value=s};)))
   | Extracted.Bv_list _ -> ({br_kind="list"; br_value="_"})
