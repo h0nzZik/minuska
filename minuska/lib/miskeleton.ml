@@ -338,8 +338,7 @@ let main
          | true -> () (* OK *)
          | false -> printf "Warning: the given theory is not well-formed\n"; ()
         ) in
-        let basic_interpreter : 'programT -> (((string, 'blt) Extracted.termOver')*'hidden_data) -> (((string, 'blt) Extracted.termOver')*'hidden_data) option = (
-          Obj.magic (
+        let basic_interpreter = (
             Extracted.top_poly_interpreter
               iface.v_edc
               iface.hv_edc
@@ -354,8 +353,7 @@ let main
               iface.qs_edc
               iface.hps_edc
               iface.background_model
-              thy2 
-          )
+              thy2
         ) in
         let ext_interpreter : 'programT -> (((string, 'blt) Extracted.termOver')*'hidden_data) -> ((((string, 'blt) Extracted.termOver')*'hidden_data)*int) option = (
           (*Obj.magic*) (Extracted.top_naive_interpreter_ext 
