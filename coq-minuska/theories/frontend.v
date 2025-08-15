@@ -44,7 +44,7 @@ Inductive StringExpression
 :=
 | se_ground
     (g : @TermOver' string BuiltinRepr)
-| se_Variabl
+| se_variable
     (x : string)
 | se_apply
     (s : string)
@@ -115,7 +115,7 @@ Fixpoint se_to_Expression
         | inl g' => inl (e_ground (to_transform_sym string2sym g'))
         | inr e => inr e
         end
-    | se_Variabl x =>
+    | se_variable x =>
         inl (e_Variabl (string2var x))
     | se_apply s l =>
         match (string2qfa s) with
@@ -322,7 +322,7 @@ Definition sSymbolicTerm_to_ExprTerm
     TermOver'_map (fun x:StringBuiltinOrVar =>
         match x with
         | sbov_builtin b => se_ground (t_over b)
-        | sbov_var x => se_Variabl x
+        | sbov_var x => se_variable x
         end ) t
 .
 
@@ -483,17 +483,17 @@ Section wsm.
         let lhs_vars : list (@TermOver' string StringBuiltinOrVar)
             := (map t_over (map sbov_var vars)) in
         let rhs_vars : list (@TermOver' string StringExpression)
-            := (map t_over (map se_Variabl vars)) in
+            := (map t_over (map se_variable vars)) in
         let selected_var : string
             := (argument_name position) in
-        match try_neg_s (isValue (se_Variabl selected_var)) with
+        match try_neg_s (isValue (se_variable selected_var)) with
         | None => inr "Cannot negate given isValue condition"
         | Some is_value_neg => inl (
             let lhs_selected_var : (@TermOver' string StringBuiltinOrVar)
                 := t_over (sbov_var selected_var) in
             (* all operands on the left are already evaluated *)
             let side_condition : StringSideCondition
-                := foldr  ssc_and (ssc_true) (isValue <$> ((se_Variabl <$> ((argument_name <$> positions_to_wait_for))) )) in
+                := foldr  ssc_and (ssc_true) (isValue <$> ((se_variable <$> ((argument_name <$> positions_to_wait_for))) )) in
             (mkRuleDeclaration _ lbl {|
                 sr_from := (cseq_context (cseq ([
                     (t_term sym lhs_vars);
@@ -530,7 +530,7 @@ Section wsm.
         let lhs_vars : list (@TermOver' string StringBuiltinOrVar)
             := (map t_over (map sbov_var vars)) in
         let rhs_vars : list (@TermOver' string StringExpression)
-            := (map t_over (map se_Variabl vars)) in
+            := (map t_over (map se_variable vars)) in
         let selected_var : string
             := (argument_name position) in
         let lhs_selected_var : (@TermOver' string StringBuiltinOrVar)
@@ -550,7 +550,7 @@ Section wsm.
                 (t_over (sbov_var REST_SEQ))
             ])%list)));
             sr_label := default_label;
-            sr_scs := (isValue (se_Variabl selected_var));
+            sr_scs := (isValue (se_variable selected_var));
         |})
     .
 

@@ -108,7 +108,7 @@ Definition sTermOverBoV_subst_expr2
     (t' : @TermOver' string StringExpression)
     : @TermOver' string StringExpression
 :=
-    sTermOverBoV_subst_gen (fun b => se_ground (t_over b)) (fun x => se_Variabl x) t x t'
+    sTermOverBoV_subst_gen (fun b => se_ground (t_over b)) (fun x => se_variable x) t x t'
 .
 
 Fixpoint sTermOverBoV_subst
