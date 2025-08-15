@@ -18,9 +18,6 @@ type coqModuleName =
 | Std_module of string
 [@@deriving sexp]
 
-(* Dsm.hai_klike *)
-(* Dsm.pi_trivial) *)
-
 module Extracted = Dsm
 
 (* EOF *)

@@ -107,19 +107,15 @@ Extract Inductive string => "string"
       (*Extract Inductive string => "Libminuska.Extracted.string" [ "Libminuska.Extracted.EmptyString" "Libminuska.Extracted.String" ].*)
       (*Extract Inductive ascii => "Libminuska.Extracted.ascii" [ "Libminuska.Extracted.Ascii" ].*)
       Extract Inductive stdpp.countable.Countable => "Libminuska.Extracted.countable" [ "(fun (e,d) -> {Libminuska.Extracted.encode = e; Libminuska.Extracted.decode = d;})" ].
-      Extract Inductive RewritingRule2 => "Libminuska.Extracted.rewritingRule2" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_label = d; })" ].
+      Extract Inductive RewritingRule2' => "Libminuska.Extracted.rewritingRule2'" [  "(fun (a, b, c, d) -> { Libminuska.Extracted.r_from = a; Libminuska.Extracted.r_to = b; Libminuska.Extracted.r_scs = c; Libminuska.Extracted.r_label = d; })" ].
       Extract Inductive Label => "Libminuska.Extracted.label" [ "Libminuska.Extracted.Default_label" "Libminuska.Extracted.Invisible_label" ].
       Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [ "Libminuska.Extracted.T_over" "Libminuska.Extracted.T_term" ].
-      Extract Constant TermOver "'a" => "'a Libminuska.Extracted.termOver".
       (* Extract Inductive ValueAlgebraInterface => "Libminuska.Extracted.valueAlgebraInterface" [ "(fun (a0, a, b, c) -> { Libminuska.Extracted.bi_signature = a0; Libminuska.Extracted.bi_beta = a; Libminuska.Extracted.bi_bindings = b; Libminuska.Extracted.bi_show_builtin = c; })" ] "(fun myf x -> match x with {Libminuska.Extracted.bi_signature=a0;Libminuska.Extracted.bi_beta=a;Libminuska.Extracted.bi_bindings=b; Libminuska.Extracted.bi_show_builtin = c} -> (myf a0 a b c))" . *)
 
       (* Extract Constant bi_beta => "(fun x -> x.Libminuska.Extracted.bi_beta)". *)
-      Extract Inductive Signature => "Libminuska.Extracted.signature" [ "(fun (x1,x2) -> Libminuska.Extracted.builtin_function_symbol_eqdec = x1; Libminuska.Extracted.builtin_predicate_symbol_eqdec = x2; ))" ].
-      Extract Inductive Model => "Libminuska.Extracted.model" [  "(fun (x1,x2,x3) -> {Libminuska.Extracted.builtin_value_eqdec = x1; Libminuska.Extracted.builtin_function_interp = x2; Libminuska.Extracted.builtin_predicate_interp = x3;})" ].
       (* Extract Constant builtins_empty => "Libminuska.Extracted.builtins_empty". *)
       (* Extract Constant builtins_klike => "Libminuska.Extracted.builtins_klike". *)
       (* Extract Constant pi_trivial => "Libminuska.Extracted.pi_trivial". *)
-      Extract Constant DSM => "Libminuska.Extracted.dSM".
       (* Extract Constant GT => "Libminuska.Extracted.gT". *)
       (* Extract Constant gt_term => "Libminuska.Extracted.gt_term". *)
       (* Extract Constant gt_over => "Libminuska.Extracted.gt_over". *)
