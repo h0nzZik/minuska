@@ -155,30 +155,33 @@ let rec show_groundterm
     sprintf "%s %s" s (format_string_list ss)
 
 let rec run_n_steps
+  (nvgen : Z.t -> 'nv)
   (step :
+    'nv ->
     (((string, 'builtin) Extracted.termOver')*'hidden_data) ->
     (((((string, 'builtin) Extracted.termOver')*'hidden_data)*'a) option)
   )
   (generate_debug : 'a list -> string)
   (rev_trace : 'a list)
-  (max_depth : int)
-  (curr_depth : int)
+  (max_depth : Z.t)
+  (curr_depth : Z.t)
   (gterm : (string, 'builtin) Extracted.termOver')
   (h : 'hidden_data)
-  : (int*((string, 'builtin) Extracted.termOver')*(string))
+  : (Z.t*((string, 'builtin) Extracted.termOver')*(string))
   =
-  if curr_depth >= max_depth then (curr_depth, gterm, generate_debug (List.rev rev_trace))
+  if Z.geq curr_depth max_depth then (curr_depth, gterm, generate_debug (List.rev rev_trace))
   else (
-    let ogterm2 = step (gterm,h) in
+    let ogterm2 = step (nvgen (curr_depth)) (gterm,h) in
     match ogterm2 with
     | None -> (curr_depth, gterm, generate_debug (List.rev rev_trace))
     | Some ((gterm2,h'),info) ->
         run_n_steps
+          nvgen
           step
           generate_debug
           (info::rev_trace)
           max_depth
-          (curr_depth + 1)
+          (Z.add curr_depth (Z.of_int 1))
           gterm2
           h'
   )
@@ -203,13 +206,15 @@ let command_run
   (parser : Lexing.lexbuf -> 'prg)
   (step :
     'programT ->
+    'nv ->
     (((string, 'v) Extracted.termOver')*'hv) ->
     (((string, 'v) Extracted.termOver')*'hv) option
   )
   (step_ext :
     'programT ->
+    'nv ->
     (((string, 'v) Extracted.termOver')*'hv) ->
-    ((((string, 'v) Extracted.termOver')*'hv)*int) option
+    ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option
   )
   (lang_debug_info : string list)
   =
@@ -234,7 +239,7 @@ let command_run
               match with_trace with
               | false -> (
                   (
-                    (fun (g : (((string, 'a) Extracted.termOver')*'hidden_data)) -> (match step program g with None -> None | Some g' -> Some (g', -1))), (
+                    (fun (nv : 'nv) (g : (((string, 'a) Extracted.termOver')*'hidden_data)) -> (match step program nv g with None -> None | Some g' -> Some (g', (Z.of_int ( -1))  ))), (
                     (fun _ -> "No debug info."),
                     []
                     )
@@ -242,9 +247,14 @@ let command_run
               )
               | true -> (
                   (
-                    (step_ext program), (
+                    ((step_ext program)), (
                     (fun (indices : 'myint list) : string ->
-                      let names : string list = List.mapi ~f:(fun (step_number : int) (rule_idx : 'myint) -> (string_of_int (step_number + 1)) ^ ": " ^ (List.nth_exn lang_debug_info rule_idx)) indices in
+                      let names : string list = List.mapi ~f:(
+                        fun (step_number : int) (rule_idx : 'myint) -> (
+                          (string_of_int (step_number + 1 ))
+                          ^ ": "
+                          ^ (List.nth_exn lang_debug_info (Z.to_int rule_idx))
+                      )) indices in
                       let log : string = List.fold_left names ~init:("") ~f:(fun acc x -> acc ^ "\n" ^ x) in
                       log
                     ),
@@ -253,18 +263,18 @@ let command_run
                   )
               )
             ) in
-            let actual_step : ((((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'bb) option) = (fst my_step) in
+            let actual_step : ('nv -> (((string, 'a) Extracted.termOver')*'hidden_data) -> ((((string, 'a) Extracted.termOver')*'hidden_data)*'bb) option) = (fst my_step) in
             let show_log : 'bb list -> string = (fst (snd my_step)) in
             let initial_log = (snd (snd my_step)) in
             let (initial_h : 'hidden_data) = iface.background_model.hidden_algebra.hidden_init in
-            let res0 = run_n_steps actual_step show_log initial_log depth 0 wrap_init0 initial_h in
+            let res0 = run_n_steps iface.background_model.nondet_gen actual_step show_log initial_log (Z.of_int depth) (Z.of_int 0) wrap_init0 initial_h in
             res0
           )) in
           let res = fst res0 in
           let bench_result = snd res0 in
           if bench then (fprintf stderr "Execution wall clock time: %.02f\n" (bench_result.wall); ());
           let (actual_depth,result, info) = res in
-          fprintf stdout "Taken %d steps\n" actual_depth;
+          fprintf stdout "Taken %s steps\n" (Z.to_string actual_depth);
           (if with_trace then (fprintf stdout "Trace:\n%s\n" info; ()));
           with_output_file_or_stdout output_file (fun f_out -> 
             fprintf f_out "%s\n" (show_groundterm iface.builtin_eject result);
@@ -278,8 +288,8 @@ let command_run
 let main0
   (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
   (parser : Lexing.lexbuf -> 'prg)
-  (step : 'programT -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
-  (step_ext : 'programT -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*int) option)
+  (step : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
+  (step_ext : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option)
   (lang_debug_info : string list)
   =
   Printexc.record_backtrace true;
@@ -355,15 +365,22 @@ let main
               iface.background_model
               thy2
         ) in
-        let ext_interpreter : 'programT -> (((string, 'blt) Extracted.termOver')*'hidden_data) -> ((((string, 'blt) Extracted.termOver')*'hidden_data)*int) option = (
-          (*Obj.magic*) (Extracted.top_naive_interpreter_ext 
-            iface.signature 
-            iface.hidden_signature
-            iface.value_algebra
-            iface.hidden_algebra
-            iface.program_info
-            thy2
-          )
+        let ext_interpreter = (
+          Extracted.top_poly_interpreter_ext
+              iface.v_edc
+              iface.hv_edc
+              iface.nv_edc
+              iface.vr_edc
+              iface.vr_inf
+              iface.ts_edc
+              iface.fs_edc
+              iface.ps_edc
+              iface.ats_edc
+              iface.ms_edc
+              iface.qs_edc
+              iface.hps_edc
+              iface.background_model
+              thy2
         ) in
         (main0
           iface
