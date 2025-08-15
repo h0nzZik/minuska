@@ -1,3 +1,5 @@
+FIXME: this is currenty broken and disabled
+
 
 This is how to open Coqide running with Minuska-provided Coq and libraries (and Minuska itself):
 ```sh
