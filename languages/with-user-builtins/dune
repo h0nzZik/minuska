@@ -29,8 +29,8 @@
 
 (rule
   (targets internal.ml internal.mli)
-  (deps lang.scm def.m myplugin.cmxs)
+  (deps def.m myplugin.cmxs)
   (action
   (chdir %{workspace_root}
-  (run minuska generate-interpreter-ml --dynload myplugin.cmxs lang.scm internal.ml)))
+  (run minuska generate-interpreter-ml def.m internal.ml)))
 )
