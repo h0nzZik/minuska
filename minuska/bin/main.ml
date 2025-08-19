@@ -1,17 +1,9 @@
 open Core
 open Printf
 open Sexplib
-open Sexplib.Std
 
 open Libminuska
 open Libminuskapluginbase.Pluginbase
-
-type languagedescr = {
-  language                 : string      ;
-  semantics                : string      ;
-  primitive_value_algebra  : coqModuleName ;
-  program_info             : coqModuleName ;
-} [@@deriving sexp]
 
 (* < to be patched in Nix> *)
 let coqc_command = "coqc" ;;
@@ -48,6 +40,7 @@ let append_definition
 let wrap_init (g : groundterm) : groundterm =
   `GTerm ((`Id "builtin.init"), [g])
 
+(* FIXME this is probably wrong *)
 let write_gterm
   lexbuf outname =
   match Miparse.parse_groundterm_with_error lexbuf with
@@ -149,20 +142,13 @@ let transform_groundterm
   );
   ()
 
-let generate_interpreter_ml (modules : string list) scm_filename (out_ml_file : string) =
+let generate_interpreter_ml defm_filename (out_ml_file : string) =
   let curdir = Core_unix.getcwd () in
-  List.iter ~f:(fun m -> printf "Loading module '%s'\n" m; Dynlink.loadfile m) modules;
-  let dir = Filename.to_absolute_exn ~relative_to:(curdir) (Filename.dirname scm_filename) in
-  let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
-  let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_ml_internal curdir mfile out_ml_file;
+  generate_interpreter_ml_internal curdir defm_filename out_ml_file;
   ()
 
-let generate_interpreter_coq scm_filename (out_coq_file : string) =
-  let dir = Filename.to_absolute_exn ~relative_to:(Core_unix.getcwd ()) (Filename.dirname scm_filename) in
-  let cfg = Sexp.load_sexp scm_filename |> languagedescr_of_sexp in
-  let mfile = if (Filename.is_relative cfg.semantics) then (Filename.concat dir cfg.semantics) else (cfg.semantics) in
-  generate_interpreter_coq_internal mfile out_coq_file;
+let generate_interpreter_coq defm_filename (out_coq_file : string) =
+  generate_interpreter_coq_internal defm_filename out_coq_file;
   ()
 
 let initialize_project project_name (name_of_builtins : coqModuleName) (name_of_program_info : coqModuleName) =
@@ -273,24 +259,23 @@ let command_groundterm2coq =
 
 let command_generate_interpreter_coq =
   Command.basic
-    ~summary:"Generate an interpreter *.v file from a Minuska project file (*.scm)"
+    ~summary:"Generate an interpreter *.v file from a Minuska language definition file (*.m)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-        scm_filename = anon (("lang.scm" %: Filename_unix.arg_type)) and
+        defm_filename = anon (("lang.m" %: Filename_unix.arg_type)) and
         out_ml_file = anon (("lang.ml" %: Filename_unix.arg_type))
       in
-      fun () -> generate_interpreter_coq scm_filename out_ml_file)
+      fun () -> generate_interpreter_coq defm_filename out_ml_file)
 
 let command_generate_interpreter_ml =
   Command.basic
-    ~summary:"Generate an interpreter *.ml file from a Minuska project file (*.scm)"
+    ~summary:"Generate an interpreter *.ml file from a Minuska language definition file (*.m)"
     ~readme:(fun () -> "TODO")
     (let%map_open.Command
-        dynload = (flag) "--dynload" (listed string) ~doc:("module to dynamically load") and
-        scm_filename = anon (("lang.scm" %: Filename_unix.arg_type)) and
+        defm_filename = anon (("lang.m" %: Filename_unix.arg_type)) and
         out_ml_file = anon (("lang.ml" %: Filename_unix.arg_type))
       in
-      fun () -> generate_interpreter_ml dynload scm_filename out_ml_file)
+      fun () -> generate_interpreter_ml defm_filename out_ml_file)
 
 
 let command_print_coqbin =

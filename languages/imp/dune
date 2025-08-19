@@ -25,7 +25,7 @@
 
 (rule
  (targets internal.ml internal.mli)
- (deps lang.scm imp.m)
+ (deps def.m)
  (action
   (chdir %{workspace_root}
-    (run minuska generate-interpreter-ml lang.scm internal.ml))))
+    (run minuska generate-interpreter-ml def.m internal.ml))))
