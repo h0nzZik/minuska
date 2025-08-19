@@ -3,41 +3,46 @@
 
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
+    #flake-utils.url = "github:numtide/flake-utils";
     bundlers.url = "github:NixOS/bundlers";
     bundlers.inputs.nixpkgs.follows = "nixpkgs";
    };
 
-  outputs = { self, nixpkgs, flake-utils, bundlers }: (
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = nixpkgs.legacyPackages.${system}; 
+  outputs = { self, nixpkgs, bundlers }: (
+    let
+      forAllSystems = f: nixpkgs.lib.genAttrs
+        [ 
+          "x86_64-linux"
+          "aarch64-linux"
+          "x86_64-darwin"
+          "aarch64-darwin"
+        ]
+        (system: f system nixpkgs.legacyPackages.${system});
 
-        # Coq project
-        # { coqPackages } -> derivation
-        coqMinuskaFun = import ./nix/coqMinuskaFun.nix { 
-          inherit pkgs;
-          src = ./coq-minuska;
-        }; 
-
-        # OCaml sources
-        # { coqPackages } -> derivation
-        libminuskaSrcFun = import ./nix/libminuskaSrcFun.nix {
-          inherit pkgs;
-          inherit coqMinuskaFun;
-          src = ./minuska;
-        };
-
-       # OCaml frontend
-       # { coqPackages, ocamlPackages } -> derivation
-       minuskaFun = import ./nix/minuskaFun.nix {
-         inherit pkgs;
-         inherit libminuskaSrcFun;
-       };
-
-
-       groupFun = { pkgs, coqPackages, ocamlPackages  }: (
+       groupFun = { system, pkgs }: { coqPackages, ocamlPackages }: (
        let
+         # Coq project
+         # { coqPackages } -> derivation
+         coqMinuskaFun = import ./nix/coqMinuskaFun.nix { 
+           inherit pkgs;
+           src = ./coq-minuska;
+         }; 
+
+         # OCaml sources
+         # { coqPackages } -> derivation
+         libminuskaSrcFun = import ./nix/libminuskaSrcFun.nix {
+           inherit pkgs;
+           inherit coqMinuskaFun;
+           src = ./minuska;
+         };
+
+         # OCaml frontend
+         # { coqPackages, ocamlPackages } -> derivation
+         minuskaFun = import ./nix/minuskaFun.nix {
+           inherit pkgs;
+           inherit libminuskaSrcFun;
+         };
+
          coq-minuska = coqMinuskaFun { inherit coqPackages; };
          libminuska-src = libminuskaSrcFun { inherit coqPackages; };
          minuska = minuskaFun { inherit coqPackages; inherit ocamlPackages; };
@@ -121,30 +126,41 @@
            };
          };
        });
-
-
       in {
-        legacyPackages.minuskaGroupCoq_8_20 = groupFun {
-          inherit pkgs;
-          coqPackages = pkgs.coqPackages_8_20;
-          ocamlPackages = pkgs.ocamlPackages;
-        };
+        legacyPackages = forAllSystems (system: pkgs: {
+          minuskaGroupCoq_8_20 = groupFun {
+            inherit system;
+            inherit pkgs;
+          }{
+            coqPackages = pkgs.coqPackages_8_20;
+            ocamlPackages = pkgs.ocamlPackages;
+          };
 
-        legacyPackages.minuskaGroupDefault = self.outputs.legacyPackages.${system}.minuskaGroupCoq_8_20;
-        packages.coq-minuska        = self.outputs.legacyPackages.${system}.minuskaGroupDefault.coq-minuska;
-        packages.libminuska-src        = self.outputs.legacyPackages.${system}.minuskaGroupDefault.libminuska-src;
-        packages.minuska        = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska;
+          minuskaGroupCoq_8_19 = groupFun {
+            inherit system;
+            inherit pkgs;
+          }{
+            coqPackages = pkgs.coqPackages_8_19;
+            ocamlPackages = pkgs.ocamlPackages;
+          };
 
+          minuskaGroupDefault = self.outputs.legacyPackages.${system}.minuskaGroupCoq_8_20;
+        });
 
+        packages = forAllSystems (system: pkgs: {
+          coq-minuska        = self.outputs.legacyPackages.${system}.minuskaGroupDefault.coq-minuska;
+          libminuska-src        = self.outputs.legacyPackages.${system}.minuskaGroupDefault.libminuska-src;
+          minuska        = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska;
+          bench-standalone   = self.outputs.legacyPackages.${system}.minuskaGroupDefault.bench-standalone;
+          bench-hybrid       = self.outputs.legacyPackages.${system}.minuskaGroupDefault.bench-hybrid;
+          minuska-docker     = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska-docker;
+          minuska-bundle-rpm = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska-bundle-rpm;
+          minuska-bundle-deb = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska-bundle-deb;
+          default            = self.outputs.legacyPackages.${system}.minuskaGroupDefault.default;
+        });
 
-        packages.bench-standalone   = self.outputs.legacyPackages.${system}.minuskaGroupDefault.bench-standalone;
-        packages.bench-hybrid       = self.outputs.legacyPackages.${system}.minuskaGroupDefault.bench-hybrid;
-        packages.minuska-docker     = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska-docker;
-        packages.minuska-bundle-rpm = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska-bundle-rpm;
-        packages.minuska-bundle-deb = self.outputs.legacyPackages.${system}.minuskaGroupDefault.minuska-bundle-deb;
-        packages.default            = self.outputs.legacyPackages.${system}.minuskaGroupDefault.default;
-        devShells                   = self.outputs.legacyPackages.${system}.minuskaGroupDefault.devShells;
-      }
-    )
-  );
+        devShells = forAllSystems (system: pkgs:
+          self.outputs.legacyPackages.${system}.minuskaGroupDefault.devShells
+        );
+      });
 }
