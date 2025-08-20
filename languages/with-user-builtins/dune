@@ -8,8 +8,18 @@
   (libraries
       minuska
   )
-  (modules run internal)
+  (modules run internal myalgebra)
 )
+
+
+(rule
+  (targets internal.ml internal.mli)
+  (deps def.m)
+  (action
+  (chdir %{workspace_root}
+  (run minuska generate-interpreter-ml def.m internal.ml)))
+)
+
 
 (rule
   (targets myalgebra.ml myalgebra.mli)
@@ -17,20 +27,4 @@
   (action (
     chdir %{workspace_root} (bash "$(minuska info coqbin)/coqc $(minuska info coqflags) -Q . User myalgebra.v")
   ))
-)
-
-(executable
-  (modes plugin)
-  (name myplugin)
-  (modules myplugin myalgebra)
-  (libraries core minuska minuska.pluginbase)
-)
-
-
-(rule
-  (targets internal.ml internal.mli)
-  (deps def.m myplugin.cmxs)
-  (action
-  (chdir %{workspace_root}
-  (run minuska generate-interpreter-ml def.m internal.ml)))
 )

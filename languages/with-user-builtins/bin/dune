@@ -1,4 +1,0 @@
-(executable
- (public_name mylang)
- (name main)
- (libraries mylang))

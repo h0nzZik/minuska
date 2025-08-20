@@ -60,6 +60,8 @@ Definition top_poly_interpreter_ext := @default_everything.poly_interpreter_ext.
  *)
 Extraction
     "Dsm.ml"
+    stdpp.countable.encode
+    stdpp.countable.decode
     top_string_symbols_edc
     top_string_infinite
     top_combine_symbol_classifiers
