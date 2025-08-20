@@ -1,5 +1,4 @@
 open Core
-open Printf
 open Libminuska
 open Miskeleton
 open Libminuskapluginbase
@@ -7,7 +6,6 @@ open Pluginbase
 
 
 let my_interface = (
-  let sym_edc = (Extracted.top_string_symbols_edc) in
   let m  = (Myalgebra.list_int_model) in
   let hm = (Extracted.top_hidden_unit_model) in
   let pi = (Extracted.top_pi_trivial_pi) in
@@ -19,8 +17,8 @@ let my_interface = (
   {
     v_edc = Myalgebra.list_int_v_edc;
     ts_edc = Extracted.top_string_symbols_edc;
-    fs_edc = Extracted.top_builtin_empty_fs_edc;
-    ps_edc = Extracted.top_builtin_empty_ps_edc;
+    fs_edc = Myalgebra.fs_edc;
+    ps_edc = Myalgebra.ps_edc;
     qs_edc = Extracted.top_pi_trivial_qs_edc;
     hv_edc = Extracted.top_hidden_unit_edc;
     ats_edc = Extracted.top_hidden_unit_ats_edc;
@@ -46,7 +44,7 @@ let my_interface = (
 let main () =
   Libminuska.Miskeleton.main
     my_interface
-    Transform.parse
+    (fun _ -> raise (Failure "Parser not implemented"))
     Internal.langDefaults
     Internal.lang_Decls
   

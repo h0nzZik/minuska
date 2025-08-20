@@ -18,6 +18,10 @@ From Minuska Require Import -(coercions)
   builtin.list_model
 .
 
+(* TODO put these into some reusable module in Minuska *)
+
+Extract Inductive Empty_set => "Libminuska.Extracted.empty_set" [].
+
 Extract Inductive SymbolInfo => "Libminuska.Extracted.symbolInfo" [
   "Libminuska.Extracted.Si_none"
   "Libminuska.Extracted.Si_predicate"
@@ -36,6 +40,15 @@ Extract Inductive stdpp.countable.Countable => "Libminuska.Extracted.countable" 
 
 Extract Inductive EDC => "Libminuska.Extracted.eDC" [
   "(fun (a,b) -> { Libminuska.Extracted.edc_eqdec=a; Libminuska.Extracted.edc_count=b; })"
+].
+
+Extract Inductive TermOver' => "Libminuska.Extracted.termOver'" [
+  "Libminuska.Extracted.T_over"
+  "Libminuska.Extracted.T_term"
+].
+
+Extract Inductive ValueAlgebra => "Libminuska.Extracted.valueAlgebra" [
+  "(fun (a,b) -> { Libminuska.Extracted.builtin_function_interp = a; Libminuska.Extracted.builtin_predicate_interp = b; })"
 ].
 
 Definition list_int_model
@@ -62,6 +75,18 @@ Proof.
   apply _.
 Defined.
 
+Definition fs_edc : EDC ListFunSymbol.
+Proof.
+  econstructor.
+  apply _.
+Qed.
+
+Definition ps_edc : EDC ListPredSymbol.
+Proof.
+  econstructor.
+  apply _.
+Qed.
+
 Definition bindings (Q : Type) : string -> SymbolInfo ListPredSymbol void ListFunSymbol void Q void
 :=
   fun si => si_none _ _ _ _ _ _
@@ -73,5 +98,7 @@ Extraction
   "myalgebra.ml"
     list_int_model
     list_int_v_edc
+    fs_edc
+    ps_edc
     bindings
 .
