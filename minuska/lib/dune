@@ -27,7 +27,17 @@
 (library
  (name libminuska)
  (public_name minuska)
- (modules parser lexer miparse micoqprint miunparse miskeleton programparser libminuska)
+ (modules
+   backgroundI
+   parser
+   lexer
+   miparse
+   micoqprint
+   miunparse
+   miskeleton
+   programparser
+   libminuska
+ )
  (libraries
     benchmark
     stdlib

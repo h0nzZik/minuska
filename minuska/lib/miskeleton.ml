@@ -3,27 +3,7 @@ open Printf
 open Libminuskapluginbase
 open Util
 open Pluginbase
-
-
-type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI =
-  {
-    v_edc             : 'v Extracted.eDC ;
-    hv_edc            : 'hv Extracted.eDC ;
-    nv_edc            : 'nv Extracted.eDC ;
-    vr_edc            : 'vr Extracted.eDC ;
-    vr_inf            : 'vr Extracted.infinite ;
-    ts_edc            : 'ts Extracted.eDC ;
-    fs_edc            : 'fs Extracted.eDC ;
-    ps_edc            : 'ps Extracted.eDC ;
-    ats_edc           : 'ats Extracted.eDC ;
-    ms_edc            : 'ms Extracted.eDC ;
-    qs_edc            : 'qs Extracted.eDC ;
-    hps_edc           : 'hps Extracted.eDC ;
-    background_model  : (('v, 'hv, 'nv, 'vr, 'ts, 'fs, 'ps, 'ats, 'ms, 'qs, 'hps, 'prg) Extracted.backgroundModelOver) ;
-    builtin_inject    : (builtin_repr -> 'v) ;
-    builtin_eject     : ('v -> builtin_repr ) ;
-    bindings          : (string -> ('ps, 'hps,'fs,'ats,'qs,'ms) Extracted.symbolInfo) ;
-  }
+open BackgroundI
 
 
 let klike_builtin_inject (b : builtin_repr)  =
@@ -55,7 +35,7 @@ let empty_builtin_eject b : builtin_repr =
   | _ -> failwith "This should be unreachable"
 
 
-let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) interpreterSkeletonI)*) = (
+let klike_interface (*: ((,,,,,Extracted.myQuerySymbol,) backgroundI)*) = (
 
   let sym_edc = (Extracted.top_string_symbols_edc) in
   let m  = (Extracted.top_builtin_klike_model sym_edc) in
@@ -202,7 +182,7 @@ let with_output_file_or_stdout (fname : string option) (f : Out_channel.t -> 'a)
   | None -> f stdout
 
 let command_run
-  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI)
   (parser : Lexing.lexbuf -> 'prg)
   (step :
     'programT ->
@@ -286,7 +266,7 @@ let command_run
     )
 
 let main0
-  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI)
   (parser : Lexing.lexbuf -> 'prg)
   (step : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
   (step_ext : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option)
@@ -303,7 +283,7 @@ let main0
     | Stack_overflow -> (printf "Stack overflow.\n%s" (Printexc.get_backtrace ()));;
 
 let main
-      (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) interpreterSkeletonI)
+      (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI)
       (parser : Lexing.lexbuf -> 'programT)
       langDefaults
       lang_Decls
