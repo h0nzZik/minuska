@@ -1,13 +1,21 @@
-{ pkgs, coqMinuskaFun, src }:
+{
+  pkgs,
+  coqMinuskaFun,
+  src,
+}:
 { coqPackages }:
 
-let coqMinuska = coqMinuskaFun { inherit coqPackages; }; in
+let
+  coqMinuska = coqMinuskaFun { inherit coqPackages; };
+in
 pkgs.stdenv.mkDerivation {
   name = "libminuska-src";
-  src = (pkgs.lib.fileset.toSource {
-    root = src;
-    fileset = src;
-  });
+  src = (
+    pkgs.lib.fileset.toSource {
+      root = src;
+      fileset = src;
+    }
+  );
   buildPhase = ''
     mkdir -p $out
     mkdir -p $out/bin
@@ -19,12 +27,12 @@ pkgs.stdenv.mkDerivation {
     printf "open Stdlib\n" >> $out/lib/Dsm.ml
     cat ${coqMinuska}/share/coq-minuska/Dsm.ml >> $out/lib/Dsm.ml
     ls -R $out
- '';
+  '';
 
- passthru = {
-   inherit coqMinuska;
-   coqPackages  = coqMinuska.coqPackages;
-   coqLibraries = coqMinuska.coqLibraries;
-   coqPlugins   = coqMinuska.coqPlugins;
- };
+  passthru = {
+    inherit coqMinuska;
+    coqPackages = coqMinuska.coqPackages;
+    coqLibraries = coqMinuska.coqLibraries;
+    coqPlugins = coqMinuska.coqPlugins;
+  };
 }
