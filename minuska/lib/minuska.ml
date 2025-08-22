@@ -1,3 +1,4 @@
+(* Implements Minuska OCaml interface using the sources of Minuska extracted from Coq   *)
 open Libminuskapluginbase
 open Pluginbase
 
@@ -38,3 +39,23 @@ let forth_edc : 'a BasicTypes.eDC -> 'a Extracted.eDC =
   match x with
   | { BasicTypes.eqdec = y; BasicTypes.count = z; } ->
      { Extracted.edc_eqdec = y; Extracted.edc_count = forth_countable z; }
+
+
+let back_infinite : 'a Extracted.infinite -> 'a BasicTypes.infinite =
+  fun x -> x
+
+let forth_infinite : 'a BasicTypes.infinite -> 'a Extracted.infinite =
+  fun x -> x
+
+
+let rec back_to : ('a,'b) Extracted.termOver' -> ('a,'b) BasicTypes.termOver =
+  fun x ->
+  match x with
+  | Extracted.T_over y -> BasicTypes.T_over y
+  | Extracted.T_term (s, l) -> BasicTypes.T_term (s, (List.map back_to l))
+
+let rec forth_to : ('a,'b) BasicTypes.termOver -> ('a,'b) Extracted.termOver' =
+  fun x ->
+  match x with
+  | BasicTypes.T_over y -> Extracted.T_over y
+  | BasicTypes.T_term (s, l) -> Extracted.T_term (s, (List.map forth_to l))

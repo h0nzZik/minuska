@@ -377,3 +377,16 @@ let main
   | Extracted.Inr(err) -> (
     failwith (sprintf "Err: %s" err)
   )
+
+module Interpreter = functor (M : MinuskaI) () ->
+struct
+
+  let interpreter_main
+  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI)
+  (parser : Lexing.lexbuf -> 'prg)
+  (step : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
+  (step_ext : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option)
+  (lang_debug_info : string list)
+
+
+end
