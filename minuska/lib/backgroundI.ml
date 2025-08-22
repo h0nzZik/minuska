@@ -1,5 +1,6 @@
 open Libminuskapluginbase
 open Pluginbase
+open Basics
 
 type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI =
   {
@@ -16,7 +17,7 @@ type ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI 
     qs_edc            : 'qs Extracted.eDC ;
     hps_edc           : 'hps Extracted.eDC ;
     background_model  : (('v, 'hv, 'nv, 'vr, 'ts, 'fs, 'ps, 'ats, 'ms, 'qs, 'hps, 'prg) Extracted.backgroundModelOver) ;
-    builtin_inject    : (builtin_repr -> 'v) ;
-    builtin_eject     : ('v -> builtin_repr ) ;
+    builtin_inject    : (BasicTypes.builtin_repr -> 'v) ;
+    builtin_eject     : ('v -> BasicTypes.builtin_repr ) ;
     bindings          : (string -> ('ps, 'hps,'fs,'ats,'qs,'ms) Extracted.symbolInfo) ;
   }

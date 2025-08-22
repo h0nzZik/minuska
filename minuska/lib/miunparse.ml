@@ -1,6 +1,7 @@
 open Core
 open Libminuskapluginbase
 open Pluginbase
+open Basics
 
 let mymap (f : 'a -> 'b) (g : 'b -> 'b) (l : 'a list)  : 'b list =
     let ln = List.length l in
@@ -8,7 +9,7 @@ let mymap (f : 'a -> 'b) (g : 'b -> 'b) (l : 'a list)  : 'b list =
 
 
 (* TODO rename to 'show_builtin' *)
-let builtin_to_string (b : builtin_repr) : string =
+let builtin_to_string (b : BasicTypes.builtin_repr) : string =
   match (b) with 
   | {br_kind=k; br_value=v;} -> (sprintf "(@builtin:%s(%s))" k v)
 

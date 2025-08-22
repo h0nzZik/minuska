@@ -14,7 +14,7 @@
 (library
   (name libminuskapluginbase)
   (public_name minuska.pluginbase)
-  (modules pluginbase dsm syntax util)
+  (modules pluginbase dsm syntax util basics)
   (libraries
     core
     stdlib
@@ -35,7 +35,6 @@
    micoqprint
    miunparse
    minuska
-   coqminuskai
    miskeleton
    programparser
    libminuska

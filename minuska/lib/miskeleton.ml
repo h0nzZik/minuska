@@ -4,9 +4,9 @@ open Libminuskapluginbase
 open Util
 open Pluginbase
 open BackgroundI
+open Basics
 
-
-let klike_builtin_inject (b : builtin_repr)  =
+let klike_builtin_inject (b : BasicTypes.builtin_repr)  =
   match b.br_kind with
   | "int" -> ((Extracted.Bv_Z (Z.of_string (b.br_value))))
   | "bool" -> (
@@ -18,7 +18,7 @@ let klike_builtin_inject (b : builtin_repr)  =
   | "string" -> ((Extracted.Bv_str (b.br_value)))
   | _ -> failwith (sprintf "Unknown kind of builtins '%s' for module 'klike'" b.br_kind)
 
-let klike_builtin_eject b : builtin_repr =
+let klike_builtin_eject b : BasicTypes.builtin_repr =
   match b with
   | Extracted.Bv_Z z -> (({br_kind="int"; br_value=(Z.to_string z);}))
   | Extracted.Bv_bool b' -> (({br_kind="bool"; br_value=(if b' then "true" else "false");}))
@@ -26,11 +26,11 @@ let klike_builtin_eject b : builtin_repr =
   | Extracted.Bv_list _ -> ({br_kind="list"; br_value="_"})
   | Extracted.Bv_pmap _ -> ({br_kind="map"; br_value="_"})
 
-let empty_builtin_inject (b : builtin_repr) =
+let empty_builtin_inject (b : BasicTypes.builtin_repr) =
   match b with
   | _ -> failwith (sprintf "Cannot represent given builtin using module 'empty'")
 
-let empty_builtin_eject b : builtin_repr =
+let empty_builtin_eject b : BasicTypes.builtin_repr =
   match b with
   | _ -> failwith "This should be unreachable"
 
@@ -107,7 +107,7 @@ let empty_interface = (
 )
 
 let rec convert_groundterm
-  (builtin_inject : builtin_repr -> 'builtin)
+  (builtin_inject : BasicTypes.builtin_repr -> 'builtin)
   (g : Syntax.groundterm)
   : ((string, 'builtin2) Extracted.termOver') =
   match g with
@@ -123,7 +123,7 @@ let wrap_init0 : ((string, 'builtin) Extracted.termOver') =
   Extracted.T_term (("builtin.init"), [])
   
 let rec show_groundterm
-  (builtin_eject : 'builtin -> builtin_repr)
+  (builtin_eject : 'builtin -> BasicTypes.builtin_repr)
   (g : (string, 'builtin2) Extracted.termOver')
   : string =
   match g with
@@ -290,7 +290,7 @@ let main
       =
   let r (*: ('builtin, string, string, 'pred, 'hpred, 'func, 'attr, 'query, 'meth) Extracted.realization *) = {
     Extracted.realize_br = (fun (br : Extracted.builtinRepr) : 'v option ->
-      let br' : builtin_repr =  { br_kind=(br.br_kind); br_value=(br.br_value); } in 
+      let br' : BasicTypes.builtin_repr =  { BasicTypes.br_kind=(br.br_kind); BasicTypes.br_value=(br.br_value); } in
       Some ((iface.builtin_inject br'))
     );
     Extracted.string2sym = (fun (x : string) -> x);
@@ -378,15 +378,23 @@ let main
     failwith (sprintf "Err: %s" err)
   )
 
-module Interpreter = functor (M : MinuskaI) () ->
+module Interpreter = functor (M : MinuskaI) (B : BackgroundI) () ->
 struct
 
   let interpreter_main
-  (iface : ('vr, 'v, 'nv, 'hv, 'prg, 'ts, 'fs, 'ps, 'qs, 'ats, 'ms, 'hps) backgroundI)
-  (parser : Lexing.lexbuf -> 'prg)
-  (step : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> (((string, 'v) Extracted.termOver')*'hv) option)
-  (step_ext : 'prg -> 'nv -> (((string, 'v) Extracted.termOver')*'hv) -> ((((string, 'v) Extracted.termOver')*'hv)*Z.t) option)
-  (lang_debug_info : string list)
+        (parser : Lexing.lexbuf -> B.program)
+        (step :
+          B.program ->
+          B.nondet_value ->
+          (((string, B.value) BasicTypes.termOver)*B.hidden_value) ->
+          (((string, B.value) BasicTypes.termOver)*B.hidden_value) option)
+        (step_ext :
+          B.program ->
+          B.nondet_value ->
+          (((string, B.value) BasicTypes.termOver)*B.hidden_value) ->
+          ((((string, B.value) BasicTypes.termOver)*B.hidden_value)*Z.t) option)
+        (lang_debug_info : string list)
+  = raise (Failure "Not implemented")
 
 
 end

@@ -1,15 +1,11 @@
 open Printf
 open Sexplib.Std
+open Basics
 
 type id = [ `Id of string ]
 
-type builtin_repr = {
-  br_kind : string ;
-  br_value : string;
-}
-
 type groundterm =
-  [ `GTb of builtin_repr
+  [ `GTb of BasicTypes.builtin_repr
   | `GTerm of (id*(groundterm list))
   ]
 
