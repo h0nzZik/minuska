@@ -31,11 +31,16 @@ Fixpoint term_map'
   {A B : Type}
   (i : nat)
   (p : nat -> @TermOver' A B -> bool)
-  (f : nat -> @TermOver' A B)
+  (f : nat -> option (@TermOver' A B))
   (t : @TermOver' A B)
   : @TermOver' A B
 :=
-  if (p i t) then (f i) else (
+  if (p i t) then (
+    match (f i) with
+    | None => t
+    | Some t' => t'
+    end
+  ) else (
   match t with
   | t_over _ => t
   | t_term s l =>
@@ -57,7 +62,7 @@ Fixpoint term_map'
 Definition term_map
   {A B : Type}
   (p : nat -> @TermOver' A B -> bool)
-  (f : nat -> @TermOver' A B)
+  (f : nat -> option (@TermOver' A B))
   (t : @TermOver' A B)
   : @TermOver' A B
 :=
