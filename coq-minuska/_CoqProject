@@ -58,5 +58,7 @@ theories/builtin/klike.v
 theories/pi/trivial.v
 theories/hidden/hidden_unit.v
 
+theories/refpres.v
+
 theories/playground.v
 theories/hilang.v
