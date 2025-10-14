@@ -1,6 +1,7 @@
 From Minuska Require Import
   prelude
   spec
+  basic_properties
 .
 
 Fixpoint count_occ
@@ -67,4 +68,20 @@ Definition term_map
   : @TermOver' A B
 :=
   term_map' 0 p f t
+.
+
+Definition PatchT {A B : Type} : Type := list ((@TermOver' A B)*(@TermOver' A B)).
+
+Definition apply_patch
+  {A B : Type}
+  {_EA : EqDecision A}
+  {_EB : EqDecision B}
+  (p : PatchT)
+  (t0 : @TermOver' A B)
+  : @TermOver' A B
+:=
+  term_map
+    (fun i t => match (p !! i) with None => false | Some x => bool_decide (x.1 = t) end)
+    (fun i => fmap snd (p !! i) )
+    t0
 .
