@@ -85,3 +85,58 @@ Definition apply_patch
     (fun i => fmap snd (p !! i) )
     t0
 .
+
+Fixpoint count_symbol_occ
+  {A B : Type}
+  {_EA : EqDecision A}
+  (a : A)
+  (t : @TermOver' A B)
+  : nat
+:=
+  match t with
+  | t_over _ => 0
+  | t_term s l =>
+      let n1 := if (decide (s = a)) then 1 else 0 in
+      let n2 := sum_list_with (count_symbol_occ a) l in
+      n1 + n2
+  end
+.
+
+(*
+  We need to transform a language definition such that it operates on programs
+  where one particular language construct (`a`) takes one more extra parameter
+  that gets preserved. This parameter would typically be a natural number,
+  and would be unique across the whole program, so that we can trace which
+  syntactic element introduced the 'current' term when firing a rule.
+ *)
+Fixpoint more_space_for_symbol_in_term
+  {A B : Type}
+  {_EA : EqDecision A}
+  (a : A)
+  (i : nat)
+  (genb : nat -> B)
+  (t : @TermOver' A B)
+  : @TermOver' A B
+:=
+  match t with
+  | t_over x => t_over x
+  | t_term a' l =>
+      let go := (fix go (l : list (@TermOver' A B)) (i' : nat) : list (@TermOver' A B) :=
+          match l with
+          | [] => []
+          | x::xs =>
+              let x' := more_space_for_symbol_in_term a i' genb x in
+              let xs' := go xs (i' + count_symbol_occ a x) in
+              x'::xs'
+          end
+      ) in
+      if (decide (a = a')) then (
+        let i' := (S i) in
+        let l' := go l i' in
+        t_term a' ((t_over (genb i))::l')
+      )
+      else (
+        t_term a' (go l i)
+      )
+  end
+.
