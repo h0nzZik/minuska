@@ -7,27 +7,30 @@ From Minuska Require Import
 Definition not_stuck
     {Σ : BackgroundModel}
     {Label : Set}
-    (Γ : list (RewritingRule2 Label))
+    (Γ : propset (RewritingRule2 Label))
+    (Γc : propset CtxRule)
     (program : ProgramT)
     (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue)) : Type
 :=
-    { e' : _ & { nv : NondetValue & rewriting_relation Γ program nv e e' } }
+    { e' : _ & { nv : NondetValue & rewriting_relation Γc Γ program nv e e' } }
 .
 
 Definition stuck
     {Σ : BackgroundModel}
     {Label : Set}
-    (Γ : list (RewritingRule2 Label))
+    (Γ : propset (RewritingRule2 Label))
+    (Γc : propset CtxRule)
     (program : ProgramT)
     (e : (@TermOver' TermSymbol BasicValue)*(HiddenValue)) : Type
 :=
-    notT (not_stuck Γ program e)
+    notT (not_stuck Γ Γc program e)
 .
 
 
 Definition Interpreter
     {Σ : BackgroundModel}
     {Label : Set}
+    (Γc : list CtxRule)
     (Γ : list (RewritingRule2 Label))
     : Type
     := ProgramT -> NondetValue -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> option ((@TermOver' TermSymbol BasicValue)*(HiddenValue))
@@ -36,6 +39,7 @@ Definition Interpreter
 Definition Interpreter_ext
     {Σ : BackgroundModel}
     {Label : Set}
+    (Γc : list CtxRule)
     (Γ : list (RewritingRule2 Label))
     : Type
     := ProgramT -> NondetValue -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> option (((@TermOver' TermSymbol BasicValue)*(HiddenValue))*nat)
@@ -45,19 +49,20 @@ Definition Interpreter_ext
 Definition Interpreter_sound'
     {Σ : BackgroundModel}
     {Label : Set}
+    (Γc : list CtxRule)
     (Γ : list (RewritingRule2 Label))
-    (interpreter : Interpreter Γ)
+    (interpreter : Interpreter Γc Γ)
     : Type
     := ((
         forall program e1 e2 nv,
             interpreter program nv e1 = Some e2 ->
-            rewriting_relation Γ program nv e1 e2
+            rewriting_relation (list_to_set Γc) (list_to_set Γ) program nv e1 e2
     )
     *
     (forall program e,
-        stuck Γ program e -> forall nv, interpreter program nv e = None)
+        stuck (list_to_set Γ) (list_to_set Γc) program e -> forall nv, interpreter program nv e = None)
     * (forall program e,
-        not_stuck Γ program e ->
+        not_stuck (list_to_set Γ) (list_to_set Γc) program e ->
         exists e' (nv : NondetValue), interpreter program nv e = Some e')
     )%type
 .
@@ -110,11 +115,12 @@ Definition RewritingTheory2_wf
 Definition Interpreter_sound
     {Σ : BackgroundModel}
     {Label : Set}
+    (Γc : list CtxRule)
     (Γ : list (RewritingRule2 Label))
-    (interpreter : Interpreter Γ)
+    (interpreter : Interpreter Γc Γ)
     : Type
 := 
     RewritingTheory2_wf Γ ->
-    Interpreter_sound' Γ interpreter
+    Interpreter_sound' Γc Γ interpreter
 .
 

@@ -189,17 +189,6 @@ Proof.
     }
 Qed.
 
-
-#[export]
-Instance BuiltinOrVar_eqdec {Σ : BackgroundModel}
-    : EqDecision BuiltinOrVar
-.
-Proof.
-    ltac1:(solve_decision).
-Defined.
-
-
-
 Section custom_induction_principle_2.
 
     Context
@@ -497,19 +486,16 @@ Fixpoint SideCondition_subst
 
 Fixpoint vars_of_to_l2r
     {Σ : BackgroundModel}
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     : list Variabl
 := 
     match t with
-    | t_over (bov_builtin _) => []
-    | t_over (bov_Variabl x) => [x]
+    | t_over (inl _) => []
+    | t_over (inr x) => [x]
     | t_term s l => concat (map vars_of_to_l2r l)
     end
 .
 
-
-Check @VarsOf_TermOver.
-(* Set Typeclasses Debug. *)
 Lemma vars_of_t_term
     {T0 : Type}
     {T var : Type}
@@ -640,18 +626,18 @@ Defined.
 
 Definition BoV_to_Expr2
     {Σ : BackgroundModel}
-    (bov : BuiltinOrVar)
+    (bov : BasicValue+Variabl)
     : Expression2
 :=
     match bov with
-    | bov_builtin b => (e_ground ((t_over b)))
-    | bov_Variabl x => e_Variabl x
+    | inl b => (e_ground ((t_over b)))
+    | inr x => e_Variabl x
     end
 .
 
 Definition TermOverBoV_to_TermOverExpr2
     {Σ : BackgroundModel}
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     : @TermOver' TermSymbol Expression2
 :=
     TermOver'_map BoV_to_Expr2 t

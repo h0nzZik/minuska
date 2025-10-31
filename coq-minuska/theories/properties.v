@@ -1322,7 +1322,7 @@ Qed.
 Lemma TermOverBoV_satisfies_extensive
     {Σ : BackgroundModel}
     (ρ1 ρ2 : Valuation2)
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     (gt : @TermOver' TermSymbol BasicValue)
     :
     ρ1 ⊆ ρ2 ->
@@ -1336,6 +1336,8 @@ Proof.
     {
         destruct gt,a ; ltac1:(simp sat2B); simpl.
         {
+            intros HH.
+            ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
             ltac1:(naive_solver).
         }
         {
@@ -1343,16 +1345,6 @@ Proof.
             ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
             ltac1:(naive_solver).
         }
-        {
-            ltac1:(naive_solver).
-        }
-        {
-            intros HH.
-            ltac1:(rewrite map_subseteq_spec in Hρ1ρ2).
-            ltac1:(naive_solver).
-        }
-        
-        
     }
     {
         destruct gt; ltac1:(simp sat2B).
@@ -1372,7 +1364,7 @@ Qed.
 
 Lemma TermOverBoV_satisfies_strip
     {Σ : BackgroundModel}
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     (g : @TermOver' TermSymbol BasicValue)
     (ρ : Valuation2)
 :
@@ -1383,22 +1375,25 @@ Proof.
     revert ρ g.
     ltac1:(induction t using TermOver_rect; intros ρ g HH).
     {
-        ltac1:(simp sat2B in HH).
-        ltac1:(simp sat2B).
-        unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar in *.
-        ltac1:(repeat case_match; try congruence).
+        destruct a;
+          ltac1:(simp sat2B in HH);
+          ltac1:(simp sat2B).
         unfold Valuation2,Valuation' in *.
         rewrite map_lookup_filter.
         rewrite HH.
         simpl.
         ltac1:(simplify_option_eq).
-        reflexivity.
-        ltac1:(exfalso).
-        apply H. clear H.
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        rewrite elem_of_singleton.
-        reflexivity.
+        {
+          reflexivity.
+        }
+        {
+          ltac1:(exfalso).
+          apply H. clear H.
+          unfold vars_of; simpl.
+          unfold vars_of; simpl.
+          rewrite elem_of_singleton.
+          reflexivity.
+        }
     }
     {
         destruct g;
@@ -1893,7 +1888,7 @@ Lemma satisfies_term_bov_inv
     (ρ : Valuation2)
     (γ : @TermOver' TermSymbol BasicValue)
     (s : TermSymbol)
-    (l : list (@TermOver' TermSymbol BuiltinOrVar))
+    (l : list (@TermOver' TermSymbol (BasicValue+Variabl)))
     :
     sat2B ρ γ (t_term s l) ->
     { lγ : list (@TermOver' TermSymbol BasicValue) &
@@ -2173,7 +2168,7 @@ Lemma satisfies_var
     (ρ : Valuation2)
     x γ:
     ρ !! x = Some (γ) ->
-    sat2B ρ γ (t_over (bov_Variabl x))
+    sat2B ρ γ (t_over (inr x))
 .
 Proof.
     intros H.
@@ -2200,12 +2195,11 @@ Lemma satisfies_var_inv
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     x γ:
-    sat2B ρ γ (t_over (bov_Variabl x)) ->
+    sat2B ρ γ (t_over (inr x)) ->
     ρ !! x = Some (γ)
 .
 Proof.
-    ltac1:(simp sat2B). simpl.
-    intros H; exact H.
+    ltac1:(simp sat2B).
 Qed.
 
 Lemma satisfies_var_expr_inv
@@ -2236,7 +2230,7 @@ Lemma forall_satisfies_inv'
     (sz : nat)
     (ρ : Valuation2)
     (γ1 γ2 : list (@TermOver' TermSymbol BasicValue))
-    (l : list (@TermOver' TermSymbol BuiltinOrVar))
+    (l : list (@TermOver' TermSymbol (BasicValue+Variabl) ))
     :
     sum_list_with (S ∘ TermOver_size) l < sz ->
     length γ1 = length l ->
@@ -2249,7 +2243,7 @@ with satisfies_inv'
     (sz : nat)
     (ρ : Valuation2)
     (x y : @TermOver' TermSymbol BasicValue)
-    (z : @TermOver' TermSymbol BuiltinOrVar)
+    (z : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     TermOver_size z < sz ->
     sat2B ρ x z ->
@@ -2320,49 +2314,47 @@ Proof.
             z as [az|cz lz]
             .
         {
-            ltac1:(simp sat2B in H1).
-            ltac1:(simp sat2B in H2).
-            simpl in *.
-            destruct az; simpl in *; ltac1:(simplify_eq/=); try reflexivity.
-            ltac1:(congruence).
+            clear forall_satisfies_inv' satisfies_inv'.
+            destruct az; ltac1:(simp sat2B in H1); ltac1:(simp sat2B in H2);
+              ltac1:(simplify_eq/=); reflexivity.
         }
         {
+            clear forall_satisfies_inv' satisfies_inv'.
             ltac1:(simp sat2B in H1).
             simpl in H1.
             destruct H1.
         }
         {
-            ltac1:(simp sat2B in H1).
-            ltac1:(simp sat2B in H2).
-            simpl in *.
-            destruct az; simpl in *; ltac1:(simplify_eq/=).
+            clear forall_satisfies_inv' satisfies_inv'.
+            destruct az; ltac1:(simp sat2B in H1); ltac1:(simp sat2B in H2);
+              ltac1:(simplify_eq/=); reflexivity.
         }
         {
+            clear forall_satisfies_inv' satisfies_inv'.
             ltac1:(simp sat2B in H1).
             ltac1:(simp sat2B in H2).
             simpl in *.
             destruct H1.
         }
         {
-            ltac1:(simp sat2B in H1).
-            ltac1:(simp sat2B in H2).
-            simpl in *.
-            destruct az; simpl in *; ltac1:(simplify_eq/=).
+            clear forall_satisfies_inv' satisfies_inv'.
+            destruct az; ltac1:(simp sat2B in H1); ltac1:(simp sat2B in H2);
+              ltac1:(simplify_eq/=); reflexivity.
         }
         {
+            clear forall_satisfies_inv' satisfies_inv'.
             ltac1:(simp sat2B in H1).
             ltac1:(simp sat2B in H2).
             simpl in *.
             destruct H2.
         }
         {
-            ltac1:(simp sat2B in H1).
-            ltac1:(simp sat2B in H2).
-            simpl in *.
-            destruct az; simpl in *; ltac1:(simplify_eq/=).
-            reflexivity.
+            clear forall_satisfies_inv' satisfies_inv'.
+            destruct az; ltac1:(simp sat2B in H1); ltac1:(simp sat2B in H2);
+              ltac1:(simplify_eq/=); reflexivity.
         }
         {
+            clear satisfies_inv'.
             ltac1:(simp sat2B in H1).
             ltac1:(simp sat2B in H2).
             simpl in *.
@@ -2389,7 +2381,7 @@ Lemma forall_satisfies_inv
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (γ1 γ2 : list (@TermOver' TermSymbol BasicValue))
-    (l : list (@TermOver' TermSymbol BuiltinOrVar))
+    (l : list (@TermOver' TermSymbol (BasicValue+Variabl)))
     :
     length γ1 = length l ->
     length γ2 = length l ->
@@ -2408,7 +2400,7 @@ Lemma satisfies_inv
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (x y : @TermOver' TermSymbol BasicValue)
-    (z : @TermOver' TermSymbol BuiltinOrVar)
+    (z : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     sat2B ρ x z ->
     sat2B ρ y z ->
@@ -2428,7 +2420,7 @@ Lemma satisfies_in_size
     (ρ : Valuation2)
     (x : Variabl)
     (t t' : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     x ∈ vars_of (φ) ->
     ρ !! x = Some (t') ->
@@ -2454,14 +2446,14 @@ Proof.
             {
                 unfold vars_of in Hin; simpl in Hin.
                 unfold vars_of in Hin; simpl in Hin.
-                rewrite elem_of_singleton in Hin. subst x0.
+                rewrite elem_of_singleton in Hin.
                 ltac1:(simplify_eq/=).
                 ltac1:(lia).
             }
             {
                 unfold vars_of in Hin; simpl in Hin.
                 unfold vars_of in Hin; simpl in Hin.
-                rewrite elem_of_singleton in Hin. subst x0.
+                rewrite elem_of_singleton in Hin.
                 ltac1:(simplify_eq/=).
                 ltac1:(lia).
             }
@@ -2510,10 +2502,10 @@ Qed.
 Lemma double_satisfies_contradiction
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (ay : BuiltinOrVar)
+    (ay : BasicValue+Variabl)
     (cz cx : TermSymbol)
     (lx : list (@TermOver' TermSymbol BasicValue))
-    (lz : list (@TermOver' TermSymbol BuiltinOrVar))
+    (lz : list (@TermOver' TermSymbol (BasicValue+Variabl)))
     :
     vars_of ((@t_over TermSymbol _ ay)) = vars_of ((t_term cz lz)) ->
     sat2B ρ (t_term cx lx) (t_over ay) ->
@@ -2524,9 +2516,15 @@ Proof.
     intros Hvars H1 H2.
     ltac1:(simp sat2B in H1).
     ltac1:(simp sat2B in H2).
-    destruct ay; simpl in *;
-        ltac1:(destruct_and?; simplify_eq/=).
+    destruct H2 as [H2 [H3 H4]].
+    subst.
     rewrite vars_of_t_term in Hvars.
+    destruct ay as [?|x].
+    {
+      ltac1:(simp sat2B in H1).
+      inversion H1.
+    }
+    ltac1:(simp sat2B in H1).
     assert (H: x ∈ vars_of lz).
     {
         unfold vars_of; simpl.
@@ -2545,8 +2543,8 @@ Proof.
     destruct H2y as [i Hi].
     destruct (lx !! i) eqn:Hlxi.
     {
-        specialize (H3 i _ _ Hi Hlxi).
-        assert (Htmp1 := satisfies_in_size ρ x t (t_term cz lx) y H2X H1 H3).
+        specialize (H4 i _ _ Hi Hlxi).
+        assert (Htmp1 := satisfies_in_size ρ x t (t_term cz lx) y H2X H1 H4).
         simpl in Htmp1.
         apply take_drop_middle in Hlxi.
         rewrite <- Hlxi in Htmp1.
@@ -2578,7 +2576,7 @@ Definition size_of_var_in_val
 Definition delta_in_val
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (ψ : @TermOver' TermSymbol BuiltinOrVar)
+    (ψ : @TermOver' TermSymbol (BasicValue+Variabl) )
     : nat
 :=
     sum_list_with (size_of_var_in_val ρ) (vars_of_to_l2r ψ)
@@ -2590,7 +2588,7 @@ Lemma concrete_is_larger_than_TermSymbolic
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (γ : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     sat2B ρ γ φ ->
     TermOver_size γ = TermOver_size φ + delta_in_val ρ φ
@@ -2693,9 +2691,9 @@ Lemma enveloping_preserves_or_increases_delta
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (γ1 γ2 : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     (s : TermSymbol)
-    (l1 l2 : list (@TermOver' TermSymbol BuiltinOrVar))
+    (l1 l2 : list (@TermOver' TermSymbol (BasicValue+Variabl)))
     (d : nat)
     :
     sat2B ρ γ1 φ ->
@@ -2898,7 +2896,7 @@ Lemma satisfies_TermOverBoV_to_TermOverExpr
     (h : HiddenValue)
     (ρ : Valuation2)
     (γ : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     (nv : NondetValue)
     :
     sat2E program h ρ γ (TermOverBoV_to_TermOverExpr2 φ) nv ->
@@ -2976,16 +2974,16 @@ Qed.
 Equations? TermOverBoV_eval
     {Σ : BackgroundModel}
     (ρ : Valuation2)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     (pf : vars_of φ ⊆ vars_of ρ)
     : @TermOver' TermSymbol BasicValue
     by wf (TermOver_size φ) lt
 :=
 
-    TermOverBoV_eval ρ (t_over (bov_builtin b)) pf := t_over b
+    TermOverBoV_eval ρ (t_over (inl b)) pf := t_over b
     ;
 
-    TermOverBoV_eval ρ (t_over (bov_Variabl x)) pf with (inspect (ρ !! x)) => {
+    TermOverBoV_eval ρ (t_over (inr x)) pf with (inspect (ρ !! x)) => {
         | (@exist _ _ (Some t) pf') := t;
         | (@exist _ _ None pf') := _ ;
     }
@@ -3041,7 +3039,7 @@ Lemma satisfies_TermOverBoV__impl__vars_subseteq
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (c : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     sat2B ρ c φ ->
     vars_of φ ⊆ vars_of ρ
@@ -3336,7 +3334,7 @@ Lemma vars_of_builtin
     {Σ : BackgroundModel}
     (b : BasicValue)
 :
-    vars_of (@t_over TermSymbol BuiltinOrVar (bov_builtin b)) = ∅
+    vars_of (@t_over TermSymbol (BasicValue+Variabl) (inl b)) = ∅
 .
 Proof.
     unfold vars_of; simpl.
@@ -3350,7 +3348,7 @@ Lemma vars_of_Variabl
     {Σ : BackgroundModel}
     x
 :
-    vars_of (@t_over TermSymbol BuiltinOrVar (bov_Variabl x)) = {[x]}
+    vars_of (@t_over TermSymbol (BasicValue+Variabl) (inr x)) = {[x]}
 .
 Proof.
     unfold vars_of; simpl.
