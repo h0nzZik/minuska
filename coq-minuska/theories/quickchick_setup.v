@@ -45,8 +45,8 @@ Instance showTerm {T : Type} {_ST : Show T} : Show (@TermOver' TermSymbol T) := 
 |}.
 
 #[export]
-Instance showBuiltinOrVar {T : Type} {_ST : Show T} : Show (BuiltinOrVar) := {|
-    show := fun bov => match bov with bov_builtin b => show b | bov_Variabl x => show x end;
+Instance showBuiltinOrVar {T : Type} {_ST : Show T} : Show (BasicValue+Variabl) := {|
+    show := fun bov => match bov with inl b => show b | inr x => show x end;
 |}.
 
 Definition genVariable : G Variabl :=
@@ -76,7 +76,7 @@ end.
 
 Definition genTermSized sz := genTermSized' sz (fun _ => genBuiltin).
 
-Definition genBuiltinOrVar := oneOf [bindGen genBuiltin (fun x => ret (bov_builtin x)); bindGen genVariable (fun x => ret (bov_Variabl x))].
+Definition genBuiltinOrVar := oneOf [bindGen genBuiltin (fun x => ret (inl x)); bindGen genVariable (fun x => ret (inr x))].
 
 
 Definition genPatternSized sz := genTermSized' sz (fun _ => 
@@ -173,12 +173,12 @@ Instance showVal : Show Valuation2 := {|
 |}.
 
 
-Definition showSubP_ (s : gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)) : string :=
+Definition showSubP_ (s : gmap Variabl (@TermOver' TermSymbol (BasicValue+Variabl))) : string :=
         let l := map_to_list s in
         show (l)
 .
 (* About map_to_list. *)
 #[export]
-Instance showSubP : Show (gmap Variabl (@TermOver' TermSymbol BuiltinOrVar)) := {|
+Instance showSubP : Show (gmap Variabl (@TermOver' TermSymbol (BasicValue+Variabl))) := {|
     show := showSubP_
 |}.

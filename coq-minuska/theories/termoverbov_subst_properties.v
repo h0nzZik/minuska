@@ -9,7 +9,7 @@ From Minuska Require Import
 Lemma subst_notin
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     h ∉ vars_of_to_l2r φ ->
     TermOverBoV_subst φ h ψ = φ
@@ -17,7 +17,7 @@ Lemma subst_notin
 Proof.
     induction φ; simpl.
     {
-        destruct a; simpl.
+        destruct a as [v|x]; simpl.
         {
             intros _. reflexivity.
         }
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 Lemma subst_notin2 {Σ : BackgroundModel}
-     : ∀ (h : Variabl) (φ ψ : @TermOver' TermSymbol BuiltinOrVar),
+     : ∀ (h : Variabl) (φ ψ : @TermOver' TermSymbol (BasicValue+Variabl)),
          h ∉ vars_of φ → TermOverBoV_subst φ h ψ = φ
 .
 Proof.
@@ -67,7 +67,7 @@ Proof.
     unfold vars_of in HH; simpl in HH.
     unfold vars_of in HH; simpl in HH.
     unfold vars_of_BoV in HH; simpl in HH.
-    destruct a; simpl in *.
+    destruct a as [b|x]; simpl in *.
     { reflexivity. }
     {
       rewrite elem_of_singleton in HH.
@@ -110,14 +110,14 @@ Qed.
 Lemma size_subst_1
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     TermOver_size φ <= TermOver_size (TermOverBoV_subst φ h ψ)
 .
 Proof.
     induction φ; simpl.
     {
-        destruct a; simpl.
+        destruct a as [b|x]; simpl.
         { ltac1:(lia). }
         {
             destruct (decide (h = x)); simpl.
@@ -145,7 +145,7 @@ Qed.
 Lemma size_subst_2
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     h ∈ vars_of_to_l2r φ ->
     TermOver_size ψ <= TermOver_size (TermOverBoV_subst φ h ψ)
@@ -159,15 +159,20 @@ Proof.
             inversion Hin.
         }
         {
-            inversion Hin; subst; clear Hin.
+          rewrite elem_of_cons in Hin.
+          destruct Hin as [Hin|Hin].
+          {
+            subst h.
+            rewrite decide_True.
+            { ltac1:(lia). }
             {
-                destruct (decide (x = x))>[|ltac1:(contradiction)].
-                unfold BuiltinOrVar in *.
-                ltac1:(lia).
+              reflexivity.
             }
-            {
-                inversion H1.
-            }
+          }
+          {
+            rewrite elem_of_nil in Hin.
+            destruct Hin.
+          }
         }
     }
     {
@@ -197,7 +202,7 @@ Qed.
 Lemma TermOverBoV_subst_once_size
     {Σ : BackgroundModel}
     (h : Variabl)
-    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     h ∉ vars_of ψ ->
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
@@ -206,7 +211,7 @@ Lemma TermOverBoV_subst_once_size
 Proof.
     induction φ; simpl; intros Hnotinψ Hexactlyonce.
     {
-        destruct a.
+        destruct a as [b|x].
         {
             simpl in *. ltac1:(lia).
         }
@@ -222,7 +227,6 @@ Proof.
         }
     }
     {
-        unfold BuiltinOrVar in *.
         simpl in *.
         rewrite sum_list_with_compose.
         unfold compose.
@@ -347,7 +351,6 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
-            unfold BuiltinOrVar in *.
             ltac1:(lia).
         }
 
@@ -389,12 +392,11 @@ Proof.
             destruct (decide (h=h))>[|ltac1:(contradiction)].
             rewrite length_app in Hexactlyonce.
             simpl in Hexactlyonce.
-            unfold BuiltinOrVar in *.
             ltac1:(lia).
         }
 
         assert (HH1: (sum_list_with TermOver_size
-                (map (λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ)
+                (map (λ t'' : @TermOver' TermSymbol (BasicValue+Variabl), TermOverBoV_subst t'' h ψ)
                 (take j l))  )
                 = sum_list_with TermOver_size (take j l) ).
         {
@@ -405,7 +407,6 @@ Proof.
             }
             {
                 intros i0 x1 x2 Hx1 Hx2.
-                unfold BuiltinOrVar in *.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
@@ -427,7 +428,7 @@ Proof.
         }
 
         assert (HH2: (sum_list_with TermOver_size
-                (map (λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ)
+                (map (λ t'' : @TermOver' TermSymbol (BasicValue+Variabl), TermOverBoV_subst t'' h ψ)
                 (drop (S j) l))  )
                 = sum_list_with TermOver_size (drop (S j) l) ).
         {
@@ -438,7 +439,6 @@ Proof.
             }
             {
                 intros i0 x1 x2 Hx1 Hx2.
-                unfold BuiltinOrVar in *.
                 ltac1:(replace map with (@fmap _ list_fmap) in Hx1 by reflexivity).
                 rewrite list_lookup_fmap in Hx1.
                 rewrite Hx2 in Hx1. simpl in Hx1. inversion Hx1; subst; clear Hx1.
@@ -459,7 +459,6 @@ Proof.
                 }
             }
         }
-        unfold BuiltinOrVar in *.
         rewrite HH1. clear HH1.
         rewrite HH2. clear HH2.
         remember (sum_list_with TermOver_size (take j l) ) as N1.
@@ -507,7 +506,6 @@ Proof.
             specialize (Hnotindrop _ H2x1).
             apply Hnotindrop. apply H2x.
         }
-        unfold BuiltinOrVar in *.
         specialize (H ltac:(lia)).
         rewrite H.
         assert (Htmp1 := TermOver_size_not_zero x0).
@@ -529,7 +527,7 @@ Lemma vars_of__TermOverBoV_subst__varless
 Proof.
     induction c; simpl in *; intros HH.
     {
-        destruct a.
+        destruct a as [b|x'].
         {
             unfold vars_of; simpl.
             unfold vars_of; simpl.
@@ -539,7 +537,7 @@ Proof.
         {
             unfold vars_of; simpl.
             unfold vars_of; simpl.
-            destruct (decide (x = x0)).
+            destruct (decide (x = x')).
             {
                 subst.
                 ltac1:(set_solver).
@@ -578,10 +576,10 @@ Qed.
 Lemma subst_id
 {Σ : BackgroundModel}
 a x:
-TermOverBoV_subst a x (t_over (bov_Variabl x)) = a
+TermOverBoV_subst a x (t_over (inr x)) = a
 .
 Proof.
-induction a; simpl.
+induction a as [b|x']; simpl.
 {
     ltac1:(repeat case_match); subst; reflexivity.
 }
@@ -604,7 +602,7 @@ Qed.
 
 Lemma vars_of_TermOverBoV_subst
     {Σ : BackgroundModel}
-    (t t' : @TermOver' TermSymbol BuiltinOrVar)
+    (t t' : @TermOver' TermSymbol (BasicValue+Variabl))
     (x : Variabl)
 :
     x ∈ vars_of t ->
@@ -617,17 +615,22 @@ Proof.
         unfold vars_of in HH1; simpl in HH1.
         unfold vars_of in HH1; simpl in HH1.
         unfold vars_of_BoV in HH1; simpl in HH1.
-        destruct a; simpl in *.
+        destruct a as [b|x']; simpl in *.
         {
-        rewrite elem_of_empty in HH1. inversion HH1.
+          rewrite elem_of_empty in HH1. inversion HH1.
         }
         {
-        rewrite elem_of_singleton in HH1.
-        subst x0.
-        destruct (decide (x = x))>[|ltac1:(contradiction)].
-        unfold vars_of; simpl.
-        unfold vars_of; simpl.
-        ltac1:(set_solver).
+          rewrite elem_of_singleton in HH1.
+          subst x'.
+          rewrite decide_True.
+          {
+            unfold vars_of; simpl.
+            unfold vars_of; simpl.
+            ltac1:(set_solver).
+          }
+          {
+            reflexivity.
+          }
         }
     }
     {
@@ -713,7 +716,7 @@ Qed.
 
 Lemma vars_of_to_l2r_subst
     {Σ : BackgroundModel}
-    (φ ψ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ ψ : @TermOver' TermSymbol (BasicValue+Variabl))
     (h : Variabl)
     :
     length (filter (eq h) (vars_of_to_l2r φ)) = 1 ->
@@ -725,16 +728,16 @@ Proof.
     intros Hinφ Hnotinψ.
     induction φ; simpl.
     {
-        destruct a; simpl in *.
+        destruct a as [b|x']; simpl in *.
         {
             ltac1:(lia).
         }
         {
             rewrite filter_cons in Hinφ.
             rewrite filter_cons.
-            destruct (decide (h = x)); simpl in *.
+            destruct (decide (h = x')); simpl in *.
             {
-                subst x.
+                subst x'.
                 destruct (decide (h<>h))>[ltac1:(contradiction)|].
                 rewrite filter_nil. simpl. reflexivity.
             }
@@ -858,7 +861,7 @@ Proof.
         }
         rewrite IH2. clear IH2.
 
-        assert (Heq1: ((λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> la1) = la1).
+        assert (Heq1: ((λ t'' : @TermOver' TermSymbol (BasicValue+Variabl), TermOverBoV_subst t'' h ψ) <$> la1) = la1).
         {
             clear -HH'3.
             induction la1.
@@ -875,7 +878,7 @@ Proof.
             }
         }
 
-        assert (Heq2: ((λ t'' : @TermOver' TermSymbol BuiltinOrVar, TermOverBoV_subst t'' h ψ) <$> lc1) = lc1).
+        assert (Heq2: ((λ t'' : @TermOver' TermSymbol (BasicValue+Variabl), TermOverBoV_subst t'' h ψ) <$> lc1) = lc1).
         {
             clear -HH'4.
             induction lc1.

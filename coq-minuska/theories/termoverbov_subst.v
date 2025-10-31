@@ -9,14 +9,14 @@ Fixpoint TermOverBoV_subst_gen
     {B : Type}
     (lift_builtin : BasicValue -> B)
     (lift_Variabl : Variabl -> B)
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     (x : Variabl)
     (t' : @TermOver' TermSymbol B)
     : @TermOver' TermSymbol B
 :=
 match t with
-| t_over (bov_builtin b) => t_over (lift_builtin b)
-| t_over (bov_Variabl y) =>
+| t_over (inl b) => t_over (lift_builtin b)
+| t_over (inr y) =>
     match (decide (x = y)) with
     | left _ => t'
     | right _ => t_over (lift_Variabl y)
@@ -26,7 +26,7 @@ end.
 
 Definition TermOverBoV_subst_expr2
     {Σ : BackgroundModel}
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     (x : Variabl)
     (t' : @TermOver' TermSymbol Expression2)
     : @TermOver' TermSymbol Expression2
@@ -36,16 +36,16 @@ Definition TermOverBoV_subst_expr2
 
 Fixpoint TermOverBoV_subst
     {Σ : BackgroundModel}
-    (t : @TermOver' TermSymbol BuiltinOrVar)
+    (t : @TermOver' TermSymbol (BasicValue+Variabl))
     (x : Variabl)
-    (t' : @TermOver' TermSymbol BuiltinOrVar)
+    (t' : @TermOver' TermSymbol (BasicValue+Variabl))
 :=
 match t with
-| t_over (bov_builtin b) => t_over (bov_builtin b)
-| t_over (bov_Variabl y) =>
+| t_over (inl b) => t_over (inl b)
+| t_over (inr y) =>
     match (decide (x = y)) with
     | left _ => t'
-    | right _ => t_over (bov_Variabl y)
+    | right _ => t_over (inr y)
     end
 | t_term s l => t_term s (map (fun t'' => TermOverBoV_subst t'' x t') l)
 end.
