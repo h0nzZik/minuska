@@ -4,38 +4,6 @@ From Minuska Require Import
     basic_properties
 .
 
-Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b
-    {Σ : BackgroundModel}
-    (ρ : Valuation2)
-    (t : @TermOver' TermSymbol BasicValue)
-    (bv : BuiltinOrVar)
-    : bool
-:= match bv with
-    | bov_builtin b => bool_decide (t = t_over b)
-    | bov_Variabl x => bool_decide (ρ !! x = Some t)
-    end
-.
-
-Lemma Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_reflect
-    {Σ : BackgroundModel}
-    : forall ρ t bv,
-        reflect
-            (Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ t bv)
-            (Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b ρ t bv)
-.
-Proof.
-    intros.
-    unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b.
-    unfold Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar.
-    destruct bv; simpl.
-    {
-        apply bool_decide_reflect.
-    }
-    {
-        apply bool_decide_reflect.
-    }
-Qed.
-
 Fixpoint forallbin
     {A : Type}
     (l : list A)
@@ -54,11 +22,12 @@ Equations? sat2Bb
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (t : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     : bool
     by wf (TermOver_size φ) lt
 :=
-    sat2Bb ρ t (t_over bv) := Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_b ρ t bv ;
+    sat2Bb ρ t (t_over (inl b)) := bool_decide (t = t_over b) ;
+    sat2Bb ρ t (t_over (inr x)) := bool_decide (ρ !! x = Some t) ;
     sat2Bb ρ (t_over _) (t_term s l) := false ;
     sat2Bb ρ (t_term s' l') (t_term s l) :=
         bool_decide (s' = s) &&
@@ -92,25 +61,25 @@ Lemma sat2B_refl
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (t : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     :
     reflect (sat2B ρ t φ) (sat2Bb ρ t φ)
 .
 Proof.
     revert φ.
-    ltac1:(induction t using TermOver_rect); intros φ; destruct φ;
-        ltac1:(simp sat2B); ltac1:(simp sat2Bb).
+    ltac1:(induction t using TermOver_rect); intros φ; destruct φ.
     {
-        apply Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_reflect.    
+      destruct a0; simpl; ltac1:(simp sat2B); ltac1:(simp sat2Bb); apply bool_decide_reflect.
     }
     {
         apply ReflectF.
         ltac1:(tauto).
     }
     {
-        apply Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar_reflect.
+       destruct a; simpl; ltac1:(simp sat2B); ltac1:(simp sat2Bb); apply bool_decide_reflect.
     }
     {
+        ltac1:(simp sat2B); ltac1:(simp sat2Bb).
         ltac1:(rename b into s').
         ltac1:(rename l into l').
         ltac1:(rename l0 into l).
