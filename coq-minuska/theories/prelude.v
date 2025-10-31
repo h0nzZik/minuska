@@ -22,6 +22,7 @@ From stdpp Require Export
     numbers
     pmap
     pretty
+    propset
 .
 
 (* I really, really do not want to import stdpp.strings.String, because it makes problems in the extraction *)

@@ -329,16 +329,6 @@ Instance VarsOf_Expression2
     vars_of := vars_of_Expression2 ; 
 |}.
 
-
-Inductive BuiltinOrVar' {Bv Va : Type} :=
-| bov_builtin (b : Bv)
-| bov_Variabl (x : Va)
-.
-
-Definition BuiltinOrVar {Σ : BackgroundModel} :=
-    @BuiltinOrVar' BasicValue Variabl
-.
-
 Fixpoint TermOver_size
     {T : Type}
     {A : Type}
@@ -366,9 +356,9 @@ Definition TermOverBuiltin_to_TermOverBoV
     {Σ : BackgroundModel}
     {A : Type}
     (t : @TermOver' A BasicValue)
-    : @TermOver' A BuiltinOrVar
+    : @TermOver' A (BasicValue+Variabl)
 :=
-    TermOver'_map bov_builtin t
+    TermOver'_map inl t
 .
 
 
@@ -467,7 +457,7 @@ Record RewritingRule2'
     (Label : Set)
 := mkRewritingRule2
 {
-    r_from : @TermOver' Ts (@BuiltinOrVar' Bv Va) ;
+    r_from : @TermOver' Ts (Bv+Va) ;
     r_to : @TermOver' Ts (@Expression2' Bv Va Ts Fs Qs As) ;
     r_scs : (@SideCondition' Bv Va Ts Fs Qs As Ps Hps) ;
     r_eff : (@Effect0' Bv Va Ts Fs Qs As Ms) ;
@@ -484,16 +474,21 @@ Definition RewritingRule2 {Σ : BackgroundModel} (Label : Set) : Type :=
   @RewritingRule2' BasicValue Variabl TermSymbol FunSymbol QuerySymbol AttrSymbol MethSymbol PredSymbol HPredSymbol Label
 .
 
+Record CtxRule {Σ : BackgroundModel} := {
+  cr_context : @TermOver' TermSymbol (BasicValue+Variabl+unit);
+  cr_side : SideCondition ;
+}.
+
 Definition vars_of_BoV
     {Bv Va : Type}
     {_EDVa : EqDecision Va}
     {_CNVa : Countable Va}
-    (bov : (@BuiltinOrVar' Bv Va))
+    (bov : (Bv+Va))
     : gset Va
 :=
 match bov with
-| bov_Variabl x => {[x]}
-| bov_builtin _ => ∅
+| inr x => {[x]}
+| inl _ => ∅
 end.
 
 #[export]
@@ -501,7 +496,7 @@ Instance VarsOf_BoV
     {Bv Va : Type}
     {_EDVa : EqDecision Va}
     {_CNVa : Countable Va}
-    : VarsOf (@BuiltinOrVar' Bv Va) Va
+    : VarsOf (Bv+Va) Va
 := {|
     vars_of := vars_of_BoV ; 
 |}.
@@ -561,27 +556,16 @@ Instance VarsOf_Valuation2
     vars_of := fun ρ => dom ρ ; 
 |}.
 
-Definition Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar
-    {Σ : BackgroundModel}
-    (ρ : Valuation2)
-    (t : @TermOver' TermSymbol BasicValue)
-    (bv : BuiltinOrVar)
-    : Prop
-:= match bv with
-    | bov_builtin b => t = t_over b
-    | bov_Variabl x => ρ !! x = Some t
-    end
-.
-
 Equations? sat2B
     {Σ : BackgroundModel}
     (ρ : Valuation2)
     (t : @TermOver' TermSymbol BasicValue)
-    (φ : @TermOver' TermSymbol BuiltinOrVar)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl))
     : Prop
     by wf (TermOver_size φ) lt
 :=
-    sat2B ρ t (t_over bv) := Satisfies_Valuation2_TermOverBuiltinValue_BuiltinOrVar ρ t bv ;
+    sat2B ρ t (t_over (inl b)) := t = t_over b;
+    sat2B ρ t (t_over (inr x)) := ρ !! x = Some t ;
     sat2B ρ (t_over _) (t_term s l) := False ;
     sat2B ρ (t_term s' l') (t_term s l) :=
         ((s' = s) /\
@@ -721,7 +705,8 @@ Definition BasicEffect0_evaluate
     | be_method m args =>
             let ts' := (fun e => Expression2_evaluate program h ρ e nv) <$> args in
             ts ← list_collect ts';
-            h' ← method_interpretation m h ts;
+
+h' ← method_interpretation m h ts;
             Some (h', ρ)
     | be_remember x e => 
         v ← Expression2_evaluate program h ρ e nv;
@@ -759,9 +744,83 @@ Definition Effect0_evaluate
     fmap fst (Effect0_evaluate' program h ρ nv f)
 .
 
+Equations? satCtx
+    {Σ : BackgroundModel}
+    (ρ : Valuation2)
+    (rem : @TermOver' TermSymbol BasicValue)
+    (t : @TermOver' TermSymbol BasicValue)
+    (φ : @TermOver' TermSymbol (BasicValue+Variabl+unit))
+    : Prop
+    by wf (TermOver_size φ) lt
+:=
+    satCtx ρ rem t (t_over (inl (inl b))) := t = t_over b;
+    satCtx ρ rem t (t_over (inl (inr x))) := ρ !! x = Some t ;
+    satCtx ρ rem t (t_over (inr tt)) := t = rem ;
+    satCtx ρ rem (t_over _) (t_term s l) := False ;
+    satCtx ρ rem (t_term s' l') (t_term s l) :=
+        ((s' = s) /\
+        (length l' = length l) /\
+        forall i t' φ' (pf1 : l !! i = Some φ') (pf2 : l' !! i = Some t'),
+            satCtx ρ rem t' φ'
+        )
+    ;
+.
+
+Proof.
+    abstract(
+    simpl in *;
+    simpl;
+    apply take_drop_middle in pf1;
+    rewrite <- pf1;
+    rewrite sum_list_with_app; simpl;
+    ltac1:(lia)).
+Defined.
+
+Record Decomposition {Σ : BackgroundModel} := {
+  d_remainder : @TermOver' TermSymbol BasicValue ;
+  d_valuation : Valuation2 ;
+  d_stack : list (CtxRule*Valuation2)
+}.
+
+Inductive is_decomposition_of
+  {Σ : BackgroundModel}
+  (crules : propset CtxRule)
+  (program : ProgramT)
+  (nv : NondetValue)
+  (h : HiddenValue)
+  :
+  Decomposition -> @TermOver' TermSymbol BasicValue -> Prop
+:=
+| is_dec_empty: forall ρ t,
+    is_decomposition_of
+      crules
+      program
+      nv
+      h
+      {|d_remainder := t; d_valuation := ρ; d_stack := []; |}
+      t
+| is_dec_cons : forall (d : Decomposition) r ρ rem t,
+    is_decomposition_of crules program nv h d t ->
+    r ∈ crules ->
+    satCtx ρ rem d.(d_remainder) r.(cr_context) ->
+    SideCondition_evaluate program h ρ nv r.(cr_side) = Some true ->
+    is_decomposition_of
+      crules
+      program
+      nv
+      h
+      {|
+        d_remainder := rem;
+        d_valuation := ρ;
+        d_stack := (r,d.(d_valuation))::d.(d_stack) ;
+      |}
+      t
+.
+
 Definition rewrites_in_valuation_under_to
     {Σ : BackgroundModel}
     {Label : Set}
+    (crules : propset CtxRule)
     (program : ProgramT)
     (ρ : Valuation2)
     (r : RewritingRule2 Label)
@@ -769,9 +828,13 @@ Definition rewrites_in_valuation_under_to
     (under : Label)
     (nv : NondetValue)
     (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
+    (dfrom dto : Decomposition)
     : Type
-:= ((sat2B ρ from.1 (r_from r))
-* (sat2E program from.2 ρ to.1 (r_to r) nv)
+:= (
+  (is_decomposition_of crules program nv from.2 dfrom from.1)
+* (is_decomposition_of crules program nv from.2 dto to.1)
+* (sat2B ρ dfrom.(d_remainder) (r_from r))
+* (sat2E program from.2 ρ dto.(d_remainder) (r_to r) nv)
 * (SideCondition_evaluate program from.2 ρ nv (r_scs r) = Some true)
 * (Some to.2 = Effect0_evaluate program from.2 ρ nv (r_eff r))
 * (under = r_label r)
@@ -781,6 +844,7 @@ Definition rewrites_in_valuation_under_to
 Definition rewrites_to
     {Σ : BackgroundModel}
     {Label : Set}
+    (crules : propset CtxRule)
     (program : ProgramT)
     (r : RewritingRule2 Label)
     (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
@@ -789,24 +853,30 @@ Definition rewrites_to
     (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := { ρ : Valuation2 &
-        rewrites_in_valuation_under_to program ρ r from under nv to
+     { dfrom : Decomposition &
+       { dto : Decomposition &
+          rewrites_in_valuation_under_to crules program ρ r from under nv to dfrom dto
+       }
+     }
    }
 .
 
 Definition rewriting_relation
     {Σ : BackgroundModel}
     {Label : Set}
-    (Γ : list (RewritingRule2 Label))
+    (crules : propset CtxRule)
+    (Γ : propset (RewritingRule2 Label))
     (program : ProgramT)
     (nv : NondetValue)
     : (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> (@TermOver' TermSymbol BasicValue)*(HiddenValue) -> Type
     := fun from to =>
-        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to program r from a nv to)%type}}
+        { r : _ & { a : _ & ((r ∈ Γ) * rewrites_to crules program r from a nv to)%type}}
 .
 
 Definition rewrites_to_nondet
     {Σ : BackgroundModel}
     {Label : Set}
+    (crules : propset CtxRule)
     (program : ProgramT)
     (r : RewritingRule2 Label)
     (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
@@ -814,20 +884,21 @@ Definition rewrites_to_nondet
     (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     : Type
 := { nv : NondetValue &
-        rewrites_to program r from under nv to
+        rewrites_to crules program r from under nv to
    }
 .
 
 Definition rewrites_to_thy
     {Σ : BackgroundModel}
     {Label : Set}
+    (crules : propset CtxRule)
     (program : ProgramT)
     (Γ : RewritingTheory2 Label)
     (from : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
     (under : Label)
     (to : (@TermOver' TermSymbol BasicValue)*(HiddenValue))
 := { r : RewritingRule2 Label &
-    ((r ∈ Γ)*(rewrites_to_nondet program r from under to))%type
+    ((r ∈ Γ)*(rewrites_to_nondet crules program r from under to))%type
 
 }
 .
